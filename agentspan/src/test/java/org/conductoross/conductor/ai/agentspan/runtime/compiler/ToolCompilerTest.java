@@ -84,6 +84,102 @@ class ToolCompilerTest {
     }
 
     @Test
+    void buildApiDiscoveryTasksUsesListApiToolsForEachUniqueSpec() {
+        ToolConfig first = apiTool("https://api.example.test/openapi.json");
+        ToolConfig duplicate = apiTool("https://api.example.test/openapi.json");
+
+        ToolCompiler.DiscoveryResult result =
+                new ToolCompiler()
+                        .buildApiDiscoveryTasks(
+                                "support agent",
+                                List.of(first, duplicate),
+                                List.of(),
+                                "openai/gpt-4o");
+
+        assertThat(result.getPreTasks())
+                .filteredOn(task -> "LIST_API_TOOLS".equals(task.getType()))
+                .singleElement()
+                .satisfies(
+                        task -> {
+                            assertThat(task.getTaskReferenceName())
+                                    .isEqualTo("support_agent_list_api_0");
+                            assertThat(task.getInputParameters())
+                                    .containsEntry(
+                                            "specUrl", "https://api.example.test/openapi.json");
+                            assertThat(task.getInputParameters().get("headers"))
+                                    .isEqualTo(
+                                            Map.of(
+                                                    "Authorization",
+                                                    "Bearer ${workflow.secrets.API_TOKEN}"));
+                        });
+        assertThat(result.getPreTasks()).noneMatch(task -> "HTTP".equals(task.getType()));
+        assertThat(result.getPreTasks())
+                .noneMatch(task -> task.getInputParameters().containsKey("specBody"));
+
+        WorkflowTask prepare = taskByRef(result.getPreTasks(), "support_agent_api_prepare");
+        assertThat(prepare.getInputParameters())
+                .containsEntry("api_discovered_0", "${support_agent_list_api_0.output}");
+    }
+
+    @Test
+    void buildDiscoveryTasksFeedsApiToolOutputToCombinedPreparation() {
+        ToolConfig mcp =
+                ToolConfig.builder()
+                        .toolType("mcp")
+                        .config(Map.of("server_url", "https://mcp.example.test"))
+                        .build();
+
+        ToolCompiler.DiscoveryResult result =
+                new ToolCompiler()
+                        .buildDiscoveryTasks(
+                                "support agent",
+                                List.of(mcp),
+                                List.of(apiTool("https://api.example.test/openapi.json")),
+                                List.of(),
+                                "openai/gpt-4o");
+
+        assertThat(result.getPreTasks())
+                .filteredOn(task -> "LIST_API_TOOLS".equals(task.getType()))
+                .singleElement()
+                .satisfies(
+                        task -> {
+                            assertThat(task.getTaskReferenceName())
+                                    .isEqualTo("support_agent_list_api_0");
+                            assertThat(task.getInputParameters().get("headers"))
+                                    .isEqualTo(
+                                            Map.of(
+                                                    "Authorization",
+                                                    "Bearer ${workflow.secrets.API_TOKEN}"));
+                        });
+        assertThat(result.getPreTasks()).noneMatch(task -> "HTTP".equals(task.getType()));
+        assertThat(result.getPreTasks())
+                .noneMatch(task -> task.getInputParameters().containsKey("specBody"));
+
+        WorkflowTask prepare = taskByRef(result.getPreTasks(), "support_agent_discovery_prepare");
+        assertThat(prepare.getInputParameters())
+                .containsEntry("api_discovered_0", "${support_agent_list_api_0.output}");
+    }
+
+    private ToolConfig apiTool(String specUrl) {
+        return ToolConfig.builder()
+                .toolType("api")
+                .config(
+                        Map.of(
+                                "url",
+                                specUrl,
+                                "headers",
+                                Map.of("Authorization", "Bearer ${API_TOKEN}")))
+                .build();
+    }
+
+    private WorkflowTask taskByRef(List<WorkflowTask> tasks, String referenceName) {
+        return tasks.stream()
+                .filter(task -> referenceName.equals(task.getTaskReferenceName()))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
     void testBuildToolCallRouting() {
         ToolCompiler tc = new ToolCompiler();
         WorkflowTask router = tc.buildToolCallRouting("agent", "agent_llm", null, false, "");

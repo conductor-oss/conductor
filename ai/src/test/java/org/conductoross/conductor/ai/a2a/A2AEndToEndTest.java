@@ -30,6 +30,7 @@ import okhttp3.OkHttpClient;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.task;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -59,7 +60,7 @@ class A2AEndToEndTest {
         // Spy to bypass SSRF check for loopback — embedded agent uses 127.0.0.1.
         service = spy(new A2AService(client));
         doNothing().when(service).validateAgentUrl(anyString());
-        workers = new A2AWorkers(service);
+        workers = new A2AWorkers(service, unusedAgentClient());
     }
 
     @AfterEach
@@ -169,7 +170,7 @@ class A2AEndToEndTest {
         TaskResult result = invoke(workers, task);
         assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
 
-        workers.cancel(A2AWorkers.AGENT, task, "workflow canceled");
+        workers.cancel(task, "workflow canceled");
 
         assertEquals(1, agent.cancelCalls());
     }

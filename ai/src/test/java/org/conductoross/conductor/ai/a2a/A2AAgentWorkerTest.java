@@ -36,6 +36,7 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invokeOutput;
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.task;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -53,7 +54,7 @@ class A2AAgentWorkerTest {
     @BeforeEach
     void setUp() {
         service = mock(A2AService.class);
-        workers = new A2AWorkers(service);
+        workers = new A2AWorkers(service, unusedAgentClient());
     }
 
     private A2ATask agentTask(String state, String artifactText) {
@@ -271,7 +272,7 @@ class A2AAgentWorkerTest {
         when(service.cancelTask(anyString(), eq("agent-task-1"), any()))
                 .thenReturn(agentTask(TaskState.CANCELED, null));
 
-        workers.cancel(A2AWorkers.AGENT, task, "workflow canceled");
+        workers.cancel(task, "workflow canceled");
 
         verify(service).cancelTask(eq("http://agent"), eq("agent-task-1"), any());
     }

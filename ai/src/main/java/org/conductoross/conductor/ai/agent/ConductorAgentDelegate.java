@@ -16,8 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
-import org.conductoross.conductor.common.metadata.agent.AgentStatusResponse;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -28,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Drives the {@code agentType=conductor} branch through the portable {@link AgentClient}.
+ * Drives the {@code agentType=conductor} branch through the portable {@link ConductorAgentClient}.
  *
  * <p>Every invocation is one short start/respond/status call. Durable state lives in the owning
  * Conductor task's output, so the same code works as an embedded annotated system task and as a
@@ -41,11 +39,11 @@ public class ConductorAgentDelegate {
     private static final long DEFAULT_MAX_DURATION_SECONDS = 24L * 60 * 60;
     private static final int DEFAULT_MAX_POLL_FAILURES = 30;
 
-    private final AgentClient agentClient;
+    private final ConductorAgentClient conductorAgentClient;
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
-    public ConductorAgentDelegate(AgentClient agentClient) {
-        this.agentClient = agentClient;
+    public ConductorAgentDelegate(ConductorAgentClient conductorAgentClient) {
+        this.conductorAgentClient = conductorAgentClient;
     }
 
     /** Starts/resumes a run on the first invocation and polls it on later invocations. */
@@ -74,7 +72,7 @@ public class ConductorAgentDelegate {
             } else {
                 execution =
                         fromStatus(
-                                agentClient.getAgentStatus(executionId),
+                                conductorAgentClient.getAgentStatus(executionId),
                                 asString(
                                         result.getOutputData()
                                                 .get(ConductorAgentResults.KEY_AGENT_NAME)));
@@ -113,8 +111,12 @@ public class ConductorAgentDelegate {
                 throw new NonRetryableException(
                         "AGENT (conductor) requires 'prompt' when resuming an execution");
             }
-            agentClient.respond(executionId, Map.of("result", request.getPrompt()));
-            return fromStatus(agentClient.getAgentStatus(executionId), null);
+            conductorAgentClient.respond(
+                    ConductorAgentRespondRequest.builder()
+                            .executionId(executionId)
+                            .body(Map.of("result", request.getPrompt()))
+                            .build());
+            return fromStatus(conductorAgentClient.getAgentStatus(executionId), null);
         }
 
         if (StringUtils.isBlank(request.getName())) {
@@ -125,7 +127,7 @@ public class ConductorAgentDelegate {
         }
         request.setIdempotencyKey(
                 StringUtils.firstNonBlank(request.getIdempotencyKey(), idempotencyKey(task)));
-        AgentStartResponse response = agentClient.startAgent(request);
+        ConductorAgentStartResponse response = conductorAgentClient.startAgent(request);
         return ConductorAgentExecution.builder()
                 .executionId(response.getExecutionId())
                 .agentName(response.getAgentName())
@@ -225,8 +227,14 @@ public class ConductorAgentDelegate {
                 output, execution, request.getSessionId(), objectMapper);
     }
 
-    private ConductorAgentExecution fromStatus(AgentStatusResponse status, String knownAgentName) {
-        ConductorAgentState state = deriveState(status.getStatus(), status.isWaiting());
+    private ConductorAgentExecution fromStatus(
+            ConductorAgentStatusResponse status, String knownAgentName) {
+        ConductorAgentState state =
+                status.isWaiting()
+                        ? ConductorAgentState.WAITING
+                        : status.getStatus() != null
+                                ? status.getStatus()
+                                : ConductorAgentState.RUNNING;
         Map<String, Object> output = status.isComplete() ? status.getOutput() : null;
         return ConductorAgentExecution.builder()
                 .executionId(status.getExecutionId())
@@ -249,27 +257,12 @@ public class ConductorAgentDelegate {
         return text instanceof CharSequence ? text.toString() : null;
     }
 
-    private static ConductorAgentState deriveState(String status, boolean waiting) {
-        if (waiting) {
-            return ConductorAgentState.WAITING;
-        }
-        if (status == null) {
-            return ConductorAgentState.RUNNING;
-        }
-        return switch (status) {
-            case "COMPLETED" -> ConductorAgentState.COMPLETED;
-            case "FAILED", "TIMED_OUT" -> ConductorAgentState.FAILED;
-            case "TERMINATED", "CANCELED" -> ConductorAgentState.CANCELED;
-            default -> ConductorAgentState.RUNNING;
-        };
-    }
-
     private void cancelBestEffort(String executionId, String reason) {
         if (StringUtils.isBlank(executionId)) {
             return;
         }
         try {
-            AgentStatusResponse status = agentClient.getAgentStatus(executionId);
+            ConductorAgentStatusResponse status = conductorAgentClient.getAgentStatus(executionId);
             if (status != null && status.isComplete()) {
                 return;
             }
@@ -277,7 +270,11 @@ public class ConductorAgentDelegate {
             // Still attempt cancellation when the status probe is unavailable.
         }
         try {
-            agentClient.cancelAgent(executionId, reason);
+            conductorAgentClient.cancelAgent(
+                    ConductorAgentCancelRequest.builder()
+                            .executionId(executionId)
+                            .reason(reason)
+                            .build());
         } catch (Exception e) {
             log.warn(
                     "Failed to propagate {} to conductor agent execution {}: {}",

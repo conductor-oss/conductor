@@ -14,6 +14,7 @@ import OpenIcon from "components/icons/OpenIcon";
 import ButtonLinks from "components/layout/header/ButtonLinks";
 import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
+import Error from "components/ui/Error";
 import MuiAlert from "components/ui/MuiAlert";
 import MuiTypography from "components/ui/MuiTypography";
 import NavLink from "components/ui/NavLink";
@@ -343,6 +344,7 @@ export default function Execution() {
       taskListActor,
       rightPanelActor,
       isNoAccess,
+      isNotFound,
       doWhileSelection,
       nodes,
     },
@@ -616,6 +618,40 @@ export default function Execution() {
       selectNode(maybeSelectedNode);
     }
   };
+
+  if (isNotFound) {
+    const isAgentExecutionRoute = location.pathname.startsWith(
+      `${AGENT_EXECUTIONS_URL.BASE}/`,
+    );
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          p: 5,
+        }}
+      >
+        <Helmet>
+          <title>Execution Not Found - {executionId}</title>
+        </Helmet>
+        <MuiTypography fontSize={20} fontWeight={700} mb={8}>
+          ERROR
+        </MuiTypography>
+        <Error
+          title="404"
+          description="We're sorry but we couldn't locate that execution."
+          buttonText="BACK TO EXECUTIONS"
+          onClick={() =>
+            navigate(
+              isAgentExecutionRoute ? AGENT_EXECUTIONS_URL.BASE : "/executions",
+            )
+          }
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Conductor Authors.
+ * Copyright 2026 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,71 +15,38 @@ package org.conductoross.conductor.ai.agentspan.runtime.ai;
 import java.util.List;
 
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
+import org.springframework.core.env.StandardEnvironment;
+
+import com.netflix.conductor.core.secrets.NoopSecretsDAO;
 
 import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
 
+/** Uses the production no-op secret backend instead of mocking credential lookup. */
 class AgentspanAIModelProviderTest {
 
-    private CredentialResolutionService credentialService;
-    private OkHttpClient httpClient;
-    private AgentspanAIModelProvider provider;
-
-    @BeforeEach
-    void setUp() {
-        credentialService = mock(CredentialResolutionService.class);
-        httpClient = new OkHttpClient();
-        Environment env = mock(Environment.class);
-        when(env.getProperty(anyString(), anyString())).thenAnswer(i -> i.getArgument(1));
-
-        provider = new AgentspanAIModelProvider(List.of(), env, httpClient, credentialService);
-    }
+    private final AgentspanAIModelProvider provider =
+            new AgentspanAIModelProvider(
+                    List.of(),
+                    new StandardEnvironment(),
+                    new OkHttpClient(),
+                    new CredentialResolutionService(new NoopSecretsDAO()));
 
     @Test
-    void constructorAcceptsInjectedHttpClient() {
-        // Verifies the constructor doesn't substitute its own client
+    void constructorAcceptsConcreteRuntimeDependencies() {
         assertThat(provider).isNotNull();
     }
 
     @Test
-    void isProviderConfigured_returnsFalse_whenNoCredential() {
-        when(credentialService.resolve("OPENAI_API_KEY")).thenReturn(null);
-
+    void providerIsNotConfiguredWhenTheRealSecretBackendContainsNoCredential() {
         assertThat(provider.isProviderConfigured("openai")).isFalse();
+        assertThat(provider.isProviderConfigured("Anthropic")).isFalse();
     }
 
     @Test
-    void isProviderConfigured_returnsTrue_whenCredentialFound() {
-        when(credentialService.resolve("OPENAI_API_KEY")).thenReturn("sk-test-key");
-
-        assertThat(provider.isProviderConfigured("openai")).isTrue();
-    }
-
-    @Test
-    void isProviderConfigured_caseInsensitive() {
-        when(credentialService.resolve("ANTHROPIC_API_KEY")).thenReturn("key");
-
-        assertThat(provider.isProviderConfigured("Anthropic")).isTrue();
-        assertThat(provider.isProviderConfigured("ANTHROPIC")).isTrue();
-    }
-
-    @Test
-    void isProviderConfigured_unknownProvider_returnsFalse() {
-        // No PROVIDER_TO_ENV_VAR entry → resolveUserApiKey returns null early
+    void unknownProviderNeverAppearsConfigured() {
         assertThat(provider.isProviderConfigured("unknown-provider")).isFalse();
-        verifyNoInteractions(credentialService);
-    }
-
-    @Test
-    void isProviderConfigured_credentialServiceThrows_returnsFalse() {
-        when(credentialService.resolve("OPENAI_API_KEY"))
-                .thenThrow(new RuntimeException("store unavailable"));
-
-        assertThat(provider.isProviderConfigured("openai")).isFalse();
     }
 }

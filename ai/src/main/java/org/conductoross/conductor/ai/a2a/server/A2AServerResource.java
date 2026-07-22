@@ -102,7 +102,10 @@ public class A2AServerResource {
     }
 
     @PostMapping(
-            value = "${conductor.a2a.server.basePath:/a2a}/{workflow}",
+            value = {
+                "${conductor.a2a.server.basePath:/a2a}/{workflow}",
+                "${conductor.a2a.server.basePath:/a2a}/{workflow}/rpc"
+            },
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE})
     public Object jsonRpc(
             @PathVariable("workflow") String workflow,
@@ -115,16 +118,18 @@ public class A2AServerResource {
             String method = request.get("method").asText();
             scope.add(A2ALogging.METHOD, method);
             JsonNode params = request.get("params");
-            if ("message/stream".equals(method)) {
+            // message/stream and its v0.2 alias tasks/sendSubscribe both return SSE
+            if ("message/stream".equals(method) || "tasks/sendSubscribe".equals(method)) {
                 return streamResponse(workflow, params, id);
             }
             Object result;
             switch (method) {
                 case "message/send":
+                case "tasks/send": // A2A v0.2 backward compat alias
                     {
                         // Counter is emitted only for recognized methods — 'method' is
                         // client-controlled, so it must never become an unbounded metric tag.
-                        A2AMetrics.serverRequest(method);
+                        A2AMetrics.serverRequest("message/send");
                         A2AMessage message = parseMessage(params);
                         scope.add(A2ALogging.MESSAGE_ID, message.getMessageId())
                                 .add(A2ALogging.CONTEXT_ID, message.getContextId())

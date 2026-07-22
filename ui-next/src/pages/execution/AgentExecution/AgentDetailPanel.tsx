@@ -21,6 +21,7 @@ import {
   AgentEvent,
   AgentRunData,
   AgentStatus,
+  AgentStrategy,
   EventType,
   TaskAttempt,
 } from "./types";
@@ -28,7 +29,9 @@ import {
   formatTokens,
   formatDuration,
   getModelIconPath,
+  transformWorkflowExecutionToAgentRun,
 } from "./agentExecutionUtils";
+import { WorkflowExecution } from "types/Execution";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,6 +53,7 @@ export interface DetailNodeData {
   groupType?: "agents" | "tools";
   groupAgents?: AgentRunData[];
   groupEvents?: AgentEvent[];
+  strategy?: AgentStrategy;
 }
 
 // ─── Tab keys ────────────────────────────────────────────────────────────────
@@ -58,6 +62,8 @@ const SUMMARY_TAB = "summary";
 const INPUT_TAB = "input";
 const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
+const FORMATTED_OUTPUT_TAB = "formatted";
+const RAW_OUTPUT_TAB = "raw";
 
 // ─── JSON editor viewer (Monaco, fills available height) ─────────────────────
 
@@ -193,6 +199,328 @@ function ContentView({ value, label }: { value: unknown; label?: string }) {
       }}
     >
       <JsonView src={value} />
+    </Box>
+  );
+}
+
+function formattedOutput(value: unknown): unknown {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of ["result", "output", "answer", "message", "content"]) {
+    if (typeof record[key] === "string") return record[key];
+  }
+  return value;
+}
+
+/** Keeps human-readable Markdown/text and the exact execution payload together. */
+function OutputView({ value }: { value: unknown }) {
+  const [view, setView] = useState(FORMATTED_OUTPUT_TAB);
+  return (
+    <Box
+      sx={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}
+    >
+      <Tabs value={view} contextual style={{ marginBottom: 0 }}>
+        <Tab
+          label="Formatted"
+          value={FORMATTED_OUTPUT_TAB}
+          onClick={() => setView(FORMATTED_OUTPUT_TAB)}
+        />
+        <Tab
+          label="JSON"
+          value={RAW_OUTPUT_TAB}
+          onClick={() => setView(RAW_OUTPUT_TAB)}
+        />
+      </Tabs>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2 }}>
+        {view === FORMATTED_OUTPUT_TAB ? (
+          <ContentView
+            value={formattedOutput(value)}
+            label="output captured for this execution"
+          />
+        ) : value == null ? (
+          <ContentView
+            value={value}
+            label="output captured for this execution"
+          />
+        ) : (
+          <Box sx={{ height: 400 }}>
+            <JsonView src={value} />
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+interface FetchedAgentExecution {
+  run: AgentRunData;
+  rawExecution: WorkflowExecution;
+}
+
+const fetchedAgentExecutions = new Map<string, FetchedAgentExecution | null>();
+
+function useAgentExecutionDetail(run: AgentRunData): {
+  data: FetchedAgentExecution | null;
+  loading: boolean;
+} {
+  const executionId = run.subWorkflowId;
+  const [data, setData] = useState<FetchedAgentExecution | null>(
+    executionId ? (fetchedAgentExecutions.get(executionId) ?? null) : null,
+  );
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!executionId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    if (fetchedAgentExecutions.has(executionId)) {
+      setData(fetchedAgentExecutions.get(executionId) ?? null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setData(null);
+    setLoading(true);
+    fetch(`/api/agent/executions/${executionId}/full`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((rawExecution: WorkflowExecution | null) => {
+        if (cancelled) return;
+        const detail = rawExecution
+          ? {
+              run: transformWorkflowExecutionToAgentRun(rawExecution),
+              rawExecution,
+            }
+          : null;
+        fetchedAgentExecutions.set(executionId, detail);
+        setData(detail);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        fetchedAgentExecutions.set(executionId, null);
+        setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [executionId]);
+
+  return { data, loading };
+}
+
+function AgentInspector({
+  run,
+  invocationStrategy,
+  onDrillIn,
+}: {
+  run: AgentRunData;
+  invocationStrategy?: AgentStrategy;
+  onDrillIn?: (run: AgentRunData) => void;
+}) {
+  const [tab, setTab] = useState(SUMMARY_TAB);
+  const { data: fetched, loading } = useAgentExecutionDetail(run);
+  const effectiveRun = fetched?.run ?? run;
+  const input = effectiveRun.input ?? run.input;
+  const output = effectiveRun.output ?? run.output;
+  const definition = effectiveRun.agentDef ?? run.agentDef;
+  const agentType = effectiveRun.agentType ?? run.agentType ?? "Unavailable";
+  const strategy =
+    (definition?.strategy as AgentStrategy | undefined) ??
+    effectiveRun.strategy;
+  const orchestratedBy = invocationStrategy ?? run.invocationStrategy;
+  const promptTokens = effectiveRun.totalTokens.promptTokens;
+  const completionTokens = effectiveRun.totalTokens.completionTokens;
+  const rawJson = fetched?.rawExecution ?? {
+    agentName: effectiveRun.agentName,
+    agentType,
+    strategy,
+    status: effectiveRun.status,
+    model: effectiveRun.model,
+    input,
+    output,
+    agentDef: definition,
+  };
+
+  return (
+    <Box
+      sx={{ display: "flex", minHeight: 0, flex: 1, flexDirection: "column" }}
+    >
+      <Tabs
+        value={tab}
+        contextual
+        variant="scrollable"
+        scrollButtons="auto"
+        style={{ marginBottom: 0 }}
+      >
+        <Tab
+          label="Summary"
+          value={SUMMARY_TAB}
+          onClick={() => setTab(SUMMARY_TAB)}
+        />
+        <Tab
+          label="Input"
+          value={INPUT_TAB}
+          onClick={() => setTab(INPUT_TAB)}
+        />
+        <Tab
+          label="Output"
+          value={OUTPUT_TAB}
+          onClick={() => setTab(OUTPUT_TAB)}
+        />
+        <Tab
+          label="Configuration"
+          value="configuration"
+          onClick={() => setTab("configuration")}
+        />
+        <Tab label="JSON" value={JSON_TAB} onClick={() => setTab(JSON_TAB)} />
+      </Tabs>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY:
+            tab === SUMMARY_TAB || tab === "configuration" ? "auto" : "hidden",
+          display:
+            tab === SUMMARY_TAB || tab === "configuration" ? "block" : "flex",
+          flexDirection: "column",
+        }}
+      >
+        {tab === SUMMARY_TAB && (
+          <Box>
+            {loading && (
+              <Typography
+                sx={{
+                  px: 2,
+                  pt: 1.5,
+                  fontSize: "0.75rem",
+                  color: "text.secondary",
+                }}
+              >
+                Loading full child execution details…
+              </Typography>
+            )}
+            <SummaryTable>
+              <SummaryRow label="Name" value={effectiveRun.agentName} />
+              <SummaryRow label="Agent type" value={agentType} />
+              <SummaryRow label="Strategy" value={strategy ?? "Unavailable"} />
+              {orchestratedBy && orchestratedBy !== strategy && (
+                <SummaryRow label="Invocation mode" value={orchestratedBy} />
+              )}
+              <SummaryRow
+                label="Model"
+                value={effectiveRun.model ?? "Unavailable"}
+              />
+              <SummaryRow
+                label="Status"
+                value={<StatusBadgeInline status={effectiveRun.status} />}
+              />
+              <SummaryRow
+                label="Execution ID"
+                value={effectiveRun.subWorkflowId ?? effectiveRun.id}
+              />
+              <SummaryRow
+                label="Duration"
+                value={formatDuration(effectiveRun.totalDurationMs)}
+              />
+              <SummaryRow
+                label="Turns"
+                value={String(effectiveRun.turns.length)}
+              />
+              <SummaryRow
+                label="Prompt tokens"
+                value={formatTokens(promptTokens)}
+              />
+              <SummaryRow
+                label="Completion tokens"
+                value={formatTokens(completionTokens)}
+              />
+              <SummaryRow
+                label="Total tokens"
+                value={formatTokens(effectiveRun.totalTokens.totalTokens)}
+              />
+              {effectiveRun.finishReason && (
+                <SummaryRow
+                  label="Finish reason"
+                  value={effectiveRun.finishReason.toUpperCase()}
+                />
+              )}
+              {effectiveRun.failureReason && (
+                <SummaryRow
+                  label="Failure reason"
+                  value={
+                    <span style={{ color: "#DC2626" }}>
+                      {effectiveRun.failureReason}
+                    </span>
+                  }
+                />
+              )}
+            </SummaryTable>
+            {onDrillIn && effectiveRun.subWorkflowId && (
+              <Box sx={{ px: 2, pb: 1 }}>
+                <Box
+                  onClick={() => onDrillIn(effectiveRun)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    fontWeight: 500,
+                    color: "#fff",
+                    backgroundColor: "#4969e4",
+                    "&:hover": { backgroundColor: "#3858d6" },
+                  }}
+                >
+                  View full execution <ArrowRight size={14} />
+                </Box>
+              </Box>
+            )}
+          </Box>
+        )}
+        {tab === INPUT_TAB && (
+          <Box sx={{ flex: 1, minHeight: 0, p: 2, overflowY: "auto" }}>
+            <ContentView
+              value={input}
+              label="input captured for this execution"
+            />
+          </Box>
+        )}
+        {tab === OUTPUT_TAB && <OutputView value={output} />}
+        {tab === "configuration" && (
+          <Box sx={{ p: 2 }}>
+            {loading && !definition ? (
+              <Typography color="text.disabled" sx={{ fontSize: "0.875rem" }}>
+                Loading agent configuration…
+              </Typography>
+            ) : definition ? (
+              <AgentDefinitionDetails
+                agentDef={definition}
+                title="Agent configuration"
+              />
+            ) : (
+              <Typography color="text.disabled" sx={{ fontSize: "0.875rem" }}>
+                No agent configuration captured for this execution.
+              </Typography>
+            )}
+          </Box>
+        )}
+        {tab === JSON_TAB && (
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <JsonView src={rawJson} />
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -626,159 +954,11 @@ function GroupDetailPanel({
         }}
       >
         {selAgent && (
-          <Box>
-            <SummaryTable>
-              <SummaryRow label="Agent" value={selAgent.agentName} />
-              {selAgent.model && (
-                <SummaryRow
-                  label="Model"
-                  value={<ModelValue model={selAgent.model} />}
-                />
-              )}
-              <SummaryRow
-                label="Status"
-                value={<StatusBadgeInline status={selAgent.status} />}
-              />
-              {selAgent.totalDurationMs > 0 && (
-                <SummaryRow
-                  label="Duration"
-                  value={formatDuration(selAgent.totalDurationMs)}
-                />
-              )}
-              {selAgent.totalTokens.promptTokens +
-                selAgent.totalTokens.completionTokens >
-                0 && (
-                <>
-                  <SummaryRow
-                    label="Prompt tokens"
-                    value={formatTokens(selAgent.totalTokens.promptTokens)}
-                  />
-                  <SummaryRow
-                    label="Completion tokens"
-                    value={formatTokens(selAgent.totalTokens.completionTokens)}
-                  />
-                  <SummaryRow
-                    label="Total tokens"
-                    value={formatTokens(
-                      selAgent.totalTokens.promptTokens +
-                        selAgent.totalTokens.completionTokens,
-                    )}
-                  />
-                </>
-              )}
-              {selAgent.turns.length > 0 && (
-                <SummaryRow label="Turns" value={selAgent.turns.length} />
-              )}
-              {selAgent.finishReason && (
-                <SummaryRow
-                  label="Finish reason"
-                  value={selAgent.finishReason.toUpperCase()}
-                />
-              )}
-              {selAgent.failureReason && (
-                <SummaryRow
-                  label="Failure reason"
-                  value={
-                    <span style={{ color: "#DC2626" }}>
-                      {selAgent.failureReason}
-                    </span>
-                  }
-                />
-              )}
-            </SummaryTable>
-            {/* Input */}
-            {selAgent.input && (
-              <Box
-                sx={{
-                  mx: 2,
-                  mb: 1.5,
-                  mt: 1.5,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    borderBottom: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#6b7280",
-                    }}
-                  >
-                    Input
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 2, py: 1 }}>
-                  <ContentView value={selAgent.input} label="input" />
-                </Box>
-              </Box>
-            )}
-            {/* Output */}
-            {selAgent.output && (
-              <Box
-                sx={{
-                  mx: 2,
-                  mb: 1.5,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    borderBottom: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#6b7280",
-                    }}
-                  >
-                    Output
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 2, py: 1 }}>
-                  <ContentView value={selAgent.output} label="output" />
-                </Box>
-              </Box>
-            )}
-            {onDrillIn && selAgent.subWorkflowId && (
-              <Box sx={{ px: 2, py: 1 }}>
-                <Box
-                  onClick={() => onDrillIn(selAgent)}
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.75,
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 1,
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    fontWeight: 500,
-                    color: "#fff",
-                    backgroundColor: "#4969e4",
-                    "&:hover": { backgroundColor: "#3858d6" },
-                  }}
-                >
-                  View full execution <ArrowRight size={14} />
-                </Box>
-              </Box>
-            )}
-          </Box>
+          <AgentInspector
+            run={selAgent}
+            invocationStrategy={node.strategy}
+            onDrillIn={onDrillIn}
+          />
         )}
         {selEvent && (
           <Box>
@@ -1723,6 +1903,87 @@ export function AgentDetailPanel({
         >
           <GroupDetailPanel node={node} onDrillIn={onDrillIn} />
         </Box>
+      </Paper>
+    );
+  }
+
+  // Agent identity nodes share the same inspector whether they are the root
+  // start node or a direct sub-agent node. Parallel groups render this same
+  // inspector for their selected child above.
+  if ((node.kind === "start" || node.kind === "subagent") && node.subAgentRun) {
+    return (
+      <Paper
+        square
+        elevation={0}
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 2,
+            pb: 1.5,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+            <IconButton
+              size="small"
+              onClick={onClose}
+              sx={{ width: 28, height: 28, mt: 0.25 }}
+            >
+              <CloseIcon size={16} />
+            </IconButton>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  mb: 0.5,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    lineHeight: 1.3,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {node.subAgentRun.agentName}
+                </Typography>
+                <StatusChip status={node.subAgentRun.status} />
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {KIND_DISPLAY[node.kind]}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        <AgentInspector
+          run={node.subAgentRun}
+          invocationStrategy={node.strategy}
+          onDrillIn={onDrillIn}
+        />
       </Paper>
     );
   }

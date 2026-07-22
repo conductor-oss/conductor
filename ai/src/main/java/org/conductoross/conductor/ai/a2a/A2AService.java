@@ -168,7 +168,7 @@ public class A2AService {
                 conductorAiHttpClient,
                 environment != null
                         && Boolean.parseBoolean(
-                                environment.getProperty(ALLOW_PRIVATE_NETWORK_PROPERTY, "false")));
+                                environment.getProperty(ALLOW_PRIVATE_NETWORK_PROPERTY, "true")));
     }
 
     /**

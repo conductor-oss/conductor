@@ -330,14 +330,15 @@ class MultiAgentCompilerTest {
             assertThat(inlineWf.getTasks().get(1).getInputParameters().get("_agent_state"))
                     .asString()
                     .contains("_ctx_resolve.output.result");
-            // DO_WHILE should contain check_transfer
+            // DO_WHILE should contain compiler-owned transfer detection, not a SIMPLE worker.
             WorkflowTask innerLoop = inlineWf.getTasks().get(2);
             boolean hasCheckTransfer =
                     innerLoop.getLoopOver().stream()
                             .anyMatch(
                                     t ->
-                                            t.getName() != null
-                                                    && t.getName().contains("check_transfer"));
+                                            "INLINE".equals(t.getType())
+                                                    && t.getTaskReferenceName()
+                                                            .contains("check_transfer"));
             assertThat(hasCheckTransfer).isTrue();
             // Output should include transfer fields and round-trip the structured context
             assertThat(inlineWf.getOutputParameters()).containsKey("is_transfer");
@@ -347,12 +348,13 @@ class MultiAgentCompilerTest {
                     .containsEntry("context", "${workflow.variables._agent_state}");
         }
 
-        // Handoff check inputs should include is_transfer and transfer_to
+        // Handoff resolution is compiler-owned INLINE logic and receives transfer state.
         WorkflowTask handoffTask =
                 loop.getLoopOver().stream()
-                        .filter(t -> "SIMPLE".equals(t.getType()))
+                        .filter(t -> t.getTaskReferenceName().contains("handoff_check"))
                         .findFirst()
                         .orElseThrow();
+        assertThat(handoffTask.getType()).isEqualTo("INLINE");
         assertThat(handoffTask.getInputParameters()).containsKey("is_transfer");
         assertThat(handoffTask.getInputParameters()).containsKey("transfer_to");
 
@@ -452,6 +454,15 @@ class MultiAgentCompilerTest {
         boolean hasSwitchInLoop =
                 loop.getLoopOver().stream().anyMatch(t -> "SWITCH".equals(t.getType()));
         assertThat(hasSwitchInLoop).isTrue();
+        WorkflowTask routerSubWorkflow =
+                loop.getLoopOver().stream()
+                        .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        WorkflowDef routerWorkflow = routerSubWorkflow.getSubWorkflowParam().getWorkflowDef();
+        assertThat(routerWorkflow.getMetadata())
+                .containsEntry("classifier", "agent")
+                .containsKey("agentDef");
 
         // Switch should have agent cases + DONE
         WorkflowTask switchTask =
@@ -831,7 +842,8 @@ class MultiAgentCompilerTest {
         assertThat(engSubWf.getType()).isEqualTo("SUB_WORKFLOW");
 
         // The inline workflow should use the hierarchical path:
-        // inner SUB_WORKFLOW (handoff strategy) + coerce result + transfer LLM + check_transfer
+        // inner SUB_WORKFLOW (handoff strategy) + coerce result + transfer LLM + compiler-owned
+        // transfer detection + transfer_msg extraction
         // + transfer_msg extraction
         WorkflowDef engInlineWf = engSubWf.getSubWorkflowParam().getWorkflowDef();
         assertThat(engInlineWf.getTasks()).hasSize(5);
@@ -841,7 +853,7 @@ class MultiAgentCompilerTest {
                 .isEqualTo("INLINE"); // coerce result to string
         assertThat(engInlineWf.getTasks().get(2).getType())
                 .isEqualTo("LLM_CHAT_COMPLETE"); // transfer decision
-        assertThat(engInlineWf.getTasks().get(3).getType()).isEqualTo("SIMPLE"); // check_transfer
+        assertThat(engInlineWf.getTasks().get(3).getType()).isEqualTo("INLINE"); // check_transfer
         assertThat(engInlineWf.getTasks().get(4).getType()).isEqualTo("INLINE"); // transfer_msg
 
         // Inner strategy receives the swarm's accumulated context and its context is exposed

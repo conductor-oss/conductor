@@ -27,11 +27,10 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -45,7 +44,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.MetadataService;
@@ -63,15 +61,11 @@ import lombok.extern.slf4j.Slf4j;
 public class AgentService {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
-    private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
-            "agent_classifier_backfill_version";
 
     private final AgentCompiler agentCompiler;
     private final NormalizerRegistry normalizerRegistry;
     private final ExecutionDAO executionDAO;
     private final MetadataDAO metadataDAO;
-
-    private final IndexDAO indexDAO;
 
     private final WorkflowService workflowService;
     private final TaskService taskService;
@@ -80,67 +74,6 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
-
-    /**
-     * Agent definitions created before execution classifiers were introduced still advertise their
-     * agent metadata, but their historic index rows say {@code workflow}. Re-index every registered
-     * agent's existing execution tree once. Descendants are traversed through {@code
-     * parentWorkflowId}, so inline and nested sub-agents inherit the agent classifier too.
-     */
-    @EventListener(ApplicationReadyEvent.class)
-    void backfillLegacyAgentExecutionClassifiers() {
-        Set<String> agentNamesToReindex = new HashSet<>();
-        for (WorkflowDef definition : metadataDAO.getAllWorkflowDefs()) {
-            Map<String, Object> metadata = definition.getMetadata();
-            if (!WorkflowClassifiers.isAgent(metadata)
-                    || "1"
-                            .equals(
-                                    String.valueOf(
-                                            metadata.get(AGENT_CLASSIFIER_BACKFILL_VERSION)))) {
-                continue;
-            }
-
-            Map<String, Object> upgradedMetadata = new LinkedHashMap<>(metadata);
-            upgradedMetadata.put("classifier", WorkflowClassifiers.AGENT);
-            upgradedMetadata.put(AGENT_CLASSIFIER_BACKFILL_VERSION, 1);
-            definition.setMetadata(upgradedMetadata);
-            metadataDAO.updateWorkflowDef(definition);
-            agentNamesToReindex.add(definition.getName());
-        }
-
-        for (String agentName : agentNamesToReindex) {
-            for (WorkflowModel workflow : executionDAO.getWorkflowsByType(agentName, null, null)) {
-                reindexAgentExecutionTree(workflow, new HashSet<>());
-            }
-        }
-        if (!agentNamesToReindex.isEmpty()) {
-            log.info(
-                    "Backfilled agent execution classifiers for {} agent definitions",
-                    agentNamesToReindex.size());
-        }
-    }
-
-    private void reindexAgentExecutionTree(WorkflowModel workflow, Set<String> visitedWorkflowIds) {
-        if (workflow == null || !visitedWorkflowIds.add(workflow.getWorkflowId())) {
-            return;
-        }
-
-        WorkflowSummary summary = new WorkflowSummary(workflow.toWorkflow());
-        summary.setClassifier(WorkflowClassifiers.AGENT);
-        indexDAO.indexWorkflow(summary);
-
-        SearchResult<WorkflowSummary> children =
-                indexDAO.searchWorkflowSummary(
-                        "parentWorkflowId=" + workflow.getWorkflowId(),
-                        "*",
-                        0,
-                        Integer.MAX_VALUE,
-                        Collections.emptyList());
-        for (WorkflowSummary child : children.getResults()) {
-            reindexAgentExecutionTree(
-                    executionDAO.getWorkflow(child.getWorkflowId()), visitedWorkflowIds);
-        }
-    }
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -167,8 +100,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        Set<String> workerNames = def.collectSimpleTaskNames();
-        config.collectDynamicTransferNames(workerNames);
+        Set<String> workerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
+        collectDeclaredWorkerNames(config, workerNames);
         List<String> requiredWorkers = new ArrayList<>(workerNames);
         Map<String, Object> defMap = MAPPER.convertValue(def, Map.class);
         return CompileResponse.builder()
@@ -270,8 +203,8 @@ public class AgentService {
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
 
-        Set<String> deployWorkerNames = def.collectSimpleTaskNames();
-        config.collectDynamicTransferNames(deployWorkerNames);
+        Set<String> deployWorkerNames = new LinkedHashSet<>(def.collectSimpleTaskNames());
+        collectDeclaredWorkerNames(config, deployWorkerNames);
         return AgentStartResponse.builder()
                 .agentName(def.getName())
                 .requiredWorkers(new ArrayList<>(deployWorkerNames))
@@ -635,6 +568,27 @@ public class AgentService {
     }
 
     /**
+     * Computes the prune cutoff, guarding the two ways an unchecked {@code olderThanDays} turned
+     * the prune into a data-loss operation (issue #1331): non-positive values put the cutoff in the
+     * future (matching every terminal execution), and very large values push the computed epoch
+     * negative, which the search backend matched against recent executions. A cutoff clamped to
+     * epoch start matches nothing, which is the correct meaning of "older than anything that
+     * exists".
+     *
+     * @param olderThanDays minimum age in days, must be >= 1
+     * @param now the current instant
+     * @return cutoff in epoch milliseconds, never negative
+     */
+    @VisibleForTesting
+    static long computePruneCutoffEpochMs(int olderThanDays, Instant now) {
+        if (olderThanDays < 1) {
+            throw new IllegalArgumentException(
+                    "pruneExecutions: olderThanDays must be >= 1, got " + olderThanDays);
+        }
+        return Math.max(0L, now.minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli());
+    }
+
+    /**
      * Bulk-delete completed execution records older than {@code olderThanDays} days.
      *
      * <p>Searches for COMPLETED, FAILED, TERMINATED, and TIMED_OUT executions whose end time is
@@ -645,7 +599,7 @@ public class AgentService {
      * @return number of executions deleted
      */
     public int pruneExecutions(int olderThanDays, boolean archiveTasks) {
-        long cutoffEpochMs = Instant.now().minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli();
+        long cutoffEpochMs = computePruneCutoffEpochMs(olderThanDays, Instant.now());
         String[] terminalStatuses = {"COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"};
 
         List<String> workflowNames =
@@ -878,20 +832,19 @@ public class AgentService {
                             .getWorkflowDef(name, version)
                             .orElseThrow(
                                     () ->
-                                            new IllegalArgumentException(
+                                            new NotFoundException(
                                                     "Agent not found: " + name + " v" + version));
         } else {
             def =
                     metadataDAO
                             .getLatestWorkflowDef(name)
-                            .orElseThrow(
-                                    () -> new IllegalArgumentException("Agent not found: " + name));
+                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
         }
         Map<String, Object> metadata = def.getMetadata();
         if (metadata != null && metadata.get("agentDef") instanceof Map) {
             return (Map<String, Object>) metadata.get("agentDef");
         }
-        throw new IllegalArgumentException("No agent definition found for: " + name);
+        throw new NotFoundException("No agent definition found for: " + name);
     }
 
     public void deleteAgent(String name, Integer version) {
@@ -902,8 +855,7 @@ public class AgentService {
             WorkflowDef def =
                     metadataDAO
                             .getLatestWorkflowDef(name)
-                            .orElseThrow(
-                                    () -> new IllegalArgumentException("Agent not found: " + name));
+                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
             metadataDAO.removeWorkflowDef(name, def.getVersion());
         }
     }
@@ -934,6 +886,45 @@ public class AgentService {
     private void registerTaskDefinitions(AgentConfig config) {
         Set<String> registered = new HashSet<>();
         collectAndRegisterTasks(config, registered);
+    }
+
+    /**
+     * Dynamic worker-tool dispatch is emitted by a runtime fork and is therefore absent from {@link
+     * WorkflowDef#collectSimpleTaskNames()}. Keep the compile/deploy contract truthful by reporting
+     * those user-owned workers explicitly. Compiler-owned SWARM transfer controls are deliberately
+     * excluded; only declared worker tools and declared condition workers need a poller.
+     */
+    private static void collectDeclaredWorkerNames(AgentConfig config, Set<String> names) {
+        if (config.getTools() != null) {
+            for (ToolConfig tool : config.getTools()) {
+                if ("worker".equals(tool.getToolType())
+                        && tool.getName() != null
+                        && !tool.getName().isBlank()) {
+                    names.add(tool.getName());
+                }
+            }
+        }
+        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getHandoffs() != null) {
+            for (HandoffConfig handoff : config.getHandoffs()) {
+                if ("on_condition".equals(handoff.getType())
+                        && handoff.getTaskName() != null
+                        && !handoff.getTaskName().isBlank()) {
+                    names.add(handoff.getTaskName());
+                }
+            }
+        }
+        if (config.getCallbacks() != null) {
+            for (CallbackConfig callback : config.getCallbacks()) {
+                if (callback.getTaskName() != null && !callback.getTaskName().isBlank()) {
+                    names.add(callback.getTaskName());
+                }
+            }
+        }
+        if (config.getAgents() != null) {
+            for (AgentConfig agent : config.getAgents()) {
+                collectDeclaredWorkerNames(agent, names);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1034,12 +1025,17 @@ public class AgentService {
             }
         }
 
-        // Register handoff check worker for swarm
-        if (config.getHandoffs() != null && !config.getHandoffs().isEmpty()) {
-            String taskName = config.getName() + "_handoff_check";
-            if (!registered.contains(taskName)) {
-                registerTaskDef(taskName);
-                registered.add(taskName);
+        // Declarative SWARM conditions are the only handoff workers. Generated transfer and
+        // handoff-check names are compiler-owned INLINE logic and must never be registered.
+        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getHandoffs() != null) {
+            for (HandoffConfig handoff : config.getHandoffs()) {
+                if ("on_condition".equals(handoff.getType())
+                        && handoff.getTaskName() != null
+                        && !handoff.getTaskName().isBlank()
+                        && !registered.contains(handoff.getTaskName())) {
+                    registerTaskDef(handoff.getTaskName(), agentCreds);
+                    registered.add(handoff.getTaskName());
+                }
             }
         }
 
@@ -1049,65 +1045,6 @@ public class AgentService {
             if (!registered.contains(taskName)) {
                 registerTaskDef(taskName);
                 registered.add(taskName);
-            }
-        }
-
-        // Register check_transfer worker for hybrid (has both agents AND tools)
-        if (config.getAgents() != null
-                && !config.getAgents().isEmpty()
-                && config.getTools() != null
-                && !config.getTools().isEmpty()) {
-            String taskName = config.getName() + "_check_transfer";
-            if (!registered.contains(taskName)) {
-                registerTaskDef(taskName);
-                registered.add(taskName);
-            }
-        }
-
-        // Register check_transfer workers for swarm sub-agents
-        // In swarm mode, each sub-agent gets a {name}_check_transfer SIMPLE task
-        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getAgents() != null) {
-            for (AgentConfig sub : config.getAgents()) {
-                String taskName = sub.getName() + "_check_transfer";
-                if (!registered.contains(taskName)) {
-                    registerTaskDef(taskName);
-                    registered.add(taskName);
-                }
-            }
-        }
-
-        // Register transfer_to_ workers for swarm agents
-        // Each agent gets {source}_transfer_to_{peer} — matching MultiAgentCompiler
-        if (config.getStrategy() == AgentConfig.Strategy.SWARM && config.getAgents() != null) {
-            List<String> allNames = new ArrayList<>();
-            allNames.add(config.getName());
-            for (AgentConfig sub : config.getAgents()) {
-                allNames.add(sub.getName());
-            }
-            for (String source : allNames) {
-                for (String peer : allNames) {
-                    if (!source.equals(peer)) {
-                        String taskName = source + "_transfer_to_" + peer;
-                        if (!registered.contains(taskName)) {
-                            registerTaskDef(taskName);
-                            registered.add(taskName);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Register transfer_to_ workers for hybrid agents (has both tools and sub-agents)
-        if (config.getAgents() != null
-                && !config.getAgents().isEmpty()
-                && config.getTools() != null
-                && !config.getTools().isEmpty()) {
-            for (AgentConfig sub : config.getAgents()) {
-                String taskName = config.getName() + "_transfer_to_" + sub.getName();
-                if (!registered.contains(taskName)) {
-                    registerTaskDef(taskName);
-                    registered.add(taskName);
-                }
             }
         }
 
