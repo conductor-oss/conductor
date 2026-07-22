@@ -61,19 +61,17 @@ public class SqliteSchedulerArchivalDAOTest extends AbstractSchedulerArchivalDAO
         }
 
         @Bean(initMethod = "migrate")
-        public Flyway flywayForScheduler(DataSource dataSource) {
+        public Flyway flyway(DataSource dataSource) {
             return Flyway.configure()
-                    .locations("classpath:db/migration_scheduler_sqlite")
+                    .locations("classpath:db/migration_sqlite")
+                    // mixed statements — mirrors SqliteConfiguration
+                    .mixed(true)
                     .dataSource(dataSource)
-                    .table("flyway_schema_history_scheduler")
-                    .outOfOrder(true)
-                    .baselineOnMigrate(true)
-                    .baselineVersion("0")
                     .load();
         }
 
         @Bean
-        @DependsOn("flywayForScheduler")
+        @DependsOn("flyway")
         public SchedulerArchivalDAO schedulerArchivalDAO(
                 DataSource dataSource, ObjectMapper objectMapper) {
             return new SqliteSchedulerArchivalDAO(dataSource, objectMapper);
