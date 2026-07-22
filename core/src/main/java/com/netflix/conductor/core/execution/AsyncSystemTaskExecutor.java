@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +119,9 @@ public class AsyncSystemTaskExecutor {
 
         boolean hasTaskExecutionCompleted = false;
         boolean shouldRemoveTaskFromQueue = false;
+        boolean invocationFailed = false;
+        boolean skipTaskUpdate = false;
+        String claimToken = task.getSystemTaskClaimToken();
         String workflowId = task.getWorkflowInstanceId();
         // if we are here the Task object is updated and needs to be persisted regardless of an
         // exception
@@ -147,6 +151,13 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskType(),
                     task.getTaskId(),
                     task.getStatus());
+
+            if (claimToken != null
+                    && task.getSystemTaskClaimDeadline() > System.currentTimeMillis()) {
+                reserveInflightMessage(queueName, task);
+                skipTaskUpdate = true;
+                return;
+            }
 
             boolean isTaskAsyncComplete = systemTask.isAsyncComplete(task);
             if (task.getStatus() == TaskModel.Status.SCHEDULED || !isTaskAsyncComplete) {
@@ -186,13 +197,22 @@ public class AsyncSystemTaskExecutor {
                     }
                     task.setInputData(parametersUtils.substituteSecrets(literalInput));
                     try {
+                        claimToken = UUID.randomUUID().toString();
+                        task.setSystemTaskClaimToken(claimToken);
+                        task.setSystemTaskClaimDeadline(
+                                System.currentTimeMillis()
+                                        + effectiveResponseTimeoutSeconds(task) * 1000L);
+                        task.setCallbackAfterSeconds(0);
+                        task.setStatus(TaskModel.Status.IN_PROGRESS);
                         if (scheduled) {
                             task.setStartTime(System.currentTimeMillis());
-                            // Persist startTime before invoking (status is left unchanged so a
-                            // system task whose start() branches on SCHEDULED still works) so a
-                            // redelivery can tell the task has already started and time it out if
-                            // it outlives responseTimeout instead of blindly executing it again.
-                            executionDAOFacade.updateTask(task);
+                        }
+                        executionDAOFacade.updateTask(task);
+
+                        // Keep the stored state IN_PROGRESS, but preserve the existing start()
+                        // contract for implementations that inspect the supplied task status.
+                        task.setStatus(scheduled ? TaskModel.Status.SCHEDULED : task.getStatus());
+                        if (scheduled) {
                             Monitors.recordQueueWaitTime(
                                     task.getTaskType(), task.getQueueWaitTime());
                             systemTask.start(workflow, task, workflowExecutor);
@@ -234,16 +254,31 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskId(),
                     task.getStatus());
         } catch (Exception e) {
+            invocationFailed = claimToken != null;
             Monitors.error(AsyncSystemTaskExecutor.class.getSimpleName(), "executeSystemTask");
             LOGGER.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         } finally {
-            executionDAOFacade.updateTask(task);
-            if (shouldRemoveTaskFromQueue) {
+            if (!skipTaskUpdate && claimToken != null) {
+                TaskModel persistedTask = loadTaskQuietly(taskId);
+                skipTaskUpdate =
+                        invocationFailed
+                                || persistedTask == null
+                                || !claimToken.equals(persistedTask.getSystemTaskClaimToken());
+                if (skipTaskUpdate) {
+                    LOGGER.warn("Rejecting stale system task completion for taskId: {}", taskId);
+                }
+            }
+            if (!skipTaskUpdate) {
+                task.setSystemTaskClaimToken(null);
+                task.setSystemTaskClaimDeadline(0);
+                executionDAOFacade.updateTask(task);
+            }
+            if (!skipTaskUpdate && shouldRemoveTaskFromQueue) {
                 queueDAO.remove(queueName, task.getTaskId());
                 LOGGER.debug("{} removed from queue: {}", task, queueName);
             }
             // if the current task execution has completed, then the workflow needs to be evaluated
-            if (hasTaskExecutionCompleted) {
+            if (!skipTaskUpdate && hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
         }

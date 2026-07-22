@@ -108,6 +108,15 @@ public class TaskModel {
 
     private long responseTimeoutSeconds;
 
+    /**
+     * Ownership token for an in-process async system-task invocation. A completion is accepted only
+     * while this token still owns the non-terminal task attempt.
+     */
+    private String systemTaskClaimToken;
+
+    /** Epoch-millisecond deadline for the async system-task claim. */
+    private long systemTaskClaimDeadline;
+
     private String workflowInstanceId;
 
     private String workflowType;
@@ -387,6 +396,22 @@ public class TaskModel {
 
     public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
+    }
+
+    public String getSystemTaskClaimToken() {
+        return systemTaskClaimToken;
+    }
+
+    public void setSystemTaskClaimToken(String systemTaskClaimToken) {
+        this.systemTaskClaimToken = systemTaskClaimToken;
+    }
+
+    public long getSystemTaskClaimDeadline() {
+        return systemTaskClaimDeadline;
+    }
+
+    public void setSystemTaskClaimDeadline(long systemTaskClaimDeadline) {
+        this.systemTaskClaimDeadline = systemTaskClaimDeadline;
     }
 
     public String getWorkflowInstanceId() {
