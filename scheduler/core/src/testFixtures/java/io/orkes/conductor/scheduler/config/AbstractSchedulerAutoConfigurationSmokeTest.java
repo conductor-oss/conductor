@@ -13,12 +13,9 @@
 package io.orkes.conductor.scheduler.config;
 
 import org.junit.Test;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -28,10 +25,12 @@ import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Auto-configuration smoke tests for the scheduler persistence modules.
+ * Smoke tests for scheduler DAO registration on the core persistence configurations.
  *
- * <p>Uses {@link ApplicationContextRunner} to verify that the {@code @ConditionalOnExpression}
- * guards on each persistence module's configuration class work correctly.
+ * <p>Uses {@link ApplicationContextRunner} to verify the {@code conductor.db.type} and {@code
+ * conductor.scheduler.enabled} gates on the scheduler DAO beans. Cases with the persistence
+ * configuration active run the real Flyway chain against a Testcontainers DB; cases where the
+ * {@code @ConditionalOnProperty} guard rejects the configuration run without any DB.
  */
 public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
 
@@ -41,7 +40,7 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
 
     protected abstract String driverClassName();
 
-    protected abstract Class<?> persistenceAutoConfigClass();
+    protected abstract Class<?> persistenceConfigClass();
 
     protected abstract Class<? extends SchedulerDAO> expectedDaoClass();
 
@@ -51,39 +50,14 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         public ObjectMapper objectMapper() {
             return new ObjectMapperProvider().getObjectMapper();
         }
-
-        @Bean
-        public RetryTemplate postgresRetryTemplate() {
-            return new RetryTemplate();
-        }
-
-        // stub core Flyway bean names — scheduler DAO @DependsOn needs them present
-        @Bean
-        public Object flyway() {
-            return new Object();
-        }
-
-        @Bean
-        public Object flywayInitializer() {
-            return new Object();
-        }
-
-        @Bean
-        public Object flywayForPrimaryDb() {
-            return new Object();
-        }
     }
 
     private ApplicationContextRunner baseRunner() {
         return new ApplicationContextRunner()
-                .withConfiguration(
-                        AutoConfigurations.of(
-                                DataSourceAutoConfiguration.class, persistenceAutoConfigClass()))
-                .withUserConfiguration(SharedTestBeans.class)
+                .withUserConfiguration(SharedTestBeans.class, persistenceConfigClass())
                 .withPropertyValues(
                         "spring.datasource.url=" + datasourceUrl(),
-                        "spring.datasource.driver-class-name=" + driverClassName(),
-                        "spring.flyway.enabled=false");
+                        "spring.datasource.driver-class-name=" + driverClassName());
     }
 
     @Test

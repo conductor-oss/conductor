@@ -3,6 +3,7 @@ dependencies {
     implementation project(':conductor-common-persistence')
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+    implementation project(':conductor-scheduler-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.retry:spring-retry'
@@ -32,6 +33,8 @@ dependencies {
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
+    testImplementation testFixtures(project(':conductor-scheduler-core'))
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "redis.clients:jedis:${revJedis}"
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
 }

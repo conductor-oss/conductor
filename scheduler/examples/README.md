@@ -8,7 +8,7 @@ All examples assume Conductor is running locally on port 8080.
 ## Prerequisites
 
 - Conductor running with a scheduler-compatible persistence backend
-  (`conductor-scheduler-postgres-persistence`, `conductor-scheduler-mysql-persistence`, etc.)
+  (mysql, postgres, sqlite — scheduler DAOs ship in the core persistence modules)
 - `conductor.scheduler.enabled=true` (default)
 - The `http-task` worker available (built-in for HTTP tasks; swap for `SIMPLE` if needed)
 

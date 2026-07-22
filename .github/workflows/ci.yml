@@ -42,10 +42,7 @@ jobs:
               - 'postgres-persistence/**'
               - 'redis-persistence/**'
               - 'scheduler/cassandra-persistence/**'
-              - 'scheduler/mysql-persistence/**'
-              - 'scheduler/postgres-persistence/**'
               - 'scheduler/redis-persistence/**'
-              - 'scheduler/sqlite-persistence/**'
               - 'sqlite-persistence/**'
             ui:
               - 'ui/**'
@@ -165,15 +162,12 @@ jobs:
               -x :conductor-es7-persistence:test \
               -x :conductor-es8-persistence:test \
               -x :conductor-mysql-persistence:test \
-              -x :conductor-scheduler-mysql-persistence:test \
               -x :conductor-os-persistence:test \
               -x :conductor-os-persistence-v2:test \
               -x :conductor-os-persistence-v3:test \
               -x :conductor-postgres-persistence:test \
               -x :conductor-redis-persistence:test \
-              -x :conductor-scheduler-postgres-persistence:test \
               -x :conductor-scheduler-redis-persistence:test \
-              -x :conductor-scheduler-sqlite-persistence:test \
               -x :conductor-sqlite-persistence:test
           fi
       - name: Publish Test Report
