@@ -154,7 +154,9 @@ public class AsyncSystemTaskExecutor {
 
             if (claimToken != null
                     && task.getSystemTaskClaimDeadline() > System.currentTimeMillis()) {
-                reserveInflightMessage(queueName, task);
+                if (!reserveInflightMessage(queueName, task)) {
+                    LOGGER.warn("Unable to reserve system task {}; skipping execution", taskId);
+                }
                 shouldProcessTask = false;
                 return;
             }
@@ -185,7 +187,11 @@ public class AsyncSystemTaskExecutor {
                 } else {
                     // Keep the message present but invisible for the run so it is not redelivered
                     // and the sweeper's repair does not re-queue this running task (issue #1321).
-                    reserveInflightMessage(queueName, task);
+                    if (!reserveInflightMessage(queueName, task)) {
+                        LOGGER.warn("Unable to reserve system task {}; skipping execution", taskId);
+                        shouldProcessTask = false;
+                        return;
+                    }
                     Map<String, Object> literalInput = task.getInputData();
                     // Secrets substitution only sees task.getInputData(); when input has been
                     // offloaded to external payload storage, getInputData()/setInputData() operate
@@ -285,9 +291,9 @@ public class AsyncSystemTaskExecutor {
      * Extend the task's queue message visibility to cover the invocation (issue #1321), using its
      * {@code responseTimeoutSeconds} or the default {@link TaskDef#ONE_HOUR} when unset.
      */
-    private void reserveInflightMessage(String queueName, TaskModel task) {
+    private boolean reserveInflightMessage(String queueName, TaskModel task) {
         try {
-            queueDAO.setUnackTimeout(
+            return queueDAO.setUnackTimeout(
                     queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
         } catch (Exception e) {
             LOGGER.error(
@@ -295,6 +301,7 @@ public class AsyncSystemTaskExecutor {
                     task.getTaskId(),
                     queueName,
                     e);
+            return false;
         }
     }
 

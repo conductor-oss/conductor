@@ -62,6 +62,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
 
         parametersUtils.substituteSecrets(_) >> { args -> args[0] }
+        queueDAO.setUnackTimeout(_, _, _) >> true
 
         executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, parametersUtils)
     }
@@ -279,7 +280,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // the message is reserved for responseTimeout (120s) so a running task keeps its queue
         // message and is not redelivered/re-queued mid-execution (issue #1321)
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
@@ -299,7 +300,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         _ * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // no responseTimeout set -> falls back to the default (TaskDef.ONE_HOUR = 3600s)
-        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_600_000L)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_600_000L) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
@@ -338,6 +339,37 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.TIMED_OUT
     }
 
+    def "Does not invoke a system task when queue reservation fails"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 10_000L) >> {
+            if (reservationThrows) {
+                throw new RuntimeException("queue unavailable")
+            }
+            return false
+        }
+        0 * executionDAOFacade.updateTask(_)
+        0 * workflowSystemTask.start(*_)
+        0 * workflowSystemTask.execute(*_)
+        0 * queueDAO.postpone(*_)
+        0 * queueDAO.remove(*_)
+
+        where:
+        reservationThrows << [false, true]
+    }
+
     def "Does not time out a just-scheduled task whose mapper set startTime but has no updateTime (e.g. JOIN)"() {
         given:
         String workflowId = "workflowId"
@@ -355,7 +387,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         _ * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
         // it is reserved and started, NOT timed out
-        1 * queueDAO.setUnackTimeout(queueName, taskId, _)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, _) >> true
         1 * workflowSystemTask.start(workflow, task, _)
         task.status != TaskModel.Status.TIMED_OUT
     }

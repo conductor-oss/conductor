@@ -422,11 +422,12 @@ writes. Conductor's queue de-duplicates a task ID and normally serializes its
 delivery; a DAO conditional update would be additional protection for a backend
 that permits simultaneous delivery of the same task ID.
 
-Queue reservation remains fail-open. `reserveInflightMessage()` logs an exception
-but continues, and it does not check a `false` return from `setUnackTimeout()`.
-The persisted claim still rejects a later sequential delivery, but reservation
-failure itself is not covered by the Redis integration test because the real Redis
-DAO does not expose a way to inject that failure.
+Queue reservation is a prerequisite for invoking task code. If
+`setUnackTimeout()` returns `false` or throws, the executor does not persist a new
+claim or invoke the system task. The popped message remains recoverable through
+its existing visibility timeout. This failure is covered with a fault-injected
+`QueueDAO` unit test because the real Redis DAO does not expose a deterministic
+way to produce it.
 
 Worker-requested callbacks remain distinct from an active execution claim. When a
 worker returns `IN_PROGRESS` with `callbackAfterSeconds`, the current claim ends
@@ -462,23 +463,18 @@ and is the price of not letting repair fight in-flight tasks.
 
 ## Remaining risks and coverage boundaries
 
-1. **Reservation failure is fail-open and not integration-tested.** The claim
-   protects a sequential redelivery, but the executor still invokes external work
-   when `setUnackTimeout()` throws or returns `false`. A deterministic test requires
-   a fault-injecting `QueueDAO`; the Redis production-path test uses the real DAO.
-
-2. **Crash recovery is intentionally delayed.** A node crash mid-invocation leaves
+1. **Crash recovery is intentionally delayed.** A node crash mid-invocation leaves
    the message hidden until `responseTimeout`; a task without a configured response
    timeout uses the one-hour fallback. This is bounded but slower than the prior
    sweeper repair interval and should be visible operationally.
 
-3. **Queue semantics need backend integration coverage.** Correctness requires
+2. **Queue semantics need backend integration coverage.** Correctness requires
    `containsMessage()` to include unacked messages and `setUnackTimeout()` to move
    their visibility deadline. The current production-path characterization test
    uses Redis. The same scenarios should run against PostgreSQL and MySQL to verify
    their `popped`, `deliver_on`, ACK, and unack-reaper behavior.
 
-4. **Simultaneous duplicate delivery is outside the tested queue contract.** The
+3. **Simultaneous duplicate delivery is outside the tested queue contract.** The
    tests prove sequential queue redelivery and sweeper repair. They do not force two
    executors to load the same unclaimed task before either persists its token.
    Standard Conductor queues de-duplicate by task ID; a persistence compare-and-set
@@ -501,7 +497,7 @@ every queue backend.
 | Normal terminal, non-terminal callback, and async-complete queue outcomes remain owned by the executor | Addressed | Callback behavior has real integration evidence below. Terminal completion and async-complete behavior are unit-covered in [`AsyncSystemTaskExecutorTest.groovy`, lines 396–488](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L396-L488). |
 | A late result from an expired attempt must not overwrite timeout/retry state (#1322) | Addressed beyond PR #1369 | The natural-expiry and workflow-termination integration scenarios below prove stale-result rejection. |
 | Crash recovery occurs only after the reservation expires | Behavior retained, not proven end-to-end | A deterministic process-kill test is still missing; recovery can be delayed up to the configured timeout or one-hour fallback. |
-| Queue reservation succeeds | Not fully addressed | Reservation is fail-open on exception or a `false` DAO result. A fault-injecting DAO test and a decision on fail-closed behavior are still needed. |
+| Queue reservation succeeds before external work starts | Addressed | Reservation is fail-closed: `false` or an exception skips claim persistence and task invocation. Fault-injected unit evidence is linked below. |
 | Equivalent queue semantics across supported persistence backends | Not proven | The integration suite currently proves Redis only; PostgreSQL and MySQL remain coverage gaps. |
 | Two executors simultaneously claim an unclaimed task | Not claimed by PR #1369 and not proven | The token prevents sequential redelivery and stale completion, but claim acquisition is not a persistence compare-and-set. |
 
@@ -524,9 +520,11 @@ Focused unit evidence covers the fallback and mapper boundary that are expensive
 backend-independent:
 
 - Explicit and default reservation durations: [`AsyncSystemTaskExecutorTest.groovy`, lines 265–304](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L265-L304).
-- Expired active claim timeout without provider re-entry: [`AsyncSystemTaskExecutorTest.groovy`, lines 306–339](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L306-L339).
-- A mapper-populated `startTime` with no `updateTime` is not falsely timed out: [`AsyncSystemTaskExecutorTest.groovy`, lines 341–361](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L341-L361).
+- Expired active claim timeout without provider re-entry: [`AsyncSystemTaskExecutorTest.groovy`, lines 307–340](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L307-L340).
+- Reservation returning `false` or throwing prevents persistence and task invocation: [`AsyncSystemTaskExecutorTest.groovy`, lines 342–371](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L342-L371).
+- A mapper-populated `startTime` with no `updateTime` is not falsely timed out: [`AsyncSystemTaskExecutorTest.groovy`, lines 373–393](../../core/src/test/groovy/com/netflix/conductor/core/execution/AsyncSystemTaskExecutorTest.groovy#L373-L393).
 
-The integration evidence is Redis-specific. Reservation failure injection,
-PostgreSQL/MySQL queue behavior, node-crash recovery time, and simultaneous
-duplicate delivery are explicitly not claimed as proven by this suite.
+The integration evidence is Redis-specific. PostgreSQL/MySQL queue behavior,
+node-crash recovery time, and simultaneous duplicate delivery are explicitly not
+claimed as proven by this suite. Reservation failure is fault-injected at the unit
+boundary rather than through Redis.
