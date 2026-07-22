@@ -17,6 +17,14 @@ on:
   pull_request:
     paths:
       - ".github/workflows/llm-media-integration.yml"
+      # Provider adapter changes are exactly what these tests exist to catch;
+      # everything else in the repo never triggers a paid run.
+      - "ai/src/main/java/org/conductoross/conductor/ai/providers/**"
+
+# A rapid series of pushes should not stack paid runs — keep only the latest.
+concurrency:
+  group: llm-media-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
