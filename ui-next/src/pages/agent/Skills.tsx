@@ -9,7 +9,7 @@ import { Helmet } from "react-helmet";
 import { useFetch } from "utils/query";
 import { SkillSummary } from "./types";
 
-const INTRO_CONTENT = `**Skills** are reusable SKILL.md packages registered with the AgentSpan runtime. Package bytes and metadata are persisted through Conductor's configured backend.`;
+const INTRO_CONTENT = `**Skills** are reusable SKILL.md packages registered with the Conductor agent runtime. Package bytes and metadata are persisted through Conductor's configured backend.`;
 
 export default function Skills() {
   const { data, isFetching, refetch } = useFetch<SkillSummary[]>("/skills");

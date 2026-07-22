@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { useFetch } from "utils/query";
 import { AgentExecutionSearchResult, AgentExecutionSummary } from "./types";
 
-const INTRO_CONTENT = `**Agent executions** are AgentSpan agent runs, executed as native Conductor workflows. Click an execution to open it in the workflow viewer.`;
+const INTRO_CONTENT = `**Agent executions** are agent runs, executed as native Conductor workflows. Click an execution to open it in the workflow viewer.`;
 
 export default function AgentExecutions() {
   const [searchParams] = useSearchParams();

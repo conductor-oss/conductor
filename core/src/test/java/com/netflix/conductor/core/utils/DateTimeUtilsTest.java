@@ -27,6 +27,32 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class DateTimeUtilsTest {
 
+    private static Stream<Arguments> iso8601Durations() {
+        return Stream.of(
+                Arguments.of("PT1S", Duration.ofSeconds(1)),
+                Arguments.of("PT1M", Duration.ofMinutes(1)),
+                Arguments.of("PT1H", Duration.ofHours(1)),
+                Arguments.of("PT1H30M", Duration.ofSeconds(90 * 60)),
+                Arguments.of("P1D", Duration.ofDays(1)),
+                Arguments.of("P1DT2H3M4S", Duration.ofSeconds(86400 + 2 * 3600 + 3 * 60 + 4)),
+                Arguments.of("pt1s", Duration.ofSeconds(1)) // case-insensitive
+                );
+    }
+
+    @ParameterizedTest(name = "[{0}] is valid ISO-8601 duration")
+    @MethodSource("iso8601Durations")
+    public void shouldParseIso8601Duration(String input, Duration expectedDuration) {
+        assertThat(parseDuration(input)).isEqualTo(expectedDuration);
+    }
+
+    @ParameterizedTest(name = "[{0}] is invalid ISO-8601 duration")
+    @ValueSource(strings = {"Pnotvalid", "PT", "P1X"})
+    public void shouldRejectInvalidIso8601Duration(String input) {
+        assertThatThrownBy(() -> parseDuration(input))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Not valid ISO-8601 duration");
+    }
+
     private static Stream<Arguments> validDurations() {
         return Stream.of(
                 Arguments.of("", Duration.ofSeconds(0)),
@@ -102,6 +128,6 @@ public class DateTimeUtilsTest {
     public void shouldValidateDuration(String input) {
         assertThatThrownBy(() -> parseDuration(input))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Not valid duration: " + input);
+                .hasMessageContaining("Not valid duration: " + input);
     }
 }

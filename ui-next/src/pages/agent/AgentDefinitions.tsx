@@ -10,9 +10,9 @@ import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { useFetch } from "utils/query";
 import { AgentSummary } from "./types";
 
-const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded AgentSpan runtime.
+const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows.
 
-Deploy agents with the AgentSpan SDK or CLI, then run and observe them here.`;
+Deploy agents with the Conductor SDK or CLI, then run and observe them here.`;
 
 export default function AgentDefinitions() {
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");

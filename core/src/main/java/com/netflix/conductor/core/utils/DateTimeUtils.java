@@ -35,8 +35,24 @@ public class DateTimeUtils {
                     Pattern.CASE_INSENSITIVE);
 
     public static Duration parseDuration(String text) {
+        // Accept ISO-8601 duration (e.g. "PT1S", "PT1H30M") as a convenience fallback.
+        if (text != null && text.toUpperCase().startsWith("P")) {
+            try {
+                return Duration.parse(text);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Not valid ISO-8601 duration: "
+                                + text
+                                + ". Expected format e.g. 'PT1S', 'PT1H30M'.");
+            }
+        }
+
         Matcher m = DURATION_PATTERN.matcher(text);
-        if (!m.matches()) throw new IllegalArgumentException("Not valid duration: " + text);
+        if (!m.matches())
+            throw new IllegalArgumentException(
+                    "Not valid duration: "
+                            + text
+                            + ". Use format like '1s', '2m', '1h 30m', or ISO-8601 e.g. 'PT1S'.");
 
         int days = (m.start(1) == -1 ? 0 : Integer.parseInt(m.group(1)));
         int hours = (m.start(2) == -1 ? 0 : Integer.parseInt(m.group(2)));

@@ -428,7 +428,7 @@ export default function ScheduleDefinitions() {
     onSuccess: () => {
       refetch();
     },
-    onError: (error: Response) => handleFetchError(error, HTTPMethods.GET),
+    onError: (error: Response) => handleFetchError(error, HTTPMethods.PUT),
   });
 
   const handlePauseSchedule = useCallback(
@@ -436,7 +436,7 @@ export default function ScheduleDefinitions() {
       if (scheduleName) {
         // @ts-ignore
         pauseScheduleAction.mutate({
-          method: "get",
+          method: "put",
           path: `/scheduler/schedules/${scheduleName}/pause`,
         });
         setToast({
@@ -454,7 +454,7 @@ export default function ScheduleDefinitions() {
       if (scheduleName) {
         // @ts-ignore
         pauseScheduleAction.mutate({
-          method: "get",
+          method: "put",
           path: `/scheduler/schedules/${scheduleName}/resume`,
         });
         setToast({
