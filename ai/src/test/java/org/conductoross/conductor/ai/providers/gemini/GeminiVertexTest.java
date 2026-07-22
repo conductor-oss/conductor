@@ -13,6 +13,8 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -22,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 
 import okhttp3.OkHttpClient;
 
@@ -31,6 +35,7 @@ class GeminiVertexTest {
 
     private static final String ENV_PROJECT_ID = "GOOGLE_CLOUD_PROJECT";
     private static final String ENV_LOCATION = "GOOGLE_CLOUD_LOCATION";
+    private static final String ENV_API_KEY = "GEMINI_API_KEY";
 
     @Nested
     class UnitTests {
@@ -198,6 +203,83 @@ class GeminiVertexTest {
 
             assertNotNull(embeddings);
             assertFalse(embeddings.isEmpty());
+        }
+    }
+
+    /**
+     * Live tests in API-key (AI Studio / generativelanguage.googleapis.com) mode — the mode the
+     * server uses when only {@code conductor.ai.gemini.api-key} (GEMINI_API_KEY) is configured, as
+     * opposed to the Vertex mode covered by {@link IntegrationTests}.
+     */
+    @Nested
+    @EnabledIfEnvironmentVariable(named = ENV_API_KEY, matches = ".+")
+    class ApiKeyIntegrationTests {
+
+        private GeminiVertex gemini;
+
+        @BeforeEach
+        void setUp() {
+            GeminiVertexConfiguration config = new GeminiVertexConfiguration();
+            config.setApiKey(System.getenv(ENV_API_KEY));
+            gemini = new GeminiVertex(config, new OkHttpClient());
+        }
+
+        @Test
+        void testChatCompletion() {
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(100);
+            input.setTemperature(0.7);
+
+            Prompt prompt =
+                    new Prompt(
+                            List.of(new UserMessage("Say hello in one word")),
+                            gemini.getChatOptions(input));
+            var response = gemini.getChatModel().call(prompt);
+
+            assertNotNull(response);
+            assertNotNull(response.getResult());
+            assertFalse(response.getResult().getOutput().getText().isEmpty());
+        }
+
+        @Test
+        void testChatCompletionWithImageMedia() throws Exception {
+            // Live regression for the media fix (PR #1241): the vision model must actually
+            // see the image bytes forwarded by the adapter. The image embeds a
+            // machine-unguessable token, so a correct transcription can only come from
+            // the image — pre-fix the media was silently dropped.
+            byte[] png =
+                    Objects.requireNonNull(
+                                    getClass().getResourceAsStream("/media/melon7391.png"),
+                                    "test asset /media/melon7391.png missing")
+                            .readAllBytes();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gemini-2.5-flash");
+            input.setMaxTokens(100);
+
+            UserMessage userMsg =
+                    UserMessage.builder()
+                            .text(
+                                    "Transcribe the exact text shown in the image. Reply with"
+                                            + " only that text and nothing else.")
+                            .media(
+                                    List.of(
+                                            Media.builder()
+                                                    .data(png)
+                                                    .mimeType(MimeTypeUtils.IMAGE_PNG)
+                                                    .build()))
+                            .build();
+
+            var response =
+                    gemini.getChatModel()
+                            .call(new Prompt(List.of(userMsg), gemini.getChatOptions(input)));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").contains("MELON7391"),
+                    "vision model must transcribe the embedded token MELON7391; got: " + text);
         }
     }
 }

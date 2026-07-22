@@ -1,0 +1,65 @@
+name: LLM Provider Media Integration
+
+# Live-API regression coverage for the provider media fixes (#1238 Anthropic,
+# #1241 Gemini, #1243 Grok/Perplexity, #1246 Cohere): each test sends an image
+# embedding a machine-unguessable token to a vision model and asserts the model
+# transcribes it — proving the adapter actually attached the media.
+#
+# Provider keys are org-level secrets. Tests self-skip for any key that is
+# absent (COHERE_API_KEY is not configured today), so this workflow stays green
+# while showing per-provider SKIPPED/PASSED status in the report.
+
+on:
+  workflow_dispatch:
+  # GitHub Actions cron expressions are UTC. Weekly — these burn paid provider calls.
+  schedule:
+    - cron: "30 5 * * 1"
+  pull_request:
+    paths:
+      - ".github/workflows/llm-media-integration.yml"
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  media-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: "zulu"
+          java-version: "21"
+      - name: Cache Gradle packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Run provider media integration tests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROK_API_KEY: ${{ secrets.GROK_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          # Not configured at org level today; the Cohere test self-skips until it is.
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+        run: >
+          ./gradlew :conductor-ai:test
+          --tests "*testChatCompletionWithImageMedia*"
+          --rerun
+      - name: Publish media integration test report
+        uses: mikepenz/action-junit-report@v6
+        if: always()
+        with:
+          report_paths: "ai/build/test-results/test/TEST-*.xml"
+          check_name: LLM Media Integration Report
+          include_passed: true
+          detailed_summary: true
