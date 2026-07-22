@@ -177,7 +177,7 @@ class GeminiVertexTest {
         @Test
         void testChatCompletion() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("gemini-1.5-flash");
+            input.setModel("gemini-2.5-flash");
             input.setMaxTokens(100);
             input.setTemperature(0.7);
 

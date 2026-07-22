@@ -100,7 +100,7 @@ class BedrockTest {
         @Test
         void testChatCompletion() {
             ChatCompletion input = new ChatCompletion();
-            input.setModel("anthropic.claude-3-haiku-20240307-v1:0");
+            input.setModel("us.anthropic.claude-haiku-4-5-20251001-v1:0");
             input.setMaxTokens(100);
             input.setTemperature(0.7);
 
