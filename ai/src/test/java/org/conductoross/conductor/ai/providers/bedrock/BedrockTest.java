@@ -165,10 +165,10 @@ class BedrockTest {
                             .readAllBytes();
 
             ChatCompletion input = new ChatCompletion();
-            // Inference-profile id: bare model ids are rejected for on-demand throughput
-            // ("Invocation of model ID ... isn't supported. Retry your request with the
-            // ID or ARN of an inference profile").
-            input.setModel("us.anthropic.claude-3-haiku-20240307-v1:0");
+            // Inference-profile id (bare model ids are rejected for on-demand
+            // throughput), on a current model: claude-3-haiku is marked Legacy by the
+            // provider and Bedrock blocks it after 30 days of inactivity.
+            input.setModel("us.anthropic.claude-haiku-4-5-20251001-v1:0");
             input.setMaxTokens(100);
 
             UserMessage userMsg =
