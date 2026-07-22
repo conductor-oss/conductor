@@ -90,10 +90,17 @@ long-running `IN_PROGRESS + callbackAfterSeconds` re-invocation are all unchange
 
    ```java
    if (task.getStartTime() > 0
+           && task.getUpdateTime() > 0                       // skip just-scheduled tasks
            && now - task.getUpdateTime() >= responseTimeoutMs) {
        task.setStatus(TIMED_OUT);   // don't invoke again — let retry/timeout policy decide
    }
    ```
+
+   The `updateTime > 0` guard is required: a task whose mapper sets `startTime` at
+   scheduling (e.g. `JOIN`) has `updateTime == 0` until first persisted, so without it
+   `now - 0` always exceeds the timeout and the task is wrongly timed out on its first
+   poll. Re-polled tasks refresh `updateTime` each poll, so only a run that held the
+   worker thread past `responseTimeout` (no intervening poll) is caught.
 
    So a run that exceeds `responseTimeout` is marked `TIMED_OUT` (retriable) and the
    retry/timeout policy creates a *new* attempt or fails the workflow — it is never

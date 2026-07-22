@@ -330,6 +330,28 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.TIMED_OUT
     }
 
+    def "Does not time out a just-scheduled task whose mapper set startTime but has no updateTime (e.g. JOIN)"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // JOIN's mapper sets startTime at scheduling; updateTime is still 0 (createTasks doesn't set it)
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 0, startTime: System.currentTimeMillis(), updateTime: 0)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // it is reserved and started, NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, _)
+        1 * workflowSystemTask.start(workflow, task, _)
+        task.status != TaskModel.Status.TIMED_OUT
+    }
+
     def "Execute preserves a callback interval set by the system task"() {
         given:
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(30)
