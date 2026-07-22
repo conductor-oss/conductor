@@ -165,7 +165,10 @@ class BedrockTest {
                             .readAllBytes();
 
             ChatCompletion input = new ChatCompletion();
-            input.setModel("anthropic.claude-3-haiku-20240307-v1:0");
+            // Inference-profile id: bare model ids are rejected for on-demand throughput
+            // ("Invocation of model ID ... isn't supported. Retry your request with the
+            // ID or ARN of an inference profile").
+            input.setModel("us.anthropic.claude-3-haiku-20240307-v1:0");
             input.setMaxTokens(100);
 
             UserMessage userMsg =
