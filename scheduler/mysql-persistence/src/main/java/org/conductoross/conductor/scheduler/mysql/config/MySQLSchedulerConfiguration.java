@@ -17,6 +17,7 @@ import javax.sql.DataSource;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerArchivalDAO;
 import org.conductoross.conductor.scheduler.mysql.dao.MySQLSchedulerDAO;
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
@@ -55,14 +56,18 @@ public class MySQLSchedulerConfiguration {
     @Bean
     @DependsOn("flywayForScheduler")
     public SchedulerDAO schedulerDAO(
-            RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            DataSource dataSource,
+            ObjectMapper objectMapper) {
         return new MySQLSchedulerDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
     @DependsOn("flywayForScheduler")
     public SchedulerArchivalDAO schedulerArchivalDAO(
-            RetryTemplate retryTemplate, DataSource dataSource, ObjectMapper objectMapper) {
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            DataSource dataSource,
+            ObjectMapper objectMapper) {
         return new MySQLSchedulerArchivalDAO(retryTemplate, objectMapper, dataSource);
     }
 }
