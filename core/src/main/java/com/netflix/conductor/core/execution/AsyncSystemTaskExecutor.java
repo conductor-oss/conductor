@@ -274,14 +274,16 @@ public class AsyncSystemTaskExecutor {
     }
 
     /**
-     * True if the task has already started (startTime set, persisted on the first execution) and
-     * has not been updated within its responseTimeout — i.e. a redelivered message belongs to a run
-     * that overran its allowed time and should be timed out rather than re-executed. Uses
-     * updateTime (time since the last response), so a worker that keeps checking in within
-     * responseTimeout (long-running LLM/A2A callbacks) is not timed out.
+     * True if the task has already started (startTime set) and has not been updated within its
+     * responseTimeout — i.e. a redelivered message belongs to a run that overran its allowed time
+     * and should be timed out rather than re-executed. Uses updateTime (time since the last
+     * response), so a worker that keeps checking in within responseTimeout (long-running LLM/A2A
+     * callbacks) is not timed out. Requires updateTime > 0: a just-scheduled task whose mapper set
+     * startTime (e.g. JOIN) has updateTime == 0 and must not be treated as overrun.
      */
     private boolean hasExceededResponseTimeout(TaskModel task) {
         return task.getStartTime() > 0
+                && task.getUpdateTime() > 0
                 && (System.currentTimeMillis() - task.getUpdateTime())
                         >= effectiveResponseTimeoutSeconds(task) * 1000L;
     }
