@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -152,28 +153,55 @@ public class AsyncSystemTaskExecutor {
                 task.incrementPollCount();
             }
 
-            if (task.getStatus() == TaskModel.Status.SCHEDULED
-                    || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                Map<String, Object> literalInput = task.getInputData();
-                // Secrets substitution only sees task.getInputData(); when input has been
-                // offloaded to external payload storage, getInputData()/setInputData() operate on
-                // a different field and this substitution silently becomes a no-op.
-                if (task.getExternalInputPayloadStoragePath() != null) {
-                    LOGGER.warn(
-                            "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+            boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
+            if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                if (hasExceededResponseTimeout(task)) {
+                    // The message was redelivered while a previous invocation is still in flight
+                    // past responseTimeout. Do NOT run it again in parallel (issue #1321): the task
+                    // has exceeded its allowed time, so time it out and let the retry/timeout
+                    // policy
+                    // decide (retry as a new attempt, or fail). The finally block below removes the
+                    // message and re-evaluates the workflow.
+                    task.setStatus(TaskModel.Status.TIMED_OUT);
+                    task.setReasonForIncompletion(
+                            "Task did not complete within its responseTimeout of "
+                                    + effectiveResponseTimeoutSeconds(task)
+                                    + "s");
+                    LOGGER.info(
+                            "Timing out {}/{}: no response within responseTimeout",
+                            task.getTaskType(),
                             task.getTaskId());
-                }
-                task.setInputData(parametersUtils.substituteSecrets(literalInput));
-                try {
-                    if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                        task.setStartTime(System.currentTimeMillis());
-                        Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                        systemTask.start(workflow, task, workflowExecutor);
-                    } else {
-                        systemTask.execute(workflow, task, workflowExecutor);
+                } else {
+                    // Keep the message present but invisible for the run so it is not redelivered
+                    // and the sweeper's repair does not re-queue this running task (issue #1321).
+                    reserveInflightMessage(queueName, task);
+                    Map<String, Object> literalInput = task.getInputData();
+                    // Secrets substitution only sees task.getInputData(); when input has been
+                    // offloaded to external payload storage, getInputData()/setInputData() operate
+                    // on a different field and this substitution silently becomes a no-op.
+                    if (task.getExternalInputPayloadStoragePath() != null) {
+                        LOGGER.warn(
+                                "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+                                task.getTaskId());
                     }
-                } finally {
-                    task.setInputData(literalInput);
+                    task.setInputData(parametersUtils.substituteSecrets(literalInput));
+                    try {
+                        if (scheduled) {
+                            task.setStartTime(System.currentTimeMillis());
+                            // Persist startTime before invoking (status is left unchanged so a
+                            // system task whose start() branches on SCHEDULED still works) so a
+                            // redelivery can tell the task has already started and time it out if
+                            // it outlives responseTimeout instead of blindly executing it again.
+                            executionDAOFacade.updateTask(task);
+                            Monitors.recordQueueWaitTime(
+                                    task.getTaskType(), task.getQueueWaitTime());
+                            systemTask.start(workflow, task, workflowExecutor);
+                        } else {
+                            systemTask.execute(workflow, task, workflowExecutor);
+                        }
+                    } finally {
+                        task.setInputData(literalInput);
+                    }
                 }
             }
 
@@ -219,6 +247,43 @@ public class AsyncSystemTaskExecutor {
                 workflowExecutor.decide(workflowId);
             }
         }
+    }
+
+    /**
+     * Extend the task's queue message visibility to cover the invocation (issue #1321), using its
+     * {@code responseTimeoutSeconds} or the default {@link TaskDef#ONE_HOUR} when unset.
+     */
+    private void reserveInflightMessage(String queueName, TaskModel task) {
+        try {
+            queueDAO.setUnackTimeout(
+                    queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Error reserving in-flight message for task: {} in queue: {}",
+                    task.getTaskId(),
+                    queueName,
+                    e);
+        }
+    }
+
+    /** The task's {@code responseTimeoutSeconds}, or the default {@link TaskDef#ONE_HOUR}. */
+    private long effectiveResponseTimeoutSeconds(TaskModel task) {
+        return task.getResponseTimeoutSeconds() > 0
+                ? task.getResponseTimeoutSeconds()
+                : TaskDef.ONE_HOUR;
+    }
+
+    /**
+     * True if the task has already started (startTime set, persisted on the first execution) and
+     * has not been updated within its responseTimeout — i.e. a redelivered message belongs to a run
+     * that overran its allowed time and should be timed out rather than re-executed. Uses
+     * updateTime (time since the last response), so a worker that keeps checking in within
+     * responseTimeout (long-running LLM/A2A callbacks) is not timed out.
+     */
+    private boolean hasExceededResponseTimeout(TaskModel task) {
+        return task.getStartTime() > 0
+                && (System.currentTimeMillis() - task.getUpdateTime())
+                        >= effectiveResponseTimeoutSeconds(task) * 1000L;
     }
 
     private void postponeQuietly(String queueName, TaskModel task) {

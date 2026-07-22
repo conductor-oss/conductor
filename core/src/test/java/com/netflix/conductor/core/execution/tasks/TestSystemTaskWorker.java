@@ -25,7 +25,6 @@ import org.mockito.Mockito;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.ExecutionService;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +42,6 @@ public class TestSystemTaskWorker {
     private static final String ISOLATED_TASK = "system_task-isolated";
 
     private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
-    private ExecutionService executionService;
     private QueueDAO queueDAO;
     private ConductorProperties properties;
 
@@ -52,7 +50,6 @@ public class TestSystemTaskWorker {
     @Before
     public void setUp() {
         asyncSystemTaskExecutor = mock(AsyncSystemTaskExecutor.class);
-        executionService = mock(ExecutionService.class);
         queueDAO = mock(QueueDAO.class);
         properties = mock(ConductorProperties.class);
 
@@ -61,9 +58,7 @@ public class TestSystemTaskWorker {
         when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofSeconds(30));
 
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
     }
 
@@ -76,9 +71,7 @@ public class TestSystemTaskWorker {
     @Test
     public void testGetExecutionConfigForSystemTask() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(5);
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         assertEquals(
                 systemTaskWorker.getExecutionConfig("").getSemaphoreUtil().availableSlots(), 5);
     }
@@ -86,9 +79,7 @@ public class TestSystemTaskWorker {
     @Test
     public void testGetExecutionConfigForIsolatedSystemTask() {
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(7);
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         assertEquals(
                 systemTaskWorker.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(),
                 7);
@@ -113,6 +104,9 @@ public class TestSystemTaskWorker {
         latch.await();
 
         verify(asyncSystemTaskExecutor).execute(any(), anyString());
+        // The poll must not remove the message (issue #1321) — the executor reserves it instead.
+        verify(queueDAO, Mockito.never()).ack(anyString(), anyString());
+        verify(queueDAO, Mockito.never()).remove(anyString(), anyString());
     }
 
     @Test

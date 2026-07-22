@@ -33,7 +33,6 @@ import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.SemaphoreUtil;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.service.ExecutionService;
 
 /** The worker that polls and executes an async system task. */
 @Component
@@ -51,7 +50,6 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     ExecutionConfig defaultExecutionConfig;
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
-    private final ExecutionService executionService;
     private final int queuePopTimeout;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
@@ -59,15 +57,13 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     public SystemTaskWorker(
             QueueDAO queueDAO,
             AsyncSystemTaskExecutor asyncSystemTaskExecutor,
-            ConductorProperties properties,
-            ExecutionService executionService) {
+            ConductorProperties properties) {
         this.properties = properties;
         int threadCount = properties.getSystemTaskWorkerThreadCount();
         this.defaultExecutionConfig = new ExecutionConfig(threadCount, "system-task-worker-%d");
         this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
-        this.executionService = executionService;
         this.queuePopTimeout = (int) properties.getSystemTaskQueuePopTimeout().toMillis();
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
@@ -141,8 +137,9 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                                 queueName);
                         Monitors.recordTaskPollCount(queueName, 1);
 
-                        executionService.ackTaskReceived(taskId);
-
+                        // Deliberately not acked here: a running task keeps its queue message so
+                        // the sweeper's repair does not re-queue it (issue #1321). The executor
+                        // extends its visibility before invoking and removes it on completion.
                         CompletableFuture<Void> taskCompletableFuture =
                                 CompletableFuture.runAsync(
                                         () -> asyncSystemTaskExecutor.execute(systemTask, taskId),
