@@ -76,4 +76,20 @@ public class AdminResource {
                     boolean verbose) {
         return adminService.getEventQueues(verbose);
     }
+
+    @PostMapping("/reindex")
+    @Operation(
+            summary =
+                    "Start async reindex of all workflows and tasks from database to search index")
+    public Map<String, Object> startReindex(
+            @RequestParam(value = "force", defaultValue = "false", required = false)
+                    boolean force) {
+        return adminService.startReindex(force);
+    }
+
+    @GetMapping("/reindex/status")
+    @Operation(summary = "Get the current reindex job status and progress")
+    public Map<String, Object> getReindexStatus() {
+        return adminService.getReindexStatus();
+    }
 }

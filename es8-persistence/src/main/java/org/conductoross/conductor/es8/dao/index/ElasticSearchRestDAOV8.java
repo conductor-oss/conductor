@@ -1182,6 +1182,25 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
     }
 
+    @Override
+    public boolean isClusterHealthy() {
+        try {
+            Request request = new Request(HttpMethod.GET, "/_cluster/health");
+            request.addParameter("timeout", "5s");
+            Response response = elasticSearchAdminClient.performRequest(request);
+            JsonNode body = objectMapper.readTree(response.getEntity().getContent());
+            String status = body.path("status").asText("unknown");
+            if (!"green".equalsIgnoreCase(status)) {
+                logger.warn("Elasticsearch cluster health is {} (not green)", status);
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            logger.warn("Failed to query Elasticsearch cluster health", e);
+            return false;
+        }
+    }
+
     private long getObjectCounts(String structuredQuery, String freeTextQuery, String docType)
             throws ParserException, IOException {
         return searchSupport.getObjectCounts(structuredQuery, freeTextQuery, docType);
