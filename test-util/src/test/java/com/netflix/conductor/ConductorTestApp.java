@@ -29,10 +29,14 @@ import org.springframework.context.annotation.FilterType;
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 @ComponentScan(
         basePackages = {"com.netflix.conductor", "io.orkes.conductor", "org.conductoross"},
-        excludeFilters =
-                @ComponentScan.Filter(
-                        type = FilterType.ASSIGNABLE_TYPE,
-                        classes = {RestConfiguration.class}))
+        excludeFilters = {
+            @ComponentScan.Filter(
+                    type = FilterType.ASSIGNABLE_TYPE,
+                    classes = {RestConfiguration.class}),
+            @ComponentScan.Filter(
+                    type = FilterType.ANNOTATION,
+                    classes = {org.springframework.boot.test.context.TestConfiguration.class})
+        })
 public class ConductorTestApp {
 
     public static void main(String[] args) throws IOException {
