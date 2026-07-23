@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
@@ -39,8 +40,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * {@code type=local}). A bind mount shares the server's storage directory with the host so the
  * {@code file:///...} URIs returned by the API resolve on both sides.
  *
- * <p>Run via: {@code e2e/run_tests-es8.sh}.
+ * <p>Tagged {@code file-storage}; excluded by default (see {@code e2e/build.gradle}). Only {@code
+ * e2e/run_tests-postgres.sh} and {@code e2e/run_tests-es8.sh} opt back in with {@code
+ * -PrunFileStorageTests}, since those are the only lanes whose server config enables file-storage.
  */
+@Tag("file-storage")
 class FileStorageE2ETest {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};

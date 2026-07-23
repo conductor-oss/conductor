@@ -17,7 +17,14 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // FileStorageE2ETest needs conductor.file-storage.enabled=true server-side (only
+        // postgres and redis-es8 configs set it). Skipped by default everywhere else;
+        // opt in with -PrunFileStorageTests.
+        if (!project.hasProperty('runFileStorageTests')) {
+            excludeTags 'file-storage'
+        }
+    }
     maxParallelForks = 4
     minHeapSize = '512m'
     maxHeapSize = '2g'
