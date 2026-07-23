@@ -59,6 +59,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
@@ -842,7 +843,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (workflow.getFailedTaskId() != null) {
                     input.put("failureTaskId", workflow.getFailedTaskId());
                 }
-                input.put("failedWorkflow", workflow);
+                // Convert to a Map: the JsonPath provider used by ParametersUtils cannot traverse
+                // POJOs, so a raw WorkflowModel makes nested references like
+                // ${workflow.input.failedWorkflow.workflowId} silently resolve to null (#1164).
+                input.put(
+                        "failedWorkflow",
+                        OBJECT_MAPPER.convertValue(
+                                workflow, new TypeReference<Map<String, Object>>() {}));
 
                 try {
                     String failureWFId = idGenerator.generate();
