@@ -186,6 +186,37 @@ public class WorkflowSweeperTest {
         verify(executionLockService).releaseLock(WORKFLOW_ID);
     }
 
+    @Test
+    public void sweepDoesNotRepushInFlightAsyncSystemTaskWhenMessagePresent() {
+        // Core #1321 invariant: a running async system task keeps its queue message, so repair must
+        // leave it alone. Regression guard for the duplicate execution reported in #202 / #630 —
+        // before the poll-level-reserve fix the message was removed at poll and repair re-queued the
+        // in-flight task, running it a second time.
+        TaskModel httpTask =
+                newTask("http-task", TaskType.TASK_TYPE_HTTP, TaskModel.Status.IN_PROGRESS);
+        WorkflowModel workflow = newWorkflow(List.of(httpTask));
+
+        WorkflowSystemTask httpSystemTask = mock(WorkflowSystemTask.class);
+        when(executionLockService.acquireLock(WORKFLOW_ID)).thenReturn(true);
+        when(workflowExecutor.getWorkflow(WORKFLOW_ID, true)).thenReturn(workflow);
+        when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
+        when(systemTaskRegistry.isSystemTask(TaskType.TASK_TYPE_HTTP)).thenReturn(true);
+        when(systemTaskRegistry.get(TaskType.TASK_TYPE_HTTP)).thenReturn(httpSystemTask);
+        when(httpSystemTask.isAsync()).thenReturn(true);
+        when(httpSystemTask.isAsyncComplete(httpTask)).thenReturn(false);
+        // the task is in flight and its message is still present (reserved by the executor)
+        when(queueDAO.containsMessage(TaskType.TASK_TYPE_HTTP, httpTask.getTaskId()))
+                .thenReturn(true);
+
+        workflowSweeper.sweep(WORKFLOW_ID);
+
+        // it was treated as repairable (containsMessage was queried) but, because the message is
+        // present, it was NOT re-queued — no second execution.
+        verify(queueDAO).containsMessage(TaskType.TASK_TYPE_HTTP, httpTask.getTaskId());
+        verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
+        verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
     private WorkflowModel newWorkflow(List<TaskModel> tasks) {
         WorkflowModel workflowModel = new WorkflowModel();
         workflowModel.setWorkflowId(WORKFLOW_ID);

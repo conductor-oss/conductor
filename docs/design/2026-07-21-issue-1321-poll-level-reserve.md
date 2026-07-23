@@ -80,33 +80,41 @@ redeliver it mid-run). The executor's `finally` still owns the outcome — it
 overriding the reservation — so normal completion, the async-complete flow, and
 long-running `IN_PROGRESS + callbackAfterSeconds` re-invocation are all unchanged.
 
-3. **An overrun is timed out, not re-executed.** The reservation only lasts
+3. **A blocking overrun is timed out, not re-executed.** The reservation only lasts
    `responseTimeout`; if the actual run outlives it, the message *does* reappear.
    To avoid re-running it in parallel, the executor persists `startTime` before the
    first invocation (the status is left unchanged so a system task whose `start()`
-   branches on `SCHEDULED` — e.g. `SUB_WORKFLOW` — still works), and on any
-   redelivery checks whether the task has already started and has not responded
-   within `responseTimeout`:
+   branches on `SCHEDULED` — e.g. `SUB_WORKFLOW` — still works), and on redelivery of a
+   still-`SCHEDULED` task checks whether it started and has not responded within
+   `responseTimeout`:
 
    ```java
-   if (task.getStartTime() > 0
+   if (scheduled                                             // SCHEDULED only — see below
+           && task.getStartTime() > 0
            && task.getUpdateTime() > 0                       // skip just-scheduled tasks
            && now - task.getUpdateTime() >= responseTimeoutMs) {
        task.setStatus(TIMED_OUT);   // don't invoke again — let retry/timeout policy decide
    }
    ```
 
-   The `updateTime > 0` guard is required: a task whose mapper sets `startTime` at
+   **Only `SCHEDULED` is handled here.** A blocking `start()` runs synchronously and
+   never moves the task to `IN_PROGRESS`, so it stays `SCHEDULED` for its whole run —
+   that is the only overrun the normal response-timeout path can't already see.
+   `IN_PROGRESS` response-timeouts are owned by `DeciderService.isResponseTimedOut`
+   (invoked from `decide()`), which budgets `responseTimeout + callbackAfterSeconds`.
+   Applying this executor check to `IN_PROGRESS` tasks would fire *earlier* than
+   `DeciderService` (it omits `callbackAfterSeconds`) and wrongly time out a task that
+   is merely waiting for its next scheduled callback whenever
+   `callbackAfterSeconds >= responseTimeout`.
+
+   The `updateTime > 0` guard is also required: a task whose mapper sets `startTime` at
    scheduling (e.g. `JOIN`) has `updateTime == 0` until first persisted, so without it
    `now - 0` always exceeds the timeout and the task is wrongly timed out on its first
-   poll. Re-polled tasks refresh `updateTime` each poll, so only a run that held the
-   worker thread past `responseTimeout` (no intervening poll) is caught.
+   poll.
 
-   So a run that exceeds `responseTimeout` is marked `TIMED_OUT` (retriable) and the
-   retry/timeout policy creates a *new* attempt or fails the workflow — it is never
-   re-run in parallel under the same taskId. The check uses `updateTime` (time since
-   the last response), so a worker that keeps checking in within `responseTimeout`
-   (LLM/A2A callback flow) is not timed out.
+   So a blocking run that exceeds `responseTimeout` is marked `TIMED_OUT` (retriable)
+   and the retry/timeout policy creates a *new* attempt or fails the workflow — it is
+   never re-run in parallel under the same taskId.
 
 ## Why `responseTimeout` (not a new property)
 
@@ -138,10 +146,26 @@ and is the price of not letting repair fight in-flight tasks.
 
 - **Crash mid-execute** → recovery after `responseTimeout` (bounded), slower than
   repair's ~30s.
-- **A run that overruns `responseTimeout` is timed out and retried** per the task's
-  policy — so a task whose `responseTimeout` is set shorter than its real work will
-  time out repeatedly and eventually fail. Set a realistic `responseTimeout` for
-  long tasks (e.g. LLM); absent one, the `TaskDef.ONE_HOUR` default applies.
+- **A blocking run that overruns `responseTimeout` is timed out and retried** per the
+  task's policy — so a task whose `responseTimeout` is set shorter than its real work
+  will time out repeatedly and eventually fail. Set a realistic `responseTimeout` for
+  long tasks (e.g. LLM); absent one, the `TaskDef.ONE_HOUR` default applies. This is a
+  de-facto 1-hour execution cap **only for blocking (`SCHEDULED`-throughout) tasks**;
+  `IN_PROGRESS` waiters (HUMAN, WAIT) are unaffected — their timeout stays governed by
+  `DeciderService.isResponseTimedOut`.
+- **`pop` → reserve window.** The message is left unacked at the queue's default unack
+  timeout between `pop` (poller thread) and `reserveInflightMessage` (executor thread).
+  This is safe while a queue's semaphore permits equal its pool threads
+  (`ExecutionConfig`): a popped id always has a free thread, so it reserves within
+  milliseconds — far inside the default unack timeout. If a future change decouples
+  in-flight permits from thread count (e.g. a per-type `permitCount`, PR #1204), a
+  popped id could queue behind busy threads and the pre-reserve gap could exceed the
+  unack timeout → redelivery → the very duplicate this fixes. In that case, reserve on
+  the poller thread immediately after `pop` instead of in the executor.
+- **Extra persistence on the schedule path.** Persisting `startTime` before `start()`
+  adds one `executionDAOFacade.updateTask` (and its index write) per async system task,
+  **once per task** (only on the first, `SCHEDULED` invocation — not per callback).
+  Required so `startTime` is durable before a blocking `start()`.
 - **Zombie late-write (#1322, not fixed here):** the original invocation of a
   timed-out task keeps running and, on completion, its `finally` still writes its
   result under the original taskId, which can overwrite the `TIMED_OUT`/retry state.
@@ -149,10 +173,23 @@ and is the price of not letting repair fight in-flight tasks.
 
 ## Testing
 
-- `AsyncSystemTaskExecutorTest`: a SCHEDULED task is reserved via
-  `queueDAO.setUnackTimeout(queue, taskId, responseTimeout*1000)` before `start()`;
-  a task with no `responseTimeout` falls back to `TaskDef.ONE_HOUR` (3600s); a
-  redelivered task that outlived `responseTimeout` is marked `TIMED_OUT` and **not**
-  re-invoked.
+- `AsyncSystemTaskExecutorTest`:
+  - a SCHEDULED task is reserved via
+    `queueDAO.setUnackTimeout(queue, taskId, responseTimeout*1000)` before `start()`;
+    a task with no `responseTimeout` falls back to `TaskDef.ONE_HOUR` (3600s).
+  - a redelivered **SCHEDULED** task whose blocking `start()` outlived `responseTimeout`
+    is marked `TIMED_OUT` and **not** re-invoked.
+  - a **just-scheduled** task with `startTime` set but `updateTime == 0` (e.g. `JOIN`)
+    is reserved and started, **not** timed out (the `updateTime > 0` guard).
+  - an **`IN_PROGRESS`** task whose callback interval exceeds `responseTimeout` is
+    reserved and `execute()`d, **not** timed out (the `SCHEDULED`-only gate — the
+    response-timeout is left to `DeciderService.isResponseTimedOut`).
+- `WorkflowSweeperTest`: an in-flight async system task (`isAsync`, not
+  `asyncComplete`) whose queue message is **present** (`containsMessage == true`) is
+  **not** re-pushed by repair — the regression guard for #202 / #630.
 - `TestSystemTaskWorker`: the poll hands the task to the executor and does **not**
   `ack`/`remove` the message.
+- End-to-end: the full `conductor-test-harness` suite passes, including the fork/join
+  integration tests (`ForkJoinSyncModeIntegrationTest` et al.) that exercise `JOIN`
+  through the async executor and would fail if a freshly-scheduled `JOIN` were timed
+  out.
