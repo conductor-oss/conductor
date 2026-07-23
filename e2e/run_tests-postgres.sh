@@ -3,7 +3,12 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-postgres.yaml"
+STORAGE_DIR="/tmp/conductor-file-storage-e2e"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
+
+echo "Preparing shared storage dir at $STORAGE_DIR ..."
+rm -rf "$STORAGE_DIR"
+mkdir -p "$STORAGE_DIR"
 
 echo "Starting Conductor (Postgres + Elasticsearch 7)..."
 docker compose -f "$COMPOSE_FILE" build conductor-server
@@ -26,7 +31,7 @@ for i in $(seq 1 60); do
 done
 
 cd "$SCRIPT_DIR/.."
-./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
+./gradlew :conductor-e2e:test -PrunE2E -PrunFileStorageTests -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
 EXIT_CODE=$?
 
 docker compose -f "$COMPOSE_FILE" down -v
