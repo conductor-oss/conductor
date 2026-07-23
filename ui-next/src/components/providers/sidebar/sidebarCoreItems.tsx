@@ -318,6 +318,7 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
       hotkeys: "",
       hidden: false,
       position: R.swaggerItem,
+      isOpenNewTab: true,
     },
   ];
 }
