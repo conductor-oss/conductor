@@ -190,7 +190,8 @@ public class WorkflowSweeperTest {
     public void sweepDoesNotRepushInFlightAsyncSystemTaskWhenMessagePresent() {
         // Core #1321 invariant: a running async system task keeps its queue message, so repair must
         // leave it alone. Regression guard for the duplicate execution reported in #202 / #630 —
-        // before the poll-level-reserve fix the message was removed at poll and repair re-queued the
+        // before the poll-level-reserve fix the message was removed at poll and repair re-queued
+        // the
         // in-flight task, running it a second time.
         TaskModel httpTask =
                 newTask("http-task", TaskType.TASK_TYPE_HTTP, TaskModel.Status.IN_PROGRESS);
