@@ -101,6 +101,10 @@ public class SqliteConfiguration {
                         .sqlMigrationSeparator("__") // V1__description
                         .mixed(true) // Allow mixed migrations (both versioned and repeatable)
                         .validateOnMigrate(true)
+                        // scheduler flyway shares this db (own history table, baseline 0) —
+                        // baseline-0 keeps boot independent of migration order
+                        .baselineOnMigrate(true)
+                        .baselineVersion("0")
                         .cleanDisabled(false);
 
         return new Flyway(config);
