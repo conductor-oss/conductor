@@ -20,6 +20,7 @@ jobs:
     outputs:
       persistence: ${{ steps.filter.outputs.persistence }}
       ui: ${{ steps.filter.outputs.ui }}
+      agent: ${{ steps.filter.outputs.agent }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,6 +51,14 @@ jobs:
             ui:
               - 'ui/**'
               - 'ui-next/**'
+            agent:
+              - 'ai/**'
+              - 'conductor-agentspan/**'
+              - 'server/**'
+              - 'core/**'
+              - 'sqlite-persistence/**'
+              - '.github/agent-e2e/**'
+              - '.github/workflows/ci.yml'
 
   build:
     runs-on: ubuntu-latest
@@ -458,3 +467,126 @@ jobs:
 
       - name: Build UI
         run: NODE_OPTIONS=--max-old-space-size=4096 pnpm build
+
+  # Boots the conductor server built from THIS commit in SQLite mode (the default — no external
+  # DB) and runs the released python SDK agent e2e suite against it, so a server change can't
+  # silently break the SDK before a release. The suite + bundle come from conductor-oss/python-sdk
+  # (conductor-ai-e2e-python-<version>); the server auto-configures the openai provider from
+  # OPENAI_API_KEY (conductor.ai.openai.api-key), so no manual integration setup is needed.
+  # Known failures (none today) are xfail-ed via .github/agent-e2e/ so the lane can gate while
+  # any future gap is fixed. Runs on push/dispatch, and on PRs that touch agent-relevant paths.
+  python-sdk-e2e:
+    name: Python SDK E2E (SQLite)
+    needs: detect-changes
+    if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.agent == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      checks: write   # publish the junit test-report check
+    env:
+      # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
+      # python-sdk release tags carry no `v` prefix. Bump deliberately.
+      CONDUCTOR_PY_E2E_BUNDLE_VERSION: "2.0.0-rc2"
+      # Pinned agentspan CLI release — a few suites (cli-skills, credential lifecycle) shell
+      # out to the `agentspan` binary. Independent of the server pin; bump deliberately.
+      AGENTSPAN_CLI_VERSION: "0.4.4"
+      # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
+      # module directory that `gh release download --output agentspan` would collide with.
+      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
+      AGENTSPAN_SERVER_URL: http://localhost:8080/api
+      AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
+      MCP_TESTKIT_URL: http://localhost:3001
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      E2E_KNOWN_FAILURES: ${{ github.workspace }}/.github/agent-e2e/known-failures-python.json
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build server boot jar
+        run: ./gradlew :conductor-server:bootJar -x test --no-daemon
+
+      - name: Start mcp-testkit (best effort)
+        run: |
+          python -m pip install --quiet mcp-testkit || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
+          nohup mcp-testkit --transport http --port 3001 > mcp-testkit.log 2>&1 &
+          for i in $(seq 1 15); do curl -sf http://localhost:3001/ >/dev/null 2>&1 && break; sleep 1; done
+          echo "mcp-testkit started (or unavailable; suites skip gracefully)"
+
+      - name: Start conductor server (SQLite)
+        run: |
+          JAR="$(ls server/build/libs/conductor-server-*-boot.jar | head -1)"
+          echo "booting $JAR"
+          nohup java -jar "$JAR" --server.port=8080 > conductor-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
+              echo "server healthy after ~$((i * 3))s"; break
+            fi
+            if [ "$i" -eq 60 ]; then echo "::error::server failed to become healthy within 180s"; tail -100 conductor-server.log; exit 1; fi
+            sleep 3
+          done
+
+      - name: Fetch python e2e bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${CONDUCTOR_PY_E2E_BUNDLE_VERSION}"
+          NAME="conductor-ai-e2e-python-${V}"
+          gh release download "${V}" --repo conductor-oss/python-sdk \
+            --pattern "${NAME}.tar.gz" --pattern "${NAME}.tar.gz.sha256" --dir .
+          echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
+          tar -xzf "${NAME}.tar.gz"
+          echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
+
+      - name: Download AgentSpan CLI
+        # A few suites (cli-skills, credential lifecycle) shell out to the `agentspan`
+        # binary; without it they error with FileNotFoundError instead of skipping.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
+            --pattern "agentspan_linux_amd64" --output "$AGENTSPAN_CLI_PATH" --clobber
+          chmod +x "$AGENTSPAN_CLI_PATH"
+
+      # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
+      # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
+      # a genuine failure fails the job; entries in known-failures-python.json (none today)
+      # are xfail-ed green.
+      - name: Run python e2e (SQLite; known failures xfail-ed)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.github/agent-e2e
+        working-directory: ${{ env.BUNDLE_DIR }}
+        run: bash run.sh -p known_failures_plugin
+
+      - name: Publish test report
+        if: always()
+        continue-on-error: true   # gating is the e2e run step's exit code; a checks-API hiccup must not fail the job
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: "${{ env.BUNDLE_DIR }}/results/junit-e2e.xml"
+          check_name: "Python SDK E2E (SQLite)"
+          fail_on_failure: false
+          require_tests: false
+
+      - name: Upload results + server log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-sdk-e2e-results
+          path: |
+            ${{ env.BUNDLE_DIR }}/results/**
+            conductor-server.log
+            mcp-testkit.log
+          if-no-files-found: ignore
+          retention-days: 7
