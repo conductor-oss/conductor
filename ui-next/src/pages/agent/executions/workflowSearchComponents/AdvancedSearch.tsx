@@ -1,5 +1,12 @@
 import { Monaco } from "@monaco-editor/react";
-import { Box, Grid } from "@mui/material";
+import {
+  Box,
+  FormControl,
+  Grid,
+  InputLabel,
+  useMediaQuery,
+} from "@mui/material";
+import { Theme } from "@mui/material/styles";
 import { Button, Paper } from "components";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import MuiTypography from "components/ui/MuiTypography";
@@ -7,7 +14,6 @@ import StatusBadge from "components/StatusBadge";
 import { renderStatusTagChip } from "components/StatusTagChip";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
-import ConductorInput from "components/ui/inputs/ConductorInput";
 import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import ResetIcon from "components/icons/ResetIcon";
 import SearchIcon from "components/icons/SearchIcon";
@@ -25,7 +31,6 @@ import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";
-import { IObject } from "types/common";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
@@ -38,9 +43,19 @@ import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
 import ResultsTable from "../ResultsTable";
 import { ExampleSearchQuery } from "../SearchExampleQuery";
+import {
+  toDateControlProps,
+  useAgentSearchFilters,
+} from "../useAgentSearchFilters";
 
 const DEFAULT_SORT = "startTime:DESC";
 const workflowStatuses = Object.values(WorkflowExecutionStatus);
+
+/** Shape shown in the results snackbar (from getErrors or fetch Response). */
+type ExecutionSearchError = {
+  message?: string;
+  statusText?: string;
+} & Record<string, unknown>;
 
 export interface AdvancedSearchProps {
   doSearch: ({
@@ -54,69 +69,40 @@ export interface AdvancedSearchProps {
   }: DoSearchProps) => void;
   SwitchComponent: ReactNode;
   getTableTitle: (resultObj: TaskExecutionResult) => ReactNode;
-  freeText: string;
-  setFreeText: (val: string) => void;
-  status: string[];
-  setStatus: (val: string[]) => void;
-  startTimeFrom: string;
-  setStartTimeFrom: (val: string) => void;
-  onStartFromChange: (val: string) => void;
-  startTimeTo: string;
-  setStartTimeTo: (val: string) => void;
-  onStartToChange: (val: string) => void;
-  endTimeFrom: string;
-  setEndTimeFrom: (val: string) => void;
-  onEndFromChange: (val: string) => void;
-  endTimeTo: string;
-  setEndTimeTo: (val: string) => void;
-  onEndToChange: (val: string) => void;
-  fromDisplayTime: string;
-  setFromDisplayTime: (val: string) => void;
-  toDisplayTime: string;
-  setToDisplayTime: (val: string) => void;
-  openDateSelect: boolean;
-  setOpenDateSelect: (val: boolean) => void;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: (val: boolean) => void;
-  openEndDatePicker: boolean;
-  setEndOpenDatePicker: (val: boolean) => void;
-  recentSearches: { start: string; end: string };
 }
 
 export default function AdvancedSearch({
   doSearch,
   SwitchComponent,
   getTableTitle,
-  freeText,
-  setFreeText,
-  status,
-  setStatus,
-  startTimeFrom,
-  setStartTimeFrom,
-  onStartFromChange,
-  startTimeTo,
-  setStartTimeTo,
-  onStartToChange,
-  endTimeFrom,
-  setEndTimeFrom,
-  onEndFromChange,
-  endTimeTo,
-  setEndTimeTo,
-  onEndToChange,
-  fromDisplayTime,
-  setFromDisplayTime,
-  toDisplayTime,
-  setToDisplayTime,
-  openDateSelect,
-  setOpenDateSelect,
-  openStartDatePicker,
-  setStartOpenDatePicker,
-  openEndDatePicker,
-  setEndOpenDatePicker,
-  recentSearches,
 }: AdvancedSearchProps) {
+  const filters = useAgentSearchFilters();
+  const {
+    status,
+    setStatus,
+    startTimeFrom,
+    setStartTimeFrom,
+    startTimeTo,
+    setStartTimeTo,
+    endTimeFrom,
+    setEndTimeFrom,
+    endTimeTo,
+    setEndTimeTo,
+    setFromDisplayTime,
+    setToDisplayTime,
+  } = filters;
+
   const disposeRef = useRef<null | (() => void)>(null);
   const [queryText, setQueryText] = useQueryState("query", "");
+  // Local draft so SQL keystrokes do not rewrite the URL on every change.
+  // Sync when committed queryText changes (reset, back/forward).
+  const [queryInput, setQueryInput] = useState(queryText);
+  const [prevQueryText, setPrevQueryText] = useState(queryText);
+  if (queryText !== prevQueryText) {
+    setPrevQueryText(queryText);
+    setQueryInput(queryText);
+  }
+
   const [page, setPage] = useQueryState("page", 1);
   const [rowsPerPage, setRowsPerPage] = useQueryState(
     "rowsPerPage",
@@ -125,12 +111,18 @@ export default function AdvancedSearch({
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [showCodeDialog, setShowCodeDialog] = useQueryState("displayCode", "");
 
-  const [errorMessage, setErrorMessage] = useState<IObject | null>(null);
+  const [errorMessage, setErrorMessage] = useState<ExecutionSearchError | null>(
+    null,
+  );
 
   const [unauthorized, setUnauthorized] = useState<{
     message?: string;
     error?: string;
   } | null>(null);
+
+  const isMobile = useMediaQuery((theme: Theme) =>
+    theme.breakpoints.down("sm"),
+  );
 
   // For dropdown
   const agentNames = useAgentNames();
@@ -157,11 +149,11 @@ export default function AdvancedSearch({
   const buildQuery = useCallback(() => {
     const clauses = [];
 
-    if (!_isEmpty(status) && !queryText.includes("status")) {
+    if (!_isEmpty(status) && !queryInput.includes("status")) {
       clauses.push(`status IN (${status.join(",")})`);
     }
 
-    if (!queryText.includes("startTime")) {
+    if (!queryInput.includes("startTime")) {
       if (!_isEmpty(startTimeFrom)) {
         clauses.push(`startTime>${dateToEpoch(startTimeFrom)}`);
       }
@@ -177,23 +169,15 @@ export default function AdvancedSearch({
       clauses.push(`endTime<${dateToEpoch(endTimeTo)}`);
     }
 
-    if (!_isEmpty(queryText)) {
-      clauses.push(queryText);
+    if (!_isEmpty(queryInput)) {
+      clauses.push(queryInput);
     }
 
     return {
       query: clauses.join(" AND "),
-      freeText: _isEmpty(freeText) ? "*" : freeText,
+      freeText: "*",
     };
-  }, [
-    freeText,
-    startTimeFrom,
-    startTimeTo,
-    endTimeFrom,
-    endTimeTo,
-    status,
-    queryText,
-  ]);
+  }, [startTimeFrom, startTimeTo, endTimeFrom, endTimeTo, status, queryInput]);
 
   const [queryFT, setQueryFT] = useState(buildQuery);
   const [hideSubWorkflows, setHideSubWorkflows] = useState(true);
@@ -216,13 +200,13 @@ export default function AdvancedSearch({
     },
     {},
     {
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         if (error) {
           getErrors(error as Response).then((result) => {
             if (result?.["workflowName"] === "must not be empty") {
               setErrorMessage({ message: "Agent name should not be empty" });
             } else {
-              setErrorMessage(result);
+              setErrorMessage(result as ExecutionSearchError);
             }
           });
         } else {
@@ -233,32 +217,48 @@ export default function AdvancedSearch({
     },
   );
 
+  const setRecentTaskSearch = useCallback(() => {
+    if (startTimeFrom || startTimeTo || endTimeFrom || endTimeTo) {
+      localStorage.setItem(
+        "recentTaskSearch",
+        JSON.stringify({
+          start: startTimeFrom || startTimeTo,
+          end: endTimeTo || endTimeFrom,
+        }),
+      );
+    }
+  }, [startTimeFrom, startTimeTo, endTimeFrom, endTimeTo]);
+
+  const runSearch = useCallback(() => {
+    setQueryText(queryInput);
+    doSearch({
+      resultObj,
+      queryFT,
+      buildQuery,
+      setQueryFT,
+      refetch,
+      setPage,
+      setRecentTaskSearch,
+    });
+  }, [
+    queryInput,
+    setQueryText,
+    doSearch,
+    resultObj,
+    queryFT,
+    buildQuery,
+    refetch,
+    setPage,
+    setRecentTaskSearch,
+  ]);
+
   // hotkeys to search execution
-  useHotkeys(
-    `${Key.Meta}+${Key.Enter}`,
-    () =>
-      doSearch({
-        resultObj,
-        queryFT,
-        buildQuery,
-        setQueryFT,
-        refetch,
-        setPage,
-        setRecentTaskSearch,
-      }),
-    {
-      enableOnFormTags: ["INPUT", "TEXTAREA", "SELECT"],
-    },
-  );
+  useHotkeys(`${Key.Meta}+${Key.Enter}`, () => runSearch(), {
+    enableOnFormTags: ["INPUT", "TEXTAREA", "SELECT"],
+  });
 
   // Must be called before any early returns to follow Rules of Hooks
-  const filterOn = useMemo(() => {
-    if (queryFT.query !== "" || queryFT.freeText !== "*") {
-      return true;
-    } else {
-      return false;
-    }
-  }, [queryFT]);
+  const filterOn = useMemo(() => queryFT.query !== "", [queryFT]);
 
   const handlePage = (page: number) => {
     setPage(page);
@@ -304,7 +304,7 @@ export default function AdvancedSearch({
     return <Navigate to={ERROR_URL} />;
   }
 
-  const handleError = (error: any) => {
+  const handleError = (error: ExecutionSearchError) => {
     setErrorMessage(error);
   };
   const handleClearError = () => {
@@ -319,7 +319,7 @@ export default function AdvancedSearch({
     setEndTimeTo("");
     setToDisplayTime("");
     setFromDisplayTime("Last 72 Hours");
-    setFreeText("");
+    setQueryInput("");
     setQueryText("");
   };
 
@@ -339,23 +339,11 @@ export default function AdvancedSearch({
     setRowsPerPage(rowsPerPage);
   };
 
-  const setRecentTaskSearch = () => {
-    if (startTimeFrom || startTimeTo || endTimeFrom || endTimeTo) {
-      localStorage.setItem(
-        "recentTaskSearch",
-        JSON.stringify({
-          start: startTimeFrom || startTimeTo,
-          end: endTimeTo || endTimeFrom,
-        }),
-      );
-    }
-  };
-
   return (
     <>
       <Paper variant="outlined" sx={{ marginBottom: 6 }}>
         {SwitchComponent}
-        <Box>
+        <Box sx={{ padding: SwitchComponent ? "0 24px 24px 24px" : 6 }}>
           {showCodeDialog && (
             <ApiSearchModalIntegration
               onClose={() => setShowCodeDialog("")}
@@ -363,19 +351,25 @@ export default function AdvancedSearch({
                 start: (page - 1) * rowsPerPage,
                 size: rowsPerPage,
                 sort,
-                freeText,
+                freeText: "*",
                 query: buildQuery().query,
               }}
             />
           )}
-          <Grid container sx={{ width: "100%" }} spacing={3} p={6} pt={2}>
+          <Grid
+            container
+            sx={{ width: "100%" }}
+            spacing={3}
+            pt={2}
+            alignItems="flex-end"
+          >
             <Grid size={12}>
               <ConductorCodeBlockInput
                 label="Search"
                 language="sql"
                 minHeight={30}
-                value={queryText}
-                onChange={setQueryText}
+                value={queryInput}
+                onChange={setQueryInput}
                 autoFocus
                 options={{
                   lineNumbers: "off",
@@ -445,69 +439,15 @@ export default function AdvancedSearch({
             <Grid
               size={{
                 xs: 12,
-                sm: 12,
-                md: 5.5,
-                lg: 5,
-              }}
-            >
-              <DateControlComponent
-                startTime={startTimeFrom}
-                onStartFromChange={onStartFromChange}
-                startTimeEnd={startTimeTo}
-                onStartToChange={onStartToChange}
-                endTimeStart={endTimeFrom}
-                onEndFromChange={onEndFromChange}
-                endTime={endTimeTo}
-                onEndToChange={onEndToChange}
-                fromDisplayTime={fromDisplayTime}
-                setFromDisplayTime={setFromDisplayTime}
-                toDisplayTime={toDisplayTime}
-                setToDisplayTime={setToDisplayTime}
-                openDateSelect={openDateSelect}
-                setOpenDateSelect={setOpenDateSelect}
-                openStartDatePicker={openStartDatePicker}
-                setStartOpenDatePicker={setStartOpenDatePicker}
-                openEndDatePicker={openEndDatePicker}
-                setEndOpenDatePicker={setEndOpenDatePicker}
-                disabled={
-                  queryText.includes("startTime") ||
-                  queryText.includes("endTime")
-                }
-                recentSearches={recentSearches}
-                startTimeLabel="Execution Start Time"
-                endTimeLabel="Execution End Time"
-              />
-            </Grid>
-
-            <Grid
-              size={{
-                xs: 12,
-                sm: 12,
-                md: 2,
-                lg: 2.5,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
-                value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
-              />
-            </Grid>
-
-            <Grid
-              size={{
-                xs: 12,
                 sm: 6,
-                md: 2,
+                md: 3,
                 lg: 2,
               }}
             >
               <ConductorAutoComplete
                 id="workflow-search-status"
                 label="Status"
-                disabled={queryText.includes("status")}
+                disabled={queryInput.includes("status")}
                 fullWidth
                 options={workflowStatuses}
                 multiple
@@ -524,26 +464,53 @@ export default function AdvancedSearch({
 
             <Grid
               display="flex"
-              justifyContent="end"
+              alignItems="end"
               size={{
                 xs: 12,
                 sm: 6,
-                md: 2.5,
-                lg: 2.5,
+                md: 5,
+                lg: 6,
               }}
             >
-              <Grid alignSelf="center" size={5}>
+              <DateControlComponent
+                {...toDateControlProps(filters)}
+                disabled={
+                  queryInput.includes("startTime") ||
+                  queryInput.includes("endTime")
+                }
+                startDialogTitle="Execution Start Time"
+                startDialogHelpText="Select a date range within which the Execution has started."
+                endDialogTitle="Execution End Time"
+                endDialogHelpText="Select a date range within which the Execution has ended."
+                startTimeLabel="Execution Start Time"
+                endTimeLabel="Execution End Time"
+              />
+            </Grid>
+
+            <Grid
+              display="flex"
+              justifyContent="end"
+              alignItems="end"
+              gap={1}
+              size={{
+                xs: 12,
+                md: 4,
+                lg: 4,
+              }}
+            >
+              <FormControl>
+                {!isMobile && <InputLabel>&nbsp;</InputLabel>}
                 <Button
                   id="reset-workflow-btn"
                   variant="text"
                   onClick={handleReset}
-                  style={{ width: "100%" }}
                   startIcon={<ResetIcon />}
                 >
                   Reset
                 </Button>
-              </Grid>
-              <Grid alignSelf="center">
+              </FormControl>
+              <FormControl>
+                {!isMobile && <InputLabel>&nbsp;</InputLabel>}
                 <SplitButton
                   id="search-workflow-btn"
                   startIcon={<SearchIcon />}
@@ -553,21 +520,11 @@ export default function AdvancedSearch({
                       onClick: () => setShowCodeDialog("active"),
                     },
                   ]}
-                  primaryOnClick={() =>
-                    doSearch({
-                      resultObj,
-                      queryFT,
-                      buildQuery,
-                      setQueryFT,
-                      refetch,
-                      setPage,
-                      setRecentTaskSearch,
-                    })
-                  }
+                  primaryOnClick={runSearch}
                 >
                   Search
                 </SplitButton>
-              </Grid>
+              </FormControl>
             </Grid>
           </Grid>
         </Box>

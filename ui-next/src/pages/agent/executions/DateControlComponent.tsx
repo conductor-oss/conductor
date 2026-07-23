@@ -135,16 +135,11 @@ export const DateControlComponent = ({
       sx={{
         display: "flex",
         height: "100%",
-        alignItems: "start",
+        alignItems: "center",
         justifyContent: "start",
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
+      <Box sx={{ display: "flex", alignItems: "center", height: 42 }}>
         <Box>
           <CustomisedTooltip
             open={openStartDatePicker}
