@@ -303,13 +303,14 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
-    def "Times out a redelivered task that outlived responseTimeout instead of re-executing it"() {
+    def "Times out a redelivered SCHEDULED task whose blocking start() outlived responseTimeout instead of re-executing it"() {
         given:
         String workflowId = "workflowId"
         String taskId = "taskId"
-        // already started, and not updated within responseTimeout (updateTime is 20s old, timeout 10s)
+        // A blocking start() never moves the task off SCHEDULED; here it started but has not been
+        // updated within responseTimeout (updateTime is 20s old, timeout 10s) — the run overran.
         long stale = System.currentTimeMillis() - 20_000
-        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
                 taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
         WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
         String queueName = QueueUtils.getQueueName(task)
@@ -328,6 +329,34 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * workflowExecutor.decide(workflowId)
 
         task.status == TaskModel.Status.TIMED_OUT
+    }
+
+    def "Does not time out an IN_PROGRESS task waiting for its callback even when the callback interval exceeds responseTimeout"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // IN_PROGRESS task re-polled after its callback; the updateTime gap (40s) exceeds
+        // responseTimeout (10s). The executor must NOT time it out — IN_PROGRESS response-timeouts
+        // are owned by DeciderService.isResponseTimedOut, which budgets responseTimeout +
+        // callbackAfterSeconds. Timing out here would fire earlier than DeciderService whenever
+        // callbackAfterSeconds >= responseTimeout.
+        long stale = System.currentTimeMillis() - 40_000
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // reserved and executed (normal callback loop), NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, _)
+        1 * workflowSystemTask.execute(workflow, task, _)
+        0 * workflowSystemTask.start(*_)
+        task.status != TaskModel.Status.TIMED_OUT
     }
 
     def "Does not time out a just-scheduled task whose mapper set startTime but has no updateTime (e.g. JOIN)"() {

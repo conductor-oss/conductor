@@ -155,12 +155,15 @@ public class AsyncSystemTaskExecutor {
 
             boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
             if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                if (hasExceededResponseTimeout(task)) {
-                    // The message was redelivered while a previous invocation is still in flight
-                    // past responseTimeout. Do NOT run it again in parallel (issue #1321): the task
-                    // has exceeded its allowed time, so time it out and let the retry/timeout
-                    // policy
-                    // decide (retry as a new attempt, or fail). The finally block below removes the
+                if (scheduled && hasExceededResponseTimeout(task)) {
+                    // A blocking task's start() runs synchronously and never moves the task to
+                    // IN_PROGRESS, so it stays SCHEDULED for its whole run. If the message is
+                    // redelivered (reservation lapsed) while that run is still in flight past
+                    // responseTimeout, do NOT run it again in parallel (issue #1321): time it out
+                    // and let the retry/timeout policy decide. Only SCHEDULED is handled here;
+                    // IN_PROGRESS response-timeouts are owned by DeciderService.isResponseTimedOut
+                    // (invoked from decide()), which uses responseTimeout + callbackAfterSeconds and
+                    // so must not be duplicated/pre-empted here. The finally block removes the
                     // message and re-evaluates the workflow.
                     task.setStatus(TaskModel.Status.TIMED_OUT);
                     task.setReasonForIncompletion(
@@ -276,10 +279,10 @@ public class AsyncSystemTaskExecutor {
     /**
      * True if the task has already started (startTime set) and has not been updated within its
      * responseTimeout — i.e. a redelivered message belongs to a run that overran its allowed time
-     * and should be timed out rather than re-executed. Uses updateTime (time since the last
-     * response), so a worker that keeps checking in within responseTimeout (long-running LLM/A2A
-     * callbacks) is not timed out. Requires updateTime > 0: a just-scheduled task whose mapper set
-     * startTime (e.g. JOIN) has updateTime == 0 and must not be treated as overrun.
+     * and should be timed out rather than re-executed. Only meaningful for a SCHEDULED task (a
+     * blocking start() that never returned); the caller gates on that. Requires updateTime > 0: a
+     * just-scheduled task whose mapper set startTime (e.g. JOIN) has updateTime == 0 and must not be
+     * treated as overrun.
      */
     private boolean hasExceededResponseTimeout(TaskModel task) {
         return task.getStartTime() > 0
