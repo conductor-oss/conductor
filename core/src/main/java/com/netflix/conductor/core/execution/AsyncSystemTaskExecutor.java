@@ -172,8 +172,16 @@ public class AsyncSystemTaskExecutor {
                             task.getTaskId());
                 } else {
                     // Keep the message present but invisible for the run so repair can't re-queue
-                    // this running task (#1321).
-                    reserveInflightMessage(queueName, task);
+                    // this running task (#1321). If the reserve fails, the message stays leased at
+                    // the queue's default unack timeout and would redeliver and run in parallel, so
+                    // don't start it: leave the still-SCHEDULED message to redeliver and retry.
+                    if (!reserveInflightMessage(queueName, task)) {
+                        LOGGER.warn(
+                                "Could not reserve in-flight message for {}/{}; skipping execution, will retry on redelivery",
+                                task.getTaskType(),
+                                task.getTaskId());
+                        return;
+                    }
                     Map<String, Object> literalInput = task.getInputData();
                     // Secrets substitution only sees task.getInputData(); when input has been
                     // offloaded to external payload storage, getInputData()/setInputData() operate
@@ -247,19 +255,25 @@ public class AsyncSystemTaskExecutor {
     }
 
     /**
-     * Extend the task's queue message visibility to cover the invocation (issue #1321), using its
-     * {@code responseTimeoutSeconds} or the default {@link TaskDef#ONE_HOUR} when unset.
+     * Extend the popped message's unack lease so it stays reserved (unacked, not redelivered) for
+     * the duration of the invocation (issue #1321), using the task's {@code responseTimeoutSeconds}
+     * or the default {@link TaskDef#ONE_HOUR} when unset. Returns {@code false} if the reserve
+     * failed, in which case the caller must not start the task: the message is still leased at only
+     * the queue's default unack timeout and would otherwise redeliver and run a second time in
+     * parallel.
      */
-    private void reserveInflightMessage(String queueName, TaskModel task) {
+    private boolean reserveInflightMessage(String queueName, TaskModel task) {
         try {
             queueDAO.setUnackTimeout(
                     queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
+            return true;
         } catch (Exception e) {
             LOGGER.error(
                     "Error reserving in-flight message for task: {} in queue: {}",
                     task.getTaskId(),
                     queueName,
                     e);
+            return false;
         }
     }
 
