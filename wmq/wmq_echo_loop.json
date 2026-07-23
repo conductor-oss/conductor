@@ -1,0 +1,78 @@
+{
+  "name": "wmq_echo_loop",
+  "description": "Pulls messages from the workflow queue in a loop and echoes each payload",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "message_loop",
+      "taskReferenceName": "message_loop_ref",
+      "inputParameters": {},
+      "type": "DO_WHILE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopCondition": "$.message_loop_ref['iteration'] < 100",
+      "loopOver": [
+        {
+          "name": "pull_message",
+          "taskReferenceName": "pull_message_ref",
+          "inputParameters": {
+            "batchSize": 1
+          },
+          "type": "PULL_WORKFLOW_MESSAGES",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        },
+        {
+          "name": "echo_payload",
+          "taskReferenceName": "echo_payload_ref",
+          "inputParameters": {
+            "evaluatorType": "javascript",
+            "expression": "function e() { var msgs = $.messages; var msg = msgs && msgs.length > 0 ? msgs[0] : null; return { echoed: msg ? msg.payload : null, messageId: msg ? msg.id : null, receivedAt: msg ? msg.receivedAt : null }; } e();",
+            "messages": "${pull_message_ref.output.messages}"
+          },
+          "type": "INLINE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": [],
+          "onStateChange": {},
+          "permissive": false
+        }
+      ],
+      "onStateChange": {},
+      "permissive": false
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "variables": {},
+  "inputTemplate": {},
+  "enforceSchema": true,
+  "metadata": {},
+  "maskedFields": []
+}

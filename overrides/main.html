@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  <!-- Preconnect for faster font loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  {% set page_title = page.title ~ " — " ~ config.site_name if page and page.title else config.site_name ~ " — Durable Execution Engine" %}
+  {% set page_desc = page.meta.description if page and page.meta and page.meta.description else config.site_description %}
+  {% set page_url = config.site_url ~ page.url if page and page.url else config.site_url %}
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="{{ config.site_name }}" />
+  <meta property="og:url" content="{{ page_url }}" />
+  <meta property="og:title" content="{{ page_title }}" />
+  <meta property="og:description" content="{{ page_desc }}" />
+  <meta property="og:image" content="{{ config.site_url }}img/og-conductor.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ page_title }}" />
+  <meta name="twitter:description" content="{{ page_desc }}" />
+  <meta name="twitter:image" content="{{ config.site_url }}img/og-conductor.png" />
+
+  <!-- SEO -->
+  <meta name="description" content="{{ page_desc }}" />
+  <link rel="canonical" href="{{ page_url }}" />
+
+  <!-- Structured Data: SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Conductor",
+    "alternateName": ["Conductor OSS", "Netflix Conductor"],
+    "applicationCategory": "DeveloperApplication",
+    "applicationSubCategory": "Workflow Engine",
+    "operatingSystem": "Cross-platform (Docker, JVM, Kubernetes)",
+    "description": "{{ config.site_description }}",
+    "url": "https://conductor-oss.github.io/conductor",
+    "downloadUrl": "https://github.com/conductor-oss/conductor/releases",
+    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+    "isAccessibleForFree": true,
+    "codeRepository": "https://github.com/conductor-oss/conductor",
+    "programmingLanguage": ["Java", "Python", "Go", "JavaScript", "C#", "Ruby", "Rust"],
+    "keywords": ["workflow engine", "durable execution", "AI agent orchestration", "LLM orchestration", "microservice orchestration", "saga pattern", "MCP", "open source"],
+    "author": {
+      "@type": "Organization",
+      "name": "Conductor OSS",
+      "url": "https://github.com/conductor-oss"
+    },
+    "maintainer": {
+      "@type": "Organization",
+      "name": "Orkes",
+      "url": "https://orkes.io"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Structured Data: BreadcrumbList -->
+  {% if page and page.url %}
+  {% set parts = page.url.replace("index.html", "").rstrip("/").split("/") %}
+  {% if parts | length > 0 and parts[0] != "" %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "{{ config.site_url }}"
+      }{% for part in parts if part != "" %},
+      {
+        "@type": "ListItem",
+        "position": {{ loop.index + 1 }},
+        "name": "{{ part | replace('-', ' ') | replace('.html', '') | capitalize }}",
+        "item": "{{ config.site_url }}{{ parts[:loop.index] | join('/') }}/{{ part }}"
+      }{% endfor %}
+    ]
+  }
+  </script>
+  {% endif %}
+  {% endif %}
+
+  <!-- Structured Data: FAQPage (homepage only) -->
+  {% if page and (page.url == "index.html" or page.url == "" or page.url == "/") %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I run Conductor with Docker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Run 'docker run -p 8080:8080 conductoross/conductor:latest' to start Conductor with all dependencies included. The server will be available at http://localhost:8080. For production deployments with external persistence, see the Docker deployment guide."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Conductor open source?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Conductor is a fully open source workflow engine, Apache 2.0 licensed. You can self-host it on your own infrastructure with no vendor lock-in. It supports 5 persistence backends, 6 message brokers, and runs anywhere Docker runs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this the same as Netflix Conductor?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Conductor OSS is the continuation of the original Netflix Conductor repository after Netflix contributed the project to the open-source foundation."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is this project actively maintained?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Orkes is the primary maintainer of this repository and offers an enterprise SaaS platform for Conductor across all major cloud providers."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Conductor scale to handle my workload?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Conductor support durable execution?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Conductor pioneered durable execution patterns, ensuring workflows and durable agents complete reliably even in the face of infrastructure failures, process crashes, or network issues."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I replay a workflow after it completes or fails?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Conductor preserves full execution history indefinitely. You can restart from the beginning, rerun from any specific task, or retry just the failed step — even months later. Use the API (/restart, /rerun, /retry) or the UI."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Conductor orchestrate AI agents and LLMs?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Conductor provides AI agent orchestration and LLM orchestration as native capabilities. 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling and function calling, vector database integration (Pinecone, pgvector, MongoDB Atlas) for RAG. All with the same durability guarantees as any other workflow task."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Isn't JSON too limited for complex workflows?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The opposite. JSON separates orchestration from implementation, making every workflow deterministic by construction — no side effects, no hidden state. Dynamic forks, dynamic tasks, and dynamic sub-workflows let you build workflows that are more flexible than code-based engines. JSON is also AI-native: LLMs can generate and modify workflow definitions at runtime without a compile/deploy cycle."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does Conductor compare to other workflow engines?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Conductor is the only open source workflow engine with native LLM task types for 14+ providers, built-in MCP integration, and vector database support. Combined with durable execution, 7+ language SDKs, 6 message brokers, 5 persistence backends, and battle-tested scale at Netflix, Tesla, LinkedIn, and JP Morgan, Conductor provides the most complete workflow orchestration platform available."
+        }
+      }
+    ]
+  }
+  </script>
+  {% endif %}
+  <!-- Header social icons -->
+  <style>
+    .md-header__social {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-left: 1rem;
+    }
+    .md-header__social a {
+      display: flex;
+      align-items: center;
+      transition: opacity 0.2s;
+      opacity: 0.85;
+    }
+    .md-header__social a:hover {
+      opacity: 1;
+    }
+    .md-header__social svg {
+      width: 1.3rem;
+      height: 1.3rem;
+    }
+  </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var source = document.querySelector(".md-header__source");
+      if (!source) return;
+      var container = document.createElement("div");
+      container.className = "md-header__social";
+      container.innerHTML =
+        '<a href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA" target="_blank" rel="noopener" title="Join Slack" aria-label="Join Slack">' +
+          '<svg viewBox="0 0 448 512" role="img" aria-hidden="true">' +
+            '<path fill="#E01E5A" d="M94.12 315.1c0 25.9-21.16 47.06-47.06 47.06S0 341 0 315.1c0-25.9 21.16-47.06 47.06-47.06h47.06v47.06zm23.72 0c0-25.9 21.16-47.06 47.06-47.06s47.06 21.16 47.06 47.06v117.84c0 25.9-21.16 47.06-47.06 47.06s-47.06-21.16-47.06-47.06V315.1z"/>' +
+            '<path fill="#36C5F0" d="M164.9 126.12c-25.9 0-47.06-21.16-47.06-47.06S139 32 164.9 32s47.06 21.16 47.06 47.06v47.06H164.9zm0 23.72c25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06H47.06C21.16 244.96 0 223.8 0 197.9s21.16-47.06 47.06-47.06H164.9z"/>' +
+            '<path fill="#2EB67D" d="M353.88 197.9c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06s-21.16 47.06-47.06 47.06h-47.06V197.9zm-23.72 0c0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06V79.06c0-25.9 21.16-47.06 47.06-47.06 25.9 0 47.06 21.16 47.06 47.06V197.9z"/>' +
+            '<path fill="#ECB22E" d="M283.1 386.88c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06-25.9 0-47.06-21.16-47.06-47.06v-47.06h47.06zm0-23.72c-25.9 0-47.06-21.16-47.06-47.06 0-25.9 21.16-47.06 47.06-47.06h117.84c25.9 0 47.06 21.16 47.06 47.06 0 25.9-21.16 47.06-47.06 47.06H283.1z"/>' +
+          '</svg>' +
+        '</a>' +
+        '<a href="https://www.youtube.com/@orkesio" target="_blank" rel="noopener" title="YouTube" aria-label="YouTube">' +
+          '<svg viewBox="0 0 576 512" role="img" aria-hidden="true">' +
+            '<path fill="#FF0000" d="M549.655 124.083c-6.281-23.65-24.787-42.276-48.284-48.597C458.781 64 288 64 288 64S117.22 64 74.629 75.486c-23.497 6.322-42.003 24.947-48.284 48.597-11.412 42.867-11.412 132.305-11.412 132.305s0 89.438 11.412 132.305c6.281 23.65 24.787 41.5 48.284 47.821C117.22 448 288 448 288 448s170.78 0 213.371-11.486c23.497-6.321 42.003-24.171 48.284-47.821 11.412-42.867 11.412-132.305 11.412-132.305s0-89.438-11.412-132.305z"/>' +
+            '<path fill="#FFFFFF" d="M232.145 337.591V175.185l142.739 81.205-142.739 81.201z"/>' +
+          '</svg>' +
+        '</a>';
+      source.parentNode.insertBefore(container, source.nextSibling);
+    });
+  </script>
+{% endblock %}
