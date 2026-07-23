@@ -51,7 +51,7 @@ Conductor-owned DTOs. This keeps worker code independent of where the agent cont
 
 Runtime implementations are injected:
 
-- AgentSpan embedded mode supplies `ServiceAgentClient`, which calls `AgentService` directly and
+- AgentRuntime embedded mode supplies `ServiceAgentClient`, which calls `AgentService` directly and
   avoids loopback network calls.
 - External workers supply the Java SDK adapter, which calls the remote AgentController API.
 - Deployments without the Conductor agent control plane receive `UnavailableAgentClient`; remote
@@ -118,7 +118,7 @@ State mapping:
 | `ai/.../tasks/worker/A2AWorkers.java` | Portable task implementation, OSS bean registration, and cancellation hook |
 | `ai/.../agent/AgentClient.java` | Portable agent control-plane contract |
 | `ai/.../agent/ConductorAgentDelegate.java` | Durable Conductor-agent state machine |
-| `agentspan/.../service/ServiceAgentClient.java` | In-process AgentService implementation |
+| `embedded agent runtime/.../service/ServiceAgentClient.java` | In-process AgentService implementation |
 | `ai/.../a2a/A2AService.java` | Remote Agent2Agent transport |
 
 The test strategy is documented in [testing.md](./testing.md), with the coverage matrix in

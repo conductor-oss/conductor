@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 510" role="img" aria-labelledby="title desc">
+  <title id="title">Agent guardrails are enforced at each decision boundary</title>
+  <desc id="desc">A request passes through input, output, and tool-input guardrails. A human approval gate protects a consequential write. Each boundary can block, retry, repair, or escalate.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#334155"/></marker>
+    <marker id="teal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#0f766e"/></marker>
+  </defs>
+  <rect width="960" height="510" rx="24" fill="#f8fafc"/>
+  <text x="48" y="54" fill="#0f172a" font-family="system-ui, sans-serif" font-size="26" font-weight="700">Guardrails are execution boundaries</text>
+  <text x="48" y="82" fill="#475569" font-family="system-ui, sans-serif" font-size="15">Apply policy where untrusted input becomes an agent decision or an external side effect.</text>
+
+  <rect x="42" y="116" width="876" height="218" rx="18" fill="#ecfeff" stroke="#99f6e4" stroke-width="2"/>
+  <text x="67" y="148" fill="#0f766e" font-family="system-ui, sans-serif" font-size="14" font-weight="700">DURABLE EXECUTION PATH</text>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="74" y="205" width="115" height="64" rx="11" fill="#fff" stroke="#64748b" stroke-width="2"/>
+    <text x="132" y="232" fill="#0f172a" font-size="15" font-weight="700">Request</text><text x="132" y="251" fill="#475569" font-size="12">user or event</text>
+    <path d="M189 237 H231" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="237" y="183" width="138" height="108" rx="11" fill="#fff" stroke="#0f766e" stroke-width="2.5"/>
+    <circle cx="262" cy="207" r="13" fill="#ccfbf1"/><text x="262" y="212" fill="#0f766e" font-size="13" font-weight="700">1</text>
+    <text x="307" y="225" fill="#134e4a" font-size="15" font-weight="700">Input guardrail</text><text x="307" y="247" fill="#475569" font-size="12">validate or block</text><text x="307" y="266" fill="#475569" font-size="12">before model sees it</text>
+    <path d="M375 237 H417" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="423" y="205" width="110" height="64" rx="11" fill="#fff" stroke="#64748b" stroke-width="2"/>
+    <text x="478" y="232" fill="#0f172a" font-size="15" font-weight="700">Agent</text><text x="478" y="251" fill="#475569" font-size="12">plan + reason</text>
+    <path d="M533 237 H575" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="581" y="183" width="138" height="108" rx="11" fill="#fff" stroke="#0f766e" stroke-width="2.5"/>
+    <circle cx="606" cy="207" r="13" fill="#ccfbf1"/><text x="606" y="212" fill="#0f766e" font-size="13" font-weight="700">2</text>
+    <text x="650" y="225" fill="#134e4a" font-size="15" font-weight="700">Output guardrail</text><text x="650" y="247" fill="#475569" font-size="12">retry, repair,</text><text x="650" y="266" fill="#475569" font-size="12">or escalate</text>
+    <path d="M719 237 H761" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="767" y="205" width="120" height="64" rx="11" fill="#fff" stroke="#64748b" stroke-width="2"/>
+    <text x="827" y="232" fill="#0f172a" font-size="15" font-weight="700">Safe result</text><text x="827" y="251" fill="#475569" font-size="12">or next action</text>
+  </g>
+
+  <path d="M827 269 V369 H532" fill="none" stroke="#0f766e" stroke-width="2" marker-end="url(#teal-arrow)"/>
+  <text x="730" y="352" fill="#0f766e" font-family="system-ui, sans-serif" font-size="13" font-weight="700">consequential action requested</text>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="401" y="369" width="148" height="92" rx="11" fill="#fff" stroke="#0f766e" stroke-width="2.5"/>
+    <circle cx="426" cy="393" r="13" fill="#ccfbf1"/><text x="426" y="398" fill="#0f766e" font-size="13" font-weight="700">3</text>
+    <text x="475" y="411" fill="#134e4a" font-size="15" font-weight="700">Tool input guardrail</text><text x="475" y="433" fill="#475569" font-size="12">allow only approved args</text>
+    <path d="M549 415 H594" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="600" y="369" width="125" height="92" rx="11" fill="#fff7ed" stroke="#fb923c" stroke-width="2.5"/>
+    <text x="663" y="408" fill="#9a3412" font-size="15" font-weight="700">Human approval</text><text x="663" y="431" fill="#9a3412" font-size="12">pause before a write</text>
+    <path d="M725 415 H770" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="776" y="369" width="113" height="92" rx="11" fill="#fff" stroke="#64748b" stroke-width="2"/>
+    <text x="832" y="408" fill="#0f172a" font-size="15" font-weight="700">Write tool</text><text x="832" y="431" fill="#475569" font-size="12">email, payment, GitHub</text>
+  </g>
+  <text x="47" y="493" fill="#475569" font-family="system-ui, sans-serif" font-size="13">At every boundary, choose a durable outcome: <tspan fill="#0f766e" font-weight="700">retry</tspan>, <tspan fill="#0f766e" font-weight="700">raise</tspan>, <tspan fill="#0f766e" font-weight="700">fix</tspan>, or <tspan fill="#9a3412" font-weight="700">human review</tspan>.</text>
+</svg>

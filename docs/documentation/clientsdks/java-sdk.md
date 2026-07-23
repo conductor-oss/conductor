@@ -256,7 +256,7 @@ executor.initWorkers("com.mycompany.workers");  // Package to scan for @WorkerTa
 | Complexity | Simple | Complex (service mesh, load balancer) |
 
 **Learn more:**
-- [Worker SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/worker_sdk.md) — Complete worker framework documentation
+- [Worker SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/docs/workers.md) — Complete worker framework documentation
 - [Worker Examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/) — Sample worker implementations
 
 ## Monitoring Workers
@@ -341,8 +341,8 @@ workflowClient.restartWorkflow(workflowId, false);
 ```
 
 **Learn more:**
-- [Workflow SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/workflow_sdk.md) — Workflow-as-code documentation
-- [Workflow Testing](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) — Unit testing workflows
+- [Workflow SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflows.md) — Workflow-as-code documentation
+- [Workflow Testing](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflow-testing.md) — Unit testing workflows
 
 ## Troubleshooting
 
@@ -626,7 +626,7 @@ See the [Examples Guide](https://github.com/conductor-oss/java-sdk/blob/main/exa
 | [Events](https://github.com/conductor-oss/java-sdk/tree/main/examples/old/src/main/java/com/netflix/conductor/sdk/examples/events) | Event-driven workflows | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.events.EventHandlerExample` |
 | [All AI examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) | All agentic/LLM workflows | `./gradlew :examples:run --args="--all"` |
 | [RAG Workflow](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | RAG pipeline (index → search → answer) | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.agentic.RagWorkflowExample` |
-| [Media Transcoder](https://github.com/conductor-oss/file-storage-java-sdk/tree/main/examples/file-storage/media-transcoder) | File-handling pipeline: upload video → transcode → thumbnail → manifest | `mvn -f examples/file-storage/media-transcoder/pom.xml exec:java` |
+| [Media Transcoder](https://github.com/conductor-oss/java-sdk/tree/main/examples/file-storage/media-transcoder) | File-handling pipeline: upload video → transcode → thumbnail → manifest | `mvn -f examples/file-storage/media-transcoder/pom.xml exec:java` |
 
 ## API Journey Examples
 
@@ -643,9 +643,9 @@ End-to-end examples covering all APIs for each domain:
 
 | Document | Description |
 |----------|-------------|
-| [Worker SDK](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/worker_sdk.md) | Complete worker framework guide |
-| [Workflow SDK](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/workflow_sdk.md) | Workflow-as-code documentation |
-| [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) | Unit testing workflows and workers |
+| [Worker SDK](https://github.com/conductor-oss/java-sdk/blob/main/docs/workers.md) | Complete worker framework guide |
+| [Workflow SDK](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflows.md) | Workflow-as-code documentation |
+| [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflow-testing.md) | Unit testing workflows and workers |
 | [Conductor Client](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/README.md) | HTTP client library documentation |
 | [Client Metrics](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client-metrics/README.md) | Prometheus metrics collection |
 | [Spring Integration](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client-spring/README.md) | Spring Boot auto-configuration |
@@ -702,7 +702,7 @@ Workers are standard Java applications. Deploy them as you would any Java applic
 
 **How do I test workflows without running a full Conductor server?**
 
-The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) for details.
+The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflow-testing.md) for details.
 
 ## License
 

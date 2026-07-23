@@ -46,15 +46,15 @@ When a workflow fails (e.g., a tool call returns an error after the LLM planned 
 
 When you fix a bug in a task definition and [rerun from that task](../../architecture/durable-execution.md#replay-and-recovery), all tasks before it keep their persisted outputs. Upstream LLM calls are not re-executed.
 
-### 4. Loop checkpointing
+### 4. Loop checkpointing and the retry boundary
 
-Agent loops (`DO_WHILE`) checkpoint every iteration. If the loop runs 50 iterations and the agent crashes at iteration 48:
+Agent loops (`DO_WHILE`) checkpoint every iteration. If infrastructure recovers while the workflow remains active at iteration 48 of 50:
 
 - Iterations 1-47 are persisted with all their LLM calls and tool results.
 - Only iteration 48 re-executes.
 - **47 iterations of LLM tokens saved.**
 
-Without durability, the entire loop restarts from iteration 1.
+This is distinct from retrying a failed `DO_WHILE`: a retry of the failed loop restarts its loop iteration history from iteration 1. Keep tools idempotent, bound the loop, and retain the context needed to make that restart safe.
 
 
 ## Real-world cost impact
@@ -106,12 +106,13 @@ This is the same persistence model that applies to every task in Conductor — t
 | **Debugging** | Re-run the agent to reproduce. More tokens. | Inspect persisted outputs. Rerun from any task. |
 | **Deploy/scale** | In-flight work may be lost. | Workflows survive scaling events. |
 
-The bottom line: **durable execution is a cost optimization**, not just a reliability feature. Every crash, retry, pause, or debugging session that would re-execute LLM calls in a non-durable framework is free in Conductor — because the work was already persisted.
+The bottom line: **durable execution is a cost optimization**, not just a reliability feature. Completed work remains available across infrastructure recovery, pauses, and task-scoped retries. At-least-once delivery and retried `DO_WHILE` loops can still re-execute work, so idempotency and retry boundaries remain part of the design.
 
 
 ## Next steps
 
 - **[Durable Agents](durable-agents.md)** — What persists, what gets retried, and why JSON is AI-native.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** — The full persistence and recovery model.
-- **[Build Your First AI Agent](first-ai-agent.md)** — Step-by-step tutorial with durable execution built in.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable execution built in.
+- **[Durable Adaptive Graphs](dynamic-workflows.md)** — Build a governed loop with bounded fan-out and explicit recovery controls.
 - **[LLM Orchestration](llm-orchestration.md)** — 14+ native LLM providers, vector databases, content generation.

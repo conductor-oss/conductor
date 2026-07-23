@@ -246,12 +246,12 @@ This is a normal operating mode for Conductor. The workflow stays `RUNNING` with
 
 - `WAIT` tasks consume no resources. The durable timer fires when the duration elapses, even across deploys.
 - `HUMAN` tasks consume no resources. They persist until the signal arrives.
-- The `DO_WHILE` loop counter and all intermediate state survive indefinitely.
+- The `DO_WHILE` loop counter and intermediate state survive unless the workflow opts into iteration cleanup with `keepLastN`.
 - Server restarts, worker deploys, and infrastructure changes do not affect the execution.
 
 **Practical limits:**
 
-- Execution data grows linearly with the number of completed tasks. For very long loops (thousands of iterations), consider offloading large payloads to external storage and storing only pointers in task output. See [external payload storage](../../documentation/advanced/externalpayloadstorage.md).
+- Execution data grows linearly with the number of completed tasks. For very long loops (thousands of iterations), consider offloading large payloads to external storage and storing only pointers in task output. `keepLastN` can remove older loop iterations from both task output and storage; use it only when losing that older history is acceptable. See [external payload storage](../../documentation/advanced/externalpayloadstorage.md).
 - Workflow-level `timeoutSeconds` applies to the total execution. Set it high enough for your expected duration, or omit it for unlimited execution time.
 
 
@@ -271,6 +271,12 @@ This is a normal operating mode for Conductor. The workflow stays `RUNNING` with
 | Dynamic task doesn't exist | Task fails, retries | Validate LLM output before DYNAMIC resolution |
 | Network partition | Task requeued after timeout, may re-execute | Make workers idempotent; consider client-side caching |
 | Multi-day execution | Normal operation, fully durable | Offload large payloads; set appropriate timeouts |
+
+## Retrying an adaptive loop
+
+If a loop-body task fails, the enclosing `DO_WHILE` fails. Retrying that failed `DO_WHILE` starts the loop's iteration history again from iteration 1; it is not the same as a task-scoped retry that simply preserves a previous loop iteration. Infrastructure recovery while the workflow remains active preserves persisted state, and retries of ordinary failed tasks preserve completed upstream tasks. Design long-lived adaptive loops with idempotent tools, an explicit iteration cap, and enough retained context to make a restart safe.
+
+See **[Durable Adaptive Graphs](dynamic-workflows.md)** for the governed loop pattern and its `keepLastN` trade-off.
 
 
 ## Next steps

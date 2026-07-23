@@ -1,10 +1,10 @@
 ---
-description: "Conductor REST API reference — complete endpoint documentation for workflow orchestration including metadata, execution management, task polling, bulk operations, and event handlers."
+description: "Conductor REST API reference — workflow orchestration and Conductor Agents endpoints for definitions, execution management, tasks, events, and durable agent control."
 ---
 
 # API Reference
 
-Conductor exposes a full REST API for managing workflow definitions, executions, tasks, and events.
+Conductor exposes a full REST API for managing workflow definitions, executions, tasks, events, and Conductor Agents.
 
 ## Base URL
 
@@ -106,6 +106,7 @@ curl "http://localhost:8080/api/workflow/$WORKFLOW_ID"
 | **[Bulk Operations](bulk.md)** | `/api/workflow/bulk` | Pause, resume, restart, retry, terminate, or remove workflows in batch |
 | **[Event Handlers](eventhandlers.md)** | `/api/event` | Create and manage event-driven workflow triggers |
 | **[Task Domains](taskdomains.md)** | — | Route tasks to specific worker pools at runtime |
+| **[Conductor Agents](agents.md)** | `/api/agent` | Compile, deploy, start, observe, and control SDK-authored durable agents |
 
 ## Swagger UI
 

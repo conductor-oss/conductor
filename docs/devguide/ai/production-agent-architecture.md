@@ -4,6 +4,8 @@ description: "The canonical reference architecture for building production AI ag
 
 # Production agent architecture
 
+For the focused, runnable implementation of this pattern, start with **[Durable Adaptive Graphs](dynamic-workflows.md)**. Its source-backed `governed_github_pr_reviewer` v1 makes the controls concrete: four durable PR-review passes, a bounded allowlisted deep dive, a compact evidence ledger, and approval before one GitHub comment.
+
 This is the reference architecture for a durable AI agent on Conductor. Not a toy. Not a feature list. This is the exact pattern for an agent that plans, acts, waits, recovers, and runs in production.
 
 
@@ -137,10 +139,10 @@ A production agent has these concerns. Each one maps to a specific Conductor pri
 | Agent concern | Conductor primitive | How it works |
 |---|---|---|
 | **Plan next action** | `LLM_CHAT_COMPLETE` | LLM receives goal + context + tool list, returns structured plan |
-| **Select tool at runtime** | `DYNAMIC` task | LLM output determines which task type executes next |
+| **Select an approved tool at runtime** | `SWITCH` + guarded `CALL_MCP_TOOL` | The LLM proposes a route; the graph revalidates capability selection before execution. |
 | **Execute tool** | `CALL_MCP_TOOL`, `HTTP`, or `SIMPLE` worker | Tool runs with retry policy, timeout, and full I/O recording |
 | **Retry with backoff** | Task definition `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF` — no code needed |
-| **Parallel tool calls** | `FORK/JOIN` or `DYNAMIC_FORK` | Fan out to N tools in parallel, join when all complete |
+| **Parallel tool calls** | `FORK/JOIN` or `FORK_JOIN_DYNAMIC` | Fan out to a bounded set of tools in parallel, then join their results |
 | **Memory / context handoff** | `SET_VARIABLE` + workflow variables | Accumulate results across loop iterations; pass to next LLM call |
 | **Human approval gate** | `HUMAN` task | Durable pause. Survives restarts and deploys. Resumes on API signal. |
 | **Long wait (hours/days)** | `WAIT` task | Timer-based durable pause. Survives server restarts. |
@@ -155,7 +157,7 @@ A production agent has these concerns. Each one maps to a specific Conductor pri
 
 ## End-to-end workflow
 
-Here is the complete agent as a single Conductor workflow. Every step is a native system task or operator — no custom code, no external framework.
+The runnable source of truth is `ai/examples/35-governed-adaptive-agent.json` in this repository's AI examples directory. Every step is a native system task or operator — no custom code, no external framework. The compact JSON below is a conceptual baseline; use the governed PR reviewer when deploying this pattern because it adds the production guardrails described above.
 
 ```json
 {
@@ -178,15 +180,16 @@ Here is the complete agent as a single Conductor workflow. Every step is a nativ
       "taskReferenceName": "init_memory",
       "type": "SET_VARIABLE",
       "inputParameters": {
-        "context": [],
-        "actions_taken": []
+        "last_action": "",
+        "last_result": "",
+        "final_answer": ""
       }
     },
     {
       "name": "agent_loop",
       "taskReferenceName": "loop",
       "type": "DO_WHILE",
-      "loopCondition": "if ($.loop['plan'].output.result.done == true) { false; } else if ($.loop['plan'].output.iteration >= $.maxIterations) { false; } else { true; }",
+      "loopCondition": "$.plan['route'] != 'done' && $.loop['iteration'] < $.maxIterations",
       "inputParameters": {
         "maxIterations": "${workflow.input.maxIterations}"
       },
@@ -201,19 +204,23 @@ Here is the complete agent as a single Conductor workflow. Every step is a nativ
             "messages": [
               {
                 "role": "system",
-                "message": "You are a production AI agent. Goal: ${workflow.input.goal}\n\nAvailable tools: ${discover.output.tools}\n\nPrevious actions and results: ${workflow.variables.context}\n\nDecide the next action. Respond with JSON:\n- To use a tool: {\"action\": \"tool_name\", \"arguments\": {}, \"reasoning\": \"why\", \"needs_approval\": true/false, \"done\": false}\n- To finish: {\"answer\": \"final answer\", \"done\": true}"
+                "message": "You are a production AI agent. Goal: ${workflow.input.goal}\n\nAvailable tools: ${discover.output.tools}\n\nMost recent action: ${workflow.variables.last_action}\nMost recent result: ${workflow.variables.last_result}\n\nRespond with JSON only. Use {\"route\": \"execute\", \"action\": \"tool_name\", \"arguments\": {}, \"reasoning\": \"why\"} for a safe tool call, {\"route\": \"needs_approval\", \"action\": \"tool_name\", \"arguments\": {}, \"reasoning\": \"why\"} for a reviewable tool call, or {\"route\": \"done\", \"answer\": \"final answer\"} when complete."
               }
             ],
             "temperature": 0.1,
-            "maxTokens": 1000
+            "maxTokens": 1000,
+            "jsonOutput": true
           }
         },
         {
           "name": "check_if_done",
           "taskReferenceName": "done_check",
           "type": "SWITCH",
-          "evaluatorType": "javascript",
-          "expression": "$.plan.output.result.done ? 'done' : ($.plan.output.result.needs_approval ? 'needs_approval' : 'execute')",
+          "evaluatorType": "value-param",
+          "expression": "route",
+          "inputParameters": {
+            "route": "${plan.output.result.route}"
+          },
           "decisionCases": {
             "needs_approval": [
               {
@@ -242,7 +249,8 @@ Here is the complete agent as a single Conductor workflow. Every step is a nativ
                 "taskReferenceName": "mem_update_approved",
                 "type": "SET_VARIABLE",
                 "inputParameters": {
-                  "context": "${workflow.variables.context.concat([{action: plan.output.result.action, result: approved_tool_call.output.content, approved: true}])}"
+                  "last_action": "${plan.output.result.action}",
+                  "last_result": "${approved_tool_call.output.content}"
                 }
               }
             ],
@@ -262,7 +270,18 @@ Here is the complete agent as a single Conductor workflow. Every step is a nativ
                 "taskReferenceName": "mem_update",
                 "type": "SET_VARIABLE",
                 "inputParameters": {
-                  "context": "${workflow.variables.context.concat([{action: plan.output.result.action, result: tool_call.output.content}])}"
+                  "last_action": "${plan.output.result.action}",
+                  "last_result": "${tool_call.output.content}"
+                }
+              }
+            ],
+            "done": [
+              {
+                "name": "save_answer",
+                "taskReferenceName": "save_answer",
+                "type": "SET_VARIABLE",
+                "inputParameters": {
+                  "final_answer": "${plan.output.result.answer}"
                 }
               }
             ]
@@ -273,9 +292,10 @@ Here is the complete agent as a single Conductor workflow. Every step is a nativ
     }
   ],
   "outputParameters": {
-    "answer": "${loop.output.plan.output.result.answer}",
+    "answer": "${workflow.variables.final_answer}",
     "iterations": "${loop.output.iteration}",
-    "actions_taken": "${workflow.variables.context}"
+    "last_action": "${workflow.variables.last_action}",
+    "last_result": "${workflow.variables.last_result}"
   },
   "failureWorkflow": "agent_compensation_workflow"
 }
@@ -337,13 +357,13 @@ Open the Conductor UI to see:
 
 ### Add parallel research
 
-Replace a single tool call with `DYNAMIC_FORK` to fan out to multiple tools in parallel:
+Replace a single tool call with `FORK_JOIN_DYNAMIC` to fan out to multiple tools in parallel. Validate and cap the LLM-produced inputs before this task; an unbounded plan is not a safe production fan-out.
 
 ```json
 {
   "name": "parallel_research",
   "taskReferenceName": "research",
-  "type": "DYNAMIC_FORK",
+  "type": "FORK_JOIN_DYNAMIC",
   "inputParameters": {
     "dynamicTasks": "${plan.output.result.parallel_tasks}",
     "dynamicTasksInput": "${plan.output.result.task_inputs}"
@@ -430,7 +450,7 @@ The parent agent waits for the child to complete. If the child fails, the parent
 | Wait for a tool callback | `HUMAN` task or async completion | Durable pause. Resumes on API signal with payload. |
 | Sleep until a retry window | `WAIT` task | Timer-based durable pause. Zero resource consumption. |
 | Pick the next tool at runtime | `DYNAMIC` task | LLM output determines task type. Resolved at execution time. |
-| Call multiple tools in parallel | `FORK/JOIN` or `DYNAMIC_FORK` | Static or runtime-determined parallelism. Join waits for all. |
+| Call multiple tools in parallel | `FORK/JOIN` or `FORK_JOIN_DYNAMIC` | Static or runtime-determined parallelism. Join waits for all. |
 | Loop until goal is met | `DO_WHILE` | Checkpointed loop. Each iteration persisted. |
 | Delegate to a specialist agent | `SUB_WORKFLOW` or `START_WORKFLOW` | Child workflow with full lifecycle management. |
 | Accumulate context across steps | `SET_VARIABLE` | Workflow variables persisted to durable storage. |
@@ -444,8 +464,10 @@ The parent agent waits for the child to complete. If the child fails, the parent
 
 ## Next steps
 
+- **[Conductor Agents](conductor-agents.md)** — Use this architecture around a deployed SDK-authored agent graph.
+- **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.
-- **[Build Your First AI Agent](first-ai-agent.md)** — Start simple and build up to this architecture in 5 minutes.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with ordinary workflow tasks.
 - **[MCP Integration](mcp-guide.md)** — Connect to any MCP server, expose workflows as MCP tools.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.

@@ -16,8 +16,8 @@ Reviewer feedback on the open PR is unambiguous:
 The CI failure the reviewer pointed at —
 
 ```
-AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
-    java.lang.NoSuchMethodException: org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
+deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
+    java.lang.NoSuchMethodException: embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
 ```
 
 — is the symptom of a half-applied revert: the test still references the method
@@ -36,7 +36,7 @@ and [testing.md](./testing.md) — reuse the exact symbol names defined here.
 ## Tech stack (unchanged)
 
 - Java 21, Gradle multi-module build.
-- `agentspan` module: Spring `@Component` beans, Lombok
+- embedded agent runtime module: Spring `@Component` beans, Lombok
   (`@RequiredArgsConstructor`, `@Slf4j`), constructor injection of DAOs.
 - `test-harness` module: JUnit 5 integration tests running against real
   Conductor beans (no mocks).
@@ -49,8 +49,8 @@ method/helpers are `private`).
 
 | File | Module | Action |
 |---|---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | `agentspan` | Remove the backfill method, its private helpers, its constants, and the now-orphaned `IndexDAO` dependency. |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | `test-harness` | Remove the failing test method and its now-unused import. |
+| `embedded agent runtime service` | embedded agent runtime | Remove the backfill method, its private helpers, its constants, and the now-orphaned `IndexDAO` dependency. |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | `test-harness` | Remove the failing test method and its now-unused import. |
 
 ## Symbols removed (the shared contract for this change)
 
@@ -61,9 +61,9 @@ supporting docs reference the identical strings.
 
 Private constants (currently lines ~64–68):
 
-- `AGENT_CLASSIFIER_BACKFILL_VERSION` — the metadata key
+- `the agent classifier backfill version` — the metadata key
   `"agent_classifier_backfill_version"`.
-- `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` — the `int` version stamp (`2`),
+- `the agent classifier backfill version_VALUE` — the `int` version stamp (`2`),
   and its explanatory comment about router sub-workflow reindexing.
 
 Private methods:
@@ -84,7 +84,7 @@ gone:
   hand-written constructor exists to update.
 - Import `com.netflix.conductor.dao.IndexDAO` (currently line 46).
 
-### In `AgentSpanDeploymentContractEndToEndTest.java`
+### In `deployment contract test.java`
 
 - Test method `void legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
   (currently ~295–337), including its `@Test` annotation. This is the method
@@ -110,7 +110,7 @@ must survive:
 - Imports `com.netflix.conductor.common.run.SearchResult`,
   `com.netflix.conductor.common.run.WorkflowSummary`,
   `com.netflix.conductor.model.WorkflowModel`,
-  `org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers`,
+  `embedded agent runtime classifier utility`,
   and `java.util.ArrayList` — all still referenced elsewhere in the class.
 - In the test: `import org.conductoross...service.AgentService` and the
   `@Autowired private AgentService agentService;` field — other tests in the
@@ -141,7 +141,7 @@ just the visible failure.
 
 ## Verification (see [testing.md](./testing.md))
 
-- `./gradlew :agentspan:compileJava` — confirms no orphaned reference in
+- `./gradlew embedded agent runtime module (compileJava)` — confirms no orphaned reference in
   production code.
 - `./gradlew :test-harness:compileTestJava` — confirms the test file compiles
   without `java.lang.reflect.Method`.

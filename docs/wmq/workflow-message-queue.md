@@ -98,65 +98,13 @@ For workflows that process an unbounded stream of messages, wrap the task in a `
 
 The loop parks on `PULL_WORKFLOW_MESSAGES` until the next message arrives.
 
-## Using WMQ with Agentspan
+## Using WMQ with agents
 
-Agentspan wraps WMQ behind `wait_for_message_tool` and `runtime.send_message()`. See https://github.com/agentspan/agentspan/pull/23.
-
-### Define a message-waiting tool
-
-```python
-from agentspan.agents import Agent, wait_for_message_tool
-
-inbox = wait_for_message_tool(
-    name="wait_for_message",
-    description="Wait for the next incoming message.",
-)
-
-agent = Agent(
-    name="my-agent",
-    model="openai/gpt-4o",
-    tools=[inbox],
-    system_prompt="You are a message processing agent. Wait for messages and process them one by one.",
-)
-```
-
-When the agent calls this tool the runtime emits a `WAITING` event, the workflow parks on a `PULL_WORKFLOW_MESSAGES` task, and nothing runs until a message arrives.
-
-### Send a message to the running agent
-
-```python
-with AgentRuntime() as runtime:
-    handle = runtime.start(agent, "Start processing messages.")
-
-    # from anywhere, at any time:
-    runtime.send_message(handle.workflow_id, {"text": "hello"})
-```
-
-`send_message` POSTs the payload to `/api/workflow/{workflowId}/messages`. The workflow unblocks, the agent sees the message as a tool result, and the loop continues.
+WMQ is framework-neutral. Use `PULL_WORKFLOW_MESSAGES` in the Conductor graph to park execution until a message arrives, then pass the returned payload to the next task. For SDK-authored agents, see [Conductor Agents](../devguide/ai/conductor-agents.md) and keep framework-specific runtime code in its maintained SDK example.
 
 ### Kafka bridge example
 
-The pattern also works as a bridge from external event streams.
-
-Run the agent (it runs as a workflow in Conductor), then send messages from a Kafka consumer:
-
-```python
-with AgentRuntime() as runtime:
-    handle = runtime.start(agent, "Start consuming messages from Kafka.")
-
-    consumer = Consumer({...})
-    consumer.subscribe([KAFKA_TOPIC])
-
-    while True:
-        msg = consumer.poll(timeout=1.0)
-        if msg:
-            runtime.send_message(handle.workflow_id, {
-                "topic": msg.topic(),
-                "value": msg.value().decode("utf-8"),
-            })
-```
-
-Full examples: [`72_wait_for_message.py`](../sdk/python/examples/72_wait_for_message.py), [`73_wait_for_message_streaming.py`](../sdk/python/examples/73_wait_for_message_streaming.py), [`74_kafka_consumer_agent.py`](../sdk/python/examples/74_kafka_consumer_agent.py).
+The pattern also works as a bridge from external event streams. A Kafka consumer can translate each record into a `POST /api/workflow/{workflowId}/messages` request using the payload shape shown above. Keep that consumer implementation in its owning SDK or service repository; it is independent of the framework used by the workflow's agent steps.
 
 ## Configuration
 

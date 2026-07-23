@@ -2,14 +2,30 @@
 description: "A2A (Agent2Agent) integration with Conductor — call remote agents as durable workflow tasks, and expose Conductor workflows as A2A agents. Crash-safe, resumable, observable."
 ---
 
-# A2A integration
+# A2A Integration
 
-[A2A (Agent2Agent)](https://a2a-protocol.org/) is an open protocol for agents to talk to one another over HTTP/JSON-RPC. Conductor integrates A2A in **both directions**:
+[A2A (Agent2Agent)](https://a2a-protocol.org/) is the open protocol for agents to communicate over HTTP/JSON-RPC. Conductor makes each remote handoff durable, observable, and resumable.
 
-- **Client** — call a remote A2A agent from a workflow as a durable system task (`AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT`).
-- **Server** — expose any Conductor workflow as an A2A agent that other A2A clients (Google ADK, CrewAI, LangGraph, another Conductor) can discover and invoke.
-
-The integration is **durable**: a remote agent call survives a server crash, restart, or redeploy, and resumes from where it left off — the call's state lives in the workflow execution, not in a thread.
+<section class="integration-hero integration-hero--a2a" aria-labelledby="a2a-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo" src="../../assets/images/protocols/a2a.svg" alt="" />
+    <span class="integration-hero__connector">↔</span>
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Remote-agent interoperability</p>
+  <h2 id="a2a-hero-title">Interoperate with agents anywhere. Keep every handoff durable.</h2>
+  <p>Call a remote A2A agent from a workflow, or expose a Conductor workflow for any A2A client to discover and invoke.</p>
+  <div class="integration-action-grid">
+    <a class="integration-action-card" href="#call-a-remote-agent-from-a-workflow-client">
+      <span class="integration-action-card__title">Call remote agents</span>
+      <span>Use durable <code>AGENT</code>, <code>GET_AGENT_CARD</code>, and <code>CANCEL_AGENT</code> tasks.</span>
+    </a>
+    <a class="integration-action-card" href="#expose-a-workflow-as-an-a2a-agent-server">
+      <span class="integration-action-card__title">Expose workflows as agents</span>
+      <span>Give external A2A clients a discoverable, durable workflow endpoint.</span>
+    </a>
+  </div>
+</section>
 
 
 ## What is A2A
@@ -40,12 +56,12 @@ flowchart LR
 conductor.integrations.ai.enabled=true
 ```
 
-Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"` (Agent2Agent — the only runtime in OSS today); native runtimes such as LangGraph and OpenAI are planned, and the field is the extension point for them. An unrecognized `agentType` fails the task with a clear error.
+Each task takes an **`agentType`** input that selects one of the two supported `AGENT` modes. It does not select an authoring framework such as OpenAI Agents, Google ADK, or LangGraph. An unrecognized value fails the task with a clear error.
 
 **Choosing a runtime.** `agentType` picks where the agent runs:
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
-- `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** (`name`). See [Conductor agents (embedded runtime)](conductor-agents.md).
+- `agentType: "conductor"` — run a deployed **Conductor Agent** by `name`. See [Conductor Agents](conductor-agents.md).
 
 ### AGENT — send a message to an agent
 
@@ -92,7 +108,7 @@ sequenceDiagram
 
 | Field | Description |
 |---|---|
-| `agentType` | Agent runtime to use — defaults to `"a2a"`. Reserved for native runtimes (e.g. `langgraph`, `openai`) coming later; any other value is rejected today. |
+| `agentType` | `"a2a"` (default) calls a remote A2A endpoint. `"conductor"` runs a deployed Conductor Agent. It does not select a framework; other values are rejected. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |
@@ -314,23 +330,24 @@ workflow execution **is** the durable, resumable A2A task — that's the native 
 sequenceDiagram
     autonumber
     participant Client as External A2A client
-    participant S as A2AServerResource
-    participant A as A2AWorkflowAgent
-    participant E as Conductor engine
-    Client->>S: GET …/.well-known/agent-card.json
-    S-->>Client: Agent Card (one skill = the workflow)
-    Client->>S: POST message/send
-    S->>A: sendMessage
-    A->>E: startWorkflow (idempotencyKey = A2A messageId)
-    E-->>A: workflowId
-    A-->>Client: Task { id = workflowId, state: working }
-    loop tasks/get until terminal
-        Client->>S: tasks/get
-        S->>E: getExecutionStatus
-        E-->>S: RUNNING → COMPLETED
-        S-->>Client: Task { state, artifacts }
+    participant Server as A2A server
+    participant Agent as Workflow adapter
+    participant Engine as Conductor engine
+    Client->>Server: GET agent card
+    Server-->>Client: Agent Card
+    Client->>Server: POST message send
+    Server->>Agent: Send message
+    Agent->>Engine: Start workflow
+    Engine-->>Agent: Workflow ID
+    Agent-->>Client: Task is working
+    loop Until terminal
+        Client->>Server: Get task status
+        Server->>Engine: Get workflow status
+        Engine-->>Server: Workflow state
+        Server-->>Client: Task state and artifacts
     end
-    note over Client,E: blocked on HUMAN/WAIT → input-required;<br/>a follow-up message/send resumes the same execution
+    Note over Client,Engine: HUMAN or WAIT returns input-required
+    Note over Client,Engine: A follow-up message resumes the same execution
 ```
 
 Enable the server and opt the workflow in:

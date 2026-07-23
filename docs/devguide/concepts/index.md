@@ -9,6 +9,8 @@ workflows as code or as JSON, write workers in any language, and let Conductor h
 retries, timeouts, and flow control. Every step is durably recorded, so processes survive crashes,
 restarts, and network partitions without losing progress.
 
+For adaptive agentic graphs, that means an agent can select an approved path, tool, or bounded fan-out at runtime while Conductor preserves the resulting execution state for inspection, approval, retry, pause, cancellation, and recovery. See **[Durable Adaptive Graphs](../ai/dynamic-workflows.md)** for the governed pattern.
+
 Workflow definitions are JSON-native — you can version them in source control, diff changes across
 releases, generate them programmatically, or let LLMs create and modify them at runtime. Workers
 are polyglot: official SDKs exist for Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust,
@@ -18,6 +20,13 @@ Built-in system tasks handle common operations like HTTP calls, event publishing
 and sub-workflow orchestration without writing custom code. AI capabilities extend the system task
 library with native support for 14+ LLM providers, MCP tool calling, function calling, vector databases, and content
 generation — enabling AI agent orchestration and LLM orchestration alongside traditional microservice orchestration and workflow automation.
+
+<div class="agent-concepts-callout">
+  <p class="agent-concepts-kicker">Build with agents</p>
+  <h2>Choose the agent path that fits your application</h2>
+  <p>Build a declarative AI workflow directly in Conductor, compile an SDK-authored <strong>Conductor Agent</strong> into a durable graph, or call a remote A2A agent.</p>
+  <p><a href="agents.html">Understand agent concepts</a> · <a href="../../quickstart/first-agent.html">Run your first Conductor Agent</a> · <a href="../../quickstart/framework-agents.html">Bring a framework agent</a></p>
+</div>
 
 ## What can Conductor do?
 

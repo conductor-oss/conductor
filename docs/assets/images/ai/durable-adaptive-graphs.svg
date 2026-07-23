@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" role="img" aria-labelledby="title desc">
+  <title id="title">Durable adaptive graph with operational controls</title>
+  <desc id="desc">An agent plans, runs approved tools in bounded parallel fan-out, evaluates progress, and either loops or finishes. An operational control plane provides inspect, retry, approve, pause, cancel, and recover controls.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/></marker>
+    <marker id="teal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#0f766e"/></marker>
+  </defs>
+  <rect width="960" height="500" rx="24" fill="#f8fafc"/>
+  <text x="48" y="53" fill="#0f172a" font-family="system-ui, sans-serif" font-size="25" font-weight="700">Durable adaptive graph</text>
+  <text x="48" y="81" fill="#475569" font-family="system-ui, sans-serif" font-size="15">Runtime choices become durable, inspectable execution.</text>
+  <rect x="42" y="113" width="640" height="325" rx="18" fill="#ecfeff" stroke="#99f6e4" stroke-width="2"/>
+  <text x="64" y="145" fill="#0f766e" font-family="system-ui, sans-serif" font-size="14" font-weight="700">EXECUTION GRAPH</text>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="82" y="190" width="115" height="58" rx="10" fill="#fff" stroke="#0f766e" stroke-width="2"/><text x="139" y="215" fill="#134e4a" font-size="15" font-weight="700">Plan</text><text x="139" y="234" fill="#475569" font-size="12">validated JSON</text>
+    <path d="M197 219 H252" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="258" y="165" width="170" height="110" rx="10" fill="#fff" stroke="#0f766e" stroke-width="2"/><text x="343" y="192" fill="#134e4a" font-size="15" font-weight="700">Bounded execution</text><text x="343" y="213" fill="#475569" font-size="12">approved tools only</text><text x="343" y="234" fill="#475569" font-size="12">fan-out ≤ 3</text><text x="343" y="255" fill="#475569" font-size="12">approval before writes</text>
+    <path d="M428 219 H483" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="489" y="190" width="115" height="58" rx="10" fill="#fff" stroke="#0f766e" stroke-width="2"/><text x="546" y="215" fill="#134e4a" font-size="15" font-weight="700">Evaluate</text><text x="546" y="234" fill="#475569" font-size="12">continue or finish</text>
+    <path d="M546 248 V328 H139 V254" stroke="#0f766e" stroke-width="2" fill="none" marker-end="url(#teal-arrow)"/>
+    <text x="342" y="353" fill="#0f766e" font-size="13" font-weight="700">checkpoint every decision and result</text>
+    <path d="M604 219 H645" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <circle cx="658" cy="219" r="35" fill="#fff" stroke="#0f766e" stroke-width="2"/><text x="658" y="224" fill="#134e4a" font-size="14" font-weight="700">Finish</text>
+  </g>
+  <rect x="714" y="113" width="204" height="325" rx="18" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+  <text x="738" y="145" fill="#9a3412" font-family="system-ui, sans-serif" font-size="14" font-weight="700">CONTROL PLANE</text>
+  <g fill="#fff" stroke="#fb923c" stroke-width="1.5" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <rect x="739" y="168" width="70" height="38" rx="8"/><rect x="822" y="168" width="70" height="38" rx="8"/>
+    <rect x="739" y="219" width="70" height="38" rx="8"/><rect x="822" y="219" width="70" height="38" rx="8"/>
+    <rect x="739" y="270" width="70" height="38" rx="8"/><rect x="822" y="270" width="70" height="38" rx="8"/>
+  </g>
+  <g fill="#9a3412" font-family="system-ui, sans-serif" font-size="13" font-weight="650" text-anchor="middle">
+    <text x="774" y="192">Inspect</text><text x="857" y="192">Retry</text><text x="774" y="243">Approve</text><text x="857" y="243">Pause</text><text x="774" y="294">Cancel</text><text x="857" y="294">Recover</text>
+  </g>
+  <path d="M714 326 H682" stroke="#fb923c" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="816" y="357" fill="#9a3412" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">observable state, policy boundaries,</text>
+  <text x="816" y="376" fill="#9a3412" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">durable recovery</text>
+</svg>

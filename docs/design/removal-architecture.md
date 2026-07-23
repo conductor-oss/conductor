@@ -13,7 +13,7 @@ Single source of truth for this change. `removal-plan.md` and
 Two review comments on the open PR define the entire scope:
 
 1. > Fix the following failing test:
->    `AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
+>    `deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
 >    `java.lang.NoSuchMethodException: ...AgentService.backfillLegacyAgentExecutionClassifiers()`
 2. > do not add back `backfillLegacyAgentExecutionClassifiers` method. This method
 >    should not be added back.
@@ -40,7 +40,7 @@ that depends on it. This reverses the prior commit `code_subtask add-backfill-me
 ## 2. Tech stack (as relevant to this change)
 
 - **Language / build**: Java 21, Gradle. Format with `./gradlew spotlessApply`.
-- **Production module**: `agentspan`.
+- **Production module**: embedded agent runtime.
 - **Test module**: `test-harness` (integration tests).
 - **Lombok**: `AgentService` uses `@RequiredArgsConstructor`, so the constructor
   is derived from its `private final` fields. Removing a `private final` field
@@ -53,8 +53,8 @@ files**.
 
 | File | Module | Action |
 |---|---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | `agentspan` | Delete the backfill method, its two private helpers, its two constants, and the one field + import that becomes dead as a result. |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | `test-harness` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds` test method and its now-unused `java.lang.reflect.Method` import. |
+| `embedded agent runtime service` | embedded agent runtime | Delete the backfill method, its two private helpers, its two constants, and the one field + import that becomes dead as a result. |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | `test-harness` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds` test method and its now-unused `java.lang.reflect.Method` import. |
 
 Design docs (this set), under `docs/design/`:
 
@@ -76,14 +76,14 @@ current source. Line numbers are current positions (anchors, not guarantees).
 | Method | `private void backfillLegacyAgentExecutionClassifiers()` | 420 |
 | Helper | `private static int backfillVersionOf(Map<String, Object> metadata)` | 463 |
 | Helper | `private void reindexAgentExecutions(String agentName)` | 476 |
-| Constant | `private static final String AGENT_CLASSIFIER_BACKFILL_VERSION = "agent_classifier_backfill_version";` | 64 |
-| Constant | `private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;` | 68 |
+| Constant | `private static final String the agent classifier backfill version = "agent_classifier_backfill_version";` | 64 |
+| Constant | `private static final int the agent classifier backfill version_VALUE = 2;` | 68 |
 | Field | `private final IndexDAO indexDAO;` | 75 |
 | Import | the `IndexDAO` import backing the field above | imports block |
 
 Remove the Javadoc/comment blocks attached to each of the above (the method
 Javadoc at 407–419, the `reindexAgentExecutions` Javadoc at 471–475, and the two
-comment lines above the `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` constant).
+comment lines above the `the agent classifier backfill version_VALUE` constant).
 
 In the test file:
 

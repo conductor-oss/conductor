@@ -21,7 +21,7 @@ For agent orchestration and dynamic workloads, this is a structural advantage.
 
 ### Agents produce structured output&mdash;JSON is native
 
-LLMs already communicate in structured formats: function calls, tool-use schemas, JSON mode responses. Conductor's JSON workflow definitions are in the same format that agents already produce. An LLM can generate a workflow definition directly, and Conductor can execute it.
+LLMs already communicate in structured formats: function calls, tool-use schemas, JSON mode responses. Conductor's JSON workflow definitions are in the same format that agents already produce. An LLM can generate a workflow definition directly, and Conductor can execute it after the application validates the plan and applies its policy boundaries.
 
 ### Runtime generation without compile/deploy
 
@@ -34,7 +34,7 @@ Traditional workflow engines require you to define workflows in code, compile, a
 
 This enables patterns like:
 
-- **LLM-generated plans** where the agent decides the steps at runtime.
+- **LLM-generated plans** where the agent proposes approved steps at runtime.
 - **Template instantiation** where a base workflow is modified per-request.
 - **A/B testing** where different workflow versions are created and run dynamically.
 
@@ -121,13 +121,13 @@ The value of `taskToExecute` is determined by the output of a previous task (e.g
 
 ### 3. Dynamic fork/join
 
-The `DYNAMIC_FORK` operator creates parallel branches at runtime:
+The `FORK_JOIN_DYNAMIC` operator creates parallel branches at runtime:
 
 ```json
 {
   "name": "parallel_tool_calls",
   "taskReferenceName": "fork",
-  "type": "DYNAMIC_FORK",
+  "type": "FORK_JOIN_DYNAMIC",
   "inputParameters": {
     "dynamicTasks": "${plan.output.parallelTasks}",
     "dynamicTasksInput": "${plan.output.taskInputs}"
@@ -137,7 +137,7 @@ The `DYNAMIC_FORK` operator creates parallel branches at runtime:
 }
 ```
 
-The number of branches, their task types, and their inputs are all determined at runtime. This enables an agent to decide how many tools to call in parallel based on its plan.
+The number of branches, their task types, and their inputs are determined at runtime. Follow the fork with a `JOIN`, validate an agent's inputs first, and enforce a branch limit before executing the plan.
 
 
 ## Deterministic by construction
@@ -150,23 +150,21 @@ JSON workflow definitions are pure orchestration — they describe *what* runs a
 
 **Clean separation of concerns.** Orchestration logic (sequencing, branching, retries, timeouts) is defined declaratively in JSON. Implementation logic (calling APIs, transforming data, running ML models) lives in workers written in any language. Each can be tested, deployed, and versioned independently. Change a worker without touching the workflow. Change the workflow without redeploying workers.
 
-### JSON is more dynamic than code
-
-The common assumption is that code-based workflows are more flexible. The opposite is true. Code-based definitions are static at deploy time — to change the workflow, you redeploy.
+### JSON makes runtime adaptation inspectable
 
 Conductor's JSON definitions can be:
 
-- **Generated at runtime** — an LLM or planner service produces a workflow definition as JSON and Conductor executes it immediately, no compilation or deployment step.
+- **Generated at runtime** — an LLM or planner service produces a workflow definition as JSON and Conductor executes it after validation, without a compilation or deployment step.
 - **Modified per-execution** — pass a complete `workflowDef` in the start request to customize any execution on the fly.
-- **Dynamically branched** — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md) resolve which task to execute based on runtime output. [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) creates an arbitrary number of parallel branches determined by a previous task's output. [Sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized dynamically.
+- **Dynamically branched** — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md) resolve which task to execute based on runtime output. [FORK_JOIN_DYNAMIC](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) creates parallel branches determined by a previous task's output. [Sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized dynamically.
 
-Combined, these primitives make Conductor the most dynamic workflow engine available — not despite using JSON, but because of it. A JSON definition is data, and data is easy to generate, transform, and compose programmatically. Code is not.
+Combined, these primitives let teams generate, transform, compose, review, and govern runtime plans as data. A JSON definition is easy to diff, validate, version, and inspect alongside its execution.
 
 ### AI-native by design
 
-LLMs produce structured output. JSON *is* structured output. There is no impedance mismatch — an agent can generate a Conductor workflow definition directly, and Conductor executes it with full durability, observability, and replayability. No code generation, no compilation, no deployment pipeline. The workflow evolves as fast as the agent can think.
+LLMs produce structured output. JSON *is* structured output. An agent can propose a Conductor workflow definition directly, and Conductor can execute the validated plan with durability, observability, and replayability. The runtime snapshot remains stable after start, which lets teams inspect what was proposed and what actually ran.
 
-Code-based workflow engines require generated code to be compiled, tested, and deployed before it runs — a friction that fundamentally limits how dynamically an AI system can operate.
+For a governed implementation with capability allowlists, bounded fan-out, approval, and cancellation, see **[Durable Adaptive Graphs](../devguide/ai/dynamic-workflows.md)**.
 
 
 ## Exposing workflows as APIs and MCP tools

@@ -4,9 +4,56 @@ description: Run your first Conductor workflow in 2 minutes. Call an API, parse 
 
 # Run Your First Workflow
 
-**See a workflow execute in 2 minutes. Build your own in 5.**
+<section class="integration-hero integration-hero--workflow" aria-labelledby="workflow-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../img/logo.svg" alt="" />
+    <span class="integration-hero__connector">→</span>
+    <img class="integration-hero__logo" src="../assets/images/concepts/workflow-run.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Your first durable workflow</p>
+  <h2 id="workflow-hero-title">Run a real workflow in two minutes. Build your own in five.</h2>
+  <p>Start Conductor locally, call an API, transform its response, and inspect every durable step in the UI—without writing or deploying a worker.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#start-conductor">
+      <span class="integration-action-card__title">Start Conductor</span>
+      <span>Run the local server and open the workflow UI.</span>
+    </a>
+    <a class="integration-action-card" href="#phase-1-see-it-work">
+      <span class="integration-action-card__title">Run a workflow</span>
+      <span>Call an API and transform its response with native system tasks.</span>
+    </a>
+    <a class="integration-action-card" href="#phase-2-add-a-worker">
+      <span class="integration-action-card__title">Add your code</span>
+      <span>Connect a worker and watch Conductor handle a retry.</span>
+    </a>
+  </div>
+</section>
 
 You need [Node.js](https://nodejs.org/) (v16+) and Java 21+ installed. That's it.
+
+## Choose your path
+
+<div class="integration-action-grid integration-action-grid--three">
+  <div class="integration-action-card">
+    <span class="integration-action-card__title">Start with a workflow</span>
+    <span>This page: durable, declarative work with Conductor system tasks.</span>
+  </div>
+  <a class="integration-action-card" href="first-agent.html">
+    <span class="integration-action-card__title">Run your first Conductor Agent</span>
+    <span>Author a Python agent and compile it into a durable graph.</span>
+  </a>
+  <a class="integration-action-card" href="framework-agents.html">
+    <span class="integration-action-card__title">Bring a framework agent</span>
+    <span>Use Python with OpenAI Agents, LangChain, LangGraph, or Google ADK.</span>
+  </a>
+</div>
+
+```mermaid
+flowchart LR
+    Start([Start workflow]) --> Fetch[HTTP task: call an API]
+    Fetch --> Parse[INLINE task: transform response]
+    Parse --> Output[(Durable workflow output)]
+```
 
 ## Phase 1: See it work
 

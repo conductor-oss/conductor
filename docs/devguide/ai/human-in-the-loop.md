@@ -4,9 +4,43 @@ description: Human-in-the-loop patterns for AI agents — pre-execution approval
 
 # Human-in-the-loop
 
+<section class="integration-hero integration-hero--hitl" aria-labelledby="hitl-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+    <span class="integration-hero__connector">→</span>
+    <img class="integration-hero__logo" src="../../assets/images/concepts/human-review.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Durable human oversight</p>
+  <h2 id="hitl-hero-title">Put a person exactly where the decision matters.</h2>
+  <p>Pause an agent for approval, preserve its complete state, and resume the same execution when the reviewer responds—whether that takes seconds or days.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#pre-execution-review">
+      <span class="integration-action-card__title">Approve before action</span>
+      <span>Review an agent’s proposed action before it changes the world.</span>
+    </a>
+    <a class="integration-action-card" href="#conditional-post-execution-review">
+      <span class="integration-action-card__title">Escalate selectively</span>
+      <span>Require review only for high-risk, low-confidence, or sensitive outcomes.</span>
+    </a>
+    <a class="integration-action-card" href="#llm-as-judge-automated-review">
+      <span class="integration-action-card__title">Automate first-pass review</span>
+      <span>Use an LLM judge to route exceptions to a human decision.</span>
+    </a>
+  </div>
+</section>
+
 Production agents need oversight. Conductor's `HUMAN` task is a durable pause — the workflow stops, persists its state, and resumes only when a human responds via the Task Update API. This pause survives server restarts, deploys, and infrastructure changes. Whether the reviewer responds in 5 seconds or 5 days, the workflow state is preserved and execution resumes exactly where it left off.
 
 Conductor supports two distinct patterns for human oversight, plus LLM-as-judge for automated review.
+
+```mermaid
+flowchart LR
+    Plan[Agent plans an action] --> Gate[/HUMAN task: review and decide/]
+    Gate -->|Approve| Act[Execute the action]
+    Gate -->|Reject or revise| Plan
+    Gate -->|No response yet| Stored[(Durable workflow state)]
+    Stored -->|Reviewer responds| Gate
+```
 
 
 ## Pre-execution review

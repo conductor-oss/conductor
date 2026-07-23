@@ -98,8 +98,9 @@ An autonomous agent loops: plan, act, observe, repeat. On Conductor, each iterat
 ```json
 {
   "name": "agent_loop",
+  "taskReferenceName": "loop",
   "type": "DO_WHILE",
-  "loopCondition": "if ($.loop['think'].output.result.done == true) { false; } else if ($.loop['think'].output.iteration >= 20) { false; } else { true; }",
+  "loopCondition": "if ($.think['result']['route'] == 'done' || $.loop['iteration'] >= 20) { false; } else { true; }",
   "loopOver": [
     {
       "name": "think",
@@ -108,25 +109,36 @@ An autonomous agent loops: plan, act, observe, repeat. On Conductor, each iterat
         "llmProvider": "anthropic",
         "model": "claude-sonnet-4-20250514",
         "messages": [
-          {"role": "system", "message": "Goal: ${workflow.input.goal}. Previous results: ${workflow.variables.context}. Respond with {action, arguments, done}."}
-        ]
+          {"role": "system", "message": "Goal: ${workflow.input.goal}. Respond with JSON only: {\"route\": \"call_tool\", \"action\": \"tool_name\", \"arguments\": {}} or {\"route\": \"done\", \"answer\": \"final answer\"}."}
+        ],
+        "jsonOutput": true
       }
     },
     {
-      "name": "act",
-      "type": "CALL_MCP_TOOL",
+      "name": "act_or_finish",
+      "taskReferenceName": "act_or_finish",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "route",
       "inputParameters": {
-        "mcpServer": "${workflow.input.mcpServerUrl}",
-        "method": "${think.output.result.action}",
-        "arguments": "${think.output.result.arguments}"
-      }
-    },
-    {
-      "name": "remember",
-      "type": "SET_VARIABLE",
-      "inputParameters": {
-        "context": "${workflow.variables.context.concat([{action: think.output.result.action, result: act.output.content}])}"
-      }
+        "route": "${think.output.result.route}"
+      },
+      "decisionCases": {
+        "call_tool": [
+          {
+            "name": "act",
+            "taskReferenceName": "act",
+            "type": "CALL_MCP_TOOL",
+            "inputParameters": {
+              "mcpServer": "${workflow.input.mcpServerUrl}",
+              "method": "${think.output.result.action}",
+              "arguments": "${think.output.result.arguments}"
+            }
+          }
+        ],
+        "done": []
+      },
+      "defaultCase": []
     }
   ]
 }
@@ -147,7 +159,7 @@ This is the capability no other engine can match. An LLM generates a complete wo
   "type": "START_WORKFLOW",
   "inputParameters": {
     "startWorkflow": {
-      "workflowDefinition": "${planner_llm.output.result}",
+          "workflowDef": "${planner_llm.output.result}",
       "input": "${workflow.input.taskInput}"
     }
   }
@@ -156,7 +168,7 @@ This is the capability no other engine can match. An LLM generates a complete wo
 
 The LLM's output is a Conductor workflow definition. No code generation. No compilation. No deployment pipeline. The generated workflow runs with the same durable execution guarantees as any hand-written workflow — persistence, retries, observability, replay.
 
-Combined with `DYNAMIC` tasks (resolve which task to run at runtime) and `DYNAMIC_FORK` (create N parallel branches at runtime), Conductor is more dynamic than code-based engines. Not despite using JSON — because of it. Data is easier to generate, transform, and compose than code.
+Combined with `DYNAMIC` tasks (resolve an approved task at runtime) and `FORK_JOIN_DYNAMIC` (create validated, bounded parallel branches at runtime), Conductor makes runtime plans inspectable and governable as data.
 
 On code-based engines, dynamic workflows require generating source code, compiling it, deploying it, and then executing it. That friction fundamentally limits how dynamically an AI system can operate.
 
@@ -204,7 +216,7 @@ A parent agent delegates to specialist agents. Each specialist is a sub-workflow
 ```json
 {
   "name": "parallel_research",
-  "type": "DYNAMIC_FORK",
+  "type": "FORK_JOIN_DYNAMIC",
   "inputParameters": {
     "dynamicTasks": "${planner.output.result.research_tasks}",
     "dynamicTasksInput": "${planner.output.result.task_inputs}"
@@ -307,9 +319,9 @@ Every agentic pattern maps to a specific Conductor primitive:
 | **Tool-calling agent** | `LLM_CHAT_COMPLETE` + `CALL_MCP_TOOL` |
 | **Approval-gated actions** | `HUMAN` task + `SWITCH` for timeout |
 | **Planner/executor loop** | `DO_WHILE` + `SET_VARIABLE` |
-| **Multi-agent delegation** | `SUB_WORKFLOW` or `DYNAMIC_FORK` |
+| **Multi-agent delegation** | `SUB_WORKFLOW` or `FORK_JOIN_DYNAMIC` |
 | **Long wait for external system** | `HUMAN` or `WAIT` task |
-| **High fan-out research** | `DYNAMIC_FORK` + `JOIN` |
+| **High fan-out research** | `FORK_JOIN_DYNAMIC` + `JOIN` |
 | **RAG pipeline** | `LLM_SEARCH_INDEX` + `LLM_CHAT_COMPLETE` |
 | **Content generation** | `GENERATE_IMAGE` / `GENERATE_AUDIO` / `GENERATE_VIDEO` / `GENERATE_PDF` |
 | **Agent that builds its own plan** | `LLM_CHAT_COMPLETE` + `START_WORKFLOW` with inline definition |
@@ -318,7 +330,9 @@ Every agentic pattern maps to a specific Conductor primitive:
 
 ## Next steps
 
+- **[Conductor Agents](conductor-agents.md)** — Bring existing framework-native agents into durable Conductor graphs.
+- **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and native agents.
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern, fully wired.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract under every scenario.
-- **[Build Your First AI Agent](first-ai-agent.md)** — From zero to a running agent in 5 minutes.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.

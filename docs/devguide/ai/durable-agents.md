@@ -2,11 +2,48 @@
 description: What makes a durable AI agent — persisted state, crash recovery, and why JSON workflow definitions are AI-native for agent orchestration.
 ---
 
-# Durable agents
+# Durable Agents
+
+<section class="integration-hero integration-hero--durable" aria-labelledby="durable-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+    <span class="integration-hero__connector">→</span>
+    <img class="integration-hero__logo" src="../../assets/images/concepts/durable-checkpoint.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Crash-safe agent execution</p>
+  <h2 id="durable-hero-title">Every completed step becomes a durable checkpoint.</h2>
+  <p>Conductor saves progress after each LLM call, tool call, wait, and human decision—so failures resume the same agent execution instead of replaying completed work.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#what-gets-persisted">
+      <span class="integration-action-card__title">Keep every decision</span>
+      <span>Persist model calls, tool results, waits, approvals, and loop state.</span>
+    </a>
+    <a class="integration-action-card" href="#error-handling-and-compensation">
+      <span class="integration-action-card__title">Recover deliberately</span>
+      <span>Retry transient failures and compensate for completed side effects.</span>
+    </a>
+    <a class="integration-action-card" href="#multi-agent-composition">
+      <span class="integration-action-card__title">Compose durable agents</span>
+      <span>Fan out to specialists, join their results, and keep the full execution tree visible.</span>
+    </a>
+  </div>
+</section>
 
 An agent that runs in a single process is fragile. A crashed pod replays every LLM call from the beginning — burning tokens and money. A human approval that took three days is lost because a deploy bounced the server. A multi-hour research pipeline fails at step 47 and starts over from step 1.
 
-Conductor eliminates all of this. Every step of a durable agent workflow is persisted to storage as it completes. If the process dies, the agent resumes from the last completed step — not from the beginning.
+Conductor persists every completed step of a durable agent workflow. If infrastructure fails after a task completes, the execution resumes from the persisted checkpoint rather than replaying completed work. At-least-once task delivery still means side-effecting tools must be idempotent.
+
+```mermaid
+flowchart LR
+    Start([Start]) --> LLM[LLM call]
+    LLM --> Checkpoint1[(Persisted checkpoint)]
+    Checkpoint1 --> Tool[Tool call]
+    Tool --> Checkpoint2[(Persisted checkpoint)]
+    Checkpoint2 --> Wait[/Human or external wait/]
+    Wait --> Checkpoint3[(Persisted checkpoint)]
+    Checkpoint3 --> Done([Continue or complete])
+    Crash{{Crash or deploy}} -. resume .-> Checkpoint3
+```
 
 
 ## What gets persisted
@@ -140,11 +177,11 @@ Conductor models this with `SUB_WORKFLOW` tasks inside a `FORK`/`JOIN` for paral
 }
 ```
 
-Both sub-agents run concurrently. The `JOIN` waits for both to complete before the synthesize step runs. If you don't know the number of sub-agents ahead of time, use `DYNAMIC_FORK` instead — the LLM's plan output determines how many sub-agents to spawn.
+Both sub-agents run concurrently. The `JOIN` waits for both to complete before the synthesize step runs. If you don't know the number of sub-agents ahead of time, use `FORK_JOIN_DYNAMIC` instead — validate and bound the plan before it determines how many sub-agents to spawn.
 
 **What you get from multi-agent composition in Conductor:**
 
-- **Parallel execution.** Sub-agents run concurrently via `FORK`/`JOIN` or `DYNAMIC_FORK`. The join collects all results before the next step proceeds.
+- **Parallel execution.** Sub-agents run concurrently via `FORK`/`JOIN` or `FORK_JOIN_DYNAMIC`. The join collects all results before the next step proceeds.
 - **Full observability across the agent tree.** The parent workflow shows the status of each sub-agent. You can drill into any sub-workflow to see its individual LLM calls, tool calls, and decisions.
 - **Failure isolation.** A failing sub-agent does not crash the parent. The parent can catch the failure, retry with different parameters, or route to a fallback agent.
 - **Failure propagation with compensation.** If a sub-agent fails and the parent should also fail, `failureWorkflow` runs compensation across the entire agent tree.
@@ -172,7 +209,8 @@ For programmatic access, the [Workflow API](../../documentation/api/workflow.md)
 
 ## Next steps
 
+- **[Durable Adaptive Graphs](dynamic-workflows.md)** &mdash; Govern runtime-selected paths, bounded fan-out, approval, cancellation, and recovery.
+- **[Conductor Agents](conductor-agents.md)** &mdash; Compile an SDK-authored agent into the same durable, inspectable workflow graph.
 - **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.
-- **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
 - **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, vector databases, and content generation.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** &mdash; Failure matrix, state transitions, and exactly what persists.

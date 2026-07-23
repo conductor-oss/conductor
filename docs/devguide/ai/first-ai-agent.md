@@ -1,294 +1,188 @@
 ---
-description: "Build your first AI agent with Conductor in 5 minutes. Step-by-step tutorial: discover MCP tools, call an LLM, execute tools, add human approval, and make it autonomous — all with durable execution guarantees."
+description: "Build your first agentic workflow graph — compose an SDK-authored Conductor Agent with ordinary HTTP tasks in a durable, inspectable workflow."
 ---
 
-# Build your first AI agent
+# Build Your First Agentic Workflow Graph
 
-**Build a durable AI agent in 5 minutes.** Your agent will discover tools, plan actions, execute them, and summarize results — with full crash recovery, observability, and human approval built in.
+<section class="integration-hero integration-hero--first-agent" aria-labelledby="first-agent-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo" src="../../assets/images/concepts/ai-agent.svg" alt="" />
+    <span class="integration-hero__connector">→</span>
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Your first agentic workflow graph</p>
+  <h2 id="first-agent-hero-title">Keep the agent in an SDK. Put it in a durable graph.</h2>
+  <p>Author an agent with the SDK or framework you prefer, then compose it with ordinary Conductor tasks. This first graph fetches context over HTTP and sends it to a reusable <code>AGENT</code> task.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#step-1-build-and-deploy-an-agent-with-the-sdk">
+      <span class="integration-action-card__title">Author the agent</span>
+      <span>Create and deploy a reusable Conductor Agent with an SDK.</span>
+    </a>
+    <a class="integration-action-card" href="#step-2-create-the-agentic-workflow-graph">
+      <span class="integration-action-card__title">Compose the graph</span>
+      <span>Use an HTTP task and an <code>AGENT</code> task in one workflow.</span>
+    </a>
+    <a class="integration-action-card" href="#step-3-register-and-run-the-graph">
+      <span class="integration-action-card__title">Run and inspect</span>
+      <span>See every step, retry, and output in Conductor.</span>
+    </a>
+  </div>
+</section>
 
-**Prerequisites:**
-
-- Conductor running locally (`conductor server start`)
-- An LLM provider API key (OpenAI or Anthropic)
-- An MCP server running (we'll use a simple example below)
-
-## Step 1: Start an MCP server
-
-Your agent needs tools to call. MCP (Model Context Protocol) is the open standard for connecting AI agents to tools. Start a test MCP server — or use any MCP server you already have running.
-
-```bash
-pip install mcp-testkit
-mcp-testkit --transport http
+```mermaid
+flowchart LR
+    Start([Start]) --> Context[HTTP: fetch context]
+    Context --> Agent[AGENT: SDK-authored agent]
+    Agent --> End([Answer])
 ```
 
-This starts an MCP server at `http://localhost:3001/mcp` with deterministic tools for testing. You'll use this URL in the workflow definition.
+This is the useful division of responsibility:
 
-!!! tip "Any MCP server works"
-    Conductor connects to any MCP-compatible server. Use community MCP servers for GitHub, Slack, databases, or any API — or build your own. See the [MCP integration guide](mcp-guide.md) for details.
+- **SDK agent:** framework-native reasoning, tools, and model behavior.
+- **Workflow graph:** context gathering, branching, retries, human gates, fan-out/join, schedules, and cancellation.
 
+## Step 1: Build and deploy an agent with the SDK
 
-## Step 2: Configure your LLM provider
+Use the Conductor Agent SDK path to create your reusable agent. During interactive development, use `run`; for a graph that other workflows will invoke, use `deploy` and keep required workers available with `serve`.
 
-Set your API key as an environment variable before starting the server:
+Start with one of these maintained, runnable SDK paths:
 
-```bash
-# Choose one (or both):
-export OPENAI_API_KEY=sk-your-openai-key
-export ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
+- [Run Your First Conductor Agent](../../quickstart/first-agent.md) — native Python Conductor Agent.
+- [Framework Agent Quickstarts](../../quickstart/framework-agents.md) — OpenAI Agents, Google ADK, LangChain/LangChain4j, LangGraph/LangGraph4j, and Vercel AI SDK.
+- [Framework Agent Recipes](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every bridge.
+
+For this tutorial, deploy an agent named `greeter`. The agent takes a prompt and returns a concise answer. The framework code belongs in the maintained SDK example; the workflow below needs only the stable deployed-agent contract.
+
+### Define and deploy `greeter` with the Python Agent SDK
+
+Install and point the SDK at your local server:
+
+```shell
+pip install 'conductor-python[agents]'
+export CONDUCTOR_SERVER_URL=http://localhost:8080/api
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 ```
 
-Then start (or restart) the server. Conductor auto-enables providers when their API key is set.
+Configure the model provider credential on the Conductor server. Then save this as `greeter.py` and run it once as part of your deployment step:
 
+```python
+from conductor.ai.agents import Agent, AgentRuntime
 
-## Step 3: Create the agent workflow
+greeter = Agent(
+    name="greeter",
+    model="openai/gpt-4o-mini",
+    instructions="You are a friendly assistant. Keep responses brief.",
+)
 
-Save this as `my_first_agent.json`. This is a complete AI agent in four tasks — no custom code, no workers, no framework:
+if __name__ == "__main__":
+    with AgentRuntime() as runtime:
+        runtime.deploy(greeter)
+```
+
+Keep the agent available in a long-lived worker process:
+
+```python
+from conductor.ai.agents import AgentRuntime
+from greeter import greeter
+
+with AgentRuntime() as runtime:
+    runtime.serve(greeter)
+```
+
+`deploy` registers the reusable `greeter` graph without executing it; `serve` runs the required local workers until interrupted. For an interactive one-off, replace `deploy` with `runtime.run(greeter, "Say hello.")`.
+
+!!! note "Use the right `agentType`"
+    An SDK-authored Conductor Agent uses `agentType: "conductor"`. The A2A mode (`agentType: "a2a"`) is for calling a remote Agent2Agent service; it does not select LangChain, OpenAI Agents, or another framework.
+
+## Step 2: Create the agentic workflow graph
+
+Save this definition as `first_agentic_graph.json`. The public HTTP task makes the graph easy to understand and run; the `AGENT` task turns the fetched context into an answer with the deployed SDK agent.
 
 ```json
 {
-  "name": "my_first_agent",
-  "description": "AI agent that discovers tools, plans, executes, and summarizes",
+  "name": "first_agentic_graph",
+  "description": "Fetch public context, then ask a deployed Conductor Agent to explain it",
   "version": 1,
   "schemaVersion": 2,
-  "inputParameters": ["task"],
+  "inputParameters": ["question"],
   "tasks": [
     {
-      "name": "discover_tools",
-      "taskReferenceName": "discover",
-      "type": "LIST_MCP_TOOLS",
+      "name": "fetch_example_context",
+      "taskReferenceName": "fetch_context",
+      "type": "HTTP",
       "inputParameters": {
-        "mcpServer": "http://localhost:3001/mcp"
+        "http_request": {
+          "uri": "https://jsonplaceholder.typicode.com/todos/1",
+          "method": "GET"
+        }
       }
     },
     {
-      "name": "plan_action",
-      "taskReferenceName": "plan",
-      "type": "LLM_CHAT_COMPLETE",
+      "name": "ask_greeter",
+      "taskReferenceName": "ask_agent",
+      "type": "AGENT",
       "inputParameters": {
-        "llmProvider": "openai",
-        "model": "gpt-4o-mini",
-        "messages": [
-          {
-            "role": "system",
-            "message": "You are an AI agent. Available tools: ${discover.output.tools}. The user wants to: ${workflow.input.task}. Decide which tool to use. Respond with JSON: {\"method\": \"tool_name\", \"arguments\": {}}"
-          },
-          {
-            "role": "user",
-            "message": "${workflow.input.task}"
-          }
-        ],
-        "temperature": 0.1,
-        "maxTokens": 500
-      }
-    },
-    {
-      "name": "execute_tool",
-      "taskReferenceName": "execute",
-      "type": "CALL_MCP_TOOL",
-      "inputParameters": {
-        "mcpServer": "http://localhost:3001/mcp",
-        "method": "${plan.output.result.method}",
-        "arguments": "${plan.output.result.arguments}"
-      }
-    },
-    {
-      "name": "summarize_result",
-      "taskReferenceName": "summarize",
-      "type": "LLM_CHAT_COMPLETE",
-      "inputParameters": {
-        "llmProvider": "openai",
-        "model": "gpt-4o-mini",
-        "messages": [
-          {
-            "role": "user",
-            "message": "The user asked: ${workflow.input.task}\n\nTool result: ${execute.output.content}\n\nSummarize this clearly for the user."
-          }
-        ],
-        "maxTokens": 500
+        "agentType": "conductor",
+        "name": "greeter",
+        "prompt": "Question: ${workflow.input.question}\n\nContext fetched by the workflow: ${fetch_context.output.response.body.title}",
+        "pollIntervalSeconds": 5
       }
     }
   ],
   "outputParameters": {
-    "plan": "${plan.output.result}",
-    "toolResult": "${execute.output.content}",
-    "summary": "${summarize.output.result}"
+    "context": "${fetch_context.output.response.body}",
+    "answer": "${ask_agent.output.text}",
+    "agentExecutionId": "${ask_agent.output.executionId}"
   }
 }
 ```
 
-**What each task does:**
+### What the graph does
 
-| Task | Type | Purpose |
-|------|------|---------|
-| `discover` | `LIST_MCP_TOOLS` | Queries the MCP server to discover available tools |
-| `plan` | `LLM_CHAT_COMPLETE` | Sends the tool list + user task to the LLM, which picks a tool and arguments |
-| `execute` | `CALL_MCP_TOOL` | Calls the selected tool on the MCP server |
-| `summarize` | `LLM_CHAT_COMPLETE` | Summarizes the raw tool output for the user |
+| Step | Type | Why it belongs in the graph |
+|---|---|---|
+| `fetch_context` | `HTTP` | Retrieves context before the agent runs. Replace it with your API, database worker, search, or retrieval step. |
+| `ask_agent` | `AGENT` | Invokes the deployed SDK-authored `greeter` agent and records its child execution ID, state, text, and structured output. |
 
-Every task is a native Conductor system task. No workers to write, no code to deploy.
+The `AGENT` task starts the deployed agent by `name`. Set `version` to pin an agent version; omit it to use the latest deployment. On completion, its output includes `executionId`, `agentName`, `state`, `text`, and structured `output` when the agent supplies one.
 
+## Step 3: Register and run the graph
 
-## Step 4: Register and run
+Register the workflow, then run it synchronously:
 
-```bash
-# Register the workflow
-conductor workflow create my_first_agent.json
+```shell
+conductor workflow create first_agentic_graph.json
 
-# Run the agent synchronously — output prints directly to your terminal
-curl -s -X POST 'http://localhost:8080/api/workflow/execute/my_first_agent/1' \
+curl -s -X POST 'http://localhost:8080/api/workflow/execute/first_agentic_graph/1' \
   -H 'Content-Type: application/json' \
   -d '{
-    "task": "What is the weather in San Francisco?"
+    "question": "What does this fetched task ask someone to do?"
   }' | jq .
 ```
 
-Or using the CLI:
+Or use the CLI:
 
-```bash
-conductor workflow start -w my_first_agent --sync --input '{"task": "What is the weather in San Francisco?"}'
+```shell
+conductor workflow start -w first_agentic_graph --sync \
+  --input '{"question":"What does this fetched task ask someone to do?"}'
 ```
 
-Open [http://localhost:8080](http://localhost:8080) to see the execution. Click into the workflow to see each task's input, output, and timing.
-
-!!! success "What just happened"
-    Your agent discovered tools from an MCP server, asked an LLM to pick the right one, executed it, and summarized the result. Every step was persisted — if the server had crashed at any point, execution would have resumed from the last completed task. No tokens wasted, no progress lost.
-
-
-## Step 5: Add human approval
-
-Real agents need guardrails. Add a `HUMAN` task between planning and execution so a person reviews the agent's plan before it acts.
-
-Update `my_first_agent.json` — insert this task between `plan_action` and `execute_tool`:
-
-```json
-{
-  "name": "human_review",
-  "taskReferenceName": "approval",
-  "type": "HUMAN",
-  "inputParameters": {
-    "plannedAction": "${plan.output.result}",
-    "userTask": "${workflow.input.task}"
-  }
-}
-```
-
-Now when you run the agent, it pauses after planning and waits for human approval. Approve it via the UI or API:
-
-```bash
-# Approve the plan (replace TASK_ID with the actual task ID from the execution)
-curl -X POST 'http://localhost:8080/api/tasks' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "workflowInstanceId": "WORKFLOW_ID",
-    "taskId": "TASK_ID",
-    "status": "COMPLETED",
-    "outputData": {"approved": true, "reviewer": "you"}
-  }'
-```
-
-The approval is durable — the workflow stays paused indefinitely, even across server restarts and deploys, until someone approves it.
-
-
-## Step 6: Make it autonomous
-
-Turn your agent into an autonomous loop that keeps working until the task is done. Replace the linear workflow with a `DO_WHILE` loop:
-
-```json
-{
-  "name": "autonomous_agent",
-  "description": "Agent that loops until the task is complete",
-  "version": 1,
-  "schemaVersion": 2,
-  "inputParameters": ["task"],
-  "tasks": [
-    {
-      "name": "discover_tools",
-      "taskReferenceName": "discover",
-      "type": "LIST_MCP_TOOLS",
-      "inputParameters": {
-        "mcpServer": "http://localhost:3001/mcp"
-      }
-    },
-    {
-      "name": "agent_loop",
-      "taskReferenceName": "loop",
-      "type": "DO_WHILE",
-      "loopCondition": "if ($.loop['think'].output.result.done == true) { false; } else { true; }",
-      "loopOver": [
-        {
-          "name": "think",
-          "taskReferenceName": "think",
-          "type": "LLM_CHAT_COMPLETE",
-          "inputParameters": {
-            "llmProvider": "openai",
-            "model": "gpt-4o-mini",
-            "messages": [
-              {
-                "role": "system",
-                "message": "You are an autonomous agent. Available tools: ${discover.output.tools}. Previous results: ${loop.output.results}. Respond with JSON: {\"action\": \"tool_name\", \"arguments\": {}, \"done\": false} when you need to use a tool, or {\"answer\": \"final answer\", \"done\": true} when the task is complete."
-              },
-              {
-                "role": "user",
-                "message": "${workflow.input.task}"
-              }
-            ],
-            "temperature": 0.1
-          }
-        },
-        {
-          "name": "act",
-          "taskReferenceName": "act",
-          "type": "SWITCH",
-          "evaluatorType": "javascript",
-          "expression": "$.think.output.result.done ? 'done' : 'call_tool'",
-          "decisionCases": {
-            "call_tool": [
-              {
-                "name": "execute_tool",
-                "taskReferenceName": "tool_call",
-                "type": "CALL_MCP_TOOL",
-                "inputParameters": {
-                  "mcpServer": "http://localhost:3001/mcp",
-                  "method": "${think.output.result.action}",
-                  "arguments": "${think.output.result.arguments}"
-                }
-              }
-            ]
-          },
-          "defaultCase": []
-        }
-      ]
-    }
-  ],
-  "outputParameters": {
-    "answer": "${loop.output.think.output.result.answer}",
-    "iterations": "${loop.output.iteration}"
-  }
-}
-```
-
-Each iteration of the loop is a durable checkpoint. If the agent crashes at iteration 12, it resumes from iteration 12 — not from the beginning. Every LLM call and tool call is persisted and observable.
-
+Open [http://localhost:8080](http://localhost:8080) to inspect the graph. You will see the HTTP response, the `AGENT` task's child execution ID, and the final answer as separate durable records.
 
 ## What you built
 
-In 5 minutes, you built an AI agent that:
+You now have an agentic workflow graph that combines deterministic workflow work with agent reasoning:
 
-- **Discovers tools** from any MCP server at runtime
-- **Plans actions** using an LLM
-- **Executes tools** with full retry and error handling
-- **Supports human approval** as a durable pause
-- **Loops autonomously** until the task is complete
-- **Survives crashes** without losing progress or re-running LLM calls
-- **Is fully observable** — every prompt, response, tool call, and decision is recorded
+- Fetch context before the agent starts.
+- Invoke a reusable, SDK-authored agent as one workflow step.
+- Inspect and retry the HTTP and agent steps independently.
+- Return both the deterministic context and the agent's answer as a stable workflow output contract.
 
-All of this with zero custom code. The entire agent is a JSON workflow definition that Conductor executes with durable execution guarantees.
-
+From here, add ordinary Conductor capabilities around the same agent: a `HUMAN` approval gate, `SWITCH` routing, parallel specialist agents with `FORK_JOIN`, schedules, or cancellation propagation.
 
 ## Next steps
 
-- **[MCP Integration](mcp-guide.md)** — Connect to any MCP server, expose workflows as MCP tools.
-- **[Human-in-the-Loop](human-in-the-loop.md)** — Advanced approval patterns: conditional review, LLM-as-judge.
-- **[Dynamic Workflows](dynamic-workflows.md)** — Agents that generate their own execution plans as JSON.
-- **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.
-- **[LLM Orchestration](llm-orchestration.md)** — 12 native LLM providers, vector databases, content generation.
+- [Conductor Agents](conductor-agents.md) — complete `AGENT` input, output, wait/resume, timeout, and cancellation contract.
+- [Framework Agent Recipes](agent-framework-recipes.md) — choose the supported SDK bridge for your framework.
+- [Human-in-the-Loop](human-in-the-loop.md) — pause a graph for review and resume an agent safely.
+- [A2A Integration](a2a-integration.md) — use a remote A2A agent instead of an SDK-authored Conductor Agent.

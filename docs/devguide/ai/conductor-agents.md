@@ -1,175 +1,130 @@
 ---
-description: "Conductor agents — run an agent on the embedded agentspan runtime as a durable AGENT task. The conductor branch of the AGENT task, its input/output contract, human-in-the-loop resume, and durability guards."
+description: "Conductor Agents — compile SDK-authored agents into durable, inspectable Conductor graphs and use them as reusable AGENT tasks."
 ---
 
-# Conductor agents (embedded runtime)
+# Conductor Agents
 
-The `AGENT` task selects its runtime with an **`agentType`** input:
+<section class="integration-hero integration-hero--agents" aria-labelledby="conductor-agents-hero-title">
+  <div class="integration-hero__identity integration-hero__identity--conductor" aria-hidden="true">
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">SDK-authored durable agents</p>
+  <h2 id="conductor-agents-hero-title">Keep your framework. Get a durable graph.</h2>
+  <p>Author agents with the SDK or framework your team already uses. Conductor compiles the result into an inspectable, retryable graph that larger workflows can invoke.</p>
+  <div class="agent-framework-strip" aria-label="Supported Conductor Agent authoring paths">
+    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/openai.svg" alt="" />OpenAI Agents</span>
+    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/google-adk.svg" alt="" />Google ADK</span>
+    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/langchain.svg" alt="" />LangChain</span>
+    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/langgraph.svg" alt="" />LangGraph</span>
+    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/vercel.svg" alt="" />Vercel AI SDK</span>
+  </div>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="../../quickstart/first-agent.html">
+      <span class="integration-action-card__title">Author in an SDK</span>
+      <span>Run a native Python Conductor Agent interactively.</span>
+    </a>
+    <a class="integration-action-card" href="agent-framework-recipes.html">
+      <span class="integration-action-card__title">Bring a framework agent</span>
+      <span>Choose a supported bridge and its maintained example.</span>
+    </a>
+    <a class="integration-action-card" href="#use-a-deployed-agent-in-a-workflow">
+      <span class="integration-action-card__title">Use it in a workflow</span>
+      <span>Invoke the deployed graph as a reusable <code>AGENT</code> task.</span>
+    </a>
+  </div>
+</section>
 
-- `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint over HTTP. See [A2A integration](a2a-integration.md).
-- `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** in-process. This page.
+Conductor Agents are distinct from building a declarative AI workflow directly with `LLM_CHAT_COMPLETE`, MCP, `HUMAN`, and control-flow tasks. Both paths are first-class: use direct tasks when the graph is the application, and Conductor Agents when you bring framework-native logic into a broader durable process.
 
-Both values drive the same `AGENT` task type with one consistent input/output contract; the branch is chosen per task by `agentType`.
+The SDK-created agent is compiled into ordinary Conductor workflow definitions. That makes every LLM call, tool invocation, wait, retry, and branch visible in the UI and API, and lets the same graph compose with ordinary tasks, `SWITCH`, `FORK_JOIN`, `HUMAN`, schedules, and workflow cancellation.
 
+## Lifecycle
 
-## What it is
+Use the SDK that owns the framework bridge for framework code, package versions, and runnable examples. The stable lifecycle is:
 
-With `agentType: "conductor"`, the `AGENT` task runs a registered agent on Conductor's embedded agentspan runtime instead of calling out to a remote agent. Like the A2A branch, it is **non-blocking**: a fast reply completes immediately; a long-running run moves to `IN_PROGRESS` and is polled at a cadence (no worker thread is held), so the call survives a server crash, restart, or redeploy and resumes from persisted state.
+1. **Create** an agent from a supported framework object in the SDK.
+2. **Plan** or inspect the generated graph during development and CI.
+3. **Deploy** the agent to register a reusable, versioned Conductor Agent.
+4. **Serve** its workers where the SDK bridge requires a long-running worker process.
+5. **Run** directly for interactive use, or invoke the deployed agent by name from an `AGENT` task in a larger workflow.
 
-This branch requires the embedded runtime, enabled with:
+For interactive development, use `run`. For production, deploy the agent and serve its workers so that workflow callers can start the stable deployed version. See [Framework Agent Recipes](agent-framework-recipes.md) for maintained SDK documentation and executable examples.
 
-```properties
-agentspan.embedded=true
-```
+For server setup, start a local Conductor server and configure the SDK with `CONDUCTOR_SERVER_URL`. The maintained SDK setup guides are the source of truth for deployment-specific agent runtime configuration.
 
-On a deployment without it, the runtime bean is absent and any `agentType: "conductor"` task fails terminally with:
+## Use a deployed agent in a workflow
 
-```
-Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)
-```
+`agentType` chooses the **execution mode**, not the authoring framework:
 
+- `agentType: "a2a"` (default) calls a remote A2A endpoint.
+- `agentType: "conductor"` runs a deployed Conductor Agent selected by `name`.
 
-## Task input
-
-The conductor branch parses its task input as a `ConductorAgentRequest` — an `AgentStartRequest` (the same DTO `POST /api/agent/start` takes) plus four AGENT-task-only orchestration fields for resuming a run and bounding how long it polls. Fields specific to the A2A branch (`agentUrl`, `streaming`, `pushNotification`, `headers`, `contextId`, `taskId`, `parts`, `message`, …) don't exist on this contract and are ignored here.
-
-| Field | Type | Meaning |
-|---|---|---|
-| `agentType` | String | Must be `"conductor"` to select this branch. |
-| `name` | String | **Required** on a fresh start. Name of a previously deployed agent definition. |
-| `version` | Integer | Optional deployed agent version. The latest version is used when omitted. |
-| `prompt` | String | **Required** on a fresh start. The single prompt field — no fallback chain. |
-| `sessionId` | String | Optional. Associates the run with an existing conversation/session. |
-| `runId` | String | Per-execution isolation key for stateful agents. When set, every worker tool task is routed to this domain so concurrent instances of the same agent don't cross-talk. |
-| `context` | Map | Extra context values passed to the run. |
-| `media` | List\<String\> | Media references attached to the prompt. |
-| `agentConfig` | AgentConfig | Inline agent construction details. Mutually exclusive with identifying the agent by `name`/`version`. |
-| `framework` | String | Framework identifier for foreign agents (e.g. `"openai"`, `"google_adk"`). Null for native agents. |
-| `rawConfig` | Map | Raw framework-specific agent config. Used when `framework` is non-null. |
-| `skillRef` | Map | Reference to a server-registered skill package. Used with `framework="skill"` when the caller wants the server to resolve the raw skill config from the skill registry instead of sending it inline. |
-| `timeoutSeconds` | Integer | Per-call timeout override (seconds). Applied server-side to the workflow definition. |
-| `idempotencyKey` | String | Client-supplied idempotency key. If omitted on a fresh start, the conductor branch fills in a deterministic, restart-stable key itself (see [Durability](#durability)). |
-| `static_plan` | Map | Optional deterministic plan for `Strategy.PLAN_EXECUTE` harnesses — replays a recorded plan instead of running an LLM planner. Note the wire key is `static_plan` (snake_case), not `staticPlan`. |
-| `executionId` | String | When set, **resume** an in-flight run instead of starting a new one (see [Human-in-the-loop](#human-in-the-loop--resume)). |
-| `pollIntervalSeconds` | Integer | Poll cadence while the run is not terminal. Default 5. |
-| `maxDurationSeconds` | Integer | Absolute deadline (seconds) for the run to reach a terminal state. Default 86400 (24h). |
-| `maxPollFailures` | Integer | Consecutive transient poll failures (executor unreachable) tolerated before failing terminally. Default 30. |
-
-
-## Task output
-
-The task writes these keys to its output (`ConductorAgentResults`):
-
-| Output key | Meaning |
-|---|---|
-| `executionId` | Runtime-assigned execution id — carry it into a follow-up `AGENT` call to resume. |
-| `agentName` | Name of the executed agent. |
-| `sessionId` | Session id the execution belongs to. |
-| `state` | Normalized execution state (uppercase): `RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, `CANCELED`. |
-| `waiting` | `true` when the run paused for external input (human answer / tool result). |
-| `pendingTool` | The pending tool/human request surfaced while waiting. |
-| `text` | Latest / final text emitted by the agent. |
-| `output` | Structured output of a completed run. |
-
-The agent's execution state maps onto the Conductor task status as follows:
-
-| `state` | Conductor task status | Notes |
-|---|---|---|
-| `RUNNING` | `IN_PROGRESS` | Keep polling at the evaluation cadence. |
-| `WAITING` | `COMPLETED` | Sets `waiting=true` and surfaces `pendingTool` / `text`. Resume with a new `AGENT` call carrying `executionId`. |
-| `COMPLETED` | `COMPLETED` | Surfaces `output` + `text`. |
-| `FAILED` | `FAILED` | Sets `reasonForIncompletion`. |
-| `CANCELED` | `CANCELED` | Sets `reasonForIncompletion` when present. |
-
-Downstream tasks read these with `${agent.output.text}`, `${agent.output.executionId}`, etc.
-
-
-## Minimal workflow
-
-A single `AGENT` task that runs an embedded agent to completion:
+OpenAI Agents, Google ADK, LangGraph, and other supported bridges are SDK authoring paths. They are not `agentType` values.
 
 ```json
 {
-  "name": "conductor_agent_basic",
-  "version": 1,
-  "schemaVersion": 2,
-  "tasks": [
-    {
-      "name": "run_agent",
-      "taskReferenceName": "agent",
-      "type": "AGENT",
-      "inputParameters": {
-        "agentType": "conductor",
-        "name": "${workflow.input.name}",
-        "prompt": "${workflow.input.prompt}",
-        "pollIntervalSeconds": 5
-      }
-    }
-  ]
-}
-```
-
-Register and run it (the embedded runtime must be enabled — `agentspan.embedded=true`):
-
-```bash
-# register
-curl -X POST 'http://localhost:8080/api/metadata/workflow' \
-  -H 'Content-Type: application/json' \
-  -d @conductor_agent_basic.json
-
-# run
-curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_basic' \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"my-agent","prompt":"Summarize the latest release notes"}'
-```
-
-
-## Human-in-the-loop / resume
-
-When the agent pauses for external input (a human answer or a tool result), it reaches `WAITING`. The `AGENT` task then **completes** with `waiting=true` and surfaces the pending request in `pendingTool` (and any `text`), rather than holding a thread open.
-
-The workflow branches on that state and resumes by issuing a **second `AGENT` task carrying the same `executionId`** — the resume feeds the caller's message back into the waiting execution as the pending tool/human result:
-
-```json
-{
-  "name": "resume_agent",
-  "taskReferenceName": "resume",
+  "name": "run_agent",
+  "taskReferenceName": "run_agent_ref",
   "type": "AGENT",
   "inputParameters": {
     "agentType": "conductor",
-    "executionId": "${agent.output.executionId}",
-    "prompt": "${workflow.input.answer}"
+    "name": "planner",
+    "prompt": "${workflow.input.prompt}",
+    "pollIntervalSeconds": 5
   }
 }
 ```
 
-`name` is not required on a resume — the `executionId` identifies the in-flight run. Full example: `ai/examples/32-conductor-agent-human-in-loop.json`.
+On a fresh call, `name` and `prompt` are required. `version` optionally pins the deployed agent version; omit it to use the latest version. `sessionId`, `runId`, `context`, `media`, `model`, `timeoutSeconds`, and `idempotencyKey` are available when the deployed agent contract needs them. The runtime creates a restart-stable idempotency key if one is not supplied.
 
+## Output and durable execution contract
 
-## Durability
+The `AGENT` task writes `executionId`, `agentName`, `state`, `text`, and, for completed runs, structured `output`. Its `state` is the normalized A2A lifecycle value: `working`, `input-required`, `completed`, `failed`, or `canceled`.
 
-The conductor branch mirrors the A2A branch's guards; the run's state lives in the persisted task output, not a thread.
+| Runtime state / output `state` | Conductor task status | Meaning |
+|---|---|---|
+| `RUNNING` / `working` | `IN_PROGRESS` | The task polls again after `pollIntervalSeconds` (default 5). |
+| `WAITING` / `input-required` | `COMPLETED` | The run paused for human or tool input; output includes `waiting: true` and may include `pendingTool`. |
+| `COMPLETED` / `completed` | `COMPLETED` | Output includes the final `text` and structured `output`. |
+| `FAILED` / `failed` | `FAILED` | The task includes the completion reason. |
+| `CANCELED` / `canceled` | `CANCELED` | The task includes the cancellation reason when available. |
 
-- **Deterministic idempotency key.** A fresh start uses a restart-stable key so a re-issued start (after a retry or restart) is deduped by the runtime:
+`maxDurationSeconds` bounds the full run (default 86400 seconds) and `maxPollFailures` bounds consecutive transient poll failures (default 30). Both fail the task terminally and make a best-effort cancellation of the child execution. These guards are separate from normal task-definition timeouts.
 
-    ```
-    "conductor-agent-" + workflowInstanceId + ":" + referenceTaskName + ":" + iteration
-    ```
+## Resume and cancellation
 
-    It is built from retry-stable identity — **not** `taskId`, which changes per retry attempt.
-- **Absolute deadline.** Anchored once at start; the task fails terminally after `maxDurationSeconds` (default 86400) if the run never reaches a terminal state. The abandoned child execution is also given a best-effort `terminateWorkflow` call so it doesn't keep running orphaned.
-- **Poll-failure cap.** Consecutive transient poll failures are counted and reset to 0 on any success; the task fails terminally at `maxPollFailures` (default 30), with the same best-effort child termination.
+When an agent waits for external input, its first `AGENT` task completes rather than holding a worker. A workflow can collect the answer in a `HUMAN` task and resume the same run with another `AGENT` task:
 
-`maxDurationSeconds`/`maxPollFailures` are this branch's own liveness guards, independent of the Conductor engine's standard task-level timeout (`taskDefinition.timeoutSeconds`/`responseTimeoutSeconds`/`timeoutPolicy`, set inline on the `AGENT` `WorkflowTask` — not as an `inputParameters` field). Note: as of this writing, the engine does not invoke a system task's `cancel()` hook when the task's *own* `TaskDef` timeout fires (it only does so for still-running sibling tasks once the whole workflow becomes terminal) — a general gap that also affects `SUB_WORKFLOW`. Until that's addressed at the engine level, `maxDurationSeconds` is the reliable way to guarantee the child agent execution is cleaned up.
+```json
+{
+  "name": "resume_agent",
+  "taskReferenceName": "resume_agent_ref",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "executionId": "${run_agent_ref.output.executionId}",
+    "prompt": "${collect_answer_ref.output.answer}"
+  }
+}
+```
 
+On a resume, `executionId` identifies the run and `prompt` provides the response; `name` is not required. Workflow cancellation is propagated to an in-flight Conductor Agent on a best-effort basis.
 
-## Examples
+## Guardrails and evaluations
 
-Runnable workflow definitions live in [`ai/examples/`](https://github.com/conductor-oss/conductor/tree/main/ai/examples):
+SDK-authored agents can compile runtime guardrails for agent output and tool input or output. Choose a deterministic regex guardrail for format, PII, and known-dangerous patterns; use an LLM guardrail for semantic policy; use a custom or external guardrail when policy needs an application service. A guardrail can retry, fail closed, provide a custom repair, or pause for durable human review. Put the strongest guardrail directly before a consequential tool call.
 
-| File | Shows |
+Before promotion, evaluate the recorded agent behavior—not only its final text. The Python SDK's evaluation harness can assert tool selection and arguments, handoffs, guardrail events, turn counts, and terminal state, then use an optional LLM judge for qualitative criteria. See [Agent Guardrails](agent-guardrails.md) and [Agent Evals](agent-evals.md) for the runtime policy and CI patterns.
+
+## Workflow-integration recipes
+
+These repository examples deliberately contain only the stable workflow contract. They are framework-agnostic; create and deploy `planner` / `researcher` with the SDK bridge appropriate to your framework.
+
+| Recipe | What it demonstrates |
 |---|---|
-| `31-conductor-agent-basic.json` | Run an embedded agent to completion (poll mode) |
-| `32-conductor-agent-human-in-loop.json` | `WAITING` → resume with the same `executionId` |
-| `33-conductor-agent-multi-agent.json` | `FORK_JOIN` running two independent AGENT (conductor) tasks concurrently |
-| `34-conductor-agent-cancel.json` | Canceling an in-flight run via `TERMINATE` maps to `CANCELED` on the AGENT task |
+| [`31-conductor-agent-basic.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/31-conductor-agent-basic.json) | A reusable deployed agent as one step in a workflow. |
+| [`32-conductor-agent-human-in-loop.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/32-conductor-agent-human-in-loop.json) | `WAITING` → `HUMAN` → resume with `executionId`. |
+| [`33-conductor-agent-multi-agent.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/33-conductor-agent-multi-agent.json) | Parallel specialist agents inside a `FORK_JOIN` / `JOIN` graph. |
+| [`34-conductor-agent-cancel.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/34-conductor-agent-cancel.json) | Cancellation propagation from the parent graph. |
+
+Next: choose a framework route in [Framework Agent Recipes](agent-framework-recipes.md), or compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md).

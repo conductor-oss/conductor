@@ -9,7 +9,7 @@ offending test gone.
 ## 1. What is removed and why no replacement is added
 
 The deleted test —
-`AgentSpanDeploymentContractEndToEndTest.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds`
+`deployment contract test.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds`
 — asserted the behavior of `backfillLegacyAgentExecutionClassifiers`, a
 `private` maintenance routine reached only via reflection. Per the reviewer, that
 method must not exist. There is no public method, REST endpoint, CLI command, or
@@ -23,7 +23,7 @@ Run the affected integration suite with the removed test absent:
 
 ```bash
 ./gradlew :test-harness:test --tests \
-  "com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest"
+  "deployment contract test"
 ```
 
 Expected: build succeeds; the class runs with the backfill test no longer
@@ -36,13 +36,13 @@ legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
 
 no longer appears because the test that produced it is gone.
 
-Run the `agentspan` unit tests to confirm the production removal broke nothing:
+Run the embedded agent runtime unit tests to confirm the production removal broke nothing:
 
 ```bash
-./gradlew :agentspan:test
+./gradlew embedded agent runtime module (test)
 ```
 
-Expected: pass. No existing `agentspan` test references `backfill*`,
+Expected: pass. No existing embedded agent runtime test references `backfill*`,
 `reindexAgentExecutions`, or `indexDAO` on `AgentService` (verified by the grep
 in `backfill-method-removal-plan.md` §3).
 
@@ -54,7 +54,7 @@ depended on that field or on `IndexDAO` being an `AgentService` constructor
 argument:
 
 ```bash
-./gradlew :agentspan:compileJava :test-harness:compileTestJava
+./gradlew embedded agent runtime module (compileJava) :test-harness:compileTestJava
 ```
 
 Expected: both compile with no unused-import or missing-symbol errors.
@@ -73,9 +73,9 @@ Aligned with `backfill-method-removal-architecture.md` §7:
 
 1. Repo-wide grep for `backfillLegacyAgentExecutionClassifiers`,
    `backfillVersionOf`, `reindexAgentExecutions`, and
-   `AGENT_CLASSIFIER_BACKFILL_VERSION` under `agentspan/src` and
+   `the agent classifier backfill version` under `embedded agent runtime source` and
    `test-harness/src` returns nothing.
-2. `AgentSpanDeploymentContractEndToEndTest` compiles and passes without the
+2. `deployment contract test` compiles and passes without the
    removed test.
-3. `:agentspan:test` passes.
+3. `embedded agent runtime module (test)` passes.
 4. `spotlessApply` leaves the tree clean.

@@ -2,7 +2,7 @@
   "name": "conductor_agent_basic",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Minimal single-task run against the embedded agentspan runtime: an AGENT (conductor) task runs the registered 'planner' agent to completion (poll mode) and the workflow surfaces its text, output, and state.",
+  "description": "Framework-agnostic Conductor Agents recipe: an AGENT task invokes the deployed 'planner' agent to completion and surfaces its text, output, and state.",
   "tasks": [
     {
       "name": "run_agent",

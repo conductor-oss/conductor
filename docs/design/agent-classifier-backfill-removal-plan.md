@@ -13,7 +13,7 @@ reference was one of the members already scheduled for deletion. Confirm each
 ## 1. `AgentService.java`
 
 Path:
-`agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java`
+`embedded agent runtime service`
 
 ### 1a. Delete the backfill method
 
@@ -37,11 +37,11 @@ private void backfillLegacyAgentExecutionClassifiers() { ... }
 ### 1c. Delete constants that only the removed methods read
 
 ```java
-private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+private static final String the agent classifier backfill version =
         "agent_classifier_backfill_version";
 // Version 2 additionally reindexes generated router sub-workflows, which older compiler
 // output persisted as ordinary workflow executions.
-private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
+private static final int the agent classifier backfill version_VALUE = 2;
 ```
 
 Remove the two associated comment lines with them.
@@ -70,10 +70,10 @@ sufficient; then delete its now-orphaned `import`.
 > `executionDAO`, `metadataDAO`, and `indexDAO` are used broadly across
 > `AgentService` and are likely to stay. Verify, do not assume.
 
-## 2. `AgentSpanDeploymentContractEndToEndTest.java`
+## 2. `deployment contract test.java`
 
 Path:
-`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java`
+`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java`
 
 ### 2a. Delete the test method
 
@@ -99,7 +99,7 @@ Remove `import java.lang.reflect.Method;` **iff** no other test in the file uses
 ## 3. Formatting and build
 
 - Run `./gradlew spotlessApply`.
-- Confirm compile: `./gradlew :agentspan:compileJava`.
+- Confirm compile: `./gradlew embedded agent runtime module (compileJava)`.
 
 ## Change budget
 

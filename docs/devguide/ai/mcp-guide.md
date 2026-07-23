@@ -2,9 +2,34 @@
 description: "MCP (Model Context Protocol) integration with Conductor — connect AI agents to external tools, discover tools at runtime, execute with durable retry, and expose workflows as MCP tools."
 ---
 
-# MCP integration
+# MCP Integration
 
 MCP (Model Context Protocol) is the open standard for connecting AI agents to tools and data sources. Conductor provides native MCP integration — discover tools, call them with full durability, and expose your own workflows as MCP tools.
+
+<section class="integration-hero integration-hero--mcp" aria-labelledby="mcp-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo" src="../../assets/images/protocols/mcp.svg" alt="" />
+    <span class="integration-hero__connector">→</span>
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Durable tool orchestration</p>
+  <h2 id="mcp-hero-title">Give every agent a durable tool layer.</h2>
+  <p>Use MCP for standardized tool discovery and invocation; Conductor adds durable execution, observability, and workflow composition around those calls.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#list_mcp_tools-discover-available-tools">
+      <span class="integration-action-card__title">Discover tools</span>
+      <span>Inspect an MCP server’s available capabilities at runtime.</span>
+    </a>
+    <a class="integration-action-card" href="#call_mcp_tool-execute-a-tool">
+      <span class="integration-action-card__title">Call tools</span>
+      <span>Run a selected tool as a native Conductor task.</span>
+    </a>
+    <a class="integration-action-card" href="#exposing-workflows-as-mcp-tools">
+      <span class="integration-action-card__title">Expose workflows</span>
+      <span>Publish durable workflow logic as an MCP tool.</span>
+    </a>
+  </div>
+</section>
 
 
 ## What is MCP
@@ -239,7 +264,7 @@ Every task type here — `LIST_MCP_TOOLS`, `LLM_CHAT_COMPLETE`, `CALL_MCP_TOOL`,
 
 ## Next steps
 
-- **[Build Your First AI Agent](first-ai-agent.md)** — Step-by-step tutorial using MCP.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.
 - **[Dynamic Workflows](dynamic-workflows.md)** — Agents that generate their own execution plans.
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Approval patterns for MCP tool calls.
 - **[LLM Orchestration](llm-orchestration.md)** — 12 native LLM providers, vector databases, content generation.

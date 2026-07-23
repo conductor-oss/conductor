@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" role="img" aria-labelledby="title desc">
+  <title id="title">Agent evaluation pipeline from curated fixture to release decision</title>
+  <desc id="desc">A curated test fixture runs an agent against sandbox tools, producing a durable trace. Deterministic assertions and an optional semantic judge inform a release decision. Sanitized traces can be recorded and replayed for regression tests.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#334155"/></marker>
+    <marker id="purple-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#7e22ce"/></marker>
+  </defs>
+  <rect width="960" height="500" rx="24" fill="#f8fafc"/>
+  <text x="48" y="54" fill="#0f172a" font-family="system-ui, sans-serif" font-size="26" font-weight="700">Evaluate the path, not only the final text</text>
+  <text x="48" y="82" fill="#475569" font-family="system-ui, sans-serif" font-size="15">Turn representative requests into repeatable evidence before promoting an agent version.</text>
+
+  <rect x="42" y="116" width="876" height="210" rx="18" fill="#f5f3ff" stroke="#ddd6fe" stroke-width="2"/>
+  <text x="67" y="148" fill="#6b21a8" font-family="system-ui, sans-serif" font-size="14" font-weight="700">LIVE OR SANDBOX EVALUATION</text>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="75" y="198" width="130" height="72" rx="11" fill="#fff" stroke="#7e22ce" stroke-width="2"/>
+    <text x="140" y="226" fill="#581c87" font-size="15" font-weight="700">Curated fixture</text><text x="140" y="247" fill="#475569" font-size="12">prompt + expectation</text>
+    <path d="M205 234 H248" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="254" y="184" width="158" height="100" rx="11" fill="#fff" stroke="#7e22ce" stroke-width="2"/>
+    <text x="333" y="216" fill="#581c87" font-size="15" font-weight="700">Agent run</text><text x="333" y="238" fill="#475569" font-size="12">sandbox tools</text><text x="333" y="258" fill="#475569" font-size="12">real orchestration</text>
+    <path d="M412 234 H455" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="461" y="184" width="158" height="100" rx="11" fill="#fff" stroke="#7e22ce" stroke-width="2"/>
+    <text x="540" y="216" fill="#581c87" font-size="15" font-weight="700">Durable trace</text><text x="540" y="238" fill="#475569" font-size="12">turns, tools, guards</text><text x="540" y="258" fill="#475569" font-size="12">handoffs, terminal state</text>
+    <path d="M619 234 H662" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="668" y="184" width="178" height="100" rx="11" fill="#fff" stroke="#7e22ce" stroke-width="2"/>
+    <text x="757" y="216" fill="#581c87" font-size="15" font-weight="700">Release evidence</text><text x="757" y="238" fill="#475569" font-size="12">pass, fail, or investigate</text><text x="757" y="258" fill="#475569" font-size="12">with the trace attached</text>
+  </g>
+  <g font-family="system-ui, sans-serif">
+    <rect x="107" y="354" width="290" height="102" rx="14" fill="#ecfeff" stroke="#99f6e4" stroke-width="2"/>
+    <text x="132" y="384" fill="#0f766e" font-size="15" font-weight="700">Deterministic assertions</text>
+    <text x="132" y="408" fill="#475569" font-size="13">route • required/forbidden tools • arguments</text>
+    <text x="132" y="430" fill="#475569" font-size="13">guardrail event • turn limit • terminal state</text>
+    <rect x="566" y="354" width="290" height="102" rx="14" fill="#fff7ed" stroke="#fdba74" stroke-width="2"/>
+    <text x="591" y="384" fill="#9a3412" font-size="15" font-weight="700">Optional semantic judge</text>
+    <text x="591" y="408" fill="#475569" font-size="13">groundedness • usefulness • calibrated claims</text>
+    <text x="591" y="430" fill="#475569" font-size="13">pin model + threshold; review edge cases</text>
+  </g>
+  <path d="M540 284 V334 H252 V354" fill="none" stroke="#0f766e" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M540 284 V334 H711 V354" fill="none" stroke="#fb923c" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M397 405 H558" stroke="#7e22ce" stroke-width="2" marker-end="url(#purple-arrow)"/>
+  <text x="477" y="394" fill="#6b21a8" font-family="system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">combine evidence</text>
+  <text x="48" y="484" fill="#475569" font-family="system-ui, sans-serif" font-size="13">For regression tests, record sanitized traces and replay them without another model call.</text>
+</svg>

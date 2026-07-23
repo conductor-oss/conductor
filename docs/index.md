@@ -53,6 +53,18 @@ description: Conductor is an open source workflow engine and durable execution p
   </div>
 </div>
 
+<div class="dag-proof-card">
+  <div>
+    <p class="dag-proof-card__eyebrow">Durable adaptive graphs</p>
+    <h2>Build agents that adapt. Run graphs that endure.</h2>
+    <p>Turn runtime choices—loops, branching, bounded fan-out, tool calls, approvals, retries, and cancellation—into durable, inspectable execution.</p>
+  </div>
+  <div class="dag-proof-card__actions">
+    <a href="devguide/ai/dynamic-workflows.html" class="btn-primary">Build the governed graph<span class="btn-arrow">&rarr;</span></a>
+    <a href="devguide/ai/production-agent-architecture.html" class="repo-link">Review production architecture<span class="btn-arrow">&rarr;</span></a>
+  </div>
+</div>
+
 <div class="value-strip">
   <div class="value-item"><div class="value-metric">Guaranteed at-least-once</div><div class="value-label">Task Delivery</div></div>
   <div class="value-divider"></div>

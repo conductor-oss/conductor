@@ -1,7 +1,61 @@
+import html
 import os
 import re
 import subprocess
 import sys
+
+
+VISUAL_JOURNEY_PAGES = {
+    "quickstart/index.md",
+    "devguide/ai/a2a-integration.md",
+    "devguide/ai/agent-framework-recipes.md",
+    "devguide/ai/conductor-agents.md",
+    "devguide/ai/durable-agents.md",
+    "devguide/ai/first-ai-agent.md",
+    "devguide/ai/human-in-the-loop.md",
+    "devguide/ai/mcp-guide.md",
+}
+
+
+def on_pre_page_macros(env):
+    """Place each compact page description directly after its H1.
+
+    Dedicated tutorial journeys already provide a richer visual introduction.
+    For the remaining public pages, reuse front-matter descriptions and remove
+    an identical first paragraph so the summary is additive only when needed.
+    """
+    page = env.page
+    description = (page.meta or {}).get("description")
+    if not description or page.file.src_path in VISUAL_JOURNEY_PAGES:
+        return
+
+    heading = re.search(r"(?m)^# [^\n]+\n", env.markdown)
+    if not heading:
+        return
+
+    remaining = env.markdown[heading.end() :].lstrip("\n")
+    first_paragraph = re.match(r"(.+?)(?:\n\s*\n|$)", remaining, re.DOTALL)
+    summary_text = description
+    if first_paragraph:
+        candidate = " ".join(first_paragraph.group(1).split())
+        # Move only plain prose into the card. Rich Markdown stays in the
+        # document and the front-matter description remains the summary.
+        if candidate and not re.search(r"[`*_\[\]<>|]|^#{1,6} |^!!!|^```", candidate):
+            summary_text = candidate
+            remaining = remaining[first_paragraph.end() :].lstrip("\n")
+        elif remaining.startswith(description):
+            remaining = remaining[len(description) :].lstrip("\n")
+
+    summary = (
+        '<aside class="page-summary" aria-label="Page summary">\n'
+        '  <span class="page-summary__mark" aria-hidden="true">→</span>\n'
+        "  <div>\n"
+        '    <p class="page-summary__eyebrow">Conductor documentation</p>\n'
+        f'    <p class="page-summary__text">{html.escape(summary_text)}</p>\n'
+        "  </div>\n"
+        "</aside>"
+    )
+    env.markdown = env.markdown[: heading.end()] + "\n" + summary + "\n\n" + remaining
 
 def on_pre_build(env):
     """Fetch SDK README files before the build starts."""

@@ -7,14 +7,14 @@ verbatim. Every step is a **removal**; no code is added.
 ## Step 1 — `AgentService.java`
 
 File:
-`agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java`
+`embedded agent runtime service`
 
 ### 1a. Remove the two private constants
 
 Delete the field declaration:
 
 ```java
-private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+private static final String the agent classifier backfill version =
         "agent_classifier_backfill_version";
 ```
 
@@ -23,7 +23,7 @@ and the constant plus its explanatory comment:
 ```java
 // Version 2 additionally reindexes generated router sub-workflows, which older compiler
 // output persisted as ordinary workflow executions.
-private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
+private static final int the agent classifier backfill version_VALUE = 2;
 ```
 
 Leave the neighboring `MAPPER` constant and the injected `final` fields in place, except
@@ -83,10 +83,10 @@ and the corresponding `import ...IndexDAO;` line.
 Do **not** remove `workflowService`, `executionDAO`, or `metadataDAO`; they are used by
 unrelated methods (search, status, lifecycle operations, deployment/listing).
 
-## Step 2 — `AgentSpanDeploymentContractEndToEndTest.java`
+## Step 2 — `deployment contract test.java`
 
 File:
-`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java`
+`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java`
 
 ### 2a. Remove the failing test method
 

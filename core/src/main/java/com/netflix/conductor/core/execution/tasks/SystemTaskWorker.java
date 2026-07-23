@@ -120,6 +120,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
             LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, messagesToAcquire);
 
+            // replace with task service.batchPoll
             List<String> polledTaskIds =
                     queueDAO.pop(queueName, messagesToAcquire, queuePopTimeout);
 

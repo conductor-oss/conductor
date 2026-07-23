@@ -4,7 +4,18 @@ description: AI agent orchestration and LLM orchestration with Conductor — LLM
 
 # AI Cookbook
 
-Conductor is not an AI framework. It is a durable execution engine that provides AI agent orchestration and LLM orchestration by solving the hard infrastructure problems that AI agents create: long-running processes, unreliable external calls, function calling and tool use, human-in-the-loop approval, structured output, and the need to survive failures across any of these steps. Conductor makes every agent a durable agent — one that survives crashes, retries, and infrastructure failures without losing progress.
+## Build agents that adapt. Run graphs that endure.
+
+Conductor is the durable execution platform for adaptive agentic graphs. Developers can keep their preferred SDK or agent framework and compose it with durable workflow primitives. Platform teams retain the runtime controls that production agents need: persisted state, policy boundaries, approval, retries, cancellation, versioned definitions, and an execution trail that can be inspected after the fact.
+
+Start with **[Durable Adaptive Graphs](dynamic-workflows.md)** to build a governed plan → bounded fan-out → evaluate → continue-or-finish loop, including approval before consequential actions.
+
+Conductor is a durable execution engine for AI systems. It supports two complementary paths:
+
+- **Declarative AI workflows** use Conductor's LLM, MCP, vector-search, human, and control-flow tasks directly in a workflow definition.
+- **Conductor Agents** let an SDK compile an existing framework-native agent into an inspectable Conductor graph, then deploy and reuse that agent as an `AGENT` task inside larger workflows.
+
+Both paths make progress durable across crashes, retries, waits, and infrastructure failures.
 
 
 ## The problem agents create
@@ -53,7 +64,7 @@ Your agent code starts a workflow. Conductor schedules each step as a task, pers
 | **Wait for external event** | `WAIT` task (time-based) or `HUMAN` task with event handler | Durable pause. Timer or signal resolution survives server restarts. |
 | **Wait for webhook** | `HUMAN` task + webhook endpoint | External system calls the Task Update API with payload. Workflow resumes with that payload as task output. |
 | **Plan/act/observe loop** | `DO_WHILE` operator | Loop until a condition is met. Each iteration is a persisted step. The loop counter and state survive failures. |
-| **Dynamic tool selection** | `DYNAMIC` task or `DYNAMIC_FORK` | The LLM output determines which task(s) to run next. Conductor resolves the task type at runtime. |
+| **Dynamic tool selection** | `DYNAMIC` task or `FORK_JOIN_DYNAMIC` | The LLM output determines an approved task or bounded set of tasks to run next. Conductor records the resulting path and branches. |
 | **Multi-agent / sub-agent** | `SUB_WORKFLOW` task | Spawn a child agent as a sub-workflow. Parent waits for completion. Failure in a child can trigger compensation in the parent. Full observability across the entire agent tree. |
 | **Rollback on failure** | `failureWorkflow` + compensation pattern | When an agent fails after taking real-world actions, a failure workflow runs compensating tasks (undo API calls, send notifications, release resources). |
 | **Structured output** | Workflow `outputParameters` | Map task outputs to a structured JSON response using Conductor's expression syntax. |
@@ -78,15 +89,18 @@ Conductor provides all of this as infrastructure. Your agent code focuses on the
 
 ## Next steps
 
-- **[Build Your First AI Agent](first-ai-agent.md)** &mdash; Step-by-step: discover MCP tools, call an LLM, execute, add human approval, make it autonomous. 5 minutes.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** &mdash; Step-by-step: compose an SDK-authored agent with HTTP and other durable workflow tasks.
+- **[Durable Adaptive Graphs](dynamic-workflows.md)** &mdash; Govern runtime planning, bounded fan-out, approvals, retries, and cancellation.
 - **[AI & LLM Recipes](../cookbook/ai-llm.md)** &mdash; Ready-to-use recipes: chat completion, RAG, MCP agents, web search, code execution, coding agents, extended thinking, and more.
 - **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, built-in tools, vector databases, and content generation.
 - **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
-- **[Conductor Agents](conductor-agents.md)** &mdash; Run an agent on the embedded agentspan runtime as a durable `AGENT` task, with human-in-the-loop resume.
+- **[Conductor Agents](conductor-agents.md)** &mdash; Compile an SDK-authored agent into a durable graph and reuse it as an `AGENT` task.
+- **[Agent Guardrails](agent-guardrails.md)** &mdash; Enforce runtime policy at agent and tool boundaries, with durable human review for consequential output.
+- **[Agent Evals](agent-evals.md)** &mdash; Test routing, tools, guardrails, and output quality in CI before release.
+- **[Framework Agent Recipes](agent-framework-recipes.md)** &mdash; Supported framework paths and maintained SDK examples.
 - **[Production Agent Architecture](production-agent-architecture.md)** &mdash; The canonical reference architecture for a durable production agent. End-to-end pattern with every primitive mapped.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** &mdash; The exact failure contract: what happens under crashes, retries, duplicates, long waits, and partial side effects.
 - **[Why Conductor for Agents](why-conductor.md)** &mdash; What Conductor gives you out of the box for agentic workflows.
 - **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
 - **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.
-- **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
 - **[Token Efficiency](token-efficiency.md)** &mdash; How durable execution saves tokens and reduces LLM costs.

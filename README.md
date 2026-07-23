@@ -18,9 +18,9 @@
 [![Conductor Slack](https://img.shields.io/badge/Slack-Join%20the%20Community-blueviolet?logo=slack)](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA)
 [![Conductor OSS](https://img.shields.io/badge/Conductor%20OSS-Visit%20Site-blue)](https://conductor-oss.org)
 
-#### Orchestrating distributed systems means wrestling with failures, retries, and state recovery. Conductor handles all of that so you don't have to.
+#### Build agents that adapt. Run graphs that endure.
 
-Conductor is an open-source, durable workflow engine built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40) for orchestrating microservices, AI agents, and durable workflows at internet scale. Trusted in production at Netflix, Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
+Conductor is an open-source durable execution platform, built at [Netflix](https://netflixtechblog.com/netflix-conductor-a-microservices-orchestrator-2e8d4771bf40), for orchestrating microservices, AI agents, and adaptive workflow graphs at internet scale. It turns runtime choices—loops, branching, fan-out, tool calls, approvals, retries, and cancellation—into durable, inspectable execution. Trusted in production at Netflix, Tesla, LinkedIn, and J.P. Morgan. Actively maintained by [Orkes](https://orkes.io) and a growing [community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
 
 [![conductor_oss_getting_started](https://github.com/user-attachments/assets/6153aa58-8ad1-4ec5-93d1-38ba1b83e3f4)](https://youtu.be/4azDdDlx27M)
 
@@ -78,16 +78,19 @@ All CLI commands have equivalent cURL/API calls. See the [Quickstart](https://do
 |---|---|
 | **Durable execution** | Every step is persisted. Survives crashes, restarts, and network failures with configurable retries and timeouts. |
 | **Deterministic by design** | Orchestration is separated from business logic — determinism is architectural, not developer discipline. Workers run any code; the workflow graph stays deterministic by construction. |
-| **AI agent orchestration** | 14+ native LLM providers, MCP tool calling, function calling, human-in-the-loop approval, and vector databases for RAG. |
-| **Dynamic at runtime** | Dynamic forks, tasks, and sub-workflows resolved at runtime. LLMs generate JSON workflow definitions and Conductor executes them immediately. |
+| **AI agent orchestration** | Native LLM providers, MCP tool calling, human-in-the-loop approval, and vector databases for RAG. |
+| **Durable adaptive graphs** | Govern runtime-selected paths, bounded fan-out, tool calls, approvals, retries, cancellation, and recovery. |
+| **Dynamic at runtime** | Dynamic forks, tasks, and sub-workflows can be resolved at runtime. Validate generated workflow definitions before starting them. |
 | **Full replayability** | Restart from the beginning, rerun from any task, or retry just the failed step — on any workflow, at any time. |
 | **Internet scale** | Battle-tested at Netflix, Tesla, LinkedIn, and J.P. Morgan. Scales horizontally to billions of workflow executions. |
 | **Polyglot workers** | Workers in Java, Python, Go, JavaScript, C#, Ruby, or Rust. Workers poll, execute, and report — run them anywhere. |
 | **Self-hosted, no lock-in** | Apache 2.0. 5 persistence backends, 6 message brokers. Runs anywhere Docker or a JVM runs. |
 
-# Ship Agents, Not Framework Code
+# Ship Durable Adaptive Graphs, Not Framework Code
 
-Conductor workers are plain code — any language, any library, any I/O. No determinism constraints, no SDK ritual. The orchestration layer is declarative and machine-readable, so LLMs generate and compose workflows natively. If an agent crashes at iteration 12, it resumes from iteration 12.
+Conductor workers are plain code — any language, any library, any I/O. The orchestration layer is declarative and machine-readable, so developers can keep their preferred SDK or framework while operators retain durable state, policy boundaries, replay, versioning, and auditability.
+
+Start with the [governed adaptive graph](https://docs.conductor-oss.org/devguide/ai/dynamic-workflows.html): plan → validate approved capabilities → bounded fan-out or human approval → evaluate → continue or finish.
 
 **An autonomous think-act agent in Conductor:** discover tools via MCP, reason with an LLM, call the chosen tool, repeat until done.
 
@@ -109,7 +112,7 @@ Conductor workers are plain code — any language, any library, any I/O. No dete
       "name": "agent_loop",
       "taskReferenceName": "loop",
       "type": "DO_WHILE",
-      "loopCondition": "if ($.loop['think'].output.result.done == true) { false; } else { true; }",
+      "loopCondition": "$.think['done'] != true && $.loop['iteration'] < 10",
       "loopOver": [
         {
           "name": "think",
@@ -124,16 +127,21 @@ Conductor workers are plain code — any language, any library, any I/O. No dete
                 "message": "You are an autonomous agent. Available tools: ${discover.output.tools}. Previous results: ${loop.output.results}. Respond with JSON: {\"action\": \"tool_name\", \"arguments\": {}, \"done\": false} or {\"answer\": \"final answer\", \"done\": true}."
               },
               { "role": "user", "message": "${workflow.input.task}" }
-            ]
+            ],
+            "jsonOutput": true
           }
         },
         {
           "name": "act",
           "taskReferenceName": "act",
           "type": "SWITCH",
-          "expression": "$.think.output.result.done ? 'done' : 'call_tool'",
+          "evaluatorType": "value-param",
+          "expression": "route",
+          "inputParameters": {
+            "route": "${think.output.result.done}"
+          },
           "decisionCases": {
-            "call_tool": [
+            "false": [
               {
                 "name": "execute_tool",
                 "taskReferenceName": "tool_call",
@@ -144,7 +152,8 @@ Conductor workers are plain code — any language, any library, any I/O. No dete
                   "arguments": "${think.output.result.arguments}"
                 }
               }
-            ]
+            ],
+            "true": []
           }
         }
       ]
@@ -155,7 +164,7 @@ Conductor workers are plain code — any language, any library, any I/O. No dete
 
 Every step is durably persisted — no framework, no SDK lock-in. Code-first engines force your code to be deterministic so the framework can replay it. Conductor makes the engine deterministic — so your code doesn't have to be.
 
-See the [Build Your First AI Agent](https://docs.conductor-oss.org/devguide/ai/first-ai-agent.html) guide for the full walkthrough.
+See [Build Your First AI Agent](https://docs.conductor-oss.org/devguide/ai/first-ai-agent.html) for the framework-first walkthrough, or [Durable Adaptive Graphs](https://docs.conductor-oss.org/devguide/ai/dynamic-workflows.html) for the governed production pattern.
 
 ---
 
