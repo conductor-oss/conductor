@@ -156,15 +156,11 @@ public class AsyncSystemTaskExecutor {
             boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
             if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                 if (scheduled && hasExceededResponseTimeout(task)) {
-                    // A blocking task's start() runs synchronously and never moves the task to
-                    // IN_PROGRESS, so it stays SCHEDULED for its whole run. If the message is
-                    // redelivered (reservation lapsed) while that run is still in flight past
-                    // responseTimeout, do NOT run it again in parallel (issue #1321): time it out
-                    // and let the retry/timeout policy decide. Only SCHEDULED is handled here;
-                    // IN_PROGRESS response-timeouts are owned by DeciderService.isResponseTimedOut
-                    // (invoked from decide()), which uses responseTimeout + callbackAfterSeconds and
-                    // so must not be duplicated/pre-empted here. The finally block removes the
-                    // message and re-evaluates the workflow.
+                    // A blocking start() never leaves SCHEDULED, so a redelivered SCHEDULED task
+                    // past responseTimeout means its run overran: time it out, don't re-run it
+                    // (#1321). IN_PROGRESS response-timeouts are
+                    // DeciderService.isResponseTimedOut's
+                    // job (it budgets responseTimeout + callbackAfterSeconds).
                     task.setStatus(TaskModel.Status.TIMED_OUT);
                     task.setReasonForIncompletion(
                             "Task did not complete within its responseTimeout of "
@@ -175,13 +171,12 @@ public class AsyncSystemTaskExecutor {
                             task.getTaskType(),
                             task.getTaskId());
                 } else {
-                    // Keep the message present but invisible for the run so it is not redelivered
-                    // and the sweeper's repair does not re-queue this running task (issue #1321).
+                    // Keep the message present but invisible for the run so repair can't re-queue
+                    // this running task (#1321).
                     reserveInflightMessage(queueName, task);
                     Map<String, Object> literalInput = task.getInputData();
-                    // Secrets substitution only sees task.getInputData(); when input has been
-                    // offloaded to external payload storage, getInputData()/setInputData() operate
-                    // on a different field and this substitution silently becomes a no-op.
+                    // Secrets substitution only sees getInputData(); with external payload storage
+                    // it operates on a different field and silently becomes a no-op.
                     if (task.getExternalInputPayloadStoragePath() != null) {
                         LOGGER.warn(
                                 "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
@@ -191,10 +186,8 @@ public class AsyncSystemTaskExecutor {
                     try {
                         if (scheduled) {
                             task.setStartTime(System.currentTimeMillis());
-                            // Persist startTime before invoking (status is left unchanged so a
-                            // system task whose start() branches on SCHEDULED still works) so a
-                            // redelivery can tell the task has already started and time it out if
-                            // it outlives responseTimeout instead of blindly executing it again.
+                            // Persist startTime before invoking so a redelivery can detect an
+                            // overrun (status left unchanged for start()'s SCHEDULED branch).
                             executionDAOFacade.updateTask(task);
                             Monitors.recordQueueWaitTime(
                                     task.getTaskType(), task.getQueueWaitTime());
@@ -281,8 +274,8 @@ public class AsyncSystemTaskExecutor {
      * responseTimeout — i.e. a redelivered message belongs to a run that overran its allowed time
      * and should be timed out rather than re-executed. Only meaningful for a SCHEDULED task (a
      * blocking start() that never returned); the caller gates on that. Requires updateTime > 0: a
-     * just-scheduled task whose mapper set startTime (e.g. JOIN) has updateTime == 0 and must not be
-     * treated as overrun.
+     * just-scheduled task whose mapper set startTime (e.g. JOIN) has updateTime == 0 and must not
+     * be treated as overrun.
      */
     private boolean hasExceededResponseTimeout(TaskModel task) {
         return task.getStartTime() > 0
