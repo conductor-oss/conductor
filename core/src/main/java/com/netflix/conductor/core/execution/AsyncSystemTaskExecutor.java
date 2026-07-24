@@ -159,7 +159,7 @@ public class AsyncSystemTaskExecutor {
                 // acked, so until this write the task is indistinguishable from an orphaned one;
                 // the sweeper would repush it mid-execution and the task would run twice. Must
                 // happen before secrets substitution so resolved secrets are never persisted.
-                persistStartMarkerQuietly(task);
+                executionDAOFacade.updateTask(task);
             }
 
             if (task.getStatus() == TaskModel.Status.SCHEDULED
@@ -227,19 +227,6 @@ public class AsyncSystemTaskExecutor {
             if (hasTaskExecutionCompleted) {
                 workflowExecutor.decide(workflowId);
             }
-        }
-    }
-
-    private void persistStartMarkerQuietly(TaskModel task) {
-        try {
-            executionDAOFacade.updateTask(task);
-        } catch (Exception e) {
-            // A failed marker write must not block execution; the worst case is the legacy
-            // behavior (sweeper may repush the task while it runs).
-            LOGGER.warn(
-                    "Could not persist start marker for task: {} before execution",
-                    task.getTaskId(),
-                    e);
         }
     }
 

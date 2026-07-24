@@ -469,7 +469,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * executionDAOFacade.updateTask(task)
     }
 
-    def "start marker persistence failure does not prevent the system task from running"() {
+    def "start marker persistence failure aborts execution and is handled by the outer catch"() {
         given:
         String workflowId = "workflowId"
         String taskId = "taskId"
@@ -484,10 +484,11 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // marker write throws; start() never runs; the finally block still persists the task
         2 * executionDAOFacade.updateTask(task) >> { throw new RuntimeException("db down") } >> null
-        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
+        0 * workflowSystemTask.start(workflow, task, workflowExecutor)
 
-        task.status == TaskModel.Status.IN_PROGRESS
+        task.status == TaskModel.Status.SCHEDULED
     }
 
 }
