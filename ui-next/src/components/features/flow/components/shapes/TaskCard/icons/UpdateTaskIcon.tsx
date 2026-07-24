@@ -9,8 +9,8 @@ function Icon({ size, color = "currentColor" }: CustomIconType) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M2 10H3V10.01C3 6.15 6.14 3.01 10 3.01C11.84 3.01 13.57 3.72 14.86 4.98L13.5 6.34H17V2.84L15.57 4.27C14.07 2.81 12.1 2 10 2C5.59 2 2 5.59 2 10ZM10 18C14.41 18 18 14.41 18 10H17C17 13.86 13.86 17 10 17C8.13 17 6.37 16.27 5.07 14.97L5.05 14.95L6.5 13.5H3V17L4.34 15.66C5.85 17.17 7.86 18 10 18Z"
         fill={color}
       />
