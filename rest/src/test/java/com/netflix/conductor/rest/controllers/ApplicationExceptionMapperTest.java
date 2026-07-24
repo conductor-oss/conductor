@@ -112,7 +112,7 @@ public class ApplicationExceptionMapperTest {
                 new HttpRequestMethodNotSupportedException("GET"), status().isMethodNotAllowed());
     }
 
-    private void assertLoggedAtWarn(RuntimeException exception, ResultMatcher expectedStatus)
+    private void assertLoggedAtWarn(Exception exception, ResultMatcher expectedStatus)
             throws Exception {
         // logger is a static mock reused across assertions; start each one clean.
         clearInvocations(logger);
