@@ -112,6 +112,11 @@ public class TestWorkflowExecutor {
             return new Wait();
         }
 
+        @Bean(TASK_TYPE_HUMAN)
+        public Human human() {
+            return new Human();
+        }
+
         @Bean("HTTP")
         public WorkflowSystemTask http() {
             return new WorkflowSystemTaskStub("HTTP") {
@@ -346,6 +351,104 @@ public class TestWorkflowExecutor {
         assertTrue(stateChanged);
         assertFalse(httpTask.isStarted());
         assertTrue(http2Task.isStarted());
+    }
+
+    // --- #1176: TaskStatusListener notification for synchronous system tasks ---
+
+    private WorkflowModel newWorkflowForScheduling() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf_1176");
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("wf_1176");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        return workflow;
+    }
+
+    private TaskModel newScheduledSystemTask(
+            String taskType, String refName, WorkflowModel workflow, IDGenerator idGenerator) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setType(taskType);
+        workflowTask.setTaskReferenceName(refName);
+
+        TaskModel task = new TaskModel();
+        task.setTaskType(taskType);
+        task.setTaskDefName(taskType);
+        task.setReferenceTaskName(refName);
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setCorrelationId(workflow.getCorrelationId());
+        task.setScheduledTime(System.currentTimeMillis());
+        task.setTaskId(idGenerator.generate());
+        task.setInputData(new HashMap<>());
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setRetryCount(0);
+        task.setWorkflowTask(workflowTask);
+        return task;
+    }
+
+    /**
+     * #1176: a synchronous HUMAN task transitions to IN_PROGRESS inside start() during
+     * scheduleTask, and must notify the TaskStatusListener of that transition (previously dropped).
+     */
+    @Test
+    public void testScheduleTaskNotifiesListenerForSyncHumanInProgress() {
+        IDGenerator idGenerator = new IDGenerator();
+        WorkflowModel workflow = newWorkflowForScheduling();
+        TaskModel human =
+                newScheduledSystemTask(TASK_TYPE_HUMAN, "human_ref", workflow, idGenerator);
+
+        List<TaskModel> tasks = new LinkedList<>();
+        tasks.add(human);
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
+
+        workflowExecutor.scheduleTask(workflow, tasks);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, human.getStatus());
+        verify(taskStatusListener, times(1)).onTaskInProgressIfEnabled(human);
+        verify(taskStatusListener, never()).onTaskCompletedIfEnabled(any());
+    }
+
+    /**
+     * #1176: notifyTaskStatusListener dispatches by current status. A synchronous system task that
+     * reaches a terminal status directly inside start() must fire the terminal event (COMPLETED),
+     * not IN_PROGRESS. The HTTP2 stub is synchronous and sets COMPLETED in start().
+     */
+    @Test
+    public void testScheduleTaskNotifiesListenerForSyncTaskCompletingImmediately() {
+        IDGenerator idGenerator = new IDGenerator();
+        WorkflowModel workflow = newWorkflowForScheduling();
+        TaskModel task = newScheduledSystemTask("HTTP2", "http2_ref", workflow, idGenerator);
+
+        List<TaskModel> tasks = new LinkedList<>();
+        tasks.add(task);
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
+
+        workflowExecutor.scheduleTask(workflow, tasks);
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        verify(taskStatusListener, times(1)).onTaskCompletedIfEnabled(task);
+        verify(taskStatusListener, never()).onTaskInProgressIfEnabled(any());
+    }
+
+    /**
+     * #1176: the fix only covers the synchronous branch. Asynchronous system tasks are queued and
+     * notified later via their own execution path, so scheduleTask must not fire IN_PROGRESS /
+     * COMPLETED notifications for them (guards against double notification). HTTP stub is async.
+     */
+    @Test
+    public void testScheduleTaskDoesNotNotifyListenerForAsyncSystemTask() {
+        IDGenerator idGenerator = new IDGenerator();
+        WorkflowModel workflow = newWorkflowForScheduling();
+        TaskModel task = newScheduledSystemTask("HTTP", "http_ref", workflow, idGenerator);
+
+        List<TaskModel> tasks = new LinkedList<>();
+        tasks.add(task);
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
+
+        workflowExecutor.scheduleTask(workflow, tasks);
+
+        verify(taskStatusListener, never()).onTaskInProgressIfEnabled(any());
+        verify(taskStatusListener, never()).onTaskCompletedIfEnabled(any());
     }
 
     @Test(expected = TerminateWorkflowException.class)
