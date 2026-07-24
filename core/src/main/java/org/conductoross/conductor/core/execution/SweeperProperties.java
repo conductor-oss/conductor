@@ -27,4 +27,13 @@ import lombok.ToString;
 public class SweeperProperties {
     private int sweepBatchSize = 2;
     private int queuePopTimeout = 100;
+
+    /**
+     * Grace period (ms) during which a system task whose execution has started (persisted
+     * startTime) is not repaired even if its queue message is missing. The message is acked before
+     * the task executes, so a missing message plus a recent startTime means "in flight", not
+     * "orphaned"; repushing it would double-execute the task. Size above the worst-case system
+     * task execution time. 0 disables the grace (legacy behavior).
+     */
+    private long startedTaskRepairGraceMillis = 60_000;
 }

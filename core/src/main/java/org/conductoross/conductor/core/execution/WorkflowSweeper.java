@@ -68,6 +68,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
     private final ExecutionLockService executionLockService;
     private final Clock clock = Clock.systemDefaultZone();
     private AtomicBoolean stop = new AtomicBoolean(false);
+    private final Predicate<TaskModel> isTaskRepairable;
 
     public WorkflowSweeper(
             @Qualifier(SWEEPER_EXECUTOR_NAME) Executor sweeperExecutor,
@@ -89,35 +90,44 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
         this.systemTaskRegistry = systemTaskRegistry;
         this.objectMapper = objectMapper;
         this.executionLockService = executionLockService;
+        /*
+        For system task -> Verify the task isAsync() and not isAsyncComplete() or isAsyncComplete() in SCHEDULED state,
+        and in SCHEDULED or IN_PROGRESS state. (Example: SUB_WORKFLOW tasks in SCHEDULED state)
+        For simple task -> Verify the task is in SCHEDULED state.
+        */
+        this.isTaskRepairable =
+                task -> {
+                    if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
+                        WorkflowSystemTask workflowSystemTask =
+                                systemTaskRegistry.get(task.getTaskType());
+                        // The queue message is acked before the task executes, and the task row is
+                        // only moved past SCHEDULED after execution finishes. A persisted startTime
+                        // within the grace window therefore means the task is in flight on some
+                        // worker; repushing its message now would execute it a second time.
+                        long graceMillis = sweeperProperties.getStartedTaskRepairGraceMillis();
+                        if (graceMillis > 0
+                                && task.getStartTime() > 0
+                                && clock.millis() - task.getStartTime() < graceMillis) {
+                            return false;
+                        }
+                        return workflowSystemTask.isAsync()
+                                && (!workflowSystemTask.isAsyncComplete(task)
+                                        || (workflowSystemTask.isAsyncComplete(task)
+                                                && task.getStatus() == TaskModel.Status.SCHEDULED))
+                                && (task.getStatus() == TaskModel.Status.IN_PROGRESS
+                                        || task.getStatus() == TaskModel.Status.SCHEDULED);
+                    } else { // Else if simple task or wait task
+                        return (task.getStatus() == TaskModel.Status.SCHEDULED
+                                || (!task.getStatus().isTerminal()
+                                        && task.getWaitTimeout() > 0
+                                        && (clock.millis() - task.getWaitTimeout() > 1000)));
+                    }
+                };
         log.info("Initializing sweeper with {} threads", properties.getSweeperThreadCount());
         for (int i = 0; i < properties.getSweeperThreadCount(); i++) {
             sweeperExecutor.execute(this::pollAndSweep);
         }
     }
-
-    /*
-    For system task -> Verify the task isAsync() and not isAsyncComplete() or isAsyncComplete() in SCHEDULED state,
-    and in SCHEDULED or IN_PROGRESS state. (Example: SUB_WORKFLOW tasks in SCHEDULED state)
-    For simple task -> Verify the task is in SCHEDULED state.
-    */
-    private final Predicate<TaskModel> isTaskRepairable =
-            task -> {
-                if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
-                    WorkflowSystemTask workflowSystemTask =
-                            systemTaskRegistry.get(task.getTaskType());
-                    return workflowSystemTask.isAsync()
-                            && (!workflowSystemTask.isAsyncComplete(task)
-                                    || (workflowSystemTask.isAsyncComplete(task)
-                                            && task.getStatus() == TaskModel.Status.SCHEDULED))
-                            && (task.getStatus() == TaskModel.Status.IN_PROGRESS
-                                    || task.getStatus() == TaskModel.Status.SCHEDULED);
-                } else { // Else if simple task or wait task
-                    return (task.getStatus() == TaskModel.Status.SCHEDULED
-                            || (!task.getStatus().isTerminal()
-                                    && task.getWaitTimeout() > 0
-                                    && (clock.millis() - task.getWaitTimeout() > 1000)));
-                }
-            };
 
     private void pollAndSweep() {
         try {
