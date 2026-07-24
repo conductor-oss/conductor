@@ -19,7 +19,6 @@ import java.util.Objects;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.ToolSpec;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,12 +36,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class AnthropicTest {
 
     private static final String ENV_API_KEY = "ANTHROPIC_API_KEY";
-    private static final String API_USAGE_LIMIT_MESSAGE =
-            "You have reached your specified API usage limits.";
-
-    private static boolean isApiUsageLimit(RuntimeException exception) {
-        return String.valueOf(exception.getMessage()).contains(API_USAGE_LIMIT_MESSAGE);
-    }
 
     @Nested
     class UnitTests {
@@ -136,15 +129,6 @@ class AnthropicTest {
             var chatModel = anthropic.getChatModel();
             assertNotNull(chatModel);
             assertInstanceOf(AnthropicChatModel.class, chatModel);
-        }
-
-        @Test
-        void testIsApiUsageLimit() {
-            assertTrue(
-                    isApiUsageLimit(
-                            new RuntimeException(
-                                    "Anthropic API failed: " + API_USAGE_LIMIT_MESSAGE)));
-            assertFalse(isApiUsageLimit(new RuntimeException("Anthropic API failed: invalid key")));
         }
 
         @Test
@@ -278,23 +262,10 @@ class AnthropicTest {
                                                     .build()))
                             .build();
 
-            ChatResponse response;
-            try {
-                response =
-                        anthropic
-                                .getChatModel()
-                                .call(
-                                        new Prompt(
-                                                List.of(userMsg), anthropic.getChatOptions(input)));
-            } catch (RuntimeException exception) {
-                // This is an external account-budget condition, not a media-adapter regression.
-                // Abort so JUnit records the live test as skipped while preserving all other
-                // provider failures as release-blocking failures.
-                Assumptions.assumeFalse(
-                        isApiUsageLimit(exception),
-                        "Anthropic API usage limit reached; skipping live media integration test");
-                throw exception;
-            }
+            ChatResponse response =
+                    anthropic
+                            .getChatModel()
+                            .call(new Prompt(List.of(userMsg), anthropic.getChatOptions(input)));
 
             String text = response.getResult().getOutput().getText();
             assertNotNull(text);
