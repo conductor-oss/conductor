@@ -1,174 +1,125 @@
-# Architecture — Fix #1393: `HttpRequestMethodNotSupportedException` returned as `500` instead of `405`
+# Agent Worker Architecture
 
-## 1. Overview
+This document describes the shipped implementation of the `GET_AGENT_CARD`, `AGENT`, and
+`CANCEL_AGENT` task types. The implementation is portable: the same annotation-backed worker
+methods run inside OSS Conductor or in an external Java SDK worker process.
 
-### Problem
+## 1. Runtime shape
 
-`SchedulerClient.pauseSchedule(...)` in the Java SDK fails with:
-
-```
-com.netflix.conductor.client.exception.ConductorClientException:
-    Request method 'GET' is not supported {status=500, retryable: false}
-```
-
-The Java SDK's `io.orkes.conductor.client.http.SchedulerResource` calls the pause
-endpoint through a compatibility helper, `executeGetThenPutOnMethodNotAllowed`, that:
-
-1. issues a `GET` to `/api/scheduler/schedules/{name}/pause`, and
-2. **on a `405 Method Not Allowed`**, falls through and re-issues the request as a `PUT`.
-
-The endpoint is declared `PUT`-only on the server
-(`SchedulerResource.pauseSchedule`, `@PutMapping("/schedules/{name}/pause")`).
-When the client probes it with `GET`, Spring MVC throws
-`org.springframework.web.HttpRequestMethodNotSupportedException` with the message
-`Request method 'GET' is not supported`. The correct HTTP status for that exception
-is `405 Method Not Allowed`.
-
-The server instead returns `500 Internal Server Error`. The client's fallback only
-recognizes `405`, so it surfaces the `500` as a hard exception rather than proceeding
-to the `PUT`.
-
-### Root cause
-
-`rest/src/main/java/com/netflix/conductor/rest/controllers/ApplicationExceptionMapper.java`
-is a `@RestControllerAdvice` with a single catch-all
-`@ExceptionHandler(Throwable.class)`. It maps exception classes to HTTP statuses via a
-static `EXCEPTION_STATUS_MAP` and falls back to `HttpStatus.INTERNAL_SERVER_ERROR` for
-any class not present in that map:
+`org.conductoross.conductor.ai.tasks.worker.A2AWorkers` is the only task implementation. It exposes:
 
 ```java
-HttpStatus status =
-        EXCEPTION_STATUS_MAP.getOrDefault(th.getClass(), HttpStatus.INTERNAL_SERVER_ERROR);
+@WorkerTask("GET_AGENT_CARD")
+AgentCard getAgentCard(A2AAgentCardRequest request)
+
+@WorkerTask(value = "AGENT", leaseExtendEnabled = true)
+TaskResult agent(Task task)
+
+@WorkerTask("CANCEL_AGENT")
+TaskResult cancelAgent(Task task)
 ```
 
-`HttpRequestMethodNotSupportedException` is **not** in `EXCEPTION_STATUS_MAP`, so every
-unsupported-method request (including the client's `GET` probe of a `PUT`-only route)
-is reported as `500`. This is a server-side defect: an HTTP method mismatch is a client
-error (`4xx`), not a server failure (`5xx`), and Spring already models it precisely.
+There are no parallel `WorkflowSystemTask` implementations for these task types.
 
-### Fix (minimal, focused)
+The runtime selects one of two registration modes:
 
-Add one entry to `EXCEPTION_STATUS_MAP` so the catch-all handler maps
-`HttpRequestMethodNotSupportedException` to `405 METHOD_NOT_ALLOWED`. No new endpoint,
-no controller change, and no client change is required in this repository. Once the
-server returns a clean `405`, the Java SDK's existing GET-then-PUT-on-405 fallback
-proceeds to the `PUT` and the scheduler lifecycle (deploy → create → list → pause →
-resume → preview → delete) completes.
+- `A2AWorkers` is a Spring component implementing `AnnotatedSystemTaskWorker`, so the annotation
+  scanner registers its methods as embedded system tasks in OSS Conductor.
+- An external Java SDK runtime instantiates `A2AWorkers` and polls the same task types through the
+  public `Task` and `TaskResult` contracts.
 
-This is the smallest change that resolves the issue at its source. Because the mapper is
-a shared `@RestControllerAdvice`, the correction applies uniformly to every controller —
-including `SchedulerResource` — and to any future method mismatch across the whole REST
-surface.
+Both modes persist durable state in task output and return `IN_PROGRESS` with
+`callbackAfterSeconds` while an agent is still running. No worker thread is held between polls.
 
-### Why fix the server, not the client
+## 2. Agent runtimes
 
-- The client (`java-sdk`) lives in a **separate repository**; this repo cannot change it.
-- The server is objectively wrong: a method mismatch is `405`, not `500`. Returning the
-  spec-correct status (RFC 7231 §6.5.5 for `405` vs §5.5.6 for `5xx`) is a bug fix that
-  benefits every SDK and every raw HTTP caller, and it is exactly what the client's
-  fallback expects.
-- The Python SDK works because it issues `PUT` directly and never triggers the probe; the
-  server's mis-mapping is latent for any client that relies on `405` semantics.
+The `AGENT` and `CANCEL_AGENT` methods dispatch on `agentType`:
 
-## 2. Tech stack
+- `a2a` or blank: call a remote Agent2Agent endpoint through `A2AService`.
+- `conductor`: call the Conductor agent control plane through `AgentClient`.
 
-| Concern | Choice |
+Remote A2A behavior, including polling, streaming, push callbacks, deterministic message IDs,
+deadlines, and poll-failure limits, remains in `A2AWorkers`.
+
+The Conductor branch delegates its state machine to `ConductorAgentDelegate`. The delegate only
+knows about `AgentClient`; it never receives or calls `WorkflowExecutor`.
+
+## 3. AgentClient boundary
+
+`org.conductoross.conductor.ai.agent.ConductorAgentClient` mirrors the Java SDK agent-client surface using
+Conductor-owned DTOs. This keeps worker code independent of where the agent control plane lives.
+
+Runtime implementations are injected:
+
+- AgentSpan embedded mode supplies `ServiceAgentClient`, which calls `AgentService` directly and
+  avoids loopback network calls.
+- External workers supply the Java SDK adapter, which calls the remote AgentController API.
+- Deployments without the Conductor agent control plane receive `UnavailableAgentClient`; remote
+  A2A tasks continue to work, while `agentType: conductor` fails clearly.
+
+## 4. Embedded cancellation
+
+`A2AWorkers` also implements `AnnotatedTaskCancellationHandler`. When an embedded `AGENT` task is
+canceled, its cancellation hook propagates cancellation to either the remote A2A task or the
+Conductor agent execution.
+
+External worker processes do not receive parent-workflow cancellation callbacks. Workflows that
+require explicit remote propagation should use `CANCEL_AGENT`.
+
+## 5. Conductor-agent contract
+
+The `conductor` branch deserializes task input as `ConductorAgentRequest`, which extends the same
+`AgentStartRequest` accepted by the agent controller. A fresh call requires `name` and `prompt`.
+Supplying `executionId` resumes an existing run and sends the prompt as the response payload.
+
+Task-only durability fields are:
+
+| Field | Default | Purpose |
+|---|---:|---|
+| `pollIntervalSeconds` | 5 | Delay before the next status poll |
+| `maxDurationSeconds` | 86400 | Absolute execution deadline |
+| `maxPollFailures` | 30 | Consecutive transient status failures before terminal failure |
+
+The deterministic idempotency key is:
+
+```text
+conductor-agent-<workflowInstanceId>:<referenceTaskName>:<iteration>
+```
+
+The principal output fields are:
+
+| Key | Meaning |
 |---|---|
-| Language / runtime | Java 21 |
-| Build | Gradle |
-| Web framework | Spring Boot / Spring MVC (`@RestControllerAdvice`, `@ExceptionHandler`) |
-| Error model | `com.netflix.conductor.common.validation.ErrorResponse` |
-| Method-mismatch exception | `org.springframework.web.HttpRequestMethodNotSupportedException` |
-| Metrics | `com.netflix.conductor.metrics.Monitors` |
-| Test framework | JUnit (existing `ApplicationExceptionMapperTest`) |
+| `executionId` | Agent execution used for poll, respond, and cancel |
+| `agentName` | Executed agent |
+| `state` | `RUNNING`, `WAITING`, `COMPLETED`, `FAILED`, or `CANCELED` |
+| `waiting` | True when external input is required |
+| `pendingTool` | Pending human or tool request |
+| `text` | Latest or final text |
+| `output` | Structured completed output |
+| `agentStartTime` | Agent execution start time and durable deadline anchor |
+| `agentEndTime` | Time a terminal agent state was observed |
+| `agentPollFailures` | Consecutive transient status failures |
 
-## 3. Module / file layout
+State mapping:
 
-Everything needed lives in the existing `rest` module. No new source files are required;
-the fix is a one-line addition to a static map plus test coverage.
-
-| File | Change | Responsibility |
-|---|---|---|
-| `rest/src/main/java/com/netflix/conductor/rest/controllers/ApplicationExceptionMapper.java` | **Edit** | Add `HttpRequestMethodNotSupportedException.class → HttpStatus.METHOD_NOT_ALLOWED` to `EXCEPTION_STATUS_MAP`; add the `org.springframework.web.HttpRequestMethodNotSupportedException` import. |
-| `rest/src/test/java/com/netflix/conductor/rest/controllers/ApplicationExceptionMapperTest.java` | **Edit** | Add a test asserting that `HttpRequestMethodNotSupportedException` maps to `405`, `retryable=false`, and preserves the original message. |
-
-No changes are made to:
-
-- `scheduler/core/src/main/java/io/orkes/conductor/scheduler/rest/SchedulerResource.java`
-  (the `@PutMapping("/schedules/{name}/pause")` mapping is already correct).
-- Any persistence module, DAO, service, or SDK class.
-
-## 4. Shared contracts
-
-These names and types are reused verbatim by the supporting documents.
-
-### 4.1 The exception-to-status mapping
-
-`ApplicationExceptionMapper.EXCEPTION_STATUS_MAP` is a
-`Map<Class<? extends Throwable>, HttpStatus>`. After the fix it contains:
-
-| Exception class | HTTP status |
+| Agent state | Worker result |
 |---|---|
-| `NotFoundException` | `404 NOT_FOUND` |
-| `ConflictException` | `409 CONFLICT` |
-| `IllegalArgumentException` | `400 BAD_REQUEST` |
-| `InvalidFormatException` | `500 INTERNAL_SERVER_ERROR` |
-| `NoResourceFoundException` | `404 NOT_FOUND` |
-| `FileStorageException` | `413 PAYLOAD_TOO_LARGE` |
-| `AccessForbiddenException` | `403 FORBIDDEN` |
-| **`HttpRequestMethodNotSupportedException`** | **`405 METHOD_NOT_ALLOWED`** *(new)* |
-| *(any other `Throwable`)* | `500 INTERNAL_SERVER_ERROR` (default) |
+| `RUNNING` | `IN_PROGRESS` with callback delay |
+| `WAITING` | `COMPLETED`, with `waiting=true` |
+| `COMPLETED` | `COMPLETED` |
+| `FAILED` | `FAILED` |
+| `CANCELED` | `FAILED_WITH_TERMINAL_ERROR` |
 
-Lookup is by **exact class** (`getOrDefault(th.getClass(), ...)`), not `instanceof`.
-`HttpRequestMethodNotSupportedException` is a concrete class thrown directly by Spring
-MVC's dispatcher, so an exact-class entry is sufficient and consistent with the existing
-entries.
+## 6. Source layout
 
-### 4.2 The error response body
-
-The handler returns a `ResponseEntity<ErrorResponse>`. For a `405` the body fields are:
-
-| `ErrorResponse` field | Value for `405` |
+| File | Responsibility |
 |---|---|
-| `instance` | server id (`Utils.getServerId()`) |
-| `status` | `405` |
-| `message` | the exception message, e.g. `Request method 'GET' is not supported` |
-| `retryable` | `false` (only `TransientException` is retryable) |
+| `ai/.../tasks/worker/A2AWorkers.java` | Portable task implementation, OSS bean registration, and cancellation hook |
+| `ai/.../agent/AgentClient.java` | Portable agent control-plane contract |
+| `ai/.../agent/ConductorAgentDelegate.java` | Durable Conductor-agent state machine |
+| `agentspan/.../service/ServiceAgentClient.java` | In-process AgentService implementation |
+| `ai/.../a2a/A2AService.java` | Remote Agent2Agent transport |
 
-### 4.3 Logging contract
-
-`logException(...)` already emits `4xx` at `WARN` and `5xx`/unmapped at `ERROR`. Because
-`405` is a `4xx` client error, moving it out of the `500` default also correctly moves it
-from `ERROR` to `WARN`: a method-mismatch probe is expected client behavior and should not
-pollute server error logs. No change to `logException` is needed; the behavior follows
-automatically from the new status.
-
-### 4.4 Endpoint contract (unchanged)
-
-The scheduler pause endpoint remains:
-
-```
-PUT /api/scheduler/schedules/{name}/pause?reason={reason}
-```
-
-Declared in `SchedulerResource.pauseSchedule` with
-`@PutMapping("/schedules/{name}/pause")` and `@ResponseStatus(HttpStatus.OK)`. A `GET` to
-this path now returns `405` (was `500`).
-
-## 5. Sequence: SDK pause after the fix
-
-```
-Java SDK (SchedulerResource.pauseSchedule)
-  └─ executeGetThenPutOnMethodNotAllowed(...)
-       ├─ GET  /api/scheduler/schedules/{name}/pause
-       │     Spring MVC → HttpRequestMethodNotSupportedException
-       │     ApplicationExceptionMapper → 405 METHOD_NOT_ALLOWED   ← fixed here
-       ├─ (client recognizes 405) fall through
-       └─ PUT  /api/scheduler/schedules/{name}/pause?reason=...
-             SchedulerResource.pauseSchedule → 200 OK
-```
-
-## 6. Supporting documents
-
-- [`error-mapping.md`](error-mapping.md) — the exception→status contract and edit detail.
-- [`testing.md`](testing.md) — verification plan and the exact assertions to add.
+The test strategy is documented in [testing.md](./testing.md), with the coverage matrix in
+[test-plan.md](./test-plan.md).
