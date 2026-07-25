@@ -56,3 +56,4 @@ server/*.db*
 *.db-shm
 *.db-wal
 docs/superpowers
+.codex/
