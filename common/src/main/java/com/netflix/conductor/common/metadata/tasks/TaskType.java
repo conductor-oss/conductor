@@ -86,6 +86,10 @@ public enum TaskType {
     public static final String TASK_TYPE_NOOP = "NOOP";
     public static final String TASK_TYPE_PULL_WORKFLOW_MESSAGES = "PULL_WORKFLOW_MESSAGES";
 
+    public static final String TASK_TYPE_AGENT = "AGENT";
+    public static final String TASK_TYPE_GET_AGENT_CARD = "GET_AGENT_CARD";
+    public static final String TASK_TYPE_CANCEL_AGENT = "CANCEL_AGENT";
+
     private static final Set<String> BUILT_IN_TASKS = new HashSet<>();
 
     static {

@@ -18,6 +18,9 @@ import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 
+import io.orkes.conductor.client.AgentClient;
+import io.orkes.conductor.client.OrkesClients;
+
 public class ApiUtil {
 
     // The conductor-client SDK appends paths like /metadata/workflow to the basePath,
@@ -42,4 +45,5 @@ public class ApiUtil {
     public static final TaskClient TASK_CLIENT = new TaskClient(CLIENT);
     public static final MetadataClient METADATA_CLIENT = new MetadataClient(CLIENT);
     public static final EventClient EVENT_CLIENT = new EventClient(CLIENT);
+    public static final AgentClient AGENT_CLIENT = new OrkesClients(CLIENT).getAgentClient();
 }

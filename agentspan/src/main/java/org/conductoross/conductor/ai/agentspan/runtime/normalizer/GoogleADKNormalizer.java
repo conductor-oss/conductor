@@ -102,6 +102,17 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
             }
         }
 
+        // GoogleSearchTool is provider-native functionality, not an HTTP endpoint.  Keeping it
+        // in the regular tool list made the dynamic router create HTTP tasks with an empty URI.
+        // Record the capability on the canonical config instead; AgentCompiler maps it to the
+        // LLM_CHAT_COMPLETE webSearch flag and rejects providers that cannot execute it.
+        if (hasToolType(rawTools, "GoogleSearchTool", "google_search")) {
+            if (config.getMetadata() == null) {
+                config.setMetadata(new HashMap<>());
+            }
+            config.getMetadata().put("_builtin_web_search", true);
+        }
+
         // Code execution — check for code_execution tool
         if (hasToolType(rawTools, "CodeExecutionTool", "code_execution")) {
             config.setCodeExecution(CodeExecutionConfig.builder().enabled(true).build());
@@ -294,12 +305,7 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
         switch (type) {
             case "GoogleSearchTool":
             case "google_search":
-                return ToolConfig.builder()
-                        .name("google_search")
-                        .description("Search using Google")
-                        .toolType("http")
-                        .config(Map.of("builtin", "google_search"))
-                        .build();
+                return null;
 
             case "CodeExecutionTool":
             case "code_execution":

@@ -145,17 +145,19 @@ class AIModelTaskMapperPreviousResponseIdTest {
         TaskModel prior1 = completedIteration("resp_one");
         prior1.getOutputData().put("result", "Got it.");
         prior1.setIteration(1); // makes isLoopOverTask() true
+        prior1.setParentTaskReferenceName("loop");
         workflow.getTasks().add(prior1);
 
         TaskModel prior2 = completedIteration("resp_two");
         prior2.getOutputData().put("result", "Got it.");
         prior2.setIteration(2);
+        prior2.setParentTaskReferenceName("loop");
         workflow.getTasks().add(prior2);
 
         Map<String, Object> input = chatInput();
         input.put("messages", new ArrayList<Map<String, Object>>());
         input.put("previousResponseId", "resp_two");
-        TaskMapperContext ctx = newContext(workflow, llmTask(), input);
+        TaskMapperContext ctx = newContext(workflow, llmTask(), input, "loop");
 
         List<TaskModel> mapped = new ChatCompleteTaskMapper().getMappedTasks(ctx);
 
@@ -424,6 +426,14 @@ class AIModelTaskMapperPreviousResponseIdTest {
 
     private static TaskMapperContext newContext(
             WorkflowModel workflow, WorkflowTask task, Map<String, Object> input) {
+        return newContext(workflow, task, input, null);
+    }
+
+    private static TaskMapperContext newContext(
+            WorkflowModel workflow,
+            WorkflowTask task,
+            Map<String, Object> input,
+            String parentTaskReferenceName) {
         return TaskMapperContext.newBuilder()
                 .withWorkflowModel(workflow)
                 .withTaskDefinition(new TaskDef())
@@ -431,6 +441,7 @@ class AIModelTaskMapperPreviousResponseIdTest {
                 .withTaskInput(input)
                 .withRetryCount(0)
                 .withTaskId("task-" + System.nanoTime())
+                .withParentTaskReferenceName(parentTaskReferenceName)
                 .build();
     }
 

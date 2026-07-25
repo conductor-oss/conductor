@@ -49,6 +49,8 @@ public class StartWorkflowInput {
         this.externalInputPayloadStoragePath =
                 startWorkflowRequest.getExternalInputPayloadStoragePath();
         this.taskToDomain = startWorkflowRequest.getTaskToDomain();
+        this.idempotencyKey = startWorkflowRequest.getIdempotencyKey();
+        this.idempotencyStrategy = startWorkflowRequest.getIdempotencyStrategy();
     }
 
     public String getName() {

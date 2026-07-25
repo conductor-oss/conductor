@@ -975,44 +975,22 @@ public class ToolCompiler {
 
         for (int i = 0; i < apiServers.size(); i++) {
             Map<String, Object> server = apiServers.get(i);
-            String fetchRef = agentName + "_fetch_api_" + i;
-            String parseRef = agentName + "_list_api_" + i;
-            listTaskRefs.add(parseRef);
+            String listRef = agentName + "_list_api_" + i;
+            listTaskRefs.add(listRef);
 
-            // Step 1: HTTP task to fetch the spec
-            WorkflowTask fetchTask = new WorkflowTask();
-            fetchTask.setName("http_fetch_api_spec");
-            fetchTask.setTaskReferenceName(fetchRef);
-            fetchTask.setType("HTTP");
+            WorkflowTask listTask = new WorkflowTask();
+            listTask.setName("LIST_API_TOOLS");
+            listTask.setTaskReferenceName(listRef);
+            listTask.setType("LIST_API_TOOLS");
 
-            Map<String, Object> httpReq = new LinkedHashMap<>();
-            httpReq.put("uri", server.get("specUrl"));
-            httpReq.put("method", "GET");
-            httpReq.put("accept", "application/json");
-            httpReq.put("connectionTimeOut", 30000);
-            httpReq.put("readTimeOut", 30000);
-            // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
-            Object hdrs = secretRefHeaders(server.get("headers"));
-            if (hdrs != null && !((Map<?, ?>) hdrs).isEmpty()) {
-                httpReq.put("headers", hdrs);
+            Map<String, Object> listInputs = new LinkedHashMap<>();
+            listInputs.put("specUrl", server.get("specUrl"));
+            Object headers = secretRefHeaders(server.get("headers"));
+            if (headers != null && !((Map<?, ?>) headers).isEmpty()) {
+                listInputs.put("headers", headers);
             }
-            Map<String, Object> fetchInputs = new LinkedHashMap<>();
-            fetchInputs.put("http_request", httpReq);
-            fetchTask.setInputParameters(fetchInputs);
-            preTasks.add(fetchTask);
-
-            // Step 2: INLINE task to parse the OpenAPI/Swagger/Postman spec
-            WorkflowTask parseTask = new WorkflowTask();
-            parseTask.setTaskReferenceName(parseRef);
-            parseTask.setType("INLINE");
-
-            Map<String, Object> parseInputs = new LinkedHashMap<>();
-            parseInputs.put("evaluatorType", "graaljs");
-            parseInputs.put("expression", JavaScriptBuilder.apiParseScript());
-            parseInputs.put("specBody", "${" + fetchRef + ".output.response.body}");
-            parseInputs.put("specUrl", server.get("specUrl"));
-            parseTask.setInputParameters(parseInputs);
-            preTasks.add(parseTask);
+            listTask.setInputParameters(listInputs);
+            preTasks.add(listTask);
         }
 
         // ── 2. INLINE prepare task ───────────────────────────────────
@@ -1032,8 +1010,7 @@ public class ToolCompiler {
         prepareInputs.put("evaluatorType", "graaljs");
         prepareInputs.put("expression", prepareScript);
         for (int i = 0; i < listTaskRefs.size(); i++) {
-            prepareInputs.put(
-                    "api_discovered_" + i, "${" + listTaskRefs.get(i) + ".output.result}");
+            prepareInputs.put("api_discovered_" + i, "${" + listTaskRefs.get(i) + ".output}");
         }
         prepareTask.setInputParameters(prepareInputs);
         preTasks.add(prepareTask);
@@ -1192,44 +1169,22 @@ public class ToolCompiler {
 
         for (int i = 0; i < apiServers.size(); i++) {
             Map<String, Object> server = apiServers.get(i);
-            String fetchRef = agentName + "_fetch_api_" + i;
-            String parseRef = agentName + "_list_api_" + i;
-            apiListRefs.add(parseRef);
+            String listRef = agentName + "_list_api_" + i;
+            apiListRefs.add(listRef);
 
-            // HTTP task to fetch the spec
-            WorkflowTask fetchTask = new WorkflowTask();
-            fetchTask.setName("http_fetch_api_spec");
-            fetchTask.setTaskReferenceName(fetchRef);
-            fetchTask.setType("HTTP");
+            WorkflowTask listTask = new WorkflowTask();
+            listTask.setName("LIST_API_TOOLS");
+            listTask.setTaskReferenceName(listRef);
+            listTask.setType("LIST_API_TOOLS");
 
-            Map<String, Object> httpReq = new LinkedHashMap<>();
-            httpReq.put("uri", server.get("specUrl"));
-            httpReq.put("method", "GET");
-            httpReq.put("accept", "application/json");
-            httpReq.put("connectionTimeOut", 30000);
-            httpReq.put("readTimeOut", 30000);
-            // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
-            Object hdrs = secretRefHeaders(server.get("headers"));
-            if (hdrs != null && !((Map<?, ?>) hdrs).isEmpty()) {
-                httpReq.put("headers", hdrs);
+            Map<String, Object> listInputs = new LinkedHashMap<>();
+            listInputs.put("specUrl", server.get("specUrl"));
+            Object headers = secretRefHeaders(server.get("headers"));
+            if (headers != null && !((Map<?, ?>) headers).isEmpty()) {
+                listInputs.put("headers", headers);
             }
-            Map<String, Object> fetchInputs = new LinkedHashMap<>();
-            fetchInputs.put("http_request", httpReq);
-            fetchTask.setInputParameters(fetchInputs);
-            preTasks.add(fetchTask);
-
-            // INLINE task to parse the spec
-            WorkflowTask parseTask = new WorkflowTask();
-            parseTask.setTaskReferenceName(parseRef);
-            parseTask.setType("INLINE");
-
-            Map<String, Object> parseInputs = new LinkedHashMap<>();
-            parseInputs.put("evaluatorType", "graaljs");
-            parseInputs.put("expression", JavaScriptBuilder.apiParseScript());
-            parseInputs.put("specBody", "${" + fetchRef + ".output.response.body}");
-            parseInputs.put("specUrl", server.get("specUrl"));
-            parseTask.setInputParameters(parseInputs);
-            preTasks.add(parseTask);
+            listTask.setInputParameters(listInputs);
+            preTasks.add(listTask);
         }
 
         // ── 2. INLINE prepare task (combined MCP + API) ─────────────
@@ -1903,6 +1858,7 @@ public class ToolCompiler {
         mergeInput.put("evaluatorType", "graaljs");
         mergeInput.put("expression", JavaScriptBuilder.stateMergeScript());
         mergeInput.put("currentState", "${workflow.variables._agent_state}");
+        mergeInput.put("previousToolResults", "${workflow.variables._last_tool_results}");
         mergeInput.put("joinOutput", "${" + joinRef + ".output}");
         mergeTask.setInputParameters(mergeInput);
 
@@ -1912,7 +1868,9 @@ public class ToolCompiler {
         setTask.setType("SET_VARIABLE");
         setTask.setTaskReferenceName(setRef);
         setTask.setInputParameters(
-                Map.of("_agent_state", "${" + mergeRef + ".output.result.mergedState}"));
+                Map.of(
+                        "_agent_state", "${" + mergeRef + ".output.result.mergedState}",
+                        "_last_tool_results", "${" + mergeRef + ".output.result.toolResults}"));
 
         return List.of(mergeTask, setTask);
     }

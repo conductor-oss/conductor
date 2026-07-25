@@ -71,7 +71,7 @@ class FileStorageE2ETest {
                 client.execute(
                                 ConductorClientRequest.builder()
                                         .method(Method.GET)
-                                        .path("/files/" + fileId + "/upload-url")
+                                        .path("/files/wf-1/" + fileId + "/upload-url")
                                         .build(),
                                 MAP_TYPE)
                         .getData();
@@ -89,7 +89,7 @@ class FileStorageE2ETest {
                 client.execute(
                                 ConductorClientRequest.builder()
                                         .method(Method.GET)
-                                        .path("/files/" + fileId)
+                                        .path("/files/wf-1/" + fileId)
                                         .build(),
                                 MAP_TYPE)
                         .getData();
@@ -107,7 +107,7 @@ class FileStorageE2ETest {
             client.execute(
                     ConductorClientRequest.builder()
                             .method(Method.GET)
-                            .path("/files/nonexistent-file-id-" + UUID.randomUUID())
+                            .path("/files/wf-1/nonexistent-file-id-" + UUID.randomUUID())
                             .build(),
                     MAP_TYPE);
             fail("Expected 404");
@@ -128,7 +128,7 @@ class FileStorageE2ETest {
                 client.execute(
                                 ConductorClientRequest.builder()
                                         .method(Method.POST)
-                                        .path("/files/" + fileId + "/multipart")
+                                        .path("/files/wf-1/" + fileId + "/multipart")
                                         .build(),
                                 MAP_TYPE)
                         .getData();
@@ -176,7 +176,7 @@ class FileStorageE2ETest {
                 client.execute(
                                 ConductorClientRequest.builder()
                                         .method(Method.POST)
-                                        .path("/files/" + fileId + "/upload-complete")
+                                        .path("/files/wf-rt/" + fileId + "/upload-complete")
                                         .build(),
                                 MAP_TYPE)
                         .getData();
@@ -229,15 +229,13 @@ class FileStorageE2ETest {
         String fileId = fileIdFromResponse(created);
         String uploadUrl = created.get("uploadUrl").toString();
 
-        // File must be UPLOADED before the family check is reached;
-        // without this the server returns 400 (not yet uploaded) instead of 403.
         Path uploadPath = Path.of(URI.create(uploadUrl));
         Files.createDirectories(uploadPath.getParent());
         Files.write(uploadPath, new byte[64]);
         client.execute(
                 ConductorClientRequest.builder()
                         .method(Method.POST)
-                        .path("/files/" + fileId + "/upload-complete")
+                        .path("/files/wf-owner/" + fileId + "/upload-complete")
                         .build(),
                 MAP_TYPE);
 

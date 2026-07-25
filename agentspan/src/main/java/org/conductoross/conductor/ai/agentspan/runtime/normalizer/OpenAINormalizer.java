@@ -70,6 +70,13 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
             }
         }
 
+        // Provider-native web search is configured on LLM_CHAT_COMPLETE.  It is never a
+        // dynamically-dispatched HTTP tool, because no endpoint URL exists for that shape.
+        if (hasToolType(rawTools, "WebSearchTool") || hasToolType(rawTools, "web_search")) {
+            config.setMetadata(new LinkedHashMap<>());
+            config.getMetadata().put("_builtin_web_search", true);
+        }
+
         // Code execution — check if any tool is a CodeInterpreterTool
         if (hasToolType(rawTools, "CodeInterpreterTool")) {
             config.setCodeExecution(CodeExecutionConfig.builder().enabled(true).build());
@@ -151,12 +158,7 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
         switch (type) {
             case "WebSearchTool":
             case "web_search":
-                return ToolConfig.builder()
-                        .name("web_search")
-                        .description("Search the web for information")
-                        .toolType("http")
-                        .config(Map.of("builtin", "web_search"))
-                        .build();
+                return null;
 
             case "FileSearchTool":
             case "file_search":

@@ -3,8 +3,7 @@ plugins {
 }
 
 dependencies {
-    testImplementation 'org.conductoross:conductor-client:5.0.1'
-    testImplementation 'org.conductoross:java-sdk:5.0.1'
+    testImplementation 'org.conductoross:conductor-client:6.0.0.rc2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
     testImplementation 'org.junit.jupiter:junit-jupiter-params'

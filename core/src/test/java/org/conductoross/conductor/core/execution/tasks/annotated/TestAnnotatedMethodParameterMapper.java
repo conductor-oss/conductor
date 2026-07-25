@@ -19,6 +19,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
 
@@ -31,6 +32,8 @@ public class TestAnnotatedMethodParameterMapper {
     // Test class with various method signatures
     static class TestWorker {
         public void taskModelParameter(TaskModel task) {}
+
+        public void taskParameter(Task task) {}
 
         public void mapParameter(Map<String, Object> input) {}
 
@@ -58,6 +61,21 @@ public class TestAnnotatedMethodParameterMapper {
 
         assertEquals(1, params.length);
         assertSame(task, params[0]);
+    }
+
+    @Test
+    public void testPublicTaskParameter() throws Exception {
+        Method method = TestWorker.class.getMethod("taskParameter", Task.class);
+        TaskModel task = createTaskModel("workflow-id", Map.of("key", "value"));
+        task.setTaskId("task-id");
+
+        Object[] params = mapper.mapParameters(task, method);
+
+        assertEquals(1, params.length);
+        assertTrue(params[0] instanceof Task);
+        Task publicTask = (Task) params[0];
+        assertEquals("task-id", publicTask.getTaskId());
+        assertEquals("value", publicTask.getInputData().get("key"));
     }
 
     @Test
@@ -140,6 +158,7 @@ public class TestAnnotatedMethodParameterMapper {
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(workflowId);
         task.setInputData(new HashMap<>(inputData));
+        task.setStatus(TaskModel.Status.SCHEDULED);
         return task;
     }
 }

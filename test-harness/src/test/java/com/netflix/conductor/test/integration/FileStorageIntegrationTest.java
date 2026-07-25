@@ -62,7 +62,7 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
                 fileStorageService.createFile(newRequest("doc.pdf", "application/pdf"));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
 
-        FileHandle handle = fileStorageService.getFileMetadata(fileId);
+        FileHandle handle = fileStorageService.getFileMetadata(WORKFLOW_ID, fileId);
 
         assertEquals(created.getFileHandleId(), handle.getFileHandleId());
         assertEquals("doc.pdf", handle.getFileName());
@@ -72,7 +72,8 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
     @Test
     void getMetadataForUnknownFileThrowsNotFoundException() {
         assertThrows(
-                NotFoundException.class, () -> fileStorageService.getFileMetadata("nonexistent"));
+                NotFoundException.class,
+                () -> fileStorageService.getFileMetadata(WORKFLOW_ID, "nonexistent"));
     }
 
     @Test
@@ -84,7 +85,7 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fileStorageService.getDownloadUrl(fileId, "wf-test"));
+                () -> fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId));
     }
 
     @Test
@@ -97,8 +98,9 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
         Files.createDirectories(storagePath.getParent());
         Files.writeString(storagePath, "hello");
 
-        FileUploadCompleteResponse confirmed = fileStorageService.confirmUpload(fileId);
-        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(fileId, "wf-test");
+        FileUploadCompleteResponse confirmed =
+                fileStorageService.confirmUpload(WORKFLOW_ID, fileId);
+        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId);
 
         assertEquals(FileUploadStatus.UPLOADED, confirmed.getUploadStatus());
         assertNotNull(download.getDownloadUrl());
@@ -110,10 +112,13 @@ class FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
                 fileStorageService.createFile(newRequest("large.bin", "application/octet-stream"));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
 
-        MultipartInitResponse init = fileStorageService.initiateMultipartUpload(fileId);
+        MultipartInitResponse init =
+                fileStorageService.initiateMultipartUpload(WORKFLOW_ID, fileId);
 
         assertNotNull(init.getUploadId());
         assertNotNull(
-                fileStorageService.getPartUploadUrl(fileId, init.getUploadId(), 1).getUploadUrl());
+                fileStorageService
+                        .getPartUploadUrl(WORKFLOW_ID, fileId, init.getUploadId(), 1)
+                        .getUploadUrl());
     }
 }
