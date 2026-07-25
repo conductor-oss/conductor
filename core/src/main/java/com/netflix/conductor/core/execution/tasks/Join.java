@@ -25,9 +25,9 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.LoopTaskUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -63,11 +63,8 @@ public class Join extends WorkflowSystemTask {
         boolean agentExecution = isAgentExecution(workflow);
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
-            // If join is part of loop over task, wait for specific iteration to get complete
-            joinOn =
-                    joinOn.stream()
-                            .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                            .toList();
+            String suffixChain = LoopTaskUtils.getIterationSuffixChain(task);
+            joinOn = joinOn.stream().map(name -> name + suffixChain).toList();
         }
 
         boolean allTasksTerminal =

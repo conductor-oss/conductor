@@ -19,8 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.LoopTaskUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -48,12 +48,8 @@ public class ExclusiveJoin extends WorkflowSystemTask {
         TaskModel.Status taskStatus;
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
-            // If exclusive join is part of loop over task, wait for specific iteration to get
-            // complete
-            joinOn =
-                    joinOn.stream()
-                            .map(name -> TaskUtils.appendIteration(name, task.getIteration()))
-                            .collect(Collectors.toList());
+            String suffixChain = LoopTaskUtils.getIterationSuffixChain(task);
+            joinOn = joinOn.stream().map(name -> name + suffixChain).collect(Collectors.toList());
         }
         TaskModel exclusiveTask = null;
         for (String joinOnRef : joinOn) {

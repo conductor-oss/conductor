@@ -48,6 +48,7 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener.WorkflowEventType;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.core.utils.LoopTaskUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
@@ -2468,12 +2469,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         loopTask.getRetryCount(),
                         null);
         setTaskDomains(scheduledLoopOverTasks, workflow);
+        String loopSuffixChain = LoopTaskUtils.getIterationSuffixChain(loopTask);
         scheduledLoopOverTasks.forEach(
                 t -> {
                     t.setReferenceTaskName(
                             TaskUtils.appendIteration(
-                                    t.getReferenceTaskName(), loopTask.getIteration()));
+                                    t.getReferenceTaskName() + loopSuffixChain,
+                                    loopTask.getIteration()));
                     t.setIteration(loopTask.getIteration());
+                    t.setLoopTaskId(loopTask.getTaskId());
                 });
         scheduleTask(workflow, scheduledLoopOverTasks);
         workflow.getTasks().addAll(scheduledLoopOverTasks);

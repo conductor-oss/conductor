@@ -1976,6 +1976,35 @@ public class TestDeciderService {
         return workflow;
     }
 
+    @Test
+    public void testFilterNextLoopOverTasksPreservesFullParentSuffixChain() {
+        WorkflowModel workflow = new WorkflowModel();
+
+        WorkflowTask innerDefinition = new WorkflowTask();
+        innerDefinition.setTaskReferenceName("inner_loop");
+        TaskModel completedInnerLoop = new TaskModel();
+        completedInnerLoop.setWorkflowTask(innerDefinition);
+        completedInnerLoop.setReferenceTaskName("inner_loop__3__2");
+        completedInnerLoop.setTaskId("inner-id");
+        completedInnerLoop.setLoopTaskId("parent-loop-id");
+        completedInnerLoop.setIteration(7);
+        completedInnerLoop.setStatus(TaskModel.Status.COMPLETED);
+
+        TaskModel sibling = new TaskModel();
+        sibling.setReferenceTaskName("sibling_check");
+        sibling.setStatus(TaskModel.Status.SCHEDULED);
+        workflow.getTasks().add(completedInnerLoop);
+
+        List<TaskModel> result =
+                deciderService.filterNextLoopOverTasks(
+                        Arrays.asList(sibling), "__3__2", completedInnerLoop, workflow);
+
+        assertEquals(1, result.size());
+        assertEquals("sibling_check__3__2", result.get(0).getReferenceTaskName());
+        assertEquals(2, result.get(0).getIteration());
+        assertEquals("parent-loop-id", result.get(0).getLoopTaskId());
+    }
+
     private WorkflowDef createNestedWorkflow() {
 
         WorkflowDef workflowDef = new WorkflowDef();

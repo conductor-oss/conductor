@@ -32,13 +32,13 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
-import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.core.utils.LoopTaskUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -240,10 +240,13 @@ public class DeciderService {
                     && pendingTask.getStatus().isTerminal()) {
                 pendingTask.setExecuted(true);
                 List<TaskModel> nextTasks = getNextTask(workflow, pendingTask);
-                if (pendingTask.isLoopOverTask()
-                        && !TaskType.DO_WHILE.name().equals(pendingTask.getTaskType())
-                        && !nextTasks.isEmpty()) {
-                    nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
+                if (!nextTasks.isEmpty()) {
+                    String suffixChain = LoopTaskUtils.getIterationSuffixChain(pendingTask);
+                    if (!suffixChain.isEmpty()) {
+                        nextTasks =
+                                filterNextLoopOverTasks(
+                                        nextTasks, suffixChain, pendingTask, workflow);
+                    }
                 }
                 nextTasks.forEach(
                         nextTask ->
@@ -319,14 +322,25 @@ public class DeciderService {
     @VisibleForTesting
     List<TaskModel> filterNextLoopOverTasks(
             List<TaskModel> tasks, TaskModel pendingTask, WorkflowModel workflow) {
+        return filterNextLoopOverTasks(
+                tasks, LoopTaskUtils.getIterationSuffixChain(pendingTask), pendingTask, workflow);
+    }
 
-        // Update the task reference name and iteration
+    @VisibleForTesting
+    List<TaskModel> filterNextLoopOverTasks(
+            List<TaskModel> tasks,
+            String suffixChain,
+            TaskModel pendingTask,
+            WorkflowModel workflow) {
+
+        int iteration = LoopTaskUtils.getIterationFromSuffixChain(suffixChain);
         tasks.forEach(
                 nextTask -> {
-                    nextTask.setReferenceTaskName(
-                            TaskUtils.appendIteration(
-                                    nextTask.getReferenceTaskName(), pendingTask.getIteration()));
-                    nextTask.setIteration(pendingTask.getIteration());
+                    nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + suffixChain);
+                    if (iteration > 0) {
+                        nextTask.setIteration(iteration);
+                    }
+                    nextTask.setLoopTaskId(pendingTask.getLoopTaskId());
                 });
 
         List<String> tasksInWorkflow =
@@ -522,13 +536,16 @@ public class DeciderService {
 
         String taskReferenceName =
                 task.isLoopOverTask()
-                        ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName())
+                        ? LoopTaskUtils.removeIterationSuffixChain(task.getReferenceTaskName())
                         : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
         }
         if (taskToSchedule != null && TaskType.DO_WHILE.name().equals(taskToSchedule.getType())) {
+            if (taskToSchedule.has(taskReferenceName)) {
+                return Collections.emptyList();
+            }
             // check if already has this DO_WHILE task, ignore it if it already exists
             String nextTaskReferenceName = taskToSchedule.getTaskReferenceName();
             if (workflow.getTasks().stream()

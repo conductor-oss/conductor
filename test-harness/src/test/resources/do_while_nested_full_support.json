@@ -1,0 +1,40 @@
+{
+  "name": "do_while_nested_full_support",
+  "description": "Verifies nested DO_WHILE suffix chains and a trailing sibling task",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "outer_loop",
+      "taskReferenceName": "outer_loop",
+      "type": "DO_WHILE",
+      "loopCondition": "if ($.outer_loop['iteration'] < 2) { true; } else { false; }",
+      "loopOver": [
+        {
+          "name": "inner_loop",
+          "taskReferenceName": "inner_loop",
+          "type": "DO_WHILE",
+          "loopCondition": "if ($.inner_loop['iteration'] < 2) { true; } else { false; }",
+          "loopOver": [
+            {
+              "name": "inner_body",
+              "taskReferenceName": "inner_body",
+              "type": "LAMBDA",
+              "inputParameters": {
+                "scriptExpression": "return {ok: true}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "outer_sibling",
+          "taskReferenceName": "outer_sibling",
+          "type": "LAMBDA",
+          "inputParameters": {
+            "scriptExpression": "return {ok: true}"
+          }
+        }
+      ]
+    }
+  ]
+}

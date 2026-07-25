@@ -45,7 +45,26 @@ class DoWhileSpec extends AbstractSpecification {
                 'do_while_system_tasks.json',
                 'do_while_with_decision_task.json',
                 'do_while_set_variable_fix.json',
-                'do_while_high_iteration_test.json')
+                'do_while_high_iteration_test.json',
+                'do_while_nested_full_support.json')
+    }
+
+    def "nested DO_WHILE preserves every iteration suffix and completes"() {
+        when:
+        def workflowId = startWorkflow('do_while_nested_full_support', 1, 'nested-full', new HashMap(), null)
+
+        then:
+        with(workflowExecutionService.getExecutionStatus(workflowId, true)) {
+            def taskRefs = tasks*.referenceTaskName
+            status == Workflow.WorkflowStatus.COMPLETED
+            taskRefs.containsAll([
+                    'inner_loop__1',
+                    'inner_body__1__1',
+                    'inner_body__2__1',
+                    'outer_sibling__1',
+                    'outer_sibling__2'
+            ])
+        }
     }
 
     def "Test workflow with 2 iterations of five tasks"() {

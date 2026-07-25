@@ -27,6 +27,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.LoopTaskUtils;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -64,14 +65,18 @@ public class DoWhile extends WorkflowSystemTask {
          * Get the latest set of tasks (the ones that have the highest retry count). We don't want to evaluate any tasks
          * that have already failed if there is a more current one (a later retry count).
          */
+        String currentIterationChain =
+                TaskUtils.appendIteration(
+                        LoopTaskUtils.getIterationSuffixChain(doWhileTaskModel),
+                        doWhileTaskModel.getIteration());
         Map<String, TaskModel> relevantTasks = new LinkedHashMap<>();
         TaskModel relevantTask;
         for (TaskModel t : workflow.getTasks()) {
             if (doWhileTaskModel
                             .getWorkflowTask()
-                            .has(TaskUtils.removeIterationFromTaskRefName(t.getReferenceTaskName()))
+                            .has(LoopTaskUtils.removeIterationSuffixChain(t.getReferenceTaskName()))
                     && !doWhileTaskModel.getReferenceTaskName().equals(t.getReferenceTaskName())
-                    && doWhileTaskModel.getIteration() == t.getIteration()) {
+                    && currentIterationChain.equals(LoopTaskUtils.getIterationSuffixChain(t))) {
                 relevantTask = relevantTasks.get(t.getReferenceTaskName());
                 if (relevantTask == null || t.getRetryCount() > relevantTask.getRetryCount()) {
                     relevantTasks.put(t.getReferenceTaskName(), t);
@@ -122,7 +127,7 @@ public class DoWhile extends WorkflowSystemTask {
                 failureReason.append(loopOverTask.getReasonForIncompletion()).append(" ");
             }
             output.put(
-                    TaskUtils.removeIterationFromTaskRefName(loopOverTask.getReferenceTaskName()),
+                    LoopTaskUtils.removeIterationSuffixChain(loopOverTask.getReferenceTaskName()),
                     loopOverTask.getOutputData());
             if (hasFailures) {
                 break;
@@ -221,13 +226,13 @@ public class DoWhile extends WorkflowSystemTask {
                 keepLastN);
 
         // Find and remove tasks from old iterations
-        List<TaskModel> tasksToRemove =
+        Set<String> taskIdsToRemove =
                 workflow.getTasks().stream()
                         .filter(
                                 task -> {
                                     // Check if this task belongs to the DO_WHILE loop
                                     String taskRefWithoutIteration =
-                                            TaskUtils.removeIterationFromTaskRefName(
+                                            LoopTaskUtils.removeIterationSuffixChain(
                                                     task.getReferenceTaskName());
                                     boolean belongsToLoop =
                                             doWhileTaskModel
@@ -244,10 +249,27 @@ public class DoWhile extends WorkflowSystemTask {
 
                                     return belongsToLoop && isOldIteration;
                                 })
-                        .collect(Collectors.toList());
+                        .map(TaskModel::getTaskId)
+                        .collect(Collectors.toSet());
+
+        boolean changed = !taskIdsToRemove.isEmpty();
+        while (changed) {
+            changed = false;
+            for (TaskModel task : workflow.getTasks()) {
+                if (!taskIdsToRemove.contains(task.getTaskId())
+                        && task.getLoopTaskId() != null
+                        && taskIdsToRemove.contains(task.getLoopTaskId())) {
+                    taskIdsToRemove.add(task.getTaskId());
+                    changed = true;
+                }
+            }
+        }
 
         // Remove each task from the database
-        for (TaskModel taskToRemove : tasksToRemove) {
+        for (TaskModel taskToRemove : workflow.getTasks()) {
+            if (!taskIdsToRemove.contains(taskToRemove.getTaskId())) {
+                continue;
+            }
             try {
                 LOGGER.debug(
                         "Removing task {} (iteration {}) from workflow {}",
@@ -265,10 +287,9 @@ public class DoWhile extends WorkflowSystemTask {
                 // Continue with other tasks even if one fails
             }
         }
-
         LOGGER.info(
                 "Removed {} tasks from {} old iterations for DO_WHILE task {} in workflow {}",
-                tasksToRemove.size(),
+                taskIdsToRemove.size(),
                 iterationsToRemove,
                 doWhileTaskModel.getReferenceTaskName(),
                 workflow.getWorkflowId());
@@ -287,11 +308,13 @@ public class DoWhile extends WorkflowSystemTask {
         List<WorkflowTask> workflowTasksInsideDoWhile =
                 doWhileTaskModel.getWorkflowTask().getLoopOver();
         int iteration = doWhileTaskModel.getIteration();
+        String currentIterationChain =
+                TaskUtils.appendIteration(
+                        LoopTaskUtils.getIterationSuffixChain(doWhileTaskModel), iteration);
         boolean allTasksTerminal = true;
         for (WorkflowTask workflowTaskInsideDoWhile : workflowTasksInsideDoWhile) {
             String taskReferenceName =
-                    TaskUtils.appendIteration(
-                            workflowTaskInsideDoWhile.getTaskReferenceName(), iteration);
+                    workflowTaskInsideDoWhile.getTaskReferenceName() + currentIterationChain;
             if (referenceNameToModel.containsKey(taskReferenceName)) {
                 TaskModel taskModel = referenceNameToModel.get(taskReferenceName);
                 if (!taskModel.getStatus().isTerminal()) {
@@ -329,7 +352,7 @@ public class DoWhile extends WorkflowSystemTask {
         for (TaskModel task : referenceNameToModel.values()) {
             if (task.getStatus().isTerminal()) {
                 String refNameWithoutIteration =
-                        TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName());
+                        LoopTaskUtils.removeIterationSuffixChain(task.getReferenceTaskName());
                 WorkflowTask nextWorkflowTask =
                         doWhileTaskModel.getWorkflowTask().next(refNameWithoutIteration, null);
                 // A non-null next task that is still within the DO_WHILE hierarchy (i.e. not the
@@ -341,8 +364,7 @@ public class DoWhile extends WorkflowSystemTask {
                                 .getWorkflowTask()
                                 .has(nextWorkflowTask.getTaskReferenceName())) {
                     String nextTaskRef =
-                            TaskUtils.appendIteration(
-                                    nextWorkflowTask.getTaskReferenceName(), iteration);
+                            nextWorkflowTask.getTaskReferenceName() + currentIterationChain;
                     if (!referenceNameToModel.containsKey(nextTaskRef)) {
                         // Successor task not yet scheduled — iteration is not complete.
                         return false;
@@ -515,7 +537,9 @@ public class DoWhile extends WorkflowSystemTask {
                         workflow,
                         task.getTaskId(),
                         taskDefinition);
-        conditionInput.put(task.getReferenceTaskName(), task.getOutputData());
+        conditionInput.put(
+                LoopTaskUtils.removeIterationSuffixChain(task.getReferenceTaskName()),
+                task.getOutputData());
         List<TaskModel> loopOver =
                 workflow.getTasks().stream()
                         .filter(
@@ -532,7 +556,7 @@ public class DoWhile extends WorkflowSystemTask {
 
         for (TaskModel loopOverTask : loopOver) {
             conditionInput.put(
-                    TaskUtils.removeIterationFromTaskRefName(loopOverTask.getReferenceTaskName()),
+                    LoopTaskUtils.removeIterationSuffixChain(loopOverTask.getReferenceTaskName()),
                     loopOverTask.getOutputData());
         }
 
