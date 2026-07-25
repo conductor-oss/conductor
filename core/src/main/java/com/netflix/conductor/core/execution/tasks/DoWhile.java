@@ -540,18 +540,23 @@ public class DoWhile extends WorkflowSystemTask {
         conditionInput.put(
                 LoopTaskUtils.removeIterationSuffixChain(task.getReferenceTaskName()),
                 task.getOutputData());
+        String currentIterationChain =
+                TaskUtils.appendIteration(
+                        LoopTaskUtils.getIterationSuffixChain(task), task.getIteration());
         List<TaskModel> loopOver =
                 workflow.getTasks().stream()
                         .filter(
                                 t ->
                                         (task.getWorkflowTask()
                                                         .has(
-                                                                TaskUtils
-                                                                        .removeIterationFromTaskRefName(
+                                                                LoopTaskUtils
+                                                                        .removeIterationSuffixChain(
                                                                                 t
                                                                                         .getReferenceTaskName()))
                                                 && !task.getReferenceTaskName()
-                                                        .equals(t.getReferenceTaskName())))
+                                                        .equals(t.getReferenceTaskName())
+                                                && currentIterationChain.equals(
+                                                        LoopTaskUtils.getIterationSuffixChain(t))))
                         .collect(Collectors.toList());
 
         for (TaskModel loopOverTask : loopOver) {

@@ -59,8 +59,11 @@ class DoWhileSpec extends AbstractSpecification {
             status == Workflow.WorkflowStatus.COMPLETED
             taskRefs.containsAll([
                     'inner_loop__1',
+                    'inner_loop__2',
                     'inner_body__1__1',
                     'inner_body__2__1',
+                    'inner_body__1__2',
+                    'inner_body__2__2',
                     'outer_sibling__1',
                     'outer_sibling__2'
             ])
