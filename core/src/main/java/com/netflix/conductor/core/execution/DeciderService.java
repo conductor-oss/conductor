@@ -32,6 +32,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
@@ -536,7 +537,7 @@ public class DeciderService {
 
         String taskReferenceName =
                 task.isLoopOverTask()
-                        ? LoopTaskUtils.removeIterationSuffixChain(task.getReferenceTaskName())
+                        ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName())
                         : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {

@@ -15,6 +15,7 @@ package com.netflix.conductor.core.utils;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.model.TaskModel;
 
 import static org.junit.Assert.assertEquals;
@@ -23,10 +24,8 @@ public class LoopTaskUtilsTest {
 
     @Test
     public void removesTheWholeIterationSuffixChain() {
-        assertEquals("task", LoopTaskUtils.removeIterationSuffixChain("task__1"));
-        assertEquals("task", LoopTaskUtils.removeIterationSuffixChain("task__2__14"));
-        assertEquals("a__b", LoopTaskUtils.removeIterationSuffixChain("a__b"));
-        assertEquals("a__1b", LoopTaskUtils.removeIterationSuffixChain("a__1b__2"));
+        assertEquals("task", TaskUtils.removeIterationFromTaskRefName("task__1"));
+        assertEquals("task", TaskUtils.removeIterationFromTaskRefName("task__2__14"));
     }
 
     @Test

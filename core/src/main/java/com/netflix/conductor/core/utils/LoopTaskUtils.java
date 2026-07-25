@@ -24,10 +24,6 @@ public final class LoopTaskUtils {
 
     private LoopTaskUtils() {}
 
-    public static String removeIterationSuffixChain(String referenceTaskName) {
-        return ITERATION_SUFFIX_CHAIN.matcher(referenceTaskName).replaceAll("");
-    }
-
     /**
      * Returns the runtime iteration suffixes relative to the definition-time reference name. A
      * nested task has one {@code __<iteration>} suffix for each enclosing DO_WHILE.
