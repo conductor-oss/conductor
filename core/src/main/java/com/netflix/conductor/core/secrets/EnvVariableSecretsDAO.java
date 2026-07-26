@@ -27,6 +27,23 @@ import com.netflix.conductor.core.env.EnvVarLookup;
 @ConditionalOnProperty(name = "conductor.secrets.type", havingValue = "env", matchIfMissing = true)
 public class EnvVariableSecretsDAO implements SecretsDAO {
 
+    /**
+     * Env vars that {@code conductor.ai.*.api-key} properties fall back to in {@code
+     * application.properties} (e.g. {@code conductor.ai.openai.api-key=${OPENAI_API_KEY:}}).
+     */
+    private static final List<String> KNOWN_LLM_API_KEYS =
+            List.of(
+                    "OPENAI_API_KEY",
+                    "ANTHROPIC_API_KEY",
+                    "MISTRAL_API_KEY",
+                    "COHERE_API_KEY",
+                    "XAI_API_KEY",
+                    "PERPLEXITY_API_KEY",
+                    "HUGGINGFACE_API_KEY",
+                    "STABILITY_API_KEY",
+                    "AZURE_OPENAI_API_KEY",
+                    "GEMINI_API_KEY");
+
     private final String prefix;
 
     public EnvVariableSecretsDAO(
@@ -61,6 +78,29 @@ public class EnvVariableSecretsDAO implements SecretsDAO {
 
     @Override
     public List<CredentialMeta> listWithMeta() {
-        return List.of();
+        List<CredentialMeta> result = new ArrayList<>();
+        EnvVarLookup.allWithPrefix(prefix)
+                .forEach((name, value) -> result.add(toMeta(name, value)));
+        for (String llmKey : KNOWN_LLM_API_KEYS) {
+            String value = EnvVarLookup.lookup("", llmKey);
+            if (value != null) {
+                result.add(toMeta(llmKey, value));
+            }
+        }
+        return result;
+    }
+
+    private static CredentialMeta toMeta(String name, String value) {
+        return CredentialMeta.builder().name(name).partial(maskPartial(value)).build();
+    }
+
+    private static String maskPartial(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        if (value.length() <= 8) {
+            return "...";
+        }
+        return value.substring(0, 4) + "..." + value.substring(value.length() - 4);
     }
 }

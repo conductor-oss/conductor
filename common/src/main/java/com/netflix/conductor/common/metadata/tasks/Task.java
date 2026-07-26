@@ -221,6 +221,7 @@ public class Task {
      * {@link #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
      */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @ProtoField(id = 46)
     private Map<String, String> runtimeMetadata = new HashMap<>();
 
     public Task() {}

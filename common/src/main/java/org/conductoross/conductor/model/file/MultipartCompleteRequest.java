@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Payload for {@code POST /api/files/{fileId}/multipart/{uploadId}/complete}. {@code partETags} is
- * the ordered list of ETags (or backend equivalents) from each part upload.
+ * Payload for {@code POST /api/files/{workflowId}/{fileId}/multipart/{uploadId}/complete}. {@code
+ * partETags} is the ordered list of ETags (or backend equivalents) from each part upload.
  */
 public class MultipartCompleteRequest {
 

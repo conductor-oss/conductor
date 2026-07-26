@@ -42,6 +42,8 @@ import com.netflix.conductor.ConductorTestApp;
         })
 public abstract class AbstractFileStorageIntegrationTest {
 
+    protected static final String WORKFLOW_ID = "wf-test";
+
     @SuppressWarnings("resource")
     private static final GenericContainer<?> REDIS =
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
@@ -73,7 +75,7 @@ public abstract class AbstractFileStorageIntegrationTest {
         FileUploadRequest req = new FileUploadRequest();
         req.setFileName(name);
         req.setContentType(contentType);
-        req.setWorkflowId("wf-test");
+        req.setWorkflowId(WORKFLOW_ID);
         return req;
     }
 }

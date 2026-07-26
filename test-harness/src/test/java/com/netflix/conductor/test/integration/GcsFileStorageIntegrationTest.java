@@ -94,7 +94,8 @@ class GcsFileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
     @Test
     void getMetadataForUnknownFileThrowsNotFoundException() {
         assertThrows(
-                NotFoundException.class, () -> fileStorageService.getFileMetadata("nonexistent"));
+                NotFoundException.class,
+                () -> fileStorageService.getFileMetadata(WORKFLOW_ID, "nonexistent"));
     }
 
     @Test
@@ -106,7 +107,7 @@ class GcsFileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fileStorageService.getDownloadUrl(fileId, "wf-test"));
+                () -> fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId));
     }
 
     @Test
@@ -123,8 +124,9 @@ class GcsFileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
         // finds the object in the bucket.
         TEST_STORAGE.create(BlobInfo.newBuilder(BlobId.of(BUCKET, storagePath)).build(), payload);
 
-        FileUploadCompleteResponse confirmed = fileStorageService.confirmUpload(fileId);
-        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(fileId, "wf-test");
+        FileUploadCompleteResponse confirmed =
+                fileStorageService.confirmUpload(WORKFLOW_ID, fileId);
+        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId);
 
         assertEquals(FileUploadStatus.UPLOADED, confirmed.getUploadStatus());
         assertNotNull(download.getDownloadUrl());

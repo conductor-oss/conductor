@@ -38,6 +38,7 @@ public class NotificationResult {
     private WorkflowModel targetWorkflow;
     private WorkflowModel blockingWorkflow;
     private List<TaskModel> blockingTasks;
+    private boolean signalTimeout;
 
     public SignalResponse toResponse(
             WorkflowSignalReturnStrategy returnStrategy, String requestId) {
@@ -65,6 +66,7 @@ public class NotificationResult {
         workflowRun.setTargetWorkflowId(this.targetWorkflow.getWorkflowId());
         workflowRun.setTargetWorkflowStatus(this.targetWorkflow.getStatus().toString());
         workflowRun.setResponseType(returnStrategy);
+        workflowRun.setSignalTimeout(signalTimeout);
         return workflowRun;
     }
 
@@ -116,6 +118,7 @@ public class NotificationResult {
         run.setCreatedBy(task.getWorkerId());
         run.setCreateTime(task.getStartTime());
         run.setUpdateTime(task.getUpdateTime());
+        run.setSignalTimeout(signalTimeout);
 
         return run;
     }

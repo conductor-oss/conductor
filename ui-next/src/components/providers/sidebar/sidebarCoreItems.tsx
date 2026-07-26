@@ -160,7 +160,7 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           linkTo: SKILLS_URL.BASE,
           shortcuts: [],
           hotkeys: "",
-          hidden: hideAgentspan,
+          hidden: true,
           position: 300,
         },
         {

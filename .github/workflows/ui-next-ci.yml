@@ -5,11 +5,13 @@ on:
     branches:
       - main
     paths:
+      - "ui/**"
       - "ui-next/**"
   push:
     branches:
       - main
     paths:
+      - "ui/**"
       - "ui-next/**"
 
 permissions:

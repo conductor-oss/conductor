@@ -24,20 +24,22 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
+import org.conductoross.conductor.ai.tasks.worker.A2AWorkers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.Environment;
 
-import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 import okhttp3.OkHttpClient;
 
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.Mockito.mock;
 
 /**
  * Interop test against a <b>real, non-Conductor A2A agent</b> — the reference {@code a2a-sdk} echo
@@ -98,16 +100,17 @@ class A2ASdkInteropTest {
 
     @Test
     void callAgentTask_drivesRealAgentToCompletion() {
-        TaskModel task = callAgentTask(taskAgent.url(), "hello world", false);
-        new AgentTask(service(), mock(Environment.class)).start(null, task, null);
+        Task task = callAgentTask(taskAgent.url(), "hello world", false);
+        TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
         int guard = 0;
-        AgentTask client = new AgentTask(service(), mock(Environment.class));
-        while (task.getStatus() == TaskModel.Status.IN_PROGRESS && guard++ < 60) {
-            client.execute(null, task, null);
+        A2AWorkers workers = new A2AWorkers(service(), unusedAgentClient());
+        while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 60) {
+            result = invoke(workers, task);
         }
 
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus(), task.getReasonForIncompletion());
+        assertEquals(
+                TaskResult.Status.COMPLETED, result.getStatus(), result.getReasonForIncompletion());
         assertEquals("completed", task.getOutputData().get("state"));
         assertTrue(
                 String.valueOf(task.getOutputData().get("text")).contains("echo-task: hello world"),
@@ -116,11 +119,12 @@ class A2ASdkInteropTest {
 
     @Test
     void streamingCall_aggregatesRealSseToCompletion() {
-        TaskModel task = callAgentTask(taskAgent.url(), "stream me", true);
-        new AgentTask(service(), mock(Environment.class)).start(null, task, null);
+        Task task = callAgentTask(taskAgent.url(), "stream me", true);
+        TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
-        // Streaming aggregates to a terminal state in start(); no poll loop needed.
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus(), task.getReasonForIncompletion());
+        // Streaming aggregates to a terminal state in one worker invocation.
+        assertEquals(
+                TaskResult.Status.COMPLETED, result.getStatus(), result.getReasonForIncompletion());
         assertTrue(
                 String.valueOf(task.getOutputData().get("text")).contains("echo-task: stream me"),
                 "streamed artifact text: " + task.getOutputData().get("text"));
@@ -130,10 +134,10 @@ class A2ASdkInteropTest {
     void messageModeAgent_returnsDirectMessage() throws Exception {
         // A second real agent, this one configured to reply with a direct Message (not a Task).
         try (AgentProcess messageAgent = AgentProcess.launch(python, "message")) {
-            TaskModel task = callAgentTask(messageAgent.url(), "ping", false);
-            new AgentTask(service(), mock(Environment.class)).start(null, task, null);
+            Task task = callAgentTask(messageAgent.url(), "ping", false);
+            TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
-            assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+            assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
             assertTrue(
                     String.valueOf(task.getOutputData().get("text")).contains("echo: ping"),
                     "direct message reply: " + task.getOutputData().get("text"));
@@ -142,11 +146,13 @@ class A2ASdkInteropTest {
 
     // ---- helpers -----------------------------------------------------------------------------
 
-    private TaskModel callAgentTask(String agentUrl, String text, boolean streaming) {
-        TaskModel task = new TaskModel();
+    private Task callAgentTask(String agentUrl, String text, boolean streaming) {
+        Task task = new Task();
         task.setTaskId("interop-" + System.nanoTime());
         task.setWorkflowInstanceId("interop-wf");
         task.setReferenceTaskName("callEcho");
+        task.setStatus(Task.Status.SCHEDULED);
+        task.setOutputData(new HashMap<>());
         Map<String, Object> input = new HashMap<>();
         input.put("agentUrl", agentUrl);
         input.put("text", text);

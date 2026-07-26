@@ -17,6 +17,13 @@ export const editChanges = assign<SaveWorkflowMachineContext, EditEvent>({
   editorChanges: (_context, { changes }) => changes,
 });
 
+export const storeResolvedAgentSnapshots = assign<
+  SaveWorkflowMachineContext,
+  DoneInvokeEvent<string>
+>({
+  editorChanges: (_context, { data }) => data,
+});
+
 export const debounceEditEvent = raise<SaveWorkflowMachineContext, EditEvent>(
   (__, { changes }) => ({
     type: SaveWorkflowMachineEventTypes.EDIT_EVT,
