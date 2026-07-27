@@ -22,7 +22,7 @@ import com.netflix.conductor.test.utils.BlockingSystemTask
 import spock.lang.Shared
 
 /**
- * An async system task must never be executed twice under the same task id.
+ * An async system task shouldn't be executed twice under the same task id.
  *
  * SystemTaskWorker acks (removes) the queue message at poll, and AsyncSystemTaskExecutor then invokes
  * a blocking start() without persisting anything first. For the whole invocation the task is therefore
