@@ -118,6 +118,9 @@ jobs:
   unit-test:
     needs: detect-changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -180,8 +183,13 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
+          check_name: "Unit Test results"
+          check_title_template: "{{SUITE_NAME}} | {{TEST_NAME}} | {{CLASS_NAME}}"
           report_paths: "**/build/test-results/test/TEST-*.xml"
-          check_name: Unit Test Report
+          check_retries: true
+          detailed_summary: true
+          include_passed: false
+          flaky_summary: true
       - name: Upload unit-test reports
         uses: actions/upload-artifact@v7
         if: always()
@@ -251,7 +259,7 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
-          check_name: "Test-Harness tests"
+          check_name: "Test-Harness results"
           check_title_template: "{{SUITE_NAME}} | {{TEST_NAME}} | {{CLASS_NAME}}"
           report_paths: "test-harness/build/test-results/test/TEST-*.xml"
           check_retries: true
@@ -348,6 +356,9 @@ jobs:
     needs: generate-e2e-matrix
     if: ${{ needs.generate-e2e-matrix.outputs.matrix != '{"include":[]}' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
@@ -380,7 +391,13 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
+          check_name: "E2E results (${{ matrix.name }})"
+          check_title_template: "{{SUITE_NAME}} | {{TEST_NAME}} | {{CLASS_NAME}}"
           report_paths: "e2e/build/test-results/test/TEST-*.xml"
+          check_retries: true
+          detailed_summary: true
+          include_passed: false
+          flaky_summary: true
       - name: Generate test summary table
         if: always()
         shell: python3 {0}
