@@ -246,7 +246,13 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
+          check_name: "Test-Harness tests"
+          check_title_template: "{{SUITE_NAME}} | {{TEST_NAME}} | {{CLASS_NAME}}"
           report_paths: "test-harness/build/test-results/test/TEST-*.xml"
+          check_retries: true
+          detailed_summary: true
+          include_passed: false
+          flaky_summary: true
       - name: Upload test-harness reports
         uses: actions/upload-artifact@v7
         if: always()
