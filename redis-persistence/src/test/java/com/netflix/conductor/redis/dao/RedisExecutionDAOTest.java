@@ -15,9 +15,15 @@ package com.netflix.conductor.redis.dao;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
@@ -430,5 +436,160 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
         verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
         verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
+    }
+
+    // ---- #1322: first-terminal-write-wins guard ----
+
+    private TaskModel newTask(String taskId, String workflowId, TaskModel.Status status) {
+        TaskModel task = new TaskModel();
+        task.setTaskDefName("task_type");
+        task.setTaskType("task_type");
+        task.setReferenceTaskName("ref");
+        task.setTaskId(taskId);
+        task.setWorkflowInstanceId(workflowId);
+        task.setStatus(status);
+        return task;
+    }
+
+    private Set<String> markerKeys() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            return jedis.keys("*}.TERM");
+        }
+    }
+
+    @Test
+    public void testFirstTerminalWriteWins() {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+        String taskId = UUID.randomUUID().toString();
+        TaskModel task = newTask(taskId, workflow.getWorkflowId(), TaskModel.Status.SCHEDULED);
+        executionDAO.createTasks(List.of(task));
+
+        // First terminal write with output A.
+        task.setStatus(TaskModel.Status.COMPLETED);
+        task.setOutputData(new HashMap<>(Map.of("result", "A")));
+        executionDAO.updateTask(task);
+        assertFalse("marker must be set after a terminal write", markerKeys().isEmpty());
+
+        // Zombie duplicate terminal write with output B must be rejected.
+        TaskModel zombie = executionDAO.getTask(taskId);
+        zombie.setStatus(TaskModel.Status.COMPLETED);
+        zombie.setOutputData(new HashMap<>(Map.of("result", "B")));
+        executionDAO.updateTask(zombie);
+
+        TaskModel stored = executionDAO.getTask(taskId);
+        assertEquals("first terminal write must win", "A", stored.getOutputData().get("result"));
+    }
+
+    @Test
+    public void testNonTerminalWritesNotBlocked() {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+        String taskId = UUID.randomUUID().toString();
+        TaskModel task = newTask(taskId, workflow.getWorkflowId(), TaskModel.Status.SCHEDULED);
+        executionDAO.createTasks(List.of(task));
+
+        for (int i = 0; i < 3; i++) {
+            task.setStatus(TaskModel.Status.IN_PROGRESS);
+            task.setOutputData(new HashMap<>(Map.of("result", "v" + i)));
+            executionDAO.updateTask(task);
+        }
+
+        assertEquals("v2", executionDAO.getTask(taskId).getOutputData().get("result"));
+        assertTrue("non-terminal writes must not set a marker", markerKeys().isEmpty());
+    }
+
+    @Test
+    public void testForceUpdateOverwritesTerminalThenReopenClearsMarker() {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+        String taskId = UUID.randomUUID().toString();
+        TaskModel task = newTask(taskId, workflow.getWorkflowId(), TaskModel.Status.SCHEDULED);
+        executionDAO.createTasks(List.of(task));
+
+        // Terminal via the guarded path.
+        task.setStatus(TaskModel.Status.COMPLETED);
+        task.setOutputData(new HashMap<>(Map.of("result", "A")));
+        executionDAO.updateTask(task);
+
+        // forceUpdateTask bypasses the guard and overwrites a terminal task.
+        TaskModel forced = executionDAO.getTask(taskId);
+        forced.setStatus(TaskModel.Status.COMPLETED);
+        forced.setOutputData(new HashMap<>(Map.of("result", "B")));
+        executionDAO.forceUpdateTask(forced);
+        assertEquals("B", executionDAO.getTask(taskId).getOutputData().get("result"));
+        assertFalse("marker stays set on terminal force-update", markerKeys().isEmpty());
+
+        // Reopening to a non-terminal status via forceUpdateTask clears the marker (rerun/retry).
+        TaskModel reopened = executionDAO.getTask(taskId);
+        reopened.setStatus(TaskModel.Status.SCHEDULED);
+        executionDAO.forceUpdateTask(reopened);
+        assertTrue("reopen must clear the marker", markerKeys().isEmpty());
+
+        // Re-completion after reopen is accepted by the guarded path.
+        TaskModel recompleted = executionDAO.getTask(taskId);
+        recompleted.setStatus(TaskModel.Status.COMPLETED);
+        recompleted.setOutputData(new HashMap<>(Map.of("result", "C")));
+        executionDAO.updateTask(recompleted);
+        assertEquals("C", executionDAO.getTask(taskId).getOutputData().get("result"));
+    }
+
+    @Test
+    public void testRemoveTaskClearsMarker() {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+        String taskId = UUID.randomUUID().toString();
+        TaskModel task = newTask(taskId, workflow.getWorkflowId(), TaskModel.Status.SCHEDULED);
+        executionDAO.createTasks(List.of(task));
+        task.setStatus(TaskModel.Status.COMPLETED);
+        executionDAO.updateTask(task);
+        assertFalse(markerKeys().isEmpty());
+
+        executionDAO.removeTask(taskId);
+
+        assertNull(executionDAO.getTask(taskId));
+        assertTrue("removeTask must clear the marker", markerKeys().isEmpty());
+    }
+
+    @Test
+    public void testConcurrentTerminalWrites() throws InterruptedException {
+        WorkflowModel workflow = createRunningWorkflow();
+        executionDAO.createWorkflow(workflow);
+        String taskId = UUID.randomUUID().toString();
+        executionDAO.createTasks(
+                List.of(newTask(taskId, workflow.getWorkflowId(), TaskModel.Status.SCHEDULED)));
+
+        int threads = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        Set<String> candidates = new HashSet<>();
+        for (int i = 0; i < threads; i++) {
+            String value = "v" + i;
+            candidates.add(value);
+            pool.submit(
+                    () -> {
+                        TaskModel t =
+                                newTask(
+                                        taskId,
+                                        workflow.getWorkflowId(),
+                                        TaskModel.Status.COMPLETED);
+                        t.setOutputData(new HashMap<>(Map.of("result", value)));
+                        try {
+                            start.await();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                        executionDAO.updateTask(t);
+                    });
+        }
+        start.countDown();
+        pool.shutdown();
+        assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS));
+
+        // Exactly one write wins; the stored value is one intact candidate, not a torn write.
+        Object stored = executionDAO.getTask(taskId).getOutputData().get("result");
+        assertTrue("stored value must be one intact candidate", candidates.contains(stored));
+        assertEquals("exactly one terminal marker for the task", 1, markerKeys().size());
     }
 }

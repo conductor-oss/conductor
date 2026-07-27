@@ -324,7 +324,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 return;
         }
         task.addOutput(subWorkflow.getOutput());
-        executionDAO.updateTask(task);
+        executionDAO.forceUpdateTask(task);
     }
 
     private void forceSetLastTaskAsNotExecuted(WorkflowModel workflow) {

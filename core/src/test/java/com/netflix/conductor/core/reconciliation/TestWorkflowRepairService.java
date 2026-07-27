@@ -259,7 +259,7 @@ public class TestWorkflowRepairService {
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
         // Verify
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAO, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAO, times(1)).forceUpdateTask(argumentCaptor.capture());
         assertEquals(taskId, argumentCaptor.getValue().getTaskId());
         assertEquals(subWorkflowId, argumentCaptor.getValue().getSubWorkflowId());
         assertEquals(TaskModel.Status.CANCELED, argumentCaptor.getValue().getStatus());

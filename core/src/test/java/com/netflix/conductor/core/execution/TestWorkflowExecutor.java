@@ -1203,7 +1203,7 @@ public class TestWorkflowExecutor {
                             return null;
                         })
                 .when(executionDAOFacade)
-                .updateTasks(any());
+                .forceUpdateTasks(any());
 
         AtomicInteger updateTaskCalledCounter = new AtomicInteger(0);
         doAnswer(
@@ -1212,7 +1212,7 @@ public class TestWorkflowExecutor {
                             return null;
                         })
                 .when(executionDAOFacade)
-                .updateTask(any());
+                .forceUpdateTask(any());
 
         // add 2 failed task in 2 forks and 1 cancelled in the 3rd fork
         TaskModel task_1_1 = new TaskModel();
@@ -1665,7 +1665,7 @@ public class TestWorkflowExecutor {
                             return null;
                         })
                 .when(executionDAOFacade)
-                .updateTasks(any());
+                .forceUpdateTasks(any());
         // end of setup
 
         // when
@@ -2403,7 +2403,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.updateParentWorkflowTask(subWorkflow);
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).forceUpdateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
     }

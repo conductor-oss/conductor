@@ -48,9 +48,27 @@ public interface ExecutionDAO {
     List<TaskModel> createTasks(List<TaskModel> tasks);
 
     /**
+     * Updates the persisted task. Semantics are first-terminal-write-wins: once the stored task for
+     * a given taskId is terminal ({@link TaskModel.Status#isTerminal()}), implementations MUST
+     * atomically reject (drop, logged) any later write for that taskId. Non-terminal writes and the
+     * first terminal write always apply. Trusted engine state-machine paths that legitimately need
+     * to re-write an already-terminal task (rerun/retry reopen, decide() re-persist, sub-workflow
+     * sync, reconciliation) must call {@link #forceUpdateTask(TaskModel)} instead.
+     *
      * @param task Task to be updated
      */
     void updateTask(TaskModel task);
+
+    /**
+     * Unconditional write that bypasses the first-terminal-write-wins guard. Only for trusted
+     * engine state-machine paths (rerun/retry reopen, decide() re-persist, sub-workflow sync,
+     * reconciliation).
+     *
+     * @param task Task to be updated
+     */
+    default void forceUpdateTask(TaskModel task) {
+        updateTask(task);
+    }
 
     /**
      * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the

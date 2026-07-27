@@ -180,7 +180,7 @@ public class WorkflowSweeperTest {
 
         workflowSweeper.sweep(WORKFLOW_ID);
 
-        verify(executionDAO).updateTask(subWorkflowTask);
+        verify(executionDAO).forceUpdateTask(subWorkflowTask);
         verify(workflowExecutor, times(2)).decide(WORKFLOW_ID);
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
         verify(executionLockService).releaseLock(WORKFLOW_ID);

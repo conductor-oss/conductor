@@ -550,6 +550,20 @@ public class ExecutionDAOFacade {
      *     payload fails.
      */
     public void updateTask(TaskModel taskModel) {
+        doUpdateTask(taskModel, false);
+    }
+
+    /**
+     * Same as {@link #updateTask(TaskModel)} but bypasses the first-terminal-write-wins guard. Only
+     * for trusted engine state-machine paths that legitimately re-write a terminal task.
+     *
+     * @param taskModel the task to be updated in the data store
+     */
+    public void forceUpdateTask(TaskModel taskModel) {
+        doUpdateTask(taskModel, true);
+    }
+
+    private void doUpdateTask(TaskModel taskModel, boolean force) {
         if (taskModel.getStatus() != null) {
             if (!taskModel.getStatus().isTerminal()
                     || (taskModel.getStatus().isTerminal() && taskModel.getUpdateTime() == 0)) {
@@ -560,7 +574,11 @@ public class ExecutionDAOFacade {
             }
         }
         externalizeTaskData(taskModel);
-        executionDAO.updateTask(taskModel);
+        if (force) {
+            executionDAO.forceUpdateTask(taskModel);
+        } else {
+            executionDAO.updateTask(taskModel);
+        }
         try {
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
@@ -586,6 +604,10 @@ public class ExecutionDAOFacade {
 
     public void updateTasks(List<TaskModel> tasks) {
         tasks.forEach(this::updateTask);
+    }
+
+    public void forceUpdateTasks(List<TaskModel> tasks) {
+        tasks.forEach(this::forceUpdateTask);
     }
 
     public void removeTask(String taskId) {

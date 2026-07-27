@@ -200,6 +200,6 @@ public class WorkflowRepairService {
                 break;
         }
         task.addOutput(subWorkflow.getOutput());
-        executionDAO.updateTask(task);
+        executionDAO.forceUpdateTask(task);
     }
 }

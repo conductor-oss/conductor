@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.redis.dao;
 
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,6 +63,23 @@ public class RedisExecutionDAO extends BaseDynoDAO
     private static final String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
     private final QueueDAO queueDAO;
+
+    // First-terminal-write-wins guard for the TASK payload: KEYS=[taskKey, markerKey],
+    // ARGV=[payload, isTerminal "1"/"0", bypass "1"/"0"]. Marker present + not bypassing => reject.
+    private static final String TERMINAL_WRITE_GUARD_SCRIPT =
+            "if ARGV[3] == '0' and redis.call('EXISTS', KEYS[2]) == 1 then\n"
+                    + "    return 0\n"
+                    + "end\n"
+                    + "redis.call('SET', KEYS[1], ARGV[1])\n"
+                    + "if ARGV[2] == '1' then\n"
+                    + "    redis.call('SET', KEYS[2], '1')\n"
+                    + "elseif ARGV[3] == '1' then\n"
+                    + "    redis.call('DEL', KEYS[2])\n"
+                    + "end\n"
+                    + "return 1";
+
+    private volatile String scriptSha;
+    private volatile boolean scriptingUnsupported;
 
     public RedisExecutionDAO(
             JedisProxy jedisProxy,
@@ -197,7 +215,57 @@ public class RedisExecutionDAO extends BaseDynoDAO
     @Override
     public void updateTask(TaskModel task) {
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
+        String payload = toJson(task);
+        recordRedisDaoPayloadSize(
+                "updateTask",
+                payload.length(),
+                taskDefinition.map(TaskDef::getName).orElse("n/a"),
+                task.getWorkflowType());
+        recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
 
+        boolean terminal = task.getStatus() != null && task.getStatus().isTerminal();
+        boolean written = writeTaskPayload(task.getTaskId(), payload, terminal, false);
+        if (!written) {
+            LOGGER.warn(
+                    "Rejected update to already-terminal task with taskId: {}, workflowId: {}, taskType: {} (first-terminal-write-wins); use forceUpdateTask to bypass",
+                    task.getTaskId(),
+                    task.getWorkflowInstanceId(),
+                    task.getTaskType());
+            return;
+        }
+        LOGGER.debug(
+                "Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
+                nsKey(TASK, task.getTaskId()),
+                task.getWorkflowInstanceId(),
+                task.getTaskId(),
+                task.getTaskType());
+        updateTaskBookkeeping(task, taskDefinition, terminal);
+    }
+
+    @Override
+    public void forceUpdateTask(TaskModel task) {
+        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
+        String payload = toJson(task);
+        recordRedisDaoPayloadSize(
+                "updateTask",
+                payload.length(),
+                taskDefinition.map(TaskDef::getName).orElse("n/a"),
+                task.getWorkflowType());
+        recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
+
+        boolean terminal = task.getStatus() != null && task.getStatus().isTerminal();
+        writeTaskPayload(task.getTaskId(), payload, terminal, true);
+        LOGGER.debug(
+                "Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during forceUpdateTask",
+                nsKey(TASK, task.getTaskId()),
+                task.getWorkflowInstanceId(),
+                task.getTaskId(),
+                task.getTaskType());
+        updateTaskBookkeeping(task, taskDefinition, terminal);
+    }
+
+    private void updateTaskBookkeeping(
+            TaskModel task, Optional<TaskDef> taskDefinition, boolean terminal) {
         if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {
 
             if (task.getStatus() != null && task.getStatus().equals(TaskModel.Status.IN_PROGRESS)) {
@@ -229,7 +297,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
                         task.getTaskId(),
                         task.getTaskType(),
                         task.getStatus().name());
-                if (task.getStatus() != null && task.getStatus().isTerminal()) {
+                if (terminal) {
                     String queueName = QueueUtils.getQueueName(task);
                     List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
                     if (nextIds != null && !nextIds.isEmpty()) {
@@ -243,22 +311,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
             }
         }
 
-        String payload = toJson(task);
-        recordRedisDaoPayloadSize(
-                "updateTask",
-                payload.length(),
-                taskDefinition.map(TaskDef::getName).orElse("n/a"),
-                task.getWorkflowType());
-
-        recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
-        jedisProxy.set(nsKey(TASK, task.getTaskId()), payload);
-        LOGGER.debug(
-                "Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
-                nsKey(TASK, task.getTaskId()),
-                task.getWorkflowInstanceId(),
-                task.getTaskId(),
-                task.getTaskType());
-        if (task.getStatus() != null && task.getStatus().isTerminal()) {
+        if (terminal) {
             jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
             LOGGER.debug(
                     "Workflow Task removed from TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
@@ -274,6 +327,80 @@ public class RedisExecutionDAO extends BaseDynoDAO
         if (!taskIds.contains(task.getTaskId())) {
             correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
         }
+    }
+
+    private String termMarkerKey(String taskId) {
+        return "{" + nsKey(TASK, taskId) + "}.TERM";
+    }
+
+    // Atomically applies the first-terminal-write-wins guard (or bypasses it) for the TASK
+    // payload. Returns false only when the write was rejected (marker present, bypass=false).
+    private boolean writeTaskPayload(
+            String taskId, String payload, boolean terminal, boolean bypass) {
+        if (scriptingUnsupported) {
+            jedisProxy.set(nsKey(TASK, taskId), payload);
+            return true;
+        }
+
+        String sha = ensureScriptLoaded(taskId);
+        if (sha == null) {
+            jedisProxy.set(nsKey(TASK, taskId), payload);
+            return true;
+        }
+
+        List<String> keys = Arrays.asList(nsKey(TASK, taskId), termMarkerKey(taskId));
+        List<String> args = Arrays.asList(payload, terminal ? "1" : "0", bypass ? "1" : "0");
+        try {
+            return isAccepted(jedisProxy.evalsha(sha, keys, args));
+        } catch (RuntimeException e) {
+            if (e.getMessage() == null || !e.getMessage().contains("NOSCRIPT")) {
+                throw e;
+            }
+            String reloadedSha = reloadScript(taskId);
+            if (reloadedSha == null) {
+                jedisProxy.set(nsKey(TASK, taskId), payload);
+                return true;
+            }
+            return isAccepted(jedisProxy.evalsha(reloadedSha, keys, args));
+        }
+    }
+
+    private boolean isAccepted(Object evalResult) {
+        return ((Long) evalResult) == 1L;
+    }
+
+    private String ensureScriptLoaded(String taskId) {
+        String sha = scriptSha;
+        if (sha != null) {
+            return sha;
+        }
+        synchronized (this) {
+            if (scriptSha == null) {
+                scriptSha = loadScript(taskId);
+            }
+            return scriptSha;
+        }
+    }
+
+    private String reloadScript(String taskId) {
+        synchronized (this) {
+            scriptSha = loadScript(taskId);
+            return scriptSha;
+        }
+    }
+
+    // Returns null (and sets scriptingUnsupported) when the backend's scriptLoad is a no-op,
+    // i.e. the InMemory backend used in single-process dev/test; the guard is inert there.
+    private String loadScript(String taskId) {
+        byte[] sha =
+                jedisProxy.scriptLoad(
+                        TERMINAL_WRITE_GUARD_SCRIPT.getBytes(StandardCharsets.UTF_8),
+                        nsKey(TASK, taskId).getBytes(StandardCharsets.UTF_8));
+        if (sha == null || sha.length == 0) {
+            scriptingUnsupported = true;
+            return null;
+        }
+        return new String(sha, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -354,6 +481,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         removeTaskMappings(task);
 
         jedisProxy.del(nsKey(TASK, task.getTaskId()));
+        jedisProxy.del(termMarkerKey(task.getTaskId()));
         recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
         return true;
     }
@@ -367,6 +495,7 @@ public class RedisExecutionDAO extends BaseDynoDAO
         removeTaskMappingsWithExpiry(task);
 
         jedisProxy.expire(nsKey(TASK, task.getTaskId()), ttlSeconds);
+        jedisProxy.expire(termMarkerKey(task.getTaskId()), ttlSeconds);
         recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
         return true;
     }
