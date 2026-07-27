@@ -34,10 +34,15 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskWorker
  * namespace, so both contexts read and write the same physical queues. Isolation comes from the
  * setup()/cleanup() lifecycle below, which arms the worker only for the duration of a feature.
  */
+// systemTaskWorkerThreadCount must be comfortably above 1: SystemTaskWorker shares a single
+// ExecutionConfig (thread pool + semaphore) across every async system-task queue, so a task that
+// blocks in start() holds a permit for its whole invocation. With only 2 permits, the remaining one
+// is contended by all ~26 pollers and a queued message can sit undelivered for tens of seconds,
+// which silently turns redelivery tests into false passes.
 @TestPropertySource(properties = [
         "conductor.system-task-workers.enabled=true",
-        "conductor.app.systemTaskWorkerThreadCount=2",
-        "conductor.app.systemTaskMaxPollCount=2",
+        "conductor.app.systemTaskWorkerThreadCount=10",
+        "conductor.app.systemTaskMaxPollCount=10",
         "conductor.app.systemTaskWorkerPollInterval=50ms",
         "conductor.app.systemTaskQueuePopTimeout=100ms"
 ])
