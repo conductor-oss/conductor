@@ -527,8 +527,8 @@ jobs:
       # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
       # module directory that `gh release download --output agentspan` would collide with.
       AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
-      AGENTSPAN_SERVER_URL: http://localhost:8080/api
-      AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
+      CONDUCTOR_SERVER_URL: http://localhost:8080/api
+      CONDUCTOR_AGENT_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
