@@ -12,6 +12,15 @@ export interface AgentSummary {
   updateTime?: number;
   description?: string;
   checksum?: string;
+  schemaVersion?: number;
+  restartable?: boolean;
+  workflowStatusListenerEnabled?: boolean;
+  ownerEmail?: string;
+  inputParameters?: string[];
+  outputParameters?: Record<string, unknown>;
+  timeoutPolicy?: string;
+  timeoutSeconds?: number;
+  failureWorkflow?: string;
 }
 
 export interface AgentExecutionSummary {

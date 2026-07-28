@@ -391,6 +391,18 @@ public class AgentService {
                             .updateTime(def.getUpdateTime())
                             .description(def.getDescription())
                             .checksum(checksum)
+                            .schemaVersion(def.getSchemaVersion())
+                            .restartable(def.isRestartable())
+                            .workflowStatusListenerEnabled(def.isWorkflowStatusListenerEnabled())
+                            .ownerEmail(def.getOwnerEmail())
+                            .inputParameters(def.getInputParameters())
+                            .outputParameters(def.getOutputParameters())
+                            .timeoutPolicy(
+                                    def.getTimeoutPolicy() == null
+                                            ? null
+                                            : def.getTimeoutPolicy().name())
+                            .timeoutSeconds(def.getTimeoutSeconds())
+                            .failureWorkflow(def.getFailureWorkflow())
                             .build());
         }
 
