@@ -15,8 +15,8 @@ package org.conductoross.conductor.ai.agent;
 /**
  * Agent control-plane client used by portable Conductor workers.
  *
- * <p>The boundary uses only AI-module DTOs. AgentSpan injects an in-process implementation and
- * translates those models to its service layer; external workers inject an SDK-backed adapter.
+ * <p>The boundary uses only AI-module DTOs. Conductor-Agents injects an in-process implementation
+ * and translates those models to its service layer; external workers inject an SDK-backed adapter.
  */
 public interface ConductorAgentClient extends AutoCloseable {
 

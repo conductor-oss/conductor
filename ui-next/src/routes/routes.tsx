@@ -207,9 +207,9 @@ const getCoreAuthenticatedRoutes = () => [
     element: <CreatorFlags />,
   },
 
-  // Embedded AgentSpan pages (registered only when AGENTSPAN_ENABLED, i.e.
+  // Embedded Conductor-Agents pages (registered only when CONDUCTOR_INTEGRATIONS_AI_ENABLED, i.e.
   // the server's conductor.integrations.ai.enabled is true).
-  ...(featureFlags.isEnabled(FEATURES.AGENTSPAN_ENABLED)
+  ...(featureFlags.isEnabled(FEATURES.CONDUCTOR_INTEGRATIONS_AI_ENABLED)
     ? [
         { path: AGENT_DEFINITION_URL.BASE, element: <AgentDefinitions /> },
         { path: AGENT_DEFINITION_URL.NEW, element: <CreateAgentGuide /> },
