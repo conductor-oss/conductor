@@ -12,11 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.a2a;
 
-import org.conductoross.conductor.ai.a2a.model.A2AMessage;
-import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
-import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.ai.a2a.model.TaskStatus;
 import org.conductoross.conductor.ai.a2a.server.A2AServerException;
 import org.conductoross.conductor.ai.a2a.server.A2AServerProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,30 +37,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Tests HTTP routing and delegation for A2AAgentServerResource. Dispatch behavior (switch logic,
+ * JSON-RPC error mapping, streaming) is covered in A2ANativeAgentFacadeTest.
+ */
 class A2AAgentServerResourceTest {
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private A2ANativeAgentFacade facade;
-    private A2AServerProperties properties;
     private A2AAgentServerResource resource;
 
     @BeforeEach
     void setUp() {
         facade = mock(A2ANativeAgentFacade.class);
-        properties = new A2AServerProperties();
-        resource = new A2AAgentServerResource(facade, properties);
-    }
-
-    private A2ATask task(String id, String state) {
-        A2ATask task = new A2ATask();
-        task.setId(id);
-        TaskStatus status = new TaskStatus();
-        status.setState(state);
-        task.setStatus(status);
-        return task;
+        resource = new A2AAgentServerResource(facade, new A2AServerProperties());
     }
 
     private JsonNode rpc(String method, String paramsJson) {
@@ -80,96 +68,34 @@ class A2AAgentServerResourceTest {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private ResponseEntity<JsonNode> call(String agentName, JsonNode request) {
-        return (ResponseEntity<JsonNode>) resource.jsonRpc(agentName, request);
-    }
-
-    // ---- message/send ------------------------------------------------------------------------
+    // ---- jsonRpc delegates to facade ---------------------------------------------------------
 
     @Test
-    void messageSend_dispatchesAndReturnsResult() {
-        when(facade.sendMessage(eq("greeter"), any(A2AMessage.class)))
-                .thenReturn(task("exec-1", TaskState.WORKING));
+    void jsonRpc_delegatesToFacadeDispatch() {
+        JsonNode fakeResult = objectMapper.createObjectNode().put("ok", true);
+        ResponseEntity<JsonNode> fakeResponse = ResponseEntity.ok(fakeResult);
+        when(facade.dispatch(eq("greeter"), any())).thenReturn(fakeResponse);
 
-        JsonNode request =
-                rpc(
-                        "message/send",
-                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\",\"messageId\":\"m1\","
-                                + "\"parts\":[{\"kind\":\"text\",\"text\":\"hello\"}]}}");
-        ResponseEntity<JsonNode> response = call("greeter", request);
+        JsonNode request = rpc("message/send", "{\"message\":{\"parts\":[]}}");
+        resource.jsonRpc("greeter", request);
 
-        assertEquals(1, response.getBody().get("id").asInt());
-        assertEquals("exec-1", response.getBody().get("result").get("id").asText());
-        verify(facade).sendMessage(eq("greeter"), any(A2AMessage.class));
+        verify(facade).dispatch(eq("greeter"), eq(request));
     }
 
     @Test
-    void tasksSend_alias_dispatchesToSendMessage() {
-        when(facade.sendMessage(eq("greeter"), any(A2AMessage.class)))
-                .thenReturn(task("exec-1", TaskState.WORKING));
+    void jsonRpc_streamMethod_returnsSseEmitter() {
+        SseEmitter emitter = new SseEmitter();
+        when(facade.dispatch(eq("greeter"), any())).thenReturn(emitter);
 
-        ResponseEntity<JsonNode> response =
-                call(
+        Object result =
+                resource.jsonRpc(
                         "greeter",
                         rpc(
-                                "tasks/send",
+                                "message/stream",
                                 "{\"message\":{\"role\":\"user\",\"kind\":\"message\","
                                         + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}"));
 
-        assertEquals("exec-1", response.getBody().get("result").get("id").asText());
-        verify(facade).sendMessage(eq("greeter"), any(A2AMessage.class));
-    }
-
-    // ---- tasks/get ---------------------------------------------------------------------------
-
-    @Test
-    void tasksGet_dispatches() {
-        when(facade.getTask("greeter", "exec-1")).thenReturn(task("exec-1", TaskState.COMPLETED));
-
-        ResponseEntity<JsonNode> response =
-                call("greeter", rpc("tasks/get", "{\"id\":\"exec-1\"}"));
-
-        assertEquals(
-                TaskState.COMPLETED,
-                response.getBody().get("result").get("status").get("state").asText());
-    }
-
-    // ---- tasks/cancel ------------------------------------------------------------------------
-
-    @Test
-    void tasksCancel_dispatches() {
-        when(facade.cancelTask("greeter", "exec-1")).thenReturn(task("exec-1", TaskState.CANCELED));
-
-        call("greeter", rpc("tasks/cancel", "{\"id\":\"exec-1\"}"));
-
-        verify(facade).cancelTask("greeter", "exec-1");
-    }
-
-    // ---- error handling ----------------------------------------------------------------------
-
-    @Test
-    void unknownMethod_returnsMethodNotFound() {
-        ResponseEntity<JsonNode> response = call("greeter", rpc("foo/bar", "{}"));
-        assertEquals(-32601, response.getBody().get("error").get("code").asInt());
-    }
-
-    @Test
-    void missingMethod_returnsInvalidRequest() throws Exception {
-        JsonNode request = objectMapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1}");
-        ResponseEntity<JsonNode> response = call("greeter", request);
-        assertEquals(-32600, response.getBody().get("error").get("code").asInt());
-    }
-
-    @Test
-    void serverException_mapsToJsonRpcError() {
-        when(facade.getTask("greeter", "missing"))
-                .thenThrow(A2AServerException.notFound("not found"));
-
-        ResponseEntity<JsonNode> response =
-                call("greeter", rpc("tasks/get", "{\"id\":\"missing\"}"));
-
-        assertEquals(-32001, response.getBody().get("error").get("code").asInt());
+        assertInstanceOf(SseEmitter.class, result);
     }
 
     // ---- agent card --------------------------------------------------------------------------
@@ -208,44 +134,12 @@ class A2AAgentServerResourceTest {
         assertEquals(404, response.getStatusCode().value());
     }
 
-    // ---- streaming ---------------------------------------------------------------------------
-
-    @Test
-    void messageStream_returnsSseEmitter() {
-        when(facade.isExposed("greeter")).thenReturn(true);
-
-        Object result =
-                resource.jsonRpc(
-                        "greeter",
-                        rpc(
-                                "message/stream",
-                                "{\"message\":{\"role\":\"user\",\"kind\":\"message\","
-                                        + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}"));
-
-        assertInstanceOf(SseEmitter.class, result);
-    }
-
-    @Test
-    void tasksSendSubscribe_alias_returnsSseEmitter() {
-        when(facade.isExposed("greeter")).thenReturn(true);
-
-        Object result =
-                resource.jsonRpc(
-                        "greeter",
-                        rpc(
-                                "tasks/sendSubscribe",
-                                "{\"message\":{\"role\":\"user\",\"kind\":\"message\","
-                                        + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}"));
-
-        assertInstanceOf(SseEmitter.class, result);
-    }
-
     // ---- URL routing -------------------------------------------------------------------------
 
     @Test
     void rpcPathSuffix_routesToJsonRpcHandler() throws Exception {
-        when(facade.sendMessage(eq("greeter"), any(A2AMessage.class)))
-                .thenReturn(task("exec-1", TaskState.WORKING));
+        JsonNode fakeResult = objectMapper.createObjectNode().put("ok", true);
+        when(facade.dispatch(eq("greeter"), any())).thenReturn(ResponseEntity.ok(fakeResult));
 
         MockMvc mvc = MockMvcBuilders.standaloneSetup(resource).build();
         mvc.perform(
@@ -255,7 +149,6 @@ class A2AAgentServerResourceTest {
                                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message/send\","
                                                 + "\"params\":{\"message\":{\"role\":\"user\",\"kind\":\"message\","
                                                 + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.id").value("exec-1"));
+                .andExpect(status().isOk());
     }
 }

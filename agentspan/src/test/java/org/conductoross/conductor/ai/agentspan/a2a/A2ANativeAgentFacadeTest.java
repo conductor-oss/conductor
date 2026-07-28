@@ -31,7 +31,10 @@ import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -39,8 +42,12 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -354,5 +361,138 @@ class A2ANativeAgentFacadeTest {
         when(workflowService.getExecutionStatus(wf.getWorkflowId(), true)).thenReturn(wf);
         when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
         return facade.getTask("greeter", wf.getWorkflowId()).getStatus().getState();
+    }
+
+    // ---- dispatch() --------------------------------------------------------------------------
+
+    private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
+
+    @SuppressWarnings("unchecked")
+    private ResponseEntity<JsonNode> dispatch(String agent, String method, String paramsJson) {
+        try {
+            JsonNode request =
+                    objectMapper.readTree(
+                            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\""
+                                    + method
+                                    + "\",\"params\":"
+                                    + paramsJson
+                                    + "}");
+            return (ResponseEntity<JsonNode>) facade.dispatch(agent, request);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void dispatch_messageSend_callsSendMessageAndReturnsTask() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.start(any()))
+                .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
+        when(workflowService.getExecutionStatus("exec-1", false))
+                .thenReturn(workflow("exec-1", WorkflowStatus.RUNNING));
+
+        ResponseEntity<JsonNode> response =
+                dispatch(
+                        "greeter",
+                        "message/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\","
+                                + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hello\"}]}}");
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("exec-1", response.getBody().get("result").get("id").asText());
+    }
+
+    @Test
+    void dispatch_tasksSend_aliasCallsSendMessage() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(agentService.start(any()))
+                .thenReturn(AgentStartResponse.builder().executionId("exec-2").build());
+        when(workflowService.getExecutionStatus("exec-2", false))
+                .thenReturn(workflow("exec-2", WorkflowStatus.RUNNING));
+
+        ResponseEntity<JsonNode> response =
+                dispatch(
+                        "greeter",
+                        "tasks/send",
+                        "{\"message\":{\"role\":\"user\",\"kind\":\"message\","
+                                + "\"messageId\":\"m2\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}");
+
+        assertEquals("exec-2", response.getBody().get("result").get("id").asText());
+    }
+
+    @Test
+    void dispatch_tasksGet_returnsTask() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(workflowService.getExecutionStatus("exec-1", true))
+                .thenReturn(workflow("exec-1", WorkflowStatus.COMPLETED));
+
+        ResponseEntity<JsonNode> response = dispatch("greeter", "tasks/get", "{\"id\":\"exec-1\"}");
+
+        assertEquals(
+                TaskState.COMPLETED,
+                response.getBody().get("result").get("status").get("state").asText());
+    }
+
+    @Test
+    void dispatch_tasksCancel_returnsCanceled() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+        when(workflowService.getExecutionStatus("exec-1", true))
+                .thenReturn(workflow("exec-1", WorkflowStatus.RUNNING));
+        when(workflowService.getExecutionStatus("exec-1", false))
+                .thenReturn(workflow("exec-1", WorkflowStatus.TERMINATED));
+
+        ResponseEntity<JsonNode> response =
+                dispatch("greeter", "tasks/cancel", "{\"id\":\"exec-1\"}");
+
+        assertEquals(
+                TaskState.CANCELED,
+                response.getBody().get("result").get("status").get("state").asText());
+    }
+
+    @Test
+    void dispatch_unknownMethod_returnsMethodNotFound() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+
+        ResponseEntity<JsonNode> response = dispatch("greeter", "foo/bar", "{}");
+
+        assertEquals(-32601, response.getBody().get("error").get("code").asInt());
+    }
+
+    @Test
+    void dispatch_missingMethod_returnsInvalidRequest() throws Exception {
+        JsonNode request = objectMapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1}");
+        @SuppressWarnings("unchecked")
+        ResponseEntity<JsonNode> response =
+                (ResponseEntity<JsonNode>) facade.dispatch("greeter", request);
+        assertEquals(-32600, response.getBody().get("error").get("code").asInt());
+    }
+
+    @Test
+    void dispatch_serverException_mapsToJsonRpcError() {
+        when(agentService.listAgents()).thenReturn(List.of());
+
+        ResponseEntity<JsonNode> response = dispatch("greeter", "tasks/get", "{\"id\":\"exec-1\"}");
+
+        assertEquals(-32001, response.getBody().get("error").get("code").asInt());
+    }
+
+    @Test
+    void dispatch_messageStream_returnsSseEmitter() {
+        when(agentService.listAgents()).thenReturn(List.of(summary("greeter")));
+
+        JsonNode request;
+        try {
+            request =
+                    objectMapper.readTree(
+                            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message/stream\","
+                                    + "\"params\":{\"message\":{\"role\":\"user\",\"kind\":\"message\","
+                                    + "\"messageId\":\"m1\",\"parts\":[{\"kind\":\"text\",\"text\":\"hi\"}]}}}");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        Object result = facade.dispatch("greeter", request);
+
+        assertInstanceOf(SseEmitter.class, result);
     }
 }
