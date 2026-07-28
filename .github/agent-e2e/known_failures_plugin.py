@@ -15,6 +15,10 @@ they still RUN, a failure reports as XFAIL (green), and a fix XPASSes — the si
 the entry. Keys that match nothing are harmless no-ops (the test runs and the gate still
 catches a real break), so a stale entry can never silently hide a regression. Keys beginning
 with "_" (e.g. "_README") are treated as comments and ignored.
+
+That no-op guarantee depends on matching being ANCHORED at node-id component boundaries —
+see _matches(). A key is only ever under-inclusive, never over-inclusive: it can fail to
+match the test you meant, but it cannot pick up a test you did not mean.
 """
 
 import json
@@ -53,9 +57,16 @@ def _matches(nodeid, suffix):
     # The suite appends an xdist loadgroup label as "@<group>" to some node-ids
     # (e.g. test_mcp_lifecycle@credentials). Match against both the raw node-id and
     # the label-stripped base so entries can be written either way.
+    #
+    # Every arm is ANCHORED at a node-id component boundary ("::" or "/"), never a bare
+    # endswith. A bare suffix test would let a key like "_completes" match every test whose
+    # name happens to end that way, quietly xfail-ing unrelated tests — the exact
+    # hide-a-regression failure this file claims to be immune to. The "/" arm is what makes
+    # the common "<file>.py::<Class>::<test>" key match a node-id of
+    # "e2e/<file>.py::<Class>::<test>"; without it those keys match nothing at all.
     for nid in (nodeid, nodeid.split("@", 1)[0]):
         for suf in (suffix, suffix.split("@", 1)[0]):
-            if nid == suf or nid.endswith("::" + suf) or nid.endswith(suf):
+            if nid == suf or nid.endswith("::" + suf) or nid.endswith("/" + suf):
                 return True
     return False
 
