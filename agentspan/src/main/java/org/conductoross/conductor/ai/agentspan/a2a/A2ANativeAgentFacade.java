@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.conductoross.conductor.ai.a2a.A2AMetrics;
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
@@ -85,8 +84,7 @@ public class A2ANativeAgentFacade {
     // ---- exposure ----------------------------------------------------------------------------
 
     public boolean isExposed(String agentName) {
-        return agentService.listAgents().stream()
-                .anyMatch(s -> s.getName().equals(agentName));
+        return agentService.listAgents().stream().anyMatch(s -> s.getName().equals(agentName));
     }
 
     public List<AgentSummary> exposedAgents() {
