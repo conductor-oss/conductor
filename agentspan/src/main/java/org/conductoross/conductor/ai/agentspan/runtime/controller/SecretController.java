@@ -49,7 +49,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/secrets")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class SecretController {
 
     private static final Logger log = LoggerFactory.getLogger(SecretController.class);

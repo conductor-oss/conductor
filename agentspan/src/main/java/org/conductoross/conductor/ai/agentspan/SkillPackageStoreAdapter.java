@@ -17,7 +17,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.spi.StoredSkillPackage;
 import org.conductoross.conductor.dao.SkillPackageDAO;
 
 /**
- * Bridges AgentSpan's {@link SkillPackageStore} SPI onto Conductor's backend-agnostic {@link
+ * Bridges Conductor-Agents' {@link SkillPackageStore} SPI onto Conductor's backend-agnostic {@link
  * SkillPackageDAO}, so skill package bytes persist through whichever Conductor backend is
  * configured (Postgres, MySQL, SQLite, Redis).
  *

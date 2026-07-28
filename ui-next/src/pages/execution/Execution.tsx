@@ -473,7 +473,7 @@ export default function Execution() {
               (isAgentWorkflowExecution(execution) ? (
                 // Relabeled "Agent Definition" in LeftPanelTabs for agent
                 // executions — a graph of the agent's static structure
-                // (model/sub-agents/tools/guardrails), matching AgentSpan's
+                // (model/sub-agents/tools/guardrails), matching Conductor-Agents'
                 // own UI, instead of the plain Conductor execution summary.
                 <AgentDefinitionView execution={execution} />
               ) : (

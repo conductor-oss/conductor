@@ -2406,7 +2406,7 @@ public class MultiAgentCompiler {
         routerWf.setInputParameters(List.of("conversation"));
         routerWf.setTasks(List.of(llm));
         routerWf.setOutputParameters(Map.of("result", ref(taskRef + "_llm.output.result")));
-        // Routers are implementation details of an AgentSpan execution.  Stamping the inline
+        // Routers are implementation details of a Conductor-Agents execution. Stamping the inline
         // definition preserves that identity in the execution index, where parentWorkflowId
         // distinguishes this generated child from the top-level agent run.
         agentCompiler.stampAgentMetadata(routerWf, parentAgent);

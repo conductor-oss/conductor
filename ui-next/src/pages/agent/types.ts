@@ -1,5 +1,5 @@
 /**
- * Wire types for the embedded AgentSpan REST API (conductor-agentspan).
+ * Wire types for the embedded Conductor-Agents REST API (conductor-agentspan).
  * Kept local to the agent pages; mirror the server DTOs.
  */
 
