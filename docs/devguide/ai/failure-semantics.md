@@ -281,6 +281,7 @@ See **[Durable Adaptive Graphs](dynamic-workflows.md)** for the governed loop pa
 
 ## Next steps
 
+- **[Production Agent Architecture](production-agent-architecture.md)** — turn this failure contract into deployment and recovery practice.
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** — The full persistence model, task state machine, and retry configuration.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.

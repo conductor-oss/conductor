@@ -4,9 +4,9 @@ description: "Conductor Agents REST API — compile, deploy, start, observe, con
 
 # Conductor Agents API
 
-The Conductor Agents control plane compiles SDK-authored or framework-native agents into durable Conductor graphs, then deploys and operates those graphs. Use the SDK for framework setup and interactive development; use these REST endpoints when you need CI/CD, an operations console, or a custom integration.
+The Conductor Agents control plane compiles SDK-authored Conductor Agents or framework agents—including OpenAI Agents, Google ADK, LangChain, and LangGraph—into durable Conductor graphs, then deploys and operates those graphs. Use the SDK for framework setup and interactive development; use these REST endpoints when you need CI/CD, an operations console, or a custom integration.
 
-These endpoints are available when the embedded Conductor Agents runtime is enabled on the server.
+These endpoints are available only when the embedded Conductor Agents runtime is enabled with `agentspan.embedded=true`.
 
 ## Base path
 
@@ -26,7 +26,7 @@ http://localhost:8080/api/agent
 | `GET` | `/{name}?version=` | Get a registered agent definition. |
 | `DELETE` | `/{name}?version=` | Delete a registered agent definition. |
 
-`/compile`, `/deploy`, and `/start` accept an `AgentStartRequest`. To use a previously deployed agent, provide `name` and optionally `version`. To create an agent inline, provide either `agentConfig` for a native Conductor Agent or `framework` plus framework-specific `rawConfig` for a supported bridge.
+`/compile`, `/deploy`, and `/start` accept an `AgentStartRequest`. To use a previously deployed agent, provide `name` and optionally `version`. To create an agent inline, provide either `agentConfig` for a Conductor Agent or `framework` plus framework-specific `rawConfig` for a supported bridge.
 
 ```json
 {
@@ -96,5 +96,5 @@ The skill endpoints are present only when skill packages are enabled on the serv
 ## Related guides
 
 - [Conductor Agents](../../devguide/ai/conductor-agents.md) — SDK creation, deploy/serve lifecycle, and use as an `AGENT` task.
-- [Framework Agent Recipes](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and native paths.
+- [Framework Agent Recipes](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agent paths.
 - [A2A Integration](../../devguide/ai/a2a-integration.md) — Remote A2A agents; this is a separate `AGENT` mode.

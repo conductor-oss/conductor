@@ -38,7 +38,7 @@ flowchart LR
 
 This is the useful division of responsibility:
 
-- **SDK agent:** framework-native reasoning, tools, and model behavior.
+- **SDK agent:** Conductor Agent or framework-agent reasoning, tools, and model behavior.
 - **Workflow graph:** context gathering, branching, retries, human gates, fan-out/join, schedules, and cancellation.
 
 ## Step 1: Build and deploy an agent with the SDK
@@ -47,7 +47,7 @@ Use the Conductor Agent SDK path to create your reusable agent. During interacti
 
 Start with one of these maintained, runnable SDK paths:
 
-- [Run Your First Conductor Agent](../../quickstart/first-agent.md) — native Python Conductor Agent.
+- [Run Your First Conductor Agent](../../quickstart/first-agent.md) — Python example; Conductor Agents also support Java, TypeScript/JavaScript, and C#.
 - [Framework Agent Quickstarts](../../quickstart/framework-agents.md) — OpenAI Agents, Google ADK, LangChain/LangChain4j, LangGraph/LangGraph4j, and Vercel AI SDK.
 - [Framework Agent Recipes](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every bridge.
 
@@ -58,7 +58,7 @@ For this tutorial, deploy an agent named `greeter`. The agent takes a prompt and
 Install and point the SDK at your local server:
 
 ```shell
-pip install 'conductor-python[agents]'
+pip install conductor-python
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 ```

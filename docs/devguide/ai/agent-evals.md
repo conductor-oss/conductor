@@ -25,18 +25,29 @@ Evals answer a release question: did the agent take the intended path for a repr
 
 Conductor persists the events an evaluation needs: tool calls and arguments, handoffs, guardrail results, turns, output, retries, and terminal state. That makes behavior checks more useful than text-only assertions.
 
-## What is available today
+## What an eval checks
 
-The Python Agent SDK includes a correctness-evaluation harness for live agent runs:
+An eval asserts on the **durable trace**, not just the final text. Conductor persists every tool call and its arguments, every handoff, guardrail result, turn, retry, and the terminal state — so a case can assert on the path the agent actually took.
 
-- `CorrectnessEval` runs a suite of `EvalCase` definitions.
-- Cases can require or forbid tools, verify tool arguments, assert a handoff target, check output text or a regex, require a terminal status, and attach custom assertions.
-- Strategy validation verifies the recorded orchestration behavior against the configured agent strategy.
-- The fluent assertion API can inspect guardrail pass/fail events, tool-call order, event sequence, and maximum turns.
-- `record()` and `replay()` save an `AgentResult` trace for deterministic regression assertions without another model call.
-- `assert_output_satisfies()` provides an optional LLM-as-judge semantic score.
+| You can assert on | Examples |
+|---|---|
+| Tool behaviour | Which tools ran, in what order, with which arguments; which were forbidden |
+| Routing | Which sub-agent handled it, which handoff fired |
+| Guardrails | That a rule passed, or that it correctly blocked |
+| Shape | Terminal status, turn count, output type, text or regex match |
+| Quality | An optional LLM judge scoring groundedness or usefulness |
 
-There is not a server-side evaluation dataset, experiment tracker, or scorecard API. The harness is designed for code and CI. The Java SDK has focused unit and end-to-end agent tests, but does not yet expose an equivalent `CorrectnessEval`/record-replay package.
+## The building blocks
+
+| Piece | What it does |
+|---|---|
+| `EvalCase` | One scenario: a prompt plus the assertions it must satisfy |
+| `CorrectnessEval` | Runs a suite of cases and returns an `EvalSuiteResult` |
+| `expect(result)` | Fluent assertions over a single run |
+| `assert_*` helpers | Named assertions for tools, output, status, events, handoffs, guardrails |
+| `mock_run()` | Drive an agent through scripted events with no model call |
+| `record()` / `replay()` | Save a trace and re-assert against it later |
+| `assert_output_satisfies()` | LLM-as-judge score with a pinned model and threshold |
 
 ## Start with deterministic behavior
 
@@ -105,6 +116,39 @@ For every write-capable tool, include at least these cases:
 
 Use a fixture account, sandbox, or fake tool for tests that could send email, charge money, mutate a repository, or run commands. Do not place production credentials or production records in an eval corpus or an LLM judge prompt.
 
+## Assertion helpers
+
+Alongside the fluent `expect(...)` API, `conductor.ai.agents.testing` exports named assertions you can use directly in a test:
+
+| Area | Assertions |
+|---|---|
+| Tools | `assert_tool_used`, `assert_tool_not_used`, `assert_tool_called_with`, `assert_tool_call_order`, `assert_tools_used_exactly` |
+| Output | `assert_output_contains`, `assert_output_matches`, `assert_output_type` |
+| Status | `assert_status`, `assert_no_errors`, `assert_max_turns` |
+| Events | `assert_events_contain`, `assert_event_sequence` |
+| Multi-agent | `assert_handoff_to`, `assert_agent_ran` |
+| Guardrails | `assert_guardrail_passed`, `assert_guardrail_failed` |
+
+```python
+from conductor.ai.agents.testing import assert_tool_used, assert_no_errors
+
+result = runtime.run(agent, "What's the weather in San Francisco?")
+assert_tool_used(result, "get_weather")
+assert_no_errors(result)
+```
+
+## Test without calling a model
+
+`mock_run()` drives an agent through a scripted sequence of events, so a test can assert on routing and tool selection with no provider call and no cost:
+
+```python
+from conductor.ai.agents.testing import mock_run
+
+result = mock_run(agent, "What's the weather?", events=[...])
+```
+
+Tools still execute by default; pass `auto_execute_tools=False` to stub those too. Use `mock_run()` for logic that must hold on every commit, and a live `CorrectnessEval` suite for behaviour that only a real model can exercise.
+
 ## Record a regression trace
 
 Use record/replay when the purpose is to preserve a known-good behavior shape, not to retest a live model:
@@ -121,6 +165,19 @@ expect(saved).completed().used_tool("lookup_order").no_errors()
 
 Recorded traces may contain prompts, tool arguments, and outputs. Store only sanitized fixtures and protect the recording directory with the same care as test data.
 
+## Run them in pytest
+
+The SDK ships a pytest plugin, registered as `conductor-agents-testing`, providing two fixtures:
+
+- **`mock_agent_run`** — the mock runner, per test
+- **`event`** — a builder for the scripted events
+
+```python
+def test_weather_routes_to_the_right_tool(mock_agent_run, event):
+    result = mock_agent_run(agent, "Weather in SF?", events=[event.tool_call("get_weather")])
+    assert_tool_used(result, "get_weather")
+```
+
 ## A practical release ladder
 
 1. **Unit tests:** custom guardrail, tool, and data-shaping logic against fixed inputs.
@@ -133,6 +190,7 @@ Use a failure in layers 1–3 as a release blocker for a safety or routing invar
 
 ## Next steps
 
+- **[Production Agent Architecture](production-agent-architecture.md)** — use evaluation evidence as a release gate and operating baseline.
 - **[Agent Guardrails](agent-guardrails.md)** — Runtime policy enforcement for inputs, outputs, and tools.
 - **[Conductor Agents](conductor-agents.md)** — Deploy and invoke an SDK-authored agent from a workflow.
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Evaluate approval, edit, and rejection paths.

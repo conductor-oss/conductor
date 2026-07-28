@@ -1,30 +1,50 @@
 ---
-description: "Run your first Conductor Agent with Python. Define an SDK agent, run it interactively, and see it compile into a durable Conductor graph."
+description: Run your first Conductor Agent and verify its durable execution with the SDK language you choose.
 ---
 
-# Run Your First Conductor Agent
+# Run your first Conductor Agent
 
-Use this path when you want to author an agent in Python and have Conductor make its execution durable. Your SDK-created agent compiles into a Conductor graph, so its steps are inspectable, retryable, and ready to compose with workflows later.
+**Audience:** developers authoring a new Conductor Agent with Python, Java, TypeScript/JavaScript, or C#.
 
-For an existing OpenAI Agents, LangChain, LangGraph, or Google ADK object, use [Framework Agent Quickstarts](framework-agents.md) instead.
+**Outcome:** a completed agent run that is compiled to and executed as a Conductor workflow.
 
-## 1. Start Conductor
+Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#. Choose a language below to see its complete install and first-run steps.
 
-Start a local Conductor server using the [workflow quickstart](index.md#start-conductor). The Python SDK connects to `http://localhost:8080/api` by default.
+For an existing framework agent, such as LangChain, use [framework agent quickstarts](framework-agents.md). For a declarative LLM and tool workflow, start from [Agents & AI](../devguide/ai/index.md).
 
-## 2. Install and configure the Python SDK
+## Prerequisites
+
+Complete [Connect to Conductor](connect.md), including the hosted model integration or local provider API-key setup required by the selected model. You also need the runtime or SDK tooling for the language you select.
+
+## Run your first workflow
+
+If your work starts with services, APIs, timers, or workers, begin with [Run your first workflow](first-workflow.md). It creates and inspects a durable two-step workflow without requiring an agent or model-provider credential.
+
+## Language-specific quickstart
+
+`AGENTSPAN_SERVER_URL` and its access credentials are configured in [Connect to Conductor](connect.md). Keep provider credentials in the environment or secret system used by the agent workers; do not put them in workflow input.
+
+<div class="agent-language-picker" markdown="1">
+  <label for="agent-language-select">Language</label>
+  <select id="agent-language-select" aria-describedby="agent-language-help">
+    <option value="python" selected>Python</option>
+    <option value="java">Java</option>
+    <option value="typescript">TypeScript / JavaScript</option>
+    <option value="csharp">C#</option>
+  </select>
+  <p id="agent-language-help">Choose a language to reveal its install and runnable first-agent steps.</p>
+
+  <section class="agent-language-guide" data-agent-language="python" markdown="1">
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">1. Install Python support</p>
 
 ```bash
-pip install 'conductor-python[agents]'
-export CONDUCTOR_SERVER_URL=http://localhost:8080/api
-export OPENAI_API_KEY=<your-openai-api-key>
+pip install conductor-python
 ```
 
-`CONDUCTOR_SERVER_URL` points the SDK at your Conductor server. Configure the model provider credential on the Conductor server for production deployments, as described in the maintained SDK setup guides.
+<p class="agent-language-guide__heading" role="heading" aria-level="3">2. Save and run an agent</p>
 
-## 3. Define and run an agent
-
-Save this as `hello_agent.py`:
+Save this as `hello.py`:
 
 ```python
 from conductor.ai.agents import Agent, AgentRuntime
@@ -36,24 +56,177 @@ agent = Agent(
 )
 
 with AgentRuntime() as runtime:
-    result = runtime.run(agent, "Say hello and tell me a fun fact about Python.")
-    print(result.output)
+    result = runtime.run(agent, "Say hello and share a fun Python fact.")
+    result.print_result()
 ```
-
-Run it:
 
 ```bash
-python hello_agent.py
+python hello.py
 ```
 
-`runtime.run()` creates the graph, starts the agent, and waits for its result. It is the right lifecycle for interactive development.
+See the [Python agent guide](https://github.com/conductor-oss/python-sdk/tree/main/docs/agents) for more examples.
 
-## What Conductor adds
+  </section>
 
-The agent logic stays in Python, while Conductor owns the durable graph around it. That graph can use normal workflow capabilities such as retries, waits, human approval, fan-out/join, schedules, and cancellation.
+  <section class="agent-language-guide" data-agent-language="java" hidden markdown="1">
 
-## Next: deploy a reusable agent
+<p class="agent-language-guide__heading" role="heading" aria-level="3">1. Install Java support</p>
 
-For production, compile and register the agent with `deploy`, then keep its workers available with `serve`. The full, maintained lifecycle and runnable examples live in the [Python SDK agent getting-started guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/getting-started.md) and [deployment examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents).
+Gradle:
 
-To use the deployed graph as a step in a larger workflow, continue with [Conductor Agents](../devguide/ai/conductor-agents.md).
+```groovy
+dependencies {
+    implementation 'org.conductoross:conductor-client-ai:VERSION'
+}
+```
+
+Maven:
+
+```xml
+<dependency>
+    <groupId>org.conductoross</groupId>
+    <artifactId>conductor-client-ai</artifactId>
+    <version>VERSION</version>
+</dependency>
+```
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">2. Define and run an agent</p>
+
+```java
+import org.conductoross.conductor.ai.Agent;
+import org.conductoross.conductor.ai.AgentRuntime;
+import org.conductoross.conductor.ai.model.AgentResult;
+
+Agent agent = Agent.builder()
+    .name("java_greeter")
+    .model("openai/gpt-4o-mini")
+    .instructions("You are friendly and concise.")
+    .build();
+
+try (AgentRuntime runtime = new AgentRuntime()) {
+    AgentResult result = runtime.run(agent, "Share a fun Java fact.");
+    result.printResult();
+}
+```
+
+Run the class with your Gradle or Maven application task. See the [Java agent guide](https://github.com/conductor-oss/java-sdk/tree/main/docs/agents) for project setup and runnable examples.
+
+  </section>
+
+  <section class="agent-language-guide" data-agent-language="typescript" hidden markdown="1">
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">1. Install TypeScript / JavaScript support</p>
+
+```bash
+npm install @io-orkes/conductor-javascript
+```
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">2. Save and run an agent</p>
+
+Save this as `my-agent.ts`:
+
+```typescript
+import { Agent, AgentRuntime } from "@io-orkes/conductor-javascript/agents";
+
+const agent = new Agent({
+  name: "greeter",
+  model: "openai/gpt-4o-mini",
+  instructions: "You are friendly and concise.",
+});
+
+const runtime = new AgentRuntime();
+try {
+  const result = await runtime.run(agent, "Share a fun TypeScript fact.");
+  result.printResult();
+} finally {
+  await runtime.shutdown();
+}
+```
+
+```bash
+npx tsx my-agent.ts
+```
+
+See the [TypeScript agent guide](https://github.com/conductor-oss/javascript-sdk/tree/main/docs/agents) for more examples.
+
+  </section>
+
+  <section class="agent-language-guide" data-agent-language="csharp" hidden markdown="1">
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">1. Install C# support</p>
+
+```bash
+dotnet add package conductor-ai
+```
+
+<p class="agent-language-guide__heading" role="heading" aria-level="3">2. Define and run an agent</p>
+
+```csharp
+using Conductor.AI;
+
+var agent = new Agent("greeter")
+{
+    Model = "openai/gpt-4o-mini",
+    Instructions = "You are friendly and concise.",
+};
+
+await using var runtime = new AgentRuntime();
+var result = await runtime.RunAsync(agent, "Share a fun C# fact.");
+result.PrintResult();
+```
+
+```bash
+dotnet run
+```
+
+See the [C# agent guide](https://github.com/conductor-oss/csharp-sdk/tree/main/docs/agents) for project setup and runnable examples.
+
+  </section>
+</div>
+
+<script>
+  (function () {
+    var select = document.getElementById("agent-language-select");
+    var guides = document.querySelectorAll("[data-agent-language]");
+
+    function showGuide() {
+      guides.forEach(function (guide) {
+        guide.hidden = guide.dataset.agentLanguage !== select.value;
+      });
+    }
+
+    select.addEventListener("change", showGuide);
+  })();
+</script>
+
+## 3. Verify and recover
+
+In the Conductor UI, locate the execution created by the run. Verify its terminal status and inspect its task timeline, inputs, and output. If the run cannot reach the model, first confirm the server URL and provider credential in the worker environment; then inspect the failed task in the execution before retrying.
+
+## Add your agent to a workflow
+
+After deploying an agent, a workflow can invoke it as an `AGENT` task alongside ordinary API calls, retrieval, approval, retries, branches, and parallel work. The workflow owns the durable business process; the agent owns the model-driven decision or action inside it.
+
+```json
+{
+  "name": "ask_agent",
+  "taskReferenceName": "ask_agent_ref",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "name": "greeter",
+    "prompt": "Summarize this workflow context: ${fetch_context.output.response.body}",
+    "pollIntervalSeconds": 5
+  }
+}
+```
+
+The task records the agent execution ID, state, text, and structured output, so operators can inspect the parent workflow and the agent run together. See the [complete workflow-plus-agent example](../devguide/ai/first-ai-agent.md) or the [`AGENT` task integration guide](../devguide/ai/conductor-agents.md#use-a-deployed-agent-in-a-workflow).
+
+## What you built
+
+Each language uses the same durable execution model: the runtime compiles and runs the agent as a Conductor workflow, preserving an inspectable execution record. A later design can add approval, waits, retries, composition, and operational recovery without moving the agent logic into one long-lived process.
+
+## Next production step
+
+Continue with the [production agent architecture](../devguide/ai/production-agent-architecture.md). It covers governance, evaluation, deployment, composition, recovery, and operations.

@@ -1,56 +1,170 @@
 ---
-description: "Use Python to run existing OpenAI Agents, LangChain, LangGraph, or Google ADK agents as durable Conductor Agents."
+description: Run an existing OpenAI Agents, Google ADK, LangChain, or LangGraph agent through Conductor's durable runtime.
 ---
 
-# Framework Agent Quickstarts
+# Framework agent quickstarts
 
-**Bring your agent. Make it durable.** Keep the framework object and authoring API you already use; the Conductor Python SDK compiles it into an inspectable, retryable Conductor graph.
+**Audience:** teams with an existing framework agent; this guide uses Python framework bridges.
 
-For a new agent that does not need another framework, start with [Run Your First Conductor Agent](first-agent.md).
+**Outcome:** your framework agent runs through Conductor and produces an inspectable execution.
 
-## Before you start
+For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). The bridges below keep the framework object you already author; Conductor provides the durable runtime around it.
 
-Start a local server with the [workflow quickstart](index.md#start-conductor), then configure the Python SDK:
+<section class="framework-hero" aria-labelledby="framework-quickstarts-title">
+  <p class="framework-hero__eyebrow">Framework bridges</p>
+  <h2 id="framework-quickstarts-title">Bring your existing agent.</h2>
+  <p>Choose the framework you already use. Conductor runs its agent through a durable, inspectable execution.</p>
+  <div class="framework-logo-grid framework-logo-grid--quickstart">
+    <a class="framework-logo-card" href="#openai-agents-sdk" aria-label="OpenAI Agents SDK quickstart">
+      <img class="framework-logo framework-logo--wide" src="../assets/images/frameworks/openai.svg" alt="" />
+      <span>OpenAI Agents</span>
+    </a>
+    <a class="framework-logo-card" href="#langchain" aria-label="LangChain quickstart">
+      <img class="framework-logo" src="../assets/images/frameworks/langchain.svg" alt="" />
+      <span>LangChain</span>
+    </a>
+    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#google-adk" aria-label="Google ADK recipe">
+      <img class="framework-logo" src="../assets/images/frameworks/google-adk.svg" alt="" />
+      <span>Google ADK</span>
+    </a>
+    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#vercel-ai-sdk" aria-label="Vercel AI SDK recipe">
+      <img class="framework-logo" src="../assets/images/frameworks/vercel.svg" alt="" />
+      <span>Vercel AI SDK</span>
+    </a>
+  </div>
+</section>
+
+## Prerequisites
+
+Complete [Connect to Conductor](connect.md), including the hosted model integration or local provider API-key setup required by the selected model. Install the package extra that matches your framework. The examples use an OpenAI model; supply the credentials your framework/model needs.
+
+## OpenAI Agents SDK
+
+Install the agent bridge and OpenAI Agents SDK:
 
 ```bash
-export CONDUCTOR_SERVER_URL=http://localhost:8080/api
+pip install conductor-python
 ```
 
-Use `run` while you are iterating interactively. In production, use `deploy` to register the compiled graph and `serve` to run its workers. The SDK repositories are the source of truth for framework packages and runnable code.
-
-## OpenAI Agents
-
-Use the Python bridge as a near drop-in replacement for the OpenAI Agents runner:
+Save as `openai_agent.py`:
 
 ```python
 from conductor.ai import Runner
-from agents import Agent
+from agents import Agent, function_tool
 
-agent = Agent(name="assistant", instructions="Reply concisely.")
-result = Runner.run_sync(agent, "Explain durable execution in one sentence.")
+@function_tool
+def get_weather(city: str) -> str:
+    return f"72F and sunny in {city}"
+
+agent = Agent(
+    name="weather_assistant",
+    model="gpt-4o-mini",
+    tools=[get_weather],
+    instructions="You are a helpful assistant.",
+)
+
+result = Runner.run_sync(agent, "What's the weather in NYC?")
 print(result.final_output)
 ```
 
-Follow the maintained [Python bridge guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md#openai-agents-sdk) and [runnable OpenAI Agents examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/openai).
+Run `python openai_agent.py`, then verify the output and execution in the UI. The only runner import changes: use `conductor.ai.Runner` rather than the framework runner.
 
 ## LangChain
 
-Create the agent with LangChain, then pass the object to `AgentRuntime.run(...)`. The maintained [LangChain bridge snippet](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md#langchain) is the supported starting point; it stays aligned with the current LangChain API.
+Install the LangChain bridge:
+
+```bash
+pip install 'conductor-python[langchain]'
+```
+
+```python
+from conductor.ai.agents import AgentRuntime
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+
+@tool
+def check_token() -> str:
+    """Check a token."""
+    return "available"
+
+agent = create_agent("openai:gpt-4o-mini", tools=[check_token],
+                     system_prompt="You are a helpful assistant.")
+
+with AgentRuntime() as runtime:
+    result = runtime.run(agent, "Is the token set?")
+    result.print_result()
+```
 
 ## LangGraph
 
-Compile your LangGraph state graph, then pass that graph to `AgentRuntime.run(...)`. Start from the maintained [LangGraph bridge guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md#langgraph) and [runnable Python examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/langgraph).
+Install the LangGraph bridge:
+
+```bash
+pip install 'conductor-python[langgraph]'
+```
+
+```python
+import math
+from conductor.ai.agents import AgentRuntime
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+
+@tool
+def calculate(expression: str) -> str:
+    """Evaluate a limited math expression."""
+    return str(eval(expression, {"__builtins__": {}}, {"sqrt": math.sqrt, "pi": math.pi}))
+
+graph = create_react_agent(
+    ChatOpenAI(model="gpt-4o-mini", temperature=0), tools=[calculate], name="math_agent"
+)
+
+with AgentRuntime() as runtime:
+    result = runtime.run(graph, "What is sqrt(256) + 2**10?")
+    result.print_result()
+```
 
 ## Google ADK
 
-Pass a standard Google ADK `Agent` to `AgentRuntime.run(...)`. Use the maintained [Google ADK bridge guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md#google-adk) and [runnable Python examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/adk).
+Install the Google ADK bridge:
 
-## Choose the production path
-
-Every bridge follows the same lifecycle:
-
-```text
-framework-native agent → plan → deploy → serve → invoke from a workflow
+```bash
+python -m pip install 'conductor-python[adk]'
 ```
 
-See [Framework Agent Recipes](../devguide/ai/agent-framework-recipes.md) for the broader support matrix, including Java and TypeScript paths, and [Conductor Agents](../devguide/ai/conductor-agents.md) for using a deployed agent as an `AGENT` task.
+```python
+from conductor.ai.agents import AgentRuntime
+from google.adk.agents import Agent
+
+agent = Agent(
+    name="adk_greeter",
+    model="gemini-2.0-flash",
+    instruction="You are friendly and concise.",
+)
+
+with AgentRuntime() as runtime:
+    result = runtime.run(agent, "Say hello and share an ML fact.")
+    result.print_result()
+```
+
+Save the file as `adk_agent.py` and run `python adk_agent.py`.
+
+## Verify and recover
+
+For every bridge, verify the printed result and find the corresponding execution in the Conductor UI. If it fails, first check the runtime server URL, framework package, and provider credentials; then inspect the failed task before retrying. Do not retry an agent action that may have performed an external side effect until its idempotency and recovery policy are clear.
+
+## Next production step
+
+Use the [production agent architecture](../devguide/ai/production-agent-architecture.md) to add governance, evaluations, deployment, composition, and operations. The [Python SDK framework-agent guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md) remains the source for the current bridge API and support matrix.
+
+## SDK examples
+
+Use the maintained SDK examples for complete, runnable projects. A dash marks a pairing with no maintained example.
+
+| Framework | Python | Java | TypeScript / JavaScript | C# |
+|---|---|---|---|---|
+| OpenAI Agents | [Examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/openai) | [Examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples) | [Examples](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/openai) | [Examples](https://github.com/conductor-oss/csharp-sdk/tree/main/Conductor.AI.Examples) |
+| Google ADK | [Examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/adk) | [Examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples) | [Examples](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/adk) | [Examples](https://github.com/conductor-oss/csharp-sdk/tree/main/Conductor.AI.Examples) |
+| LangChain | [Examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents) | [LangChain4j examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples) | [Examples](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents) | — |
+| LangGraph | [Examples](https://github.com/conductor-oss/python-sdk/tree/main/examples/agents/langgraph) | [LangGraph4j examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples) | [Examples](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/langgraph) | — |
+| Vercel AI SDK | — | — | [Examples](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/vercel-ai) | — |

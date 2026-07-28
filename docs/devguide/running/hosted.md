@@ -4,7 +4,7 @@ description: "Hosted Solutions — run Conductor in the cloud with Orkes, offeri
 # Hosted Solutions
 
 ## Orkes
-[Orkes](https://orkes.io) offers a cloud-hosted, enterprise-grade version of Conductor, enabling teams to get started with minimal operational overhead. Besides full compatibility with Conductor OSS, Orkes Conductor provides [additional features](https://www.orkes.io/platform/conductor-oss-vs-orkes) not available in the open source release.
+[Orkes](https://orkes.io) offers a cloud-hosted, enterprise-grade version of Conductor, enabling teams to get started with minimal operational overhead. Besides full compatibility with Conductor OSS, Orkes Conductor adds [further features](https://www.orkes.io/platform/conductor-oss-vs-orkes) on top of it.
 
 Here are the options for using Conductor via Orkes:
 

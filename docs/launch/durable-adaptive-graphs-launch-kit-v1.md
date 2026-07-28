@@ -25,6 +25,7 @@ description: Internal, ready-to-paste messaging kit for the Durable Adaptive Gra
 | Proof pillar: bounded adaptation | `DO_WHILE`, `SWITCH`, `FORK_JOIN_DYNAMIC`, MCP tasks, and runtime workflow definitions support adaptive paths that teams can validate and cap. |
 | Proof pillar: operational control | Operators can inspect, retry, pause, resume, cancel, and recover workflow executions. |
 | Proof pillar: choice without lock-in | Workers are plain code and the graph can compose SDK-authored agents, system tasks, MCP tools, and sub-workflows. |
+| Proof pillar: AI-ready documentation | Humans and coding agents can begin from the same source-backed workflow, agent, guardrail, eval, and production-architecture guidance. |
 
 ### Anti-messaging
 
@@ -32,6 +33,7 @@ description: Internal, ready-to-paste messaging kit for the Durable Adaptive Gra
 - Do not imply exactly-once side effects. Conductor uses at-least-once task delivery; tools must be idempotent.
 - Do not say an agent freely mutates a running workflow snapshot. It selects approved runtime paths or starts validated child plans.
 - Do not promise that all loop history is retained when `keepLastN` is enabled; older iteration data is intentionally removed.
+- Do not use public comparison tables or unverified rankings. Let runnable proof, source-backed claims, and the product journey establish leadership.
 
 ## Source-backed claims matrix
 
@@ -61,6 +63,10 @@ description: Internal, ready-to-paste messaging kit for the Durable Adaptive Gra
 **README lead**
 
 > Conductor is an open-source durable execution platform for microservices, AI agents, and adaptive workflow graphs. It turns runtime choices—loops, branching, fan-out, tool calls, approvals, retries, and cancellation—into durable, inspectable execution.
+
+**AI-assistant CTA**
+
+> Give a coding assistant the canonical Conductor context: `/llms.txt` points to durable workflows, governed adaptive graphs, guardrails, evals, production architecture, and the workflow definition reference.
 
 ## Sales narratives
 

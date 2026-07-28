@@ -20,12 +20,12 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
   </div>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="../../quickstart/first-agent.html">
-      <span class="integration-action-card__title">Author in an SDK</span>
-      <span>Run a native Python Conductor Agent interactively.</span>
+      <span class="integration-action-card__title">Author a Conductor Agent</span>
+      <span>Author with Python, Java, TypeScript/JavaScript, or C#.</span>
     </a>
     <a class="integration-action-card" href="agent-framework-recipes.html">
       <span class="integration-action-card__title">Bring a framework agent</span>
-      <span>Choose a supported bridge and its maintained example.</span>
+      <span>Choose a bridge for OpenAI Agents, Google ADK, LangChain, LangGraph, or more.</span>
     </a>
     <a class="integration-action-card" href="#use-a-deployed-agent-in-a-workflow">
       <span class="integration-action-card__title">Use it in a workflow</span>
@@ -34,7 +34,9 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
   </div>
 </section>
 
-Conductor Agents are distinct from building a declarative AI workflow directly with `LLM_CHAT_COMPLETE`, MCP, `HUMAN`, and control-flow tasks. Both paths are first-class: use direct tasks when the graph is the application, and Conductor Agents when you bring framework-native logic into a broader durable process.
+Conductor Agents are distinct from building a declarative AI workflow directly with `LLM_CHAT_COMPLETE`, MCP, `HUMAN`, and control-flow tasks. Both paths are first-class: use direct tasks when the graph is the application, and Conductor Agents when you bring framework-authored logic into a broader durable process.
+
+Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#. Choose the SDK and framework bridge that match your application; all compile into the same durable Conductor execution model.
 
 The SDK-created agent is compiled into ordinary Conductor workflow definitions. That makes every LLM call, tool invocation, wait, retry, and branch visible in the UI and API, and lets the same graph compose with ordinary tasks, `SWITCH`, `FORK_JOIN`, `HUMAN`, schedules, and workflow cancellation.
 
@@ -50,7 +52,7 @@ Use the SDK that owns the framework bridge for framework code, package versions,
 
 For interactive development, use `run`. For production, deploy the agent and serve its workers so that workflow callers can start the stable deployed version. See [Framework Agent Recipes](agent-framework-recipes.md) for maintained SDK documentation and executable examples.
 
-For server setup, start a local Conductor server and configure the SDK with `CONDUCTOR_SERVER_URL`. The maintained SDK setup guides are the source of truth for deployment-specific agent runtime configuration.
+For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md). The maintained SDK setup guides are the source of truth for deployment-specific agent runtime configuration.
 
 ## Use a deployed agent in a workflow
 
@@ -127,4 +129,4 @@ These repository examples deliberately contain only the stable workflow contract
 | [`33-conductor-agent-multi-agent.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/33-conductor-agent-multi-agent.json) | Parallel specialist agents inside a `FORK_JOIN` / `JOIN` graph. |
 | [`34-conductor-agent-cancel.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/34-conductor-agent-cancel.json) | Cancellation propagation from the parent graph. |
 
-Next: choose a framework route in [Framework Agent Recipes](agent-framework-recipes.md), or compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md).
+Next: choose a framework route in [Framework Agent Recipes](agent-framework-recipes.md), compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md), then use the [Production Agent Architecture](production-agent-architecture.md) for governance, evaluation, deployment, recovery, and operations.

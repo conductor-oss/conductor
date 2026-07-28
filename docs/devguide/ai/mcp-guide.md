@@ -4,8 +4,6 @@ description: "MCP (Model Context Protocol) integration with Conductor — connec
 
 # MCP Integration
 
-MCP (Model Context Protocol) is the open standard for connecting AI agents to tools and data sources. Conductor provides native MCP integration — discover tools, call them with full durability, and expose your own workflows as MCP tools.
-
 <section class="integration-hero integration-hero--mcp" aria-labelledby="mcp-hero-title">
   <div class="integration-hero__identity" aria-hidden="true">
     <img class="integration-hero__logo" src="../../assets/images/protocols/mcp.svg" alt="" />
@@ -264,6 +262,7 @@ Every task type here — `LIST_MCP_TOOLS`, `LLM_CHAT_COMPLETE`, `CALL_MCP_TOOL`,
 
 ## Next steps
 
+- **[Production Agent Architecture](production-agent-architecture.md)** — govern and operate a tool-using agent after its first result.
 - **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.
 - **[Dynamic Workflows](dynamic-workflows.md)** — Agents that generate their own execution plans.
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Approval patterns for MCP tool calls.

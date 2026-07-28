@@ -116,6 +116,7 @@ Use [Agent Evals](agent-evals.md) to turn those checks into repeatable CI cases.
 
 ## Next steps
 
+- **[Production Agent Architecture](production-agent-architecture.md)** — connect these controls to evaluation, deployment, recovery, and operations.
 - **[Agent Evals](agent-evals.md)** — Test routing, tool use, guardrail behavior, and output quality before release.
 - **[Human-in-the-Loop](human-in-the-loop.md)** — Durable approval patterns for consequential actions.
 - **[Durable Adaptive Graphs](dynamic-workflows.md)** — Guard an adaptive workflow built directly from native tasks.

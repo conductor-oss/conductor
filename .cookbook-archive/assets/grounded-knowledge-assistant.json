@@ -1,0 +1,81 @@
+{
+  "name": "grounded_knowledge_assistant",
+  "description": "Retrieves source references and returns a citation-ready grounded answer.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 180,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "question",
+    "vectorDB",
+    "index",
+    "namespace"
+  ],
+  "tasks": [
+    {
+      "name": "retrieve_sources",
+      "taskReferenceName": "retrieve_sources",
+      "type": "LLM_SEARCH_INDEX",
+      "inputParameters": {
+        "vectorDB": "${workflow.input.vectorDB}",
+        "index": "${workflow.input.index}",
+        "namespace": "${workflow.input.namespace}",
+        "embeddingModelProvider": "openai",
+        "embeddingModel": "text-embedding-3-small",
+        "query": "${workflow.input.question}",
+        "llmMaxResults": 5
+      },
+      "taskDefinition": {
+        "name": "retrieve_sources",
+        "retryCount": 2,
+        "retryLogic": "EXPONENTIAL_BACKOFF",
+        "retryDelaySeconds": 2,
+        "responseTimeoutSeconds": 30,
+        "timeoutSeconds": 60,
+        "timeoutPolicy": "TIME_OUT_WF",
+        "rateLimitPerFrequency": 60,
+        "rateLimitFrequencyInSeconds": 60,
+        "concurrentExecLimit": 10
+      }
+    },
+    {
+      "name": "answer_with_citations",
+      "taskReferenceName": "answer_with_citations",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Answer only from the supplied sources. Return JSON with answer and citations. Each citation must use the source document id. If unsupported, say so."
+          },
+          {
+            "role": "user",
+            "message": "Question: ${workflow.input.question}\nSources: ${retrieve_sources.output.result}"
+          }
+        ],
+        "temperature": 0.1,
+        "maxTokens": 700,
+        "jsonOutput": true
+      },
+      "taskDefinition": {
+        "name": "answer_with_citations",
+        "retryCount": 2,
+        "retryLogic": "EXPONENTIAL_BACKOFF",
+        "retryDelaySeconds": 2,
+        "responseTimeoutSeconds": 45,
+        "timeoutSeconds": 90,
+        "timeoutPolicy": "TIME_OUT_WF",
+        "rateLimitPerFrequency": 30,
+        "rateLimitFrequencyInSeconds": 60,
+        "concurrentExecLimit": 8
+      }
+    }
+  ],
+  "outputParameters": {
+    "answer": "${answer_with_citations.output.result.answer}",
+    "citations": "${answer_with_citations.output.result.citations}",
+    "sources": "${retrieve_sources.output.result}"
+  }
+}

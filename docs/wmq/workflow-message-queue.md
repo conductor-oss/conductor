@@ -13,12 +13,13 @@ Two pieces make this work:
 
 ## Prerequisites
 
-WMQ requires changes that are currently in review:
+WMQ is disabled by default. Enable it on the Conductor server before registering a workflow that uses `PULL_WORKFLOW_MESSAGES` or calling the push endpoint:
 
-| Component | PR |
-|---|---|
-| Conductor OSS | https://github.com/conductor-oss/conductor/pull/917 |
-| Python SDK (`conductor-python`) | https://github.com/conductor-oss/python-sdk/pull/389 |
+```properties
+conductor.workflow-message-queue.enabled=true
+```
+
+When this property is `false`, Conductor does not register the system task or the HTTP endpoint; the endpoint returns `404 Not Found`.
 
 ## Using WMQ
 
@@ -62,8 +63,9 @@ The task completes with:
 Your workflow accesses the user data via `output.messages[0].payload`. The `id` and `receivedAt` fields are added by Conductor at ingestion time.
 
 **Push errors:**
+- `404 Not Found` — the workflow ID does not exist, or the WMQ feature is disabled.
 - `409 Conflict` — workflow is not in `RUNNING` state (completed, failed, terminated, etc.). The message is not stored.
-- `500` — queue is full (`maxQueueSize` reached). Caller must back off and retry.
+- `429 Too Many Requests` — queue is full (`maxQueueSize` reached). Caller must back off and retry.
 
 ### Event loop pattern
 

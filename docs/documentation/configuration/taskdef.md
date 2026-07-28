@@ -4,6 +4,8 @@ description: "Task definition schema in Conductor — configure retry logic, exp
 
 # Task Definition
 
+For the complete machine-readable field contract, see [TaskDef.json](schemas.md#definition-objects).
+
 Task Definitions are used to register SIMPLE tasks (workers). Conductor maintains a registry of user task types. A task type MUST be registered before being used in a workflow.
 
 This should not be confused with [*Task Configurations*](workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
@@ -74,9 +76,6 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 You have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set `concurrentExecLimit` to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.
 
 ### Task Rate Limits
-
-!!! note "Rate Limiting"
-    Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.
 
 * `rateLimitFrequencyInSeconds` and `rateLimitPerFrequency` should be used together.
 * `rateLimitFrequencyInSeconds` sets the "frequency window", i.e the `duration` to be used in `events per duration`. Eg: 1s, 5s, 60s, 300s etc.

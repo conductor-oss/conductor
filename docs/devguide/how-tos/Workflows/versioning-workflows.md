@@ -7,6 +7,16 @@ Conductor allows you to safely run different workflow versions without disruptin
 
 Refer to [Updating workflows](creating-workflows.md#updating-workflows) for more information on modifying a workflow and saving it as a new version.
 
+## Rollout procedure
+
+1. Register a new workflow version instead of overwriting the version used by production callers.
+2. Validate and mock-test it, then run a real canary execution with the version pinned.
+3. Move callers, schedules, and parent-workflow references deliberately to the new version.
+4. Compare completion, failure, latency, and output-contract behavior.
+5. Keep the previous version registered until callers have migrated and its executions no longer need restart/replay support.
+
+Success means new callers start the intended version while existing executions continue against their recorded definition snapshot.
+
 
 ## When to version workflows
 
@@ -52,6 +62,9 @@ Since any changes to a workflow definition will not impact its ongoing execution
 
 Using the Conductor UI or APIs, you can upgrade a running workflow by terminating the execution and restarting it with the latest definition.
 
+!!! warning
+    Terminating and restarting can repeat side effects. Prefer allowing running executions to finish on their snapshot unless the workflow is idempotent or compensation is defined.
+
 ### Using Conductor UI
 
 **To upgrade a running workflow**:
@@ -63,3 +76,7 @@ Using the Conductor UI or APIs, you can upgrade a running workflow by terminatin
 ### Using Conductor APIs
 
 The API approach allows you to upgrade running workflows in bulk. Use the Bulk Terminate API (`POST /api/workflow/bulk/terminate`) to specify a list of ongoing workflows. Then, use the Bulk Restart API (`POST /api/workflow/bulk/restart`) to restart the terminated workflows.
+
+## Limitations and next step
+
+Omitting a version at start time selects the latest registered version, which trades rollout control for convenience. Pin versions in schedules and parent workflows when deterministic deployment matters. Next, rehearse [Debug and recover](debugging-workflows.md) for both the current and previous version.

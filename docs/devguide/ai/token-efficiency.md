@@ -96,22 +96,16 @@ Conductor persists LLM task outputs the same way it persists any task output:
 This is the same persistence model that applies to every task in Conductor — the [durable execution semantics](../../architecture/durable-execution.md) guarantee that completed work is never lost.
 
 
-## Comparison: durable vs non-durable frameworks
+## Where durable execution reduces repeat work
 
-| | Non-durable (LangChain, CrewAI, custom) | Durable (Conductor) |
-|---|---|---|
-| **Crash at step N of M** | Restart from step 1. All N tokens re-consumed. | Resume from step N. Zero tokens wasted. |
-| **Retry after tool failure** | Re-run entire chain including LLM calls. | Retry only the failed task. LLM outputs preserved. |
-| **Long pause (human review)** | Process may die. Full restart required. | Durable pause. Resume with all state intact. |
-| **Debugging** | Re-run the agent to reproduce. More tokens. | Inspect persisted outputs. Rerun from any task. |
-| **Deploy/scale** | In-flight work may be lost. | Workflows survive scaling events. |
+Completed task outputs remain available across infrastructure recovery, pauses, and task-scoped retries. That can avoid repeating upstream LLM calls when a later task fails, an agent waits for approval, or an operator reruns from a selected task.
 
-The bottom line: **durable execution is a cost optimization**, not just a reliability feature. Completed work remains available across infrastructure recovery, pauses, and task-scoped retries. At-least-once delivery and retried `DO_WHILE` loops can still re-execute work, so idempotency and retry boundaries remain part of the design.
+This is not a guarantee that no call runs again. Conductor uses at-least-once delivery, and retrying a failed `DO_WHILE` restarts that loop's iteration history. Make tools idempotent and choose retry boundaries deliberately.
 
 
 ## Next steps
 
-- **[Durable Agents](durable-agents.md)** — What persists, what gets retried, and why JSON is AI-native.
+- **[Durable Execution Semantics](../../architecture/durable-execution.md)** — What persists, what gets retried, and how recovery affects repeat work.
 - **[Durable Execution Semantics](../../architecture/durable-execution.md)** — The full persistence and recovery model.
 - **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable execution built in.
 - **[Durable Adaptive Graphs](dynamic-workflows.md)** — Build a governed loop with bounded fan-out and explicit recovery controls.

@@ -85,6 +85,7 @@ The server will be available at `http://localhost:3001/mcp`.
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
 | `30-rag-sqlite-vec.json` | Zero-infra RAG on the bundled SQLite + sqlite-vec store | OpenAI, SQLite (built-in) |
+| `36-ai-workflow-routing.json` | LLM selects an approved child workflow, then runs it as a dynamic sub-workflow | OpenAI; register the paired `36a`–`36c` child workflows |
 
 ### A2A (Agent2Agent) examples
 

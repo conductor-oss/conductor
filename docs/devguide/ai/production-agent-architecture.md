@@ -1,15 +1,112 @@
 ---
-description: "The canonical reference architecture for building production AI agents on Conductor — end-to-end pattern with planner, tool selection, execution, retry, memory, human approval, long waits, reflection loops, budget caps, and full observability."
+description: "A compact, framework-neutral blueprint for adopting production AI agents on Conductor: choose an execution boundary, define contracts, govern side effects, and operate durable workflows."
 ---
 
 # Production agent architecture
 
 For the focused, runnable implementation of this pattern, start with **[Durable Adaptive Graphs](dynamic-workflows.md)**. Its source-backed `governed_github_pr_reviewer` v1 makes the controls concrete: four durable PR-review passes, a bounded allowlisted deep dive, a compact evidence ledger, and approval before one GitHub comment.
 
-This is the reference architecture for a durable AI agent on Conductor. Not a toy. Not a feature list. This is the exact pattern for an agent that plans, acts, waits, recovers, and runs in production.
+This is a compact, framework-neutral parent-workflow blueprint for an agent that plans, acts, waits, recovers, and runs in production. Keep detailed framework setup, A2A protocol behavior, and incident procedures in their specialist guides.
 
+## The parent workflow reference path
 
-## Architecture diagram
+Every path starts and ends in the parent workflow: validate the request, choose an execution boundary, validate the returned result, then apply approval, writes, or compensation. The parent owns the business process; each agent path owns only the work behind its boundary.
+
+<div style="margin: 2rem 0;">
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg" style="max-width: 960px; width: 100%; height: auto;" role="img" aria-labelledby="production-agent-parent-title production-agent-parent-desc">
+  <title id="production-agent-parent-title">Production agent parent workflow</title>
+  <desc id="production-agent-parent-desc">A parent workflow validates a request, chooses native tasks, a deployed Conductor Agent, or a remote A2A agent, validates the returned result, and then obtains approval before writing or compensates on failure. Native and deployed-agent paths are observable in Conductor; an A2A handoff is observable at the parent boundary while its internals remain remote.</desc>
+  <defs>
+    <marker id="parent-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#4a5568"/></marker>
+  </defs>
+
+  <rect x="20" y="18" width="920" height="390" rx="12" fill="rgba(59,130,246,0.04)" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="42" y="45" font-size="13" font-weight="600" fill="#2e3545" font-family="sans-serif">Parent workflow — durable business-process boundary</text>
+
+  <rect x="52" y="88" width="150" height="58" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="127" y="113" text-anchor="middle" font-size="12" font-weight="600" fill="#2e3545" font-family="sans-serif">Validate request</text>
+  <text x="127" y="130" text-anchor="middle" font-size="10" fill="#4a5568" font-family="sans-serif">shape, policy, IDs</text>
+
+  <line x1="202" y1="117" x2="256" y2="117" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+  <polygon points="285,82 326,117 285,152 244,117" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="285" y="113" text-anchor="middle" font-size="10" font-weight="600" fill="#2e3545" font-family="sans-serif">Choose</text>
+  <text x="285" y="127" text-anchor="middle" font-size="10" fill="#4a5568" font-family="sans-serif">boundary</text>
+
+  <line x1="326" y1="117" x2="372" y2="117" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+  <line x1="285" y1="152" x2="285" y2="290" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="285" y1="290" x2="372" y2="290" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+  <line x1="326" y1="117" x2="372" y2="214" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+
+  <rect x="372" y="72" width="220" height="90" rx="7" fill="rgba(6,214,160,0.10)" stroke="#06a88a" stroke-width="1.5"/>
+  <text x="482" y="99" text-anchor="middle" font-size="12" font-weight="600" fill="#155e75" font-family="sans-serif">Native tasks</text>
+  <text x="482" y="118" text-anchor="middle" font-size="10" fill="#2e3545" font-family="sans-serif">LLM, MCP, control flow</text>
+  <text x="482" y="140" text-anchor="middle" font-size="10" fill="#155e75" font-family="sans-serif">execution + observability: Conductor</text>
+
+  <rect x="372" y="170" width="220" height="90" rx="7" fill="rgba(59,130,246,0.10)" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="482" y="197" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8" font-family="sans-serif">Conductor Agent</text>
+  <text x="482" y="216" text-anchor="middle" font-size="10" fill="#2e3545" font-family="sans-serif">AGENT: agentType conductor</text>
+  <text x="482" y="238" text-anchor="middle" font-size="10" fill="#1d4ed8" font-family="sans-serif">execution + observability: Conductor</text>
+
+  <rect x="372" y="268" width="220" height="90" rx="7" fill="rgba(245,158,11,0.12)" stroke="#d97706" stroke-width="1.5"/>
+  <text x="482" y="295" text-anchor="middle" font-size="12" font-weight="600" fill="#92400e" font-family="sans-serif">Remote A2A agent</text>
+  <text x="482" y="314" text-anchor="middle" font-size="10" fill="#2e3545" font-family="sans-serif">AGENT: agentType a2a</text>
+  <text x="482" y="336" text-anchor="middle" font-size="10" fill="#92400e" font-family="sans-serif">handoff observable; internals remote</text>
+
+  <line x1="592" y1="117" x2="656" y2="117" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="592" y1="215" x2="656" y2="215" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="592" y1="313" x2="656" y2="313" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="656" y1="117" x2="656" y2="313" stroke="#4a5568" stroke-width="1.5"/>
+  <line x1="656" y1="215" x2="708" y2="215" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+
+  <rect x="708" y="186" width="178" height="58" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/>
+  <text x="797" y="211" text-anchor="middle" font-size="12" font-weight="600" fill="#2e3545" font-family="sans-serif">Validate result</text>
+  <text x="797" y="228" text-anchor="middle" font-size="10" fill="#4a5568" font-family="sans-serif">schema, policy, artifacts</text>
+
+  <line x1="797" y1="244" x2="797" y2="278" stroke="#4a5568" stroke-width="1.5" marker-end="url(#parent-arrow)"/>
+  <rect x="708" y="278" width="178" height="58" rx="6" fill="#f59e0b" stroke="#d97706" stroke-width="1.5"/>
+  <text x="797" y="302" text-anchor="middle" font-size="12" font-weight="600" fill="#fff" font-family="sans-serif">Approve then write</text>
+  <text x="797" y="319" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.85)" font-family="sans-serif">or compensate on failure</text>
+</svg>
+</div>
+
+## Choose the execution boundary
+
+The parent workflow can use one or more of these execution paths. Choose the path based on where the agent behavior belongs; all three participate in the same durable business process.
+
+- **Native AI tasks** run directly in the workflow graph. Use `LLM_CHAT_COMPLETE`, MCP tasks, `HUMAN`, and control-flow tasks when the workflow definition is the agent implementation.
+- **Deployed Conductor Agents** run through an `AGENT` task with `agentType: "conductor"`. They include agents authored with a Conductor SDK or framework bridges for OpenAI Agents, Google ADK, LangChain, LangGraph, and Vercel AI SDK. Conductor compiles these agents into deployed workflow graphs.
+- **Remote A2A agents** run through an `AGENT` task with `agentType: "a2a"`. This is a durable handoff to an independently deployed Agent2Agent service: Conductor manages the parent-workflow lifecycle, while the remote service keeps its own implementation and internals.
+
+`agentType` selects the execution mode; it does not name an authoring framework. Use `SUB_WORKFLOW` or `START_WORKFLOW` to compose child workflows, and use `AGENT` when the parent invokes an agent runtime.
+
+| Boundary | Use it when | Execution and observability |
+|---|---|---|
+| Native tasks | The workflow graph owns the orchestration and agent behavior. | Native system tasks execute and are observable in Conductor. |
+| `AGENT` / `agentType: "conductor"` | The agent is authored in a Conductor SDK or a supported framework bridge: OpenAI Agents, Google ADK, LangChain, LangGraph, or Vercel AI SDK. | Conductor compiles and runs the deployed agent graph, so its execution is observable in Conductor. |
+| `AGENT` / `agentType: "a2a"` | A specialist is independently deployed as a remote A2A service. | Conductor observes the durable handoff, lifecycle, and returned artifacts; the remote agent owns its private internals. |
+| `SUB_WORKFLOW` / `START_WORKFLOW` | You are composing another Conductor workflow, synchronously or fire-and-forget. | These compose workflow definitions; they do not invoke either `AGENT` runtime mode. |
+
+## Production contract at every agent boundary
+
+| Decision | Default production contract |
+|---|---|
+| Input and output | Define and validate input before the boundary and output after it; do not let an unvalidated model or remote response decide a consequential action. |
+| Identity and side effects | Carry a correlation ID and idempotency key into external effects and remote handoffs. Treat every tool and remote-agent side effect as at-least-once; use idempotency or an explicit reconciliation marker. |
+| State owner | Keep orchestration state in workflow variables, resumable deployed-agent state behind its execution ID, and remote continuation state in A2A context and task IDs. |
+| Durable payload | Return small durable artifacts and references, not raw histories or large payloads. |
+
+## Production readiness
+
+- Resolve credentials server-side. Never put secrets in prompts or workflow input.
+- Use least-privileged tools, validate outputs, and require human approval before consequential writes.
+- Bound turns, parallelism, time, tokens or cost, retries, cancellation, and compensation behavior.
+- Name an owner and define one correlation-ID convention. Monitor terminal state, duration, retries, timeout or cancellation, tool failures, budget exhaustion, and approval age.
+- Run one recovery drill: interrupt a safe execution, locate it by correlation ID, retry, resume, or terminate as appropriate, and verify the audit trail.
+- Keep releases KISS: test the changed path against sandbox tools, deploy it, and retain a known-good definition for rollback.
+
+For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Recipes](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
+
+## Native-task implementation: architecture diagram
 
 <div style="margin: 2rem 0;">
 <svg viewBox="0 0 720 820" xmlns="http://www.w3.org/2000/svg" style="max-width: 720px; width: 100%; height: auto;">
@@ -150,14 +247,16 @@ A production agent has these concerns. Each one maps to a specific Conductor pri
 | **Reflection / evaluation loop** | `DO_WHILE` with LLM-as-judge | Second LLM evaluates output quality; loop continues if below threshold |
 | **Budget / iteration cap** | `DO_WHILE` `loopCondition` | `iteration < maxIterations` or token/cost check in loop condition |
 | **Termination criteria** | `DO_WHILE` exit + `SWITCH` | LLM sets `done: true`, or evaluator decides goal is met |
-| **Delegate to specialist** | `SUB_WORKFLOW` or `START_WORKFLOW` | Spawn child agent. Parent waits. Failure propagates. Full observability across the tree. |
+| **Invoke a deployed specialist agent** | `AGENT` with `agentType: "conductor"` | Run a deployed Conductor Agent by name; its compiled graph is visible in Conductor. |
+| **Hand off to a remote specialist agent** | `AGENT` with `agentType: "a2a"` | Call a remote A2A service; Conductor persists the handoff, lifecycle, and returned artifacts at the parent boundary. |
+| **Compose a child workflow** | `SUB_WORKFLOW` or `START_WORKFLOW` | Use `SUB_WORKFLOW` when the parent waits, or `START_WORKFLOW` for fire-and-forget workflow composition. |
 | **Compensation on failure** | `failureWorkflow` | Undo side effects: revoke API calls, send notifications, release resources |
 | **Audit trail** | Automatic | Every task's input, output, timing, retry count, and worker ID is persisted |
 
 
-## End-to-end workflow
+## Native-task implementation: end-to-end workflow
 
-The runnable source of truth is `ai/examples/35-governed-adaptive-agent.json` in this repository's AI examples directory. Every step is a native system task or operator — no custom code, no external framework. The compact JSON below is a conceptual baseline; use the governed PR reviewer when deploying this pattern because it adds the production guardrails described above.
+The runnable source of truth for the native-task path is `ai/examples/35-governed-adaptive-agent.json` in this repository's AI examples directory. Every step is a native system task or operator — no custom code or external framework. The compact JSON below is a conceptual baseline for that path; use the governed PR reviewer when deploying it because it adds the production guardrails described above.
 
 ```json
 {
@@ -306,7 +405,9 @@ The runnable source of truth is `ai/examples/35-governed-adaptive-agent.json` in
 
 ### Every step is a durable checkpoint
 
-Each iteration of `DO_WHILE` is persisted before the next begins. If the agent crashes at iteration 15 of 20, it resumes from iteration 15 — not from scratch. Every LLM prompt, response, tool call, and human decision is recorded.
+In the native-task path, each iteration of `DO_WHILE` is persisted before the next begins. If the agent crashes at iteration 15 of 20, it resumes from iteration 15 — not from scratch. Every LLM prompt, response, tool call, and human decision is recorded. Deployed Conductor Agents provide the same internal Conductor visibility because their graphs are compiled into Conductor workflows.
+
+For an A2A path, the durable checkpoint is the `AGENT` handoff: Conductor records its status, retry and cancellation lifecycle, and returned artifacts. The remote agent's private internal steps remain owned and observed by that remote service.
 
 ### Human approval is a durable gate
 
@@ -342,7 +443,7 @@ If the agent fails after taking real-world actions (sent an email, created a rec
 
 ### Observability is automatic
 
-Open the Conductor UI to see:
+For native tasks and compiled Conductor Agent graphs, open the Conductor UI to see:
 
 - The exact task graph for this execution
 - Every LLM prompt and response (click any `LLM_CHAT_COMPLETE` task)
@@ -351,6 +452,8 @@ Open the Conductor UI to see:
 - The iteration count and loop state
 - Retry history for any failed task
 - The full workflow input, output, and variables
+
+For a remote A2A agent, the parent workflow exposes the durable `AGENT` task — handoff state, retry and cancellation lifecycle, and returned text or artifacts. The remote agent's internal graph stays private to its operator, which is what keeps the boundary clean.
 
 
 ## Extending the pattern
@@ -422,7 +525,37 @@ The wait is durable. The workflow does not consume resources while waiting. Afte
 
 ### Delegate to specialist agents
 
-Use `SUB_WORKFLOW` to spawn a child agent for a specialized task:
+Use `AGENT` when the specialist is an agent runtime. A deployed Conductor Agent is invoked by name:
+
+```json
+{
+  "name": "delegate_to_planner",
+  "taskReferenceName": "planner_agent",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "name": "specialist_planner",
+    "prompt": "${workflow.input.goal}"
+  }
+}
+```
+
+Use `agentType: "a2a"` when the specialist is an independently deployed A2A service:
+
+```json
+{
+  "name": "delegate_to_researcher",
+  "taskReferenceName": "research_agent",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "a2a",
+    "agentUrl": "${workflow.input.researchAgentUrl}",
+    "text": "${plan.output.result.research_topic}"
+  }
+}
+```
+
+Use `SUB_WORKFLOW` when the specialist is a child workflow rather than an agent runtime:
 
 ```json
 {
@@ -440,7 +573,7 @@ Use `SUB_WORKFLOW` to spawn a child agent for a specialized task:
 }
 ```
 
-The parent agent waits for the child to complete. If the child fails, the parent's failure handling kicks in. The entire agent tree is observable in the UI — drill from parent to child to sub-child.
+The parent waits for the child workflow to complete. If it fails, the parent's failure handling kicks in. Its workflow tree is observable in the UI. `START_WORKFLOW` is the corresponding fire-and-forget option; neither task is a substitute for invoking a deployed or remote agent runtime.
 
 
 ## The primitives, mapped
@@ -452,7 +585,9 @@ The parent agent waits for the child to complete. If the child fails, the parent
 | Pick the next tool at runtime | `DYNAMIC` task | LLM output determines task type. Resolved at execution time. |
 | Call multiple tools in parallel | `FORK/JOIN` or `FORK_JOIN_DYNAMIC` | Static or runtime-determined parallelism. Join waits for all. |
 | Loop until goal is met | `DO_WHILE` | Checkpointed loop. Each iteration persisted. |
-| Delegate to a specialist agent | `SUB_WORKFLOW` or `START_WORKFLOW` | Child workflow with full lifecycle management. |
+| Invoke a deployed specialist agent | `AGENT` with `agentType: "conductor"` | Runs a named Conductor Agent; its compiled workflow graph is inspectable in Conductor. |
+| Hand off to a remote specialist agent | `AGENT` with `agentType: "a2a"` | Durable remote handoff with parent-boundary status, lifecycle, and artifacts. |
+| Compose a child workflow | `SUB_WORKFLOW` or `START_WORKFLOW` | Waiting or fire-and-forget child-workflow composition; distinct from invoking an agent runtime. |
 | Accumulate context across steps | `SET_VARIABLE` | Workflow variables persisted to durable storage. |
 | Evaluate output quality | `LLM_CHAT_COMPLETE` as evaluator | LLM-as-judge pattern inside the loop. |
 | Cap iterations or cost | `DO_WHILE` `loopCondition` | Check iteration count, token usage, or cost. |
@@ -466,6 +601,7 @@ The parent agent waits for the child to complete. If the child fails, the parent
 
 - **[Conductor Agents](conductor-agents.md)** — Use this architecture around a deployed SDK-authored agent graph.
 - **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
+- **[A2A Integration](a2a-integration.md)** — Hand off to independently deployed A2A agents while retaining a durable parent-workflow boundary.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.
 - **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with ordinary workflow tasks.

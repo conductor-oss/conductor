@@ -99,6 +99,7 @@ The reviewer intentionally keeps all four iterations. Do not set `keepLastN` her
 
 ## Next steps
 
+- **[Production Agent Architecture](production-agent-architecture.md)** — take this governed graph through evaluation, deployment, recovery, and operations.
 - **[Production Agent Architecture](production-agent-architecture.md)** — the broader architecture for retries, memory, waits, and compensation.
 - **[Failure Semantics](failure-semantics.md)** — task retries, at-least-once delivery, waits, and loop failure behavior.
 - **[MCP Guide](mcp-guide.md)** — configure and call MCP tools from a workflow.

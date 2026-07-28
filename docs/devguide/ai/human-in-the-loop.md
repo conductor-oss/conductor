@@ -213,6 +213,7 @@ Because each review step is a separate persisted task, no upstream work is repea
 
 ## Next steps
 
-- **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, error handling, and multi-agent composition.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; connect approval to governance, evaluation, recovery, and operations.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; Approval, persistence, recovery, and multi-agent composition in a production agent boundary.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
 - **[HUMAN task reference](../../documentation/configuration/workflowdef/systemtasks/human-task.md)** &mdash; Full configuration options for the HUMAN system task.

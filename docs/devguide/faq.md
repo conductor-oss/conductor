@@ -1,5 +1,5 @@
 ---
-description: "Frequently asked questions about Conductor — open source workflow engine, self-hosted deployment, AI agent orchestration, LLM orchestration, workflow automation, durable execution, microservice orchestration, saga pattern, scaling, and how Conductor compares to Temporal, Airflow, and Step Functions."
+description: "Frequently asked questions about Conductor: durable workflows, adaptive agents, AI orchestration, self-hosting, operations, and runtime control."
 ---
 
 # Frequently Asked Questions
@@ -42,31 +42,15 @@ No. Conductor is designed for developers who write code. While workflows can be 
 
 Yes. Conductor supports advanced patterns including nested loops, dynamic branching, sub-workflows, and workflows with thousands of tasks.
 
-## How does Conductor compare to other workflow engines?
+## What does Conductor provide?
 
-Conductor combines durable execution, 14+ native LLM providers, JSON-native workflow definitions, 7+ language SDKs, and battle-tested scale (Netflix, Tesla, LinkedIn, JP Morgan). It's the only open source workflow engine with native AI/LLM task types, MCP integration, and built-in vector database support.
+Conductor combines durable workflow execution with built-in system tasks, JSON-native workflow definitions, polyglot workers, and native AI and MCP capabilities. Use it to coordinate distributed services, framework-authored agents, and adaptive runtime paths while retaining an inspectable execution record.
 
 ### Isn't JSON too limited for complex workflows?
 
-No — JSON makes workflows *more* capable, not less. A JSON workflow definition is pure orchestration: it describes what runs, in what order, with what inputs. It cannot open connections, mutate state, or produce side effects. This means every execution is deterministic by construction — given the same inputs, the same task graph executes every time. That is why replay, restart, and retry work unconditionally.
+No. A JSON definition expresses orchestration data: task order, inputs, outputs, operators, and policy. Put side effects in built-in tasks or workers, where they can be observed and retried. The graph remains machine-readable and versioned, while the worker remains ordinary code.
 
-Code-based workflow engines embed orchestration logic alongside business logic, which means your workflow code can introduce non-determinism (system clocks, random values, uncontrolled I/O). These engines must impose restrictions on what your code is allowed to do — and bugs from violating those restrictions are subtle and hard to debug.
-
-Conductor's dynamic primitives — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md), [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md), and [dynamic sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) — provide more runtime flexibility than code-based definitions. An LLM can generate a complete workflow definition as JSON and Conductor executes it immediately, with full durability and observability. No code generation, no compilation, no deployment. See [JSON + Code Native](../architecture/json-native.md) for the full picture.
-
-### How is Conductor different from Temporal?
-
-Both are durable execution engines, but with fundamentally different approaches. Conductor's JSON-native definitions separate orchestration from implementation, making workflows deterministic by construction — no side-effect restrictions to remember, no non-determinism bugs to debug. Temporal embeds orchestration in code, which requires developers to avoid non-deterministic operations (system clocks, random values, uncontrolled I/O) or risk subtle replay failures.
-
-Conductor is fully open source (Apache 2.0) with no proprietary server components. It provides native LLM orchestration for 14+ providers, MCP tool calling, and vector database support out of the box — capabilities Temporal does not offer. Conductor's JSON definitions can be generated and modified at runtime by LLMs or APIs without a compile/deploy cycle.
-
-### How is Conductor different from AWS Step Functions?
-
-Step Functions is a proprietary, cloud-locked service. Conductor is an open source, self-hosted workflow engine you can run on any infrastructure. Conductor supports 7+ language SDKs, 5 persistence backends, and provides native AI agent orchestration — none of which Step Functions offers. If you need an open source Step Functions alternative with no cloud lock-in, Conductor is a strong fit.
-
-### How is Conductor different from Airflow?
-
-Airflow is a DAG-based batch scheduler designed for data pipelines. Conductor is a real-time workflow orchestration engine designed for microservice orchestration, event-driven workflows, and AI agent orchestration. Conductor provides durable execution with sub-second task scheduling, while Airflow is optimized for scheduled batch jobs. If you need a real-time workflow engine rather than a job scheduler, Conductor is the better choice.
+For runtime-selected paths, use [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md), [FORK_JOIN_DYNAMIC](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md), and [sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md). A generated definition is data that must be validated before it is started; see [Durable Adaptive Graphs](ai/dynamic-workflows.md).
 
 ### Can I use Conductor for workflow automation?
 
@@ -74,7 +58,7 @@ Yes. Conductor is a developer-first workflow automation platform — not a low-c
 
 ## Can Conductor orchestrate AI agents?
 
-Yes. Conductor provides native AI agent orchestration with LLM tasks (chat completion, text completion), MCP tool calling and function calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), human-in-the-loop approval (HUMAN task), and dynamic workflows that agents can generate at runtime. Every agent built on Conductor is a durable agent — LLM orchestration runs with the same durable execution guarantees as any other workflow, so agents survive crashes, retries, and infrastructure failures without losing progress.
+Yes. Conductor provides LLM tasks, MCP tool discovery and calls, human approval, vector workflows, and adaptive control flow. An agent can select approved paths at runtime while Conductor retains state, task outcomes, and operator controls around the execution.
 
 ## Does Conductor support MCP (Model Context Protocol)?
 
@@ -82,7 +66,7 @@ Yes. LIST_MCP_TOOLS discovers available tools from any MCP server, and CALL_MCP_
 
 ## What LLM providers does Conductor support?
 
-14+ providers natively: Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. All accessible as workflow system tasks with built-in function calling and tool use via MCP integration.
+See [LLM orchestration](ai/llm-orchestration.md) for the source-backed provider matrix and the capability-specific task reference. Providers, models, and supported features evolve independently, so the matrix is the canonical documentation.
 
 ## Does Conductor support vector databases and RAG?
 
@@ -90,7 +74,7 @@ Yes. Built-in support for Pinecone, pgvector, and MongoDB Atlas Vector Search. S
 
 ## Is Conductor a durable execution engine?
 
-Yes. Every workflow execution is persisted at each step. If a task fails, it's retried with configurable backoff. If a worker crashes, the task is rescheduled. If the server restarts, execution resumes exactly where it left off. See [Durable Execution](../architecture/durable-execution.md).
+Yes. Conductor persists workflow and task state, supports configurable retry and timeout policy, and provides recovery paths for worker and infrastructure failure. At-least-once task delivery means side-effecting tools must be idempotent. See [Durable Execution](../architecture/durable-execution.md).
 
 ## Can Conductor handle millions of workflows?
 
@@ -137,9 +121,7 @@ Conductor, however will run [system tasks](../documentation/configuration/workfl
 
 ## How can I schedule workflows to run at a specific time?
 
-Conductor itself does not provide any scheduling mechanism.  But there is a community project [_Schedule Conductor Workflows_](https://github.com/jas34/scheduledwf) which provides workflow scheduling capability as a pluggable module as well as workflow server.
-Other way is you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.
-More details about [eventing](../documentation/configuration/eventhandlers.md).
+Use Conductor's built-in scheduler to bind a Spring cron expression to a workflow start request. You can create, pause, resume, preview, and inspect schedules through the [scheduling workflows guide](how-tos/Workflows/scheduling-workflows.md) or the [Scheduler API](../documentation/api/scheduler.md). For message-driven starts instead of time-based starts, use [event orchestration](how-tos/event-bus.md).
 
 ## Can I use Conductor with Ruby / Go / Python / JavaScript / C# / Rust?
 
