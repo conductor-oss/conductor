@@ -461,8 +461,8 @@ public class JavaScriptBuilder {
     }
 
     /**
-     * Normalize a framework/custom guardrail worker result into AgentSpan's internal guardrail
-     * contract.
+     * Normalize a framework/custom guardrail worker result into Conductor-Agents' internal
+     * guardrail contract.
      */
     public static String customGuardrailNormalizeScript() {
         return iife(
@@ -1279,7 +1279,8 @@ public class JavaScriptBuilder {
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
                             + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
-                            // Keep the dynamic MCP path equivalent to static AgentSpan tool specs.
+                            // Keep the dynamic MCP path equivalent to static Conductor-Agents tool
+                            // specs.
                             + "      selfDescribing: true,"
                             + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}, selfDescribing: true}});"
                             + "    mcpCfg[t.name] = {mcpServer: s.serverUrl, headers: s.headers || {}};"

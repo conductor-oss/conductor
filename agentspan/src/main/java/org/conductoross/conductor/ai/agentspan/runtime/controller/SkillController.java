@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/skills")
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-        name = {"agentspan.embedded", "agentspan.skills.enabled"},
+        name = {"conductor.integrations.ai.enabled", "agentspan.skills.enabled"},
         havingValue = "true")
 public class SkillController {
 

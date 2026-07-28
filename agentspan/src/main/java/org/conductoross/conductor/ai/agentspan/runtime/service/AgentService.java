@@ -56,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 @Slf4j
 public class AgentService {
 
@@ -353,7 +353,8 @@ public class AgentService {
         for (WorkflowDef def : allDefs) {
             Map<String, Object> metadata = def.getMetadata();
             // A def is an agent when its derived classifier resolves to "agent": either the
-            // AgentSpan stamp (agent_sdk/agentDef) is present, or the def carries an explicit
+            // Conductor-Agents stamp (agent_sdk/agentDef) is present, or the def carries an
+            // explicit
             // metadata.classifier=agent tag. An explicit non-agent classifier excludes a def
             // even if it still carries a stamp.
             if (!WorkflowClassifiers.isAgent(metadata)) {

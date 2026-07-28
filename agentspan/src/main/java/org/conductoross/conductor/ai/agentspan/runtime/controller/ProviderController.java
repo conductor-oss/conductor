@@ -54,7 +54,7 @@ import okhttp3.Response;
 @RestController
 @RequestMapping("/api/providers")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class ProviderController {
 
     /** Providers surfaced in status, aligned with the docs' provider list. */

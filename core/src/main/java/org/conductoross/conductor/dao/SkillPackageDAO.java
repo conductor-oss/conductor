@@ -13,11 +13,11 @@
 package org.conductoross.conductor.dao;
 
 /**
- * Persistence for AgentSpan skill package <b>bytes</b> (the zipped {@code SKILL.md} package),
- * addressed by an opaque {@code handle}. Skill <b>metadata</b> is stored separately via {@link
- * SkillMetadataDAO}.
+ * Persistence for Conductor-Agents skill package <b>bytes</b> (the zipped {@code SKILL.md}
+ * package), addressed by an opaque {@code handle}. Skill <b>metadata</b> is stored separately via
+ * {@link SkillMetadataDAO}.
  *
- * <p>This DAO is the Conductor-native backing store for AgentSpan's {@code
+ * <p>This DAO is the Conductor-native backing store for Conductor-Agents' {@code
  * dev.agentspan.runtime.spi.SkillPackageStore} SPI; an adapter in the {@code conductor-ai} module
  * bridges the two. Implementations store the bytes through whichever Conductor backend is
  * configured (Postgres, MySQL, SQLite, Redis). Bytes are persisted Base64-encoded so the value
