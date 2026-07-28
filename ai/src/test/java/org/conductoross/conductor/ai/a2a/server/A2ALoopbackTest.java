@@ -156,7 +156,7 @@ class A2ALoopbackTest {
     }
 
     private String agentUrl() {
-        return "http://localhost:" + port + "/a2a/order_pizza";
+        return "http://localhost:" + port + "/api/a2a/workflow/order_pizza";
     }
 
     @Test
