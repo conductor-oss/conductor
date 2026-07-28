@@ -558,17 +558,24 @@ jobs:
       AGENTSPAN_SERVER_URL: http://localhost:8080/api
       AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
+      # Suite21 probes GET {this}/scheduler/schedules and skips the whole suite unless it
+      # answers 200. Its default is port 8089, so without this the 11 scheduling tests
+      # skipped silently on every run. conductor-oss serves the scheduler itself
+      # (conductor.scheduler.enabled=true by default, SchedulerResource at /api/scheduler),
+      # so point it at the same server — verified 200, and 10 of the 11 then pass.
+      SCHEDULER_CONDUCTOR_URL: http://localhost:8080/api
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       E2E_KNOWN_FAILURES: ${{ github.workspace }}/.github/agent-e2e/known-failures-python.json
       # Minimum number of tests that must actually PASS. A pytest skip is not a failure, so a
       # server change that breaks a test's setup silently converts pass -> skip and the lane
       # stays green while covering less. This floor is the backstop: if fewer than this many
-      # tests pass, fail regardless of whether anything reported a failure. Observed 127 on CI
-      # (runs 30398185123 and 30400603109, both 127 passed / 27 skipped / 0 failed) and 127
-      # locally. RAISE it when real coverage is added; LOWER it only with a written reason —
-      # lowering silently is exactly the regression this guards against.
-      E2E_MIN_PASSED: "127"
+      # tests pass, fail regardless of whether anything reported a failure. Was 127 (CI runs
+      # 30398185123 / 30400603109, both 127 passed / 27 skipped); +10 from wiring up
+      # SCHEDULER_CONDUCTOR_URL below, which un-skipped suite21. RAISE it when real coverage
+      # is added; LOWER it only with a written reason — lowering silently is exactly the
+      # regression this guards against.
+      E2E_MIN_PASSED: "137"
     steps:
       - uses: actions/checkout@v7
 
