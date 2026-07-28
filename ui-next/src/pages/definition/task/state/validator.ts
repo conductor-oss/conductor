@@ -124,16 +124,48 @@ export const validateTask = (
   return null;
 };
 
+const crossFieldErrors = (task: TaskDefinitionDto): ErrorObject[] => {
+  const result: ErrorObject[] = [];
+
+  const { timeoutSeconds, responseTimeoutSeconds } = task;
+
+  if (
+    typeof timeoutSeconds === "number" &&
+    typeof responseTimeoutSeconds === "number" &&
+    timeoutSeconds > 0 &&
+    responseTimeoutSeconds > timeoutSeconds
+  ) {
+    result.push({
+      instancePath: "/responseTimeoutSeconds",
+      schemaPath: "#/properties/responseTimeoutSeconds/maximum",
+      keyword: "maximum",
+      params: { comparison: "<=", limit: timeoutSeconds },
+      message: `Must be ≤ Timeout Seconds (${timeoutSeconds}).`,
+    });
+  }
+
+  return result;
+};
+
 export const validatingService = async (
   modifiedTaskDefinition: TaskDefinitionDto | TaskDefinitionDto[],
   isBulk: boolean,
 ) => {
   try {
-    const errors = validateTask(modifiedTaskDefinition, isBulk);
+    const schemaErrors = validateTask(modifiedTaskDefinition, isBulk);
+
+    const extra: ErrorObject[] = isBulk
+      ? (modifiedTaskDefinition as TaskDefinitionDto[]).flatMap(
+          crossFieldErrors,
+        )
+      : crossFieldErrors(modifiedTaskDefinition as TaskDefinitionDto);
+
+    const errors: ErrorObject[] | null =
+      schemaErrors || extra.length ? [...(schemaErrors ?? []), ...extra] : null;
 
     return {
       error: parseErrors(errors),
-      numberOfError: errors?.length || 0,
+      numberOfError: errors?.length ?? 0,
     };
   } catch (error: any) {
     const errorDetail = await getErrors(error as Response);

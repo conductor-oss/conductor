@@ -499,10 +499,12 @@ export function useAgentNames(
     ...optionsOverride,
   });
 
-  return useMemo(
-    () => (data ? data.map((agent) => agent.name).filter(Boolean) : []),
-    [data],
-  );
+  return useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return Array.from(
+      new Set(data.map((agent) => agent.name).filter(Boolean)),
+    ).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  }, [data]);
 }
 
 export const useSharedQueryContext = (): {

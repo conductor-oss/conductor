@@ -351,6 +351,9 @@ export default function Execution() {
   ] = useExecutionMachine();
   const location = useLocation();
   const navigate = useNavigate();
+  const isAgentExecutionRoute = location.pathname.startsWith(
+    `${AGENT_EXECUTIONS_URL.BASE}/`,
+  );
 
   // Agent executions can be reached via a bookmarked/shared "/execution/:id"
   // link (or any other pre-existing entry point) rather than the Agents
@@ -620,9 +623,6 @@ export default function Execution() {
   };
 
   if (isNotFound) {
-    const isAgentExecutionRoute = location.pathname.startsWith(
-      `${AGENT_EXECUTIONS_URL.BASE}/`,
-    );
     return (
       <Box
         sx={{
@@ -743,7 +743,14 @@ export default function Execution() {
                 </Stack>
               }
               breadcrumbItems={[
-                { label: "Workflow Executions", to: "/executions" },
+                {
+                  label: isAgentExecutionRoute
+                    ? "Agent Executions"
+                    : "Workflow Executions",
+                  to: isAgentExecutionRoute
+                    ? AGENT_EXECUTIONS_URL.BASE
+                    : "/executions",
+                },
                 {
                   label: execution.workflowId || "",
                   to: "",
