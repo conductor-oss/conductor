@@ -528,6 +528,14 @@ jobs:
       # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
       # module directory that `gh release download --output agentspan` would collide with.
       AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
+      # TODO: rename to CONDUCTOR_SERVER_URL / CONDUCTOR_AGENT_LLM_MODEL once a migrated
+      # bundle is pinned above. Do NOT rename these ahead of that — the bundle ships
+      # prebuilt from conductor-oss/python-sdk and its `e2e/conftest.py` reads only the
+      # AGENTSPAN_* names, so renaming here silently drops both to conftest's defaults.
+      # (The SDK's own Configuration already prefers CONDUCTOR_SERVER_URL; it is the
+      # harness that has not migrated. CONDUCTOR_AGENT_LLM_MODEL is read by nothing yet.)
+      # Order of operations: migrate conftest in python-sdk → release → bump the pin
+      # above → rename here → delete this TODO.
       AGENTSPAN_SERVER_URL: http://localhost:8080/api
       AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
