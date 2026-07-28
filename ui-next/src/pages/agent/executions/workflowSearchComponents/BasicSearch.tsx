@@ -413,6 +413,8 @@ export default function BasicSearch({
                 sort,
                 freeText,
                 query: buildQuery().query,
+                classifier: "agent",
+                topLevelOnly: hideSubWorkflows,
               }}
             />
           )}
