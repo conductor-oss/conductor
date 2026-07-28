@@ -508,8 +508,9 @@ jobs:
   # silently break the SDK before a release. The suite + bundle come from conductor-oss/python-sdk
   # (conductor-ai-e2e-python-<version>); the server auto-configures the openai provider from
   # OPENAI_API_KEY (conductor.ai.openai.api-key), so no manual integration setup is needed.
-  # Known failures (none today) are xfail-ed via .github/agent-e2e/ so the lane can gate while
-  # any future gap is fixed. Runs on push/dispatch, and on PRs that touch agent-relevant paths.
+  # Known failures are xfail-ed via .github/agent-e2e/known-failures-python.json so the lane can
+  # gate while a gap is fixed; see that file for the current list and why each is listed.
+  # Runs on push/dispatch, and on PRs that touch agent-relevant paths.
   python-sdk-e2e:
     name: Python SDK E2E (SQLite)
     needs: detect-changes
@@ -524,12 +525,11 @@ jobs:
       # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
       # `CONDUCTOR_PY_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
       CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc2' }}
-      # Pinned agentspan CLI release — a few suites (cli-skills, credential lifecycle) shell
-      # out to the `agentspan` binary. Independent of the server pin; bump deliberately.
-      AGENTSPAN_CLI_VERSION: "0.4.4"
-      # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
-      # module directory that `gh release download --output agentspan` would collide with.
-      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
+      # No AGENTSPAN_CLI_PATH: the `agentspan` binary is deliberately not provisioned here.
+      # Its only consumers are the Suite16 cli-skills tests (server-side skills API, which
+      # conductor-oss does not support — see known-failures-python.json) and the credential
+      # suites, which skip on this flavor anyway because the secret store is env-backed and
+      # read-only. Absent the binary the suites skip cleanly; nothing errors.
       # TODO: rename to CONDUCTOR_SERVER_URL / CONDUCTOR_AGENT_LLM_MODEL once a migrated
       # bundle is pinned above. Do NOT rename these ahead of that — the bundle ships
       # prebuilt from conductor-oss/python-sdk and its `e2e/conftest.py` reads only the
@@ -592,16 +592,6 @@ jobs:
           echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
           tar -xzf "${NAME}.tar.gz"
           echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
-
-      - name: Download AgentSpan CLI
-        # A few suites (cli-skills, credential lifecycle) shell out to the `agentspan`
-        # binary; without it they error with FileNotFoundError instead of skipping.
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
-            --pattern "agentspan_linux_amd64" --output "$AGENTSPAN_CLI_PATH" --clobber
-          chmod +x "$AGENTSPAN_CLI_PATH"
 
       # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
       # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
