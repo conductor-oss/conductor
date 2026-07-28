@@ -1085,7 +1085,7 @@ public class MultiAgentCompiler {
         Map<String, Object> selectInputs = new LinkedHashMap<>();
         selectInputs.put("evaluatorType", "graaljs");
         selectInputs.put("expression", selectScript);
-        selectInputs.put("iteration", ref(loopRef + ".iteration"));
+        selectInputs.put("iteration", ref(loopRef + ".output.iteration"));
         if (config.getAllowedTransitions() != null) {
             selectInputs.put("last_agent", "${workflow.variables.last_agent}");
         }

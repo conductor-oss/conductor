@@ -341,7 +341,16 @@ public class JavaScriptBuilder {
         String nameJs = toJson(guardrailName);
 
         return iife(
-                "  var content = $.content;"
+                // A tool-call turn is legally empty (output.result is []), so an output
+                // guardrail must not judge it. When toolCalls is bound (output guardrails only)
+                // and non-empty, short-circuit to a pass before evaluating content. Tool-level
+                // guardrails do not bind toolCalls, so this is a no-op for them.
+                "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: 'pass',"
+                        + "            fixed_output: null, guardrail_name: '', should_continue: false};"
+                        + "  }"
+                        + "  var content = $.content;"
                         + "  var iteration = $.iteration;"
                         + "  var patterns = "
                         + patternsJson
@@ -382,7 +391,14 @@ public class JavaScriptBuilder {
     public static String llmGuardrailParserScript(
             String onFail, int maxRetries, String guardrailName) {
         return iife(
-                "  var raw = $.llm_result;"
+                // Skip judging tool-call turns (output.result is empty). Mirrors the regex
+                // guardrail short-circuit; toolCalls is only bound for output guardrails.
+                "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: 'pass',"
+                        + "            fixed_output: null, guardrail_name: '', should_continue: false};"
+                        + "  }"
+                        + "  var raw = $.llm_result;"
                         + "  var iteration = $.iteration;"
                         + "  var on_fail_mode = "
                         + toJson(onFail)
@@ -453,6 +469,22 @@ public class JavaScriptBuilder {
                 "  var raw = $.worker_output;"
                         + "  var guardrailName = $.guardrail_name || 'guardrail';"
                         + "  var defaultOnFail = $.default_on_fail || 'retry';"
+                        // A tool-call turn is legally empty, so an output guardrail must treat it
+                        // as a pass. toolCalls is only bound for output guardrails; tool-level
+                        // guardrails leave it unset and fall through to normal evaluation.
+                        + "  var __toolCalls = $.toolCalls;"
+                        + "  if (__toolCalls && __toolCalls.length > 0) {"
+                        + "    return {passed: true, message: '', on_fail: null,"
+                        + "            fixed_output: null, guardrail_name: guardrailName,"
+                        + "            should_continue: false};"
+                        + "  }"
+                        + "  var iteration = $.iteration || 0;"
+                        + "  var max_retries = $.max_retries || 0;"
+                        + "  function escalate(of, fixedOutput) {"
+                        + "    if (of === 'retry' && iteration >= max_retries) return 'raise';"
+                        + "    if (of === 'fix' && (fixedOutput === null || fixedOutput === undefined)) return 'raise';"
+                        + "    return of;"
+                        + "  }"
                         + "  if (raw == null) {"
                         + "    return {passed: true, message: '', on_fail: null,"
                         + "            fixed_output: null, guardrail_name: guardrailName,"
@@ -471,9 +503,10 @@ public class JavaScriptBuilder {
                         + "    var existingOnFail = raw.on_fail !== undefined ? raw.on_fail : raw.onFail;"
                         + "    var fixedOutput = raw.fixed_output !== undefined ? raw.fixed_output : raw.fixedOutput;"
                         + "    var passed = raw.passed !== false && (existingOnFail == null || existingOnFail === 'pass');"
-                        + "    return {passed: passed, message: raw.message || '', on_fail: existingOnFail,"
+                        + "    var actualOnFail = passed ? existingOnFail : escalate(existingOnFail, fixedOutput);"
+                        + "    return {passed: passed, message: raw.message || '', on_fail: actualOnFail,"
                         + "            fixed_output: fixedOutput, guardrail_name: raw.guardrail_name || raw.guardrailName || guardrailName,"
-                        + "            should_continue: existingOnFail === 'retry'};"
+                        + "            should_continue: actualOnFail === 'retry'};"
                         + "  }"
                         + "  if (raw != null && typeof raw === 'object'"
                         + "      && (raw.tripwire_triggered !== undefined || raw.tripwireTriggered !== undefined"
@@ -491,9 +524,10 @@ public class JavaScriptBuilder {
                         + "              fixed_output: null, guardrail_name: guardrailName,"
                         + "              should_continue: false};"
                         + "    }"
+                        + "    var tripwireOnFail = escalate(defaultOnFail, null);"
                         + "    return {passed: false, message: reason || (guardrailName + ' triggered'),"
-                        + "            on_fail: defaultOnFail, fixed_output: null,"
-                        + "            guardrail_name: guardrailName, should_continue: defaultOnFail === 'retry'};"
+                        + "            on_fail: tripwireOnFail, fixed_output: null,"
+                        + "            guardrail_name: guardrailName, should_continue: tripwireOnFail === 'retry'};"
                         + "  }"
                         + "  return {passed: true, message: '', on_fail: null,"
                         + "          fixed_output: null, guardrail_name: guardrailName,"
