@@ -519,8 +519,9 @@ jobs:
       checks: write   # publish the junit test-report check
     env:
       # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
-      # python-sdk release tags carry no `v` prefix. Bump deliberately.
-      CONDUCTOR_PY_E2E_BUNDLE_VERSION: "2.0.0-rc2"
+      # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
+      # `CONDUCTOR_PY_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
+      CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc2' }}
       # Pinned agentspan CLI release — a few suites (cli-skills, credential lifecycle) shell
       # out to the `agentspan` binary. Independent of the server pin; bump deliberately.
       AGENTSPAN_CLI_VERSION: "0.4.4"
