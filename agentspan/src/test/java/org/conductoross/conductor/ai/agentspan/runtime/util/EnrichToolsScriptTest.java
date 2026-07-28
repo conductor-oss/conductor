@@ -12,9 +12,12 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.util;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -101,6 +104,42 @@ class EnrichToolsScriptTest {
         Object tasks =
                 outer.containsKey("dynamicTasks") ? outer.get("dynamicTasks") : outer.get("tasks");
         return (List<Map<String, Object>>) tasks;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> enrichDynamic(
+            String httpJson, String knownNamesJson, String toolCallsJson) throws Exception {
+        String script =
+                JavaScriptBuilder.enrichToolsScriptDynamic(
+                        httpJson, "{}", "{}", "{}", "{}", "{}", knownNamesJson);
+        String wrapped =
+                "var $ = {toolCalls: "
+                        + toolCallsJson
+                        + ", agentState: {}, userPrompt: 'test', mcpConfig: {}, apiConfig: {}}; JSON.stringify("
+                        + script
+                        + ");";
+        Map<String, Object> outer =
+                MAPPER.readValue(graalCtx.eval("js", wrapped).asString(), Map.class);
+        return (List<Map<String, Object>>) outer.get("dynamicTasks");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> evaluateWithJavaInputs(String script, Map<String, Object> inputs)
+            throws Exception {
+        // Bind Java Maps/Lists exactly as INLINE tasks do. This catches regressions where a
+        // generated script works with JSON literals but drops data at the Graal host-object
+        // boundary.
+        graalCtx.getBindings("js").putMember("$", inputs);
+        String json = graalCtx.eval("js", "JSON.stringify(" + script + ");").asString();
+        return MAPPER.readValue(json, Map.class);
+    }
+
+    private static Map<String, Object> map(Object... entries) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (int i = 0; i < entries.length; i += 2) {
+            result.put((String) entries[i], entries[i + 1]);
+        }
+        return result;
     }
 
     @Test
@@ -282,8 +321,8 @@ class EnrichToolsScriptTest {
         assertThat(req.get("method")).isEqualTo("GET");
         assertThat((Map<String, Object>) req.get("headers"))
                 .containsEntry("Authorization", "Bearer ${workflow.secrets.OCG_US_KEY}");
-        // entity_id and depth were consumed; limit was never supplied.
-        assertThat((Map<String, Object>) req.get("body")).isEmpty();
+        // entity_id and depth were consumed; GET requests carry no body.
+        assertThat(req).doesNotContainKey("body");
     }
 
     @Test
@@ -294,7 +333,7 @@ class EnrichToolsScriptTest {
                 "{\"weather\": {\"url\": \"https://api.weather.com\", \"method\": \"POST\"}}";
         String toolCalls =
                 "[{\"name\": \"weather\", \"taskReferenceName\": \"call_1\","
-                        + " \"inputParameters\": {\"city\": \"SF\"}}]";
+                        + " \"inputParameters\": {\"city\": \"SF\", \"method\": \"weather\"}}]";
 
         List<Map<String, Object>> tasks =
                 enrichWithConfigs(httpCfg, "{}", "{\"weather\": true}", toolCalls);
@@ -304,7 +343,87 @@ class EnrichToolsScriptTest {
                         ((Map<String, Object>) tasks.get(0).get("inputParameters"))
                                 .get("http_request");
         assertThat(req.get("uri")).isEqualTo("https://api.weather.com");
-        assertThat((Map<String, Object>) req.get("body")).containsEntry("city", "SF");
+        assertThat((Map<String, Object>) req.get("body"))
+                .containsEntry("city", "SF")
+                .doesNotContainKey("method");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void bodylessHttpMethodsPutArgumentsInTheQueryForBothDispatchers() throws Exception {
+        String httpCfg =
+                "{\"weather\": {\"url\": \"https://api.example/weather?source=agent#details\", \"method\": \"GET\"}}";
+        String toolCalls =
+                "[{\"name\": \"weather\", \"taskReferenceName\": \"call_1\","
+                        + " \"inputParameters\": {\"city\": \"New York/NY\", \"active\": false, \"count\": 0, \"method\": \"weather\", \"empty\": \"\", \"missing\": null}}]";
+
+        for (List<Map<String, Object>> tasks :
+                List.of(
+                        enrichWithConfigs(httpCfg, "{}", "{\"weather\": true}", toolCalls),
+                        enrichDynamic(httpCfg, "{\"weather\": true}", toolCalls))) {
+            Map<String, Object> request =
+                    (Map<String, Object>)
+                            ((Map<String, Object>) tasks.get(0).get("inputParameters"))
+                                    .get("http_request");
+            assertThat(request.get("uri"))
+                    .isEqualTo(
+                            "https://api.example/weather?source=agent&city=New%20York%2FNY&active=false&count=0#details");
+            assertThat(request).doesNotContainKey("body");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void javaMapToolArgumentsDoNotLeakMapMethodsIntoGetQuery() throws Exception {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("city", "London");
+        args.put("method", "get_current_weather_http");
+        Map<String, Object> call = new LinkedHashMap<>();
+        call.put("name", "get_current_weather_http");
+        call.put("taskReferenceName", "call_weather");
+        call.put("inputParameters", args);
+        Map<String, Object> input = new LinkedHashMap<>();
+        input.put("toolCalls", List.of(call));
+        input.put("agentState", Map.of());
+        input.put("userPrompt", "weather");
+        input.put("mcpConfig", Map.of());
+        input.put("apiConfig", Map.of());
+        graalCtx.getBindings("js").putMember("$", input);
+
+        String script =
+                JavaScriptBuilder.enrichToolsScript(
+                        "{\"get_current_weather_http\":{\"url\":\"http://localhost:3001/api/weather\",\"method\":\"GET\"}}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{\"get_current_weather_http\":true}");
+        String dynamicScript =
+                JavaScriptBuilder.enrichToolsScriptDynamic(
+                        "{\"get_current_weather_http\":{\"url\":\"http://localhost:3001/api/weather\",\"method\":\"GET\"}}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{\"get_current_weather_http\":true}");
+        for (String candidate : List.of(script, dynamicScript)) {
+            Map<String, Object> outer =
+                    MAPPER.readValue(
+                            graalCtx.eval("js", "JSON.stringify(" + candidate + ");").asString(),
+                            Map.class);
+            List<Map<String, Object>> tasks = (List<Map<String, Object>>) outer.get("dynamicTasks");
+            Map<String, Object> request =
+                    (Map<String, Object>)
+                            ((Map<String, Object>) tasks.get(0).get("inputParameters"))
+                                    .get("http_request");
+            assertThat(request.get("uri"))
+                    .isEqualTo("http://localhost:3001/api/weather?city=London");
+            assertThat(request).doesNotContainKey("body");
+        }
     }
 
     // ── Credential markers: #{NAME} in configs must be emitted as ${workflow.secrets.NAME} ──
@@ -372,6 +491,163 @@ class EnrichToolsScriptTest {
         Map<String, Object> ip = (Map<String, Object>) t.get("inputParameters");
         assertThat((Map<String, Object>) ip.get("headers"))
                 .containsEntry("Authorization", "Bearer ${workflow.secrets.NOTION_KEY}");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void discoveredMcpSchemaAndMarkerSurvivePrepareFilterAndResolve() throws Exception {
+        Map<String, Object> schema =
+                map(
+                        "type",
+                        "object",
+                        "properties",
+                        map(
+                                "city",
+                                map("type", "string", "enum", List.of("London", "Paris")),
+                                "days",
+                                map("type", "array", "items", map("type", "integer"))),
+                        "required",
+                        List.of("city"));
+        Map<String, Object> discovered =
+                map("name", "get_weather", "description", "Lookup weather", "inputSchema", schema);
+
+        Map<String, Object> prepared =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"http://localhost:3001/mcp\",\"headers\":{}}]",
+                                0),
+                        map("discovered_0", List.of(discovered)));
+        Map<String, Object> preparedTool =
+                ((List<Map<String, Object>>) prepared.get("tools")).get(0);
+        assertThat(preparedTool.get("inputSchema")).isEqualTo(schema);
+        assertThat(preparedTool.get("selfDescribing")).isEqualTo(true);
+        assertThat((Map<String, Object>) preparedTool.get("configParams"))
+                .containsEntry("selfDescribing", true)
+                .containsEntry("mcpServer", "http://localhost:3001/mcp");
+
+        Map<String, Object> filtered =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.filterToolsScriptDynamic(),
+                        map(
+                                "allTools",
+                                prepared.get("tools"),
+                                "selectedNames",
+                                "[\"get_weather\"]"));
+        Map<String, Object> resolved =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpResolveScript(),
+                        map(
+                                "filtered_tools",
+                                filtered.get("tools"),
+                                "prepared_tools",
+                                prepared.get("tools"),
+                                "mcpConfig",
+                                prepared.get("mcpConfig"),
+                                "apiConfig",
+                                Map.of()));
+        Map<String, Object> resolvedTool =
+                ((List<Map<String, Object>>) resolved.get("tools")).get(0);
+        assertThat(resolvedTool.get("inputSchema")).isEqualTo(schema);
+        assertThat((Map<String, Object>) resolvedTool.get("configParams"))
+                .containsEntry("selfDescribing", true);
+
+        ChatCompletion llmInput =
+                MAPPER.convertValue(map("tools", resolved.get("tools")), ChatCompletion.class);
+        ToolSpec llmTool = llmInput.getTools().get(0);
+        assertThat(llmTool.getInputSchema()).isEqualTo(schema);
+        assertThat(llmTool.getConfigParams()).containsEntry("selfDescribing", true);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void discoveredMcpAndApiSchemasAreSelfDescribingBeforeLlmReceivesThem() throws Exception {
+        Map<String, Object> schema =
+                map(
+                        "type",
+                        "object",
+                        "properties",
+                        map(
+                                "city",
+                                map("type", "string"),
+                                "includeForecast",
+                                map("type", "boolean")),
+                        "required",
+                        List.of("city"));
+        Map<String, Object> operation =
+                map(
+                        "name",
+                        "get_weather",
+                        "description",
+                        "Lookup weather",
+                        "method",
+                        "GET",
+                        "path",
+                        "/weather",
+                        "inputSchema",
+                        schema);
+        Map<String, Object> discoveredApi =
+                map("baseUrl", "http://localhost:3001/api", "tools", List.of(operation));
+        Map<String, Object> discoveredMcp =
+                map(
+                        "name",
+                        "lookup_weather_alerts",
+                        "description",
+                        "Lookup weather alerts",
+                        "inputSchema",
+                        schema);
+
+        Map<String, Object> prepared =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.apiPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"http://localhost:3001/mcp\",\"headers\":{}}]",
+                                1,
+                                "[{\"headers\":{}}]",
+                                32),
+                        map(
+                                "mcp_discovered_0",
+                                List.of(discoveredMcp),
+                                "api_discovered_0",
+                                discoveredApi));
+        List<Map<String, Object>> tools = (List<Map<String, Object>>) prepared.get("tools");
+        Map<String, Object> mcpTool = tools.get(0);
+        Map<String, Object> apiTool = tools.get(1);
+        assertThat(mcpTool.get("inputSchema")).isEqualTo(schema);
+        assertThat((Map<String, Object>) mcpTool.get("configParams"))
+                .containsEntry("selfDescribing", true)
+                .containsEntry("mcpServer", "http://localhost:3001/mcp");
+        assertThat(apiTool.get("type")).isEqualTo("HTTP");
+        assertThat(apiTool.get("inputSchema")).isEqualTo(schema);
+        assertThat(apiTool.get("selfDescribing")).isEqualTo(true);
+        assertThat((Map<String, Object>) apiTool.get("configParams"))
+                .containsEntry("selfDescribing", true);
+
+        Map<String, Object> filtered =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.filterToolsScriptDynamic(),
+                        map("allTools", tools, "selectedNames", "[\"get_weather\"]"));
+        Map<String, Object> resolved =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpResolveScript(),
+                        map(
+                                "filtered_tools",
+                                filtered.get("tools"),
+                                "prepared_tools",
+                                tools,
+                                "mcpConfig",
+                                prepared.get("mcpConfig"),
+                                "apiConfig",
+                                prepared.get("apiConfig")));
+        ToolSpec llmTool =
+                MAPPER.convertValue(map("tools", resolved.get("tools")), ChatCompletion.class)
+                        .getTools()
+                        .get(0);
+        assertThat(llmTool.getName()).isEqualTo("get_weather");
+        assertThat(llmTool.getInputSchema()).isEqualTo(schema);
+        assertThat(llmTool.getConfigParams()).containsEntry("selfDescribing", true);
     }
 
     @Test

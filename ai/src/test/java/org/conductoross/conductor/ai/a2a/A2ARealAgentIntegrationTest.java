@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import okhttp3.OkHttpClient;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -73,7 +74,7 @@ class A2ARealAgentIntegrationTest {
         String url = System.getenv("A2A_AGENT_URL");
         String prompt = System.getenv().getOrDefault("A2A_AGENT_PROMPT", "hello");
 
-        A2AWorkers workers = new A2AWorkers(service());
+        A2AWorkers workers = new A2AWorkers(service(), unusedAgentClient());
         Task task = new Task();
         task.setTaskId("it-task-1");
         task.setStatus(Task.Status.SCHEDULED);

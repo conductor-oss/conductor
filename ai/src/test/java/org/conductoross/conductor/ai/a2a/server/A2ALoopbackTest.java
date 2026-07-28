@@ -48,6 +48,7 @@ import com.netflix.conductor.service.WorkflowService;
 import okhttp3.OkHttpClient;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -193,7 +194,7 @@ class A2ALoopbackTest {
     @Test
     void fullRoundTrip_clientTaskDrivesServerWorkflowToCompletion() {
         A2AService service = clientService();
-        A2AWorkers workers = new A2AWorkers(service);
+        A2AWorkers workers = new A2AWorkers(service, unusedAgentClient());
 
         Task task = new Task();
         task.setTaskId("client-task-1");

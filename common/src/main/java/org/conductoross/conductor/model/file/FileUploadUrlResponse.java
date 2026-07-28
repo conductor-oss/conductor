@@ -15,7 +15,8 @@ package org.conductoross.conductor.model.file;
 import java.util.Objects;
 
 /**
- * Response to {@code GET /api/files/{fileId}/upload-url} — fresh presigned upload URL for retry.
+ * Response to {@code GET /api/files/{workflowId}/{fileId}/upload-url} — fresh presigned upload URL
+ * for retry.
  */
 public class FileUploadUrlResponse {
 

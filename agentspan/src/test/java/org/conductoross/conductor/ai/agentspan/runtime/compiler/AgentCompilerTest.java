@@ -99,7 +99,26 @@ class AgentCompilerTest {
 
         // Loop should contain ctx_inject + LLM + tool_router at minimum
         assertThat(loop.getLoopOver().size()).isGreaterThanOrEqualTo(3);
-        assertThat(loop.getLoopOver().get(0).getType()).isEqualTo("INLINE"); // ctx_inject
+        WorkflowTask contextInjection = loop.getLoopOver().get(0);
+        assertThat(contextInjection.getType()).isEqualTo("INLINE"); // ctx_inject
+        assertThat(contextInjection.getInputParameters())
+                .containsEntry("toolResults", "${workflow.variables._last_tool_results}");
+        assertThat(String.valueOf(contextInjection.getInputParameters().get("expression")))
+                .contains("[TOOL RESULTS]");
+        assertThat(wf.getTasks().get(1).getInputParameters())
+                .containsEntry("_last_tool_results", List.of());
+        WorkflowTask toolRouter =
+                loop.getLoopOver().stream()
+                        .filter(task -> "SWITCH".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        WorkflowTask toolStateMerge =
+                toolRouter.getDecisionCases().get("tool_call").stream()
+                        .filter(task -> task.getTaskReferenceName().contains("merge_state"))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(toolStateMerge.getInputParameters())
+                .containsEntry("previousToolResults", "${workflow.variables._last_tool_results}");
         assertThat(loop.getLoopOver().get(1).getType()).isEqualTo("LLM_CHAT_COMPLETE");
     }
 

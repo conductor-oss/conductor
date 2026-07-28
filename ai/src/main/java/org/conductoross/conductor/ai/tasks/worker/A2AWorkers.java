@@ -31,9 +31,9 @@ import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.PushNotificationConfig;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.ai.agent.AgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
-import org.conductoross.conductor.ai.agent.UnavailableAgentClient;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
@@ -84,7 +84,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
-    private final AgentClient agentClient;
+    private final ConductorAgentClient conductorAgentClient;
     private final String callbackUrl;
 
     /**
@@ -97,23 +97,21 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
      */
     @Autowired
     public A2AWorkers(
-            A2AService a2aService, @Lazy AgentClient agentClient, Environment environment) {
-        this(a2aService, agentClient, environment.getProperty(CALLBACK_URL_PROPERTY));
+            A2AService a2aService,
+            @Lazy ConductorAgentClient conductorAgentClient,
+            Environment environment) {
+        this(a2aService, conductorAgentClient, environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
-    public A2AWorkers(A2AService a2aService, AgentClient agentClient, String callbackUrl) {
+    public A2AWorkers(
+            A2AService a2aService, ConductorAgentClient conductorAgentClient, String callbackUrl) {
         this.a2aService = a2aService;
-        this.agentClient = agentClient;
+        this.conductorAgentClient = conductorAgentClient;
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
-    public A2AWorkers(A2AService a2aService, AgentClient agentClient) {
-        this(a2aService, agentClient, (String) null);
-    }
-
-    /** Creates remote-A2A-only workers when the Conductor agent control plane is unavailable. */
-    public A2AWorkers(A2AService a2aService) {
-        this(a2aService, new UnavailableAgentClient(), (String) null);
+    public A2AWorkers(A2AService a2aService, ConductorAgentClient conductorAgentClient) {
+        this(a2aService, conductorAgentClient, (String) null);
     }
 
     /** Fetch a remote agent's Agent Card. */
@@ -140,7 +138,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         Task task = TaskContext.get().getTask();
         TaskResult result;
         if (A2AService.isConductorAgentType(request.getAgentType())) {
-            result = new ConductorAgentDelegate(agentClient).execute(task);
+            result = new ConductorAgentDelegate(conductorAgentClient).execute(task);
         } else {
             result = executeRemote(task, request);
         }
@@ -159,10 +157,14 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                 return finish(result, A2ACancelResult.class);
             }
             try {
-                agentClient.cancelAgent(
-                        executionId,
-                        StringUtils.firstNonBlank(
-                                request.getReason(), "Cancelled by CANCEL_AGENT task"));
+                conductorAgentClient.cancelAgent(
+                        ConductorAgentCancelRequest.builder()
+                                .executionId(executionId)
+                                .reason(
+                                        StringUtils.firstNonBlank(
+                                                request.getReason(),
+                                                "Cancelled by CANCEL_AGENT task"))
+                                .build());
                 result.getOutputData().put("executionId", executionId);
                 result.getOutputData().put("canceled", true);
                 result.setStatus(TaskResult.Status.COMPLETED);
@@ -218,7 +220,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         }
         A2ACallRequest request = parse(task, A2ACallRequest.class);
         if (A2AService.isConductorAgentType(request.getAgentType())) {
-            new ConductorAgentDelegate(agentClient).cancel(task, reason);
+            new ConductorAgentDelegate(conductorAgentClient).cancel(task, reason);
             return;
         }
         String remoteTaskId =

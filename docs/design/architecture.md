@@ -46,7 +46,7 @@ knows about `AgentClient`; it never receives or calls `WorkflowExecutor`.
 
 ## 3. AgentClient boundary
 
-`org.conductoross.conductor.ai.agent.AgentClient` mirrors the Java SDK agent-client surface using
+`org.conductoross.conductor.ai.agent.ConductorAgentClient` mirrors the Java SDK agent-client surface using
 Conductor-owned DTOs. This keeps worker code independent of where the agent control plane lives.
 
 Runtime implementations are injected:

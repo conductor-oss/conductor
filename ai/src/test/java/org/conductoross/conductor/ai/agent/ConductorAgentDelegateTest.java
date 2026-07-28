@@ -17,10 +17,6 @@ import java.util.Map;
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
-import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
-import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
-import org.conductoross.conductor.common.metadata.agent.AgentStatusResponse;
-import org.conductoross.conductor.common.metadata.agent.CompileResponse;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -38,7 +34,7 @@ class ConductorAgentDelegateTest {
 
     @Test
     void startsOnceThenPollsToCompletion() {
-        FakeAgentClient client = new FakeAgentClient();
+        FakeConductorAgentClient client = new FakeConductorAgentClient();
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
         Task first =
                 task(
@@ -73,9 +69,9 @@ class ConductorAgentDelegateTest {
         Task polled = task(first.getInputData());
         polled.setOutputData(started.getOutputData());
         client.status =
-                AgentStatusResponse.builder()
+                ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("COMPLETED")
+                        .status(ConductorAgentState.COMPLETED)
                         .complete(true)
                         .output(Map.of("context", Map.of("language", "en"), "result", "done"))
                         .startTime(1000L)
@@ -106,11 +102,11 @@ class ConductorAgentDelegateTest {
 
     @Test
     void waitingExecutionCompletesTaskWithPendingTool() {
-        FakeAgentClient client = new FakeAgentClient();
+        FakeConductorAgentClient client = new FakeConductorAgentClient();
         client.status =
-                AgentStatusResponse.builder()
+                ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("RUNNING")
+                        .status(ConductorAgentState.WAITING)
                         .waiting(true)
                         .pendingTool(Map.of("taskRefName", "approval"))
                         .build();
@@ -137,11 +133,11 @@ class ConductorAgentDelegateTest {
 
     @Test
     void canceledExecutionIsTerminalAndPreservesState() {
-        FakeAgentClient client = new FakeAgentClient();
+        FakeConductorAgentClient client = new FakeConductorAgentClient();
         client.status =
-                AgentStatusResponse.builder()
+                ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("TERMINATED")
+                        .status(ConductorAgentState.CANCELED)
                         .complete(true)
                         .reasonForIncompletion("parent canceled")
                         .startTime(1000L)
@@ -165,9 +161,12 @@ class ConductorAgentDelegateTest {
 
     @Test
     void cancellationUsesAgentClientInsteadOfWorkflowExecutor() {
-        FakeAgentClient client = new FakeAgentClient();
+        FakeConductorAgentClient client = new FakeConductorAgentClient();
         client.status =
-                AgentStatusResponse.builder().executionId("exec-1").status("RUNNING").build();
+                ConductorAgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status(ConductorAgentState.RUNNING)
+                        .build();
         Task task = task(Map.of("agentType", "conductor"));
         task.setOutputData(Map.of("executionId", "exec-1"));
 
@@ -192,13 +191,13 @@ class ConductorAgentDelegateTest {
         return new ObjectMapper().convertValue(result.getOutputData().get("task"), A2ATask.class);
     }
 
-    private static final class FakeAgentClient implements AgentClient {
+    private static final class FakeConductorAgentClient implements ConductorAgentClient {
 
-        private AgentStartRequest startedRequest;
-        private AgentStatusResponse status =
-                AgentStatusResponse.builder()
+        private ConductorAgentStartRequest startedRequest;
+        private ConductorAgentStatusResponse status =
+                ConductorAgentStatusResponse.builder()
                         .executionId("exec-1")
-                        .status("RUNNING")
+                        .status(ConductorAgentState.RUNNING)
                         .running(true)
                         .build();
         private int startCalls;
@@ -207,62 +206,30 @@ class ConductorAgentDelegateTest {
         private String cancelReason;
 
         @Override
-        public CompileResponse compileAgent(AgentStartRequest request) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public AgentStartResponse deployAgent(AgentStartRequest request) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public AgentStartResponse startAgent(AgentStartRequest request) {
+        public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
             startedRequest = request;
             startCalls++;
-            return AgentStartResponse.builder().executionId("exec-1").agentName("planner").build();
+            return ConductorAgentStartResponse.builder()
+                    .executionId("exec-1")
+                    .agentName("planner")
+                    .build();
         }
 
         @Override
-        public AgentStatusResponse getAgentStatus(String executionId) {
+        public ConductorAgentStatusResponse getAgentStatus(String executionId) {
             statusCalls++;
             return status;
         }
 
         @Override
-        public Map<String, Object> getExecution(String executionId) {
+        public void respond(ConductorAgentRespondRequest request) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Map<String, Object> listExecutions(Map<String, Object> params) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void respond(String executionId, Map<String, Object> body) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void stopAgent(String executionId) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void signalAgent(String executionId, String message) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void cancelAgent(String executionId, String reason) {
-            canceledExecutionId = executionId;
-            cancelReason = reason;
-        }
-
-        @Override
-        public AgentEventStream streamSse(String executionId, String lastEventId) {
-            throw new UnsupportedOperationException();
+        public void cancelAgent(ConductorAgentCancelRequest request) {
+            canceledExecutionId = request.getExecutionId();
+            cancelReason = request.getReason();
         }
     }
 }

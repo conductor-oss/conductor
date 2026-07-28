@@ -18,7 +18,7 @@ import org.conductoross.conductor.model.file.*;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 /**
@@ -40,14 +40,14 @@ public interface FileStorageService {
      */
     FileUploadResponse createFile(@NotNull @Valid FileUploadRequest request);
 
-    /** Issues a fresh presigned upload URL for retry when the original has expired. */
-    FileUploadUrlResponse getUploadUrl(@NotEmpty String fileId);
+    /** Issues a fresh presigned upload URL when the exact owning workflow requests it. */
+    FileUploadUrlResponse getUploadUrl(@NotBlank String workflowId, @NotBlank String fileId);
 
     /**
      * Verifies the object is present on the backend, reads and persists {@code contentHash} and
      * actual size, transitions the record to {@code UPLOADED}.
      */
-    FileUploadCompleteResponse confirmUpload(@NotEmpty String fileId);
+    FileUploadCompleteResponse confirmUpload(@NotBlank String workflowId, @NotBlank String fileId);
 
     /**
      * Issues a presigned download URL. Requires status {@code UPLOADED}.
@@ -63,17 +63,21 @@ public interface FileStorageService {
      * @throws com.netflix.conductor.core.exception.AccessForbiddenException if the caller is not in
      *     the file's workflow family
      */
-    FileDownloadUrlResponse getDownloadUrl(@NotEmpty String fileId, @NotNull String workflowId);
+    FileDownloadUrlResponse getDownloadUrl(@NotBlank String workflowId, @NotBlank String fileId);
 
-    /** Returns full file metadata. The server-internal {@code storagePath} is not exposed. */
-    FileHandle getFileMetadata(@NotEmpty String fileId);
+    /**
+     * Returns file metadata to a member of the owning workflow's family. The server-internal {@code
+     * storagePath} is not exposed.
+     */
+    FileHandle getFileMetadata(@NotBlank String workflowId, @NotBlank String fileId);
 
     /**
      * Starts a backend-native multipart upload. Returns the backend upload ID, recommended part
      * size, and — for GCS/Azure — a resumable session URL. For S3 the response URL is {@code null}
      * and per-part URLs are obtained via {@link #getPartUploadUrl}.
      */
-    MultipartInitResponse initiateMultipartUpload(@NotEmpty String fileId);
+    MultipartInitResponse initiateMultipartUpload(
+            @NotBlank String workflowId, @NotBlank String fileId);
 
     /**
      * Issues a presigned URL for a single S3 multipart part. Not used for GCS/Azure.
@@ -81,7 +85,10 @@ public interface FileStorageService {
      * @param partNumber 1-based part number
      */
     FileUploadUrlResponse getPartUploadUrl(
-            @NotEmpty String fileId, @NotEmpty String uploadId, int partNumber);
+            @NotBlank String workflowId,
+            @NotBlank String fileId,
+            @NotBlank String uploadId,
+            int partNumber);
 
     /**
      * Finalizes a multipart upload and transitions the record to {@code UPLOADED}, persisting the
@@ -90,5 +97,12 @@ public interface FileStorageService {
      * @param partETags ordered ETags (or backend equivalents) from each part upload
      */
     FileUploadCompleteResponse completeMultipartUpload(
-            @NotEmpty String fileId, @NotEmpty String uploadId, @NotNull List<String> partETags);
+            @NotBlank String workflowId,
+            @NotBlank String fileId,
+            @NotBlank String uploadId,
+            @NotNull List<String> partETags);
+
+    /** Best-effort cancellation of a multipart session by the exact owning workflow. */
+    void abortMultipartUpload(
+            @NotBlank String workflowId, @NotBlank String fileId, @NotBlank String uploadId);
 }

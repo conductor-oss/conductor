@@ -990,8 +990,12 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
             wrapTask.put("inputParameters", wrapInputs);
             tasks.add(wrapTask);
             // The wrap INLINE is now the step's "primary output" — Refs
-            // resolve to `${wrapRef.output.result}`. Don't advance
-            // ctx.lastOpRef (its consumers want the raw last op's terminal).
+            // resolve to `${wrapRef.output.result}`. The workflow-level result
+            // also selects ctx.lastOpRef, so it must point at this normalized
+            // value rather than the raw SIMPLE output. Otherwise map-returning
+            // workers execute successfully but expose an empty top-level
+            // `result` because raw worker output has no `.result` member.
+            ctx.lastOpRef = wrapRef;
             ctx.stepOutputRefs.put(stepId, "${" + wrapRef + ".output.result}");
         }
         return null;

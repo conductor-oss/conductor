@@ -35,6 +35,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import okhttp3.OkHttpClient;
 
 import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.invoke;
+import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgentClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -100,10 +101,10 @@ class A2ASdkInteropTest {
     @Test
     void callAgentTask_drivesRealAgentToCompletion() {
         Task task = callAgentTask(taskAgent.url(), "hello world", false);
-        TaskResult result = invoke(new A2AWorkers(service()), task);
+        TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
         int guard = 0;
-        A2AWorkers workers = new A2AWorkers(service());
+        A2AWorkers workers = new A2AWorkers(service(), unusedAgentClient());
         while (result.getStatus() == TaskResult.Status.IN_PROGRESS && guard++ < 60) {
             result = invoke(workers, task);
         }
@@ -119,7 +120,7 @@ class A2ASdkInteropTest {
     @Test
     void streamingCall_aggregatesRealSseToCompletion() {
         Task task = callAgentTask(taskAgent.url(), "stream me", true);
-        TaskResult result = invoke(new A2AWorkers(service()), task);
+        TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
         // Streaming aggregates to a terminal state in one worker invocation.
         assertEquals(
@@ -134,7 +135,7 @@ class A2ASdkInteropTest {
         // A second real agent, this one configured to reply with a direct Message (not a Task).
         try (AgentProcess messageAgent = AgentProcess.launch(python, "message")) {
             Task task = callAgentTask(messageAgent.url(), "ping", false);
-            TaskResult result = invoke(new A2AWorkers(service()), task);
+            TaskResult result = invoke(new A2AWorkers(service(), unusedAgentClient()), task);
 
             assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
             assertTrue(

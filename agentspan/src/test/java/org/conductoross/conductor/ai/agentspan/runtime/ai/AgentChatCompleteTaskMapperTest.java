@@ -102,6 +102,64 @@ class AgentChatCompleteTaskMapperTest {
         assertThat(result).containsEntry("otherField", "value");
     }
 
+    @Test
+    void dynamicForkToolResultIsRestoredIntoTheNextModelTurn() throws Exception {
+        String llmRef = "agent_llm";
+        String logicalToolRef = "toolu_abc";
+
+        TaskModel priorLlm = new TaskModel();
+        WorkflowTask priorLlmTask = workflowTask(llmRef);
+        priorLlmTask.setType("LLM_CHAT_COMPLETE");
+        priorLlm.setWorkflowTask(priorLlmTask);
+        priorLlm.setTaskType("LLM_CHAT_COMPLETE");
+        priorLlm.setStatus(TaskModel.Status.COMPLETED);
+        priorLlm.setIteration(1);
+        priorLlm.setOutputData(
+                Map.of(
+                        "toolCalls",
+                        List.of(
+                                Map.of(
+                                        "name",
+                                        "ask_question",
+                                        "taskReferenceName",
+                                        logicalToolRef,
+                                        "type",
+                                        "HUMAN",
+                                        "inputParameters",
+                                        Map.of("question", "What is your name?")))));
+
+        TaskModel dynamicHuman = new TaskModel();
+        dynamicHuman.setWorkflowTask(workflowTask(logicalToolRef + "_0"));
+        dynamicHuman.setTaskType("HUMAN");
+        dynamicHuman.setTaskDefName("ask_question");
+        dynamicHuman.setStatus(TaskModel.Status.COMPLETED);
+        dynamicHuman.setInputData(Map.of("_agent_tool_name", "ask_question"));
+        dynamicHuman.setOutputData(Map.of("result", "Alice"));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setTasks(List.of(priorLlm, dynamicHuman));
+        TaskModel currentLlm = new TaskModel();
+        currentLlm.setWorkflowTask(workflowTask(llmRef));
+
+        ChatCompletion completion = new ChatCompletion();
+        invokeGetHistory(workflow, currentLlm, completion);
+
+        assertThat(completion.getMessages()).hasSize(2);
+        ChatMessage toolCall = completion.getMessages().get(0);
+        assertThat(toolCall.getRole()).isEqualTo(ChatMessage.Role.tool_call);
+        assertThat(toolCall.getToolCalls())
+                .singleElement()
+                .satisfies(
+                        call -> {
+                            assertThat(call.getName()).isEqualTo("ask_question");
+                            assertThat(call.getTaskReferenceName())
+                                    .isEqualTo(logicalToolRef + "_0");
+                        });
+        ChatMessage result = completion.getMessages().get(1);
+        assertThat(result.getRole()).isEqualTo(ChatMessage.Role.tool);
+        assertThat(result.getMessage()).isEqualTo("Alice");
+    }
+
     // ── Context condensation tests ─────────────────────────────────
 
     @Test
@@ -641,6 +699,12 @@ class AgentChatCompleteTaskMapperTest {
         return messages;
     }
 
+    private WorkflowTask workflowTask(String referenceName) {
+        WorkflowTask task = new WorkflowTask();
+        task.setTaskReferenceName(referenceName);
+        return task;
+    }
+
     // Use reflection to test private methods
     @SuppressWarnings("unchecked")
     private Map<String, Object> invokeExtractResult(Map<String, Object> outputData)
@@ -659,5 +723,15 @@ class AgentChatCompleteTaskMapperTest {
                         "extractSubWorkflowInput", Map.class);
         method.setAccessible(true);
         return (Map<String, Object>) method.invoke(mapper, inputData);
+    }
+
+    private void invokeGetHistory(
+            WorkflowModel workflow, TaskModel currentLlm, ChatCompletion completion)
+            throws Exception {
+        Method method =
+                AgentChatCompleteTaskMapper.class.getDeclaredMethod(
+                        "getHistory", WorkflowModel.class, TaskModel.class, ChatCompletion.class);
+        method.setAccessible(true);
+        method.invoke(mapper, workflow, currentLlm, completion);
     }
 }

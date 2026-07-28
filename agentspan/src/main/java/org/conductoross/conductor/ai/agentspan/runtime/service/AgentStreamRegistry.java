@@ -46,7 +46,7 @@ public class AgentStreamRegistry {
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>> emitters =
             new ConcurrentHashMap<>();
 
-    /** In-process subscribers used by the embedded AgentClient implementation. */
+    /** In-process subscribers used by the embedded ConductorAgentClient implementation. */
     private final ConcurrentHashMap<String, CopyOnWriteArrayList<LocalEventStream>> subscribers =
             new ConcurrentHashMap<>();
 

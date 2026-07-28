@@ -12,26 +12,23 @@
  */
 package org.conductoross.conductor.ai.agent;
 
-import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
- * Input for the {@code AGENT} task's {@code conductor} branch: an {@link AgentStartRequest} (the
- * same DTO {@code POST /api/agent/start} takes) plus the handful of AGENT-task-only orchestration
- * knobs that don't belong on that REST contract — resuming an in-flight run and the durability
- * guards used by the portable annotated AGENT worker.
+ * Input for the {@code AGENT} task's {@code conductor} branch: a {@link ConductorAgentStartRequest}
+ * plus the handful of AGENT-task-only orchestration knobs used by the portable annotated AGENT
+ * worker.
  *
  * <p>Deliberately does NOT carry any A2A-shaped fields ({@code agentUrl}, {@code message}, {@code
  * parts}, {@code text}, {@code headers}, {@code streaming}, ...) — those belong to {@link
  * org.conductoross.conductor.ai.model.A2ACallRequest} and the {@code a2a} branch only.
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class ConductorAgentRequest extends AgentStartRequest {
+public class ConductorAgentRequest extends ConductorAgentStartRequest {
 
     /**
      * Execution id of an in-flight run. When set, the call resumes that execution (e.g. to provide

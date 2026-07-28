@@ -89,7 +89,7 @@ public class Join extends WorkflowSystemTask {
             // the full fork output (default Conductor behavior).
             if (!forkedTask.getOutputData().isEmpty()) {
                 if (agentExecution) {
-                    Map<String, Object> compact = compactAgentOutput(forkedTask.getOutputData());
+                    Map<String, Object> compact = compactAgentOutput(forkedTask);
                     if (!compact.isEmpty()) {
                         task.addOutput(joinOnRef, compact);
                     }
@@ -152,9 +152,21 @@ public class Join extends WorkflowSystemTask {
         return def != null && def.isAgent();
     }
 
-    /** Returns a copy of {@code output} containing only {@link #AGENT_PROPAGATED_KEYS}. */
-    private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {
+    /**
+     * Returns the compact state output for an agent fork, or a namespaced observation for a
+     * dynamically generated AgentSpan tool. The latter is the only durable way an AgentSpan ReAct
+     * loop can make a dynamic HTTP/MCP/HUMAN result available to its next model turn: dynamic task
+     * reference names are not known when the workflow is compiled.
+     */
+    private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
+        Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
+        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        if (agentToolName != null) {
+            compact.put("_agent_tool_name", agentToolName);
+            compact.put("_agent_tool_output", output);
+            return compact;
+        }
         if (output != null) {
             for (String key : AGENT_PROPAGATED_KEYS) {
                 if (output.containsKey(key)) {
