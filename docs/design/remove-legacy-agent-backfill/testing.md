@@ -6,7 +6,7 @@ architecture.md §5.
 
 ## 1. What the failing test was
 
-`AgentSpanDeploymentContractEndToEndTest.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
+`deployment contract test.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
 deployed a legacy agent, stripped the `agent_classifier_backfill_version` metadata key,
 then reflectively invoked the private method:
 
@@ -35,13 +35,13 @@ file:
 
 - Search term: `agent_classifier_backfill_version`
 - Expected: 0 matches in `AgentService.java` and in
-  `AgentSpanDeploymentContractEndToEndTest.java`. (Both its producer and its consumer are
+  `deployment contract test.java`. (Both its producer and its consumer are
   removed.)
 
 ### 2.3 Helpers and constants are gone from `AgentService.java`
 
-- `AGENT_CLASSIFIER_BACKFILL_VERSION` — 0 matches.
-- `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` — 0 matches.
+- `the agent classifier backfill version` — 0 matches.
+- `the agent classifier backfill version_VALUE` — 0 matches.
 - `backfillVersionOf` — 0 matches.
 - `reindexAgentExecutions` — 0 matches.
 
@@ -55,7 +55,7 @@ file:
 ### 2.5 Unused test import removed
 
 - `java.lang.reflect.Method` — 0 matches in
-  `AgentSpanDeploymentContractEndToEndTest.java`.
+  `deployment contract test.java`.
 
 ## 3. Build / test gates
 
@@ -64,9 +64,9 @@ Because the change is deletion-only, the goal is to prove nothing else regressed
 | Gate | Command | Expectation |
 |---|---|---|
 | Formatting | `./gradlew spotlessApply` | No manual fixups needed afterward. |
-| Production compiles | `./gradlew :agentspan:compileJava` | Success; no unused-symbol or missing-symbol errors from the removals. |
-| agentspan tests | `./gradlew :agentspan:test` | All remaining tests pass. |
-| End-to-end contract suite | `./gradlew :test-harness:test --tests "com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest"` | Class compiles without the reflection import; all remaining tests pass; the deleted test no longer runs. |
+| Production compiles | `./gradlew embedded agent runtime module (compileJava)` | Success; no unused-symbol or missing-symbol errors from the removals. |
+| embedded agent runtime tests | `./gradlew embedded agent runtime module (test)` | All remaining tests pass. |
+| End-to-end contract suite | `./gradlew :test-harness:test --tests "deployment contract test"` | Class compiles without the reflection import; all remaining tests pass; the deleted test no longer runs. |
 
 ## 4. Regression guard for the review instruction
 
@@ -82,5 +82,5 @@ to **remove the caller**, never to restore the callee.
 No behavior is introduced, so there is nothing new to assert. Adding a test that checks
 "the method does not exist" would re-encode the forbidden symbol in source (failing the
 §2.1 check) and is therefore explicitly avoided. The existing, unrelated tests in
-`AgentSpanDeploymentContractEndToEndTest` continue to cover agent deployment and
+`deployment contract test` continue to cover agent deployment and
 execution behavior.

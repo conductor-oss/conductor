@@ -1,5 +1,5 @@
 ---
-description: "Why use Conductor? An open source workflow engine for workflow orchestration, microservice orchestration, and AI agent orchestration. Durable execution, polyglot workers, LLM orchestration, workflow automation, and self-hosted deployment — a developer-first alternative to Temporal, Step Functions, and Airflow."
+description: "Why use Conductor? An open-source durable execution platform for workflow orchestration, adaptive agents, AI systems, polyglot workers, and self-hosted deployment."
 ---
 
 # Why Conductor
@@ -34,7 +34,7 @@ HTTP calls, inline JavaScript execution, JSON transforms, event publishing, wait
 Fork/join for parallelism, switch for conditional branching, do-while for loops, sub-workflows for composition, and dynamic tasks resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
 
 ### AI agent orchestration and LLM orchestration
-Conductor provides LLM orchestration and AI agent orchestration as native system tasks — no external frameworks required. Supported providers include Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, and StabilityAI — 14+ providers available out of the box for chat completion, text completion, and embedding generation.
+Conductor provides LLM orchestration and AI agent orchestration as native system tasks. Configure a supported provider and model on the task, or bring a framework-authored agent into a durable Conductor graph. The [LLM orchestration guide](../ai/llm-orchestration.md) is the maintained provider and capability reference.
 
 MCP (Model Context Protocol) integration is built in: use `LIST_MCP_TOOLS` to discover available tools and `CALL_MCP_TOOL` to invoke them — enabling function calling and tool use within workflows with full retry and state tracking.
 
@@ -43,13 +43,13 @@ For RAG pipelines, Conductor supports three vector databases natively — Pineco
 Content generation tasks cover image, audio, video, and PDF creation using AI models. Every AI task runs with the same durability guarantees as any other Conductor task: automatic retries, timeout handling, and a complete audit trail.
 
 ### Event-driven workflows
-Publish to and consume from Kafka, NATS, AMQP (RabbitMQ), and SQS. Trigger workflows from external events or emit events from within workflows. See [Event Bus Orchestration](../how-tos/event-bus.md).
+Publish to and consume from Kafka, NATS, AMQP (RabbitMQ), and SQS. Trigger workflows from external events or emit events from within workflows. See [Event orchestration](../how-tos/event-bus.md).
 
 ### Full operational control
 Pause, resume, restart, retry, and terminate any workflow execution. Search and filter executions by status, time, correlation ID, or custom tags. Every task has a complete audit trail — inputs, outputs, timestamps, retry history, and worker identity.
 
 ### Horizontal scaling
-Conductor scales horizontally to millions of concurrent workflow executions. Workers scale independently — add more instances and Conductor distributes tasks automatically. Rate limits and concurrency caps prevent overload. This workflow engine scalability makes Conductor suitable for production deployments at any scale.
+Conductor servers and workers scale independently. Use task domains, rate limits, concurrency limits, persistence configuration, and metrics to match throughput and isolation to your environment.
 
 ## When to use Conductor
 
@@ -65,20 +65,16 @@ Conductor scales horizontally to millions of concurrent workflow executions. Wor
 | **RAG applications** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
 | **Content generation pipelines** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
 
-## What sets Conductor apart
+## The Conductor execution model
 
-No other open source workflow engine matches this combination:
-
-- **14+ native LLM providers as system tasks** — Anthropic, OpenAI, Azure OpenAI, Gemini, Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. No wrappers, no plugins — first-class support.
+- **Native AI tasks** — LLM, MCP, vector, media, and PDF tasks compose with standard workflow control flow.
 - **MCP (Model Context Protocol) native integration** — discover and call tools directly from workflow definitions.
-- **3 vector databases for built-in RAG** — Pinecone, pgvector, MongoDB Atlas. Embed, index, search, and generate in one workflow.
+- **Vector workflows for RAG** — Embed, index, search, and generate in one workflow; see the supported integration reference for configuration.
 - **Content generation tasks** — image, audio, video, and PDF generation as system tasks.
-- **6 message brokers** — Kafka, NATS, NATS Streaming, SQS, AMQP (RabbitMQ), and internal queuing.
-- **5 persistence backends** — Redis, PostgreSQL, MySQL, Cassandra, and SQLite.
-- **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust.
-- **Battle-tested at scale** — proven in production at Netflix, Tesla, LinkedIn, and JP Morgan.
+- **Event and persistence choices** — Deploy with the persistence, queue, and worker topology appropriate for your environment.
+- **Polyglot implementation** — Build workers and clients with the supported SDKs while keeping the execution graph visible.
 - **JSON-native and code-first workflow definitions** — define workflows as JSON or as code using SDKs. Workflow as code for developers who want type safety; JSON for runtime generation and LLM-driven workflows.
-- **Self-hosted with no vendor lock-in** — deploy Conductor on your own infrastructure. Apache 2.0 licensed, fully open source.
+- **Self-hosted and open source** — deploy Conductor on your own infrastructure under the Apache 2.0 license.
 - **Human-in-the-loop as a first-class task type** — pause execution for approvals, reviews, or manual intervention with built-in timeout and escalation.
 
 ## How it works
@@ -111,7 +107,7 @@ Workers poll for tasks, execute business logic, and report results. Conductor ha
 
 ## Next steps
 
-- [Quickstart](../../quickstart/index.md) — run your first workflow in 2 minutes
+- [Quickstart](../../quickstart/first-workflow.md) — run your first workflow in 2 minutes
 - [Workflows](workflows.md) — how workflow definitions work
 - [Tasks](tasks.md) — task types and configuration
 - [Workers](workers.md) — building workers in any language

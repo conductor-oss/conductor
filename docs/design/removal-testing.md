@@ -9,10 +9,10 @@ the concrete edits are in [`removal-plan.md`](./removal-plan.md).
 The failure reported in review is:
 
 ```
-Gradle Test Executor 2 > AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
-    java.lang.NoSuchMethodException: org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
+Gradle Test Executor 2 > deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
+    java.lang.NoSuchMethodException: embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
         at java.base/java.lang.Class.getDeclaredMethod(Class.java:2850)
-        at com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds(AgentSpanDeploymentContractEndToEndTest.java:328)
+        at deployment contract test.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds(deployment contract test.java:328)
 ```
 
 The test exists **only** to exercise `backfillLegacyAgentExecutionClassifiers`,
@@ -39,7 +39,7 @@ Per `removal-plan.md` §2:
 - Delete `import java.lang.reflect.Method;` (current line 18), which becomes
   unused once the test is gone.
 
-No other test in `AgentSpanDeploymentContractEndToEndTest` references the backfill
+No other test in `deployment contract test` references the backfill
 method, the `Method` type, or the `agent_classifier_backfill_version` metadata key,
 so no other test needs to change.
 
@@ -63,7 +63,7 @@ Run in order; each must pass before the change is considered complete.
    consistent and nothing else referenced the deleted members):
 
    ```
-   ./gradlew :agentspan:compileJava
+   ./gradlew embedded agent runtime module (compileJava)
    ```
 
 3. **Test module compiles** (proves the deleted test left no dangling references):
@@ -77,7 +77,7 @@ Run in order; each must pass before the change is considered complete.
    remaining tests in the class:
 
    ```
-   ./gradlew :test-harness:test --tests "com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest"
+   ./gradlew :test-harness:test --tests "deployment contract test"
    ```
 
    Expected: the suite runs without the deleted test and without a
@@ -89,7 +89,7 @@ A grep-based sanity check after editing, expecting **zero** matches in productio
 source, confirms the method and its exclusive members are gone:
 
 ```
-grep -rn "backfillLegacyAgentExecutionClassifiers\|AGENT_CLASSIFIER_BACKFILL_VERSION\|reindexAgentExecutions\|backfillVersionOf" agentspan/src/main
+grep -rn "backfillLegacyAgentExecutionClassifiers\|the agent classifier backfill version\|reindexAgentExecutions\|backfillVersionOf" embedded agent runtime source/main
 ```
 
 The metadata key string `agent_classifier_backfill_version` may still appear in

@@ -1,234 +1,71 @@
 ---
-description: "Orchestrate event-driven workflows with Conductor using Kafka, NATS, AMQP (RabbitMQ), and SQS as event buses. Configure event handlers to trigger workflows, complete tasks, or fail tasks on incoming events."
+description: Receive broker events and webhooks, publish workflow events, or signal a workflow already blocked on WAIT.
 ---
 
-# Event Bus Orchestration
+# Event-Driven Orchestration
 
-Conductor integrates with external messaging systems to enable event-driven workflow orchestration. You can publish events from workflows and react to external events — starting workflows, completing tasks, or failing tasks based on incoming messages.
+<section class="concept-hero concept-hero--event-bus" aria-labelledby="event-overview-title">
+  <div class="concept-hero__content">
+    <p class="concept-hero__eyebrow">Broker, HTTP, and workflow state</p>
+    <h2 id="event-overview-title">Receive events or publish them from a workflow</h2>
+    <p>Route a broker message into durable work, publish a workflow event to a configured sink, accept a verified HTTP callback, or directly advance a workflow already blocked on <code>WAIT</code>.</p>
+    <p><a href="publish-events.html">Publish events</a> · <a href="consume-route-events.html">Consume and route events</a> · <a href="incoming-webhooks.html">Incoming webhooks</a> · <a href="../cookbook/sending-signals.html">Send signals</a></p>
+  </div>
+  <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 220" role="img" aria-labelledby="event-overview-svg-title event-overview-svg-desc" xmlns="http://www.w3.org/2000/svg">
+    <title id="event-overview-svg-title">Event-driven orchestration paths</title>
+    <desc id="event-overview-svg-desc">A workflow publishes to a broker, which an event handler can route to a workflow or task. A webhook is verified HTTP ingress, while a signal directly advances a blocked wait task.</desc>
+    <defs><marker id="event-overview-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+    <rect x="14" y="16" width="103" height="48" rx="10" class="concept-hero__node concept-hero__node--accent"/><text x="66" y="37" text-anchor="middle" class="concept-hero__label">Workflow</text><text x="66" y="53" text-anchor="middle" class="concept-hero__detail">EVENT</text>
+    <path d="M117 40 H153" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="161" y="16" width="105" height="48" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="214" y="37" text-anchor="middle" class="concept-hero__label">Broker</text><text x="214" y="53" text-anchor="middle" class="concept-hero__detail">topic or queue</text>
+    <path d="M266 40 H298" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="306" y="16" width="120" height="48" rx="10" class="concept-hero__node event-hero__node--action"/><text x="366" y="37" text-anchor="middle" class="concept-hero__label">Handler</text><text x="366" y="53" text-anchor="middle" class="concept-hero__detail">start or update</text>
+    <rect x="14" y="103" width="112" height="48" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="70" y="124" text-anchor="middle" class="concept-hero__label">Webhook</text><text x="70" y="140" text-anchor="middle" class="concept-hero__detail">verified HTTP</text>
+    <path d="M126 127 H174" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="182" y="103" width="109" height="48" rx="10" class="concept-hero__node event-hero__node--action"/><text x="236" y="124" text-anchor="middle" class="concept-hero__label">Durable work</text><text x="236" y="140" text-anchor="middle" class="concept-hero__detail">start or resume</text>
+    <rect x="14" y="172" width="112" height="34" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="70" y="194" text-anchor="middle" class="concept-hero__label">Signal caller</text>
+    <path d="M126 189 H174" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="182" y="172" width="109" height="34" rx="10" class="concept-hero__node concept-hero__node--accent"/><text x="236" y="194" text-anchor="middle" class="concept-hero__label">Blocked WAIT</text>
+    <path d="M291 189 H341" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <text x="383" y="194" text-anchor="middle" class="concept-hero__detail">continue</text>
+  </svg>
+</section>
 
-## Supported event buses
+| Need | Start here | Availability |
+|---|---|---|
+| Publish workflow data to a queue or broker | [Publish events](publish-events.md) | OSS and Orkes |
+| Consume a broker message and start or update workflow work | [Consume and route events](consume-route-events.md) | OSS and Orkes |
+| Receive an HTTP callback from an external service | [Incoming webhooks](incoming-webhooks.md) | Orkes only |
+| Continue a workflow blocked on `WAIT` | [Send signals to workflows](../cookbook/sending-signals.md) | OSS and Orkes |
 
-| System | Sink prefix | Module | Use case |
-| :--- | :--- | :--- | :--- |
-| **Kafka** | `kafka` | `kafka` | High-throughput, durable event streaming |
-| **NATS** | `nats` | `nats` | Lightweight, low-latency messaging |
-| **NATS Streaming** | `nats-stream` | `nats-streaming` | Durable NATS with replay (legacy) |
-| **NATS JetStream** | `nats` | `nats` | Modern durable NATS streaming |
-| **AMQP (RabbitMQ)** | `amqp`, `amqp_queue`, `amqp_exchange` | `amqp` | Traditional message queuing with routing |
-| **SQS** | `sqs` | `sqs` | AWS-native message queuing |
-| **Conductor** | `conductor` | built-in | Internal event routing between workflows |
+`EVENT` publishes messages; an event handler consumes and routes them. A webhook is HTTP ingress, not a general-purpose event handler. A signal changes an existing workflow and does not create a new execution.
 
+## Broker provider matrix
 
-## How it works
+Provider support depends on the Conductor distribution and enabled server integration. The destination after the first colon in an event name is provider-specific.
 
-Event bus orchestration has two sides:
+| Provider | OSS Conductor | Orkes |
+|---|:---:|:---:|
+| Conductor internal queue | Yes | — |
+| Kafka | Yes | Yes |
+| Amazon SQS | Yes | Yes |
+| NATS | Yes | Yes |
+| NATS JetStream | Yes | — |
+| NATS Streaming | Yes | — |
+| AMQP queue / exchange | Yes | Yes (including RabbitMQ) |
+| Azure Service Bus | — | Yes |
+| Google Cloud Pub/Sub | — | Yes |
+| IBM MQ | — | Yes |
 
-1. **Publishing** — Use the [Event task](../../documentation/configuration/workflowdef/systemtasks/event-task.md) or [Kafka Publish task](../../documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md) to send messages from a workflow.
-2. **Consuming** — Register [event handlers](../../documentation/configuration/eventhandlers.md) that listen for messages and trigger actions.
+## Operate the whole path
 
-```
-┌──────────────┐     Event Task      ┌──────────────┐    Event Handler    ┌──────────────┐
-│  Workflow A   │ ──────────────────► │  Event Bus   │ ──────────────────► │  Workflow B   │
-│              │   (publish)         │ (Kafka/NATS/ │   (start_workflow)  │  (triggered)  │
-│              │                     │  AMQP/SQS)   │                     │              │
-└──────────────┘                     └──────────────┘                     └──────────────┘
-```
+Monitor broker queue depth (`event_queue_depth`), message processing (`event_queue_messages_processed`, `event_queue_messages_handled`, and `event_queue_messages_error`), and handler actions (`event_execution_success` and `event_execution_error`). Then check the resulting workflow or task: broker acknowledgement alone does not prove the downstream action reached its intended state.
 
+## Next steps
 
-## Publishing events
-
-### Event task
-
-The [Event task](../../documentation/configuration/workflowdef/systemtasks/event-task.md) publishes a message to any supported event bus. The `sink` parameter determines the target:
-
-```json
-{
-  "name": "notify_downstream",
-  "taskReferenceName": "notify_ref",
-  "type": "EVENT",
-  "sink": "kafka:order-events",
-  "inputParameters": {
-    "orderId": "${workflow.input.orderId}",
-    "status": "PROCESSED"
-  }
-}
-```
-
-### Kafka Publish task
-
-For Kafka-specific features (custom headers, key, serializers), use the dedicated [Kafka Publish task](../../documentation/configuration/workflowdef/systemtasks/kafka-publish-task.md):
-
-```json
-{
-  "name": "publish_to_kafka",
-  "taskReferenceName": "kafka_ref",
-  "type": "KAFKA_PUBLISH",
-  "inputParameters": {
-    "kafka_request": {
-      "topic": "order-events",
-      "value": "${workflow.input.orderData}",
-      "bootStrapServers": "kafka:9092",
-      "headers": {
-        "X-Correlation-Id": "${workflow.correlationId}"
-      }
-    }
-  }
-}
-```
-
-### Sink format
-
-The `sink` parameter follows the format `prefix:queue_name`:
-
-| Example | System |
-| :--- | :--- |
-| `kafka:order-events` | Kafka topic `order-events` |
-| `nats:notifications` | NATS subject `notifications` |
-| `amqp:task-queue` | AMQP queue `task-queue` |
-| `amqp_exchange:events` | AMQP exchange `events` |
-| `sqs:my-queue` | SQS queue `my-queue` |
-| `conductor` | Conductor internal queue |
-| `conductor:workflow_name:queue_name` | Conductor internal, specific queue |
-
-
-## Consuming events
-
-### Event handlers
-
-Event handlers listen for messages on an event bus and execute actions when a matching event arrives. Register them via the `/api/event` API.
-
-```json
-{
-  "name": "order_event_handler",
-  "event": "kafka:order-events",
-  "condition": "$.status == 'PROCESSED'",
-  "actions": [
-    {
-      "action": "start_workflow",
-      "start_workflow": {
-        "name": "fulfillment_workflow",
-        "input": {
-          "orderId": "${orderId}"
-        }
-      }
-    }
-  ]
-}
-```
-
-### Supported actions
-
-| Action | Description |
-| :--- | :--- |
-| `start_workflow` | Start a new workflow execution with the event payload as input. |
-| `complete_task` | Complete a waiting task (e.g., a `WAIT` or `HUMAN` task) in a running workflow. |
-| `fail_task` | Fail a task in a running workflow. |
-
-### Conditions
-
-The `condition` field supports JavaScript-like expressions evaluated against the event payload:
-
-| Expression | Result |
-| :--- | :--- |
-| `$.version > 1` | true if `version` field > 1 |
-| `$.metadata.codec == 'aac'` | true if nested field matches |
-| `$.status == 'COMPLETED'` | true if status is COMPLETED |
-
-Actions execute only when the condition evaluates to `true`. If no condition is specified, actions execute for every event.
-
-
-## Patterns
-
-### Event-driven workflow chaining
-
-Decouple workflows using events instead of sub-workflows:
-
-```json
-{
-  "name": "order_pipeline",
-  "tasks": [
-    {
-      "name": "process_order",
-      "taskReferenceName": "process_ref",
-      "type": "SIMPLE"
-    },
-    {
-      "name": "notify_fulfillment",
-      "taskReferenceName": "notify_ref",
-      "type": "EVENT",
-      "sink": "kafka:fulfillment-requests",
-      "inputParameters": {
-        "orderId": "${workflow.input.orderId}",
-        "items": "${process_ref.output.items}"
-      }
-    }
-  ]
-}
-```
-
-A separate event handler starts the fulfillment workflow when the event arrives.
-
-### Wait for external event
-
-Combine a `WAIT` task with an event handler to pause a workflow until an external system signals completion:
-
-```json
-{
-  "name": "wait_for_approval",
-  "taskReferenceName": "approval_ref",
-  "type": "WAIT"
-}
-```
-
-Register an event handler that completes the task when an approval event arrives:
-
-```json
-{
-  "name": "approval_handler",
-  "event": "kafka:approval-events",
-  "condition": "$.approved == true",
-  "actions": [
-    {
-      "action": "complete_task",
-      "complete_task": {
-        "workflowId": "${workflowId}",
-        "taskRefName": "approval_ref",
-        "output": {
-          "approvedBy": "${approvedBy}"
-        }
-      }
-    }
-  ]
-}
-```
-
-
-## Configuration
-
-Each event bus module requires its own configuration. Enable the modules you need in your Conductor server configuration:
-
-### Kafka
-
-```properties
-conductor.event-queues.kafka.enabled=true
-conductor.event-queues.kafka.bootstrap-servers=kafka:9092
-```
-
-### NATS
-
-```properties
-conductor.event-queues.nats.enabled=true
-conductor.event-queues.nats.url=nats://localhost:4222
-```
-
-### AMQP (RabbitMQ)
-
-```properties
-conductor.event-queues.amqp.enabled=true
-conductor.event-queues.amqp.hosts=rabbitmq
-conductor.event-queues.amqp.port=5672
-conductor.event-queues.amqp.username=guest
-conductor.event-queues.amqp.password=guest
-```
-
-Refer to the module source code for the full set of configuration properties.
+<div class="event-next-steps">
+  <a href="publish-events.html">Publish events →</a>
+  <a href="consume-route-events.html">Consume and route events →</a>
+  <a href="incoming-webhooks.html">Receive webhooks →</a>
+  <a href="../cookbook/sending-signals.html">Send workflow signals →</a>
+</div>

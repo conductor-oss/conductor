@@ -22,8 +22,8 @@ The reviewer's decision is explicit and takes precedence over the test:
 The originally reported failure —
 
 ```
-AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
-    java.lang.NoSuchMethodException: org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
+deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
+    java.lang.NoSuchMethodException: embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
 ```
 
 — must therefore be resolved by **removing the test's dependency on the
@@ -41,9 +41,9 @@ resolution. No new behavior is introduced.
 ### Tech stack (unchanged)
 
 - Java 21, Gradle multi-module build.
-- Modules touched: `agentspan` (production) and `test-harness` (integration test).
+- Modules touched: embedded agent runtime (production) and `test-harness` (integration test).
 - Spring Boot component model; `AgentService` is a `@Component` gated by
-  `@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")`
+  `@ConditionalOnPropertyembedded agent runtime is enabled`
   and uses Lombok `@RequiredArgsConstructor`.
 - JUnit 5 (`org.junit.jupiter`) for the affected test.
 
@@ -53,8 +53,8 @@ Only two files are edited. No source files are created. No new interfaces or typ
 
 | File | Module | Action |
 |---|---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | `agentspan` | Delete the backfill method and everything used **only** by it (see §3). |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | `test-harness` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test and its now-unused import (see §4). |
+| `embedded agent runtime service` | embedded agent runtime | Delete the backfill method and everything used **only** by it (see §3). |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | `test-harness` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test and its now-unused import (see §4). |
 
 Nothing else in the repository references the removed symbols, so no other file
 needs to change.
@@ -79,9 +79,9 @@ All of the following are removed. Each is verified (see the plan doc) to have
 
 ### 3.2 Constants
 
-- `private static final String AGENT_CLASSIFIER_BACKFILL_VERSION = "agent_classifier_backfill_version";`
+- `private static final String the agent classifier backfill version = "agent_classifier_backfill_version";`
   — currently at `AgentService.java:64`.
-- `private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;`
+- `private static final int the agent classifier backfill version_VALUE = 2;`
   — currently at `AgentService.java:68`, plus its explanatory comment.
 
 Both constants are referenced **only** from the three methods above.
@@ -110,14 +110,14 @@ These are referenced elsewhere in `AgentService` and are **not** removed:
 - Fields `executionDAO`, `metadataDAO`, `workflowService`, `taskService`,
   `workflowExecutor`, and all remaining collaborators.
 
-## 4. `AgentSpanDeploymentContractEndToEndTest.java` — test to remove
+## 4. `deployment contract test.java` — test to remove
 
 - Delete the entire test method
   `void legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() throws Exception`
-  — currently at `AgentSpanDeploymentContractEndToEndTest.java:295`–`338`,
+  — currently at `deployment contract test.java:295`–`338`,
   including its `@Test` annotation.
 - Remove the import `import java.lang.reflect.Method;`
-  (`AgentSpanDeploymentContractEndToEndTest.java:18`) **only if** no other test
+  (`deployment contract test.java:18`) **only if** no other test
   method in the file uses `java.lang.reflect.Method`. It is verified unused
   elsewhere in the file; keep the `AgentService` import, which the class still
   autowires and uses.
@@ -135,19 +135,19 @@ Every document in this set and every edit refers to these exact names:
 | Removed production method | `backfillLegacyAgentExecutionClassifiers` |
 | Removed helper (version read) | `backfillVersionOf` |
 | Removed helper (reindex) | `reindexAgentExecutions` |
-| Removed constant (metadata key) | `AGENT_CLASSIFIER_BACKFILL_VERSION` |
-| Removed constant (version value) | `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` |
+| Removed constant (metadata key) | `the agent classifier backfill version` |
+| Removed constant (version value) | `the agent classifier backfill version_VALUE` |
 | Removed field | `indexDAO` (type `com.netflix.conductor.dao.IndexDAO`) |
 | Removed test method | `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds` |
-| Production class | `org.conductoross.conductor.ai.agentspan.runtime.service.AgentService` |
-| Test class | `com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest` |
+| Production class | `embedded agent runtime service` |
+| Test class | `deployment contract test` |
 | Metadata string literal (workflow def) | `"agent_classifier_backfill_version"` |
 
 ## 6. Non-goals
 
 - Do **not** re-add the backfill method under any name or visibility.
 - Do **not** introduce a public API, endpoint, or CLI command to replace it.
-- Do **not** touch other tests in `AgentSpanDeploymentContractEndToEndTest`.
+- Do **not** touch other tests in `deployment contract test`.
 - Do **not** migrate or rewrite existing `"agent_classifier_backfill_version"`
   metadata already stamped on deployed definitions; leaving stale metadata is
   harmless (nothing reads it after this change).
@@ -158,8 +158,8 @@ The change is complete when all of the following hold:
 
 1. `AgentService.java` contains zero occurrences of `backfill` (method, helpers,
    constants) and of the `indexDAO` field / `IndexDAO` import.
-2. `AgentSpanDeploymentContractEndToEndTest.java` contains zero occurrences of
+2. `deployment contract test.java` contains zero occurrences of
    `backfill` and no `getDeclaredMethod(...)` referencing the removed method.
 3. Both modules compile; `./gradlew spotlessApply` leaves no diff.
-4. `AgentSpanDeploymentContractEndToEndTest` runs with the removed test absent
+4. `deployment contract test` runs with the removed test absent
    and every remaining test passing.

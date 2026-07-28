@@ -6,21 +6,21 @@ exact symbol names listed there. It is a deletion-only change across two files.
 ## Step 1 — `AgentService.java`
 
 Path:
-`agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java`
+`embedded agent runtime service`
 
 Perform these deletions:
 
-1. **Constants block.** Remove `AGENT_CLASSIFIER_BACKFILL_VERSION` and
-   `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` (and the two-line comment above the
+1. **Constants block.** Remove `the agent classifier backfill version` and
+   `the agent classifier backfill version_VALUE` (and the two-line comment above the
    latter). Keep `MAPPER` and the surrounding declarations.
 
    ```java
    // DELETE:
-   private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+   private static final String the agent classifier backfill version =
            "agent_classifier_backfill_version";
    // Version 2 additionally reindexes generated router sub-workflows, which older compiler
    // output persisted as ordinary workflow executions.
-   private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
+   private static final int the agent classifier backfill version_VALUE = 2;
    ```
 
 2. **`indexDAO` field.** Remove the field. `@RequiredArgsConstructor`
@@ -60,10 +60,10 @@ Do **not** touch these — they remain in use elsewhere in the class:
 After the edits, `IndexDAO` and the two `AGENT_CLASSIFIER_BACKFILL_*` symbols
 must not appear anywhere in the file.
 
-## Step 2 — `AgentSpanDeploymentContractEndToEndTest.java`
+## Step 2 — `deployment contract test.java`
 
 Path:
-`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java`
+`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java`
 
 1. **Remove the test method** `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
    in full, including its `@Test` annotation. This is the method that calls:
@@ -95,7 +95,7 @@ Run, in order (see `testing.md` for the acceptance criteria):
 
 ```bash
 ./gradlew spotlessApply
-./gradlew :agentspan:compileJava
+./gradlew embedded agent runtime module (compileJava)
 ./gradlew :test-harness:compileTestJava
 ./gradlew test
 ```
@@ -103,7 +103,7 @@ Run, in order (see `testing.md` for the acceptance criteria):
 ## Post-conditions
 
 - `grep -rn "backfillLegacyAgentExecutionClassifiers" .` returns nothing.
-- `grep -rn "AGENT_CLASSIFIER_BACKFILL_VERSION" .` returns nothing.
+- `grep -rn "the agent classifier backfill version" .` returns nothing.
 - `grep -rn "reindexAgentExecutions\|backfillVersionOf" .` returns nothing.
 - No unused-import or unreachable-code warnings from the two edited files.
 - The change diff contains only deletions (plus whatever whitespace

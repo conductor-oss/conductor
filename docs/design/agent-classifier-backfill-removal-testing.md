@@ -9,8 +9,8 @@ document exactly.
 The CI failure is:
 
 ```
-AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
-    java.lang.NoSuchMethodException: org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
+deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
+    java.lang.NoSuchMethodException: embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
 ```
 
 The test obtains the method reflectively:
@@ -32,7 +32,7 @@ has no subject and is removed with it.
 
 ## What remains covered
 
-`AgentSpanDeploymentContractEndToEndTest` keeps all other cases unchanged,
+`deployment contract test` keeps all other cases unchanged,
 including the deployment-contract assertions immediately preceding the deleted
 test (task-def presence/absence for guardrails, handoff checks, and transfer
 tasks) and the SDK lifecycle-callback boundary test that follows it. Deployment
@@ -48,8 +48,8 @@ Run from the repository root:
 
 | Step | Command | Expected |
 |---|---|---|
-| Module compiles without the removed members | `./gradlew :agentspan:compileJava` | Success; no "unused" or "cannot find symbol" errors. |
-| End-to-end contract tests pass | `./gradlew :test-harness:test --tests '*AgentSpanDeploymentContractEndToEndTest*'` | Green; the deleted test is absent and no `NoSuchMethodException` is thrown. |
+| Module compiles without the removed members | `./gradlew embedded agent runtime module (compileJava)` | Success; no "unused" or "cannot find symbol" errors. |
+| End-to-end contract tests pass | `./gradlew :test-harness:test --tests '*deployment contract test*'` | Green; the deleted test is absent and no `NoSuchMethodException` is thrown. |
 | Formatting normalized | `./gradlew spotlessApply` | No diff on re-run. |
 
 ## Regression guard
@@ -59,4 +59,4 @@ The consistency invariants in
 after the change, no `AgentService` member named or aliased `backfill*Classifiers`
 exists, and no test references such a member. A repository-wide search for
 `backfillLegacyAgentExecutionClassifiers` must return zero results in both
-`agentspan` and `test-harness`.
+embedded agent runtime and `test-harness`.

@@ -30,24 +30,24 @@ Run from the repository root:
 | `grep -R "backfillLegacyAgentExecutionClassifiers" .` | no matches |
 | `grep -R "reindexAgentExecutions" .` | no matches |
 | `grep -R "backfillVersionOf" .` | no matches |
-| `grep -R "AGENT_CLASSIFIER_BACKFILL_VERSION" .` | no matches |
-| `grep -n "indexDAO\|IndexDAO" agentspan/.../service/AgentService.java` | no matches |
-| `grep -n "java.lang.reflect.Method" test-harness/.../AgentSpanDeploymentContractEndToEndTest.java` | no matches |
+| `grep -R "the agent classifier backfill version" .` | no matches |
+| `grep -n "indexDAO\|IndexDAO" embedded agent runtime/.../service/AgentService.java` | no matches |
+| `grep -n "java.lang.reflect.Method" test-harness/.../deployment contract test.java` | no matches |
 
 ## Build & test verification
 
 | Command | Expected result |
 |---|---|
 | `./gradlew spotlessApply` | Reformats touched files; no manual formatting needed. |
-| `./gradlew :agentspan:compileJava` | Compiles — confirms the `IndexDAO` import/field removal left no dangling reference and the Lombok constructor still resolves. |
+| `./gradlew embedded agent runtime module (compileJava)` | Compiles — confirms the `IndexDAO` import/field removal left no dangling reference and the Lombok constructor still resolves. |
 | `./gradlew :test-harness:compileTestJava` | Compiles — confirms the `Method` import removal left no dangling reference. |
-| `./gradlew :test-harness:test --tests "com.netflix.conductor.test.integration.agent.AgentSpanDeploymentContractEndToEndTest"` | Passes; the `legacyAgentClassifierBackfill...` case is no longer present, so it can neither fail nor error with `NoSuchMethodException`. |
+| `./gradlew :test-harness:test --tests "deployment contract test"` | Passes; the `legacyAgentClassifierBackfill...` case is no longer present, so it can neither fail nor error with `NoSuchMethodException`. |
 
 ## Regression surface
 
 The removal is subtractive and touches no production caller (see the
 [Reachability analysis](./architecture.md#reachability-analysis)). The remaining tests
-in `AgentSpanDeploymentContractEndToEndTest` — deployment, metadata stamping, callback
+in `deployment contract test` — deployment, metadata stamping, callback
 placement, and the sibling classifier/routing cases — are unaffected because they do not
 reference any removed symbol. No new test is added, consistent with a
 capability-removal change.
@@ -56,6 +56,6 @@ capability-removal change.
 
 1. Both reviewer comments are satisfied: the backfill method is **not** present, and the
    test suite no longer fails with `NoSuchMethodException`.
-2. `agentspan` and `test-harness` compile.
-3. `AgentSpanDeploymentContractEndToEndTest` passes with the backfill case removed.
+2. embedded agent runtime and `test-harness` compile.
+3. `deployment contract test` passes with the backfill case removed.
 4. All static-verification greps return no matches.

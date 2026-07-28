@@ -75,7 +75,7 @@ Retry behavior is controlled by the task definition:
 | Parameter | Description |
 | :--- | :--- |
 | `retryCount` | Maximum number of retry attempts. |
-| `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. See [Retry Logic](../../../documentation/configuration/taskdef.md#retry-logic). |
+| `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. See [Retry Logic](../../documentation/configuration/taskdef.md#retry-logic). |
 | `retryDelaySeconds` | Base delay between retries. |
 | `maxRetryDelaySeconds` | Caps the computed delay. Prevents exponential growth from becoming arbitrarily large. |
 | `backoffJitterMs` | Adds random milliseconds to each delay to spread concurrent retries over time. |

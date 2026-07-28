@@ -22,7 +22,7 @@ invokes it. Review feedback is explicit and takes precedence over the test:
 - @v1r3n: *"do not add back `backfillLegacyAgentExecutionClassifiers` method.
   This method should not be added back."*
 - @v1r3n: the test
-  `AgentSpanDeploymentContractEndToEndTest.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
+  `deployment contract test.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`
   currently fails with `NoSuchMethodException` for that method and must be
   fixed.
 
@@ -56,7 +56,7 @@ This is a minimal, review-scoped change.
 ## Overview & tech stack
 
 - **Language / build**: Java 21, Gradle.
-- **Affected runtime module**: `agentspan` — the embedded agent runtime.
+- **Affected runtime module**: embedded agent runtime — the embedded agent runtime.
 - **Affected test module**: `test-harness` — cross-module integration tests.
 - **Relevant collaborators of `AgentService`**: `MetadataDAO`, `ExecutionDAO`,
   `IndexDAO`, and the workflow search service. Which of these remain injected is
@@ -71,8 +71,8 @@ written.
 
 | File | Responsibility | Change |
 |---|---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | Embedded agent deploy/start/search service | Delete the backfill method chain and its now-dead constants/helpers/imports (see below). |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | Deployment-contract end-to-end tests | Delete the single test that reflectively invokes the removed method. |
+| `embedded agent runtime service` | Embedded agent deploy/start/search service | Delete the backfill method chain and its now-dead constants/helpers/imports (see below). |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | Deployment-contract end-to-end tests | Delete the single test that reflectively invokes the removed method. |
 
 ## Shared contract — the exact removal set
 
@@ -88,8 +88,8 @@ method).
 | `backfillLegacyAgentExecutionClassifiers` | method | `private void backfillLegacyAgentExecutionClassifiers()` | Directly forbidden by review. Root of the dead-code chain. |
 | `backfillVersionOf` | method | `private static int backfillVersionOf(Map<String, Object> metadata)` | Only caller is the backfill method. |
 | `reindexAgentExecutions` | method | `private void reindexAgentExecutions(String agentName)` | Only caller is the backfill method (confirmed no other references in the file). |
-| `AGENT_CLASSIFIER_BACKFILL_VERSION` | constant | `private static final String AGENT_CLASSIFIER_BACKFILL_VERSION = "agent_classifier_backfill_version"` | Only read by the removed methods. |
-| `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` | constant | `private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2` | Only read by the removed methods. |
+| `the agent classifier backfill version` | constant | `private static final String the agent classifier backfill version = "agent_classifier_backfill_version"` | Only read by the removed methods. |
+| `the agent classifier backfill version_VALUE` | constant | `private static final int the agent classifier backfill version_VALUE = 2` | Only read by the removed methods. |
 
 Imports and injected fields (`indexDAO`, `executionDAO`, the workflow search
 service, `WorkflowSummary`, `SearchResult`, `WorkflowClassifiers`, etc.) are
@@ -97,7 +97,7 @@ removed **case by case** and **only** when a repository-wide check shows the
 removed methods were their last user. The concrete determination lives in
 `agent-classifier-backfill-removal-plan.md`.
 
-### In `AgentSpanDeploymentContractEndToEndTest.java`
+### In `deployment contract test.java`
 
 | Identifier | Kind | Removed because |
 |---|---|---|
@@ -122,8 +122,8 @@ this test method is also removed.
 
 ## Verification (design-level, not run here)
 
-- `./gradlew :agentspan:compileJava` — module compiles with the members removed.
-- `./gradlew :test-harness:test --tests '*AgentSpanDeploymentContractEndToEndTest*'`
+- `./gradlew embedded agent runtime module (compileJava)` — module compiles with the members removed.
+- `./gradlew :test-harness:test --tests '*deployment contract test*'`
   — the remaining tests pass; the deleted test no longer references a missing
   method.
 - `./gradlew spotlessApply` — formatting normalized after edits.

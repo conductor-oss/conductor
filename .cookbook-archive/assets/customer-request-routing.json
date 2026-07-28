@@ -1,0 +1,117 @@
+{
+  "name": "customer_request_approved_dispatch",
+  "description": "Classifies a request into one of an explicit approved workflow catalog.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 180,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "request"
+  ],
+  "tasks": [
+    {
+      "name": "classify_request",
+      "taskReferenceName": "classify_request",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Return JSON only. Choose action from support, refund, or sales. Do not invent actions."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input.request}"
+          }
+        ],
+        "temperature": 0,
+        "maxTokens": 120,
+        "jsonOutput": true
+      },
+      "taskDefinition": {
+        "name": "classify_request",
+        "retryCount": 2,
+        "retryLogic": "EXPONENTIAL_BACKOFF",
+        "retryDelaySeconds": 2,
+        "responseTimeoutSeconds": 30,
+        "timeoutSeconds": 60,
+        "timeoutPolicy": "TIME_OUT_WF",
+        "rateLimitPerFrequency": 60,
+        "rateLimitFrequencyInSeconds": 60,
+        "concurrentExecLimit": 10
+      }
+    },
+    {
+      "name": "dispatch_approved_workflow",
+      "taskReferenceName": "dispatch",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "action",
+      "inputParameters": {
+        "action": "${classify_request.output.result.action}"
+      },
+      "decisionCases": {
+        "support": [
+          {
+            "name": "support_workflow",
+            "taskReferenceName": "support_workflow",
+            "type": "SUB_WORKFLOW",
+            "subWorkflowParam": {
+              "name": "ai_route_support_ticket",
+              "version": 1
+            },
+            "inputParameters": {
+              "request": "${workflow.input.request}"
+            }
+          }
+        ],
+        "refund": [
+          {
+            "name": "refund_workflow",
+            "taskReferenceName": "refund_workflow",
+            "type": "SUB_WORKFLOW",
+            "subWorkflowParam": {
+              "name": "ai_route_refund_request",
+              "version": 1
+            },
+            "inputParameters": {
+              "request": "${workflow.input.request}"
+            }
+          }
+        ],
+        "sales": [
+          {
+            "name": "sales_workflow",
+            "taskReferenceName": "sales_workflow",
+            "type": "SUB_WORKFLOW",
+            "subWorkflowParam": {
+              "name": "ai_route_sales_lead",
+              "version": 1
+            },
+            "inputParameters": {
+              "request": "${workflow.input.request}"
+            }
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "unclassified",
+          "taskReferenceName": "unclassified",
+          "type": "TERMINATE",
+          "inputParameters": {
+            "terminationStatus": "FAILED",
+            "workflowOutput": {
+              "reason": "Unapproved classification"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "outputParameters": {
+    "classification": "${classify_request.output.result}"
+  }
+}

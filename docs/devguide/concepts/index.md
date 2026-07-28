@@ -4,19 +4,21 @@ description: "Core concepts of Conductor — an open source workflow orchestrati
 
 # Basic Concepts
 
-Conductor is an open source workflow orchestration engine that orchestrates distributed workflows. You define
-workflows as code or as JSON, write workers in any language, and let Conductor handle state persistence,
+**Conductor is an open source workflow orchestration engine that orchestrates distributed workflows.** 
+You define workflows as code or as JSON, write workers in any language, and let Conductor handle state persistence,
 retries, timeouts, and flow control. Every step is durably recorded, so processes survive crashes,
 restarts, and network partitions without losing progress.
 
-Workflow definitions are JSON-native — you can version them in source control, diff changes across
-releases, generate them programmatically, or let LLMs create and modify them at runtime. Workers
-are polyglot: official SDKs exist for Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust,
+**Workflow** definitions are JSON-native — you can version them in source control, diff changes across
+releases, generate them programmatically, or let LLMs create and modify them at runtime. 
+
+**Workers** are polyglot: official SDKs exist for Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust,
 so teams can use the language that best fits each task.
 
 Built-in system tasks handle common operations like HTTP calls, event publishing, inline transforms,
-and sub-workflow orchestration without writing custom code. AI capabilities extend the system task
-library with native support for 14+ LLM providers, MCP tool calling, function calling, vector databases, and content
+and sub-workflow orchestration without writing custom code. 
+
+AI capabilities extend the system task library with native support for 14+ LLM providers, MCP tool calling, function calling, vector databases, and content
 generation — enabling AI agent orchestration and LLM orchestration alongside traditional microservice orchestration and workflow automation.
 
 ## What can Conductor do?
@@ -51,6 +53,10 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <div class="wcc-header"><span class="wcc-title">Use LLM Tasks</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Use LLM tasks to build AI-powered workflows, including agentic workflows. <a href="../ai/index.html">Learn more</a></div>
     </div>
+    <div class="wcc-item" data-wcc="13" role="tab" aria-selected="false" tabindex="0">
+      <div class="wcc-header"><span class="wcc-title">Orchestrate Agents</span><span class="wcc-chevron"></span></div>
+      <div class="wcc-body">Build and run Conductor Agents, or orchestrate deployed and remote A2A agents as durable workflow steps. <a href="agents.html">Learn more</a></div>
+    </div>
     <div class="wcc-item" data-wcc="7" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Human in the Loop</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Plug in manual steps in your workflows using Human tasks. <a href="../../documentation/configuration/workflowdef/systemtasks/human-task.html">Human tasks</a> · <a href="../../documentation/configuration/workflowdef/systemtasks/wait-task.html">Wait tasks</a></div>
@@ -69,11 +75,19 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
     </div>
     <div class="wcc-item" data-wcc="11" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Debug Visually</span><span class="wcc-chevron"></span></div>
-      <div class="wcc-body">Track and debug workflows from Conductor UI. View inputs, pull logs, and restart from any point. <a href="../../quickstart/index.html">Get started</a></div>
+      <div class="wcc-body">Track and debug workflows from Conductor UI. View inputs, pull logs, and restart from any point. <a href="../../quickstart/first-workflow.html">Get started</a></div>
     </div>
     <div class="wcc-item" data-wcc="12" role="tab" aria-selected="false" tabindex="0">
       <div class="wcc-header"><span class="wcc-title">Scale Horizontally</span><span class="wcc-chevron"></span></div>
       <div class="wcc-body">Run multiple server instances behind a load balancer with shared backends for high availability. <a href="../running/deploy.html">Deployment guide</a></div>
+    </div>
+    <div class="wcc-controls" aria-label="Feature navigation">
+      <button class="wcc-control" data-wcc-direction="previous" type="button">
+        <span class="wcc-control-icon" aria-hidden="true">←</span><span>Previous</span>
+      </button>
+      <button class="wcc-control" data-wcc-direction="next" type="button">
+        <span>Next</span><span class="wcc-control-icon" aria-hidden="true">→</span>
+      </button>
     </div>
   </div>
   <div class="wcc-right" role="tabpanel">
@@ -107,7 +121,7 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <circle cx="130" cy="382" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="130" y="387" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">End</text>
     </svg>
     <!-- 2: Run Loops — do-while highlighted -->
-    <svg class="wcc-diagram" data-wcc-diagram="2" viewBox="0 0 280 440" xmlns="http://www.w3.org/2000/svg">
+    <svg class="wcc-diagram" data-wcc-diagram="2" viewBox="-30 0 330 440" xmlns="http://www.w3.org/2000/svg">
       <circle cx="110" cy="30" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="35" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Start</text>
       <line x1="110" y1="52" x2="110" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <rect x="35" y="80" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="105" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task A</text>
@@ -126,7 +140,7 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <defs><marker id="wcc-arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#06d6a0"/></marker></defs>
     </svg>
     <!-- 3: Parallelize — fork/join -->
-    <svg class="wcc-diagram" data-wcc-diagram="3" viewBox="0 0 320 440" xmlns="http://www.w3.org/2000/svg">
+    <svg class="wcc-diagram" data-wcc-diagram="3" viewBox="-25 0 370 440" xmlns="http://www.w3.org/2000/svg">
       <circle cx="140" cy="30" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="140" y="35" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Start</text>
       <line x1="140" y1="52" x2="140" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <rect x="65" y="80" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="140" y="105" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task A</text>
@@ -219,7 +233,7 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <defs><marker id="wcc-arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/></marker></defs>
     </svg>
     <!-- 9: Replay Any Workflow -->
-    <svg class="wcc-diagram" data-wcc-diagram="9" viewBox="0 0 340 420" xmlns="http://www.w3.org/2000/svg">
+    <svg class="wcc-diagram" data-wcc-diagram="9" viewBox="-30 0 400 420" xmlns="http://www.w3.org/2000/svg">
       <circle cx="110" cy="30" r="22" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="35" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Start</text>
       <line x1="110" y1="52" x2="110" y2="80" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <rect x="35" y="80" width="150" height="40" rx="6" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="110" y="105" text-anchor="middle" font-size="12" fill="#2e3545" font-family="sans-serif">Task A</text>
@@ -243,7 +257,7 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       </defs>
     </svg>
     <!-- 10: Integrate -->
-    <svg class="wcc-diagram" data-wcc-diagram="10" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
+    <svg class="wcc-diagram" data-wcc-diagram="10" viewBox="-20 0 350 350" xmlns="http://www.w3.org/2000/svg">
       <rect x="75" y="20" width="150" height="50" rx="8" fill="#06d6a0" stroke="#05c792" stroke-width="1.5"/><text x="150" y="42" text-anchor="middle" font-size="11" fill="#fff" font-weight="600" font-family="sans-serif">Conductor</text><text x="150" y="58" text-anchor="middle" font-size="10" fill="#fff" font-family="sans-serif">Workflow Engine</text>
       <line x1="75" y1="45" x2="20" y2="115" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
       <line x1="120" y1="70" x2="90" y2="115" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-arrow)"/>
@@ -288,33 +302,49 @@ generation — enabling AI agent orchestration and LLM orchestration alongside t
       <text x="160" y="195" text-anchor="middle" font-size="10" font-weight="600" fill="#06d6a0" font-family="sans-serif">Shared Backends</text>
       <text x="160" y="215" text-anchor="middle" font-size="9" fill="#4a5568" font-family="sans-serif">Database  ·  Queue  ·  Index  ·  Lock</text>
     </svg>
+    <!-- 13: Agents -->
+    <svg class="wcc-diagram" data-wcc-diagram="13" viewBox="0 0 320 330" xmlns="http://www.w3.org/2000/svg">
+      <rect x="85" y="15" width="150" height="42" rx="7" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="160" y="40" text-anchor="middle" font-size="11" fill="#2e3545" font-family="sans-serif">Conductor Workflow</text>
+      <line x1="160" y1="57" x2="160" y2="90" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-agent-arrow)"/>
+      <rect x="95" y="90" width="130" height="46" rx="7" fill="#06d6a0" stroke="#05c792" stroke-width="1.5"/><text x="160" y="117" text-anchor="middle" font-size="12" fill="#fff" font-weight="600" font-family="sans-serif">AGENT Task</text>
+      <line x1="125" y1="136" x2="70" y2="185" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-agent-arrow)"/>
+      <line x1="195" y1="136" x2="250" y2="185" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-agent-arrow)"/>
+      <rect x="10" y="185" width="120" height="55" rx="7" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="70" y="208" text-anchor="middle" font-size="10" fill="#2e3545" font-weight="600" font-family="sans-serif">Conductor Agent</text><text x="70" y="224" text-anchor="middle" font-size="9" fill="#4a5568" font-family="sans-serif">Build and run</text>
+      <rect x="190" y="185" width="120" height="55" rx="7" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="250" y="208" text-anchor="middle" font-size="10" fill="#2e3545" font-weight="600" font-family="sans-serif">A2A Agent</text><text x="250" y="224" text-anchor="middle" font-size="9" fill="#4a5568" font-family="sans-serif">Orchestrate remotely</text>
+      <line x1="70" y1="240" x2="70" y2="275" stroke="#a0aec0" stroke-width="1.5"/><line x1="250" y1="240" x2="250" y2="275" stroke="#a0aec0" stroke-width="1.5"/><line x1="70" y1="275" x2="250" y2="275" stroke="#a0aec0" stroke-width="1.5"/><line x1="160" y1="275" x2="160" y2="300" stroke="#a0aec0" stroke-width="1.5" marker-end="url(#wcc-agent-arrow)"/>
+      <circle cx="160" cy="310" r="16" fill="#e2e8f0" stroke="#4a5568" stroke-width="1.5"/><text x="160" y="314" text-anchor="middle" font-size="9" fill="#2e3545" font-family="sans-serif">Done</text>
+      <defs><marker id="wcc-agent-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a0aec0"/></marker></defs>
+    </svg>
   </div>
 </div>
 
 <style>
 .wcc-widget{display:flex;gap:0;border:1px solid var(--c-cloud,#e2e8f0);border-radius:var(--r-md,10px);overflow:hidden;margin:1.5rem 0 2rem;min-height:420px;background:var(--c-white,#fff)}
-.wcc-left{flex:0 0 52%;border-right:1px solid var(--c-cloud,#e2e8f0);overflow-y:auto;max-height:520px}
+.wcc-left{flex:0 0 52%;display:flex;flex-direction:column;border-right:1px solid var(--c-cloud,#e2e8f0);min-height:420px}
 .wcc-right{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--c-snow,#f8fafc)}
-.wcc-item{border-bottom:1px solid var(--c-cloud,#e2e8f0);cursor:pointer;transition:background .15s}
-.wcc-item:last-child{border-bottom:none}
-.wcc-item:hover{background:var(--c-fog,#f1f4f8)}
-.wcc-item.wcc-active{background:var(--c-fog,#f1f4f8)}
-.wcc-header{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem}
-.wcc-title{font-family:var(--font-body,sans-serif);font-size:.78rem;font-weight:500;color:var(--c-charcoal,#2e3545)}
-.wcc-active .wcc-title{color:var(--c-teal,#06d6a0);font-weight:600}
-.wcc-chevron{width:10px;height:10px;border-right:2px solid var(--c-muted,#718096);border-bottom:2px solid var(--c-muted,#718096);transform:rotate(45deg);transition:transform .2s;flex-shrink:0}
-.wcc-active .wcc-chevron{transform:rotate(-135deg)}
-.wcc-body{max-height:0;overflow:hidden;transition:max-height .25s ease,padding .25s ease;padding:0 1rem;font-size:.72rem;line-height:1.55;color:var(--c-slate,#4a5568)}
-.wcc-active .wcc-body{max-height:120px;padding:0 1rem .7rem}
+.wcc-item{display:none;flex:1;cursor:default;padding:2rem;animation:wcc-slide-in .22s ease}
+.wcc-item.wcc-active{display:block;background:var(--c-fog,#f1f4f8)}
+.wcc-header{display:flex;align-items:center;justify-content:space-between}
+.wcc-title{font-family:var(--font-body,sans-serif);font-size:1.1rem;font-weight:600;color:var(--c-teal,#06d6a0)}
+.wcc-chevron{display:none}
+.wcc-body{padding-top:1rem;font-size:.9rem;line-height:1.65;color:var(--c-slate,#4a5568)}
 .wcc-body a{color:var(--c-teal,#06d6a0);text-decoration:none;font-weight:500}
 .wcc-body a:hover{text-decoration:underline}
+.wcc-controls{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:1rem 1.25rem;border-top:1px solid var(--c-cloud,#e2e8f0);background:var(--c-white,#fff)}
+.wcc-control{display:inline-flex;align-items:center;gap:.55rem;padding:.45rem .7rem;border:0;background:transparent;color:var(--c-charcoal,#2e3545);font-family:var(--font-body,sans-serif);font-size:.8rem;font-weight:600;line-height:1;white-space:nowrap;cursor:pointer}
+.wcc-control-icon{display:inline-flex;width:2rem;height:2rem;align-items:center;justify-content:center;border-radius:50%;background:var(--c-blue,#3b82f6);color:#fff;font-size:1.2rem;font-weight:700;line-height:1;transition:transform .15s ease,background .15s ease}
+.wcc-control:hover:not(:disabled){color:var(--c-blue,#3b82f6)}
+.wcc-control:hover:not(:disabled) .wcc-control-icon{background:#2563eb;transform:translateX(2px)}
+.wcc-control[data-wcc-direction="previous"]:hover:not(:disabled) .wcc-control-icon{transform:translateX(-2px)}
+.wcc-control:disabled{opacity:.4;cursor:not-allowed}
 .wcc-diagram{display:none;max-width:100%;max-height:400px;width:auto;height:auto}
 .wcc-diagram.wcc-visible{display:block}
-@media(max-width:768px){.wcc-widget{flex-direction:column}.wcc-left{flex:none;border-right:none;border-bottom:1px solid var(--c-cloud,#e2e8f0);max-height:300px}.wcc-right{min-height:300px}}
+@keyframes wcc-slide-in{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:768px){.wcc-widget{flex-direction:column}.wcc-left{flex:none;border-right:none;border-bottom:1px solid var(--c-cloud,#e2e8f0);min-height:260px}.wcc-item{padding:1.5rem}.wcc-right{min-height:300px}.wcc-controls{padding:1rem}}
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded",function(){var items=document.querySelectorAll(".wcc-item");var diagrams=document.querySelectorAll(".wcc-diagram");items.forEach(function(item){item.addEventListener("click",function(){items.forEach(function(i){i.classList.remove("wcc-active");i.setAttribute("aria-selected","false")});item.classList.add("wcc-active");item.setAttribute("aria-selected","true");var idx=item.getAttribute("data-wcc");diagrams.forEach(function(d){d.classList.remove("wcc-visible")});var target=document.querySelector('[data-wcc-diagram="'+idx+'"]');if(target)target.classList.add("wcc-visible")});item.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();item.click()}})})});
+document.addEventListener("DOMContentLoaded",function(){var items=Array.prototype.slice.call(document.querySelectorAll(".wcc-item"));var diagrams=document.querySelectorAll(".wcc-diagram");var controls=document.querySelectorAll(".wcc-control");var activeIndex=Math.max(0,items.findIndex(function(item){return item.classList.contains("wcc-active")}));function show(index,focus){activeIndex=Math.max(0,Math.min(index,items.length-1));items.forEach(function(item,itemIndex){var active=itemIndex===activeIndex;item.classList.toggle("wcc-active",active);item.setAttribute("aria-selected",String(active));item.setAttribute("aria-hidden",String(!active));item.tabIndex=active?0:-1});var selected=items[activeIndex];var diagramIndex=selected.getAttribute("data-wcc");diagrams.forEach(function(diagram){diagram.classList.toggle("wcc-visible",diagram.getAttribute("data-wcc-diagram")===diagramIndex)});controls.forEach(function(control){control.disabled=control.getAttribute("data-wcc-direction")==="previous"?activeIndex===0:activeIndex===items.length-1});if(focus)selected.focus()}items.forEach(function(item,itemIndex){item.addEventListener("keydown",function(event){if(event.key==="ArrowRight"){event.preventDefault();show(activeIndex+1,true)}else if(event.key==="ArrowLeft"){event.preventDefault();show(activeIndex-1,true)}else if(event.key==="Home"){event.preventDefault();show(0,true)}else if(event.key==="End"){event.preventDefault();show(items.length-1,true)}});item.addEventListener("click",function(){show(itemIndex,false)})});controls.forEach(function(control){control.addEventListener("click",function(){show(activeIndex+(control.getAttribute("data-wcc-direction")==="next"?1:-1),true)})});show(activeIndex,false)});
 </script>
 
 ## Core building blocks
@@ -327,6 +357,8 @@ document.addEventListener("DOMContentLoaded",function(){var items=document.query
 - **[Workers](workers.md)** — The code that executes tasks in a Conductor workflow. Workers are
   language-agnostic processes that poll the Conductor server, execute business logic, and report
   results back.
+- **[Agents](agents.md) (`AGENT` task)** — Invoke a deployed Conductor Agent or a remote A2A
+  agent as a durable step inside a workflow.
 
 ## Key differentiators
 

@@ -8,18 +8,18 @@ absolutes after each edit.
 ## Edit set 1 — `AgentService.java`
 
 Path:
-`agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java`
+`embedded agent runtime service`
 
 ### 1a. Delete the two constants and their comment (currently lines 64–68)
 
 Remove:
 
 ```java
-    private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+    private static final String the agent classifier backfill version =
             "agent_classifier_backfill_version";
     // Version 2 additionally reindexes generated router sub-workflows, which older compiler
     // output persisted as ordinary workflow executions.
-    private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
+    private static final int the agent classifier backfill version_VALUE = 2;
 ```
 
 Leave the preceding `MAPPER` constant and the following field declarations intact.
@@ -79,10 +79,10 @@ Do **not** remove these — they are used by retained methods:
 - `com.netflix.conductor.common.run.WorkflowSummary`
 - `com.netflix.conductor.model.WorkflowModel`
 
-## Edit set 2 — `AgentSpanDeploymentContractEndToEndTest.java`
+## Edit set 2 — `deployment contract test.java`
 
 Path:
-`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java`
+`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java`
 
 ### 2a. Delete the failing test method (currently lines 295–338)
 
@@ -119,7 +119,7 @@ usage remains in the file before removing it.
 ## Post-edit checklist
 
 1. `grep -R backfillLegacyAgentExecutionClassifiers` returns **no matches** in the repo.
-2. `grep -R AGENT_CLASSIFIER_BACKFILL_VERSION` returns **no matches** in the repo.
+2. `grep -R the agent classifier backfill version` returns **no matches** in the repo.
 3. `grep -R reindexAgentExecutions` and `grep -R backfillVersionOf` return **no matches**.
 4. No `indexDAO` / `IndexDAO` reference remains in `AgentService.java`.
 5. No `java.lang.reflect.Method` reference remains in the test file.

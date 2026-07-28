@@ -8,6 +8,8 @@ Conductor Skills teaches your AI coding agent to create, run, monitor, and manag
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
+For a source-backed technical map that any assistant can consume, start with [Conductor for AI assistants](../ai/conductor-for-ai-assistants.md) and [/llms.txt](../../llms.txt). The full context is generated from canonical docs at [/llms-full.txt](../../llms-full.txt).
+
 
 ## Install
 
@@ -68,7 +70,7 @@ This walkthrough shows how to build a complete application using Conductor as th
 
 ### Step 1: Create the workflow
 
-> *"Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a WAIT task before payment so a human can review high-value orders."*
+> *"Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a HUMAN task before payment so a human can review high-value orders."*
 
 Your agent creates the workflow definition:
 
@@ -108,14 +110,17 @@ Your agent creates the workflow definition:
       "name": "review_gate",
       "taskReferenceName": "review_gate",
       "type": "SWITCH",
-      "evaluatorType": "javascript",
-      "expression": "$.workflow.input.totalAmount > 500 ? 'needs_review' : 'auto_approve'",
+      "evaluatorType": "graaljs",
+      "expression": "$.totalAmount > 500 ? 'needs_review' : 'auto_approve'",
+      "inputParameters": {
+        "totalAmount": "${workflow.input.totalAmount}"
+      },
       "decisionCases": {
         "needs_review": [
           {
             "name": "human_review",
             "taskReferenceName": "review",
-            "type": "WAIT",
+            "type": "HUMAN",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "amount": "${workflow.input.totalAmount}"
@@ -278,6 +283,6 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 ## Next steps
 
 - **[conductor-skills repository](https://github.com/conductor-oss/conductor-skills)** &mdash; Full documentation, more examples, and source code.
-- **[Quickstart](../../quickstart/index.md)** &mdash; Get a Conductor server running to use with your agent.
+- **[Quickstart](../../quickstart/first-workflow.md)** &mdash; Get a Conductor server running to use with your agent.
 - **[AI & Agents](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
 - **[Client SDKs](../../documentation/clientsdks/index.md)** &mdash; Language SDKs for writing workers and programmatic access.

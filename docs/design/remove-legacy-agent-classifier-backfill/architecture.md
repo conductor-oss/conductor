@@ -20,10 +20,10 @@ Two comments from `@v1r3n` on the PR:
 1. A failing integration test:
 
    ```
-   AgentSpanDeploymentContractEndToEndTest > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
+   deployment contract test > legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds() FAILED
        java.lang.NoSuchMethodException:
-       org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
-           at AgentSpanDeploymentContractEndToEndTest.java:328
+       embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
+           at deployment contract test.java:328
    ```
 
 2. > do not add back `backfillLegacyAgentExecutionClassifiers` method. This method
@@ -65,7 +65,7 @@ Unchanged by this design. For context only:
 | Concern | Technology |
 |---|---|
 | Language / build | Java 21, Gradle |
-| Module under change (prod) | `agentspan` |
+| Module under change (prod) | embedded agent runtime |
 | Module under change (test) | `test-harness` |
 | DI / lifecycle | Spring Boot (`@Component`, `@RequiredArgsConstructor`) |
 | Test framework | JUnit 5 (`@Test`), Testcontainers-backed integration harness |
@@ -79,8 +79,8 @@ exactly two files — the production class that declares it and the test that re
 it:
 
 ```
-agentspan/.../runtime/service/AgentService.java
-test-harness/.../integration/agent/AgentSpanDeploymentContractEndToEndTest.java
+embedded agent runtime/.../runtime/service/AgentService.java
+test-harness/.../integration/agent/deployment contract test.java
 ```
 
 There is **no Spring bean method, scheduled task, startup listener, REST endpoint, or
@@ -96,8 +96,8 @@ edits are deletions.
 
 | File | Change |
 |---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | Delete the backfill method, its two private helpers, the two constants (and their comment), the `indexDAO` field, and the now-unused `IndexDAO` import. |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test method and its now-unused `java.lang.reflect.Method` import. |
+| `embedded agent runtime service` | Delete the backfill method, its two private helpers, the two constants (and their comment), the `indexDAO` field, and the now-unused `IndexDAO` import. |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | Delete the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test method and its now-unused `java.lang.reflect.Method` import. |
 
 The exact, line-anchored edits are enumerated in [change-spec.md](./change-spec.md).
 The verification and test rationale are in [testing.md](./testing.md).
@@ -113,12 +113,12 @@ Every other document in this set refers to these symbols with exactly these name
 | `backfillLegacyAgentExecutionClassifiers()` | `private void` method | Rejected by reviewer; only caller is the deleted test. |
 | `reindexAgentExecutions(String agentName)` | `private void` method | Called only by the backfill method. |
 | `backfillVersionOf(Map<String, Object> metadata)` | `private static int` method | Called only by the backfill method. |
-| `AGENT_CLASSIFIER_BACKFILL_VERSION` | `private static final String` = `"agent_classifier_backfill_version"` | Read only by the removed methods. |
-| `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` | `private static final int` = `2` | Read only by the removed methods. |
+| `the agent classifier backfill version` | `private static final String` = `"agent_classifier_backfill_version"` | Read only by the removed methods. |
+| `the agent classifier backfill version_VALUE` | `private static final int` = `2` | Read only by the removed methods. |
 | `indexDAO` | `private final IndexDAO` field | Used only on the `indexWorkflow` line inside `reindexAgentExecutions`. |
 | `import com.netflix.conductor.dao.IndexDAO;` | import | Becomes unused once the field is removed. |
 
-### Symbols deleted from `AgentSpanDeploymentContractEndToEndTest`
+### Symbols deleted from `deployment contract test`
 
 | Symbol | Declared kind | Removal reason |
 |---|---|---|

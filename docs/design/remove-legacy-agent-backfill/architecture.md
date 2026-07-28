@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-This design addresses PR review feedback on the `agentspan` module. A prior commit
+This design addresses PR review feedback on the embedded agent runtime module. A prior commit
 (`code_subtask add-backfill-method`) reintroduced a private maintenance routine,
 `AgentService.backfillLegacyAgentExecutionClassifiers()`, together with its supporting
 private helpers and constants, in order to satisfy an end-to-end test that invokes the
@@ -16,12 +16,12 @@ method reflectively.
 The reviewer (@v1r3n) gave two explicit, mutually reinforcing instructions:
 
 1. Fix the failing test
-   `AgentSpanDeploymentContractEndToEndTest.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`,
+   `deployment contract test.legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()`,
    which fails with:
 
    ```
    java.lang.NoSuchMethodException:
-     org.conductoross.conductor.ai.agentspan.runtime.service.AgentService.backfillLegacyAgentExecutionClassifiers()
+     embedded agent runtime service.backfillLegacyAgentExecutionClassifiers()
    ```
 
 2. **Do not add `backfillLegacyAgentExecutionClassifiers` back.** This method must not
@@ -53,7 +53,7 @@ This is a **deletion-only** change. No new behavior, types, or endpoints are int
   that is unrelated to the backfill routine.
 - Reintroducing the backfill under a different name or as public API. Explicitly
   forbidden by the review.
-- Modifying other tests in `AgentSpanDeploymentContractEndToEndTest` or any other test
+- Modifying other tests in `deployment contract test` or any other test
   class.
 - The pre-existing `docs/design/architecture.md` / `docs/design/testing.md` — left
   untouched.
@@ -61,7 +61,7 @@ This is a **deletion-only** change. No new behavior, types, or endpoints are int
 ## 3. Tech stack (context only)
 
 - **Language / build:** Java 21, Gradle.
-- **Affected modules:** `agentspan` (production code) and `test-harness` (end-to-end
+- **Affected modules:** embedded agent runtime (production code) and `test-harness` (end-to-end
   test).
 - **Frameworks in play at the touch points:** Spring (`@Component`,
   `@ConditionalOnProperty`), Lombok (`@RequiredArgsConstructor`, `@Slf4j`), JUnit 5 /
@@ -76,8 +76,8 @@ removals.
 
 | File | Module | Change |
 |---|---|---|
-| `agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java` | `agentspan` | Remove the backfill method, its two private helper methods, its two private constants, and the now-unused `IndexDAO` field + import (see §5). |
-| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java` | `test-harness` | Remove the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test method and the now-unused `java.lang.reflect.Method` import (see §5). |
+| `embedded agent runtime service` | embedded agent runtime | Remove the backfill method, its two private helper methods, its two private constants, and the now-unused `IndexDAO` field + import (see §5). |
+| `test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java` | `test-harness` | Remove the `legacyAgentClassifierBackfillUsesConcreteExecutionTimeBounds()` test method and the now-unused `java.lang.reflect.Method` import (see §5). |
 
 Design docs created by this change (all under `docs/design/remove-legacy-agent-backfill/`):
 
@@ -92,14 +92,14 @@ Design docs created by this change (all under `docs/design/remove-legacy-agent-b
 Every supporting document references the symbols below **verbatim**. These are the names
 as they exist in the current source.
 
-### 5.1 In `AgentService.java` (module `agentspan`)
+### 5.1 In `AgentService.java` (module embedded agent runtime)
 
 Remove all of the following, and **nothing else**:
 
 | Symbol | Kind | Notes |
 |---|---|---|
-| `AGENT_CLASSIFIER_BACKFILL_VERSION` | `private static final String` constant (value `"agent_classifier_backfill_version"`) | Only referenced by the backfill code being removed. |
-| `AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE` | `private static final int` constant (value `2`) | Only referenced by the backfill code being removed. Remove its preceding explanatory comment too. |
+| `the agent classifier backfill version` | `private static final String` constant (value `"agent_classifier_backfill_version"`) | Only referenced by the backfill code being removed. |
+| `the agent classifier backfill version_VALUE` | `private static final int` constant (value `2`) | Only referenced by the backfill code being removed. Remove its preceding explanatory comment too. |
 | `backfillLegacyAgentExecutionClassifiers()` | `private void` method (with its Javadoc) | The method named in the `NoSuchMethodException`. Must not be re-added. |
 | `backfillVersionOf(Map<String, Object> metadata)` | `private static int` method | Helper used only by the backfill method. |
 | `reindexAgentExecutions(String agentName)` | `private void` method | Helper used only by the backfill method. |
@@ -118,7 +118,7 @@ confirming `indexDAO` has no remaining references in `AgentService` once
 `reindexAgentExecutions` is deleted. If any other reference exists, keep the field and
 its import.
 
-### 5.2 In `AgentSpanDeploymentContractEndToEndTest.java` (module `test-harness`)
+### 5.2 In `deployment contract test.java` (module `test-harness`)
 
 Remove:
 

@@ -3,7 +3,7 @@
    Inter × IBM Plex Mono
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=IBM+Plex+Mono:wght@400;500;600&family=Patrick+Hand&display=swap');
 
 /* ---------- Tokens — Light (default) ---------- */
 :root {
@@ -117,9 +117,60 @@ body {
   letter-spacing: 0;
   opacity: 1 !important;
 }
+.md-tabs__item--active > .md-tabs__link,
 .md-tabs__link--active,
 .md-tabs__link:hover {
   color: var(--c-text) !important;
+}
+.md-tabs__item--active > .md-tabs__link {
+  border-bottom: 2px solid var(--c-accent);
+  font-weight: 600;
+}
+
+/* ---------- Quickstart language pickers ---------- */
+.agent-language-picker,
+.worker-language-picker {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg-secondary);
+}
+.agent-language-picker > label,
+.worker-language-picker > label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.agent-language-picker > select,
+.worker-language-picker > select {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+}
+.agent-language-picker > p,
+.worker-language-picker > p {
+  margin: 6px 0 16px !important;
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+.agent-language-guide > :last-child,
+.worker-language-guide > :last-child {
+  margin-bottom: 0;
+}
+.agent-language-guide__heading,
+.worker-language-guide__heading {
+  margin: 20px 0 12px !important;
+  color: var(--c-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 /* ---------- Typography (docs pages) ---------- */
@@ -187,6 +238,1031 @@ body {
   text-decoration-color: rgba(59, 130, 246, 0.6);
 }
 
+/* ---------- Compact page summaries ---------- */
+.page-summary {
+  display: flex;
+  align-items: flex-start;
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: linear-gradient(115deg, rgba(59, 130, 246, 0.1), transparent 55%), var(--c-bg-secondary);
+}
+.page-summary__text {
+  margin: 0 !important;
+  color: var(--c-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.page-summary__source {
+  margin: 8px 0 0 !important;
+  font-size: 13px;
+}
+
+/* ---------- Concept heroes ---------- */
+.concept-hero {
+  --concept-accent: var(--c-blue);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(260px, 0.95fr);
+  align-items: center;
+  gap: 28px;
+  margin: 24px 0 30px;
+  padding: 26px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--concept-accent) 15%, transparent), transparent 62%), var(--c-bg-secondary);
+}
+.concept-hero--workflows { --concept-accent: #2563eb; }
+.concept-hero--tasks { --concept-accent: #7c3aed; }
+.concept-hero--workers { --concept-accent: #0f766e; }
+.concept-hero--event-bus { --concept-accent: #ea580c; }
+.concept-hero--cookbook { --concept-accent: #0f766e; }
+.concept-hero__content > :last-child {
+  margin-bottom: 0;
+}
+.concept-hero__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--concept-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.concept-hero h2 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.2;
+}
+.concept-hero__graphic {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  color: var(--concept-accent);
+}
+.concept-hero__node,
+.concept-hero__outcome-box {
+  fill: var(--c-bg);
+  stroke: var(--c-text-muted);
+  stroke-width: 2;
+}
+.concept-hero__node--accent {
+  fill: color-mix(in srgb, var(--concept-accent) 14%, var(--c-bg));
+  stroke: var(--concept-accent);
+}
+.concept-hero__outcome {
+  fill: color-mix(in srgb, var(--concept-accent) 14%, var(--c-bg));
+  stroke: var(--concept-accent);
+  stroke-width: 2;
+}
+.concept-hero__line {
+  fill: none;
+  stroke: var(--c-text-muted);
+  stroke-width: 2;
+}
+.concept-hero__line--inside {
+  stroke: var(--concept-accent);
+  stroke-width: 3;
+}
+.concept-hero__check {
+  fill: none;
+  stroke: var(--concept-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+.concept-hero__label {
+  fill: var(--c-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.concept-hero__detail {
+  fill: var(--c-text-muted);
+  font-size: 11px;
+}
+.concept-hero--event-bus .event-hero__node--broker {
+  fill: color-mix(in srgb, #2563eb 11%, var(--c-bg));
+  stroke: #2563eb;
+}
+.concept-hero--event-bus .event-hero__node--action {
+  fill: color-mix(in srgb, #0f766e 11%, var(--c-bg));
+  stroke: #0f766e;
+}
+.concept-hero--event-bus .event-hero__line--dashed {
+  stroke-dasharray: 5 4;
+}
+.event-bus-hero__visual {
+  display: grid;
+  min-width: 0;
+  gap: 14px;
+}
+.event-bus-hero__brokers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.event-bus-hero__broker {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 700;
+}
+.event-bus-hero__broker img {
+  display: block;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.event-bus-hero__broker span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.event-bus-hero__flow {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+.event-bus-hero__flow b {
+  color: var(--concept-accent);
+  font-size: 16px;
+}
+.event-bus-hero__flow strong {
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--concept-accent) 15%, var(--c-bg));
+  color: var(--c-text);
+  font-size: 12px;
+  line-height: 1.25;
+}
+.event-bus-hero__flow small {
+  color: var(--c-text-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+.event-bus-recipes {
+  margin: 18px 0 0;
+}
+.event-bus-recipes__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 15px;
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-sm);
+  background: var(--c-accent);
+  color: #fff !important;
+  font-weight: 700;
+  text-decoration: none !important;
+}
+.event-bus-recipes__link:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+}
+
+/* ---------- Cookbook landing ---------- */
+.cookbook-hero__sources rect {
+  fill: var(--c-bg);
+  stroke: var(--c-text-muted);
+  stroke-width: 2;
+}
+.cookbook-hero__sources text {
+  fill: var(--c-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.cookbook-grid {
+  --cookbook-accent: #0f766e;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+.cookbook-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg-secondary);
+  color: var(--c-text) !important;
+  text-decoration: none !important;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.cookbook-card:hover {
+  border-color: var(--cookbook-accent);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+.cookbook-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cookbook-accent) 35%, transparent);
+  outline-offset: 3px;
+}
+.cookbook-card__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--cookbook-accent) 14%, var(--c-bg));
+  color: var(--cookbook-accent);
+}
+.cookbook-card__icon svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.cookbook-card__body {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.cookbook-card__body strong {
+  color: var(--c-text);
+  font-size: 16px;
+  line-height: 1.25;
+}
+.cookbook-card__body span {
+  color: var(--c-text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.cookbook-card__arrow {
+  color: var(--cookbook-accent);
+  font-size: 21px;
+  font-weight: 700;
+}
+
+/* ---------- Agent discovery ---------- */
+.agent-concepts-callout,
+.framework-hero {
+  margin: 24px 0 30px;
+  padding: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), transparent 58%), var(--c-bg-secondary);
+}
+.agent-concepts-callout h2,
+.framework-hero h2 {
+  margin: 0 0 8px;
+}
+.agent-concepts-callout p:last-child,
+.framework-hero p:last-child {
+  margin-bottom: 0;
+}
+.agent-concepts-kicker,
+.framework-hero__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--c-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.framework-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.framework-logo-grid--quickstart {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.framework-logo-card {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+  color: var(--c-text) !important;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.framework-logo-card:hover {
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-card);
+  color: var(--c-text) !important;
+  transform: translateY(-2px);
+}
+.framework-logo-card:focus-visible {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 3px;
+}
+.framework-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+.framework-logo--wide {
+  width: 104px;
+}
+.framework-heading-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 7px;
+  vertical-align: -5px;
+}
+.framework-heading-logo--wide {
+  width: 74px;
+}
+[data-md-color-scheme="slate"] .framework-logo,
+[data-md-color-scheme="slate"] .framework-heading-logo {
+  filter: brightness(0) invert(1);
+}
+.integration-hero {
+  --integration-accent: var(--c-accent);
+  margin: 24px 0 30px;
+  padding: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--integration-accent) 16%, transparent), transparent 58%), var(--c-bg-secondary);
+}
+.integration-hero--a2a { --integration-accent: #2563eb; }
+.integration-hero--mcp { --integration-accent: #7c3aed; }
+.integration-hero--hitl { --integration-accent: #00a6a6; }
+.integration-hero--durable { --integration-accent: #f97316; }
+.integration-hero--workflow { --integration-accent: #2563eb; }
+.integration-hero--first-agent { --integration-accent: #7c3aed; }
+.integration-hero--agents { --integration-accent: var(--c-accent); }
+.integration-hero--guardrails { --integration-accent: #0f766e; }
+.integration-hero--evals { --integration-accent: #7e22ce; }
+.integration-hero h2 {
+  margin: 0 0 8px;
+}
+.integration-hero__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 46px;
+  margin-bottom: 14px;
+}
+.integration-hero__identity--conductor {
+  justify-content: flex-start;
+}
+.integration-hero__logo {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+.integration-hero__logo--conductor {
+  width: 132px;
+}
+.integration-hero__connector {
+  color: var(--integration-accent);
+  font-size: 24px;
+  font-weight: 700;
+}
+.integration-hero__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--integration-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.integration-hero__diagram {
+  display: block;
+  width: 100%;
+  margin: 22px 0 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+}
+
+/* ---------- Agents & AI runtime hero ---------- */
+.agent-runtime-hero {
+  --agent-authoring: #c2410c;
+  --agent-brain: #7c3aed;
+  --agent-runtime: #2563eb;
+  --agent-hands: #0f766e;
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+  align-items: center;
+  gap: 28px;
+  margin: 24px 0 34px;
+  padding: 26px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--agent-brain) 12%, transparent), transparent 44%),
+    linear-gradient(315deg, color-mix(in srgb, var(--agent-hands) 12%, transparent), transparent 44%),
+    var(--c-bg-secondary);
+}
+.agent-runtime-hero__content > :last-child {
+  margin-bottom: 0;
+}
+.agent-runtime-hero__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--agent-runtime);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.agent-runtime-hero h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 2.7vw, 34px);
+  line-height: 1.16;
+}
+.agent-runtime-hero__paths {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+.agent-runtime-hero__paths a {
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--agent-runtime) 42%, var(--c-border));
+  border-radius: 999px;
+  background: var(--c-bg);
+  color: var(--agent-runtime);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+}
+.agent-runtime-hero__paths a:hover {
+  border-color: var(--agent-runtime);
+  color: var(--agent-runtime);
+}
+.agent-runtime-hero__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 16px;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.agent-runtime-hero__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.agent-runtime-hero__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.agent-runtime-hero__swatch--authoring { background: var(--agent-authoring); }
+.agent-runtime-hero__swatch--brain { background: var(--agent-brain); }
+.agent-runtime-hero__swatch--runtime { background: var(--agent-runtime); }
+.agent-runtime-hero__swatch--hands { background: var(--agent-hands); }
+.agent-runtime-hero__diagram {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+.agent-runtime-hero__lane-label,
+.agent-runtime-hero__compile {
+  fill: var(--c-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.agent-runtime-hero__compile {
+  fill: var(--agent-runtime);
+  font-size: 10px;
+}
+.agent-runtime-hero__brain-box {
+  fill: color-mix(in srgb, var(--agent-brain) 10%, var(--c-bg));
+  stroke: color-mix(in srgb, var(--agent-brain) 55%, var(--c-border));
+  stroke-width: 1.5;
+}
+.agent-runtime-hero__authoring-box {
+  fill: color-mix(in srgb, var(--agent-authoring) 9%, var(--c-bg));
+  stroke: color-mix(in srgb, var(--agent-authoring) 55%, var(--c-border));
+  stroke-width: 1.5;
+}
+.agent-runtime-hero__authoring-card {
+  fill: var(--c-bg);
+  stroke: var(--agent-authoring);
+  stroke-width: 1.5;
+}
+.agent-runtime-hero__brain-card {
+  fill: var(--c-bg);
+  stroke: var(--agent-brain);
+  stroke-width: 1.5;
+}
+.agent-runtime-hero__runtime-box {
+  fill: color-mix(in srgb, var(--agent-runtime) 13%, var(--c-bg));
+  stroke: var(--agent-runtime);
+  stroke-width: 2;
+}
+.agent-runtime-hero__hands-card {
+  fill: color-mix(in srgb, var(--agent-hands) 10%, var(--c-bg));
+  stroke: color-mix(in srgb, var(--agent-hands) 72%, var(--c-border));
+  stroke-width: 1.5;
+}
+.agent-runtime-hero__label,
+.agent-runtime-hero__runtime-title {
+  fill: var(--c-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.agent-runtime-hero__runtime-title {
+  fill: var(--agent-runtime);
+  font-size: 15px;
+}
+.agent-runtime-hero__runtime-title--brain { fill: var(--agent-brain); }
+.agent-runtime-hero__detail,
+.agent-runtime-hero__runtime-detail {
+  fill: var(--c-text-muted);
+  font-size: 10px;
+}
+.agent-runtime-hero__runtime-detail { font-size: 11px; }
+.agent-runtime-hero__arrow,
+.agent-runtime-hero__runtime-rule {
+  fill: none;
+  stroke: var(--c-text-muted);
+  stroke-width: 1.75;
+}
+.agent-runtime-hero__arrow--runtime,
+.agent-runtime-hero__runtime-rule {
+  stroke: var(--agent-runtime);
+}
+.agent-runtime-hero__arrowhead { fill: var(--c-text-muted); }
+.agent-runtime-hero__arrowhead--runtime { fill: var(--agent-runtime); }
+.agent-runtime-hero__turn-loop {
+  fill: none;
+  stroke: var(--agent-runtime);
+  stroke-dasharray: 5 4;
+  stroke-width: 1.75;
+}
+
+/* ---------- AI Cookbook hero ---------- */
+.ai-cookbook-hero {
+  --ai-cookbook-input: #0f766e;
+  --ai-cookbook-ai: #7c3aed;
+  --ai-cookbook-control: #2563eb;
+  --ai-cookbook-outcome: #c2410c;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(350px, 1.1fr);
+  align-items: center;
+  gap: 28px;
+  margin: 24px 0 34px;
+  padding: 26px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ai-cookbook-ai) 12%, transparent), transparent 45%),
+    linear-gradient(315deg, color-mix(in srgb, var(--ai-cookbook-input) 12%, transparent), transparent 45%),
+    var(--c-bg-secondary);
+}
+.ai-cookbook-hero__content > :last-child { margin-bottom: 0; }
+.ai-cookbook-hero__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--ai-cookbook-control);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ai-cookbook-hero h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 2.7vw, 34px);
+  line-height: 1.16;
+}
+.ai-cookbook-hero__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 16px;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ai-cookbook-hero__legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ai-cookbook-hero__swatch { width: 9px; height: 9px; border-radius: 50%; }
+.ai-cookbook-hero__swatch--input { background: var(--ai-cookbook-input); }
+.ai-cookbook-hero__swatch--ai { background: var(--ai-cookbook-ai); }
+.ai-cookbook-hero__swatch--control { background: var(--ai-cookbook-control); }
+.ai-cookbook-hero__swatch--outcome { background: var(--ai-cookbook-outcome); }
+.ai-cookbook-hero__diagram { display: block; width: 100%; min-width: 0; overflow: visible; }
+.ai-cookbook-hero__lane,
+.ai-cookbook-hero__caption {
+  fill: var(--c-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+.ai-cookbook-hero__caption { fill: var(--ai-cookbook-control); letter-spacing: 0.02em; }
+.ai-cookbook-hero__family { fill: var(--c-bg); stroke-width: 1.5; }
+.ai-cookbook-hero__family--workflows { stroke: var(--ai-cookbook-ai); }
+.ai-cookbook-hero__family--agents { stroke: var(--ai-cookbook-control); }
+.ai-cookbook-hero__starter { fill: color-mix(in srgb, var(--ai-cookbook-control) 12%, var(--c-bg)); stroke: var(--ai-cookbook-control); stroke-width: 2; }
+.ai-cookbook-hero__model { fill: color-mix(in srgb, var(--ai-cookbook-ai) 11%, var(--c-bg)); stroke: var(--ai-cookbook-ai); stroke-width: 1.25; }
+.ai-cookbook-hero__policy { fill: color-mix(in srgb, var(--ai-cookbook-control) 13%, var(--c-bg)); stroke: var(--ai-cookbook-control); stroke-width: 1.25; }
+.ai-cookbook-hero__outcome { fill: color-mix(in srgb, var(--ai-cookbook-outcome) 11%, var(--c-bg)); stroke: var(--ai-cookbook-outcome); stroke-width: 1.5; }
+.ai-cookbook-hero__label,
+.ai-cookbook-hero__starter-title { fill: var(--c-text); font-size: 12px; font-weight: 700; }
+.ai-cookbook-hero__starter-title { fill: var(--ai-cookbook-control); font-size: 16px; }
+.ai-cookbook-hero__detail { fill: var(--c-text-muted); font-size: 10px; }
+.ai-cookbook-hero__policy-text { fill: var(--ai-cookbook-control); font-size: 10px; font-weight: 700; }
+.ai-cookbook-hero__arrow { fill: none; stroke: var(--c-text-muted); stroke-width: 1.75; }
+.ai-cookbook-hero__arrow--control { stroke: var(--ai-cookbook-control); }
+.ai-cookbook-hero__arrowhead { fill: var(--c-text-muted); }
+.ai-cookbook-hero__arrowhead--control { fill: var(--ai-cookbook-control); }
+.ai-cookbook-hero__check { fill: none; stroke: var(--ai-cookbook-outcome); stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+
+/* ---------- Workflow diagrams ---------- */
+.md-typeset .workflow-diagram {
+  display: grid;
+  place-items: center;
+  margin: 22px 0 28px;
+  padding: 18px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--c-blue) 7%, transparent), transparent 52%),
+    var(--c-bg-secondary);
+  box-shadow: var(--shadow-card);
+}
+.md-typeset .workflow-diagram .mermaid {
+  width: 100%;
+  margin: 0;
+  background: transparent;
+}
+/* Material's mermaid themeCSS forces label text to --md-mermaid-font-family.
+   Custom properties inherit into the closed shadow root Material renders the
+   SVG into, so overriding the variable here is the only way to restyle
+   diagram type. Pairs the handwriting face with look: handDrawn (main.py). */
+.md-typeset .workflow-diagram {
+  --md-mermaid-font-family: "Patrick Hand", "Segoe Print", cursive;
+}
+.md-typeset .workflow-diagram .mermaid svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 1180px;
+  min-width: 520px;
+  margin: 0 auto;
+}
+@media screen and (max-width: 600px) {
+  .md-typeset .workflow-diagram { padding: 14px; }
+  .md-typeset .workflow-diagram .mermaid svg { min-width: 440px; }
+}
+/* Subgraph fill/border are set via clusterBkg and clusterBorder in
+   MERMAID_WORKFLOW_INIT (main.py), not here. */
+
+/* ---------- Agent concepts decision guide ---------- */
+.agent-concepts-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
+  align-items: center;
+  gap: 26px;
+  margin: 22px 0 30px;
+  padding: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--c-blue) 10%, transparent), transparent 48%),
+    linear-gradient(315deg, color-mix(in srgb, var(--c-accent) 10%, transparent), transparent 48%),
+    var(--c-bg-secondary);
+}
+.agent-concepts-hero__content > :last-child { margin-bottom: 0; }
+.agent-concepts-hero__eyebrow,
+.agent-concepts-path__eyebrow {
+  margin: 0 0 6px !important;
+  color: var(--c-blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.agent-concepts-hero h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1.16;
+}
+.agent-concepts-hero__diagram {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+}
+.agent-concepts-hero__lane {
+  fill: var(--c-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.agent-concepts-hero__source { fill: var(--c-bg); stroke-width: 1.5; }
+.agent-concepts-hero__source--workflow { stroke: var(--c-blue); }
+.agent-concepts-hero__source--sdk { stroke: var(--c-accent); }
+.agent-concepts-hero__source--a2a { stroke: #0f766e; }
+.agent-concepts-hero__conductor {
+  fill: color-mix(in srgb, var(--c-blue) 11%, var(--c-bg));
+  stroke: var(--c-blue);
+  stroke-width: 2;
+}
+.agent-concepts-hero__outcome {
+  fill: color-mix(in srgb, var(--c-accent) 10%, var(--c-bg));
+  stroke: var(--c-accent);
+  stroke-width: 1.5;
+}
+.agent-concepts-hero__title,
+.agent-concepts-hero__conductor-title {
+  fill: var(--c-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.agent-concepts-hero__conductor-title { fill: var(--c-blue); font-size: 18px; }
+.agent-concepts-hero__detail,
+.agent-concepts-hero__conductor-detail {
+  fill: var(--c-text-muted);
+  font-size: 10px;
+}
+.agent-concepts-hero__conductor-detail { font-size: 11px; }
+.agent-concepts-hero__arrow,
+.agent-concepts-hero__rule {
+  fill: none;
+  stroke: var(--c-text-muted);
+  stroke-width: 1.75;
+}
+.agent-concepts-hero__arrow--out,
+.agent-concepts-hero__rule { stroke: var(--c-blue); }
+.agent-concepts-hero__arrowhead { fill: var(--c-text-muted); }
+.agent-concepts-paths,
+.agent-concepts-next-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 28px;
+}
+.agent-concepts-path,
+.agent-concepts-next-step {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg-secondary);
+  overflow-wrap: anywhere;
+}
+.agent-concepts-path h3 {
+  margin: 0 0 12px;
+  color: var(--c-text);
+  font-size: 17px;
+}
+.agent-concepts-path dl {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 14px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.agent-concepts-path dt { color: var(--c-text); font-weight: 700; }
+.agent-concepts-path dd {
+  margin: 0 0 7px;
+  margin-left: 0 !important;
+  margin-inline-start: 0;
+  padding-left: 0 !important;
+  padding-inline-start: 0;
+  color: var(--c-text-muted);
+}
+.agent-concepts-path a {
+  display: inline-block;
+  margin-top: auto;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.agent-concepts-next-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--c-text-muted) !important;
+  font-size: 13px;
+  line-height: 1.45;
+  text-decoration: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.agent-concepts-next-step strong { color: var(--c-text); font-size: 15px; }
+.agent-concepts-next-step:hover {
+  border-color: var(--c-blue);
+  box-shadow: var(--shadow-card);
+  color: var(--c-text-muted) !important;
+  transform: translateY(-2px);
+}
+.agent-concepts-next-step:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--c-blue) 40%, transparent);
+  outline-offset: 3px;
+}
+
+/* ---------- Agents & AI overview cards ---------- */
+.agent-overview-grid {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0 28px;
+}
+.agent-overview-grid--three,
+.agent-overview-grid--outcomes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.agent-overview-grid--principles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.agent-overview-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+  padding: 17px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg-secondary);
+  color: var(--c-text-muted) !important;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.agent-overview-card > strong {
+  color: var(--c-text);
+  font-size: 15px;
+  line-height: 1.3;
+}
+.agent-overview-card--link {
+  text-decoration: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.agent-overview-card--link:hover {
+  border-color: var(--c-blue);
+  box-shadow: var(--shadow-card);
+  color: var(--c-text-muted) !important;
+  transform: translateY(-2px);
+}
+.agent-overview-card--link:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--c-blue) 40%, transparent);
+  outline-offset: 3px;
+}
+.agent-overview-card__kicker,
+.agent-overview-card__number {
+  color: var(--c-blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.agent-overview-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  margin-top: auto;
+  padding-top: 5px;
+}
+.agent-overview-card__links a {
+  font-weight: 700;
+}
+.integration-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.integration-action-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.integration-action-grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.integration-action-card {
+  display: flex;
+  min-height: 102px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+  color: var(--c-text-muted) !important;
+  font-size: 13px;
+  line-height: 1.4;
+  text-decoration: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.integration-action-card:hover {
+  border-color: var(--integration-accent);
+  box-shadow: var(--shadow-card);
+  color: var(--c-text-muted) !important;
+  transform: translateY(-2px);
+}
+.integration-action-card:focus-visible {
+  outline: 3px solid var(--integration-accent);
+  outline-offset: 3px;
+}
+.integration-action-card__title {
+  color: var(--c-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+.agent-framework-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.agent-framework-strip__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+.agent-framework-strip__item img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+[data-md-color-scheme="slate"] .integration-hero__logo,
+[data-md-color-scheme="slate"] .agent-framework-strip__item img {
+  filter: brightness(0) invert(1);
+}
+@media screen and (max-width: 44.9375em) {
+  .framework-logo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .integration-action-grid,
+  .integration-action-grid--three,
+  .integration-action-grid--four,
+  .cookbook-grid,
+  .agent-concepts-paths,
+  .agent-concepts-next-steps,
+  .agent-overview-grid--three,
+  .agent-overview-grid--principles,
+  .agent-overview-grid--outcomes {
+    grid-template-columns: 1fr;
+  }
+  .agent-concepts-callout,
+  .framework-hero,
+  .integration-hero,
+  .concept-hero,
+  .agent-concepts-hero,
+  .agent-runtime-hero {
+    padding: 20px;
+  }
+  .agent-runtime-hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .ai-cookbook-hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .agent-concepts-hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .concept-hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 /* Code */
 .md-typeset code {
   font-family: var(--font-mono) !important;
@@ -240,8 +1316,31 @@ body {
   border-color: var(--c-border-dim);
   padding: 7px 12px;
 }
+.md-typeset table:not([class]) code {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
 .md-typeset table:not([class]) tbody tr:hover {
   background: rgba(255,255,255,0.03);
+}
+
+/* Keep schema filenames intact while letting relationship descriptions use the remaining space. */
+.md-typeset h2.schema-table-heading + table {
+  table-layout: auto;
+  width: 100%;
+}
+.md-typeset h2.schema-table-heading + table th:first-child,
+.md-typeset h2.schema-table-heading + table td:first-child {
+  min-width: 15rem;
+  white-space: nowrap;
+}
+.md-typeset h2.schema-table-heading + table td:first-child a,
+.md-typeset h2.schema-table-heading + table td:first-child a code {
+  display: inline-block;
+  overflow-wrap: normal !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
 }
 
 /* Sidebar */
@@ -278,6 +1377,39 @@ label.md-nav__link[for] {
   color: var(--c-text-dim) !important;
   background: transparent !important;
 }
+
+/* Material only marks nav groups as --section inside the *active* tab's
+   subtree. Pages linked by absolute URL (quickstart/first-agent.html?nav=...)
+   match no nav entry, so no tab is active and every group falls back to a
+   collapsible toggle — a chevron and an indent that appear on no other page.
+   navigation.expand keeps these groups open anyway, so render nested groups
+   the same way as sections and drop the decorative toggle. */
+.md-sidebar--primary .md-nav__item--nested > .md-nav__link,
+.md-sidebar--primary .md-nav__item--nested > label.md-nav__link {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-text-dim) !important;
+  cursor: default;
+}
+.md-sidebar--primary .md-nav__item--nested > .md-nav__link .md-nav__icon {
+  display: none !important;
+}
+.md-sidebar--primary .md-nav__item--nested > .md-nav,
+.md-sidebar--primary .md-nav__item--nested > .md-nav > .md-nav__list {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* Material pins the section container (.md-nav__container) to the top of the
+   nav while its children scroll past. The rule above makes section links
+   transparent, which let those children render straight through the pinned
+   label. Restore an opaque background on the sticky element only. */
+.md-nav__item--section > .md-nav__link.md-nav__container,
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link.md-nav__container {
+  background: var(--c-bg) !important;
+}
 label.md-nav__link {
   font-size: 13px;
   background: transparent !important;
@@ -290,7 +1422,9 @@ label.md-nav__link {
 .md-nav--lifted .md-nav__title,
 .md-nav--lifted .md-nav[data-md-level="1"] > .md-nav__title,
 [data-md-level] > .md-nav__title {
-  background: transparent !important;
+  /* These titles are position:sticky in Material. A transparent background lets
+     nav items scroll *through* the label, so the background must stay opaque. */
+  background: var(--c-bg) !important;
   box-shadow: none !important;
   color: var(--c-text-dim) !important;
   font-size: 11px;
@@ -549,6 +1683,11 @@ label.md-nav__link {
   align-items: center;
   justify-content: center;
 }
+.hero > .home-journey-grid {
+  max-width: 700px;
+  margin: 20px auto 0;
+  text-align: left;
+}
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -701,66 +1840,82 @@ code.hero-terminal {
   color: var(--c-text-muted) !important;
 }
 
-/* ---------- Hero Two-Column (quickstart + AI card) ---------- */
-.hero > .hero-ai-card {
+/* ---------- Hero Conductor Skills install card ---------- */
+.hero > .hero-skills-card {
   margin-top: 32px;
-  max-width: 700px;
-  margin-left: auto;
-  margin-right: auto;
+  width: min(840px, calc(100vw - 64px));
+  max-width: none;
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
 }
-.hero-ai-card {
+.hero-skills-card {
   background: var(--c-bg-secondary);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   padding: 16px 24px;
+  text-align: center;
 }
-.hero-ai-header {
+.hero-skills-header {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
-.hero-ai-icon {
+.hero-skills-icon {
   color: var(--c-accent);
   flex-shrink: 0;
   line-height: 0;
 }
-.hero-ai-card h3 {
+.hero-skills-card h3 {
   font-family: var(--font-body) !important;
   font-size: 16px !important;
   font-weight: 600 !important;
   color: var(--c-text) !important;
   margin: 0 !important;
 }
-.hero-ai-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.hero-skills-description {
+  max-width: 540px;
+  margin: 0 auto 14px !important;
+  color: var(--c-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.hero-skills-card .highlight {
+  margin: 0 0 14px;
+  text-align: left;
+}
+.hero-skills-card .highlight pre {
+  margin: 0;
+}
+.hero-skills-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
-.hero-ai-item {
-  display: flex;
-  flex-direction: column;
-}
-.hero-ai-link {
+.hero-skills-link {
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--c-accent);
   text-decoration: none;
-  margin-bottom: 4px;
 }
-.hero-ai-link:hover {
+.hero-skills-link:hover {
   color: var(--c-accent-hover);
 }
-.hero-ai-sub {
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--c-text-muted);
-}
 @media (max-width: 700px) {
-  .hero-ai-body {
-    grid-template-columns: 1fr;
+  .hero > .hero-skills-card {
+    width: calc(100vw - 32px);
+  }
+  .hero-skills-card {
+    padding: 16px;
+  }
+  .hero-skills-actions {
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 
@@ -1437,7 +2592,7 @@ code.hero-terminal {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--c-text-dim) !important;
-  background: transparent !important;
+  background: var(--c-bg) !important;
   box-shadow: none !important;
   border-bottom: 1px solid var(--c-border-dim);
   padding: 0.3rem 0.6rem;
@@ -1565,6 +2720,40 @@ code.hero-terminal {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='12' fill='%23000'/%3E%3Ccircle cx='60' cy='60' r='34' fill='none' stroke='white' stroke-width='6'/%3E%3Ccircle cx='60' cy='24' r='5' fill='white'/%3E%3Crect x='46' y='48' width='28' height='6' rx='2' fill='white'/%3E%3Crect x='46' y='58' width='20' height='6' rx='2' fill='white'/%3E%3Crect x='46' y='68' width='10' height='6' rx='2' fill='white'/%3E%3Cline x1='58' y1='68' x2='74' y2='74' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
+.event-next-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .75rem;
+  margin: 1.25rem 0;
+}
+
+.event-next-steps a {
+  display: block;
+  padding: .85rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-bg-secondary);
+  color: var(--c-text) !important;
+  font-weight: 650;
+  text-decoration: none !important;
+}
+
+.event-next-steps a:hover { border-color: var(--c-accent); }
+
+.event-badge {
+  display: inline-block;
+  margin-left: .35rem;
+  padding: .08rem .38rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  color: var(--c-text-muted);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .sdk-grid {
@@ -1623,3 +2812,21 @@ code.hero-terminal {
 [data-md-color-scheme="slate"] .md-typeset pre > code .punctuation,
 [data-md-color-scheme="slate"] .md-typeset pre > code .operator { color: #a1a1aa !important; }
 [data-md-color-scheme="slate"] .md-typeset pre > code .ow { color: #fb923c !important; }
+/* Durable Adaptive Graphs launch card */
+.dag-proof-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: 1180px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border: 1px solid rgba(6, 214, 160, 0.42);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(6, 214, 160, 0.12), rgba(59, 130, 246, 0.08));
+}
+.dag-proof-card__eyebrow { margin: 0; color: #0f766e; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.dag-proof-card h2 { margin: .3rem 0 .6rem; }
+.dag-proof-card p { max-width: 700px; margin: 0; }
+.dag-proof-card__actions { display: flex; flex-wrap: wrap; gap: .75rem; min-width: 290px; }
+@media (max-width: 760px) { .dag-proof-card { align-items: flex-start; flex-direction: column; margin: 1rem; } .dag-proof-card__actions { min-width: 0; } }

@@ -4,6 +4,8 @@ description: "Task definition schema in Conductor — configure retry logic, exp
 
 # Task Definition
 
+For the complete machine-readable field contract, see [TaskDef.json](schemas.md#definition-objects).
+
 Task Definitions are used to register SIMPLE tasks (workers). Conductor maintains a registry of user task types. A task type MUST be registered before being used in a workflow.
 
 This should not be confused with [*Task Configurations*](workflowdef/index.md#task-configurations) which are part of the Workflow Definition, and are iterated in the `tasks` property in the definition.
@@ -20,7 +22,7 @@ This should not be confused with [*Task Configurations*](workflowdef/index.md#ta
 | retryDelaySeconds           | number             | Base delay before the first retry. The meaning varies by `retryLogic`.                                                                                                                                        | Defaults to 60 seconds                                                           |
 | maxRetryDelaySeconds        | number             | Maximum delay between retries, in seconds. Caps the computed delay for `EXPONENTIAL_BACKOFF` and `LINEAR_BACKOFF` so delays never grow beyond this value. `0` disables the cap.                              | Defaults to 0 (no cap). See [Retry Logic](#retry-logic)                          |
 | backoffJitterMs             | number             | Adds a random jitter of up to this many milliseconds to each retry delay. Spreads simultaneous retries across time to prevent thundering herd. `0` disables jitter.                                          | Defaults to 0 (no jitter). See [Retry Logic](#retry-logic)                       |
-| totalTimeoutSeconds         | number             | Maximum wall-clock time (in seconds) across all retry attempts combined. Once exceeded, the task fails immediately with no further retries, regardless of `retryCount`. `0` disables this limit.             | Defaults to 0 (no limit). See [Timeout scenarios](../../../devguide/architecture/tasklifecycle.md#total-timeout)  |
+| totalTimeoutSeconds         | number             | Maximum wall-clock time (in seconds) across all retry attempts combined. Once exceeded, the task fails immediately with no further retries, regardless of `retryCount`. `0` disables this limit.             | Defaults to 0 (no limit). See [Timeout scenarios](../../devguide/architecture/tasklifecycle.md#total-timeout)  |
 | timeoutPolicy               | string (enum)      | Task's timeout policy.                                                                                                                                                                                         | Defaults to `TIME_OUT_WF`; See [Timeout Policy](#timeout-policy)                 |
 | timeoutSeconds              | number             | Time in seconds, after which the task is marked as `TIMED_OUT` if it has not reached a terminal state after transitioning to `IN_PROGRESS` status for the first time.                                                                | No timeouts if set to 0                                                          |
 | responseTimeoutSeconds      | number             | If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure. | Defaults to 600                                                                 |
@@ -74,9 +76,6 @@ where `clamp` only applies when `maxRetryDelaySeconds > 0`.
 You have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set `concurrentExecLimit` to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.
 
 ### Task Rate Limits
-
-!!! note "Rate Limiting"
-    Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.
 
 * `rateLimitFrequencyInSeconds` and `rateLimitPerFrequency` should be used together.
 * `rateLimitFrequencyInSeconds` sets the "frequency window", i.e the `duration` to be used in `events per duration`. Eg: 1s, 5s, 60s, 300s etc.

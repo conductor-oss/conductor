@@ -13,7 +13,7 @@ with a repository-wide search before deleting. See `removal-architecture.md` §4
 ## 1. `AgentService.java`
 
 Path:
-`agentspan/src/main/java/org/conductoross/conductor/ai/agentspan/runtime/service/AgentService.java`
+`embedded agent runtime service`
 
 ### 1a. Delete the backfill method
 
@@ -36,11 +36,11 @@ Grep confirms each helper's only caller is inside
 ### 1c. Delete the two constants read only by the removed methods
 
 ```java
-private static final String AGENT_CLASSIFIER_BACKFILL_VERSION =
+private static final String the agent classifier backfill version =
         "agent_classifier_backfill_version";
 // Version 2 additionally reindexes generated router sub-workflows, which older compiler
 // output persisted as ordinary workflow executions.
-private static final int AGENT_CLASSIFIER_BACKFILL_VERSION_VALUE = 2;
+private static final int the agent classifier backfill version_VALUE = 2;
 ```
 
 Remove the two associated comment lines with them (current lines 64–68).
@@ -72,10 +72,10 @@ Verified against the current source. Removing any of these breaks compilation:
 > `executionDAO`, `SearchResult`, `WorkflowSummary`, or `WorkflowModel` as
 > removal candidates. They are live in the current source.
 
-## 2. `AgentSpanDeploymentContractEndToEndTest.java`
+## 2. `deployment contract test.java`
 
 Path:
-`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/AgentSpanDeploymentContractEndToEndTest.java`
+`test-harness/src/test/java/com/netflix/conductor/test/integration/agent/deployment contract test.java`
 
 ### 2a. Delete the test method
 
@@ -104,7 +104,7 @@ guiding rule governs.
 ## 3. Formatting and build
 
 - Run `./gradlew spotlessApply`.
-- Confirm compile: `./gradlew :agentspan:compileJava`.
+- Confirm compile: `./gradlew embedded agent runtime module (compileJava)`.
 - Confirm the test module compiles: `./gradlew :test-harness:compileTestJava`.
 
 ## Change budget

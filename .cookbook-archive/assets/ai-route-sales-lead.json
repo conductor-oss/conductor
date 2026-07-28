@@ -1,0 +1,19 @@
+{
+  "name": "ai_route_sales_lead",
+  "description": "Derived from ai/examples/36c-ai-route-sales-lead.json. Example child workflow for pricing and enterprise sales requests.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["request", "routingReason"],
+  "tasks": [
+    {
+      "name": "record_sales_route",
+      "taskReferenceName": "record_sales_route",
+      "type": "NOOP"
+    }
+  ],
+  "outputParameters": {
+    "route": "sales",
+    "request": "${workflow.input.request}",
+    "routingReason": "${workflow.input.routingReason}"
+  }
+}

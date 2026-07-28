@@ -1,10 +1,16 @@
 ---
-description: "Conductor REST API reference — complete endpoint documentation for workflow orchestration including metadata, execution management, task polling, bulk operations, and event handlers."
+description: "Conductor REST API reference — workflow orchestration and Conductor Agents endpoints for definitions, execution management, tasks, events, and durable agent control."
 ---
 
 # API Reference
 
-Conductor exposes a full REST API for managing workflow definitions, executions, tasks, and events.
+Conductor exposes public REST APIs for workflow definitions and executions, worker tasks, schedules, events, files, bulk operations, task domains, and Conductor Agents. The complete deployment-specific surface, including administration and UI-support endpoints, is available in Swagger.
+
+## Reference conventions
+
+- **Availability gates:** a route or task labeled with a property is registered only when that server property is enabled. Scheduler endpoints require the scheduler condition; AI task and Agent capabilities require their respective AI runtime configuration.
+- **Deprecation:** deprecated routes and task types are retained only for migration guidance. Use the documented replacement for new integrations.
+- **Definitions vs. runtime:** workflow/task definitions are reusable blueprints; workflow/task objects are individual execution records. See [Schemas](../configuration/schemas.md) and its direct source-schema links for the field-level contract.
 
 ## Base URL
 
@@ -77,8 +83,10 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
         "taskReferenceName": "hello_ref",
         "type": "HTTP",
         "inputParameters": {
-          "uri": "https://jsonplaceholder.typicode.com/posts/1",
-          "method": "GET"
+          "http_request": {
+            "uri": "https://jsonplaceholder.typicode.com/posts/1",
+            "method": "GET"
+          }
         }
       }
     ],
@@ -105,7 +113,10 @@ curl "http://localhost:8080/api/workflow/$WORKFLOW_ID"
 | **[Task](task.md)** | `/api/tasks` | Poll for tasks, update results, manage queues, view logs, search |
 | **[Bulk Operations](bulk.md)** | `/api/workflow/bulk` | Pause, resume, restart, retry, terminate, or remove workflows in batch |
 | **[Event Handlers](eventhandlers.md)** | `/api/event` | Create and manage event-driven workflow triggers |
+| **[Files](files.md)** | `/api/files` | Create workflow-scoped file handles and exchange signed upload/download URLs; requires file storage |
 | **[Task Domains](taskdomains.md)** | — | Route tasks to specific worker pools at runtime |
+| **[Scheduler](scheduler.md)** | `/api/scheduler` | Create, search, pause, resume, and bulk-manage schedules; requires `conductor.scheduler.enabled=true` |
+| **[Conductor Agents](agents.md)** | `/api/agent` | Compile, deploy, start, observe, and control SDK-authored durable agents; requires `agentspan.embedded=true` |
 
 ## Swagger UI
 
