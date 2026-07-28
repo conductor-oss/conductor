@@ -65,7 +65,7 @@ export default function WorkflowDefinitions() {
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
   const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch }: UseQueryResult<WorkflowDef[]> =
-    useWorkflowDefs();
+    useWorkflowDefs({}, "workflow");
   const [showAddTagDialog, setShowAddTagDialog] = useState(false);
   const [addTagDialogData, setAddTagDialogData] =
     useState<TagDialogProps | null>(null);
