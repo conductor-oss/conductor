@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -103,7 +104,15 @@ public class ApplicationExceptionMapperTest {
         assertLoggedAtWarn(new NotFoundException("resource not found"), status().isNotFound());
     }
 
-    private void assertLoggedAtWarn(RuntimeException exception, ResultMatcher expectedStatus)
+    @Test
+    public void testMethodNotSupportedMapsTo405() throws Exception {
+        // an unsupported HTTP method on an existing path must map to 405 (RFC 7231),
+        // not the default 500, so SDK GET-then-PUT-on-405 fallbacks keep working.
+        assertLoggedAtWarn(
+                new HttpRequestMethodNotSupportedException("GET"), status().isMethodNotAllowed());
+    }
+
+    private void assertLoggedAtWarn(Exception exception, ResultMatcher expectedStatus)
             throws Exception {
         // logger is a static mock reused across assertions; start each one clean.
         clearInvocations(logger);
