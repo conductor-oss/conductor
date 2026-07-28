@@ -597,8 +597,22 @@ jobs:
         run: |
           python -m pip install --quiet mcp-testkit || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
           nohup mcp-testkit --transport http --port 3001 > mcp-testkit.log 2>&1 &
-          for i in $(seq 1 15); do curl -sf http://localhost:3001/ >/dev/null 2>&1 && break; sleep 1; done
-          echo "mcp-testkit started (or unavailable; suites skip gracefully)"
+          # Readiness = "the port answers HTTP at all", NOT 2xx. mcp-testkit serves 404 on /,
+          # so `curl -sf` (which treats 404 as failure) never succeeded: the loop always ran
+          # all 15 iterations and the message below printed unconditionally, whether or not
+          # anything was listening. Drop -f and check we got a status line instead.
+          for i in $(seq 1 15); do
+            # Fallback outside the substitution: on connection failure curl already prints
+            # "000" AND exits non-zero, so `|| echo 000` inside would concatenate to "000000"
+            # and read as a live response. The `||` also keeps `bash -e` from aborting here.
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://localhost:3001/)" || code="000"
+            if [ "$code" != "000" ]; then echo "mcp-testkit responding (HTTP $code) after ~${i}s"; break; fi
+            if [ "$i" -eq 15 ]; then
+              echo "::warning::mcp-testkit did not respond within 15s — MCP suites will skip"
+              tail -20 mcp-testkit.log || true
+            fi
+            sleep 1
+          done
 
       - name: Start conductor server (SQLite)
         run: |
