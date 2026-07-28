@@ -97,6 +97,8 @@ nav:
     - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
     - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
     - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
+    - Saga & Compensation: devguide/cookbook/saga-compensation.md
+    - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
     - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
     - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
   - Event-Driven Orchestration:

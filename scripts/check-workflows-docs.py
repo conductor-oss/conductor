@@ -85,6 +85,8 @@ def check_cookbook_nav() -> None:
         "devguide/cookbook/dynamic-parallelism.md",
         "devguide/cookbook/wait-and-timers.md",
         "devguide/cookbook/task-timeouts-and-retries.md",
+        "devguide/cookbook/saga-compensation.md",
+        "devguide/cookbook/http-poll-long-running-job.md",
         "devguide/cookbook/workflow-scheduling.md",
         "devguide/cookbook/dynamic-workflows.md",
     ]

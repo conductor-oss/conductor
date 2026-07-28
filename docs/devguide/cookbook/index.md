@@ -61,6 +61,18 @@ description: "Conductor cookbook — copy-paste workflow orchestration recipes f
     <span class="cookbook-card__arrow" aria-hidden="true">→</span>
   </a>
 
+  <a class="cookbook-card" href="saga-compensation.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 9 9"/><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-9-9"/><path d="M3 12h4M17 12h4"/><path d="M7 9l-4 3 4 3M17 9l4 3-4 3"/></svg></span>
+    <span class="cookbook-card__body"><strong>Saga and compensation</strong><span>Undo a partially completed transaction: failureWorkflow, reverse-order rollback, idempotent undo.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
+  <a class="cookbook-card" href="http-poll-long-running-job.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+    <span class="cookbook-card__body"><strong>Polling a long-running job</strong><span>Wait on a slow third-party API with one HTTP_POLL task, backoff, and a poll ceiling.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
   <a class="cookbook-card" href="workflow-scheduling.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3"/></svg></span>
     <span class="cookbook-card__body"><strong>Scheduled workflows</strong><span>Cron execution, downtime catchup, bounded windows, and concurrent runs.</span></span>
@@ -75,7 +87,7 @@ description: "Conductor cookbook — copy-paste workflow orchestration recipes f
 
   <a class="cookbook-card" href="../ai/cookbook/index.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-5l-4 3v-3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M9 10h.01M12 10h.01M15 10h.01"/></svg></span>
-    <span class="cookbook-card__body"><strong>AI Cookbook</strong><span>Production starters for knowledge, research, framework agents, governed actions, and creative delivery.</span></span>
+    <span class="cookbook-card__body"><strong>AI Cookbook</strong><span>Agentic workflows and SDK-authored agents: RAG, MCP tools, guardrails, human approval, deep research, handoffs, and memory.</span></span>
     <span class="cookbook-card__arrow" aria-hidden="true">→</span>
   </a>
 
