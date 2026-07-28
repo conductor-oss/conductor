@@ -463,8 +463,12 @@ export function useUsersListing(includeApps = false) {
 
 export function useWorkflowDefs(
   optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
+  classifier?: "workflow" | "agent",
 ): UseQueryResult<WorkflowDef[], FetchError> {
-  return useFetch<WorkflowDef[]>(WORKFLOW_METADATA_SHORT_URL, {
+  const path = classifier
+    ? `${WORKFLOW_METADATA_SHORT_URL}&classifier=${classifier}`
+    : WORKFLOW_METADATA_SHORT_URL;
+  return useFetch<WorkflowDef[]>(path, {
     staleTime: DEFAULT_STALE_TIME,
     ...optionsOverride,
   });
