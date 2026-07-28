@@ -525,11 +525,19 @@ jobs:
       # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
       # `CONDUCTOR_PY_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
       CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc2' }}
-      # No AGENTSPAN_CLI_PATH: the `agentspan` binary is deliberately not provisioned here.
-      # Its only consumers are the Suite16 cli-skills tests (server-side skills API, which
-      # conductor-oss does not support — see known-failures-python.json) and the credential
-      # suites, which skip on this flavor anyway because the secret store is env-backed and
-      # read-only. Absent the binary the suites skip cleanly; nothing errors.
+      # Pinned agentspan CLI release. Required — do not drop it. The credential suites
+      # (suites 2/3/4/5/26, xdist group `credentials`) reach their conductor-oss skip
+      # THROUGH the CLI: conftest's CredentialsCLI.set() shells out, the server rejects the
+      # write because its secret store is env-backed and read-only, and it is that stderr
+      # that triggers pytest.skip. subprocess.run has no try/except there, so with no binary
+      # they raise FileNotFoundError and FAIL instead (verified: removing it turned 4 clean
+      # skips into hard failures). Suite16 cli-skills also uses it, but those stay red
+      # regardless — server-side skills are unsupported here, see known-failures-python.json.
+      # Independent of the server pin; bump deliberately.
+      AGENTSPAN_CLI_VERSION: "0.4.4"
+      # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
+      # module directory that `gh release download --output agentspan` would collide with.
+      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
       # TODO: rename to CONDUCTOR_SERVER_URL / CONDUCTOR_AGENT_LLM_MODEL once a migrated
       # bundle is pinned above. Do NOT rename these ahead of that — the bundle ships
       # prebuilt from conductor-oss/python-sdk and its `e2e/conftest.py` reads only the
@@ -592,6 +600,17 @@ jobs:
           echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
           tar -xzf "${NAME}.tar.gz"
           echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
+
+      - name: Download AgentSpan CLI
+        # Load-bearing: the credential suites reach their read-only skip by invoking this
+        # binary. Without it conftest's subprocess.run raises FileNotFoundError and 4 tests
+        # fail instead of skipping. See the AGENTSPAN_CLI_VERSION comment above.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
+            --pattern "agentspan_linux_amd64" --output "$AGENTSPAN_CLI_PATH" --clobber
+          chmod +x "$AGENTSPAN_CLI_PATH"
 
       # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
       # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
