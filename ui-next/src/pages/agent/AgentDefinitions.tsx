@@ -32,6 +32,7 @@ import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
 import TagList from "components/ui/TagList";
+import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
 
 const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded AgentSpan runtime.
@@ -53,6 +54,7 @@ export default function AgentDefinitions() {
   const { setMessage } = useContext(MessageContext);
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AgentSummary | null>(null);
+  const [agentToClone, setAgentToClone] = useState<AgentSummary | null>(null);
   const [
     { filterParam, pageParam, searchParam },
     { setFilterParam, setSearchParam, handlePageChange },
@@ -70,33 +72,6 @@ export default function AgentDefinitions() {
     },
     onError: (error: Error) => {
       setMessage({ severity: "error", text: "Failed to delete agent" });
-      logger.error(error);
-    },
-  });
-
-  const copyAgentAction = useActionWithPath<Record<string, unknown>>({
-    onSuccess: async (definition) => {
-      try {
-        await navigator.clipboard.writeText(
-          JSON.stringify(definition, null, 2),
-        );
-        setToastMessage({
-          text: "Agent definition copied to clipboard",
-          severity: "success",
-        });
-      } catch (error) {
-        setMessage({
-          severity: "error",
-          text: "Failed to copy agent definition",
-        });
-        logger.error(error);
-      }
-    },
-    onError: (error: Error) => {
-      setMessage({
-        severity: "error",
-        text: "Failed to load agent definition",
-      });
       logger.error(error);
     },
   });
@@ -264,16 +239,11 @@ export default function AgentDefinitions() {
                 <PlayIcon size={22} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Copy agent definition">
+            <Tooltip title="Clone Agent">
               <IconButton
-                id={`copy-${agent.name}-btn`}
+                id={`clone-${agent.name}-btn`}
                 disabled={isTrialExpired}
-                onClick={() =>
-                  copyAgentAction.mutate({
-                    method: "get",
-                    path: `/agent/${encodeURIComponent(agent.name)}?version=${agent.version}`,
-                  })
-                }
+                onClick={() => setAgentToClone(agent)}
                 size="small"
               >
                 <CopyIcon size={20} />
@@ -293,7 +263,7 @@ export default function AgentDefinitions() {
         ),
       },
     ],
-    [copyAgentAction, isTrialExpired, navigate, tagsEnabled],
+    [isTrialExpired, navigate, tagsEnabled],
   );
 
   const handleFilterChange = useCallback(
@@ -312,6 +282,21 @@ export default function AgentDefinitions() {
       <Helmet>
         <title>Agent Definitions</title>
       </Helmet>
+      {agentToClone && (
+        <CloneAgentDialog
+          selectedAgent={agentToClone}
+          agentList={tableData}
+          onClose={() => setAgentToClone(null)}
+          onSuccess={() => {
+            setAgentToClone(null);
+            refetch();
+            setToastMessage({
+              text: "Agent cloned successfully",
+              severity: "success",
+            });
+          }}
+        />
+      )}
       {confirmDelete && (
         <ConfirmChoiceDialog
           handleConfirmationValue={(confirmed) => {
@@ -369,7 +354,7 @@ export default function AgentDefinitions() {
             localStorageKey="agentDefinitionsTable"
             quickSearchEnabled
             quickSearchPlaceholder="Search agent definitions"
-            searchTerm={searchParam}
+            searchTerm={searchParam ?? ""}
             onSearchTermChange={setSearchParam}
             defaultShowColumns={[
               "workflow_name",

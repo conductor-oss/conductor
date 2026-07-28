@@ -494,7 +494,7 @@ export default function WorkflowDefinitions() {
               localStorageKey="workflowsTable"
               quickSearchEnabled
               quickSearchPlaceholder="Search workflow definitions"
-              searchTerm={searchParam}
+              searchTerm={searchParam ?? ""}
               onSearchTermChange={setSearchParam}
               defaultShowColumns={[
                 "workflow_name",
