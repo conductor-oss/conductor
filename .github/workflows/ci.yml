@@ -510,11 +510,20 @@ jobs:
   # OPENAI_API_KEY (conductor.ai.openai.api-key), so no manual integration setup is needed.
   # Known failures are xfail-ed via .github/agent-e2e/known-failures-python.json so the lane can
   # gate while a gap is fixed; see that file for the current list and why each is listed.
-  # Runs on push/dispatch, and on PRs that touch agent-relevant paths.
+  # Runs on push/dispatch/schedule, and on same-repo PRs that touch agent-relevant paths.
+  # Fork PRs are skipped on purpose: this is a public repo and GitHub withholds secrets from
+  # fork-originated workflows, so OPENAI_API_KEY would be empty, the server's openai provider
+  # would fail to initialise, and the LLM suites would fail for a reason the contributor
+  # cannot fix. The fork test is nested inside the pull_request branch — hoisting it into a
+  # top-level AND would also disable push/dispatch/schedule, where github.event.pull_request
+  # is null and the comparison is therefore false.
   python-sdk-e2e:
     name: Python SDK E2E (SQLite)
     needs: detect-changes
-    if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.agent == 'true' }}
+    if: >-
+      github.event_name != 'pull_request' ||
+      (needs.detect-changes.outputs.agent == 'true' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
