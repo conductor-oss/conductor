@@ -46,17 +46,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * A2A server endpoints for native Conductor agents — exposes agentspan agents as A2A agents.
- *
- * <ul>
- *   <li>{@code GET /api/a2a/agent} — list all exposed native agents (non-spec convenience).
- *   <li>{@code GET /api/a2a/agent/{name}/.well-known/agent-card.json} — agent card discovery.
- *   <li>{@code POST /api/a2a/agent/{name}} — JSON-RPC 2.0: {@code message/send}, {@code tasks/get},
- *       {@code tasks/cancel}, {@code message/stream}.
- * </ul>
- *
- * <p>Gated on both {@code conductor.a2a.server.enabled=true} and {@code agentspan.embedded=true}.
- * Paths use {@code conductor.a2a.server.agentBasePath} (default {@code /api/a2a/agent}).
+ * A2A server endpoints for native Conductor agents. Exposes agentspan agents as A2A agents. Routes:
+ * GET /api/a2a/agent (list), GET /api/a2a/agent/{name}/.well-known/agent-card.json (discovery),
+ * POST /api/a2a/agent/{name} (JSON-RPC: message/send, tasks/get, tasks/cancel, message/stream).
+ * Gated on conductor.a2a.server.enabled=true and agentspan.embedded=true.
  */
 @RestController
 @ConditionalOnProperty(

@@ -48,14 +48,10 @@ import com.netflix.conductor.service.WorkflowService;
 
 /**
  * Exposes native Conductor agents (agentspan) as A2A agents (server side). One agent = one A2A
- * agent card, served at {@code /api/a2a/agent/{name}}.
- *
- * <p>Mirrors {@code A2AWorkflowAgent} but drives native agents via {@link AgentService} instead of
- * {@code WorkflowService.startWorkflow()}. Since native agents compile down to workflows, all
- * execution tracking (getTask, cancelTask, stream) reuses the same workflow-state mapping.
- *
- * <p>Gated on both {@code conductor.a2a.server.enabled=true} (the A2A server master switch) and
- * {@code agentspan.embedded=true} (agentspan runtime present).
+ * agent card served at /api/a2a/agent/{name}. Mirrors A2AWorkflowAgent but drives agents via
+ * AgentService instead of WorkflowService.startWorkflow(). Since agents compile down to workflows,
+ * execution tracking (getTask, cancelTask, stream) reuses the same workflow-state mapping. Gated on
+ * conductor.a2a.server.enabled=true and agentspan.embedded=true.
  */
 @Component
 @ConditionalOnProperty(
