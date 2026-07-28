@@ -35,10 +35,16 @@ public class A2AServerProperties {
     /** Master switch (also enforced by {@code A2AServerEnabledCondition}). */
     private boolean enabled = false;
 
-    /** URL path prefix under which workflow agents are served. Each workflow is at {basePath}/{name}. */
+    /**
+     * URL path prefix under which workflow agents are served. Each workflow is at
+     * {basePath}/{name}.
+     */
     private String basePath = "/api/a2a/workflow";
 
-    /** URL path prefix under which native Conductor agents are served. Each agent is at {agentBasePath}/{name}. */
+    /**
+     * URL path prefix under which native Conductor agents are served. Each agent is at
+     * {agentBasePath}/{name}.
+     */
     private String agentBasePath = "/api/a2a/agent";
 
     /** Workflow names explicitly exposed as agents (in addition to metadata opt-in). */

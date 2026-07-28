@@ -513,7 +513,9 @@ public class A2AWorkflowAgent {
         return null;
     }
 
-    /** The agent's JSON-RPC endpoint URL, e.g. {@code https://host/api/a2a/workflow/order_pizza}. */
+    /**
+     * The agent's JSON-RPC endpoint URL, e.g. {@code https://host/api/a2a/workflow/order_pizza}.
+     */
     public String agentUrl(String workflowName, String requestBaseUrl) {
         return baseUrl(requestBaseUrl) + normalizedBasePath() + "/" + workflowName;
     }

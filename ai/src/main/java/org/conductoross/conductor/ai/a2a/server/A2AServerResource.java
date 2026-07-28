@@ -165,7 +165,9 @@ public class A2AServerResource {
         }
     }
 
-    @GetMapping(value = "${conductor.a2a.server.basePath:/api/a2a/workflow}", produces = "application/json")
+    @GetMapping(
+            value = "${conductor.a2a.server.basePath:/api/a2a/workflow}",
+            produces = "application/json")
     public ResponseEntity<?> listAgents(HttpServletRequest httpRequest) {
         String base = requestBaseUrl(httpRequest);
         List<?> agents =
