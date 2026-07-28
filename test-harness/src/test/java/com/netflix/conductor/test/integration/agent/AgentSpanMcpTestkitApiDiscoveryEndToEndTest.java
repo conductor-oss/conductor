@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.integration.agent;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
@@ -104,6 +107,11 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
             new GenericContainer<>(DockerImageName.parse("redis:6.2-alpine"))
                     .withExposedPorts(6379);
 
+    // mcp-testkit 1.0.3 does not constrain its own `mcp` dependency, and mcp 2.0.0 dropped
+    // mcp.server.fastmcp, which the testkit imports at start-up. Without 'mcp<2' the install
+    // succeeds and the server then dies with ModuleNotFoundError, so nothing ever binds 3001.
+    // The log-message wait is what surfaces that: the default port check is satisfied by Docker's
+    // published-port proxy before the process inside the container has bound anything.
     @SuppressWarnings("resource")
     private static final GenericContainer<?> MCP_TESTKIT =
             new GenericContainer<>(DockerImageName.parse("python:3.12-slim"))
@@ -111,10 +119,15 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
                     .withCommand(
                             "sh",
                             "-c",
-                            "pip install --no-cache-dir mcp-testkit==1.0.3"
+                            "pip install --no-cache-dir mcp-testkit==1.0.3 'mcp<2'"
                                     + " && mcp-testkit --transport http --host 0.0.0.0 --port 3001"
                                     + " --auth "
-                                    + TESTKIT_AUTH);
+                                    + TESTKIT_AUTH)
+                    .withLogConsumer(
+                            new Slf4jLogConsumer(org.slf4j.LoggerFactory.getLogger("mcp-testkit")))
+                    .waitingFor(
+                            Wait.forLogMessage(".*Application startup complete.*\\n", 1)
+                                    .withStartupTimeout(Duration.ofMinutes(3)));
 
     @SuppressWarnings("resource")
     private static final LocalStackContainer LOCALSTACK =
