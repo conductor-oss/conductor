@@ -369,13 +369,16 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 }
 ```
 
-**Routing: one agent per workflow.** Each exposed workflow is its own focused agent at `{basePath}/{workflow}` (default basePath `/a2a`):
+**Routing: one agent per workflow.** Each exposed workflow is its own focused agent under `/api/a2a/workflow`; native Conductor agents (agentspan) are under `/api/a2a/agent`:
 
 | Method & path | Purpose |
 |---|---|
-| `GET /a2a/{workflow}/.well-known/agent-card.json` | Agent Card (also `/agent.json`). |
-| `POST /a2a/{workflow}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
-| `GET /a2a` | Convenience listing of exposed agents (non-spec). |
+| `GET /api/a2a/workflow/{name}/.well-known/agent-card.json` | Agent Card for a workflow-backed agent (also `/agent.json`). |
+| `POST /api/a2a/workflow/{name}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
+| `GET /api/a2a/workflow` | Convenience listing of exposed workflow agents (non-spec). |
+| `GET /api/a2a/agent/{name}/.well-known/agent-card.json` | Agent Card for a native Conductor agent (also `/agent.json`). |
+| `POST /api/a2a/agent/{name}` | JSON-RPC: same methods, backed by the agentspan runtime. |
+| `GET /api/a2a/agent` | Convenience listing of exposed native agents (non-spec). |
 
 Exposed agents advertise `capabilities.streaming=true`.
 
@@ -383,10 +386,10 @@ Exposed agents advertise `capabilities.streaming=true`.
 
 ```bash
 # 1. Discover
-curl http://localhost:8080/a2a/order_pizza/.well-known/agent-card.json
+curl http://localhost:8080/api/a2a/workflow/order_pizza/.well-known/agent-card.json
 
 # 2. Start a task (message/send → starts the workflow)
-curl -X POST http://localhost:8080/a2a/order_pizza \
+curl -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{
     "jsonrpc": "2.0", "id": 1, "method": "message/send",
@@ -398,7 +401,7 @@ curl -X POST http://localhost:8080/a2a/order_pizza \
 # → result is an A2A Task: { "id": "<workflowId>", "contextId": ..., "status": { "state": "working" } }
 
 # 3. Poll
-curl -X POST http://localhost:8080/a2a/order_pizza \
+curl -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc": "2.0", "id": 2, "method": "tasks/get", "params": { "id": "<workflowId>" } }'
 ```
@@ -412,7 +415,7 @@ then `status-update` events as the workflow's A2A state changes and `artifact-up
 output is produced, ending with a `final` status-update at a terminal / input-required state.
 
 ```bash
-curl -N -X POST http://localhost:8080/a2a/order_pizza \
+curl -N -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":1, "method":"message/stream",
         "params": { "message": { "role":"user", "messageId":"m-1",
@@ -478,7 +481,7 @@ confirms:
 **Turn 1 — start.** The workflow reaches the `HUMAN` task and parks at `input-required`:
 
 ```bash
-curl -X POST http://localhost:8080/a2a/book_appointment \
+curl -X POST http://localhost:8080/api/a2a/workflow/book_appointment \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":1, "method":"message/send",
         "params": { "message": { "role":"user", "messageId":"m-1",
@@ -505,7 +508,7 @@ curl -X POST http://localhost:8080/a2a/book_appointment \
 completes with the message as its input and the workflow finishes:
 
 ```bash
-curl -X POST http://localhost:8080/a2a/book_appointment \
+curl -X POST http://localhost:8080/api/a2a/workflow/book_appointment \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":2, "method":"message/send",
         "params": { "message": { "role":"user", "messageId":"m-2", "taskId":"wf-7f3a91",
@@ -572,8 +575,10 @@ A2A code paths emit metrics through the shared Conductor metrics registry and se
 | `conductor.a2a.callback.url` | — | Externally-reachable base URL for push callbacks. |
 | `conductor.a2a.client.allow-private-network` | `false` | Allow agent URLs on private/loopback networks (metadata still blocked). |
 | `conductor.a2a.server.enabled` | `false` | Enables the A2A server endpoints. |
-| `conductor.a2a.server.basePath` | `/a2a` | Base path for exposed agents. |
+| `conductor.a2a.server.basePath` | `/api/a2a/workflow` | Base path for workflow-backed agents. |
+| `conductor.a2a.server.agentBasePath` | `/api/a2a/agent` | Base path for native Conductor agents (agentspan). |
 | `conductor.a2a.server.exposed-workflows` | — | Comma-separated workflow names to expose. |
+| `conductor.a2a.server.expose-all` | `false` | Expose all registered workflows automatically (dev/single-tenant). |
 | `conductor.a2a.server.public-url` | request-derived | Base URL advertised in the agent card. |
 | `conductor.a2a.server.provider-organization` | `Conductor` | `provider.organization` on the card. |
 
