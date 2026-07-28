@@ -600,6 +600,15 @@ jobs:
       - name: Run python e2e (SQLite; known failures xfail-ed)
         env:
           PYTHONPATH: ${{ github.workspace }}/.github/agent-e2e
+          # CONDUCTOR_* above are the canonical names — the SDK's Configuration reads
+          # CONDUCTOR_SERVER_URL in preference to AGENTSPAN_SERVER_URL. The bundle's own
+          # conftest has not migrated: it reads AGENTSPAN_SERVER_URL for its direct HTTP
+          # calls (health, workflow polling, taskdefs) and AGENTSPAN_LLM_MODEL for the
+          # model, and reads CONDUCTOR_AGENT_LLM_MODEL nowhere. Mirror both off the
+          # canonical values so one edit above moves the whole lane; drop this block once
+          # a bundle ships that reads CONDUCTOR_*.
+          AGENTSPAN_SERVER_URL: ${{ env.CONDUCTOR_SERVER_URL }}
+          AGENTSPAN_LLM_MODEL: ${{ env.CONDUCTOR_AGENT_LLM_MODEL }}
         working-directory: ${{ env.BUNDLE_DIR }}
         run: bash run.sh -p known_failures_plugin
 
