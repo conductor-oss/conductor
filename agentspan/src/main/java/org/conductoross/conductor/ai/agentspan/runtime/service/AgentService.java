@@ -197,8 +197,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -281,8 +281,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -873,6 +873,27 @@ public class AgentService {
     }
 
     /**
+     * Persist an agent-generated workflow with the metadata lifecycle used by normal workflow
+     * definitions. Direct DAO updates bypass {@link MetadataService} and leave a newly deployed
+     * agent's create time at zero, which prevents the definitions table from rendering it.
+     */
+    private void upsertWorkflowDef(WorkflowDef def) {
+        Optional<WorkflowDef> existing =
+                metadataDAO.getWorkflowDef(def.getName(), def.getVersion());
+        if (existing.isPresent()) {
+            // Older direct-DAO deployments have no create time; repair it on their next deploy.
+            if (existing.get().getCreateTime() == 0) {
+                def.setCreateTime(System.currentTimeMillis());
+            } else {
+                def.setCreateTime(existing.get().getCreateTime());
+            }
+            metadataService.updateWorkflowDef(def);
+        } else {
+            metadataService.registerWorkflowDef(def);
+        }
+    }
+
+    /**
      * Search for an existing workflow with the given correlationId (idempotency key). Returns the
      * execution ID if a RUNNING or COMPLETED execution exists, null otherwise.
      */
@@ -1144,7 +1165,7 @@ public class AgentService {
 
                 // Compile and register the child agent workflow
                 WorkflowDef childDef = agentCompiler.compile(childConfig);
-                metadataDAO.updateWorkflowDef(childDef);
+                upsertWorkflowDef(childDef);
                 log.info(
                         "Registered agent_tool child workflow: {} for tool '{}'",
                         childDef.getName(),

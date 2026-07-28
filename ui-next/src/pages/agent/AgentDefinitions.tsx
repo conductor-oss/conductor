@@ -39,7 +39,11 @@ const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as n
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
 const toTagDtos = (tags?: string[]): TagDto[] =>
-  (tags || []).map((tag) => ({ key: "capability", value: tag }));
+  (tags || []).map((tag) => ({
+    key: "capability",
+    value: tag,
+    type: "METADATA",
+  }));
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
