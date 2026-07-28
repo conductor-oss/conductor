@@ -6,10 +6,26 @@ description: "A2A (Agent2Agent) integration with Conductor — call remote agent
 
 [A2A (Agent2Agent)](https://a2a-protocol.org/) is the open protocol for agents to communicate over HTTP/JSON-RPC. Conductor makes each remote handoff durable, observable, and resumable.
 
-Call a remote A2A agent from a workflow, or expose a Conductor workflow for any A2A client to discover and invoke.
-
-- **[Call remote agents](#call-a-remote-agent-from-a-workflow-client)** — use durable `AGENT`, `GET_AGENT_CARD`, and `CANCEL_AGENT` tasks.
-- **[Expose workflows as agents](#expose-a-workflow-as-an-a2a-agent-server)** — give external A2A clients a discoverable, durable workflow endpoint.
+<section class="integration-hero integration-hero--a2a" aria-labelledby="a2a-hero-title">
+  <div class="integration-hero__identity" aria-hidden="true">
+    <img class="integration-hero__logo" src="../../assets/images/protocols/a2a.svg" alt="" />
+    <span class="integration-hero__connector">↔</span>
+    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
+  </div>
+  <p class="integration-hero__eyebrow">Remote-agent interoperability</p>
+  <h2 id="a2a-hero-title">Interoperate with agents anywhere. Keep every handoff durable.</h2>
+  <p>Call a remote A2A agent from a workflow, or expose a Conductor workflow for any A2A client to discover and invoke.</p>
+  <div class="integration-action-grid">
+    <a class="integration-action-card" href="#call-a-remote-agent-from-a-workflow-client">
+      <span class="integration-action-card__title">Call remote agents</span>
+      <span>Use durable <code>AGENT</code>, <code>GET_AGENT_CARD</code>, and <code>CANCEL_AGENT</code> tasks.</span>
+    </a>
+    <a class="integration-action-card" href="#expose-a-workflow-as-an-a2a-agent-server">
+      <span class="integration-action-card__title">Expose workflows as agents</span>
+      <span>Give external A2A clients a discoverable, durable workflow endpoint.</span>
+    </a>
+  </div>
+</section>
 
 
 ## What is A2A
