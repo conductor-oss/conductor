@@ -567,6 +567,13 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       E2E_KNOWN_FAILURES: ${{ github.workspace }}/.github/agent-e2e/known-failures-python.json
+      # The bundle's run.sh does `pip install -r requirements.txt` at run time, and that file
+      # pins only conductor-python — pytest, langgraph, mcp-testkit and the provider SDKs all
+      # float. An upstream release could therefore redden this gating lane with no change
+      # here, looking like a server regression. pip honours PIP_CONSTRAINT for every install
+      # in the job, so this pins the bundle's transitive deps without modifying the bundle.
+      # Regenerate when the bundle pin above moves — see the header of that file.
+      PIP_CONSTRAINT: ${{ github.workspace }}/.github/agent-e2e/constraints-python.txt
       # Minimum number of tests that must actually PASS. A pytest skip is not a failure, so a
       # server change that breaks a test's setup silently converts pass -> skip and the lane
       # stays green while covering less. This floor is the backstop: if fewer than this many
@@ -580,7 +587,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Zulu JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: zulu
           java-version: "21"
