@@ -55,6 +55,7 @@ export enum ExecutionActionTypes {
 }
 
 export enum ExecutionTabs {
+  AGENT_EXECUTION_TAB = "agentExecution",
   DIAGRAM_TAB = "diagram",
   TASK_LIST_TAB = "taskList",
   TIMELINE_TAB = "timeLine",

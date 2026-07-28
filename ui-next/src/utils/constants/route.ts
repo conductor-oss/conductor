@@ -40,8 +40,13 @@ export const SCHEDULER_EXECUTION_URL = "/schedulerExecs";
 // Embedded AgentSpan agent pages (gated by AGENTSPAN_ENABLED / conductor.integrations.ai.enabled)
 export const AGENT_DEFINITION_URL = {
   BASE: "/agents",
+  NEW: "/agents/new",
+  NAME_VERSION: "/agents/:name/:version?",
 };
-export const AGENT_EXECUTIONS_URL = "/agentExecutions";
+export const AGENT_EXECUTIONS_URL = {
+  BASE: "/agentExecutions",
+  ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+};
 export const SKILLS_URL = {
   BASE: "/skills",
 };
@@ -105,6 +110,8 @@ export const SECRETS_URL = {
 };
 
 export const RUN_WORKFLOW_URL = "/runWorkflow";
+
+export const RUN_AGENT_URL = "/runAgent";
 
 export const HUMAN_TASK_URL = {
   BASE: "/human",

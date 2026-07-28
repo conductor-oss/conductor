@@ -77,7 +77,7 @@ public class FileStorageServiceImplTest {
     @Test
     public void testGetUploadUrl() {
         String fileId = createTestFileId();
-        FileUploadUrlResponse response = service.getUploadUrl(fileId);
+        FileUploadUrlResponse response = service.getUploadUrl(WORKFLOW_ID, fileId);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
@@ -87,7 +87,7 @@ public class FileStorageServiceImplTest {
 
     @Test(expected = NotFoundException.class)
     public void testGetUploadUrlNotFound() {
-        service.getUploadUrl("nonexistent");
+        service.getUploadUrl(WORKFLOW_ID, "nonexistent");
     }
 
     @Test
@@ -95,7 +95,7 @@ public class FileStorageServiceImplTest {
         String fileId = createTestFileId();
         simulateFileOnStorage(fileId);
 
-        FileUploadCompleteResponse response = service.confirmUpload(fileId);
+        FileUploadCompleteResponse response = service.confirmUpload(WORKFLOW_ID, fileId);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
@@ -107,23 +107,23 @@ public class FileStorageServiceImplTest {
         String fileId = createTestFileId();
         simulateFileOnStorage(fileId);
 
-        service.confirmUpload(fileId);
-        service.confirmUpload(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
     }
 
     @Test(expected = NonTransientException.class)
     public void testConfirmUploadFileNotOnStorage() {
         String fileId = createTestFileId();
-        service.confirmUpload(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
     }
 
     @Test
     public void testGetDownloadUrl() {
         String fileId = createTestFileId();
         simulateFileOnStorage(fileId);
-        service.confirmUpload(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
 
-        FileDownloadUrlResponse response = service.getDownloadUrl(fileId, WORKFLOW_ID);
+        FileDownloadUrlResponse response = service.getDownloadUrl(WORKFLOW_ID, fileId);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
@@ -134,7 +134,7 @@ public class FileStorageServiceImplTest {
     @Test(expected = IllegalArgumentException.class)
     public void testGetDownloadUrlNotUploaded() {
         String fileId = createTestFileId();
-        service.getDownloadUrl(fileId, WORKFLOW_ID);
+        service.getDownloadUrl(WORKFLOW_ID, fileId);
     }
 
     // ── Upload enforcement ────────────────────────────────────────────────────
@@ -157,16 +157,16 @@ public class FileStorageServiceImplTest {
         fileMetadataDAO.createFileMetadata(model);
         fileStorage.putFile(model.getStoragePath(), new byte[] {1});
 
-        service.getDownloadUrl(fileId, WORKFLOW_ID);
+        service.getDownloadUrl(WORKFLOW_ID, fileId);
     }
 
     @Test(expected = AccessForbiddenException.class)
     public void testDownloadForbiddenWhenCallerNotInFamily() {
         String fileId = createTestFileId();
         simulateFileOnStorage(fileId);
-        service.confirmUpload(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
 
-        service.getDownloadUrl(fileId, "unrelated-workflow");
+        service.getDownloadUrl("unrelated-workflow", fileId);
     }
 
     @Test
@@ -174,9 +174,9 @@ public class FileStorageServiceImplTest {
         // StubWorkflowFamilyResolver includes WORKFLOW_ID in the family
         String fileId = createTestFileId();
         simulateFileOnStorage(fileId);
-        service.confirmUpload(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
 
-        FileDownloadUrlResponse response = service.getDownloadUrl(fileId, WORKFLOW_ID);
+        FileDownloadUrlResponse response = service.getDownloadUrl(WORKFLOW_ID, fileId);
         assertNotNull(response.getDownloadUrl());
     }
 
@@ -197,9 +197,9 @@ public class FileStorageServiceImplTest {
                 svc.createFile(newRequestWithWorkflow("parent-file.bin", parentId));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
         simulateFileOnStorage(fileId);
-        svc.confirmUpload(fileId);
+        svc.confirmUpload(parentId, fileId);
 
-        FileDownloadUrlResponse response = svc.getDownloadUrl(fileId, childId);
+        FileDownloadUrlResponse response = svc.getDownloadUrl(childId, fileId);
         assertNotNull(response.getDownloadUrl());
     }
 
@@ -220,33 +220,36 @@ public class FileStorageServiceImplTest {
                 svc.createFile(newRequestWithWorkflow("child-file.bin", childId));
         String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
         simulateFileOnStorage(fileId);
-        svc.confirmUpload(fileId);
+        svc.confirmUpload(childId, fileId);
 
-        FileDownloadUrlResponse response = svc.getDownloadUrl(fileId, parentId);
+        FileDownloadUrlResponse response = svc.getDownloadUrl(parentId, fileId);
         assertNotNull(response.getDownloadUrl());
     }
 
     @Test
     public void testGetFileMetadata() {
         String fileId = createTestFileId();
+        simulateFileOnStorage(fileId);
+        service.confirmUpload(WORKFLOW_ID, fileId);
 
-        FileHandle handle = service.getFileMetadata(fileId);
+        FileHandle handle = service.getFileMetadata(WORKFLOW_ID, fileId);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), handle.getFileHandleId());
         assertEquals("report.pdf", handle.getFileName());
         assertEquals(StorageType.LOCAL, handle.getStorageType());
+        assertEquals(3L, handle.getFileSize());
     }
 
     @Test(expected = NotFoundException.class)
     public void testGetFileMetadataNotFound() {
-        service.getFileMetadata("nonexistent");
+        service.getFileMetadata(WORKFLOW_ID, "nonexistent");
     }
 
     @Test
     public void testInitiateMultipartUpload() {
         String fileId = createTestFileId();
-        MultipartInitResponse response = service.initiateMultipartUpload(fileId);
+        MultipartInitResponse response = service.initiateMultipartUpload(WORKFLOW_ID, fileId);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
@@ -256,7 +259,8 @@ public class FileStorageServiceImplTest {
     @Test
     public void testGetPartUploadUrl() {
         String fileId = createTestFileId();
-        FileUploadUrlResponse response = service.getPartUploadUrl(fileId, "upload-123", 1);
+        FileUploadUrlResponse response =
+                service.getPartUploadUrl(WORKFLOW_ID, fileId, "upload-123", 1);
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
@@ -268,11 +272,68 @@ public class FileStorageServiceImplTest {
     public void testCompleteMultipartUpload() {
         String fileId = createTestFileId();
         FileUploadCompleteResponse response =
-                service.completeMultipartUpload(fileId, "upload-123", List.of("etag1", "etag2"));
+                service.completeMultipartUpload(
+                        WORKFLOW_ID, fileId, "upload-123", List.of("etag1", "etag2"));
 
         assertEquals(
                 FileIdToFileHandleIdConverter.toFileHandleId(fileId), response.getFileHandleId());
         assertEquals(FileUploadStatus.UPLOADED, response.getUploadStatus());
+    }
+
+    @Test(expected = AccessForbiddenException.class)
+    public void testUploadUrlRequiresExactOwner() {
+        String fileId = createTestFileId();
+        service.getUploadUrl("unrelated-workflow", fileId);
+    }
+
+    @Test(expected = AccessForbiddenException.class)
+    public void testUploadMutationRejectsWorkflowFamilyMember() {
+        String parentId = "wf-parent";
+        String childId = "wf-child";
+        FileStorageServiceImpl svc =
+                new FileStorageServiceImpl(
+                        fileStorage,
+                        fileMetadataDAO,
+                        properties,
+                        wfId -> Set.of(parentId, childId));
+        FileUploadResponse created =
+                svc.createFile(newRequestWithWorkflow("parent-file.bin", parentId));
+        String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
+
+        svc.initiateMultipartUpload(childId, fileId);
+    }
+
+    @Test(expected = AccessForbiddenException.class)
+    public void testMetadataRejectsUnrelatedWorkflow() {
+        String fileId = createTestFileId();
+        service.getFileMetadata("unrelated-workflow", fileId);
+    }
+
+    @Test
+    public void testMetadataAllowsWorkflowFamilyMember() {
+        String parentId = "wf-parent";
+        String childId = "wf-child";
+        FileStorageServiceImpl svc =
+                new FileStorageServiceImpl(
+                        fileStorage,
+                        fileMetadataDAO,
+                        properties,
+                        wfId -> Set.of(parentId, childId));
+        FileUploadResponse created =
+                svc.createFile(newRequestWithWorkflow("parent-file.bin", parentId));
+        String fileId = FileIdToFileHandleIdConverter.toFileId(created.getFileHandleId());
+
+        assertNotNull(svc.getFileMetadata(childId, fileId));
+    }
+
+    @Test
+    public void testAbortMultipartUpload() {
+        String fileId = createTestFileId();
+        String storagePath = fileMetadataDAO.getFileMetadata(fileId).getStoragePath();
+
+        service.abortMultipartUpload(WORKFLOW_ID, fileId, "upload-123");
+
+        assertTrue(fileStorage.wasMultipartUploadAborted(storagePath, "upload-123"));
     }
 
     private String createTestFileId() {

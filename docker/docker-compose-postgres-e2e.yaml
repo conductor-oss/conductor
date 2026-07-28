@@ -6,6 +6,7 @@ services:
       # stays unconfigured and the LLM e2e tests that depend on it self-skip.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
     image: conductor:server
     container_name: conductor-server-e2e
     networks:

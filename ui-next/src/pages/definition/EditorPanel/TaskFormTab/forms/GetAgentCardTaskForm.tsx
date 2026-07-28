@@ -1,6 +1,5 @@
 import { Box, Grid } from "@mui/material";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
-import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import { path as _path } from "lodash/fp";
 import { updateField } from "utils/fieldHelpers";
 import { ConductorAdditionalHeadersBase } from "./HTTPTaskForm/ConductorAdditionalHeaders";
@@ -9,12 +8,11 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 
-const AGENT_TYPES = [
-  { value: "a2a", label: "A2A" },
-  { value: "conductor", label: "Conductor" },
-];
-
-/** Config form for GET_AGENT_CARD — discovers a remote A2A agent's Agent Card. */
+/**
+ * Config form for GET_AGENT_CARD — discovers a remote A2A agent's Agent Card. A2A-only: there is
+ * no equivalent "card" concept for a registered Conductor agent, so this task has no agentType
+ * selector (unlike AGENT/CANCEL_AGENT).
+ */
 export const GetAgentCardTaskForm = ({ task, onChange }: TaskFormProps) => {
   const get = (p: string) => _path(p, task);
   const set = (p: string, value: any) => onChange(updateField(p, value, task));
@@ -29,14 +27,6 @@ export const GetAgentCardTaskForm = ({ task, onChange }: TaskFormProps) => {
         title="Agent"
       >
         <Grid container spacing={2} sx={{ width: "100%" }}>
-          <Grid size={12}>
-            <RadioButtonGroup
-              name="agentType"
-              value={get("inputParameters.agentType") || "a2a"}
-              onChange={(e) => set("inputParameters.agentType", e.target.value)}
-              items={AGENT_TYPES}
-            />
-          </Grid>
           <Grid size={12}>
             <ConductorAutocompleteVariables
               label="Agent URL"

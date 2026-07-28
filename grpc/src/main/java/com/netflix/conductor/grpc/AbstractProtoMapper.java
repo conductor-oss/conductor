@@ -832,6 +832,7 @@ public abstract class AbstractProtoMapper {
         if (from.getParentTaskId() != null) {
             to.setParentTaskId( from.getParentTaskId() );
         }
+        to.putAllRuntimeMetadata( from.getRuntimeMetadata() );
         return to.build();
     }
 
@@ -896,6 +897,7 @@ public abstract class AbstractProtoMapper {
             to.setExecutionMetadata( fromProto( from.getExecutionMetadata() ) );
         }
         to.setParentTaskId( from.getParentTaskId() );
+        to.setRuntimeMetadata( from.getRuntimeMetadataMap() );
         return to;
     }
 
@@ -1114,6 +1116,17 @@ public abstract class AbstractProtoMapper {
         if (from.getExecutionMetadata() != null) {
             to.setExecutionMetadata( toProto( from.getExecutionMetadata() ) );
         }
+        for (TaskExecLog elem : from.getLogs()) {
+            to.addLogs( toProto(elem) );
+        }
+        if (from.getExternalOutputPayloadStoragePath() != null) {
+            to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        }
+        if (from.getSubWorkflowId() != null) {
+            to.setSubWorkflowId( from.getSubWorkflowId() );
+        }
+        to.setExtendLease( from.isExtendLease() );
+        to.setSupportsCancellation( from.isSupportsCancellation() );
         return to.build();
     }
 
@@ -1136,6 +1149,11 @@ public abstract class AbstractProtoMapper {
         if (from.hasExecutionMetadata()) {
             to.setExecutionMetadata( fromProto( from.getExecutionMetadata() ) );
         }
+        to.setLogs( from.getLogsList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        to.setSubWorkflowId( from.getSubWorkflowId() );
+        to.setExtendLease( from.getExtendLease() );
+        to.setSupportsCancellation( from.getSupportsCancellation() );
         return to;
     }
 
@@ -1146,6 +1164,7 @@ public abstract class AbstractProtoMapper {
             case FAILED: to = TaskResultPb.TaskResult.Status.FAILED; break;
             case FAILED_WITH_TERMINAL_ERROR: to = TaskResultPb.TaskResult.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = TaskResultPb.TaskResult.Status.COMPLETED; break;
+            case CANCELED: to = TaskResultPb.TaskResult.Status.CANCELED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
@@ -1158,6 +1177,7 @@ public abstract class AbstractProtoMapper {
             case FAILED: to = TaskResult.Status.FAILED; break;
             case FAILED_WITH_TERMINAL_ERROR: to = TaskResult.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = TaskResult.Status.COMPLETED; break;
+            case CANCELED: to = TaskResult.Status.CANCELED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
@@ -1428,9 +1448,6 @@ public abstract class AbstractProtoMapper {
         if (from.getFailureWorkflow() != null) {
             to.setFailureWorkflow( from.getFailureWorkflow() );
         }
-        if (from.getFailureWorkflowVersion() != null) {
-            to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
-        }
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.isRestartable() );
         to.setWorkflowStatusListenerEnabled( from.isWorkflowStatusListenerEnabled() );
@@ -1446,6 +1463,9 @@ public abstract class AbstractProtoMapper {
         }
         for (Map.Entry<String, Object> pair : from.getInputTemplate().entrySet()) {
             to.putInputTemplate( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        if (from.getFailureWorkflowVersion() != null) {
+            to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
         }
         if (from.getWorkflowStatusListenerSink() != null) {
             to.setWorkflowStatusListenerSink( from.getWorkflowStatusListenerSink() );
@@ -1483,9 +1503,6 @@ public abstract class AbstractProtoMapper {
         }
         to.setOutputParameters(outputParametersMap);
         to.setFailureWorkflow( from.getFailureWorkflow() );
-        if (from.getFailureWorkflowVersion() != 0) {
-            to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
-        }
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.getRestartable() );
         to.setWorkflowStatusListenerEnabled( from.getWorkflowStatusListenerEnabled() );
@@ -1502,6 +1519,7 @@ public abstract class AbstractProtoMapper {
             inputTemplateMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setInputTemplate(inputTemplateMap);
+        to.setFailureWorkflowVersion( from.getFailureWorkflowVersion() );
         to.setWorkflowStatusListenerSink( from.getWorkflowStatusListenerSink() );
         if (from.hasRateLimitConfig()) {
             to.setRateLimitConfig( fromProto( from.getRateLimitConfig() ) );
@@ -1627,6 +1645,9 @@ public abstract class AbstractProtoMapper {
         if (from.getParentWorkflowId() != null) {
             to.setParentWorkflowId( from.getParentWorkflowId() );
         }
+        if (from.getClassifier() != null) {
+            to.setClassifier( from.getClassifier() );
+        }
         return to.build();
     }
 
@@ -1654,6 +1675,7 @@ public abstract class AbstractProtoMapper {
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setIdempotencyKey( from.getIdempotencyKey() );
         to.setParentWorkflowId( from.getParentWorkflowId() );
+        to.setClassifier( from.getClassifier() );
         return to;
     }
 
@@ -1748,6 +1770,9 @@ public abstract class AbstractProtoMapper {
         if (from.getJoinMode() != null) {
             to.setJoinMode( toProto( from.getJoinMode() ) );
         }
+        for (Map.Entry<String, Object> pair : from.getMetadata().entrySet()) {
+            to.putMetadata( pair.getKey(), toProto( pair.getValue() ) );
+        }
         return to.build();
     }
 
@@ -1800,6 +1825,11 @@ public abstract class AbstractProtoMapper {
         }
         to.setPermissive( from.getPermissive() );
         to.setJoinMode( fromProto( from.getJoinMode() ) );
+        Map<String, Object> metadataMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getMetadataMap().entrySet()) {
+            metadataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setMetadata(metadataMap);
         return to;
     }
 

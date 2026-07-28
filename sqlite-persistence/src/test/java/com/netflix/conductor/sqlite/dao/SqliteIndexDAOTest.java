@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import javax.sql.DataSource;
 
@@ -363,6 +364,54 @@ public class SqliteIndexDAOTest {
                 "Wrong workflow returned",
                 wfs.getWorkflowId(),
                 results.getResults().get(0).getWorkflowId());
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryByClassifier() {
+        String correlationId = "classifier-search-correlation-id";
+
+        WorkflowSummary agentWfs = getMockWorkflowSummary("workflow-id-classifier-agent");
+        agentWfs.setCorrelationId(correlationId);
+        agentWfs.setClassifier("agent");
+        indexDAO.indexWorkflow(agentWfs);
+
+        WorkflowSummary plainWfs = getMockWorkflowSummary("workflow-id-classifier-plain");
+        plainWfs.setCorrelationId(correlationId);
+        plainWfs.setClassifier("workflow");
+        indexDAO.indexWorkflow(plainWfs);
+
+        // Simulates a row indexed before the classifier column existed (NULL classifier).
+        WorkflowSummary legacyWfs = getMockWorkflowSummary("workflow-id-classifier-legacy");
+        legacyWfs.setCorrelationId(correlationId);
+        indexDAO.indexWorkflow(legacyWfs);
+
+        String agentQuery =
+                String.format("correlationId='%s' AND classifier='agent'", correlationId);
+        SearchResult<WorkflowSummary> agentResults =
+                indexDAO.searchWorkflowSummary(agentQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of agent results", 1, agentResults.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                agentWfs.getWorkflowId(),
+                agentResults.getResults().get(0).getWorkflowId());
+
+        // The untagged token must match both explicitly tagged plain workflows and legacy
+        // NULL rows.
+        String workflowQuery =
+                String.format("correlationId='%s' AND classifier='workflow'", correlationId);
+        SearchResult<WorkflowSummary> workflowResults =
+                indexDAO.searchWorkflowSummary(workflowQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of untagged results", 2, workflowResults.getResults().size());
+
+        String inQuery =
+                String.format("correlationId='%s' AND classifier IN (agent,other)", correlationId);
+        SearchResult<WorkflowSummary> inResults =
+                indexDAO.searchWorkflowSummary(inQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of IN clause results", 1, inResults.getResults().size());
+
+        indexDAO.removeWorkflow(agentWfs.getWorkflowId());
+        indexDAO.removeWorkflow(plainWfs.getWorkflowId());
+        indexDAO.removeWorkflow(legacyWfs.getWorkflowId());
     }
 
     @Test
@@ -778,6 +827,47 @@ public class SqliteIndexDAOTest {
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
         assertEquals("Should find 2 child workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testAgentHierarchySortPlacesChildImmediatelyAfterParent() {
+        WorkflowSummary child = getMockWorkflowSummary("agent-child", "agent-parent");
+        child.setClassifier("agent");
+        indexDAO.indexWorkflow(child);
+
+        WorkflowSummary grandchild = getMockWorkflowSummary("agent-grandchild", "agent-child");
+        grandchild.setClassifier("agent");
+        indexDAO.indexWorkflow(grandchild);
+
+        WorkflowSummary unrelated = getMockWorkflowSummary("agent-unrelated", "");
+        unrelated.setClassifier("agent");
+        indexDAO.indexWorkflow(unrelated);
+
+        WorkflowSummary parent = getMockWorkflowSummary("agent-parent", "");
+        parent.setClassifier("agent");
+        indexDAO.indexWorkflow(parent);
+
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(
+                        "classifier=agent",
+                        "*",
+                        0,
+                        15,
+                        Arrays.asList("agentHierarchy:DESC", "startTime:DESC"));
+
+        int parentIndex =
+                IntStream.range(0, results.getResults().size())
+                        .filter(
+                                i ->
+                                        "agent-parent"
+                                                .equals(
+                                                        results.getResults()
+                                                                .get(i)
+                                                                .getWorkflowId()))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals("agent-child", results.getResults().get(parentIndex + 1).getWorkflowId());
+        assertEquals("agent-grandchild", results.getResults().get(parentIndex + 2).getWorkflowId());
     }
 
     @Test

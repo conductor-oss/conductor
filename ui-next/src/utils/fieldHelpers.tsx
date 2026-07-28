@@ -6,6 +6,7 @@ import MuiTypography from "components/ui/MuiTypography";
 import { path as _path, clone, setWith } from "lodash/fp";
 import { ConductorValueInput } from "pages/definition/EditorPanel/TaskFormTab/forms/ConductorValueInput";
 import { ConductorArrayMapFormBase } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/ConductorArrayMapForm";
+import { LLMAutocompleteVariables } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMAutocompleteVariables";
 import {
   LLMFormFieldsEvents,
   LLMFormFieldsMachineContext,
@@ -18,6 +19,10 @@ import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { PromptDef } from "types/Prompts";
 import { ActorRef, State } from "xstate";
 import { MEDIA_TYPE_SUGGESTIONS } from "./constants/httpSuggestions";
+
+/** LLM text complete stores the prompt in promptName; chat complete uses instructions. */
+const selectedPromptNameFromTask = (task: Partial<TaskDef>) =>
+  task?.inputParameters?.promptName ?? task?.inputParameters?.instructions;
 
 export type FieldComponentType = FunctionComponent<{
   onChange: (t: Partial<TaskDef>) => void;
@@ -77,7 +82,7 @@ const aiFieldTypes = {
     );
 
     // Filter options based on selected prompt's integrations
-    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPromptName = selectedPromptNameFromTask(task);
     const selectedPrompt = promptNameOptions.find(
       (prompt: PromptDef) => prompt.name === selectedPromptName,
     );
@@ -137,7 +142,7 @@ const aiFieldTypes = {
     const selectedProvider = task?.inputParameters?.llmProvider;
 
     // Filter options based on selected prompt's integrations
-    const selectedPromptName = task?.inputParameters?.promptName;
+    const selectedPromptName = selectedPromptNameFromTask(task);
     const selectedPrompt = promptNameOptions.find(
       (prompt: PromptDef) => prompt.name === selectedPromptName,
     );
@@ -453,7 +458,7 @@ const aiFieldTypes = {
       task,
     );
     return (
-      <ConductorAutocompleteVariables
+      <LLMAutocompleteVariables
         openOnFocus
         onChange={(value) => onChange(setValue(value))}
         value={ipValue}
@@ -468,7 +473,7 @@ const aiFieldTypes = {
       task,
     );
     return (
-      <ConductorAutocompleteVariables
+      <LLMAutocompleteVariables
         openOnFocus
         onChange={(value) => onChange(setValue(value))}
         value={ipValue}

@@ -22,6 +22,7 @@ import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -49,6 +50,13 @@ import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 // the 'flyway' and 'flywayInitializer' beans exist before the MySQL DAOs are initialized.
 @Import({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 public class MySQLConfiguration {
+
+    // scheduler flyway shares this schema (own history table, baseline 0) — baseline-0 here too
+    // so the non-empty-schema check can't fail when the scheduler migrates first
+    @Bean
+    public FlywayConfigurationCustomizer mysqlFlywayCustomizer() {
+        return configuration -> configuration.baselineOnMigrate(true).baselineVersion("0");
+    }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})

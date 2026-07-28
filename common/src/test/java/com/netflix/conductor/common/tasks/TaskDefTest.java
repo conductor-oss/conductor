@@ -27,6 +27,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TaskDefTest {
@@ -126,5 +127,32 @@ public class TaskDefTest {
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
         assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testRuntimeMetadataGetterSetterRoundTrip() {
+        TaskDef taskDef = new TaskDef();
+        assertTrue(taskDef.getRuntimeMetadata().isEmpty());
+
+        List<String> runtimeMetadata = List.of("OPENAI_API_KEY", "REGION");
+        taskDef.setRuntimeMetadata(runtimeMetadata);
+
+        assertEquals(runtimeMetadata, taskDef.getRuntimeMetadata());
+    }
+
+    @Test
+    public void testTaskDefsDifferingOnlyByRuntimeMetadataAreNotEqual() {
+        TaskDef taskDef1 = new TaskDef("task1");
+        taskDef1.setRuntimeMetadata(List.of("OPENAI_API_KEY"));
+
+        TaskDef taskDef2 = new TaskDef("task1");
+        taskDef2.setRuntimeMetadata(List.of("REGION"));
+
+        assertNotEquals(taskDef1, taskDef2);
+        assertNotEquals(taskDef1.hashCode(), taskDef2.hashCode());
+
+        taskDef2.setRuntimeMetadata(List.of("OPENAI_API_KEY"));
+        assertEquals(taskDef1, taskDef2);
+        assertEquals(taskDef1.hashCode(), taskDef2.hashCode());
     }
 }

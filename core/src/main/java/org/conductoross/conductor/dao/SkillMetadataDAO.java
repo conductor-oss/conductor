@@ -25,22 +25,22 @@ import java.util.Optional;
  * MySQL, SQLite, Redis). It deliberately stores the manifest as an opaque JSON document ({@code
  * detailJson}) so the persistence layer carries no dependency on AgentSpan model types.
  *
- * <p>All operations are scoped by {@code ownerId}. Authorization (whether the caller may read a
- * given skill) is the caller's concern, not this DAO's. Implemented per supported DB.
+ * <p>Skills share a single global namespace (OSS Conductor is single-tenant). Authorization
+ * (whether the caller may read a given skill) is the caller's concern, not this DAO's. Implemented
+ * per supported DB.
  */
 public interface SkillMetadataDAO {
 
     /**
-     * Inserts or replaces the metadata for a single skill version (keyed by {@code ownerId + name +
+     * Inserts or replaces the metadata for a single skill version (keyed by {@code name +
      * version}). When {@code makeLatest} is {@code true}, this version becomes the skill's recorded
-     * latest and any previously-latest version for the same {@code (ownerId, name)} is cleared.
+     * latest and any previously-latest version for the same {@code name} is cleared.
      *
      * @param detailJson the serialized skill manifest/detail document
      * @param createdAt epoch milliseconds the version was first created (may be {@code null})
      * @param updatedAt epoch milliseconds of this write (may be {@code null})
      */
     void save(
-            String ownerId,
             String name,
             String version,
             boolean makeLatest,
@@ -49,21 +49,21 @@ public interface SkillMetadataDAO {
             Long updatedAt);
 
     /** Exact-version lookup; returns the stored {@code detailJson} or empty when absent. */
-    Optional<String> find(String ownerId, String name, String version);
+    Optional<String> find(String name, String version);
 
     /** The recorded latest version string for a skill, if any. */
-    Optional<String> latestVersion(String ownerId, String name);
+    Optional<String> latestVersion(String name);
 
     /** The stored {@code detailJson} for every recorded version of a single skill (unordered). */
-    List<String> listVersions(String ownerId, String name);
+    List<String> listVersions(String name);
 
     /**
-     * The stored {@code detailJson} for an owner's skills. When {@code allVersions} is {@code
-     * false}, returns only each skill's latest version; when {@code true}, returns every version of
-     * every skill.
+     * The stored {@code detailJson} for all skills. When {@code allVersions} is {@code false},
+     * returns only each skill's latest version; when {@code true}, returns every version of every
+     * skill.
      */
-    List<String> list(String ownerId, boolean allVersions);
+    List<String> list(boolean allVersions);
 
     /** Removes a single version and recomputes the skill's latest pointer when needed. */
-    void delete(String ownerId, String name, String version);
+    void delete(String name, String version);
 }

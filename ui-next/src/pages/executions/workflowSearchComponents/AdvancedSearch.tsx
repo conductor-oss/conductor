@@ -81,6 +81,8 @@ export interface AdvancedSearchProps {
   openEndDatePicker: boolean;
   setEndOpenDatePicker: (val: boolean) => void;
   recentSearches: { start: string; end: string };
+  /** Classifier filter passed to /workflow/search (e.g. "workflow" or "agent"). */
+  classifier?: string;
 }
 
 export default function AdvancedSearch({
@@ -114,6 +116,7 @@ export default function AdvancedSearch({
   openEndDatePicker,
   setEndOpenDatePicker,
   recentSearches,
+  classifier = "workflow",
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
   const [queryText, setQueryText] = useQueryState("query", "");
@@ -208,6 +211,9 @@ export default function AdvancedSearch({
       sort,
       query: queryFT.query,
       freeText: queryFT.freeText,
+      // Scope results to a single classifier: "workflow" for plain workflow
+      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      classifier,
     },
     {},
     {

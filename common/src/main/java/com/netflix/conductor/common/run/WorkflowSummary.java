@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.SummaryUtil;
 
@@ -102,6 +103,14 @@ public class WorkflowSummary {
     @ProtoField(id = 22)
     private String parentWorkflowId = "";
 
+    /**
+     * Classifier of the workflow definition this execution was started from (e.g. {@code workflow}
+     * for a plain workflow, {@code agent} for AgentSpan agents). Derived via {@link
+     * WorkflowClassifier} at index time.
+     */
+    @ProtoField(id = 23)
+    private String classifier;
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -151,6 +160,7 @@ public class WorkflowSummary {
         this.createdBy = workflow.getCreatedBy();
         this.parentWorkflowId =
                 workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "";
+        this.classifier = WorkflowClassifier.classifierOf(workflow.getWorkflowDefinition());
     }
 
     /**
@@ -399,6 +409,14 @@ public class WorkflowSummary {
         this.parentWorkflowId = parentWorkflowId;
     }
 
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public void setClassifier(String classifier) {
+        this.classifier = classifier;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -423,7 +441,8 @@ public class WorkflowSummary {
                 && Objects.equals(getEvent(), that.getEvent())
                 && Objects.equals(getCreatedBy(), that.getCreatedBy())
                 && Objects.equals(getTaskToDomain(), that.getTaskToDomain())
-                && Objects.equals(getParentWorkflowId(), that.getParentWorkflowId());
+                && Objects.equals(getParentWorkflowId(), that.getParentWorkflowId())
+                && Objects.equals(getClassifier(), that.getClassifier());
     }
 
     @Override
@@ -444,6 +463,7 @@ public class WorkflowSummary {
                 getPriority(),
                 getCreatedBy(),
                 getTaskToDomain(),
-                getParentWorkflowId());
+                getParentWorkflowId(),
+                getClassifier());
     }
 }

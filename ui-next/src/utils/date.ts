@@ -6,6 +6,7 @@ import {
   endOfDay,
   format,
   formatDistance,
+  formatDistanceStrict,
   formatDistanceToNow,
   fromUnixTime,
   intervalToDuration,
@@ -504,6 +505,34 @@ export const humanizeDuration = (
   if (!isValid(fromDate) || !isValid(toDate)) return "";
 
   return formatDistance(fromDate, toDate);
+};
+
+/**
+ * Formats the distance between two timestamps using the most useful unit and
+ * includes direction. date-fns handles seconds and larger units; sub-second
+ * values retain millisecond precision.
+ */
+export const formatRelativeDuration = (
+  from: Date | string | number,
+  to: Date | string | number = Date.now(),
+): string => {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+
+  if (!isValid(fromDate) || !isValid(toDate)) return "";
+
+  const differenceInMillis = toDate.getTime() - fromDate.getTime();
+  if (Math.abs(differenceInMillis) < 1000) {
+    const milliseconds = Math.abs(differenceInMillis);
+    return differenceInMillis >= 0
+      ? `${milliseconds} ms ago`
+      : `in ${milliseconds} ms`;
+  }
+
+  return formatDistanceStrict(fromDate, toDate, {
+    addSuffix: true,
+    roundingMethod: "floor",
+  });
 };
 
 /**

@@ -2,7 +2,10 @@ import { Box, Grid, Typography } from "@mui/material";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { path as _path } from "lodash/fp";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
-import { fieldsToFieldsFieldsComponents, updateField } from "utils/fieldHelpers";
+import {
+  fieldsToFieldsFieldsComponents,
+  updateField,
+} from "utils/fieldHelpers";
 import { ConductorAdditionalHeadersBase } from "./HTTPTaskForm/ConductorAdditionalHeaders";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { LLMFormFields } from "./LLMFormFields/LLMFormFields";
@@ -98,8 +101,8 @@ export const LLMSearchEmbeddingsTaskForm = ({
               <Grid size={12}>
                 <Typography variant="body2" color="text.secondary" mb={1}>
                   When <strong>embeddings</strong> is set it is used directly;
-                  otherwise the <strong>query</strong> below is embedded with the
-                  selected embedding model.
+                  otherwise the <strong>query</strong> below is embedded with
+                  the selected embedding model.
                 </Typography>
               </Grid>
             </Grid>

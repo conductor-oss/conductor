@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
@@ -46,6 +47,25 @@ public class PostgresIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        String query = builder.getQuery();
+        assertTrue(query.startsWith("WITH RECURSIVE workflow_hierarchy"));
+        assertTrue(query.contains("JOIN workflow_hierarchy parent"));
+        assertTrue(query.contains("LEFT JOIN workflow_hierarchy"));
+        assertTrue(query.contains("workflow_hierarchy.hierarchy_path ASC"));
     }
 
     @Test
@@ -599,6 +619,88 @@ public class PostgresIndexQueryBuilderTest {
         builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("COMP*", "RUNNING")));
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateQueryForClassifier() throws SQLException {
+        String inputQuery = "classifier=\"agent\"";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE classifier = ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("agent");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldGenerateQueryForClassifierInClause() throws SQLException {
+        String inputQuery = "classifier IN (agent,pipeline)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE classifier = ANY(?) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("agent", "pipeline")));
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifier() throws SQLException {
+        // Rows indexed before the classifier column existed are untagged plain workflows;
+        // filtering for the "workflow" token must also match those NULL rows.
+        String inputQuery = "classifier=\"workflow\"";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE (classifier = ? OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("workflow");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldMatchLegacyNullRowsForUntaggedClassifierInClause() throws SQLException {
+        String inputQuery = "classifier IN (agent,workflow)";
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data::TEXT FROM table_name WHERE (classifier = ANY(?) OR classifier IS NULL) LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter(new ArrayList<>(List.of("agent", "workflow")));
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);

@@ -368,6 +368,54 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testSearchWorkflowSummaryByClassifier() {
+        String correlationId = "classifier-search-correlation-id";
+
+        WorkflowSummary agentWfs = getMockWorkflowSummary("workflow-id-classifier-agent");
+        agentWfs.setCorrelationId(correlationId);
+        agentWfs.setClassifier("agent");
+        indexDAO.indexWorkflow(agentWfs);
+
+        WorkflowSummary plainWfs = getMockWorkflowSummary("workflow-id-classifier-plain");
+        plainWfs.setCorrelationId(correlationId);
+        plainWfs.setClassifier("workflow");
+        indexDAO.indexWorkflow(plainWfs);
+
+        // Simulates a row indexed before the classifier column existed (NULL classifier).
+        WorkflowSummary legacyWfs = getMockWorkflowSummary("workflow-id-classifier-legacy");
+        legacyWfs.setCorrelationId(correlationId);
+        indexDAO.indexWorkflow(legacyWfs);
+
+        String agentQuery =
+                String.format("correlationId='%s' AND classifier='agent'", correlationId);
+        SearchResult<WorkflowSummary> agentResults =
+                indexDAO.searchWorkflowSummary(agentQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of agent results", 1, agentResults.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                agentWfs.getWorkflowId(),
+                agentResults.getResults().get(0).getWorkflowId());
+
+        // The untagged token must match both explicitly tagged plain workflows and legacy
+        // NULL rows.
+        String workflowQuery =
+                String.format("correlationId='%s' AND classifier='workflow'", correlationId);
+        SearchResult<WorkflowSummary> workflowResults =
+                indexDAO.searchWorkflowSummary(workflowQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of untagged results", 2, workflowResults.getResults().size());
+
+        String inQuery =
+                String.format("correlationId='%s' AND classifier IN (agent,other)", correlationId);
+        SearchResult<WorkflowSummary> inResults =
+                indexDAO.searchWorkflowSummary(inQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of IN clause results", 1, inResults.getResults().size());
+
+        indexDAO.removeWorkflow(agentWfs.getWorkflowId());
+        indexDAO.removeWorkflow(plainWfs.getWorkflowId());
+        indexDAO.removeWorkflow(legacyWfs.getWorkflowId());
+    }
+
+    @Test
     public void testFullTextSearchWorkflowSummary() {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
 

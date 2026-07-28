@@ -100,11 +100,8 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                   handleChangeInputForm("description", value)
                 }
                 value={modifiedTaskDefinition.description}
-                error={
-                  !!error?.description || !modifiedTaskDefinition.description
-                }
+                error={!!error?.description}
                 helperText={error?.description?.message}
-                required
                 autoFocus
                 placeholder="Enter description"
                 sx={{

@@ -57,9 +57,15 @@ export function IterationSection({
     handleCancel,
   } = useSummarize();
 
-  const toggleProps = summarizeEnabled
-    ? { isSummarized, onToggleSummarize: handleToggleChange }
-    : { isSummarized: true, onToggleSummarize: undefined };
+  const isDoWhileContext =
+    selectedTask.taskType === TaskType.DO_WHILE ||
+    parentDoWhileRef != null ||
+    isIteration;
+
+  const toggleProps =
+    summarizeEnabled && isDoWhileContext
+      ? { isSummarized, onToggleSummarize: handleToggleChange }
+      : { isSummarized: true, onToggleSummarize: undefined };
 
   // Remembers the last inline iteration the user explicitly picked so we can
   // restore it when they navigate away (e.g. to the DO_WHILE task) and back.
@@ -102,7 +108,7 @@ export function IterationSection({
 
   return (
     <>
-      {summarizeEnabled && (
+      {summarizeEnabled && isDoWhileContext && (
         <SummarizeConfirmDialog
           open={confirmOpen}
           onCancel={handleCancel}

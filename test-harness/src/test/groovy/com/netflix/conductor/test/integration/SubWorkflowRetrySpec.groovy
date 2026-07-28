@@ -188,17 +188,20 @@ class SubWorkflowRetrySpec extends AbstractSpecification {
      */
     def "Test retry on the root in a 3-level subworkflow"() {
         //region Test case
-        when: "do a retry on the root workflow and execute the new root SUB_WORKFLOW task"
-        // A retry only re-runs the failed SUB_WORKFLOW task; the root's integration_task_1
-        // stays COMPLETED, so there is no integration_task_1 to poll here.
+        when: "do a retry on the root workflow"
         workflowExecutor.retry(rootWorkflowId, false)
+
+        then: "poll and complete the 'integration_task_1' task"
+        workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op1': 'task1.done'])
+
+        and: "execute the SUB_WORKFLOW task on the root to create the new mid-level workflow"
         def newRootSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
                 .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
         if (newRootSubWfTask) {
             asyncSystemTaskExecutor.execute(subWorkflowTask, newRootSubWfTask.taskId)
         }
 
-        then: "verify that the root workflow created a new SUB_WORKFLOW task"
+        and: "verify that the root workflow created a new SUB_WORKFLOW task"
         with(workflowExecutionService.getExecutionStatus(rootWorkflowId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 3

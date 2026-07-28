@@ -60,21 +60,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The durability money-shot, through the <b>real engine</b>: a {@code AGENT} task is driven by the
- * genuine decider + {@link AsyncSystemTaskExecutor} + Redis-backed persistence (not a mocked
- * engine), against a slow A2A agent, and proves crash/restart resume.
+ * genuine decider + Redis-backed persistence (not a mocked engine), against a slow A2A agent, and
+ * proves crash/restart resume.
  *
  * <p>"Durable A2A" claim under test: while the remote agent is still {@code working}, all of the
  * in-flight call state (the remote {@code taskId}, the deadline anchor) lives in the persisted task
  * output — <b>not</b> in a worker thread. So a process that lost all memory can reload the task
  * from the DAO and keep polling to completion. We model the crash by capturing only the workflow id
- * and resuming purely from {@code ExecutionService.getExecutionStatus} + {@code
- * AsyncSystemTaskExecutor.execute} (which reloads each {@code TaskModel} from the DAO every cycle).
- * The embedded agent stands in for the external agent, which does <i>not</i> crash when Conductor
- * does — it keeps serving and eventually flips to {@code completed}.
+ * and resuming purely from {@code ExecutionService.getExecutionStatus} + a fresh {@code
+ * AsyncSystemTaskExecutor} invocation (which reloads each {@code TaskModel} from the DAO every
+ * cycle). The embedded agent stands in for the external agent, which does <i>not</i> crash when
+ * Conductor does — it keeps serving and eventually flips to {@code completed}.
  *
- * <p>System-task workers are disabled in test mode, so we drain the {@code AGENT} queue and execute
- * via {@link AsyncSystemTaskExecutor} — the same path {@code SystemTaskWorkerCoordinator} takes in
- * production.
+ * <p>{@code AGENT} is an annotation-based asynchronous system task. The test drains the real Redis
+ * queue through {@link AsyncSystemTaskExecutor}, the same path used by the production system-task
+ * worker coordinator.
  */
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(
@@ -128,7 +128,8 @@ class A2ADurableEngineEndToEndTest {
 
     @BeforeEach
     void startAgent() throws IOException {
-        agent = SlowA2AAgent.start(2); // completes on the 2nd tasks/get poll
+        // Complete late enough to capture the persisted in-flight state before the terminal poll.
+        agent = SlowA2AAgent.start(6);
     }
 
     @AfterEach
@@ -150,7 +151,8 @@ class A2ADurableEngineEndToEndTest {
                 .pollInterval(250, TimeUnit.MILLISECONDS)
                 .until(
                         () -> {
-                            drainAgentTasks();
+                            workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             Task t = callAgentTask(workflowId);
                             return t != null
                                     && t.getStatus() == Task.Status.IN_PROGRESS
@@ -194,7 +196,8 @@ class A2ADurableEngineEndToEndTest {
                 .pollInterval(250, TimeUnit.MILLISECONDS)
                 .until(
                         () -> {
-                            drainAgentTasks();
+                            workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             Workflow wf = executionService.getExecutionStatus(workflowId, true);
                             latest.set(wf);
                             return wf != null
@@ -204,20 +207,29 @@ class A2ADurableEngineEndToEndTest {
         return latest.get();
     }
 
-    private void drainAgentTasks() {
-        WorkflowSystemTask callAgent =
-                asyncSystemTasks.stream()
-                        .filter(t -> "AGENT".equals(t.getTaskType()))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "AGENT WorkflowSystemTask was not registered —"
-                                                        + " conductor.integrations.ai.enabled must be"
-                                                        + " true and the ai module on the classpath."));
-        for (String taskId : queueDAO.pop("AGENT", 5, 100)) {
-            asyncSystemTaskExecutor.execute(callAgent, taskId);
+    /**
+     * Executes visible AGENT queue entries through the production asynchronous system-task path.
+     * Callback delays remain enforced by the Redis queue, so repeated calls cannot poll the remote
+     * agent faster than the configured interval.
+     */
+    private void drainQueue(String taskType) {
+        WorkflowSystemTask task = systemTask(taskType);
+        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+            asyncSystemTaskExecutor.execute(task, taskId);
         }
+    }
+
+    private WorkflowSystemTask systemTask(String taskType) {
+        return asyncSystemTasks.stream()
+                .filter(t -> taskType.equals(t.getTaskType()))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        taskType
+                                                + " WorkflowSystemTask was not registered —"
+                                                + " conductor.integrations.ai.enabled must be"
+                                                + " true and the ai module on the classpath."));
     }
 
     private Task callAgentTask(String workflowId) {

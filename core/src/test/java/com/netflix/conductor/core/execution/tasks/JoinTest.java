@@ -12,15 +12,23 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +41,22 @@ public class JoinTest {
         TaskModel task = new TaskModel();
         task.setWorkflowTask(workflowTask);
         return task;
+    }
+
+    private static TaskModel forkedTaskWithOutput(String refName, Map<String, Object> output) {
+        TaskModel forkedTask = new TaskModel();
+        forkedTask.setReferenceTaskName(refName);
+        forkedTask.setWorkflowTask(new WorkflowTask());
+        forkedTask.setStatus(TaskModel.Status.COMPLETED);
+        forkedTask.setOutputData(output);
+        return forkedTask;
+    }
+
+    private static TaskModel joinTaskOn(String... refNames) {
+        TaskModel joinTask = new TaskModel();
+        joinTask.setWorkflowTask(new WorkflowTask());
+        joinTask.setInputData(new HashMap<>(Map.of("joinOn", List.of(refNames))));
+        return joinTask;
     }
 
     @Test
@@ -124,5 +148,89 @@ public class JoinTest {
 
         // isAsync should always return true
         assertTrue(join.isAsync());
+    }
+
+    @Test
+    public void testAgentWorkflowDefCompactsForkOutput() {
+        ConductorProperties properties = mock(ConductorProperties.class);
+        Join join = new Join(properties);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+        assertTrue("precondition: def must classify as agent", agentDef.isAgent());
+
+        Map<String, Object> forkOutput = new HashMap<>();
+        forkOutput.put("state", "some-state");
+        forkOutput.put("toolResult", "full raw tool payload, should not be copied");
+        TaskModel forkedTask = forkedTaskWithOutput("t1", forkOutput);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("t1");
+
+        boolean done = join.execute(workflow, joinTask, mock(WorkflowExecutor.class));
+
+        assertTrue(done);
+        assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> compact = (Map<String, Object>) joinTask.getOutputData().get("t1");
+        assertEquals("state", "some-state", compact.get("state"));
+        assertFalse(
+                "full tool output must not leak into JOIN output for agent executions",
+                compact.containsKey("toolResult"));
+    }
+
+    @Test
+    public void testNonAgentWorkflowDefCopiesFullForkOutput() {
+        ConductorProperties properties = mock(ConductorProperties.class);
+        Join join = new Join(properties);
+
+        WorkflowDef plainDef = new WorkflowDef();
+        assertFalse("precondition: untagged def must not classify as agent", plainDef.isAgent());
+
+        Map<String, Object> forkOutput = new HashMap<>();
+        forkOutput.put("state", "some-state");
+        forkOutput.put("toolResult", "full raw tool payload");
+        TaskModel forkedTask = forkedTaskWithOutput("t1", forkOutput);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(plainDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("t1");
+
+        boolean done = join.execute(workflow, joinTask, mock(WorkflowExecutor.class));
+
+        assertTrue(done);
+        assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> full = (Map<String, Object>) joinTask.getOutputData().get("t1");
+        assertEquals(
+                "plain FORK/JOIN must keep copying the full fork output (stock Conductor behavior)",
+                forkOutput,
+                full);
+    }
+
+    @Test
+    public void testNoWorkflowDefinitionDoesNotThrow() {
+        ConductorProperties properties = mock(ConductorProperties.class);
+        Join join = new Join(properties);
+
+        Map<String, Object> forkOutput = Map.of("state", "some-state");
+        TaskModel forkedTask = forkedTaskWithOutput("t1", forkOutput);
+
+        WorkflowModel workflow = new WorkflowModel();
+        // no workflow definition set at all — must not NPE, must fall back to full copy
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("t1");
+
+        boolean done = join.execute(workflow, joinTask, mock(WorkflowExecutor.class));
+
+        assertTrue(done);
+        assertNull(workflow.getWorkflowDefinition());
+        assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
     }
 }
