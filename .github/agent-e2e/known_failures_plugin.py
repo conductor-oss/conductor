@@ -23,8 +23,13 @@ match the test you meant, but it cannot pick up a test you did not mean.
 
 import json
 import os
+import warnings
 
 import pytest
+
+
+class KnownFailuresWarning(UserWarning):
+    """An entry matched no test, or matched more than one."""
 
 
 def _load_known_failures():
@@ -71,20 +76,90 @@ def _matches(nodeid, suffix):
     return False
 
 
+def _report(config, counts, marked):
+    """Surface per-key match counts, and complain about keys that matched 0 or >1 tests.
+
+    Two channels, because neither alone is sufficient:
+
+    * warnings — xdist forwards these from workers to the controller, so they reach the log
+      even though terminal writes from a worker do not. This is the channel that matters for
+      the actual CI invocation (`run.sh` uses `-n 3`).
+    * terminal lines — richer, but only reachable where a terminalreporter exists: a non-xdist
+      run (written inline) or the xdist controller (written from pytest_testnodedown below).
+    """
+    path = os.environ.get("E2E_KNOWN_FAILURES")
+    lines = [f"[known-failures] xfail-marked {marked} item(s) from {path}"]
+    for suffix, n in sorted(counts.items()):
+        if n == 0:
+            note = "   <-- MATCHED NOTHING (stale or typo'd key; it is doing nothing)"
+        elif n > 1:
+            note = "   <-- matched >1 test (over-broad key?)"
+        else:
+            note = ""
+        lines.append(f"[known-failures]   {n}x  {suffix}{note}")
+
+    for suffix, n in sorted(counts.items()):
+        if n == 0:
+            warnings.warn(
+                f"known-failures entry matched no test: {suffix!r}. On a full-suite run this "
+                f"means the entry is doing nothing — renamed, mistyped, or the test is gone. "
+                f"(Expected, and ignorable, if this run collected a subset via -k / a path.)",
+                KnownFailuresWarning,
+                stacklevel=1,
+            )
+        elif n > 1:
+            warnings.warn(
+                f"known-failures entry matched {n} tests: {suffix!r}. An over-broad key can "
+                f"xfail tests you did not intend to list.",
+                KnownFailuresWarning,
+                stacklevel=1,
+            )
+
+    workeroutput = getattr(config, "workeroutput", None)
+    if workeroutput is not None:
+        # xdist worker: no terminalreporter here. Hand the lines to the controller.
+        workeroutput["known_failures_lines"] = lines
+        return
+    reporter = config.pluginmanager.get_plugin("terminalreporter")
+    if reporter is not None:
+        for line in lines:
+            reporter.write_line(line)
+
+
 def pytest_collection_modifyitems(config, items):
     known = _load_known_failures()
     if not known:
         return
-    matched = 0
+
+    # Count every key's matches, not just the first one to hit each item, so an over-broad
+    # key is visible in the report even when another key claimed the item first.
+    counts = {suffix: 0 for suffix in known}
+    marked = 0
     for item in items:
+        claim = None
         for suffix, (reason, run) in known.items():
             if _matches(item.nodeid, suffix):
-                item.add_marker(pytest.mark.xfail(reason=reason, strict=False, run=run))
-                matched += 1
-                break
+                counts[suffix] += 1
+                if claim is None:
+                    claim = (reason, run)
+        if claim is not None:
+            item.add_marker(pytest.mark.xfail(reason=claim[0], strict=False, run=claim[1]))
+            marked += 1
+
+    _report(config, counts, marked)
+
+
+@pytest.hookimpl(optionalhook=True)  # xdist-only hook; absent when running without -n
+def pytest_testnodedown(node, error):
+    """xdist controller side: print the report a worker handed us, once."""
+    lines = (getattr(node, "workeroutput", None) or {}).get("known_failures_lines")
+    if not lines:
+        return
+    config = node.config
+    if getattr(config, "_known_failures_reported", False):
+        return
+    config._known_failures_reported = True
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if reporter is not None:
-        reporter.write_line(
-            f"[known-failures] xfail-marked {matched} item(s) from "
-            f"{os.environ.get('E2E_KNOWN_FAILURES')}"
-        )
+        for line in lines:
+            reporter.write_line(line)
