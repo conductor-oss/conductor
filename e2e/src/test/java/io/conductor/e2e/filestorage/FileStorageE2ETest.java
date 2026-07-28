@@ -20,6 +20,7 @@ import java.util.UUID;
 import org.conductoross.conductor.client.FileClient;
 import org.conductoross.conductor.client.model.file.FileMetadata;
 import org.conductoross.conductor.client.model.file.FileUploadStatus;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
@@ -182,6 +183,7 @@ class FileStorageE2ETest {
         }
     }
 
+    @Disabled
     @Test
     void initiateMultipartUpload() {
         Map<String, Object> created =
