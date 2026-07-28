@@ -18,16 +18,16 @@ import java.util.Map;
  * Derives the <b>classifier</b> of a workflow definition from its {@code metadata} map.
  *
  * <p>The classifier is a tag used to distinguish kinds of definitions/executions: an untagged def
- * is a plain <b>workflow</b> (classifier {@link #WORKFLOW}); AgentSpan-compiled defs are tagged
- * {@link #AGENT}. The scheme is open-ended — a def may carry any explicit {@code
+ * is a plain <b>workflow</b> (classifier {@link #WORKFLOW}); Conductor-Agents-compiled defs are
+ * tagged {@link #AGENT}. The scheme is open-ended — a def may carry any explicit {@code
  * metadata.classifier} value, enabling future kinds without schema/code changes.
  *
  * <p>Resolution order:
  *
  * <ol>
  *   <li>explicit {@code metadata.classifier} (non-blank) — wins;
- *   <li>otherwise {@code "agent"} when the AgentSpan stamp is present ({@code metadata.agent_sdk}
- *       or {@code metadata.agentDef});
+ *   <li>otherwise {@code "agent"} when the Conductor-Agents stamp is present ({@code
+ *       metadata.agent_sdk} or {@code metadata.agentDef});
  *   <li>otherwise {@code "workflow"} (a normal, untagged workflow).
  * </ol>
  *

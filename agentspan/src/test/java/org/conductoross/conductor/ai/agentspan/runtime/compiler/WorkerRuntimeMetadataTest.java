@@ -27,13 +27,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Pure compiler invariants for worker credential declarations. Registration and persistence are
- * verified by {@code AgentSpanDeploymentContractEndToEndTest} using the real metadata service.
+ * verified by the deployment contract test using the real metadata service.
  */
 class WorkerRuntimeMetadataTest {
 
     @AfterEach
-    void resetEmbedded() {
-        new EmbeddedMode().setEmbedded(false);
+    void resetAiIntegrationEnabled() {
+        new EmbeddedMode().setAiIntegrationEnabled(false);
     }
 
     @Test
@@ -46,9 +46,9 @@ class WorkerRuntimeMetadataTest {
                         .config(Map.of("credentials", List.of("GITHUB_TOKEN")))
                         .build();
 
-        new EmbeddedMode().setEmbedded(true);
+        new EmbeddedMode().setAiIntegrationEnabled(true);
         String embedded = enrichScript(tool);
-        new EmbeddedMode().setEmbedded(false);
+        new EmbeddedMode().setAiIntegrationEnabled(false);
         String standalone = enrichScript(tool);
 
         assertThat(embedded).doesNotContain("__resolved_credentials__");

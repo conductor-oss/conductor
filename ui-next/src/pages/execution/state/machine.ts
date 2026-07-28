@@ -217,7 +217,7 @@ export const executionMachine = createMachine<
                     target: "diagram",
                   },
                   {
-                    // Agent-classified executions (AgentSpan-compiled workflows)
+                    // Agent-classified executions (Conductor-Agents-compiled workflows)
                     // default to the Agent Execution debugger tab; regular
                     // workflows keep Diagram as the default view.
                     cond: "isAgentWorkflowExecution",

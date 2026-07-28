@@ -35,13 +35,13 @@ class NativeSecretGatingTest {
                     .withUserConfiguration(NativeBeans.class);
 
     @Test
-    void nativeResolutionIsAbsentWhenEmbeddedModeIsNotEnabled() {
+    void nativeResolutionIsAbsentWhenAiIntegrationIsDisabled() {
         runner.run(ctx -> assertThat(ctx).doesNotHaveBean(CredentialResolutionService.class));
     }
 
     @Test
-    void nativeResolutionUsesTheConcreteSecretBackendWhenEmbeddedModeIsEnabled() {
-        runner.withPropertyValues("agentspan.embedded=true")
+    void nativeResolutionUsesTheConcreteSecretBackendWhenAiIntegrationIsEnabled() {
+        runner.withPropertyValues("conductor.integrations.ai.enabled=true")
                 .run(ctx -> assertThat(ctx).hasSingleBean(CredentialResolutionService.class));
     }
 }
