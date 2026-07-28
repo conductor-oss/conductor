@@ -75,7 +75,7 @@ tasks.withType(Test)  {
     maxParallelForks = 1
 }
 
-// AgentSpan's deterministic suite uses real Conductor services plus Testcontainers. The live
+// Conductor-Agents' deterministic suite uses real Conductor services plus Testcontainers. The live
 // suite additionally calls a configured LLM provider and is deliberately separate from the
 // default test task so local contributors do not need provider credentials to run unit tests.
 tasks.named('test') {
