@@ -138,14 +138,13 @@ class OpenAINormalizerTest {
     }
 
     @Test
-    void handoffCanDisableSynthesisSoTheSpecialistRemainsTheFinalSpeaker() {
+    void handoffDefaultsToNoSynthesisSoTheSpecialistRemainsTheFinalSpeaker() {
         AgentConfig config =
                 normalizer.normalize(
                         Map.of(
                                 "name", "support_triage",
                                 "model", "gpt-4o-mini",
                                 "instructions", "Hand off to the right specialist.",
-                                "synthesize", false,
                                 "handoffs",
                                         List.of(
                                                 Map.of(
@@ -159,6 +158,30 @@ class OpenAINormalizerTest {
         assertThat(config.isSynthesize()).isFalse();
         assertThat(flatten(workflow.getTasks()))
                 .noneMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
+    }
+
+    @Test
+    void handoffCanOptIntoSynthesis() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "name", "support_triage",
+                                "model", "gpt-4o-mini",
+                                "instructions", "Hand off to the right specialist.",
+                                "synthesize", true,
+                                "handoffs",
+                                        List.of(
+                                                Map.of(
+                                                        "name", "billing_specialist",
+                                                        "model", "gpt-4o-mini",
+                                                        "instructions",
+                                                                "Begin your reply with 'BILLING:' ."))));
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+
+        assertThat(config.isSynthesize()).isTrue();
+        assertThat(flatten(workflow.getTasks()))
+                .anyMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
     }
 
     private static List<WorkflowTask> flatten(List<WorkflowTask> tasks) {

@@ -77,7 +77,7 @@ class GoogleADKNormalizerTest {
     }
 
     @Test
-    void transferCanDisableSynthesisSoTheSubAgentRemainsTheFinalSpeaker() {
+    void transferDefaultsToNoSynthesisSoTheSubAgentRemainsTheFinalSpeaker() {
         AgentConfig config =
                 normalizer.normalize(
                         Map.of(
@@ -85,7 +85,6 @@ class GoogleADKNormalizerTest {
                                 "name", "support_triage",
                                 "model", "gemini-2.0-flash",
                                 "instruction", "Transfer to the right specialist.",
-                                "synthesize", false,
                                 "sub_agents",
                                         List.of(
                                                 Map.of(
@@ -100,6 +99,32 @@ class GoogleADKNormalizerTest {
         assertThat(config.isSynthesize()).isFalse();
         assertThat(flatten(workflow.getTasks()))
                 .noneMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
+    }
+
+    @Test
+    void transferCanOptIntoSynthesis() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "_type", "LlmAgent",
+                                "name", "support_triage",
+                                "model", "gemini-2.0-flash",
+                                "instruction", "Transfer to the right specialist.",
+                                "synthesize", true,
+                                "sub_agents",
+                                        List.of(
+                                                Map.of(
+                                                        "_type", "LlmAgent",
+                                                        "name", "billing_specialist",
+                                                        "model", "gemini-2.0-flash",
+                                                        "instruction",
+                                                                "Begin your reply with 'BILLING:' ."))));
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+
+        assertThat(config.isSynthesize()).isTrue();
+        assertThat(flatten(workflow.getTasks()))
+                .anyMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
     }
 
     private static List<WorkflowTask> flatten(List<WorkflowTask> tasks) {
