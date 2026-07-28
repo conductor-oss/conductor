@@ -35,7 +35,7 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
-    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-file-storage')
     implementation project(':conductor-gcs-storage')
 
 

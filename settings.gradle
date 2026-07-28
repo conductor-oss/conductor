@@ -59,7 +59,7 @@ include 'os-persistence'
 include 'os-persistence-v2'
 include 'os-persistence-v3'
 include 'azureblob-storage'
-include 'local-file-storage'
+include 'file-storage'
 include 'gcs-storage'
 include 'postgres-external-storage'
 include 'amqp'
@@ -79,6 +79,8 @@ include 'scheduler-sqlite-persistence'
 include 'e2e'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
+
+project(':conductor-file-storage').projectDir = file('conductor-file-storage')
 
 // Map scheduler submodules to their nested directories
 project(':conductor-scheduler-core').projectDir = file('scheduler/core')
