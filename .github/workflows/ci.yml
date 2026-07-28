@@ -53,7 +53,9 @@ jobs:
               - 'ui-next/**'
             agent:
               - 'ai/**'
-              - 'conductor-agentspan/**'
+              # Directory is 'agentspan/'; ':conductor-agentspan' is only its Gradle
+              # project name, so a 'conductor-agentspan/**' pattern matches nothing.
+              - 'agentspan/**'
               - 'server/**'
               - 'core/**'
               - 'sqlite-persistence/**'
