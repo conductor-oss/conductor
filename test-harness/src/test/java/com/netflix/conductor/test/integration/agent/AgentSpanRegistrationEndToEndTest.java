@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * End-to-end test of the <b>real</b> AgentSpan registration/compilation pipeline — not the
+ * End-to-end test of the <b>real</b> Conductor-Agents registration/compilation pipeline — not the
  * hand-rolled {@code metadata.agentDef}-stamped {@link WorkflowDef}s in {@link
  * ConductorAgentEndToEndTest}. Every agent here is registered through {@code
  * AgentService.deploy(AgentStartRequest)} (the same call {@code POST /api/agent/deploy} makes) with
@@ -80,10 +80,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Requires a live LLM. The dedicated {@code agentspanRealE2E} Gradle task fails before running
  * the suite unless {@code ANTHROPIC_API_KEY} or {@code OPENAI_API_KEY} is set. It picks whichever
- * key is present (Anthropic preferred) rather than running the provider-agnostic AgentSpan pipeline
- * twice — these tests exercise the compiler/dispatch machinery, not provider-specific quirks, so
- * there is nothing to gain from a two-provider matrix, only 2x the LLM spend on every CI run once a
- * key is configured.
+ * key is present (Anthropic preferred) rather than running the provider-agnostic Conductor-Agents
+ * pipeline twice — these tests exercise the compiler/dispatch machinery, not provider-specific
+ * quirks, so there is nothing to gain from a two-provider matrix, only 2x the LLM spend on every CI
+ * run once a key is configured.
  *
  * <p>LLM output wording is inherently non-deterministic, so assertions favor <b>structural</b>
  * proof (a real {@code HTTP} task ran with {@code statusCode=200}; a real {@code HUMAN} task paused
@@ -102,7 +102,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.app.sweeper.queuePopTimeout=750",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "conductor.external-payload-storage.type=s3",
             "conductor.external-payload-storage.s3.bucketName="
                     + AgentSpanRegistrationEndToEndTest.PAYLOAD_BUCKET,
@@ -461,7 +460,7 @@ class AgentSpanRegistrationEndToEndTest {
                 "the completed interview must preserve a terminal result: " + resultText);
     }
 
-    // ── AgentSpan registration ─────────────────────────────────────────────
+    // ── Conductor-Agents registration ──────────────────────────────────────
 
     private void deployAgent(AgentConfig config) {
         AgentStartResponse response =
