@@ -16,10 +16,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Captures whether AgentSpan is running embedded in a host (e.g. orkes-conductor) into a static
- * flag, so compile-time code reached through plain (non-Spring) helpers — e.g. {@code ToolCompiler}
- * — can branch on it. Populated once at startup from the {@code agentspan.embedded} property
- * (default {@code false} for the standalone server). Compilation is request-driven, so the value is
+ * Captures whether Conductor-Agents is running embedded in a host (e.g. orkes-conductor) into a
+ * static flag, so compile-time code reached through plain (non-Spring) helpers — e.g. {@code
+ * ToolCompiler} — can branch on it. Populated once at startup from the {@code
+ * conductor.integrations.ai.enabled} property. Compilation is request-driven, so the value is
  * always set before any compile runs.
  */
 @Component
@@ -27,8 +27,8 @@ public class EmbeddedMode {
 
     private static volatile boolean embedded = false;
 
-    @Value("${agentspan.embedded:false}")
-    public void setEmbedded(boolean value) {
+    @Value("${conductor.integrations.ai.enabled:false}")
+    public void setAiIntegrationEnabled(boolean value) {
         embedded = value;
     }
 

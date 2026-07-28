@@ -23,7 +23,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * REPRODUCES ISSUE #1323 (compiler half) - AgentSpan output guardrails misfire on tool-call turns.
+ * REPRODUCES ISSUE #1323 (compiler half) - Conductor-Agents output guardrails misfire on tool-call
+ * turns.
  *
  * <p>The runtime misfire (see {@code Issue1323GuardrailToolCallMisfireTest}) is only fixable if the
  * compiled INLINE guardrail task is actually fed the LLM turn's tool calls. Today {@link
