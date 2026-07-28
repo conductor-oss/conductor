@@ -76,6 +76,32 @@ class GoogleADKNormalizerTest {
                         "Provider-native web search requires an OpenAI or Anthropic model");
     }
 
+    @Test
+    void transferCanDisableSynthesisSoTheSubAgentRemainsTheFinalSpeaker() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "_type", "LlmAgent",
+                                "name", "support_triage",
+                                "model", "gemini-2.0-flash",
+                                "instruction", "Transfer to the right specialist.",
+                                "synthesize", false,
+                                "sub_agents",
+                                        List.of(
+                                                Map.of(
+                                                        "_type", "LlmAgent",
+                                                        "name", "billing_specialist",
+                                                        "model", "gemini-2.0-flash",
+                                                        "instruction",
+                                                                "Begin your reply with 'BILLING:' ."))));
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+
+        assertThat(config.isSynthesize()).isFalse();
+        assertThat(flatten(workflow.getTasks()))
+                .noneMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
+    }
+
     private static List<WorkflowTask> flatten(List<WorkflowTask> tasks) {
         List<WorkflowTask> result = new ArrayList<>();
         for (WorkflowTask task : tasks) {
