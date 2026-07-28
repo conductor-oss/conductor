@@ -7,7 +7,7 @@ type SeqResult = {
 };
 
 /**
- * Whether a workflow execution is an AgentSpan-compiled agent run (carries
+ * Whether a workflow execution is a Conductor-Agents-compiled agent run (carries
  * the `agentDef`/`agent_sdk` metadata stamp on its workflow definition), as
  * opposed to a plain Conductor workflow. Drives: which tab the execution page
  * defaults to, which sidebar nav item stays highlighted, and which route

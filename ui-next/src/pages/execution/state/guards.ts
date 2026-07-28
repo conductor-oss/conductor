@@ -38,7 +38,7 @@ export const isAgentExecutionTab = ({ currentTab }: ExecutionMachineContext) =>
 
 /**
  * Gate for the "Agent Execution" debugger tab — only agent-classified
- * executions (AgentSpan-compiled workflows) get the tab/default-tab treatment;
+ * executions (Conductor-Agents-compiled workflows) get the tab/default-tab treatment;
  * regular workflows keep Diagram as the default view.
  */
 export const isAgentWorkflowExecution = (context: ExecutionMachineContext) =>
