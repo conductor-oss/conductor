@@ -66,8 +66,7 @@ class A2ANativeAgentFacadeTest {
         workflowService = mock(WorkflowService.class);
         taskService = mock(TaskService.class);
         properties = new A2AServerProperties();
-        facade =
-                new A2ANativeAgentFacade(agentService, workflowService, taskService, properties);
+        facade = new A2ANativeAgentFacade(agentService, workflowService, taskService, properties);
     }
 
     private AgentSummary summary(String name) {
@@ -159,8 +158,7 @@ class A2ANativeAgentFacadeTest {
         assertEquals("exec-1", task.getId());
         assertEquals(TaskState.WORKING, task.getStatus().getState());
 
-        ArgumentCaptor<AgentStartRequest> captor =
-                ArgumentCaptor.forClass(AgentStartRequest.class);
+        ArgumentCaptor<AgentStartRequest> captor = ArgumentCaptor.forClass(AgentStartRequest.class);
         verify(agentService).start(captor.capture());
         AgentStartRequest req = captor.getValue();
         assertEquals("greeter", req.getName());
@@ -172,8 +170,7 @@ class A2ANativeAgentFacadeTest {
     @Test
     void sendMessage_unknownAgent_throws() {
         when(agentService.listAgents()).thenReturn(List.of());
-        assertThrows(
-                A2AServerException.class, () -> facade.sendMessage("unknown", userMessage()));
+        assertThrows(A2AServerException.class, () -> facade.sendMessage("unknown", userMessage()));
     }
 
     // ---- message/send (multi-turn resume) ----------------------------------------------------
@@ -225,7 +222,8 @@ class A2ANativeAgentFacadeTest {
         A2ATask task = facade.sendMessage("greeter", followUp);
 
         assertEquals(TaskState.COMPLETED, task.getStatus().getState());
-        verify(taskService, never()).updateTask(anyString(), anyString(), any(), anyString(), any());
+        verify(taskService, never())
+                .updateTask(anyString(), anyString(), any(), anyString(), any());
         verify(agentService, never()).start(any());
     }
 
@@ -254,8 +252,7 @@ class A2ANativeAgentFacadeTest {
         assertEquals(42, firstEnvelope.get("id"));
         assertTrue(firstEnvelope.get("result") instanceof A2ATask);
         assertEquals(
-                TaskState.WORKING,
-                ((A2ATask) firstEnvelope.get("result")).getStatus().getState());
+                TaskState.WORKING, ((A2ATask) firstEnvelope.get("result")).getStatus().getState());
 
         boolean sawArtifact =
                 events.stream()
@@ -345,24 +342,12 @@ class A2ANativeAgentFacadeTest {
         when(agentService.start(any()))
                 .thenReturn(AgentStartResponse.builder().executionId("exec-1").build());
 
-        assertEquals(
-                TaskState.COMPLETED,
-                taskState(workflow("exec-1", WorkflowStatus.COMPLETED)));
-        assertEquals(
-                TaskState.FAILED,
-                taskState(workflow("exec-1", WorkflowStatus.FAILED)));
-        assertEquals(
-                TaskState.FAILED,
-                taskState(workflow("exec-1", WorkflowStatus.TIMED_OUT)));
-        assertEquals(
-                TaskState.CANCELED,
-                taskState(workflow("exec-1", WorkflowStatus.TERMINATED)));
-        assertEquals(
-                TaskState.WORKING,
-                taskState(workflow("exec-1", WorkflowStatus.PAUSED)));
-        assertEquals(
-                TaskState.WORKING,
-                taskState(workflow("exec-1", WorkflowStatus.RUNNING)));
+        assertEquals(TaskState.COMPLETED, taskState(workflow("exec-1", WorkflowStatus.COMPLETED)));
+        assertEquals(TaskState.FAILED, taskState(workflow("exec-1", WorkflowStatus.FAILED)));
+        assertEquals(TaskState.FAILED, taskState(workflow("exec-1", WorkflowStatus.TIMED_OUT)));
+        assertEquals(TaskState.CANCELED, taskState(workflow("exec-1", WorkflowStatus.TERMINATED)));
+        assertEquals(TaskState.WORKING, taskState(workflow("exec-1", WorkflowStatus.PAUSED)));
+        assertEquals(TaskState.WORKING, taskState(workflow("exec-1", WorkflowStatus.RUNNING)));
     }
 
     private String taskState(Workflow wf) {

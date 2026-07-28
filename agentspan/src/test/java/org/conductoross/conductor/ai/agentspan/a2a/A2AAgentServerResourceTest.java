@@ -139,8 +139,7 @@ class A2AAgentServerResourceTest {
 
     @Test
     void tasksCancel_dispatches() {
-        when(facade.cancelTask("greeter", "exec-1"))
-                .thenReturn(task("exec-1", TaskState.CANCELED));
+        when(facade.cancelTask("greeter", "exec-1")).thenReturn(task("exec-1", TaskState.CANCELED));
 
         call("greeter", rpc("tasks/cancel", "{\"id\":\"exec-1\"}"));
 
@@ -200,7 +199,9 @@ class A2AAgentServerResourceTest {
 
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
         when(httpRequest.getRequestURL())
-                .thenReturn(new StringBuffer("http://host:8080/api/a2a/agent/unknown/.well-known/agent-card.json"));
+                .thenReturn(
+                        new StringBuffer(
+                                "http://host:8080/api/a2a/agent/unknown/.well-known/agent-card.json"));
 
         ResponseEntity<?> response = resource.agentCard("unknown", httpRequest);
 
