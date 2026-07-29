@@ -10,23 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.local.config;
+package com.netflix.conductor.server.config;
 
-import org.conductoross.conductor.core.storage.FileStorage;
-import org.conductoross.conductor.local.storage.LocalFileStorage;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
+import org.springframework.web.filter.ForwardedHeaderFilter;
 
+/** Applies trusted proxy headers before request-derived content URLs are generated. */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(LocalFileStorageProperties.class)
-@ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
-public class LocalFileStorageConfiguration {
+public class ForwardedHeaderConfiguration {
 
     @Bean
-    @ConditionalOnProperty(name = "conductor.file-storage.type", havingValue = "local")
-    public FileStorage localFileStorage(LocalFileStorageProperties properties) {
-        return new LocalFileStorage(properties);
+    public FilterRegistrationBean<ForwardedHeaderFilter> forwardedHeaderFilter() {
+        FilterRegistrationBean<ForwardedHeaderFilter> registration =
+                new FilterRegistrationBean<>(new ForwardedHeaderFilter());
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 }
