@@ -30,6 +30,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -52,6 +53,7 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
  * <p>Activated by {@code conductor.ai.bedrock-agent.enabled=true}.
  */
 @Component
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);
