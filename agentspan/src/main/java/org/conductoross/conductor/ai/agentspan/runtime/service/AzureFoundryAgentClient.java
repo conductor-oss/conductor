@@ -63,8 +63,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    private static final String DEFAULT_SCOPE = "https://management.azure.com/.default";
-    private static final String API_VERSION = "2025-05-01";
+    private static final String DEFAULT_SCOPE = "https://cognitiveservices.azure.com/.default";
+    private static final String DEFAULT_API_VERSION = "2025-01-01-preview";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final CredentialResolutionService credentialResolutionService;
@@ -91,27 +91,32 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         String endpoint = resolveEndpoint(request);
         String assistantId = resolveAssistantId(request);
+        String apiVersion = resolveApiVersion(request);
         OAuthTokenProvider tokenProvider = buildTokenProvider(request);
 
         String token = tokenProvider.getToken();
 
         // 1. Create thread
-        JsonNode threadResult = post(endpoint + "/threads", MAPPER.createObjectNode(), token);
+        JsonNode threadResult =
+                post(endpoint + "/threads", MAPPER.createObjectNode(), token, apiVersion);
         String threadId = threadResult.path("id").asText();
 
         // 2. Add user message
         ObjectNode msgBody = MAPPER.createObjectNode();
         msgBody.put("role", "user");
         msgBody.put("content", request.getPrompt());
-        post(endpoint + "/threads/" + threadId + "/messages", msgBody, token);
+        post(endpoint + "/threads/" + threadId + "/messages", msgBody, token, apiVersion);
 
         // 3. Start run
         ObjectNode runBody = MAPPER.createObjectNode();
         runBody.put("assistant_id", assistantId);
-        JsonNode runResult = post(endpoint + "/threads/" + threadId + "/runs", runBody, token);
+        JsonNode runResult =
+                post(endpoint + "/threads/" + threadId + "/runs", runBody, token, apiVersion);
         String runId = runResult.path("id").asText();
 
-        executions.put(threadId, new ExecutionContext(endpoint, assistantId, runId, tokenProvider));
+        executions.put(
+                threadId,
+                new ExecutionContext(endpoint, assistantId, runId, tokenProvider, apiVersion));
 
         return ConductorAgentStartResponse.builder()
                 .executionId(threadId)
@@ -143,7 +148,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
         String token = ctx.tokenProvider.getToken();
         String runUrl = ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId;
-        JsonNode run = get(runUrl, token);
+        JsonNode run = get(runUrl, token, ctx.apiVersion);
         return toStatusResponse(executionId, run, ctx, token);
     }
 
@@ -162,7 +167,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         // Check current run state to decide how to respond
         String runUrl = ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId;
-        JsonNode run = get(runUrl, token);
+        JsonNode run = get(runUrl, token, ctx.apiVersion);
         String status = run.path("status").asText();
 
         if ("requires_action".equals(status)) {
@@ -173,12 +178,20 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             msgBody.put("role", "user");
             String content = request.getBody() != null ? request.getBody().toString() : "";
             msgBody.put("content", content);
-            post(ctx.endpoint + "/threads/" + executionId + "/messages", msgBody, token);
+            post(
+                    ctx.endpoint + "/threads/" + executionId + "/messages",
+                    msgBody,
+                    token,
+                    ctx.apiVersion);
 
             ObjectNode runBody = MAPPER.createObjectNode();
             runBody.put("assistant_id", ctx.assistantId);
             JsonNode newRun =
-                    post(ctx.endpoint + "/threads/" + executionId + "/runs", runBody, token);
+                    post(
+                            ctx.endpoint + "/threads/" + executionId + "/runs",
+                            runBody,
+                            token,
+                            ctx.apiVersion);
             ctx.runId = newRun.path("id").asText();
         }
     }
@@ -195,7 +208,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String cancelUrl =
                 ctx.endpoint + "/threads/" + executionId + "/runs/" + ctx.runId + "/cancel";
         try {
-            post(cancelUrl, MAPPER.createObjectNode(), token);
+            post(cancelUrl, MAPPER.createObjectNode(), token, ctx.apiVersion);
         } catch (Exception e) {
             log.warn("Failed to cancel Azure Foundry run {}: {}", ctx.runId, e.getMessage());
         }
@@ -206,7 +219,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             ExecutionContext ctx,
             ConductorAgentRespondRequest request,
             String token) {
-        JsonNode run = get(ctx.endpoint + "/threads/" + threadId + "/runs/" + ctx.runId, token);
+        JsonNode run =
+                get(
+                        ctx.endpoint + "/threads/" + threadId + "/runs/" + ctx.runId,
+                        token,
+                        ctx.apiVersion);
         JsonNode toolCalls =
                 run.path("required_action").path("submit_tool_outputs").path("tool_calls");
 
@@ -228,7 +245,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         + "/runs/"
                         + ctx.runId
                         + "/submit_tool_outputs";
-        post(submitUrl, body, token);
+        post(submitUrl, body, token, ctx.apiVersion);
     }
 
     private ConductorAgentStatusResponse toStatusResponse(
@@ -247,7 +264,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         if (state == ConductorAgentState.COMPLETED) {
             // Grab the latest assistant message
-            JsonNode messages = get(ctx.endpoint + "/threads/" + threadId + "/messages", token);
+            JsonNode messages =
+                    get(ctx.endpoint + "/threads/" + threadId + "/messages", token, ctx.apiVersion);
             for (JsonNode msg : messages.path("data")) {
                 if ("assistant".equals(msg.path("role").asText())) {
                     String text = msg.path("content").path(0).path("text").path("value").asText("");
@@ -346,14 +364,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return id;
     }
 
-    private JsonNode post(String url, ObjectNode body, String bearerToken) {
+    private JsonNode post(String url, ObjectNode body, String bearerToken, String apiVersion) {
         byte[] bytes;
         try {
             bytes = MAPPER.writeValueAsBytes(body);
         } catch (IOException e) {
             throw new RuntimeException("Failed to serialize request body", e);
         }
-        String fullUrl = url.contains("?") ? url : url + "?api-version=" + API_VERSION;
+        String fullUrl = url.contains("?") ? url : url + "?api-version=" + apiVersion;
         Request request =
                 new Request.Builder()
                         .url(fullUrl)
@@ -363,8 +381,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return execute(request, url);
     }
 
-    private JsonNode get(String url, String bearerToken) {
-        String fullUrl = url.contains("?") ? url : url + "?api-version=" + API_VERSION;
+    private JsonNode get(String url, String bearerToken, String apiVersion) {
+        String fullUrl = url.contains("?") ? url : url + "?api-version=" + apiVersion;
         Request request =
                 new Request.Builder()
                         .url(fullUrl)
@@ -392,28 +410,38 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
     }
 
+    private String resolveApiVersion(ConductorAgentStartRequest request) {
+        String v = rawConfig(request, "apiVersion");
+        return StringUtils.isBlank(v) ? DEFAULT_API_VERSION : v;
+    }
+
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
         if (request.getRawConfig() == null) return null;
         Object value = request.getRawConfig().get(key);
         return value != null ? value.toString() : null;
     }
 
-    /** Per-execution state: endpoint, assistant, thread/run IDs, and token provider. */
+    /**
+     * Per-execution state: endpoint, assistant, thread/run IDs, token provider, and API version.
+     */
     private static class ExecutionContext {
         final String endpoint;
         final String assistantId;
         volatile String runId;
         final OAuthTokenProvider tokenProvider;
+        final String apiVersion;
 
         ExecutionContext(
                 String endpoint,
                 String assistantId,
                 String runId,
-                OAuthTokenProvider tokenProvider) {
+                OAuthTokenProvider tokenProvider,
+                String apiVersion) {
             this.endpoint = endpoint;
             this.assistantId = assistantId;
             this.runId = runId;
             this.tokenProvider = tokenProvider;
+            this.apiVersion = apiVersion;
         }
     }
 }
