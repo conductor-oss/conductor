@@ -22,10 +22,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Bridges AgentSpan's {@link SkillMetadataDAO} SPI onto Conductor's backend-agnostic {@link
+ * Bridges Conductor-Agents' {@link SkillMetadataDAO} SPI onto Conductor's backend-agnostic {@link
  * org.conductoross.conductor.dao.SkillMetadataDAO}. The {@link SkillDetail} manifest is serialized
- * to JSON for storage so the persistence layer carries no dependency on AgentSpan model types; it
- * is rehydrated on read.
+ * to JSON for storage so the persistence layer carries no dependency on Conductor-Agents model
+ * types; it is rehydrated on read.
  *
  * <p>OSS Conductor is single-tenant, so skills share one global namespace and neither side of the
  * adapter is owner-scoped.

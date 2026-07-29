@@ -468,7 +468,7 @@ class ToolCompilerTest {
 
     @Test
     void testCompileToolSpecs_everySpecIsSelfDescribing() {
-        // Every AgentSpan-compiled tool spec is complete (name + description +
+        // Every Conductor-Agents-compiled tool spec is complete (name + description +
         // inputSchema inline), so every spec must carry the selfDescribing
         // marker that tells OrkesLLM to skip integration resolution.
         List<ToolConfig> tools =

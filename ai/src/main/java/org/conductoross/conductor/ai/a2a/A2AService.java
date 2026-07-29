@@ -80,6 +80,12 @@ public class A2AService {
     /** Selects the embedded Conductor-agent (agentspan) runtime. */
     public static final String AGENT_TYPE_CONDUCTOR = "conductor";
 
+    /** Selects the AWS Bedrock Agent runtime. */
+    public static final String AGENT_TYPE_BEDROCK = "bedrock";
+
+    /** Selects the Azure AI Foundry runtime (Entra ID auth, A2A protocol). */
+    public static final String AGENT_TYPE_AZURE_FOUNDRY = "azure-foundry";
+
     /** Whether {@code agentType} selects the A2A runtime — null/blank defaults to A2A. */
     public static boolean isA2aAgentType(String agentType) {
         return agentType == null

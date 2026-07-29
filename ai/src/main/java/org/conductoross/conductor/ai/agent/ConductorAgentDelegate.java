@@ -119,11 +119,8 @@ public class ConductorAgentDelegate {
             return fromStatus(conductorAgentClient.getAgentStatus(executionId), null);
         }
 
-        if (StringUtils.isBlank(request.getName())) {
-            throw new NonRetryableException("AGENT (conductor) requires 'name'");
-        }
         if (StringUtils.isBlank(request.getPrompt())) {
-            throw new NonRetryableException("AGENT (conductor) requires 'prompt'");
+            throw new NonRetryableException("AGENT requires 'prompt'");
         }
         request.setIdempotencyKey(
                 StringUtils.firstNonBlank(request.getIdempotencyKey(), idempotencyKey(task)));
