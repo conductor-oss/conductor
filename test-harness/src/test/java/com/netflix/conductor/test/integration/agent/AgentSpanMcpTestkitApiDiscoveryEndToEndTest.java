@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Exercises AgentSpan API discovery and MCP calls through the real Conductor engine and
+ * Exercises Conductor-Agents API discovery and MCP calls through the real Conductor engine and
  * mcp-testkit's HTTP transport. The server exposes a deterministic authenticated OpenAPI document
  * and MCP protocol surface, so this catches routing and durability regressions that a hand-built
  * JSON fixture cannot.
@@ -89,7 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "conductor.ai.outbound.allow-private-networks=true",
             "conductor.external-payload-storage.type=s3",
             "conductor.external-payload-storage.s3.bucketName="

@@ -39,11 +39,11 @@ public class Join extends WorkflowSystemTask {
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
     /**
-     * Keys propagated from fork-branch outputs into the JOIN output for AgentSpan agent executions.
-     * Only these are copied so the JOIN payload stays small for multi-agent merges — full fork
-     * outputs are read directly from the individual tool tasks by the agent message builder, so
-     * duplicating them in JOIN is unnecessary. This mirrors AgentSpan's own JOIN task; for
-     * non-agent workflows the full fork output is copied as before.
+     * Keys propagated from fork-branch outputs into the JOIN output for Conductor-Agents agent
+     * executions. Only these are copied so the JOIN payload stays small for multi-agent merges —
+     * full fork outputs are read directly from the individual tool tasks by the agent message
+     * builder, so duplicating them in JOIN is unnecessary. This mirrors the Conductor-Agents JOIN
+     * task; for non-agent workflows the full fork output is copied as before.
      */
     private static final Set<String> AGENT_PROPAGATED_KEYS = Set.of("_state_updates", "state");
 
@@ -84,7 +84,8 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For AgentSpan agent executions, copy
+            // Only add to task output if it's not empty. For Conductor-Agents agent executions,
+            // copy
             // only the agent merge keys (compact) to keep the JOIN payload small; otherwise copy
             // the full fork output (default Conductor behavior).
             if (!forkedTask.getOutputData().isEmpty()) {
@@ -154,9 +155,9 @@ public class Join extends WorkflowSystemTask {
 
     /**
      * Returns the compact state output for an agent fork, or a namespaced observation for a
-     * dynamically generated AgentSpan tool. The latter is the only durable way an AgentSpan ReAct
-     * loop can make a dynamic HTTP/MCP/HUMAN result available to its next model turn: dynamic task
-     * reference names are not known when the workflow is compiled.
+     * dynamically generated Conductor-Agents tool. The latter is the only durable way a
+     * Conductor-Agents ReAct loop can make a dynamic HTTP/MCP/HUMAN result available to its next
+     * model turn: dynamic task reference names are not known when the workflow is compiled.
      */
     private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();

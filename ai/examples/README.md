@@ -112,16 +112,16 @@ by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.e
 
 Conductor running an agent on its **embedded agentspan runtime** via the `AGENT` task with
 `agentType: "conductor"`. These require the server to run with the embedded agentspan runtime
-enabled (`agentspan.embedded=true`) and at least one agent registered with it (example 33 needs
+enabled (`conductor.integrations.ai.enabled=true`) and at least one agent registered with it (example 33 needs
 two: `planner` and `researcher`). The `AGENT` task is non-blocking — it starts the run and polls
 until it reaches a terminal (or `WAITING`) state.
 
 | File | Workflow name | Description | Requirements |
 |------|---------------|-------------|--------------|
-| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Single agent run to completion (poll mode) | `agentspan.embedded=true`, a registered agent |
-| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Waiting run resumed via a `HUMAN` task and `executionId` | `agentspan.embedded=true`, a registered agent |
-| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two agent branches via `FORK_JOIN` -> `JOIN` | `agentspan.embedded=true`, two registered agents |
-| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start a long agent run, then cancel it (`CANCELED` mapping) | `agentspan.embedded=true`, a registered agent |
+| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Single agent run to completion (poll mode) | `conductor.integrations.ai.enabled=true`, a registered agent |
+| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Waiting run resumed via a `HUMAN` task and `executionId` | `conductor.integrations.ai.enabled=true`, a registered agent |
+| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two agent branches via `FORK_JOIN` -> `JOIN` | `conductor.integrations.ai.enabled=true`, two registered agents |
+| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start a long agent run, then cancel it (`CANCELED` mapping) | `conductor.integrations.ai.enabled=true`, a registered agent |
 
 ---
 
@@ -499,7 +499,7 @@ curl -X POST 'http://localhost:8080/api/workflow/multi_turn_chain' \
 ### 31. Conductor Agent (Basic)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -519,7 +519,7 @@ transient poll-failure cap, default 30) input parameters on the `AGENT` task.
 ### 32. Conductor Agent (Human-in-the-Loop)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -536,7 +536,7 @@ curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_human_in_loop' 
 ### 33. Conductor Agent (Multi-Agent)
 
 ```bash
-# Requires agentspan.embedded=true and two registered agents: 'planner' and 'researcher'
+# Requires conductor.integrations.ai.enabled=true and two registered agents: 'planner' and 'researcher'
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -552,7 +552,7 @@ curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_multi_agent' \
 ### 34. Conductor Agent (Cancel)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \

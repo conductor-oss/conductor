@@ -5,7 +5,7 @@
  *   1. Tool approval  (@tool(approval_required=True)) — approve/reject buttons
  *   2. MANUAL strategy agent selection — dropdown + confirm button
  *
- * Talks to the embedded AgentSpan REST API (conductor-agentspan module,
+ * Talks to the embedded Conductor-Agents REST API (conductor-agentspan module,
  * gated by conductor.integrations.ai.enabled) — /api/agent/:id/status and
  * /api/agent/:id/respond.
  */
