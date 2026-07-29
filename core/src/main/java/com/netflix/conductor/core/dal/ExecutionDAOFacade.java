@@ -561,6 +561,9 @@ public class ExecutionDAOFacade {
         }
         externalizeTaskData(taskModel);
         executionDAO.updateTask(taskModel);
+        // Must run after the ExecutionDAO write: that is what records the slot as free, and a
+        // poll in the gap would otherwise still see the limit exceeded and re-postpone.
+        releaseConcurrencyLimitedSuccessor(taskModel);
         try {
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
@@ -586,6 +589,49 @@ public class ExecutionDAOFacade {
 
     public void updateTasks(List<TaskModel> tasks) {
         tasks.forEach(this::updateTask);
+    }
+
+    /**
+     * When a task bound by {@code concurrentExecLimit} reaches a terminal state it frees a slot.
+     * Any sibling that failed the limit check earlier was pushed out by {@code
+     * conductor.app.taskExecutionPostponeDuration}, so without this it keeps waiting for a window
+     * that is no longer meaningful. Reset the next queued message to be deliverable now.
+     *
+     * <p>This belongs here rather than in each {@link ExecutionDAO}: the queue and the execution
+     * store are configured independently ({@code conductor.db.type} vs {@code
+     * conductor.queue.type}), so only the facade — which holds the active {@link QueueDAO} — can
+     * reach the queue actually in use. A per-backend copy inevitably reaches for its own store's
+     * queue table and silently does nothing when queues live elsewhere.
+     */
+    private void releaseConcurrencyLimitedSuccessor(TaskModel taskModel) {
+        if (taskModel.getStatus() == null || !taskModel.getStatus().isTerminal()) {
+            return;
+        }
+        if (taskModel.getTaskDefinition().map(TaskDef::concurrencyLimit).orElse(0) <= 0) {
+            return;
+        }
+
+        String queueName = QueueUtils.getQueueName(taskModel);
+        try {
+            List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
+            if (nextIds == null || nextIds.isEmpty()) {
+                return;
+            }
+            LOGGER.debug(
+                    "Concurrency slot freed for {}, releasing postponed task {}",
+                    taskModel.getTaskDefName(),
+                    nextIds.get(0));
+            queueDAO.resetOffsetTime(queueName, nextIds.get(0));
+        } catch (Exception e) {
+            // A failed wakeup only costs the successor its postpone window; it must not fail the
+            // task update that already succeeded.
+            LOGGER.warn(
+                    "Could not release a postponed task on queue {} after {} reached {}",
+                    queueName,
+                    taskModel.getTaskId(),
+                    taskModel.getStatus(),
+                    e);
+        }
     }
 
     public void removeTask(String taskId) {

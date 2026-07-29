@@ -29,7 +29,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.*;
 public class ExecutionDAOFacadeTest {
 
     private ExecutionDAO executionDAO;
+    private QueueDAO queueDAO;
     private IndexDAO indexDAO;
     private ExecutionDAOFacade executionDAOFacade;
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
@@ -62,7 +65,7 @@ public class ExecutionDAOFacadeTest {
     @Before
     public void setUp() {
         executionDAO = mock(ExecutionDAO.class);
-        QueueDAO queueDAO = mock(QueueDAO.class);
+        queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         RateLimitingDAO rateLimitingDao = mock(RateLimitingDAO.class);
@@ -441,5 +444,68 @@ public class ExecutionDAOFacadeTest {
                 .verifyAndUpload(task, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
 
         executionDAOFacade.updateTask(task);
+    }
+
+    // ── concurrency-limit slot release ────────────────────────────────────────
+    // These live here, not in a persistence module: the queue and the execution store are
+    // configured independently, so only the facade holds the QueueDAO actually in use.
+
+    @Test
+    public void testTerminalTaskReleasesPostponedSuccessorWhenConcurrencyLimited() {
+        when(queueDAO.peekFirstIds(anyString(), eq(1)))
+                .thenReturn(Collections.singletonList("postponed-id"));
+
+        executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 1));
+
+        verify(queueDAO).peekFirstIds(anyString(), eq(1));
+        verify(queueDAO).resetOffsetTime(anyString(), eq("postponed-id"));
+    }
+
+    @Test
+    public void testNonTerminalTaskDoesNotReleaseSuccessor() {
+        executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.SCHEDULED, 1));
+
+        verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
+        verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
+    }
+
+    @Test
+    public void testTerminalTaskWithoutConcurrencyLimitDoesNotTouchTheQueue() {
+        executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 0));
+
+        verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
+        verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
+    }
+
+    @Test
+    public void testReleaseFailureDoesNotFailTheTaskUpdate() {
+        // The task write already succeeded; a failed wakeup only costs the successor its
+        // postpone window and must not propagate.
+        when(queueDAO.peekFirstIds(anyString(), eq(1)))
+                .thenThrow(new RuntimeException("queue unavailable"));
+
+        executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 1));
+
+        verify(executionDAO).updateTask(any(TaskModel.class));
+    }
+
+    private static TaskModel concurrencyLimitedTask(TaskModel.Status status, int concurrentLimit) {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("limited_task");
+        if (concurrentLimit > 0) {
+            taskDef.setConcurrentExecLimit(concurrentLimit);
+        }
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setWorkflowInstanceId("wf1");
+        task.setTaskDefName("limited_task");
+        task.setTaskType("limited_task");
+        task.setReferenceTaskName("ref");
+        task.setWorkflowTask(workflowTask);
+        task.setStatus(status);
+        return task;
     }
 }

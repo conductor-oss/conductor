@@ -98,9 +98,8 @@ public class PostgresConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public PostgresExecutionDAO postgresExecutionDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            PostgresQueueDAO queueDAO) {
-        return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
+            ObjectMapper objectMapper) {
+        return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

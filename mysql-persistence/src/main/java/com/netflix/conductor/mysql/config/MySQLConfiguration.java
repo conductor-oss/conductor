@@ -74,9 +74,8 @@ public class MySQLConfiguration {
     public MySQLExecutionDAO mySqlExecutionDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            DataSource dataSource,
-            MySQLQueueDAO queueDAO) {
-        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
+            DataSource dataSource) {
+        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

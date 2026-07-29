@@ -31,7 +31,6 @@ import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
@@ -90,9 +89,8 @@ public class CassandraConfiguration {
             Session session,
             ObjectMapper objectMapper,
             CassandraProperties properties,
-            Statements statements,
-            QueueDAO queueDAO) {
-        return new CassandraExecutionDAO(session, objectMapper, properties, statements, queueDAO);
+            Statements statements) {
+        return new CassandraExecutionDAO(session, objectMapper, properties, statements);
     }
 
     @Bean

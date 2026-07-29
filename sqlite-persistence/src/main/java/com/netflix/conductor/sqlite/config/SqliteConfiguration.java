@@ -147,9 +147,8 @@ public class SqliteConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public SqliteExecutionDAO sqliteExecutionDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            SqliteQueueDAO queueDAO) {
-        return new SqliteExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
+            ObjectMapper objectMapper) {
+        return new SqliteExecutionDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

@@ -14,10 +14,13 @@ package io.conductor.e2e.task;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,6 +28,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
+import com.netflix.conductor.client.http.ConductorClientRequest;
+import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -40,6 +45,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.conductor.e2e.util.ApiUtil;
 import lombok.SneakyThrows;
@@ -50,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @Slf4j
 public class ConcurrentExecLimitTests {
@@ -59,6 +66,25 @@ public class ConcurrentExecLimitTests {
     static MetadataClient metadataClient;
 
     static ObjectMapper objectMapper;
+
+    /** How long the wakeup test waits for the released task after the slot frees. */
+    private static final long POLL_WINDOW_SECONDS = 5;
+
+    /**
+     * Server default for {@code conductor.app.taskExecutionPostponeDuration}, applied when the
+     * property was never overridden and so does not appear in {@code /admin/config}.
+     */
+    private static final long DEFAULT_POSTPONE_SECONDS = 60;
+
+    /**
+     * The wakeup test can only tell the fix from the bug when the postpone window is well past
+     * {@link #POLL_WINDOW_SECONDS} — otherwise the postponed task becomes pollable by natural
+     * expiry and the test passes either way.
+     */
+    private static final long MIN_POSTPONE_SECONDS = POLL_WINDOW_SECONDS * 4;
+
+    private static final Pattern DURATION_PATTERN =
+            Pattern.compile("(\\d+)\\s*(ms|s|m|h|d)?", Pattern.CASE_INSENSITIVE);
 
     @BeforeAll
     public static void init() {
@@ -192,6 +218,19 @@ public class ConcurrentExecLimitTests {
         String workflowName = "concurrency_wakeup_check";
         String taskName = "concurrency_wakeup";
 
+        long postponeSeconds = configuredPostponeSeconds();
+        assumeTrue(
+                postponeSeconds >= MIN_POSTPONE_SECONDS,
+                "conductor.app.taskExecutionPostponeDuration is "
+                        + postponeSeconds
+                        + "s, which is not comfortably longer than the "
+                        + POLL_WINDOW_SECONDS
+                        + "s poll window: the postponed task would become pollable by natural"
+                        + " expiry, so this test cannot distinguish the fix from the bug. Configure"
+                        + " at least "
+                        + MIN_POSTPONE_SECONDS
+                        + "s to run it.");
+
         terminateExistingRunningWorkflows(workflowName);
 
         TaskDef taskDef = new TaskDef(taskName);
@@ -268,9 +307,10 @@ public class ConcurrentExecLimitTests {
                 Map.of("updatedBy", "e2e"));
         log.info("Completed task A at t={}, now polling for B...", completedAt);
 
-        // Step 4: B should now be pollable quickly. Allow 5s; pre-fix the bug forces ~60s.
+        // Step 4: B should now be pollable quickly. Allow POLL_WINDOW_SECONDS; pre-fix the
+        // bug forces the full postpone duration.
         Task taskB = null;
-        long deadline = completedAt + TimeUnit.SECONDS.toMillis(5);
+        long deadline = completedAt + TimeUnit.SECONDS.toMillis(POLL_WINDOW_SECONDS);
         while (System.currentTimeMillis() < deadline) {
             List<Task> polled = taskClient.batchPollTasksByTaskType(taskName, "worker", 1, 500);
             if (polled != null && !polled.isEmpty()) {
@@ -285,7 +325,9 @@ public class ConcurrentExecLimitTests {
                 taskB != null ? taskB.getTaskId() : "<none>");
         assertNotNull(
                 taskB,
-                "Task B should be pollable within 5s of A completing, but no task was returned (waited "
+                "Task B should be pollable within "
+                        + POLL_WINDOW_SECONDS
+                        + "s of A completing, but no task was returned (waited "
                         + waitedMs
                         + " ms). This indicates the postpone offset was not reset when the "
                         + "concurrencyLimit slot was freed.");
@@ -303,6 +345,55 @@ public class ConcurrentExecLimitTests {
                                 assertEquals(
                                         Workflow.WorkflowStatus.COMPLETED,
                                         workflowClient.getWorkflow(workflowId, false).getStatus()));
+    }
+
+    /**
+     * Reads {@code conductor.app.taskExecutionPostponeDuration} from the running server. The
+     * endpoint reports only overridden properties, so an absent value means the server default is
+     * in effect.
+     */
+    private static long configuredPostponeSeconds() {
+        Map<String, Object> config =
+                ApiUtil.CLIENT
+                        .execute(
+                                ConductorClientRequest.builder()
+                                        .method(Method.GET)
+                                        .path("/admin/config")
+                                        .build(),
+                                new TypeReference<Map<String, Object>>() {})
+                        .getData();
+        Object raw =
+                config == null ? null : config.get("conductor.app.taskExecutionPostponeDuration");
+        return raw == null ? DEFAULT_POSTPONE_SECONDS : parseDurationSeconds(raw.toString());
+    }
+
+    /** Accepts the ISO-8601 and the {@code @DurationUnit(SECONDS)} bare-number/suffix forms. */
+    private static long parseDurationSeconds(String value) {
+        String trimmed = value.trim();
+        try {
+            if (trimmed.regionMatches(true, 0, "PT", 0, 2)) {
+                return Duration.parse(trimmed).getSeconds();
+            }
+            Matcher matcher = DURATION_PATTERN.matcher(trimmed);
+            if (!matcher.matches()) {
+                return DEFAULT_POSTPONE_SECONDS;
+            }
+            long amount = Long.parseLong(matcher.group(1));
+            String unit = matcher.group(2);
+            if (unit == null) {
+                return amount; // @DurationUnit(SECONDS) on the server property
+            }
+            return switch (unit.toLowerCase()) {
+                case "ms" -> amount / 1000;
+                case "m" -> amount * 60;
+                case "h" -> amount * 3600;
+                case "d" -> amount * 86400;
+                default -> amount;
+            };
+        } catch (RuntimeException e) {
+            log.warn("Could not parse postpone duration '{}'; assuming server default", value, e);
+            return DEFAULT_POSTPONE_SECONDS;
+        }
     }
 
     private List<Task> pollUntilNonEmpty(String taskName, int timeoutSecs) {
