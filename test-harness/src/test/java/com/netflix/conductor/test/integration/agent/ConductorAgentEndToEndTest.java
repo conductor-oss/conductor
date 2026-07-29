@@ -201,9 +201,7 @@ class ConductorAgentEndToEndTest {
                         .getFirst();
         // The production compiler resolves this from the surrounding agent loop. This focused
         // workflow has a single synthetic turn, so provide that turn number directly.
-        guardrailTask
-                .getTasks()
-                .forEach(task -> task.getInputParameters().put("iteration", 1));
+        guardrailTask.getTasks().forEach(task -> task.getInputParameters().put("iteration", 1));
         GuardrailCompiler.GuardrailRoutingResult routing =
                 compiler.compileGuardrailRouting(
                         guardrail,
