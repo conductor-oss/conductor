@@ -57,9 +57,9 @@ import jakarta.servlet.http.HttpServletRequest;
  *
  * <p>Lives in the {@code ai} module (component-scanned by the server), gated by {@code
  * conductor.a2a.server.enabled=true}. Paths use the configured {@code basePath} via {@code
- * ${conductor.a2a.server.basePath:/a2a}} so the routes match the property. Open by default, like
- * OSS Conductor REST — front it with a gateway/firewall, or use the enterprise build for inbound
- * authentication (OAuth/mTLS/API keys).
+ * ${conductor.a2a.server.basePath:/api/a2a/workflow}} so the routes match the property. Open by
+ * default, like OSS Conductor REST — front it with a gateway/firewall, or use the enterprise build
+ * for inbound authentication (OAuth/mTLS/API keys).
  */
 @RestController
 @Conditional(A2AServerEnabledCondition.class)
@@ -87,8 +87,8 @@ public class A2AServerResource {
 
     @GetMapping(
             value = {
-                "${conductor.a2a.server.basePath:/a2a}/{workflow}/.well-known/agent-card.json",
-                "${conductor.a2a.server.basePath:/a2a}/{workflow}/.well-known/agent.json"
+                "${conductor.a2a.server.basePath:/api/a2a/workflow}/{workflow}/.well-known/agent-card.json",
+                "${conductor.a2a.server.basePath:/api/a2a/workflow}/{workflow}/.well-known/agent.json"
             },
             produces = "application/json")
     public ResponseEntity<?> agentCard(
@@ -103,8 +103,8 @@ public class A2AServerResource {
 
     @PostMapping(
             value = {
-                "${conductor.a2a.server.basePath:/a2a}/{workflow}",
-                "${conductor.a2a.server.basePath:/a2a}/{workflow}/rpc"
+                "${conductor.a2a.server.basePath:/api/a2a/workflow}/{workflow}",
+                "${conductor.a2a.server.basePath:/api/a2a/workflow}/{workflow}/rpc"
             },
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE})
     public Object jsonRpc(
@@ -165,7 +165,9 @@ public class A2AServerResource {
         }
     }
 
-    @GetMapping(value = "${conductor.a2a.server.basePath:/a2a}", produces = "application/json")
+    @GetMapping(
+            value = "${conductor.a2a.server.basePath:/api/a2a/workflow}",
+            produces = "application/json")
     public ResponseEntity<?> listAgents(HttpServletRequest httpRequest) {
         String base = requestBaseUrl(httpRequest);
         List<?> agents =

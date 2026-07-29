@@ -15,10 +15,21 @@ package org.conductoross.conductor.ai.agent;
 /**
  * Agent control-plane client used by portable Conductor workers.
  *
- * <p>The boundary uses only AI-module DTOs. AgentSpan injects an in-process implementation and
- * translates those models to its service layer; external workers inject an SDK-backed adapter.
+ * <p>The boundary uses only AI-module DTOs. Conductor-Agents injects an in-process implementation
+ * and translates those models to its service layer; external workers inject an SDK-backed adapter.
  */
 public interface ConductorAgentClient extends AutoCloseable {
+
+    /**
+     * Agent type string that routes requests to this client (e.g. "conductor", "bedrock").
+     *
+     * <p>Defaults to {@code "conductor"} — the value of {@code A2AService.AGENT_TYPE_CONDUCTOR},
+     * inlined to keep this boundary interface free of imports — so existing implementations of the
+     * Conductor control plane keep compiling. Clients backing any other runtime must override.
+     */
+    default String agentType() {
+        return "conductor";
+    }
 
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 

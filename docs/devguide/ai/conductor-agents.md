@@ -16,16 +16,16 @@ Both values drive the same `AGENT` task type with one consistent input/output co
 
 With `agentType: "conductor"`, the `AGENT` task runs a registered agent on Conductor's embedded agentspan runtime instead of calling out to a remote agent. Like the A2A branch, it is **non-blocking**: a fast reply completes immediately; a long-running run moves to `IN_PROGRESS` and is polled at a cadence (no worker thread is held), so the call survives a server crash, restart, or redeploy and resumes from persisted state.
 
-This branch requires the embedded runtime, enabled with:
+This branch requires the AI integration, enabled with:
 
 ```properties
-agentspan.embedded=true
+conductor.integrations.ai.enabled=true
 ```
 
 On a deployment without it, the runtime bean is absent and any `agentType: "conductor"` task fails terminally with:
 
 ```
-Conductor agents require the embedded agentspan runtime (agentspan.embedded=true)
+Conductor agents require conductor.integrations.ai.enabled=true
 ```
 
 
@@ -109,7 +109,7 @@ A single `AGENT` task that runs an embedded agent to completion:
 }
 ```
 
-Register and run it (the embedded runtime must be enabled — `agentspan.embedded=true`):
+Register and run it (the AI integration must be enabled — `conductor.integrations.ai.enabled=true`):
 
 ```bash
 # register

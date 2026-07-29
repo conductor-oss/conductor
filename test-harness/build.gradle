@@ -62,7 +62,7 @@ dependencies {
     testImplementation 'com.google.cloud:google-cloud-storage:2.36.1'
     testImplementation 'com.google.http-client:google-http-client:1.44.1'
     testImplementation project(':conductor-gcs-storage')
-    testImplementation project(':conductor-local-file-storage')
+    testImplementation project(':conductor-file-storage')
     testImplementation project(':conductor-awssqs-event-queue')
     testImplementation project(':conductor-workflow-event-listener')
     testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"
@@ -75,7 +75,7 @@ tasks.withType(Test)  {
     maxParallelForks = 1
 }
 
-// AgentSpan's deterministic suite uses real Conductor services plus Testcontainers. The live
+// Conductor-Agents' deterministic suite uses real Conductor services plus Testcontainers. The live
 // suite additionally calls a configured LLM provider and is deliberately separate from the
 // default test task so local contributors do not need provider credentials to run unit tests.
 tasks.named('test') {

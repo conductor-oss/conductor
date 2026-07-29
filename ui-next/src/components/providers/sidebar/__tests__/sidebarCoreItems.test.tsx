@@ -19,7 +19,7 @@ vi.mock("utils", () => ({
     PLAYGROUND: "PLAYGROUND",
     SHOW_FEEDBACK_FORM: "SHOW_FEEDBACK_FORM",
     SCHEDULER: "SCHEDULER",
-    AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+    CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
   },
   featureFlags: {
     isEnabled: vi.fn((feature: string) => feature === "SCHEDULER"),

@@ -37,7 +37,9 @@ import {
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 const hideFeedbackForm = !featureFlags.isEnabled(FEATURES.SHOW_FEEDBACK_FORM);
 const hideScheduler = !featureFlags.isEnabled(FEATURES.SCHEDULER);
-const hideAgentspan = !featureFlags.isEnabled(FEATURES.AGENTSPAN_ENABLED);
+const hideAgentspan = !featureFlags.isEnabled(
+  FEATURES.CONDUCTOR_INTEGRATIONS_AI_ENABLED,
+);
 
 /**
  * Core sidebar position constants. Root and submenus both use 100, 200, 300, ...
@@ -131,7 +133,7 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
         },
       ],
     },
-    // Agents submenu (embedded AgentSpan) - hidden unless AGENTSPAN_ENABLED
+    // Agents submenu (embedded Conductor-Agents) - hidden unless CONDUCTOR_INTEGRATIONS_AI_ENABLED
     {
       id: "agentspanSubMenu",
       title: "Agents",

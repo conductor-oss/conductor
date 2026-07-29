@@ -17,6 +17,7 @@ import java.util.Map;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -38,7 +39,8 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AgentStartRequest {
 
-    /** Name of a previously deployed agent definition. */
+    /** Name of a previously deployed agent definition. Also accepted as {@code agentName}. */
+    @JsonAlias("agentName")
     private String name;
 
     /** Optional deployed agent version. The latest version is used when omitted. */

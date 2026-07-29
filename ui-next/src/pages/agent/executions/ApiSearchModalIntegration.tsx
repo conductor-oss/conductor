@@ -2,34 +2,12 @@ import { ApiSearchModal } from "components/ApiSearchModal";
 import { toCodeT, useParamsToSdk } from "shared/CodeModal/hook";
 import { SupportedDisplayTypes } from "shared/CodeModal/types";
 import { curlHeaders } from "shared/CodeModal/curlHeader";
-
-export type BuildQueryOutput = {
-  query: string;
-  freeText: string;
-  start: number;
-  size: number;
-  sort: string;
-};
+import { buildEndpoint, type BuildQueryOutput } from "./agentSearchCode";
 
 interface ApiSearchModalIntegrationProps {
   buildQueryOutput: BuildQueryOutput;
   onClose: () => void;
 }
-
-const buildEndpoint = ({
-  start,
-  size,
-  sort,
-  freeText,
-  query,
-}: BuildQueryOutput) =>
-  `${window.location.origin}/api/workflow/search?${new URLSearchParams({
-    start: String(start),
-    size: String(size),
-    sort,
-    freeText,
-    query,
-  }).toString()}`;
 
 const buildCurlCode = (
   buildQueryOutput: BuildQueryOutput,
@@ -99,3 +77,4 @@ const ApiSearchModalIntegration = ({
 };
 
 export { ApiSearchModalIntegration };
+export type { BuildQueryOutput };

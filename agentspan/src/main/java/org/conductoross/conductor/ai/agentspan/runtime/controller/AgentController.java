@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping({"/api/agent"})
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AgentController {
 
     private final AgentService agentService;
