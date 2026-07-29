@@ -12,6 +12,8 @@
  */
 package io.conductor.e2e.util;
 
+import org.conductoross.conductor.client.FileClient;
+
 import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.client.http.MetadataClient;
@@ -29,7 +31,7 @@ public class ApiUtil {
     private static final String SERVER_HOST =
             System.getProperty(
                     "SERVER_ROOT_URI",
-                    System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8000/api"));
+                    System.getenv().getOrDefault("SERVER_ROOT_URI", "http://localhost:8127/api"));
 
     public static final String SERVER_ROOT_URI =
             SERVER_HOST.endsWith("/api") ? SERVER_HOST : SERVER_HOST + "/api";
@@ -46,4 +48,5 @@ public class ApiUtil {
     public static final MetadataClient METADATA_CLIENT = new MetadataClient(CLIENT);
     public static final EventClient EVENT_CLIENT = new EventClient(CLIENT);
     public static final AgentClient AGENT_CLIENT = new OrkesClients(CLIENT).getAgentClient();
+    public static final FileClient FILE_CLIENT = new FileClient(CLIENT);
 }

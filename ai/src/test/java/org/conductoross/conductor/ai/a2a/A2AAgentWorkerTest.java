@@ -54,7 +54,7 @@ class A2AAgentWorkerTest {
     @BeforeEach
     void setUp() {
         service = mock(A2AService.class);
-        workers = new A2AWorkers(service, unusedAgentClient());
+        workers = new A2AWorkers(service, List.of(unusedAgentClient()));
     }
 
     private A2ATask agentTask(String state, String artifactText) {

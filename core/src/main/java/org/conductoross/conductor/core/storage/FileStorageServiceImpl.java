@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.core.storage;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -133,6 +134,29 @@ public class FileStorageServiceImpl implements FileStorageService {
         response.setDownloadUrl(downloadUrl);
         response.setExpiresAt(expiresAt);
         return response;
+    }
+
+    @Override
+    public void uploadContent(String workflowId, String fileId, InputStream content) {
+        FileModel model = getOwnedFile(workflowId, fileId);
+        if (model.getUploadStatus() != FileUploadStatus.UPLOADING) {
+            throw new ConflictException("File is not accepting content uploads: " + fileId);
+        }
+        fileStorage.writeContent(model.getStoragePath(), content);
+    }
+
+    @Override
+    public FileContent downloadContent(String workflowId, String fileId) {
+        // Family-accessible, like getDownloadUrl: for the Conductor backend that URL is this
+        // endpoint, so requiring the exact owner here would 403 a URL we just handed out.
+        FileModel model = getFamilyAccessibleFile(workflowId, fileId);
+        if (model.getUploadStatus() != FileUploadStatus.UPLOADED) {
+            throw new IllegalArgumentException("File has not been uploaded: " + fileId);
+        }
+        return new FileContent(
+                fileStorage.readContent(model.getStoragePath()),
+                model.getContentType(),
+                model.getStorageContentSize());
     }
 
     @Override
