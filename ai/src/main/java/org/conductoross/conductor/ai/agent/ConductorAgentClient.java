@@ -20,6 +20,9 @@ package org.conductoross.conductor.ai.agent;
  */
 public interface ConductorAgentClient extends AutoCloseable {
 
+    /** Agent type string that routes requests to this client (e.g. "conductor", "bedrock"). */
+    String agentType();
+
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
     ConductorAgentStatusResponse getAgentStatus(String executionId);
