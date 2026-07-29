@@ -39,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * HTTP calls through {@code AgentController}.
  */
 @Component
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class ServiceConductorAgentClient implements ConductorAgentClient {
 
     private final AgentService agentService;

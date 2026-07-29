@@ -334,7 +334,7 @@ export default function ResultsTable({
             />
           }
           label="Hide sub-agent executions"
-          sx={{ ml: 1, mb: 1 }}
+          sx={{ ml: 1, mb: 1, mt: 3 }}
         />
       )}
       <DataTable

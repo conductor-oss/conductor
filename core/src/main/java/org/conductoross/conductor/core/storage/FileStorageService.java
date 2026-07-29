@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.core.storage;
 
+import java.io.InputStream;
 import java.util.List;
 
 import org.conductoross.conductor.model.file.*;
@@ -64,6 +65,18 @@ public interface FileStorageService {
      *     the file's workflow family
      */
     FileDownloadUrlResponse getDownloadUrl(@NotBlank String workflowId, @NotBlank String fileId);
+
+    /** Streams upload content for a file owned by {@code workflowId}. */
+    void uploadContent(
+            @NotBlank String workflowId, @NotBlank String fileId, @NotNull InputStream content);
+
+    /**
+     * Opens completed file content for a member of the owning workflow's family, matching {@link
+     * #getDownloadUrl} — for the Conductor backend that URL <em>is</em> this endpoint, so a
+     * narrower rule here would hand a caller a URL it is then forbidden to fetch. The caller must
+     * close the returned descriptor when streaming is complete.
+     */
+    FileContent downloadContent(@NotBlank String workflowId, @NotBlank String fileId);
 
     /**
      * Returns file metadata to a member of the owning workflow's family. The server-internal {@code

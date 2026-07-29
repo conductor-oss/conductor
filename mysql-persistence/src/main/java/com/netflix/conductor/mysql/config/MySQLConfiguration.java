@@ -17,11 +17,13 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -50,6 +52,13 @@ import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 @Import({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 public class MySQLConfiguration {
 
+    // scheduler flyway shares this schema (own history table, baseline 0) — baseline-0 here too
+    // so the non-empty-schema check can't fail when the scheduler migrates first
+    @Bean
+    public FlywayConfigurationCustomizer mysqlFlywayCustomizer() {
+        return configuration -> configuration.baselineOnMigrate(true).baselineVersion("0");
+    }
+
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
     public MySQLMetadataDAO mySqlMetadataDAO(
@@ -77,6 +86,16 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLQueueDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public MySQLFileMetadataDAO mySqlFileMetadataDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

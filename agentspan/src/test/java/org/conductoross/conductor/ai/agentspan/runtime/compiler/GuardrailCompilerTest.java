@@ -121,6 +121,37 @@ class GuardrailCompilerTest {
     }
 
     @Test
+    void testCustomGuardrailNormalizeWiresLiveIterationAndMaxRetriesForEscalation() {
+        GuardrailConfig g =
+                GuardrailConfig.builder()
+                        .name("custom_check")
+                        .guardrailType("custom")
+                        .position("output")
+                        .taskName("my_guardrail_worker")
+                        .onFail("retry")
+                        .maxRetries(3)
+                        .build();
+
+        GuardrailCompiler gc = new GuardrailCompiler();
+        var results = gc.compileGuardrailTasks(List.of(g), "agent", "${ref}");
+
+        WorkflowTask normalize = results.get(0).getTasks().get(1);
+        assertThat(normalize.getType()).isEqualTo("INLINE");
+        // - must read from DO_WHILE task's OUTPUT: ${<loop>.output.iteration}
+        // - bare ${<loop>.iteration} = null mid-loop -> escalation silently disabled
+        assertThat((String) normalize.getInputParameters().get("iteration"))
+                .isEqualTo("${agent_loop.output.iteration}");
+        assertThat(normalize.getInputParameters().get("max_retries")).isEqualTo(3);
+        // normalize script: same retry->raise coercion as regex/llm scripts
+        assertThat((String) normalize.getInputParameters().get("expression"))
+                .contains("iteration >= max_retries")
+                .contains("'raise'")
+                // fix -> raise only if no fixedOutput
+                // else: fix guardrail w/ output wrongly terminated, not applied
+                .contains("fixedOutput === null");
+    }
+
+    @Test
     void testCustomGuardrailIncludesOpenAICompatibleInputAliases() {
         GuardrailConfig g =
                 GuardrailConfig.builder()
@@ -259,6 +290,56 @@ class GuardrailCompilerTest {
         // compileToolGuardrailTasks does NOT filter
         var toolResults = gc.compileToolGuardrailTasks(List.of(inputGuard), "agent", "${ref}");
         assertThat(toolResults).hasSize(1);
+    }
+
+    @Test
+    void testToolGuardrailIterationUsesLiveLoopCounterForAllTypes() {
+        // - compileToolGuardrailTasks used to pass constant "1", not live DoWhile counter
+        // - silently disabled retry->raise escalation for every tool-guardrail type
+        // - must resolve to ${<agent>_loop.output.iteration} (agent-level expression)
+        // - never literal "1", never bare (pre-cc025ed0) ${<agent>_loop.iteration}
+        GuardrailConfig customGuard =
+                GuardrailConfig.builder()
+                        .name("custom_check")
+                        .guardrailType("custom")
+                        .taskName("my_guardrail_worker")
+                        .onFail("retry")
+                        .maxRetries(2)
+                        .build();
+        GuardrailConfig regexGuard =
+                GuardrailConfig.builder()
+                        .name("regex_check")
+                        .guardrailType("regex")
+                        .onFail("retry")
+                        .maxRetries(2)
+                        .patterns(List.of("dangerous"))
+                        .mode("block")
+                        .build();
+        GuardrailConfig llmGuard =
+                GuardrailConfig.builder()
+                        .name("llm_check")
+                        .guardrailType("llm")
+                        .onFail("retry")
+                        .maxRetries(2)
+                        .model("openai/gpt-4o")
+                        .policy("no secrets")
+                        .build();
+
+        GuardrailCompiler gc = new GuardrailCompiler();
+        var results =
+                gc.compileToolGuardrailTasks(
+                        List.of(customGuard, regexGuard, llmGuard), "agent", "${ref}");
+        assertThat(results).hasSize(3);
+
+        // custom: iteration lands on the SIMPLE worker task (index 0)
+        assertThat((String) results.get(0).getTasks().get(0).getInputParameters().get("iteration"))
+                .isEqualTo("${agent_loop.output.iteration}");
+        // regex: single INLINE task
+        assertThat((String) results.get(1).getTasks().get(0).getInputParameters().get("iteration"))
+                .isEqualTo("${agent_loop.output.iteration}");
+        // llm: iteration lands on the parser INLINE task (index 1)
+        assertThat((String) results.get(2).getTasks().get(1).getInputParameters().get("iteration"))
+                .isEqualTo("${agent_loop.output.iteration}");
     }
 
     // ── Reachable-cases-only emission tests ───────────────────────────

@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -55,7 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 @Slf4j
 public class AgentService {
 
@@ -196,8 +197,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -280,8 +281,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -352,7 +353,8 @@ public class AgentService {
         for (WorkflowDef def : allDefs) {
             Map<String, Object> metadata = def.getMetadata();
             // A def is an agent when its derived classifier resolves to "agent": either the
-            // AgentSpan stamp (agent_sdk/agentDef) is present, or the def carries an explicit
+            // Conductor-Agents stamp (agent_sdk/agentDef) is present, or the def carries an
+            // explicit
             // metadata.classifier=agent tag. An explicit non-agent classifier excludes a def
             // even if it still carries a stamp.
             if (!WorkflowClassifiers.isAgent(metadata)) {
@@ -390,6 +392,18 @@ public class AgentService {
                             .updateTime(def.getUpdateTime())
                             .description(def.getDescription())
                             .checksum(checksum)
+                            .schemaVersion(def.getSchemaVersion())
+                            .restartable(def.isRestartable())
+                            .workflowStatusListenerEnabled(def.isWorkflowStatusListenerEnabled())
+                            .ownerEmail(def.getOwnerEmail())
+                            .inputParameters(def.getInputParameters())
+                            .outputParameters(def.getOutputParameters())
+                            .timeoutPolicy(
+                                    def.getTimeoutPolicy() == null
+                                            ? null
+                                            : def.getTimeoutPolicy().name())
+                            .timeoutSeconds(def.getTimeoutSeconds())
+                            .failureWorkflow(def.getFailureWorkflow())
                             .build());
         }
 
@@ -567,6 +581,27 @@ public class AgentService {
     }
 
     /**
+     * Computes the prune cutoff, guarding the two ways an unchecked {@code olderThanDays} turned
+     * the prune into a data-loss operation (issue #1331): non-positive values put the cutoff in the
+     * future (matching every terminal execution), and very large values push the computed epoch
+     * negative, which the search backend matched against recent executions. A cutoff clamped to
+     * epoch start matches nothing, which is the correct meaning of "older than anything that
+     * exists".
+     *
+     * @param olderThanDays minimum age in days, must be >= 1
+     * @param now the current instant
+     * @return cutoff in epoch milliseconds, never negative
+     */
+    @VisibleForTesting
+    static long computePruneCutoffEpochMs(int olderThanDays, Instant now) {
+        if (olderThanDays < 1) {
+            throw new IllegalArgumentException(
+                    "pruneExecutions: olderThanDays must be >= 1, got " + olderThanDays);
+        }
+        return Math.max(0L, now.minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli());
+    }
+
+    /**
      * Bulk-delete completed execution records older than {@code olderThanDays} days.
      *
      * <p>Searches for COMPLETED, FAILED, TERMINATED, and TIMED_OUT executions whose end time is
@@ -577,7 +612,7 @@ public class AgentService {
      * @return number of executions deleted
      */
     public int pruneExecutions(int olderThanDays, boolean archiveTasks) {
-        long cutoffEpochMs = Instant.now().minus(olderThanDays, ChronoUnit.DAYS).toEpochMilli();
+        long cutoffEpochMs = computePruneCutoffEpochMs(olderThanDays, Instant.now());
         String[] terminalStatuses = {"COMPLETED", "FAILED", "TERMINATED", "TIMED_OUT"};
 
         List<String> workflowNames =
@@ -835,6 +870,27 @@ public class AgentService {
                             .getLatestWorkflowDef(name)
                             .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
             metadataDAO.removeWorkflowDef(name, def.getVersion());
+        }
+    }
+
+    /**
+     * Persist an agent-generated workflow with the metadata lifecycle used by normal workflow
+     * definitions. Direct DAO updates bypass {@link MetadataService} and leave a newly deployed
+     * agent's create time at zero, which prevents the definitions table from rendering it.
+     */
+    private void upsertWorkflowDef(WorkflowDef def) {
+        Optional<WorkflowDef> existing =
+                metadataDAO.getWorkflowDef(def.getName(), def.getVersion());
+        if (existing.isPresent()) {
+            // Older direct-DAO deployments have no create time; repair it on their next deploy.
+            if (existing.get().getCreateTime() == 0) {
+                def.setCreateTime(System.currentTimeMillis());
+            } else {
+                def.setCreateTime(existing.get().getCreateTime());
+            }
+            metadataService.updateWorkflowDef(def);
+        } else {
+            metadataService.registerWorkflowDef(def);
         }
     }
 
@@ -1110,7 +1166,7 @@ public class AgentService {
 
                 // Compile and register the child agent workflow
                 WorkflowDef childDef = agentCompiler.compile(childConfig);
-                metadataDAO.updateWorkflowDef(childDef);
+                upsertWorkflowDef(childDef);
                 log.info(
                         "Registered agent_tool child workflow: {} for tool '{}'",
                         childDef.getName(),

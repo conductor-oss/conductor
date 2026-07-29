@@ -94,8 +94,8 @@ public class AgentspanAIModelProvider extends AIModelProvider {
 
     /**
      * Spring constructor. The native credential resolution service is <em>optional</em>: when
-     * {@code agentspan.embedded=true} it is gated off (the host delivers secrets), so it resolves
-     * to {@code null} here and native resolution is skipped.
+     * {@code conductor.integrations.ai.enabled=true} it is gated off (the host delivers secrets),
+     * so it resolves to {@code null} here and native resolution is skipped.
      */
     @Autowired
     public AgentspanAIModelProvider(

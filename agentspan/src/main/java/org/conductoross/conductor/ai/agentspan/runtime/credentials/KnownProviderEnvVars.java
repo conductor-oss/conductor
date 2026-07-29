@@ -15,16 +15,13 @@ package org.conductoross.conductor.ai.agentspan.runtime.credentials;
 import java.util.List;
 
 /**
- * Single source of truth for the well-known LLM/tool provider environment variables that AgentSpan
- * auto-seeds into the credential store on startup.
+ * Single source of truth for the well-known LLM/tool provider environment variables that
+ * Conductor-Agents auto-seeds into the credential store on startup.
  *
  * <p>Shared so every deployment seeds the same set: the standalone server's {@code
  * CredentialEnvSeeder} and any embedding host (e.g. orkes-conductor) reference this list instead of
  * maintaining their own copies. Keeping one list avoids drift between standalone and embedded
  * behavior.
- *
- * <p>{@code AGENTSPAN_MASTER_KEY} is intentionally excluded — it is the encryption master key and
- * must never be stored as a credential.
  */
 public final class KnownProviderEnvVars {
 

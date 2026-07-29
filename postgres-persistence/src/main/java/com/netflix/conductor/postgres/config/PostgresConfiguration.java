@@ -79,6 +79,9 @@ public class PostgresConfiguration {
                 .dataSource(dataSource)
                 .outOfOrder(true)
                 .baselineOnMigrate(true)
+                // default baseline version 1 would skip V1 when the scheduler flyway
+                // (same schema, own history table) migrates first
+                .baselineVersion("0")
                 .load();
     }
 

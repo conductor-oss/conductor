@@ -461,8 +461,8 @@ public class JavaScriptBuilder {
     }
 
     /**
-     * Normalize a framework/custom guardrail worker result into AgentSpan's internal guardrail
-     * contract.
+     * Normalize a framework/custom guardrail worker result into Conductor-Agents' internal
+     * guardrail contract.
      */
     public static String customGuardrailNormalizeScript() {
         return iife(
@@ -477,6 +477,13 @@ public class JavaScriptBuilder {
                         + "    return {passed: true, message: '', on_fail: null,"
                         + "            fixed_output: null, guardrail_name: guardrailName,"
                         + "            should_continue: false};"
+                        + "  }"
+                        + "  var iteration = $.iteration || 0;"
+                        + "  var max_retries = $.max_retries || 0;"
+                        + "  function escalate(of, fixedOutput) {"
+                        + "    if (of === 'retry' && iteration >= max_retries) return 'raise';"
+                        + "    if (of === 'fix' && (fixedOutput === null || fixedOutput === undefined)) return 'raise';"
+                        + "    return of;"
                         + "  }"
                         + "  if (raw == null) {"
                         + "    return {passed: true, message: '', on_fail: null,"
@@ -496,9 +503,10 @@ public class JavaScriptBuilder {
                         + "    var existingOnFail = raw.on_fail !== undefined ? raw.on_fail : raw.onFail;"
                         + "    var fixedOutput = raw.fixed_output !== undefined ? raw.fixed_output : raw.fixedOutput;"
                         + "    var passed = raw.passed !== false && (existingOnFail == null || existingOnFail === 'pass');"
-                        + "    return {passed: passed, message: raw.message || '', on_fail: existingOnFail,"
+                        + "    var actualOnFail = passed ? existingOnFail : escalate(existingOnFail, fixedOutput);"
+                        + "    return {passed: passed, message: raw.message || '', on_fail: actualOnFail,"
                         + "            fixed_output: fixedOutput, guardrail_name: raw.guardrail_name || raw.guardrailName || guardrailName,"
-                        + "            should_continue: existingOnFail === 'retry'};"
+                        + "            should_continue: actualOnFail === 'retry'};"
                         + "  }"
                         + "  if (raw != null && typeof raw === 'object'"
                         + "      && (raw.tripwire_triggered !== undefined || raw.tripwireTriggered !== undefined"
@@ -516,9 +524,10 @@ public class JavaScriptBuilder {
                         + "              fixed_output: null, guardrail_name: guardrailName,"
                         + "              should_continue: false};"
                         + "    }"
+                        + "    var tripwireOnFail = escalate(defaultOnFail, null);"
                         + "    return {passed: false, message: reason || (guardrailName + ' triggered'),"
-                        + "            on_fail: defaultOnFail, fixed_output: null,"
-                        + "            guardrail_name: guardrailName, should_continue: defaultOnFail === 'retry'};"
+                        + "            on_fail: tripwireOnFail, fixed_output: null,"
+                        + "            guardrail_name: guardrailName, should_continue: tripwireOnFail === 'retry'};"
                         + "  }"
                         + "  return {passed: true, message: '', on_fail: null,"
                         + "          fixed_output: null, guardrail_name: guardrailName,"
@@ -1270,7 +1279,8 @@ public class JavaScriptBuilder {
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
                             + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
-                            // Keep the dynamic MCP path equivalent to static AgentSpan tool specs.
+                            // Keep the dynamic MCP path equivalent to static Conductor-Agents tool
+                            // specs.
                             + "      selfDescribing: true,"
                             + "      configParams: {mcpServer: s.serverUrl, headers: s.headers || {}, selfDescribing: true}});"
                             + "    mcpCfg[t.name] = {mcpServer: s.serverUrl, headers: s.headers || {}};"

@@ -55,6 +55,10 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
         AgentConfig config = new AgentConfig();
         config.setName(getString(raw, "name", "google_adk_agent"));
 
+        // ADK transfers control to a sub-agent. Preserve the sub-agent as the final speaker
+        // unless the framework payload explicitly asks Conductor to synthesize a parent response.
+        config.setSynthesize(Boolean.TRUE.equals(raw.get("synthesize")));
+
         // Model: check for env override, then prefix with "google_gemini/" if no provider
         String model = getString(raw, "model", "gemini-2.0-flash");
         String envModel = System.getenv(DEFAULT_MODEL_ENV);
