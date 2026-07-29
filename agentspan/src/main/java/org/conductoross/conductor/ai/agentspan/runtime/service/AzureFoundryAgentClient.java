@@ -30,6 +30,7 @@ import org.conductoross.conductor.ai.agent.credentials.OAuthTokenProvider;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -57,8 +58,11 @@ import okhttp3.Response;
  *   <li>{@code endpoint} - the agentsEndpointUri for the AI Foundry project (optional if
  *       AZURE_FOUNDRY_ENDPOINT secret is set)
  * </ul>
+ *
+ * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
  */
 @Component
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
