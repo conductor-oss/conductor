@@ -120,12 +120,11 @@ class AgentSpanRegistrationEndToEndTest {
 
     private static final String MODEL =
             HAS_ANTHROPIC_KEY
-                    ? "anthropic/"
-                            + System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-haiku-4-5")
+                    ? "anthropic/" + resolveModelName("ANTHROPIC_MODEL", "claude-haiku-4-5")
                     // gpt-4o-mini did not reliably follow the multi-tool "you must ask via
                     // ask_question" instruction in this agentic, multi-turn shape (it sometimes
                     // answered directly without calling any tool) -- gpt-4o complies reliably.
-                    : "openai/" + System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o");
+                    : "openai/" + resolveModelName("OPENAI_MODEL", "gpt-4o");
 
     @SuppressWarnings("resource")
     private static final GenericContainer<?> REDIS =
@@ -725,5 +724,10 @@ class AgentSpanRegistrationEndToEndTest {
                         .build()) {
             s3.createBucket(CreateBucketRequest.builder().bucket(PAYLOAD_BUCKET).build());
         }
+    }
+
+    private static String resolveModelName(String envVar, String defaultValue) {
+        String envValue = System.getenv(envVar);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
     }
 }

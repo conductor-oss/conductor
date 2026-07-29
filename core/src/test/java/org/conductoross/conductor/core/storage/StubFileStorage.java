@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.core.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +28,7 @@ public class StubFileStorage implements FileStorage {
 
     @Override
     public StorageType getStorageType() {
-        return StorageType.LOCAL;
+        return StorageType.CONDUCTOR;
     }
 
     @Override
@@ -72,6 +74,24 @@ public class StubFileStorage implements FileStorage {
     @Override
     public void abortMultipartUpload(String storagePath, String uploadId) {
         abortedUploads.put(storagePath, uploadId);
+    }
+
+    @Override
+    public void writeContent(String storagePath, InputStream content) {
+        try {
+            files.put(storagePath, content.readAllBytes());
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to store stub content", exception);
+        }
+    }
+
+    @Override
+    public InputStream readContent(String storagePath) {
+        byte[] content = files.get(storagePath);
+        if (content == null) {
+            throw new IllegalStateException("Stub content not found: " + storagePath);
+        }
+        return new ByteArrayInputStream(content);
     }
 
     public void putFile(String storagePath, byte[] data) {

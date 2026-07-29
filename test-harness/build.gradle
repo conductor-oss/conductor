@@ -62,7 +62,7 @@ dependencies {
     testImplementation 'com.google.cloud:google-cloud-storage:2.36.1'
     testImplementation 'com.google.http-client:google-http-client:1.44.1'
     testImplementation project(':conductor-gcs-storage')
-    testImplementation project(':conductor-local-file-storage')
+    testImplementation project(':conductor-file-storage')
     testImplementation project(':conductor-awssqs-event-queue')
     testImplementation project(':conductor-workflow-event-listener')
     testImplementation "software.amazon.awssdk:s3:${revAwsSdk}"

@@ -166,7 +166,7 @@ class A2AServerResourceTest {
         when(httpRequest.getRequestURL())
                 .thenReturn(
                         new StringBuffer(
-                                "http://host:8080/a2a/order_pizza/.well-known/agent-card.json"));
+                                "http://host:8080/api/a2a/workflow/order_pizza/.well-known/agent-card.json"));
 
         ResponseEntity<?> response = resource.agentCard("order_pizza", httpRequest);
 
@@ -231,7 +231,7 @@ class A2AServerResourceTest {
 
         MockMvc mvc = MockMvcBuilders.standaloneSetup(resource).build();
         mvc.perform(
-                        post("/a2a/order_pizza/rpc")
+                        post("/api/a2a/workflow/order_pizza/rpc")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"message/send\","

@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -85,6 +86,16 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLQueueDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")
+    public MySQLFileMetadataDAO mySqlFileMetadataDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
