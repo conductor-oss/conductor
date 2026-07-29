@@ -113,10 +113,26 @@ public class Join extends WorkflowSystemTask {
                                 .filter(Objects::nonNull)
                                 .filter(t -> !t.getStatus().isSuccessful())
                                 .map(TaskModel::getReasonForIncompletion)
+                                .filter(Objects::nonNull)
                                 .collect(Collectors.joining(" "));
                 failureReason.append(failureReasons);
                 task.setReasonForIncompletion(failureReason.toString());
-                task.setStatus(TaskModel.Status.FAILED);
+                // A canceled forked task (e.g. a manually terminated sub-workflow) is a
+                // cancellation, not a failure: surface CANCELED so the decider maps the
+                // workflow to TERMINATED. Any genuinely failed non-optional forked task
+                // still wins and fails the join.
+                boolean hasNonCanceledFailure =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(Objects::nonNull)
+                                .filter(t -> t.getStatus().isTerminal())
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .filter(t -> !t.getWorkflowTask().isOptional())
+                                .anyMatch(t -> t.getStatus() != TaskModel.Status.CANCELED);
+                task.setStatus(
+                        hasNonCanceledFailure
+                                ? TaskModel.Status.FAILED
+                                : TaskModel.Status.CANCELED);
                 return true;
             }
 
