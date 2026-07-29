@@ -30,6 +30,7 @@ import org.conductoross.conductor.ai.agent.credentials.OAuthTokenProvider;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -60,6 +61,9 @@ import okhttp3.Response;
  * </ul>
  *
  * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
+ * Credentials are resolved per request from {@code credentialRef}, so the client registers whether
+ * or not Azure Foundry is configured; an unconfigured runtime fails only if a workflow routes to
+ * it.
  */
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
@@ -77,7 +81,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             new ConcurrentHashMap<>();
 
     public AzureFoundryAgentClient(
-            CredentialResolutionService credentialResolutionService, OkHttpClient httpClient) {
+            CredentialResolutionService credentialResolutionService,
+            @Qualifier("conductorAiHttpClient") OkHttpClient httpClient) {
         this.credentialResolutionService = credentialResolutionService;
         this.httpClient = httpClient;
     }
