@@ -10,7 +10,53 @@ examples.
 
 **Account:** `ai-orkes-tests.openai.azure.com`
 **Resource group:** `dl-testing`
-**Model:** `gpt-4o-mini` (all three — cheapest available, no LLM cost concerns for testing)
+**Model:** `gpt-4o-mini-viren` (deployment on `ai-orkes-tests` — all three assistants use this)
+
+---
+
+## Azure Setup
+
+### 1. Azure OpenAI Resource
+
+The `ai-orkes-tests` Azure OpenAI resource was already provisioned in the `dl-testing` resource
+group. The assistants (agents) were created via **Azure AI Foundry portal** (`ai.azure.com`):
+
+1. Navigate to the resource → **AI Foundry portal**
+2. Go to **Assistants** playground → **New assistant**
+3. Set a name, system prompt, and select the model deployment (`gpt-4o-mini-viren`)
+4. Save — this gives you an `asst_...` ID to use in Conductor
+
+The 3 assistants created:
+
+| Name | Assistant ID | System prompt |
+|---|---|---|
+| conductor-a2a-greeter | `asst_lEkmApixhANgnTj0ky8LUygc` | Friendly greeter |
+| conductor-a2a-summarizer | `asst_GHSfevnpNTfpiWUGOZ3BXTzq` | Text summarizer (bullet points) |
+| conductor-a2a-analyst | `asst_RpopyW7pURDhSbfX60q4HmOz` | Data analyst |
+
+### 2. Service Principal (OAuth credentials)
+
+Conductor authenticates to Azure OpenAI using OAuth 2.0 client credentials flow (Entra ID).
+A service principal was created and granted access to the `ai-orkes-tests` resource:
+
+```bash
+# Create service principal
+az ad sp create-for-rbac --name conductor-a2a-test --skip-assignment
+
+# Assign Cognitive Services roles on the Azure OpenAI resource
+az role assignment create \
+  --assignee <appId> \
+  --role "Cognitive Services OpenAI User" \
+  --scope /subscriptions/<sub>/resourceGroups/dl-testing/providers/Microsoft.CognitiveServices/accounts/ai-orkes-tests
+
+az role assignment create \
+  --assignee <appId> \
+  --role "Cognitive Services OpenAI Contributor" \
+  --scope /subscriptions/<sub>/resourceGroups/dl-testing/providers/Microsoft.CognitiveServices/accounts/ai-orkes-tests
+```
+
+The `client_id`, `client_secret`, and `tenant_id` from the service principal are stored as a
+JSON blob in the Conductor secret store (see [Credentials](#credentials) below).
 
 ---
 
@@ -66,28 +112,50 @@ tool-using agent that takes a few polling cycles to complete.
 
 ## Credentials
 
-Stored as environment variables — resolve via Conductor's secret store using
-`AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`, and
-`AZURE_FOUNDRY_ENDPOINT`.
-
-For direct API testing using the API key:
+The service principal credentials are stored as a single JSON blob in Conductor's secret store.
+Set the following env var before starting the server:
 
 ```bash
-# List all test agents
-curl -H "api-key: $AZURE_OPENAI_API_KEY" \
-  "https://ai-orkes-tests.openai.azure.com/openai/assistants?api-version=2025-01-01-preview"
+export CONDUCTOR_SECRET_AZURE_ORK_TESTS='{
+  "client_id": "<appId>",
+  "client_secret": "<secret>",
+  "tenant_id": "<tenantId>"
+}'
 ```
+
+Conductor's `CredentialResolutionService` resolves dotted-path sub-keys automatically — e.g.
+`credentialRef: "AZURE_ORK_TESTS"` causes the client to look up `AZURE_ORK_TESTS.client_id`,
+`AZURE_ORK_TESTS.client_secret`, and `AZURE_ORK_TESTS.tenant_id` from that JSON blob.
+
+The OAuth scope used is `https://cognitiveservices.azure.com/.default`.
 
 ---
 
-## Example: calling the greeter via Conductor
+## End-to-End Testing
 
-Configure an `AGENT` task in a workflow:
+All 3 agents were tested end-to-end using Conductor's **AGENT task** type on a local
+Conductor OSS server (port 8091). Each agent was wired into a workflow definition and
+executed via the Conductor API. All 3 completed successfully (2026-07-29).
+
+### How the AGENT task works
+
+```
+Workflow triggers AGENT task
+  → AzureFoundryAgentClient authenticates via Entra ID OAuth
+    → Creates an OpenAI thread
+    → Posts user message to thread
+    → Starts a run against the assistant
+    → Polls run status until completed
+      → Reads last assistant message
+        → Returns result as task output
+```
+
+### Workflow definition (AGENT task config)
 
 ```json
 {
   "name": "call_greeter",
-  "taskReferenceName": "call_greeter",
+  "taskReferenceName": "call_greeter_ref",
   "type": "AGENT",
   "inputParameters": {
     "agentType": "azure-foundry",
@@ -101,16 +169,20 @@ Configure an `AGENT` task in a workflow:
 }
 ```
 
-**Notes from local testing (2026-07-29):**
-- `agentType` is `"azure-foundry"` (hyphen, not underscore)
-- `endpoint` must include the `/openai` path suffix
-- The model deployment on `ai-orkes-tests` is named `gpt-4o-mini-viren` — the 3 assistants
-  above were originally created with model `gpt-4o-mini` (which doesn't exist as a deployment)
-  and have been updated to `gpt-4o-mini-viren`
-- Two bugs were found and fixed in `AzureFoundryAgentClient` during this test:
-  - `DEFAULT_SCOPE` was `management.azure.com` → fixed to `cognitiveservices.azure.com`
-  - `API_VERSION` was `2025-05-01` (unsupported on this resource) → changed to `2025-01-01-preview`
-    as the default, overridable via `rawConfig.apiVersion`
-
 Replace `assistantId` with `asst_GHSfevnpNTfpiWUGOZ3BXTzq` (summarizer) or
 `asst_RpopyW7pURDhSbfX60q4HmOz` (analyst) to test the other agents.
+
+### Test results
+
+| Agent | Input | Output |
+|---|---|---|
+| greeter | `"Hello! My name is Shailesh."` | `"Hello Shailesh! It's wonderful to meet you!"` |
+| summarizer | Paragraph about Conductor OSS | 5-bullet structured summary |
+| analyst | API latency degradation question | Root cause analysis with investigation areas |
+
+**Key config notes:**
+- `agentType` must be `"azure-foundry"` (hyphen, not underscore)
+- `endpoint` must include the `/openai` path suffix
+- Two bugs were found and fixed in `AzureFoundryAgentClient` during this test (PR [#1421](https://github.com/conductor-oss/conductor/pull/1421)):
+  - `DEFAULT_SCOPE` was `management.azure.com` → fixed to `cognitiveservices.azure.com`
+  - `API_VERSION` was hardcoded `2025-05-01` → changed to configurable default `2025-01-01-preview`
