@@ -490,6 +490,22 @@ public class JavaScriptBuilder {
                         + "            fixed_output: null, guardrail_name: guardrailName,"
                         + "            should_continue: false};"
                         + "  }"
+                        // Worker SDKs may serialize a custom guardrail response into the result
+                        // envelope. Decode it before applying the guardrail contract; otherwise a
+                        // valid {passed:false,on_fail:'raise'} response falls through as a pass.
+                        + "  if (typeof raw === 'object' && raw.result !== undefined"
+                        + "      && raw.on_fail === undefined && raw.onFail === undefined"
+                        + "      && raw.passed === undefined && raw.output === undefined) {"
+                        + "    raw = raw.result;"
+                        + "  }"
+                        + "  if (typeof raw === 'object' && raw.output !== undefined"
+                        + "      && raw.on_fail === undefined && raw.onFail === undefined"
+                        + "      && raw.passed === undefined) {"
+                        + "    raw = raw.output;"
+                        + "  }"
+                        + "  if (typeof raw === 'string') {"
+                        + "    try { raw = JSON.parse(raw); } catch (ignored) {}"
+                        + "  }"
                         + "  if (typeof raw === 'object' && raw.result !== undefined"
                         + "      && raw.on_fail === undefined && raw.onFail === undefined"
                         + "      && raw.tripwire_triggered === undefined && raw.tripwireTriggered === undefined"

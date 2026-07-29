@@ -165,6 +165,44 @@ class GuardrailEscalationScriptTest {
         assertThat(result.getMember("passed").asBoolean()).isTrue();
     }
 
+    @Test
+    void serializedCustomGuardrailRejectionPreservesRaise() {
+        Value result =
+                normalize(
+                        "{worker_output: {result: '{\\\"passed\\\":false,\\\"on_fail\\\":\\\"raise\\\",\\\"message\\\":\\\"blocked\\\"}'}, "
+                                + "guardrail_name: 'g', default_on_fail: 'retry', "
+                                + "iteration: 1, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("raise");
+        assertThat(result.getMember("message").asString()).isEqualTo("blocked");
+    }
+
+    @Test
+    void serializedCustomGuardrailRetryEscalatesAtMaxRetries() {
+        Value result =
+                normalize(
+                        "{worker_output: {result: '{\\\"passed\\\":false,\\\"on_fail\\\":\\\"retry\\\"}'}, "
+                                + "guardrail_name: 'g', default_on_fail: 'retry', "
+                                + "iteration: 3, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("raise");
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void outputEnvelopeCustomGuardrailRejectionPreservesRaise() {
+        Value result =
+                normalize(
+                        "{worker_output: {output: {passed: false, on_fail: 'raise', message: 'blocked'}}, "
+                                + "guardrail_name: 'g', default_on_fail: 'retry', "
+                                + "iteration: 1, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("raise");
+    }
+
     // ── composition with the tool-call-turn short-circuit (Issue #1323 / PR #1352) ──
     //
     // compileGuardrailTasks binds both toolCalls (short-circuit, #1352) and

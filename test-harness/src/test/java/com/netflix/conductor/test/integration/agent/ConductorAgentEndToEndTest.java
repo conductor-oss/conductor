@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.GuardrailCompiler;
+import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -168,6 +170,114 @@ class ConductorAgentEndToEndTest {
         Workflow agentExecution = executionService.getExecutionStatus(executionId, true);
         assertEquals(Workflow.WorkflowStatus.COMPLETED, agentExecution.getStatus());
         assertEquals(agentName, agentExecution.getWorkflowName());
+    }
+
+    /**
+     * A rejecting custom tool-input guardrail must take the generated {@code raise} branch before
+     * the guarded tool is reached. This deliberately uses the compiler's real {@code SIMPLE ->
+     * INLINE normalizer -> SWITCH -> SIMPLE} shape and the real server executor rather than
+     * duplicating the routing decision in the test.
+     */
+    @Test
+    void customToolInputGuardrailRaiseFailsBeforeGuardedToolExecutes() {
+        String guardrailWorker = "tin_custom_raise_guardrail_" + UUID.randomUUID();
+        String guardedTool = "tin_custom_raise_tool_" + UUID.randomUUID();
+        String workflowName = "tin_custom_raise_workflow_" + UUID.randomUUID();
+        ensureTaskDef(guardrailWorker);
+        ensureTaskDef(guardedTool);
+
+        GuardrailConfig guardrail =
+                GuardrailConfig.builder()
+                        .name("tin_custom_raise")
+                        .guardrailType("custom")
+                        .position("input")
+                        .taskName(guardrailWorker)
+                        .onFail("raise")
+                        .build();
+        GuardrailCompiler compiler = new GuardrailCompiler();
+        GuardrailCompiler.GuardrailTaskResult guardrailTask =
+                compiler.compileToolGuardrailTasks(
+                                List.of(guardrail), "tin_custom_raise", "tool input")
+                        .getFirst();
+        // The production compiler resolves this from the surrounding agent loop. This focused
+        // workflow has a single synthetic turn, so provide that turn number directly.
+        guardrailTask
+                .getTasks()
+                .forEach(task -> task.getInputParameters().put("iteration", 1));
+        GuardrailCompiler.GuardrailRoutingResult routing =
+                compiler.compileGuardrailRouting(
+                        guardrail,
+                        guardrailTask.getRefName(),
+                        "tool input",
+                        "tin_custom_raise",
+                        "_tg",
+                        guardrailTask.isInline());
+        WorkflowTask guardedToolTask = new WorkflowTask();
+        guardedToolTask.setName(guardedTool);
+        guardedToolTask.setTaskReferenceName("guarded_tool");
+        guardedToolTask.setType("SIMPLE");
+        guardedToolTask.setInputParameters(Map.of());
+        guardrailTask.getTasks().forEach(this::populateTaskNames);
+        populateTaskNames(routing.getSwitchTask());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(workflowName);
+        workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("conductor-agent-e2e@conductor.test");
+        // Tool guardrails are compiled for the agent's DO_WHILE turn loop and resolve their
+        // iteration from ${tin_custom_raise_loop.output.iteration}. Exercise that real shape so
+        // the workflow definition is valid and the routing behaviour is tested at execution time.
+        List<WorkflowTask> loopTasks = new ArrayList<>(guardrailTask.getTasks());
+        loopTasks.add(routing.getSwitchTask());
+        loopTasks.add(guardedToolTask);
+        WorkflowTask loop = new WorkflowTask();
+        loop.setName("DO_WHILE");
+        loop.setType("DO_WHILE");
+        loop.setTaskReferenceName("tin_custom_raise_loop");
+        loop.setLoopCondition(
+                "if ($.tin_custom_raise_loop['iteration'] < 1) { true; } else { false; }");
+        loop.setLoopOver(loopTasks);
+        loop.setInputParameters(Map.of("tin_custom_raise_loop", "${tin_custom_raise_loop}"));
+        workflowDef.setTasks(List.of(loop));
+        metadataService.updateWorkflowDef(List.of(workflowDef));
+
+        String workflowId = startWorkflow(workflowName);
+        String guardrailTaskId = awaitPolledTask(workflowId, guardrailWorker);
+
+        TaskResult rejection = new TaskResult();
+        rejection.setTaskId(guardrailTaskId);
+        rejection.setWorkflowInstanceId(workflowId);
+        rejection.setStatus(TaskResult.Status.COMPLETED);
+        // This is the worker result shape emitted by SDK workers that serialize their guardrail
+        // response into TaskResult.outputData.result.
+        rejection.setOutputData(
+                Map.of(
+                        "result",
+                        "{\"passed\":false,\"on_fail\":\"raise\",\"message\":\"blocked\"}"));
+        workflowExecutor.updateTask(rejection);
+
+        Workflow failed = awaitTerminal(workflowId);
+        assertEquals(Workflow.WorkflowStatus.FAILED, failed.getStatus());
+        Task normalizedGuardrail =
+                failed.getTasks().stream()
+                        .filter(
+                                task ->
+                                        "INLINE".equals(task.getTaskType())
+                                                && task.getReferenceTaskName()
+                                                        .startsWith(guardrailTask.getRefName()))
+                        .findFirst()
+                        .orElseThrow();
+        assertTrue(normalizedGuardrail.getOutputData().get("result") instanceof Map<?, ?>);
+        Map<?, ?> normalizedResult = (Map<?, ?>) normalizedGuardrail.getOutputData().get("result");
+        assertEquals(false, normalizedResult.get("passed"));
+        assertEquals("raise", normalizedResult.get("on_fail"));
+        assertTrue(
+                failed.getTasks().stream()
+                        .noneMatch(task -> guardedTool.equals(task.getTaskType())),
+                "guarded tool must never be scheduled after custom guardrail rejection");
+        assertTrue(
+                queueDAO.pop(guardedTool, 1, 100).isEmpty(),
+                "guarded tool must not be available for a worker to poll");
     }
 
     /**
@@ -1123,6 +1233,39 @@ class ConductorAgentEndToEndTest {
             metadataService.registerTaskDef(List.of(td));
         } catch (Exception ignored) {
             // already registered by a prior test
+        }
+    }
+
+    private String awaitPolledTask(String workflowId, String taskType) {
+        return Awaitility.await()
+                .atMost(15, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            workflowExecutor.decide(workflowId);
+                            List<String> taskIds = queueDAO.pop(taskType, 1, 100);
+                            return taskIds.isEmpty() ? null : taskIds.get(0);
+                        },
+                        java.util.Objects::nonNull);
+    }
+
+    /**
+     * Compiler-generated structural tasks receive names when the full agent definition is built.
+     */
+    private void populateTaskNames(WorkflowTask task) {
+        if (task.getName() == null) {
+            task.setName(task.getType());
+        }
+        if (task.getDecisionCases() != null) {
+            task.getDecisionCases()
+                    .values()
+                    .forEach(tasks -> tasks.forEach(this::populateTaskNames));
+        }
+        if (task.getDefaultCase() != null) {
+            task.getDefaultCase().forEach(this::populateTaskNames);
+        }
+        if (task.getForkTasks() != null) {
+            task.getForkTasks().forEach(tasks -> tasks.forEach(this::populateTaskNames));
         }
     }
 }
