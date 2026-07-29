@@ -20,8 +20,16 @@ package org.conductoross.conductor.ai.agent;
  */
 public interface ConductorAgentClient extends AutoCloseable {
 
-    /** Agent type string that routes requests to this client (e.g. "conductor", "bedrock"). */
-    String agentType();
+    /**
+     * Agent type string that routes requests to this client (e.g. "conductor", "bedrock").
+     *
+     * <p>Defaults to {@code "conductor"} — the value of {@code A2AService.AGENT_TYPE_CONDUCTOR},
+     * inlined to keep this boundary interface free of imports — so existing implementations of the
+     * Conductor control plane keep compiling. Clients backing any other runtime must override.
+     */
+    default String agentType() {
+        return "conductor";
+    }
 
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
