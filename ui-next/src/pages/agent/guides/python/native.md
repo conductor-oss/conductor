@@ -3,7 +3,7 @@
 ## 1. Install
 
 ```bash
-python -m pip install --upgrade --pre 'conductor-python[agents]'
+python -m pip install 'conductor-python[agents]==2.0.0rc2'
 ```
 
 ## 2. Configure

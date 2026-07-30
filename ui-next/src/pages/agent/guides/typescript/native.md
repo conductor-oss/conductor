@@ -1,7 +1,7 @@
 ## 1. Install
 
 ```bash
-npm install @io-orkes/conductor-javascript@latest
+npm install @io-orkes/conductor-javascript@4.0.0-rc4
 ```
 
 ## 2. Configure
