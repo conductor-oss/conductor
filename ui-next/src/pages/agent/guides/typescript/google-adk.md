@@ -1,7 +1,7 @@
 ## 1. Install and configure
 
 ```bash
-npm install @io-orkes/conductor-javascript@4.0.0-rc4 @google/adk
+npm install @io-orkes/conductor-javascript@latest @google/adk
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>

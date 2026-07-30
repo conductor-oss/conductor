@@ -39,12 +39,12 @@ describe("agent guide manifest", () => {
     });
   });
 
-  it("pins every guide to the current published SDK release candidate", () => {
+  it("selects the latest published SDK release in every guide", () => {
     const expectedInstallByLanguage = {
-      python: "==2.0.0rc2",
-      typescript: "@io-orkes/conductor-javascript@4.0.0-rc4",
-      java: "org.conductoross:conductor-client-ai:6.0.0.rc4",
-      dotnet: "--version 3.0.0-rc3",
+      python: "python -m pip install --upgrade --pre",
+      typescript: "@io-orkes/conductor-javascript@latest",
+      java: "org.conductoross:conductor-client-ai:latest.release",
+      dotnet: "--prerelease",
     } as const;
 
     AGENT_GUIDE_LANGUAGES.forEach(({ id, guides }) => {

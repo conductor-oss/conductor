@@ -1,7 +1,7 @@
 ## 1. Install and configure
 
 ```bash
-python -m pip install 'conductor-python[langgraph]==2.0.0rc2' langchain-openai
+python -m pip install --upgrade --pre 'conductor-python[langgraph]' langchain-openai
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
