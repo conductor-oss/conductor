@@ -18,8 +18,6 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
-import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
-import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
@@ -98,25 +96,9 @@ public class MySQLConfiguration {
         return new MySQLFileMetadataDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean
-    @DependsOn({"flyway", "flywayInitializer"})
-    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
-    public MySQLSkillMetadataDAO mySqlSkillMetadataDAO(
-            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            DataSource dataSource) {
-        return new MySQLSkillMetadataDAO(retryTemplate, objectMapper, dataSource);
-    }
-
-    @Bean
-    @DependsOn({"flyway", "flywayInitializer"})
-    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
-    public MySQLSkillPackageDAO mySqlSkillPackageDAO(
-            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper,
-            DataSource dataSource) {
-        return new MySQLSkillPackageDAO(retryTemplate, objectMapper, dataSource);
-    }
+    // Skill storage (SkillMetadataDAO / SkillPackageDAO) is registered by
+    // org.conductoross.conductor.mysql.config.MySQLSkillDAOConfiguration instead, so that a host
+    // which excludes this class from its component scan can still reach the MySQL implementations.
 
     @Bean
     public RetryTemplate mysqlRetryTemplate(MySQLProperties properties) {
