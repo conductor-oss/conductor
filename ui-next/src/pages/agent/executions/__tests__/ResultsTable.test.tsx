@@ -107,7 +107,7 @@ describe("ResultsTable", () => {
     expect(getExpander()).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("checkbox", { name: "Hide sub-agent executions" }),
+      screen.getByRole("switch", { name: "Hide sub-agent executions" }),
     );
 
     expect(getExpander()).toBeInTheDocument();
