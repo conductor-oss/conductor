@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.a2a;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +75,7 @@ class A2ARealAgentIntegrationTest {
         String url = System.getenv("A2A_AGENT_URL");
         String prompt = System.getenv().getOrDefault("A2A_AGENT_PROMPT", "hello");
 
-        A2AWorkers workers = new A2AWorkers(service(), unusedAgentClient());
+        A2AWorkers workers = new A2AWorkers(service(), List.of(unusedAgentClient()));
         Task task = new Task();
         task.setTaskId("it-task-1");
         task.setStatus(Task.Status.SCHEDULED);

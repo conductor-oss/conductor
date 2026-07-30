@@ -42,6 +42,11 @@ function makeWorkflowDef(suffix: string): WorkflowDef {
 const WF_LIST = makeWorkflowDef("list");
 const WF_EDITOR = makeWorkflowDef("editor");
 
+// Monaco loads its editor runtime asynchronously from the CDN. The integration
+// suite uses the production bundle and a real browser, so allow the same
+// network window as navigation rather than Playwright's 5-second default.
+const MONACO_CONTENT_TIMEOUT_MS = 30_000;
+
 test.beforeAll(async () => {
   await createWorkflowDef(WF_LIST);
   await createWorkflowDef(WF_EDITOR);
@@ -167,7 +172,7 @@ test("switching to the Code tab shows the workflow JSON editor", async ({
   // workflow definition JSON is actually present in the editor content.
   await expect(
     page.locator("#editor-panel-tab-content #code-tab"),
-  ).toContainText("SET_VARIABLE");
+  ).toContainText("SET_VARIABLE", { timeout: MONACO_CONTENT_TIMEOUT_MS });
 });
 
 test("navigating to /newWorkflowDef opens an empty editor", async ({
@@ -198,5 +203,5 @@ test("navigating to /newWorkflowDef opens an empty editor", async ({
   // that no task reference names snuck in from a previously loaded definition.
   await expect(
     page.locator("#editor-panel-tab-content #code-tab"),
-  ).toContainText('"tasks": []');
+  ).toContainText('"tasks": []', { timeout: MONACO_CONTENT_TIMEOUT_MS });
 });

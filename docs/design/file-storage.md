@@ -33,10 +33,16 @@ Workflow-scoped File API
   |
   +--> FileStorage --> signed URL / storage metadata / multipart mutation
 
-FileClient -- raw signed request --> S3, Azure Blob, GCS, or local filesystem
+FileClient -- provider-signed request --> S3, Azure Blob, or GCS
+
+FileClient -- raw HTTP request --> Conductor content endpoint --> Conductor-managed filesystem
 ```
 
-The server decides identity, ownership, storage location, URL lifetime, and upload state. `FileClient` orchestrates the workflow API and byte transfers. Package-private transfer adapters implement exactly one provider transfer attempt; they do not own retries or lifecycle state.
+The server decides identity, ownership, storage location, URL lifetime, and upload state.
+`FileClient` orchestrates the workflow API and byte transfers. Package-private transfer adapters
+implement exactly one provider transfer attempt; they do not own retries or lifecycle state. Direct
+provider transfers apply to object-store backends. The `CONDUCTOR` backend instead proxies raw
+content through Conductor's HTTP API to a server-managed filesystem.
 
 ## Public contract
 
@@ -80,7 +86,7 @@ If any multipart step fails, the client requests a best-effort abort. S3 has an 
 | S3 | Signed PUT. | Each part must return a non-blank `ETag`; ordered ETags complete the upload. |
 | Azure Blob | Signed PUT with `x-ms-blob-type: BlockBlob`. | Stable Base64 block IDs; part URLs add `comp=block&blockid=...`; ordered IDs are committed. |
 | GCS | Signed PUT. | Disabled until a real resumable protocol is implemented. |
-| Local | `file:` URL copy. | Not supported. |
+| Conductor | HTTP `PUT`/`GET` through `/api/files/content/{workflowId}/{fileId}`. | Not supported; bounded single-request upload. |
 | Unknown | Generic HTTP(S) signed PUT/GET when the server supplies such a URL. | Not supported. |
 
 Range bodies use a positioned file channel and must emit exactly the requested length. A short read is a failure rather than a silently truncated part.
@@ -97,7 +103,15 @@ The client validates the destination before requesting a signed URL, downloads t
 
 ## Signed URL security boundary
 
-Signed URLs are bearer credentials. They must not appear in exceptions or logs. Signed requests use a separate raw HTTP client with redirects disabled and no Conductor authentication, cookie jar, or application interceptors. The server API client and storage-transfer client therefore have separate trust boundaries.
+Signed URLs are bearer credentials. They must not appear in exceptions or logs. Object-store signed
+requests use a separate raw HTTP client with redirects disabled and no Conductor authentication,
+cookie jar, or application interceptors. The server API client and object-store transfer client
+therefore have separate trust boundaries. `CONDUCTOR` content URLs are served by Conductor; when
+content URL signing is enabled, their signature is verified by the server before it streams bytes.
+
+`CONDUCTOR` stores bytes in a server-side directory. In a multi-node deployment, every node that
+can serve content must mount the same directory; otherwise an upload accepted by one node is not
+available to another node.
 
 ## Compatibility
 

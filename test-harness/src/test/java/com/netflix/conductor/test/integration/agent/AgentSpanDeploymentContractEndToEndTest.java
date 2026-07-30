@@ -101,9 +101,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Real persistence contract for AgentSpan deployment. These assertions intentionally use the same
- * compiler, metadata service, and Redis-backed task-definition registry as production rather than
- * inspecting calls made to mocked collaborators.
+ * Real persistence contract for Conductor-Agents deployment. These assertions intentionally use the
+ * same compiler, metadata service, and Redis-backed task-definition registry as production rather
+ * than inspecting calls made to mocked collaborators.
  */
 @Tag("agentspan-deterministic-e2e")
 @SpringBootTest(
@@ -118,7 +118,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "agentspan.skills.enabled=true",
             "conductor.ai.outbound.allow-private-networks=true",
             "conductor.external-payload-storage.type=s3",
@@ -171,7 +170,11 @@ class AgentSpanDeploymentContractEndToEndTest {
 
     @Autowired private AgentService agentService;
     @Autowired private AgentDagService agentDagService;
-    @Autowired private ConductorAgentClient conductorAgentClient;
+
+    @Autowired
+    @Qualifier("serviceConductorAgentClient")
+    private ConductorAgentClient conductorAgentClient;
+
     @Autowired private ExecutionDAO executionDAO;
     @Autowired private MetadataService metadataService;
     @Autowired private ExternalPayloadStorage externalPayloadStorage;

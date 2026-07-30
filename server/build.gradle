@@ -20,7 +20,7 @@ dependencies {
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-ai')
-    // Embedded AgentSpan runtime (REST controllers, agent services); activated only when
+    // Embedded Conductor-Agents runtime (REST controllers, agent services); activated only when
     // conductor.integrations.ai.enabled=true.
     implementation project(':conductor-agentspan')
 
@@ -35,7 +35,7 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
-    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-file-storage')
     implementation project(':conductor-gcs-storage')
 
 
