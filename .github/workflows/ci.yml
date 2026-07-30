@@ -533,30 +533,18 @@ jobs:
       # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
       # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
       # `CONDUCTOR_PY_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
-      CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc2' }}
-      # Pinned agentspan CLI release. Required — do not drop it. The credential suites
-      # (suites 2/3/4/5/26, xdist group `credentials`) reach their conductor-oss skip
-      # THROUGH the CLI: conftest's CredentialsCLI.set() shells out, the server rejects the
-      # write because its secret store is env-backed and read-only, and it is that stderr
-      # that triggers pytest.skip. subprocess.run has no try/except there, so with no binary
-      # they raise FileNotFoundError and FAIL instead (verified: removing it turned 4 clean
-      # skips into hard failures). Suite16 cli-skills also uses it, but those stay red
-      # regardless — server-side skills are unsupported here, see known-failures-python.json.
-      # Independent of the server pin; bump deliberately.
-      AGENTSPAN_CLI_VERSION: "0.4.4"
-      # Named `agentspan-cli`, not `agentspan` — the repo already has an `agentspan/`
-      # module directory that `gh release download --output agentspan` would collide with.
-      AGENTSPAN_CLI_PATH: ${{ github.workspace }}/agentspan-cli
-      # TODO: rename to CONDUCTOR_SERVER_URL / CONDUCTOR_AGENT_LLM_MODEL once a migrated
-      # bundle is pinned above. Do NOT rename these ahead of that — the bundle ships
-      # prebuilt from conductor-oss/python-sdk and its `e2e/conftest.py` reads only the
-      # AGENTSPAN_* names, so renaming here silently drops both to conftest's defaults.
-      # (The SDK's own Configuration already prefers CONDUCTOR_SERVER_URL; it is the
-      # harness that has not migrated. CONDUCTOR_AGENT_LLM_MODEL is read by nothing yet.)
-      # Order of operations: migrate conftest in python-sdk → release → bump the pin
-      # above → rename here → delete this TODO.
-      AGENTSPAN_SERVER_URL: http://localhost:8080/api
-      AGENTSPAN_LLM_MODEL: openai/gpt-4o-mini
+      CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
+      # Canonical names, and what the bundle reads as of 2.0.0-rc4: its conftest migrated from
+      # AGENTSPAN_SERVER_URL / AGENTSPAN_LLM_MODEL to these. Do not rename back — and if the pin
+      # is ever moved DOWN to rc2 or earlier, these must go back with it, since those bundles
+      # read only the AGENTSPAN_* names and would silently fall through to conftest's defaults.
+      # No AGENTSPAN_CLI_* here: rc4 dropped the agentspan CLI entirely (no CredentialsCLI, no
+      # CLI_PATH, and test_suite16_cli_skills.py is gone), so provisioning it bought nothing.
+      # It WAS load-bearing under rc2 — the credential suites reached their read-only skip by
+      # invoking it, and removing it there turned clean skips into FileNotFoundError failures.
+      # So don't restore it on the assumption it is needed unless the pin goes back.
+      CONDUCTOR_SERVER_URL: http://localhost:8080/api
+      CONDUCTOR_AGENT_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
       # Suite21 probes GET {this}/scheduler/schedules and skips the whole suite unless it
       # answers 200. Its default is port 8089, so without this the 11 scheduling tests
@@ -578,12 +566,20 @@ jobs:
       # Minimum number of tests that must actually PASS. A pytest skip is not a failure, so a
       # server change that breaks a test's setup silently converts pass -> skip and the lane
       # stays green while covering less. This floor is the backstop: if fewer than this many
-      # tests pass, fail regardless of whether anything reported a failure. Was 127 (CI runs
-      # 30398185123 / 30400603109, both 127 passed / 27 skipped); +10 from wiring up
-      # SCHEDULER_CONDUCTOR_URL below, which un-skipped suite21. RAISE it when real coverage
-      # is added; LOWER it only with a written reason — lowering silently is exactly the
-      # regression this guards against.
-      E2E_MIN_PASSED: "137"
+      # tests pass, fail regardless of whether anything reported a failure. RAISE it when real
+      # coverage is added; LOWER it only with a written reason — lowering silently is exactly
+      # the regression this guards against. History:
+      #   127 — rc2 baseline (CI runs 30398185123 / 30400603109: 127 passed / 27 skipped)
+      #   137 — +10 from wiring up SCHEDULER_CONDUCTOR_URL, which un-skipped suite21
+      #   135 — pin moved to rc4, which DELETED test_suite16_cli_skills.py. Three of those
+      #         tests were xfail-ed here, but two were genuinely PASSING
+      #         (test_cli_skill_load_serve_and_run_by_name,
+      #         test_cli_skill_run_ephemeral_executes_script_worker), so real coverage of the
+      #         ephemeral/by-name CLI skill paths went away with the file. This -2 is a
+      #         coverage LOSS, not a fix — it is invisible in pass/fail terms because the
+      #         tests ceased to exist. Verified locally on rc4: 135 passed / 7 skipped /
+      #         3 xfailed.
+      E2E_MIN_PASSED: "135"
     steps:
       - uses: actions/checkout@v7
 
@@ -646,17 +642,6 @@ jobs:
           echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
           tar -xzf "${NAME}.tar.gz"
           echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
-
-      - name: Download AgentSpan CLI
-        # Load-bearing: the credential suites reach their read-only skip by invoking this
-        # binary. Without it conftest's subprocess.run raises FileNotFoundError and 4 tests
-        # fail instead of skipping. See the AGENTSPAN_CLI_VERSION comment above.
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download "v${AGENTSPAN_CLI_VERSION}" --repo agentspan-ai/agentspan \
-            --pattern "agentspan_linux_amd64" --output "$AGENTSPAN_CLI_PATH" --clobber
-          chmod +x "$AGENTSPAN_CLI_PATH"
 
       # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
       # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
