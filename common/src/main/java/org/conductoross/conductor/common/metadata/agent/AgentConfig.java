@@ -91,18 +91,16 @@ public class AgentConfig {
     private MemoryConfig memory;
 
     /**
-     * Long-term (OCG-backed) memory configuration. When present, the compiler inlines memory
-     * retrieval (pre-loop) and distill/save/feedback (post-loop) steps into the workflow. Distinct
+     * Long-term (OCG-backed) memory configuration. When present, the compiler registers OCG's MCP
+     * server for recall and the terminal workflow listener exports the raw completed run. Distinct
      * from the short-term {@link #memory}.
      */
     private LongTermMemoryConfig longTermMemory;
 
     /**
-     * Worker reference for the long-term memory {@code feedback_sink} callable. When present (and
-     * {@link #longTermMemory} is set), the compiler emits a post-loop SIMPLE task that hands the
-     * human good/bad capability links to the user's Python feedback_sink worker.
+     * @deprecated Retained for SDK wire compatibility and ignored. OCG feedback is human-only.
      */
-    private WorkerRef feedbackSink;
+    @Deprecated private WorkerRef feedbackSink;
 
     @Builder.Default private int maxTurns = 100;
 

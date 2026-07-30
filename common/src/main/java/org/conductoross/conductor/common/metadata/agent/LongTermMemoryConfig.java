@@ -21,10 +21,8 @@ import lombok.NoArgsConstructor;
 /**
  * Long-term (OCG-backed) memory configuration DTO.
  *
- * <p>Emitted by the Python serializer when an {@code Agent} has a {@code semantic_memory} backed by
- * an {@code OCGMemoryStore}. Drives the server-side compiler to inline memory retrieval (pre-loop)
- * and distill/save/feedback (post-loop) steps into the Conductor workflow, so long-term memory
- * works on the deployed/webhook execution path — not just the client-side {@code run()} wrapper.
+ * <p>Enables OCG recall through MCP and raw completed-run capture through OCG's agent-run API.
+ * Conductor deliberately does not summarize, rank, fold, or version memory.
  *
  * <p>Unlike short-term {@link MemoryConfig} (pre-loaded conversation messages), this drives HTTP
  * calls to an OCG instance using a server-resolvable credential name (never the client token).
@@ -52,12 +50,18 @@ public class LongTermMemoryConfig {
     /** Optional user owner, e.g. {@code "user:alice"}. */
     private String user;
 
-    /** Memory scope for writes (default {@code "agent"}). */
-    private String scope;
+    /**
+     * @deprecated Retained for wire compatibility; OCG owns write scope.
+     */
+    @Deprecated private String scope;
 
-    /** Max memories to retrieve per search. */
-    private Integer maxResults;
+    /**
+     * @deprecated Retained for wire compatibility; agents choose the MCP search limit.
+     */
+    @Deprecated private Integer maxResults;
 
-    /** Model used by the distillation (memory summarizer) LLM step. */
-    private String summaryModel;
+    /**
+     * @deprecated Retained for wire compatibility; OCG owns summarization.
+     */
+    @Deprecated private String summaryModel;
 }

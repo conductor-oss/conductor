@@ -818,6 +818,8 @@ public class ToolCompiler {
                         mcpDiscH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpDiscH)
                                 : mcpDiscH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
                 serverMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -838,6 +840,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
@@ -1126,6 +1129,8 @@ public class ToolCompiler {
                         mcpH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpH)
                                 : mcpH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
                 mcpServerMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1144,6 +1149,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
