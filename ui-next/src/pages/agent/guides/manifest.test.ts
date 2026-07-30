@@ -57,5 +57,11 @@ describe("agent guide manifest", () => {
     javaGuides.forEach(({ markdown }) => {
       expect(markdown).not.toContain("org.conductoross:conductor-ai:");
     });
+
+    const typescriptOpenAiGuide = getAgentGuide(
+      getAgentGuideLanguage("typescript"),
+      "openai",
+    );
+    expect(typescriptOpenAiGuide.markdown).toContain("@openai/agents@0.2.1");
   });
 });
