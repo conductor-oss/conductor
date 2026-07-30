@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.util.Map;
 
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
@@ -38,7 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * HTTP calls through {@code AgentController}.
  */
 @Component
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class ServiceConductorAgentClient implements ConductorAgentClient {
 
     private final AgentService agentService;
@@ -46,6 +47,11 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
 
     public ServiceConductorAgentClient(AgentService agentService) {
         this.agentService = agentService;
+    }
+
+    @Override
+    public String agentType() {
+        return A2AService.AGENT_TYPE_CONDUCTOR;
     }
 
     @Override

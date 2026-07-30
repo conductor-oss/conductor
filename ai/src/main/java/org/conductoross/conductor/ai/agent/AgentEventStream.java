@@ -17,8 +17,8 @@ import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 /**
  * Transport-neutral stream of agent lifecycle events.
  *
- * <p>The HTTP client adapts SSE to this contract while embedded AgentSpan implementations subscribe
- * directly to the in-process event registry.
+ * <p>The HTTP client adapts SSE to this contract while embedded Conductor-Agents implementations
+ * subscribe directly to the in-process event registry.
  */
 public interface AgentEventStream extends AutoCloseable {
 
