@@ -1,12 +1,12 @@
 ## 1. Install and configure
 
 ```bash
-npm install @io-orkes/conductor-javascript ai zod
+npm install @io-orkes/conductor-javascript@4.0.0-rc4 ai zod
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 ```
 
 ## 2. Run with the Vercel tool

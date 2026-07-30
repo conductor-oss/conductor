@@ -1,62 +1,36 @@
-# Conductor Agents — Documentation Updates
+# Agent Worker Documentation Notes
 
-Addresses review item 4 ("update docs `docs/`"). All content is derived from the shipped
-source per `CLAUDE.md`/`AGENTS.md`; field names and the `agentType` selector come from
-[`architecture.md`](./architecture.md).
+Public documentation should describe task contracts, not the runtime registration mechanism.
 
-## 1. New page: `docs/devguide/ai/conductor-agents.md`
+## AGENT
 
-A sibling to the existing `docs/devguide/ai/a2a-integration.md`. Structure:
+The task supports two runtimes:
 
-1. **What it is** — the `AGENT` task's `conductor` branch starts a registered agent workflow
-   through Conductor's core executor, in contrast to the `a2a` branch that calls a remote agent.
-2. **Task input** — table of the `conductor`-branch fields from `A2ACallRequest`
-   (`architecture.md` §4.2). Include the prompt-resolution order (`message` → `parts` →
-   `text` → `prompt`).
-3. **Task output** — table of the `ConductorAgentResults` keys (`architecture.md` §4.3) and
-   the state → status mapping (§4.5).
-4. **Minimal workflow** — the `AGENT` task JSON from `examples.md` §2 (agentType `conductor`).
-5. **Human-in-the-loop / resume** — explain the `WAITING` → resume flow: the task COMPLETES
-   with `waiting=true` + `pendingTool`, and the workflow resumes with a second `AGENT` call
-   carrying the same `executionId`. Link to example `32`.
-6. **Durability** — the deterministic idempotency key (`architecture.md` §4.6), the absolute
-   deadline (`maxDurationSeconds`, default 86400), and the poll-failure cap (`maxPollFailures`,
-   default 30). Note these mirror the `a2a` branch's guards.
-7. **Examples** — link to `ai/examples/31` and `ai/examples/32`.
+- `agentType: "a2a"` or blank calls a remote Agent2Agent endpoint.
+- `agentType: "conductor"` calls a deployed Conductor agent through the agent control plane.
 
-Every code block is copied from an example JSON or the source, not paraphrased.
+The Conductor branch uses the same start fields as `POST /api/agent/start`, plus
+`executionId`, `pollIntervalSeconds`, `maxDurationSeconds`, and `maxPollFailures`.
 
-## 2. Edit: `docs/devguide/ai/a2a-integration.md`
+Document that a running invocation is durable and non-blocking: the worker returns
+`IN_PROGRESS`, persists its execution identifier in task output, and is invoked again after the
+callback delay.
 
-The `AGENT` task now has two runtimes. Add a short **"Choosing a runtime"** note near where
-`agentType` is first introduced:
+## CANCEL_AGENT
 
-- `agentType: "a2a"` (default) — call a remote Agent2Agent endpoint (`agentUrl`).
-- `agentType: "conductor"` — run a registered Conductor agent workflow (`agentName`);
-  see [conductor-agents.md](./conductor-agents.md).
+`CANCEL_AGENT` explicitly propagates cancellation to either a remote A2A task or a Conductor agent
+execution. Parent-workflow cancellation also propagates when the workers are embedded in the
+Conductor server.
 
-Only add the cross-reference and the two-value clarification; do not rewrite existing A2A
-content (per the "editing an existing section" rule — verify surrounding blocks while there).
+## Implementation references
 
-## 3. Edit: `docs/devguide/ai/index.md`
+When updating examples or field tables, derive them from:
 
-Add `conductor-agents.md` to the AI dev-guide index/navigation list alongside
-`a2a-integration.md`, so the new page is discoverable. One line, matching the existing entry
-format.
+- `A2AWorkers`
+- `A2ACallRequest` and `A2ACancelRequest`
+- `ConductorAgentRequest`
+- `ConductorAgentResults`
+- `AgentController`
 
-## 4. Verification checklist
-
-- `agentType` values and field names match `A2ACallRequest` / `A2AService.AGENT_TYPE_CONDUCTOR`.
-- Output keys match `ConductorAgentResults`.
-- The registered-agent requirement is stated consistently: the named agent definition must already
-  exist in Conductor before an `AGENT` task can start it.
-- The execute endpoint in any curl example is `POST /api/workflow/{name}` (as used in the
-  existing examples README) — no invented routes.
-- If a live server is unavailable to confirm output blocks, mark them
-  `<!-- TODO: verify against live server -->` and call it out in the PR description.
-
-## 5. Out of scope
-
-- No changes to REST controllers, SDK, or the API reference — this branch adds no new HTTP
-  endpoint; it is driven entirely through the existing `AGENT` task definition.
-- No renaming of existing docs.
+Do not document engine-internal lifecycle methods or direct `WorkflowExecutor` access; neither is
+part of the portable worker contract.

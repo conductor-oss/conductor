@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -230,26 +231,10 @@ public class AgentCompiler {
             wf.setMaskedFields(config.getMaskedFields());
         }
 
-        // Stamp agent capability tags and agentDef into workflow metadata.
-        // Done here (not only in AgentService) so sub-workflows compiled recursively
-        // also carry their own agentDef — AgentService only stamps the top-level def.
-        if (!isFrameworkPassthrough(config) && !isGraphStructure(config)) {
-            Set<String> caps = collectCapabilities(config);
-            Map<String, Object> metadata =
-                    wf.getMetadata() != null
-                            ? new LinkedHashMap<>(wf.getMetadata())
-                            : new LinkedHashMap<>();
-            metadata.put("agent_capabilities", new ArrayList<>(caps));
-            try {
-                metadata.put("agentDef", MAPPER.convertValue(config, Map.class));
-            } catch (Exception e) {
-                log.debug(
-                        "Could not stamp agentDef for agent '{}': {}",
-                        config.getName(),
-                        e.getMessage());
-            }
-            wf.setMetadata(metadata);
-        }
+        // Stamp the agent classifier and definition into workflow metadata. The explicit
+        // classifier is what execution search indexes, so agent runs do not appear in the
+        // workflow-only execution list.
+        stampAgentMetadata(wf, config);
 
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {
@@ -265,6 +250,29 @@ public class AgentCompiler {
         }
 
         return wf;
+    }
+
+    /**
+     * Marks a generated workflow definition as an agent and retains the source definition needed to
+     * render its details. Embedded swarm workflows call this directly because they are built as
+     * inline {@code SUB_WORKFLOW} definitions and bypass {@link #compile(AgentConfig)}.
+     */
+    void stampAgentMetadata(WorkflowDef wf, AgentConfig config) {
+        Map<String, Object> metadata =
+                wf.getMetadata() != null
+                        ? new LinkedHashMap<>(wf.getMetadata())
+                        : new LinkedHashMap<>();
+        metadata.put("classifier", WorkflowClassifier.AGENT);
+        metadata.put("agent_capabilities", new ArrayList<>(collectCapabilities(config)));
+        try {
+            metadata.put("agentDef", MAPPER.convertValue(config, Map.class));
+        } catch (Exception e) {
+            log.debug(
+                    "Could not stamp agentDef for agent '{}': {}",
+                    config.getName(),
+                    e.getMessage());
+        }
+        wf.setMetadata(metadata);
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────
@@ -292,9 +300,26 @@ public class AgentCompiler {
 
         if (outputGuardrails.isEmpty()) {
             // Simple path: prefill tasks → single LLM call, no loop
-            List<WorkflowTask> tasks = new ArrayList<>(resolvedInstructions.getPreTasks());
+            List<WorkflowTask> tasks = new ArrayList<>();
+            CallbackConfig beforeAgent = findCallback(config, "before_agent");
+            if (beforeAgent != null) {
+                tasks.add(buildCallbackTask(beforeAgent, config.getName(), null));
+            }
+            tasks.addAll(resolvedInstructions.getPreTasks());
             tasks.addAll(prefill.tasks());
+            CallbackConfig beforeModel = findCallback(config, "before_model");
+            if (beforeModel != null) {
+                tasks.add(buildCallbackTask(beforeModel, config.getName(), llmRef));
+            }
             tasks.add(llmTask);
+            CallbackConfig afterModel = findCallback(config, "after_model");
+            if (afterModel != null) {
+                tasks.add(buildCallbackTask(afterModel, config.getName(), llmRef));
+            }
+            CallbackConfig afterAgent = findCallback(config, "after_agent");
+            if (afterAgent != null) {
+                tasks.add(buildCallbackTask(afterAgent, config.getName(), llmRef));
+            }
             wf.setTasks(tasks);
             Map<String, Object> simpleOutput = new LinkedHashMap<>();
             simpleOutput.put("result", ref(llmRef + ".output.result"));
@@ -310,7 +335,15 @@ public class AgentCompiler {
         int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
 
         List<WorkflowTask> loopTasks = new ArrayList<>();
+        CallbackConfig beforeModel = findCallback(config, "before_model");
+        if (beforeModel != null) {
+            loopTasks.add(buildCallbackTask(beforeModel, config.getName(), llmRef));
+        }
         loopTasks.add(llmTask);
+        CallbackConfig afterModel = findCallback(config, "after_model");
+        if (afterModel != null) {
+            loopTasks.add(buildCallbackTask(afterModel, config.getName(), llmRef));
+        }
 
         // Compile guardrails inside loop
         GuardrailCompiler gc = new GuardrailCompiler();
@@ -365,10 +398,19 @@ public class AgentCompiler {
         String resolveRef = toRef(config.getName()) + "_resolve_output";
         WorkflowTask resolveTask = buildResolveOutputTask(resolveRef, llmRef);
 
-        List<WorkflowTask> tasks = new ArrayList<>(resolvedInstructions.getPreTasks());
+        List<WorkflowTask> tasks = new ArrayList<>();
+        CallbackConfig beforeAgent = findCallback(config, "before_agent");
+        if (beforeAgent != null) {
+            tasks.add(buildCallbackTask(beforeAgent, config.getName(), null));
+        }
+        tasks.addAll(resolvedInstructions.getPreTasks());
         tasks.addAll(prefill.tasks());
         tasks.add(loop);
         tasks.add(resolveTask);
+        CallbackConfig afterAgent = findCallback(config, "after_agent");
+        if (afterAgent != null) {
+            tasks.add(buildCallbackTask(afterAgent, config.getName(), llmRef));
+        }
         wf.setTasks(tasks);
         Map<String, Object> hierOutput = new LinkedHashMap<>();
         hierOutput.put("result", ref(resolveRef + ".output.result.result"));
@@ -527,10 +569,27 @@ public class AgentCompiler {
         }
         WorkflowTask toolRouter = toolRoutingResult.getRouterTask();
 
+        // Tool callbacks belong inside the tool_call branch. Placing them outside the router
+        // would incorrectly invoke them for normal final-answer turns with no tool invocation.
+        List<WorkflowTask> toolCallTasks = toolRouter.getDecisionCases().get("tool_call");
+        CallbackConfig beforeTool = findCallback(config, "before_tool");
+        if (beforeTool != null) {
+            toolCallTasks.add(0, buildCallbackTask(beforeTool, config.getName(), llmRef));
+        }
+        CallbackConfig afterTool = findCallback(config, "after_tool");
+        if (afterTool != null) {
+            // This remains after the dynamic fork/JOIN/state merge chain and is never reached for
+            // an approval rejection because that branch deliberately TERMINATEs the agent run.
+            toolCallTasks.add(buildCallbackTask(afterTool, config.getName(), llmRef));
+        }
+
         // Build loop body
         List<WorkflowTask> loopTasks = new ArrayList<>();
 
-        // Context injection: compute state/signals prefix (prompt is appended via template)
+        // Context injection: compute state, signals, and immediately preceding tool-result prefix
+        // (prompt is appended via template).  Tool results are the durable observation channel for
+        // a ReAct turn: without them a resumed LLM only sees the original user prompt and can
+        // repeat a completed human/tool call indefinitely.
         String ctxInjectRef = toRef(config.getName()) + "_ctx_inject";
         WorkflowTask ctxInject = new WorkflowTask();
         ctxInject.setType("INLINE");
@@ -539,6 +598,7 @@ public class AgentCompiler {
         ctxInjectInputs.put("evaluatorType", "graaljs");
         ctxInjectInputs.put("state", "${workflow.variables._agent_state}");
         ctxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
+        ctxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
         ctxInjectInputs.put("maxSize", contextMaxSizeBytes);
         ctxInjectInputs.put("maxValueSize", contextMaxValueSizeBytes);
         ctxInjectInputs.put("expression", JavaScriptBuilder.contextInjectionScript());
@@ -723,6 +783,7 @@ public class AgentCompiler {
         // Initialize workflow variables
         Map<String, Object> initVars = new LinkedHashMap<>();
         initVars.put("_agent_state", "${" + ctxResolveRef + ".output.result}");
+        initVars.put("_last_tool_results", List.of());
         initVars.put("_stop_requested", false);
         initVars.put("_signal_injection", "");
         if (hasApproval) {
@@ -1208,14 +1269,16 @@ public class AgentCompiler {
             llmTask = buildLlmTask(config, parsed, llmRef, toolSpecs, hybridPrefill.refs());
         }
 
-        // Tool call routing (with tool-level guardrail metadata)
+        // Tool call routing (with tool-level guardrail metadata). The generated transfer tools
+        // remain visible to the LLM through allTools/toolSpecs, but are not executable worker
+        // tasks: the compiler-owned detector below consumes them before this router can fork.
         ToolCompiler.ToolCallRoutingResult toolRoutingResult;
         if (discoveryResult != null) {
             toolRoutingResult =
                     tc.buildToolCallRoutingDynamicWithResult(
                             config.getName(),
                             llmRef,
-                            allTools,
+                            config.getTools(),
                             hasApproval,
                             config.getModel(),
                             discoveryResult.getMcpConfigRef(),
@@ -1223,24 +1286,44 @@ public class AgentCompiler {
         } else {
             toolRoutingResult =
                     tc.buildToolCallRoutingWithResult(
-                            config.getName(), llmRef, allTools, hasApproval, config.getModel());
+                            config.getName(),
+                            llmRef,
+                            config.getTools(),
+                            hasApproval,
+                            config.getModel());
         }
         WorkflowTask toolRouter = toolRoutingResult.getRouterTask();
 
-        // Check-transfer worker
+        // Generated transfer calls are compiler-owned control signals. They are never emitted as
+        // dynamic SIMPLE tasks and need no worker registration. First valid configured transfer
+        // wins; a user worker with a transfer-like name remains an ordinary tool.
+        Map<String, String> transferTargets = new LinkedHashMap<>();
+        for (AgentConfig sub : config.getAgents()) {
+            transferTargets.put(
+                    toRef(config.getName()) + "_transfer_to_" + toRef(sub.getName()),
+                    sub.getName());
+        }
         String checkTransferRef = toRef(config.getName()) + "_check_transfer";
         WorkflowTask checkTransferTask = new WorkflowTask();
-        checkTransferTask.setName(toRef(config.getName()) + "_check_transfer");
+        checkTransferTask.setName("INLINE");
         checkTransferTask.setTaskReferenceName(checkTransferRef);
-        checkTransferTask.setType("SIMPLE");
+        checkTransferTask.setType("INLINE");
         Map<String, Object> ctInputs = new LinkedHashMap<>();
+        ctInputs.put("evaluatorType", "graaljs");
         ctInputs.put("tool_calls", ref(llmRef + ".output.toolCalls"));
+        ctInputs.put("expression", JavaScriptBuilder.detectTransferScript(transferTargets));
         checkTransferTask.setInputParameters(ctInputs);
+
+        toolRouter
+                .getInputParameters()
+                .put("isTransfer", ref(checkTransferRef + ".output.result.is_transfer"));
+        toolRouter.setExpression(
+                "$.isTransfer == true ? 'none' : ($.toolCalls != null && $.toolCalls.length > 0 ? 'tool_call' : 'none')");
 
         // Build loop body
         List<WorkflowTask> loopTasks = new ArrayList<>();
 
-        // Context injection for hybrid loop (state/signals prefix only)
+        // Context injection for hybrid loop (state, signals, and recent tool-result prefix).
         String hybridCtxInjectRef = toRef(config.getName()) + "_ctx_inject";
         WorkflowTask hybridCtxInject = new WorkflowTask();
         hybridCtxInject.setType("INLINE");
@@ -1249,6 +1332,7 @@ public class AgentCompiler {
         hybridCtxInjectInputs.put("evaluatorType", "graaljs");
         hybridCtxInjectInputs.put("state", "${workflow.variables._agent_state}");
         hybridCtxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
+        hybridCtxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
         hybridCtxInjectInputs.put("maxSize", contextMaxSizeBytes);
         hybridCtxInjectInputs.put("maxValueSize", contextMaxValueSizeBytes);
         hybridCtxInjectInputs.put("expression", JavaScriptBuilder.contextInjectionScript());
@@ -1307,6 +1391,8 @@ public class AgentCompiler {
             }
         }
 
+        // Detection must run before routing so a valid transfer does not reach the dynamic fork.
+        loopTasks.add(checkTransferTask);
         loopTasks.add(toolRouter);
 
         // Merge tool-level guardrail refs
@@ -1319,8 +1405,6 @@ public class AgentCompiler {
             for (String rr : retryRefs) participants.put(rr, "user");
             llmTask.getInputParameters().put("participants", participants);
         }
-        loopTasks.add(checkTransferTask);
-
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
         int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
@@ -1329,7 +1413,7 @@ public class AgentCompiler {
                 String.format(
                         "($.%s['toolCalls'] != null && $.%s['toolCalls'].length > 0)",
                         llmRef, llmRef);
-        String notTransfer = String.format("($.%s.is_transfer != true)", checkTransferRef);
+        String notTransfer = String.format("($.%s.result.is_transfer != true)", checkTransferRef);
 
         String loopReason;
         if (!guardrailRefs.isEmpty()) {
@@ -1359,7 +1443,7 @@ public class AgentCompiler {
         transferSwitch.setEvaluatorType("value-param");
         transferSwitch.setExpression("switchCaseValue");
         transferSwitch.setInputParameters(
-                Map.of("switchCaseValue", ref(checkTransferRef + ".output.transfer_to")));
+                Map.of("switchCaseValue", ref(checkTransferRef + ".output.result.transfer_to")));
 
         Map<String, List<WorkflowTask>> transferCases = new LinkedHashMap<>();
         for (AgentConfig sub : config.getAgents()) {
@@ -1389,6 +1473,7 @@ public class AgentCompiler {
         // Initialize workflow variables
         Map<String, Object> initHybridVars = new LinkedHashMap<>();
         initHybridVars.put("_agent_state", "${" + hybridCtxResolveRef + ".output.result}");
+        initHybridVars.put("_last_tool_results", List.of());
         initHybridVars.put("_stop_requested", false);
         initHybridVars.put("_signal_injection", "");
         if (hasApproval) {
@@ -1633,6 +1718,17 @@ public class AgentCompiler {
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("llmProvider", parsed.getProvider());
         inputs.put("model", parsed.getModel());
+
+        if (usesProviderNativeWebSearch(config)) {
+            String provider = parsed.getProvider().toLowerCase(Locale.ROOT);
+            if (!Set.of("openai", "anthropic").contains(provider)) {
+                throw new IllegalArgumentException(
+                        "Provider-native web search requires an OpenAI or Anthropic model; got '"
+                                + parsed.getProvider()
+                                + "'");
+            }
+            inputs.put("webSearch", true);
+        }
 
         // Per-agent base URL override
         if (config.getBaseUrl() != null && !config.getBaseUrl().isBlank()) {
@@ -2258,6 +2354,11 @@ public class AgentCompiler {
 
     static String ref(String path) {
         return "${" + path + "}";
+    }
+
+    private static boolean usesProviderNativeWebSearch(AgentConfig config) {
+        return config.getMetadata() != null
+                && Boolean.TRUE.equals(config.getMetadata().get("_builtin_web_search"));
     }
 
     /**
@@ -4084,11 +4185,7 @@ public class AgentCompiler {
                         "result", "${_fw_task.output.result}",
                         "context", "${workflow.input.context}"));
 
-        Map<String, Object> metadata =
-                config.getMetadata() != null
-                        ? new LinkedHashMap<>(config.getMetadata())
-                        : new LinkedHashMap<>();
-        wf.setMetadata(metadata);
+        stampAgentMetadata(wf, config);
 
         return wf;
     }

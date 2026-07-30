@@ -1,12 +1,12 @@
 ## 1. Install and configure
 
 ```bash
-python -m pip install 'conductor-python[openai-agents]'
+python -m pip install 'conductor-python[openai-agents]==2.0.0rc2'
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 ```
 
 ## 2. Change one import

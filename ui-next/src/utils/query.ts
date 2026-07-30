@@ -395,16 +395,16 @@ export function useTaskQueueInfo(taskName: string): {
   };
 }
 
-export function useAction(
+export function useAction<TData = any, TVariables = any>(
   path: string,
   method = "post",
-  callbacks?: any,
+  callbacks?: UseMutationOptions<TData, FetchError, TVariables>,
   isText?: boolean,
 ) {
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
 
-  return useMutation(
+  return useMutation<TData, FetchError, TVariables>(
     (mutateParams) =>
       fetchWithContext(
         path,
@@ -463,8 +463,12 @@ export function useUsersListing(includeApps = false) {
 
 export function useWorkflowDefs(
   optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
+  classifier?: "workflow" | "agent",
 ): UseQueryResult<WorkflowDef[], FetchError> {
-  return useFetch<WorkflowDef[]>(WORKFLOW_METADATA_SHORT_URL, {
+  const path = classifier
+    ? `${WORKFLOW_METADATA_SHORT_URL}&classifier=${classifier}`
+    : WORKFLOW_METADATA_SHORT_URL;
+  return useFetch<WorkflowDef[]>(path, {
     staleTime: DEFAULT_STALE_TIME,
     ...optionsOverride,
   });
@@ -485,6 +489,23 @@ export function useWorkflowNames(
   return useMemo(
     () => (workflows ? workflows.map((def) => def.name) : []),
     [workflows],
+  );
+}
+
+/** Registered AgentSpan definitions, used anywhere an agent—not a workflow—is selectable. */
+export function useAgentNames(
+  optionsOverride: Partial<
+    UseQueryOptions<{ name: string }[], FetchError>
+  > = {},
+): string[] {
+  const { data } = useFetch<{ name: string }[]>("/agent/list", {
+    staleTime: DEFAULT_STALE_TIME,
+    ...optionsOverride,
+  });
+
+  return useMemo(
+    () => (data ? data.map((agent) => agent.name).filter(Boolean) : []),
+    [data],
   );
 }
 

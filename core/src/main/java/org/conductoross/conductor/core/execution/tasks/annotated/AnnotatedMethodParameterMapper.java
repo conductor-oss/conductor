@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.InputParam;
@@ -59,6 +60,11 @@ public class AnnotatedMethodParameterMapper {
         // Special case: single TaskModel parameter
         if (parameterTypes.length == 1 && parameterTypes[0].equals(TaskModel.class)) {
             return new Object[] {task};
+        }
+
+        // Public Task keeps annotated workers portable between embedded and SDK runtimes.
+        if (parameterTypes.length == 1 && parameterTypes[0].equals(Task.class)) {
+            return new Object[] {task.toTask()};
         }
 
         // Special case: single Map parameter (task input data)

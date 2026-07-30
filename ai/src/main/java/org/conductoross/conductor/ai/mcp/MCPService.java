@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.mcp;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.http.ExternalDataLimits;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /**
  * Service for interacting with MCP (Model Context Protocol) servers.
@@ -48,7 +50,13 @@ public class MCPService {
     private final OkHttpClient httpClient;
 
     public MCPService(OkHttpClient conductorAiHttpClient) {
-        this.httpClient = conductorAiHttpClient;
+        // Redirects are followed explicitly below so credentials can be withheld across origins.
+        this.httpClient =
+                conductorAiHttpClient
+                        .newBuilder()
+                        .followRedirects(false)
+                        .followSslRedirects(false)
+                        .build();
     }
 
     /**
@@ -112,67 +120,63 @@ public class MCPService {
                             .header("Accept", "application/json, text/event-stream");
 
             // Add custom headers
-            if (headers != null && !headers.isEmpty()) {
-                headers.forEach(requestBuilder::header);
+            addHeaders(requestBuilder, headers);
+
+            ResponsePayload response = execute(requestBuilder.build());
+            // Check response status
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+                throw new RuntimeException(
+                        String.format(
+                                "HTTP %d error from MCP server: %s",
+                                response.statusCode, response.body));
             }
 
-            try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
-                // Check response status
-                if (!response.isSuccessful()) {
-                    throw new RuntimeException(
-                            String.format(
-                                    "HTTP %d error from MCP server: %s",
-                                    response.code(),
-                                    response.body() != null ? response.body().string() : ""));
-                }
+            // Get response body and content type
+            String responseBody = response.body;
+            String contentType = response.contentType;
 
-                // Get response body and content type
-                String responseBody = response.body().string();
-                String contentType = response.header("Content-Type", "application/json");
-
-                // Parse response based on content type
-                JsonNode responseJson;
-                if (contentType != null && contentType.contains("text/event-stream")) {
-                    // Parse SSE format
-                    responseJson = parseSseResponse(responseBody);
-                } else {
-                    // Parse as JSON directly
-                    responseJson = objectMapper.readTree(responseBody);
-                }
-
-                if (responseJson.has("error")) {
-                    throw new RuntimeException(
-                            "JSON-RPC error: " + responseJson.get("error").toString());
-                }
-
-                if (!responseJson.has("result")) {
-                    throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
-                }
-
-                JsonNode result = responseJson.get("result");
-                JsonNode toolsNode = result.get("tools");
-
-                if (toolsNode == null || !toolsNode.isArray()) {
-                    throw new RuntimeException(
-                            "Invalid response: 'tools' field is missing or not an array");
-                }
-
-                // Convert to McpSchema.Tool list
-                // Use Jackson to deserialize tools directly (same pattern as stdio
-                // implementation)
-                List<McpSchema.Tool> tools =
-                        objectMapper.convertValue(
-                                toolsNode,
-                                objectMapper
-                                        .getTypeFactory()
-                                        .constructCollectionType(List.class, McpSchema.Tool.class));
-
-                log.debug(
-                        "Successfully listed {} tools via direct JSON-RPC from {}",
-                        tools.size(),
-                        serverUrl);
-                return tools;
+            // Parse response based on content type
+            JsonNode responseJson;
+            if (contentType != null && contentType.contains("text/event-stream")) {
+                // Parse SSE format
+                responseJson = parseSseResponse(responseBody);
+            } else {
+                // Parse as JSON directly
+                responseJson = objectMapper.readTree(responseBody);
             }
+
+            if (responseJson.has("error")) {
+                throw new RuntimeException(
+                        "JSON-RPC error: " + responseJson.get("error").toString());
+            }
+
+            if (!responseJson.has("result")) {
+                throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
+            }
+
+            JsonNode result = responseJson.get("result");
+            JsonNode toolsNode = result.get("tools");
+
+            if (toolsNode == null || !toolsNode.isArray()) {
+                throw new RuntimeException(
+                        "Invalid response: 'tools' field is missing or not an array");
+            }
+            ExternalDataLimits.validateStructure(objectMapper.convertValue(result, Object.class));
+
+            // Convert to McpSchema.Tool list
+            // Use Jackson to deserialize tools directly (same pattern as stdio implementation)
+            List<McpSchema.Tool> tools =
+                    objectMapper.convertValue(
+                            toolsNode,
+                            objectMapper
+                                    .getTypeFactory()
+                                    .constructCollectionType(List.class, McpSchema.Tool.class));
+
+            log.debug(
+                    "Successfully listed {} tools via direct JSON-RPC from {}",
+                    tools.size(),
+                    serverUrl);
+            return tools;
 
         } catch (Exception e) {
             log.error(
@@ -230,56 +234,51 @@ public class MCPService {
                             .header("Accept", "application/json, text/event-stream");
 
             // Add custom headers
-            if (headers != null && !headers.isEmpty()) {
-                headers.forEach(requestBuilder::header);
+            addHeaders(requestBuilder, headers);
+
+            ResponsePayload response = execute(requestBuilder.build());
+            // Check response status
+            if (response.statusCode < 200 || response.statusCode >= 300) {
+                throw new RuntimeException(
+                        String.format(
+                                "HTTP %d error from MCP server: %s",
+                                response.statusCode, response.body));
             }
 
-            try (Response response = httpClient.newCall(requestBuilder.build()).execute()) {
-                // Check response status
-                if (!response.isSuccessful()) {
-                    throw new RuntimeException(
-                            String.format(
-                                    "HTTP %d error from MCP server: %s",
-                                    response.code(),
-                                    response.body() != null ? response.body().string() : ""));
-                }
+            // Get response body and content type
+            String responseBody = response.body;
+            String contentType = response.contentType;
 
-                // Get response body and content type
-                String responseBody = response.body().string();
-                String contentType = response.header("Content-Type", "application/json");
-
-                // Parse response based on content type
-                JsonNode responseJson;
-                if (contentType != null && contentType.contains("text/event-stream")) {
-                    // Parse SSE format
-                    responseJson = parseSseResponse(responseBody);
-                } else {
-                    // Parse as JSON directly
-                    responseJson = objectMapper.readTree(responseBody);
-                }
-
-                if (responseJson.has("error")) {
-                    throw new RuntimeException(responseJson.get("error").toString());
-                }
-
-                if (!responseJson.has("result")) {
-                    throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
-                }
-
-                JsonNode resultNode = responseJson.get("result");
-
-                // Process the result JSON to parse text content as JSON where applicable
-                processResultJson(resultNode);
-
-                // Return as Map to preserve parsed field
-                Map<String, Object> result = objectMapper.convertValue(resultNode, Map.class);
-
-                log.debug(
-                        "Successfully called tool '{}' via direct JSON-RPC on {}",
-                        toolName,
-                        serverUrl);
-                return result;
+            // Parse response based on content type
+            JsonNode responseJson;
+            if (contentType != null && contentType.contains("text/event-stream")) {
+                // Parse SSE format
+                responseJson = parseSseResponse(responseBody);
+            } else {
+                // Parse as JSON directly
+                responseJson = objectMapper.readTree(responseBody);
             }
+
+            if (responseJson.has("error")) {
+                throw new RuntimeException(responseJson.get("error").toString());
+            }
+
+            if (!responseJson.has("result")) {
+                throw new RuntimeException("Invalid JSON-RPC response: missing 'result' field");
+            }
+
+            JsonNode resultNode = responseJson.get("result");
+
+            // Process the result JSON to parse text content as JSON where applicable
+            processResultJson(resultNode);
+
+            // Return as Map to preserve parsed field
+            Map<String, Object> result = objectMapper.convertValue(resultNode, Map.class);
+            ExternalDataLimits.validateStructure(result);
+
+            log.debug(
+                    "Successfully called tool '{}' via direct JSON-RPC on {}", toolName, serverUrl);
+            return result;
 
         } catch (Exception e) {
             log.error(
@@ -372,6 +371,93 @@ public class MCPService {
             throw new RuntimeException("Failed to parse SSE data as JSON: " + jsonData, e);
         }
     }
+
+    /** Executes one MCP request and follows redirects while protecting sensitive headers. */
+    private ResponsePayload execute(Request initialRequest) throws Exception {
+        Request request = initialRequest;
+        for (int redirects = 0; redirects <= 5; redirects++) {
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isRedirect()) {
+                    return new ResponsePayload(
+                            response.code(),
+                            response.header("Content-Type", "application/json"),
+                            readBoundedBody(response.body()));
+                }
+                String location = response.header("Location");
+                if (location == null || request.url().resolve(location) == null) {
+                    throw new RuntimeException(
+                            "MCP server returned a redirect without a valid Location");
+                }
+                String target = request.url().resolve(location).toString();
+                if (hasSensitiveHeaders(request)
+                        && !isSameOrigin(request.url().toString(), target)) {
+                    throw new RuntimeException(
+                            "Refusing to forward credentials across an MCP redirect");
+                }
+                request = request.newBuilder().url(target).build();
+            }
+        }
+        throw new RuntimeException("MCP server exceeded the redirect limit");
+    }
+
+    private void addHeaders(Request.Builder builder, Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return;
+        }
+        headers.forEach(
+                (name, value) -> {
+                    if (name == null
+                            || value == null
+                            || name.indexOf('\r') >= 0
+                            || name.indexOf('\n') >= 0
+                            || value.indexOf('\r') >= 0
+                            || value.indexOf('\n') >= 0) {
+                        throw new IllegalArgumentException(
+                                "MCP headers must not contain CR or LF characters");
+                    }
+                    builder.header(name, value);
+                });
+    }
+
+    private boolean hasSensitiveHeaders(Request request) {
+        return request.header("Authorization") != null
+                || request.header("Cookie") != null
+                || request.header("Proxy-Authorization") != null;
+    }
+
+    private boolean isSameOrigin(String firstUrl, String secondUrl) {
+        okhttp3.HttpUrl first = okhttp3.HttpUrl.parse(firstUrl);
+        okhttp3.HttpUrl second = okhttp3.HttpUrl.parse(secondUrl);
+        return first != null
+                && second != null
+                && first.scheme().equalsIgnoreCase(second.scheme())
+                && first.host().equalsIgnoreCase(second.host())
+                && first.port() == second.port();
+    }
+
+    private String readBoundedBody(ResponseBody body) throws Exception {
+        if (body == null) {
+            return "";
+        }
+        if (body.contentLength() > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
+            throw new RuntimeException("MCP response exceeds the 10 MiB payload limit");
+        }
+        try (body) {
+            okio.Buffer buffer = new okio.Buffer();
+            long total = 0;
+            long read;
+            while ((read = body.source().read(buffer, 8192)) != -1) {
+                total += read;
+                if (total > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
+                    buffer.clear();
+                    throw new RuntimeException("MCP response exceeds the 10 MiB payload limit");
+                }
+            }
+            return buffer.readUtf8();
+        }
+    }
+
+    private record ResponsePayload(int statusCode, String contentType, String body) {}
 
     /** Transport type enum. */
     private enum TransportType {

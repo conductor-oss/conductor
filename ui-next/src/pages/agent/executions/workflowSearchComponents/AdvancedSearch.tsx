@@ -32,7 +32,7 @@ import { DoSearchProps } from "types/WorkflowExecution";
 import { dateToEpoch, useLocalStorage } from "utils";
 import { WORKFLOW_SEARCH_QUERY_SUGGESTIONS } from "utils/constants/common";
 import { ERROR_URL } from "utils/constants/route";
-import { useWorkflowNames, useWorkflowSearch } from "utils/query";
+import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
@@ -133,7 +133,7 @@ export default function AdvancedSearch({
   } | null>(null);
 
   // For dropdown
-  const workflowNames: string[] = useWorkflowNames();
+  const agentNames = useAgentNames();
 
   useEffect(() => {
     return () => {
@@ -210,7 +210,7 @@ export default function AdvancedSearch({
       query: queryFT.query,
       freeText: queryFT.freeText,
       // Scope results to a single classifier: "workflow" for plain workflow
-      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      // executions, "agent" for Conductor-Agents runs on the Agents pages.
       classifier: "agent",
       topLevelOnly: hideSubWorkflows,
     },
@@ -365,6 +365,8 @@ export default function AdvancedSearch({
                 sort,
                 freeText,
                 query: buildQuery().query,
+                classifier: "agent",
+                topLevelOnly: hideSubWorkflows,
               }}
             />
           )}
@@ -419,7 +421,7 @@ export default function AdvancedSearch({
                         const propertyKeys = [
                           ...WORKFLOW_SEARCH_QUERY_SUGGESTIONS,
                           ...workflowStatuses,
-                          ...workflowNames,
+                          ...agentNames,
                           "workflowType",
                         ];
                         // Provide suggestions for properties that start with the current text

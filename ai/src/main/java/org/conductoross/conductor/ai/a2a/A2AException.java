@@ -15,8 +15,8 @@ package org.conductoross.conductor.ai.a2a;
 /**
  * A retryable failure talking to a remote A2A agent (transport error, 5xx, or a transient JSON-RPC
  * error). Terminal/non-retryable failures (4xx, method-not-found, task-not-found, …) are surfaced
- * as {@link com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException} instead, so
- * both the annotated-worker path and {@code AgentTask} map them to a terminal task status.
+ * as {@link com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException} instead, so the
+ * annotation-backed A2A workers map them to the appropriate task status.
  */
 public class A2AException extends RuntimeException {
 
