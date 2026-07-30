@@ -532,8 +532,8 @@ jobs:
     env:
       # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
       # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
-      # `CONDUCTOR_PY_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
-      CONDUCTOR_PY_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PY_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
+      # `CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
+      CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
       # Canonical names, and what the bundle reads as of 2.0.0-rc4: its conftest migrated from
       # AGENTSPAN_SERVER_URL / AGENTSPAN_LLM_MODEL to these. Do not rename back — and if the pin
       # is ever moved DOWN to rc2 or earlier, these must go back with it, since those bundles
@@ -635,7 +635,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          V="${CONDUCTOR_PY_E2E_BUNDLE_VERSION}"
+          V="${CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION}"
           NAME="conductor-ai-e2e-python-${V}"
           gh release download "${V}" --repo conductor-oss/python-sdk \
             --pattern "${NAME}.tar.gz" --pattern "${NAME}.tar.gz.sha256" --dir .
