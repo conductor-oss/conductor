@@ -1325,18 +1325,47 @@ body {
   background: rgba(255,255,255,0.03);
 }
 
-/* Keep schema filenames intact while letting relationship descriptions use the remaining space. */
-.md-typeset h2.schema-table-heading + table {
+/* Keep a short identifier in the first column on one line so it does not break
+   mid-word when the second column holds a long description.
+   Opt in with `## Heading { .wide-first-col }` on the heading above the table.
+   `.schema-table-heading` is the original, narrower opt-in and behaves the same.
+
+   Both `+ table` and `+ * table` are needed: the built HTML has the table as a
+   direct sibling of the heading, but Material's JS then wraps it in
+   div.md-typeset__scrollwrap, so a `+ table` selector alone matches the static
+   page and silently stops matching in the browser. */
+.md-typeset h2.schema-table-heading + table,
+.md-typeset h2.schema-table-heading + * table,
+.md-typeset h2.wide-first-col + table,
+.md-typeset h3.wide-first-col + table,
+.md-typeset h2.wide-first-col + * table,
+.md-typeset h3.wide-first-col + * table {
   table-layout: auto;
   width: 100%;
 }
 .md-typeset h2.schema-table-heading + table th:first-child,
-.md-typeset h2.schema-table-heading + table td:first-child {
+.md-typeset h2.schema-table-heading + table td:first-child,
+.md-typeset h2.schema-table-heading + * table th:first-child,
+.md-typeset h2.schema-table-heading + * table td:first-child,
+.md-typeset h2.wide-first-col + table th:first-child,
+.md-typeset h2.wide-first-col + table td:first-child,
+.md-typeset h3.wide-first-col + table th:first-child,
+.md-typeset h3.wide-first-col + table td:first-child,
+.md-typeset h2.wide-first-col + * table th:first-child,
+.md-typeset h2.wide-first-col + * table td:first-child,
+.md-typeset h3.wide-first-col + * table th:first-child,
+.md-typeset h3.wide-first-col + * table td:first-child {
   min-width: 15rem;
   white-space: nowrap;
 }
 .md-typeset h2.schema-table-heading + table td:first-child a,
-.md-typeset h2.schema-table-heading + table td:first-child a code {
+.md-typeset h2.schema-table-heading + table td:first-child a code,
+.md-typeset h2.schema-table-heading + * table td:first-child a,
+.md-typeset h2.schema-table-heading + * table td:first-child a code,
+.md-typeset h2.wide-first-col + table td:first-child a,
+.md-typeset h3.wide-first-col + table td:first-child a,
+.md-typeset h2.wide-first-col + * table td:first-child a,
+.md-typeset h3.wide-first-col + * table td:first-child a {
   display: inline-block;
   overflow-wrap: normal !important;
   white-space: nowrap !important;

@@ -13,9 +13,7 @@ not_in_nav: |
   devguide/cookbook/files-api-usecase.md
   devguide/labs/**
   documentation/advanced/annotation-processor.md
-  resources/contributing.md
   resources/license.md
-  resources/related.md
   quickstart/index.md
   wmq/**
 
@@ -36,6 +34,7 @@ nav:
     - Workflows: devguide/concepts/workflows.md
     - Tasks: devguide/concepts/tasks.md
     - Task Inputs: devguide/how-tos/Tasks/task-inputs.md
+    - Schema Validation: devguide/how-tos/schema-validation.md
     - Workers: devguide/concepts/workers.md
     - Task Lifecycle: devguide/architecture/tasklifecycle.md
     - Guide to Scaling Workers: devguide/how-tos/Workers/scaling-workers.md
@@ -105,7 +104,7 @@ nav:
     - Overview: devguide/how-tos/event-bus.md
     - Publish events: devguide/how-tos/publish-events.md
     - Consume and route events: devguide/how-tos/consume-route-events.md
-    - Incoming webhooks (Orkes only): devguide/how-tos/incoming-webhooks.md
+    - Incoming webhooks: devguide/how-tos/incoming-webhooks.md
     - Send signals: devguide/cookbook/sending-signals.md
     - Event-driven patterns: devguide/cookbook/event-driven.md
   - SDKs:
@@ -122,6 +121,7 @@ nav:
     - From Source: devguide/running/source.md
     - Hosted: devguide/running/hosted.md
     - Best Practices: devguide/bestpractices.md
+    - CI/CD Integration: devguide/how-tos/cicd-integration.md
     - Configuration: documentation/configuration/appconf.md
     - Metrics:
       - Server Metrics: documentation/metrics/server.md
@@ -148,9 +148,9 @@ nav:
       - documentation/api/taskdomains.md
       - documentation/api/scheduler.md
       - documentation/api/agents.md
-    - Schemas: documentation/configuration/schemas.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
+      - Schemas: documentation/configuration/schemas.md
     - System Tasks:
       - documentation/configuration/workflowdef/systemtasks/index.md
       - documentation/configuration/workflowdef/systemtasks/http-task.md
@@ -179,6 +179,13 @@ nav:
       - documentation/configuration/workflowdef/operators/terminate-task.md
     - Task Definition: documentation/configuration/taskdef.md
     - Event Handlers: documentation/configuration/eventhandlers.md
+  - Contribute:
+    - Overview: resources/contribute/index.md
+    - Repositories: resources/contribute/repositories.md
+    - Contribution Guide: resources/contributing.md
+    - Best Practices: resources/contribute/best-practices.md
+    - Code of Conduct: resources/contribute/code-of-conduct.md
+    - Get Help: resources/contribute/get-help.md
 
 theme:
   name: material
