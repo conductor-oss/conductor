@@ -33,6 +33,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialRes
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -78,6 +79,7 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
     private final Duration timeout;
     private final int maxAttempts;
 
+    @Autowired
     public OcgAgentRunExporter(
             ObjectMapper mapper, CredentialResolutionService credentialResolutionService) {
         this(
