@@ -1,5 +1,5 @@
 ```bash
-dotnet add package conductor-ai-semantic-kernel
+dotnet add package conductor-ai-semantic-kernel --version 3.0.0-rc3
 ```
 
 Keep classes with `[KernelFunction]` methods and pass them to `SemanticKernelAgent.From`.

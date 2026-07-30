@@ -1,7 +1,7 @@
 ## 1. Install and configure
 
 ```bash
-python -m pip install 'conductor-python[langchain]'
+python -m pip install 'conductor-python[langchain]==2.0.0rc2'
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
