@@ -789,8 +789,57 @@ public class AgentCompiler {
         // Prefill tool calls: execute before the loop so results are in LLM context
         allTasks.addAll(prefill.tasks());
 
-        // Required tools enforcement: wrap loop + check in outer DO_WHILE
+        // Required tools enforcement: retry the agent loop until every required tool has
+        // been called (bounded at 3 attempts).
+        //
+        // The retry is an outer DO_WHILE and the agent loop it retries is itself a
+        // DO_WHILE. Conductor does not support a DO_WHILE nested directly inside another
+        // DO_WHILE, so the inner loop is wrapped in a SUB_WORKFLOW — the documented
+        // workaround, and the shape this compiler already uses elsewhere for swarm agents.
         if (config.getRequiredTools() != null && !config.getRequiredTools().isEmpty()) {
+            String innerWfRef = toRef(config.getName()) + "_required_tools_inner";
+
+            // The loop body reads workflow VARIABLES (_agent_state, _last_tool_results,
+            // _stop_requested, _signal_injection, and _human_feedback when approval is
+            // on). Variables are per-workflow, so a sub-workflow starts with none: seed
+            // them from sub-workflow inputs before the loop runs, mirroring the parent's
+            // init_state. Every SET_VARIABLE in this compiler sits OUTSIDE the loop body,
+            // so the loop only reads them — seeding is sufficient and no write-back to
+            // the parent is required.
+            Map<String, Object> seedVars = new LinkedHashMap<>();
+            for (String v : initVars.keySet()) {
+                seedVars.put(v, "${workflow.input." + v + "}");
+            }
+            WorkflowTask seedState = new WorkflowTask();
+            seedState.setType("SET_VARIABLE");
+            seedState.setTaskReferenceName(innerWfRef + "_seed_state");
+            seedState.setInputParameters(seedVars);
+
+            WorkflowDef innerWf = createWorkflow(config);
+            innerWf.setName(config.getName() + "_required_tools_inner");
+            innerWf.setDescription(
+                    "Agent loop for " + config.getName() + " (required-tools retry body)");
+            innerWf.setTasks(List.of(seedState, loop));
+            // Expose the loop output so the check task can see which tools ran.
+            innerWf.setOutputParameters(Map.of("loop", "${" + loopRef + ".output}"));
+            WorkflowTaskUtils.ensureAllTaskNames(innerWf);
+
+            WorkflowTask innerTask = new WorkflowTask();
+            innerTask.setType("SUB_WORKFLOW");
+            innerTask.setName(innerWf.getName());
+            innerTask.setTaskReferenceName(innerWfRef);
+            innerTask.setSubWorkflowParam(new SubWorkflowParams());
+            innerTask.getSubWorkflowParam().setName(innerWf.getName());
+            innerTask.getSubWorkflowParam().setWorkflowDef(innerWf);
+            Map<String, Object> innerInputs = new LinkedHashMap<>();
+            for (String k : WORKFLOW_INPUTS) {
+                innerInputs.put(k, "${workflow.input." + k + "}");
+            }
+            for (String v : initVars.keySet()) {
+                innerInputs.put(v, "${workflow.variables." + v + "}");
+            }
+            innerTask.setInputParameters(innerInputs);
+
             String checkRef = toRef(config.getName()) + "_required_tools_check";
             WorkflowTask checkTask = new WorkflowTask();
             checkTask.setType("INLINE");
@@ -801,7 +850,7 @@ public class AgentCompiler {
                             "expression",
                                     JavaScriptBuilder.requiredToolsCheckScript(
                                             config.getRequiredTools()),
-                            "completedTaskNames", ref(loopRef + ".output")));
+                            "completedTaskNames", ref(innerWfRef + ".output.loop")));
 
             String outerLoopRef = toRef(config.getName()) + "_required_tools_loop";
             String outerCondition =
@@ -814,7 +863,10 @@ public class AgentCompiler {
 
             WorkflowTask outerLoop =
                     buildDoWhile(
-                            outerLoopRef, outerCondition, List.of(loop, checkTask), outerInputs);
+                            outerLoopRef,
+                            outerCondition,
+                            List.of(innerTask, checkTask),
+                            outerInputs);
             allTasks.add(outerLoop);
         } else {
             allTasks.add(loop);

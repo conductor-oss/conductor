@@ -624,14 +624,73 @@ class AgentCompilerTest {
         assertThat(outerLoop.getType()).isEqualTo("DO_WHILE");
         assertThat(outerLoop.getTaskReferenceName()).isEqualTo("filing_agent_required_tools_loop");
 
-        // Outer loop should contain: inner loop + INLINE check
+        // Outer loop contains the agent loop wrapped in a SUB_WORKFLOW + the INLINE check.
+        // The wrapper is required: Conductor does not support DO_WHILE directly inside
+        // DO_WHILE, so the agent loop cannot be a member of loopOver on its own.
         assertThat(outerLoop.getLoopOver()).hasSize(2);
-        assertThat(outerLoop.getLoopOver().get(0).getType()).isEqualTo("DO_WHILE");
-        assertThat(outerLoop.getLoopOver().get(0).getTaskReferenceName())
-                .isEqualTo("filing_agent_loop");
+        WorkflowTask innerTask = outerLoop.getLoopOver().get(0);
+        assertThat(innerTask.getType()).isEqualTo("SUB_WORKFLOW");
+        assertThat(innerTask.getTaskReferenceName()).isEqualTo("filing_agent_required_tools_inner");
         assertThat(outerLoop.getLoopOver().get(1).getType()).isEqualTo("INLINE");
         assertThat(outerLoop.getLoopOver().get(1).getTaskReferenceName())
                 .isEqualTo("filing_agent_required_tools_check");
+
+        // The agent loop lives inside the embedded sub-workflow definition, preceded by a
+        // SET_VARIABLE that seeds the variables the loop body reads (a sub-workflow starts
+        // with an empty variable scope).
+        WorkflowDef innerWf = innerTask.getSubWorkflowParam().getWorkflowDef();
+        assertThat(innerWf).isNotNull();
+        assertThat(innerWf.getTasks()).hasSize(2);
+        assertThat(innerWf.getTasks().get(0).getType()).isEqualTo("SET_VARIABLE");
+        assertThat(innerWf.getTasks().get(0).getInputParameters())
+                .containsKeys("_agent_state", "_stop_requested", "_signal_injection");
+        assertThat(innerWf.getTasks().get(1).getType()).isEqualTo("DO_WHILE");
+        assertThat(innerWf.getTasks().get(1).getTaskReferenceName()).isEqualTo("filing_agent_loop");
+
+        // The seed values come from the parent's variables, via sub-workflow inputs.
+        assertThat(innerTask.getInputParameters())
+                .containsEntry("_agent_state", "${workflow.variables._agent_state}");
+
+        // The check task reads the loop output through the sub-workflow's output mapping.
+        assertThat(innerWf.getOutputParameters())
+                .containsEntry("loop", "${filing_agent_loop.output}");
+        assertThat(outerLoop.getLoopOver().get(1).getInputParameters())
+                .containsEntry(
+                        "completedTaskNames", "${filing_agent_required_tools_inner.output.loop}");
+
+        // The invariant this whole shape exists to satisfy.
+        assertNoDoWhileNestedInDoWhile(wf);
+    }
+
+    /**
+     * Walks a compiled definition (including embedded sub-workflow definitions) and fails if any
+     * DO_WHILE has another DO_WHILE among its loopOver tasks. Conductor does not support that
+     * nesting.
+     */
+    private static void assertNoDoWhileNestedInDoWhile(WorkflowDef wf) {
+        for (WorkflowTask t : wf.getTasks()) {
+            assertNoDoWhileNestedInDoWhile(t, false);
+        }
+    }
+
+    private static void assertNoDoWhileNestedInDoWhile(WorkflowTask task, boolean insideDoWhile) {
+        boolean isDoWhile = "DO_WHILE".equals(task.getType());
+        if (isDoWhile && insideDoWhile) {
+            throw new AssertionError(
+                    "DO_WHILE '"
+                            + task.getTaskReferenceName()
+                            + "' is nested directly inside another DO_WHILE");
+        }
+        if (task.getLoopOver() != null) {
+            for (WorkflowTask child : task.getLoopOver()) {
+                assertNoDoWhileNestedInDoWhile(child, insideDoWhile || isDoWhile);
+            }
+        }
+        // A SUB_WORKFLOW boundary resets the nesting context — that is the point of it.
+        if (task.getSubWorkflowParam() != null
+                && task.getSubWorkflowParam().getWorkflowDef() != null) {
+            assertNoDoWhileNestedInDoWhile(task.getSubWorkflowParam().getWorkflowDef());
+        }
     }
 
     @Test
