@@ -1,7 +1,19 @@
 import { Box, Chip, Divider, Paper, Typography } from "@mui/material";
 import { ReactNode, useMemo } from "react";
-import { A2AAgentCard, A2AAgentExtension, AgentMetadataSnapshot } from "types";
+import {
+  A2AAgentCard,
+  A2AAgentExtension,
+  AgentMetadataSnapshot,
+  AgentRuntimeType,
+} from "types";
 import { toolCategoryForPanel } from "utils/agentTaskCategory";
+
+const AGENT_TYPE_LABEL: Record<AgentRuntimeType, string> = {
+  conductor: "Conductor",
+  a2a: "A2A",
+  bedrock: "Bedrock",
+  "azure-foundry": "Azure Foundry",
+};
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   value != null && typeof value === "object" && !Array.isArray(value)
@@ -589,7 +601,7 @@ export function AgentSnapshotDetails({
         <DetailRow label="Name" value={snapshot.displayName} />
         <DetailRow
           label="Agent type"
-          value={snapshot.agentType === "conductor" ? "Conductor" : "A2A"}
+          value={AGENT_TYPE_LABEL[snapshot.agentType]}
         />
         <DetailRow
           label="Details"

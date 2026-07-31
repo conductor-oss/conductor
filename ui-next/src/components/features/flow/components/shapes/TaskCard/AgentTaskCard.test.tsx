@@ -108,6 +108,36 @@ describe("AGENT task diagram card", () => {
     expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
   });
 
+  it("renders a static A2A agent URL without a snapshot as resolved, not unresolved", () => {
+    // Workflows registered outside the UI editor (curl, SDK, an older save) never get a
+    // `metadata.agent` snapshot stamped — absence of a snapshot must not read as a failed
+    // resolution for a concrete, non-expression agentUrl.
+    render(
+      <TaskCard
+        nodeData={{
+          crumbs: [],
+          status: TaskStatus.IN_PROGRESS,
+          task: {
+            ...baseTask,
+            taskReferenceName: "call_summarizer_ref",
+            inputParameters: {
+              agentType: "a2a",
+              agentUrl: "https://agents.example.com/summarizer",
+            },
+          } as AgentTaskDef,
+        }}
+        onClick={vi.fn()}
+        isInconsistent={false}
+      />,
+    );
+
+    expect(
+      screen.getByText("https://agents.example.com/summarizer"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
+    expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
+  });
+
   it("keeps the compact agent identity legible in dark mode", () => {
     const { container } = render(
       <ColorModeContext.Provider value={{ mode: "dark" }}>
