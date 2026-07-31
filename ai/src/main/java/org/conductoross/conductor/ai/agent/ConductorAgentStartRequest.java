@@ -52,16 +52,9 @@ public class ConductorAgentStartRequest {
 
     private String credentialRef;
 
-    /**
-     * The remote agent URL — mirrors the {@code agentUrl} field on A2A requests so all agent types
-     * use a consistent top-level field for the endpoint.
-     *
-     * <p>For Azure Foundry: the Azure OpenAI endpoint including the {@code /openai} path suffix,
-     * e.g. {@code https://my-resource.openai.azure.com/openai}.
-     *
-     * <p>For Bedrock: a {@code bedrock://} URI encoding the agent and alias, e.g. {@code
-     * bedrock://AGENTID/ALIASID}. Region may be appended as a query param: {@code
-     * bedrock://AGENTID/ALIASID?region=us-west-2}.
-     */
+    // Remote agent URL — same field name as A2A so all agent types use a consistent top-level
+    // field.
+    // Azure Foundry: https://my-resource.openai.azure.com/openai
+    // Bedrock: bedrock://AGENTID/ALIASID  (optional ?region=us-west-2 query param)
     private String agentUrl;
 }

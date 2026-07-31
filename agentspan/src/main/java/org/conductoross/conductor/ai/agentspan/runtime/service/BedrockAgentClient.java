@@ -253,34 +253,41 @@ public class BedrockAgentClient implements ConductorAgentClient {
         return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
     }
 
-    /**
-     * Resolves [agentId, agentAliasId, region?] from either the top-level {@code agentUrl} (format:
-     * {@code bedrock://AGENTID/ALIASID} or {@code bedrock://AGENTID/ALIASID?region=us-west-2}) or
-     * the legacy {@code rawConfig.agentId} / {@code rawConfig.agentAliasId} fields.
-     */
+    // Parses agentUrl (bedrock://AGENTID/ALIASID or bedrock://AGENTID/ALIASID?region=us-west-2)
+    // into [agentId, aliasId] or [agentId, aliasId, region]. Throws if either ID is missing.
     private static String[] resolveAgentCoords(ConductorAgentStartRequest request) {
         String agentUrl = request.getAgentUrl();
-        if (StringUtils.isNotBlank(agentUrl) && agentUrl.startsWith("bedrock://")) {
-            String path = agentUrl.substring("bedrock://".length());
-            String region = null;
-            if (path.contains("?")) {
-                String query = path.substring(path.indexOf('?') + 1);
-                path = path.substring(0, path.indexOf('?'));
-                for (String param : query.split("&")) {
-                    if (param.startsWith("region=")) {
-                        region = param.substring("region=".length());
-                    }
+        if (StringUtils.isBlank(agentUrl) || !agentUrl.startsWith("bedrock://")) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl must be in the form bedrock://AGENTID/ALIASID"
+                            + " (optionally with ?region=<region>)");
+        }
+        String path = agentUrl.substring("bedrock://".length());
+        String region = null;
+        if (path.contains("?")) {
+            String query = path.substring(path.indexOf('?') + 1);
+            path = path.substring(0, path.indexOf('?'));
+            for (String param : query.split("&")) {
+                if (param.startsWith("region=")) {
+                    region = param.substring("region=".length());
                 }
             }
-            String[] parts = path.split("/", 2);
-            String agentId = parts[0];
-            String aliasId = parts.length > 1 ? parts[1] : "TSTALIASID";
-            return region != null
-                    ? new String[] {agentId, aliasId, region}
-                    : new String[] {agentId, aliasId};
         }
-        // Legacy: rawConfig.agentId / rawConfig.agentAliasId
-        return new String[] {rawConfig(request, "agentId"), rawConfig(request, "agentAliasId")};
+        String[] parts = path.split("/", 2);
+        String agentId = parts[0];
+        if (StringUtils.isBlank(agentId)) {
+            throw new IllegalArgumentException("Bedrock agentUrl is missing agentId: " + agentUrl);
+        }
+        if (parts.length < 2 || StringUtils.isBlank(parts[1])) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl is missing aliasId: "
+                            + agentUrl
+                            + " — use bedrock://AGENTID/ALIASID");
+        }
+        String aliasId = parts[1];
+        return region != null
+                ? new String[] {agentId, aliasId, region}
+                : new String[] {agentId, aliasId};
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
