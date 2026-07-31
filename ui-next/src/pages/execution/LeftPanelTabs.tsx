@@ -34,7 +34,7 @@ export default function LeftPanelTabs({
   const isAgentWorkflow = isAgentWorkflowExecution(execution);
 
   // Agent-classified executions get a curated tab set that matches
-  // AgentSpan's own UI 1:1: Agent Execution, Workflow View (Diagram, relabeled),
+  // Conductor-Agents' UI 1:1: Agent Execution, Workflow View (Diagram, relabeled),
   // Task List, Timeline, Agent Definition (Summary, relabeled), JSON — no
   // Workflow Input/Output, Variables, or Tasks to Domain. Regular workflows
   // keep the full Conductor tab set unchanged.
@@ -118,7 +118,7 @@ export default function LeftPanelTabs({
       ];
 
   // Add Workflow Introspection tab only if the feature flag is enabled —
-  // inserted right after "Timeline" in either tab set (matches AgentSpan's
+  // inserted right after "Timeline" in either tab set (matches Conductor-Agents'
   // own splice position for the agent set, and the pre-existing position
   // for the regular set).
   if (isWorkflowIntrospectionEnabled) {

@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.tasks.worker;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
@@ -63,7 +64,7 @@ class A2AWorkersTest {
     @BeforeEach
     void setUp() {
         a2aService = mock(A2AService.class);
-        workers = new A2AWorkers(a2aService, unusedAgentClient());
+        workers = new A2AWorkers(a2aService, List.of(unusedAgentClient()));
     }
 
     @Test

@@ -34,12 +34,17 @@ import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_EXECUTION_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.FILE_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.JSON_DATA_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA_BY_TASK;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA_BY_WORKFLOW;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
@@ -132,6 +137,9 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateTaskDefsTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
                 session.execute(getCreateEventExecutionsTableStatement());
+                session.execute(getCreateFileMetadataTableStatement());
+                session.execute(getCreateFileMetadataByWorkflowTableStatement());
+                session.execute(getCreateFileMetadataByTaskTableStatement());
                 LOGGER.info(
                         "{} initialization complete! Tables created!", getClass().getSimpleName());
                 initialized = true;
@@ -166,6 +174,39 @@ public abstract class CassandraBaseDAO {
                 .addColumn(PAYLOAD_KEY, DataType.text())
                 .addStaticColumn(TOTAL_TASKS_KEY, DataType.cint())
                 .addStaticColumn(TOTAL_PARTITIONS_KEY, DataType.cint())
+                .getQueryString();
+    }
+
+    /**
+     * File metadata keyed by the bare {@code file_id}. {@code workflow_id} and {@code task_id} are
+     * stored so a row is self-describing, but lookups by those go through the index tables below —
+     * Cassandra cannot filter on non-key columns without a secondary index.
+     */
+    private String getCreateFileMetadataTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_FILE_METADATA)
+                .ifNotExists()
+                .addPartitionKey(FILE_ID_KEY, DataType.text())
+                .addColumn(WORKFLOW_ID_KEY, DataType.text())
+                .addColumn(TASK_ID_KEY, DataType.text())
+                .addColumn(JSON_DATA_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    /** Index table: every file supplied as input to a workflow. */
+    private String getCreateFileMetadataByWorkflowTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_FILE_METADATA_BY_WORKFLOW)
+                .ifNotExists()
+                .addPartitionKey(WORKFLOW_ID_KEY, DataType.text())
+                .addClusteringColumn(FILE_ID_KEY, DataType.text())
+                .getQueryString();
+    }
+
+    /** Index table: every file produced by a task. */
+    private String getCreateFileMetadataByTaskTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_FILE_METADATA_BY_TASK)
+                .ifNotExists()
+                .addPartitionKey(TASK_ID_KEY, DataType.text())
+                .addClusteringColumn(FILE_ID_KEY, DataType.text())
                 .getQueryString();
     }
 

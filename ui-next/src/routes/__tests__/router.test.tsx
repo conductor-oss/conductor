@@ -18,7 +18,7 @@ vi.mock("utils", async (importOriginal) => {
       PLAYGROUND: "PLAYGROUND",
       SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
       TASK_INDEXING: "TASK_INDEXING",
-      AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+      CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
     },
   };
 });
@@ -244,7 +244,7 @@ describe("router (OSS)", () => {
     expect(router).toBeDefined();
   });
 
-  describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
+  describe("Conductor AI integration gating", () => {
     const AGENT_PATHS = [
       "/agents",
       "/agents/new",
@@ -255,15 +255,15 @@ describe("router (OSS)", () => {
       "/agentSecrets",
     ];
 
-    it("omits agent routes when AGENTSPAN_ENABLED is off", () => {
+    it("omits agent routes when the AI integration is off", () => {
       mockFeatureFlags.isEnabled.mockReturnValue(false);
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).not.toContain(p));
     });
 
-    it("includes agent routes when AGENTSPAN_ENABLED is on", () => {
+    it("includes agent routes when the AI integration is on", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
@@ -271,7 +271,7 @@ describe("router (OSS)", () => {
 
     it("registers the create-agent route before the agent detail route", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
 
