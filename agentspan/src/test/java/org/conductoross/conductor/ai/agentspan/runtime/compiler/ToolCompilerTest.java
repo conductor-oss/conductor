@@ -121,7 +121,56 @@ class ToolCompilerTest {
     }
 
     @Test
-    void rejectsUnknownExplicitOcgToolNameInsteadOfExposingTheServerCatalog() {
+    void preservesGenericMcpAllowlistForFilteredDiscovery() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of("lookup_ticket")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+
+        assertThat(expanded).containsExactly(server);
+        assertThat(ToolCompiler.requiresMcpDiscovery(expanded.get(0))).isTrue();
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks("support", expanded, List.of(), "openai/gpt-4o");
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("lookup_ticket");
+    }
+
+    @Test
+    void preservesEmptyMcpAllowlistForDenyAllDiscoveryFilter() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("generic")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of()))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks("support", expanded, List.of(), "openai/gpt-4o");
+
+        assertThat(expanded).containsExactly(server);
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("\"toolNames\":[]");
+    }
+
+    @Test
+    void stillRejectsUnknownToolsInTheOcgNamespace() {
         ToolConfig server =
                 ToolConfig.builder()
                         .name("ocg_graph")

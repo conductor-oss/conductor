@@ -603,6 +603,38 @@ class EnrichToolsScriptTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void mcpPrepareHonorsExplicitAndEmptyAllowlists() throws Exception {
+        Map<String, Object> allowed =
+                map("name", "lookup_ticket", "description", "Lookup", "inputSchema", Map.of());
+        Map<String, Object> denied =
+                map("name", "delete_ticket", "description", "Delete", "inputSchema", Map.of());
+
+        Map<String, Object> filtered =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"https://generic.example/mcp\",\"headers\":{},\"toolNames\":[\"lookup_ticket\"]}]",
+                                32),
+                        map("discovered_0", List.of(allowed, denied)));
+        assertThat((List<Map<String, Object>>) filtered.get("tools"))
+                .extracting(tool -> tool.get("name"))
+                .containsExactly("lookup_ticket");
+
+        Map<String, Object> empty =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"https://generic.example/mcp\",\"headers\":{},\"toolNames\":[]}]",
+                                32),
+                        map("discovered_0", List.of(allowed, denied)));
+        assertThat((List<Map<String, Object>>) empty.get("tools")).isEmpty();
+        assertThat((Map<String, Object>) empty.get("mcpConfig")).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void discoveredMcpAndApiSchemasAreSelfDescribingBeforeLlmReceivesThem() throws Exception {
         Map<String, Object> schema =
                 map(

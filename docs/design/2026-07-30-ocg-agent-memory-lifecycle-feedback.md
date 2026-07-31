@@ -427,8 +427,14 @@ error only when the identity cannot eventually be reconciled.
 - The feedback server ignores client-supplied ownership and routing fields.
 - Existing exporter redaction applies to raw event input and output.
 - The shared OCG client must never log request authorization headers or resolved credentials.
-- OCG URL validation must follow the same deployment policy for capture, recall, and feedback to
-  avoid creating a new server-side request-forgery path.
+- `ocgUrl` belongs to the trusted agent definition and cannot be supplied or changed by a workflow
+  execution. Principals allowed to deploy that definition can already configure credentialed MCP
+  destinations; terminal capture therefore adds no new outbound-request or credential-access
+  capability. Under Conductor's authorization model, this is not a vulnerability or a separate
+  security boundary.
+- Installations that permit untrusted agent authors must enforce authorization or network egress
+  controls consistently across all credentialed integrations. A capture-only URL restriction would
+  leave the equivalent MCP capability unchanged.
 - Authorization to view an execution does not automatically imply authorization to submit
   feedback; the feedback endpoint must pass through the installation's normal Agent API security
   and tenancy controls.

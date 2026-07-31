@@ -189,7 +189,33 @@ public class ToolCompiler {
                     tool.getConfig().containsKey("tool_names")
                             ? tool.getConfig().get("tool_names")
                             : tool.getConfig().get("toolNames");
-            if (!(configuredNames instanceof List<?> names) || names.isEmpty()) {
+            if (!(configuredNames instanceof List<?> names)) {
+                expanded.add(tool);
+                continue;
+            }
+
+            // The bundled schemas are safe to use only when every requested name identifies a
+            // known OCG operation. Generic MCP allowlists remain discovery-backed and are filtered
+            // against the server response at runtime.
+            boolean knownOcgAllowlist =
+                    !names.isEmpty()
+                            && names.stream()
+                                    .map(String::valueOf)
+                                    .allMatch(name -> OcgToolCatalog.get(name) != null);
+            boolean usesOcgNamespace =
+                    names.stream().map(String::valueOf).anyMatch(name -> name.startsWith("cg_"));
+            if (usesOcgNamespace && !knownOcgAllowlist) {
+                List<String> unknownNames =
+                        names.stream()
+                                .map(String::valueOf)
+                                .filter(name -> OcgToolCatalog.get(name) == null)
+                                .toList();
+                throw new IllegalArgumentException(
+                        "Unknown explicit OCG MCP tool(s) "
+                                + unknownNames
+                                + ". Add schemas to the Conductor OCG tool catalog before exposing them.");
+            }
+            if (!knownOcgAllowlist) {
                 expanded.add(tool);
                 continue;
             }
@@ -200,12 +226,6 @@ public class ToolCompiler {
             for (Object configuredName : names) {
                 String name = String.valueOf(configuredName);
                 OcgToolCatalog.Definition definition = OcgToolCatalog.get(name);
-                if (definition == null) {
-                    throw new IllegalArgumentException(
-                            "Unknown explicit OCG MCP tool '"
-                                    + name
-                                    + "'. Add its schema to the Conductor OCG tool catalog before exposing it.");
-                }
                 expanded.add(
                         ToolConfig.builder()
                                 .name(name)
@@ -892,6 +912,7 @@ public class ToolCompiler {
                                 : mcpDiscH);
                 serverInfo.put(
                         "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 serverMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1203,6 +1224,7 @@ public class ToolCompiler {
                                 : mcpH);
                 serverInfo.put(
                         "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 mcpServerMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1364,6 +1386,17 @@ public class ToolCompiler {
                 maxTools);
 
         return new DiscoveryResult(preTasks, toolsRef, mcpConfigRef, apiConfigRef);
+    }
+
+    private static void copyMcpToolNames(
+            Map<String, Object> source, Map<String, Object> destination) {
+        Object names =
+                source.containsKey("tool_names")
+                        ? source.get("tool_names")
+                        : source.get("toolNames");
+        if (names instanceof List<?>) {
+            destination.put("toolNames", names);
+        }
     }
 
     /** Build a dynamic filter chain for API discovery (uses _api_ prefixed task refs). */

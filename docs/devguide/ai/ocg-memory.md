@@ -15,11 +15,7 @@ Enable the AI integration and store the OCG API key in Conductor's credential st
 
 ```properties
 conductor.integrations.ai.enabled=true
-conductor.ai.outbound.allowed-origins=https://ocg.example.com
 ```
-
-The exact OCG origin must be allowed for MCP discovery. Private-network OCG deployments also need
-the development-only `conductor.ai.outbound.allow-private-networks=true` setting where appropriate.
 
 Set `longTermMemory` on the agent definition. `credential` is the credential name, never the API
 key value:
@@ -37,6 +33,19 @@ key value:
   }
 }
 ```
+
+### Security boundary
+
+`ocgUrl` is trusted agent-definition configuration, not a value supplied when an execution starts.
+Creating or changing it requires the same authority as deploying an agent that uses credentialed MCP
+tools. Such an agent author can already direct a server-resolved credential to the configured MCP
+server, so using that credential for terminal OCG capture does not add a new outbound-request or
+credential-access capability. Under Conductor's authorization model, this is not a vulnerability or
+a separate security boundary.
+
+Deployments that allow untrusted principals to author agent definitions must restrict that authority
+or enforce their own network egress policy for all credentialed agent integrations, including MCP
+and OCG. Applying a capture-only URL allowlist would not secure the existing MCP path.
 
 Use the same `agent` and optional `user` identity for capture and recall. The configured user takes
 precedence; runtime input `user` is used when the configuration omits it. Runtime values are

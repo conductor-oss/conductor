@@ -126,20 +126,25 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
     Map<String, Object> buildPayload(WorkflowModel workflow, LongTermMemoryConfig config) {
         Map<String, Object> input = workflow.getInput() == null ? Map.of() : workflow.getInput();
         Map<String, Object> output = workflow.getOutput() == null ? Map.of() : workflow.getOutput();
-        String sessionId = stringValue(input.get("session_id"), workflow.getWorkflowId());
+        Set<String> maskedFields = maskedFields(workflow);
+        Map<String, Object> safeInput = redactMap(input, maskedFields);
+        Map<String, Object> safeOutput = redactMap(output, maskedFields);
+        String sessionId = stringValue(safeInput.get("session_id"), workflow.getWorkflowId());
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("agent", stringValue(config.getAgent(), "agentspan"));
-        String user = stringValue(config.getUser(), stringValue(input.get("user"), null));
-        if (!isBlank(user)) payload.put("user", user.startsWith("user:") ? user : "user:" + user);
+        String user = stringValue(config.getUser(), stringValue(safeInput.get("user"), null));
+        if (!isBlank(user) && !"[REDACTED]".equals(user)) {
+            payload.put("user", user.startsWith("user:") ? user : "user:" + user);
+        }
         payload.put("session_id", sessionId);
         payload.put("turn_id", workflow.getWorkflowId());
-        copyString(input, payload, "repo");
-        copyString(input, payload, "branch");
-        copyString(input, payload, "cwd");
-        payload.put("input", stringValue(input.get("prompt"), ""));
-        payload.put("events", events(workflow));
-        payload.put("result", jsonString(output.get("result")));
+        copyString(safeInput, payload, "repo");
+        copyString(safeInput, payload, "branch");
+        copyString(safeInput, payload, "cwd");
+        payload.put("input", stringValue(safeInput.get("prompt"), ""));
+        payload.put("events", events(workflow, maskedFields));
+        payload.put("result", jsonString(safeOutput.get("result")));
         payload.put("outcome", outcome(workflow));
         long startedAt = startTime(workflow);
         long endedAt = workflow.getEndTime() > 0 ? workflow.getEndTime() : startedAt;
@@ -148,7 +153,7 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         return payload;
     }
 
-    private List<Map<String, Object>> events(WorkflowModel workflow) {
+    private List<Map<String, Object>> events(WorkflowModel workflow, Set<String> maskedFields) {
         if (workflow.getTasks() == null) return List.of();
         List<TaskModel> tasks = new ArrayList<>(workflow.getTasks());
         tasks.sort(Comparator.comparingInt(TaskModel::getSeq));
@@ -161,14 +166,14 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
             Map<String, Object> event = new LinkedHashMap<>();
             event.put("type", subagent ? "subagent" : "tool_call");
             event.put("name", eventName(task, subagent));
-            event.put("detail", jsonString(redact(task.getInputData())));
+            event.put("detail", jsonString(redact(task.getInputData(), maskedFields, "")));
             boolean error = task.getStatus() != null && !task.getStatus().isSuccessful();
             Object eventOutput = task.getOutputData();
             if ((eventOutput == null || (eventOutput instanceof Map<?, ?> map && map.isEmpty()))
                     && error) {
                 eventOutput = task.getReasonForIncompletion();
             }
-            event.put("output", jsonString(redact(eventOutput)));
+            event.put("output", jsonString(redact(eventOutput, maskedFields, "")));
             event.put("is_error", error);
             events.add(event);
         }
@@ -194,14 +199,17 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
                 toolName, stringValue(task.getTaskDefName(), task.getReferenceTaskName()));
     }
 
-    private Object redact(Object value) {
+    private Object redact(Object value, Set<String> maskedFields, String parentPath) {
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> clean = new LinkedHashMap<>();
             map.forEach(
                     (key, item) -> {
                         String name = String.valueOf(key);
+                        String path = parentPath.isEmpty() ? name : parentPath + "." + name;
                         String lower = name.toLowerCase(Locale.ROOT);
-                        if (lower.contains("secret")
+                        if (maskedFields.contains(name)
+                                || maskedFields.contains(path)
+                                || lower.contains("secret")
                                 || lower.contains("password")
                                 || lower.contains("token")
                                 || lower.contains("credential")
@@ -211,13 +219,30 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
                                 || lower.equals("api_key")) {
                             clean.put(name, "[REDACTED]");
                         } else {
-                            clean.put(name, redact(item));
+                            clean.put(name, redact(item, maskedFields, path));
                         }
                     });
             return clean;
         }
-        if (value instanceof List<?> list) return list.stream().map(this::redact).toList();
+        if (value instanceof List<?> list) {
+            return list.stream().map(item -> redact(item, maskedFields, parentPath)).toList();
+        }
         return value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> redactMap(Map<String, Object> value, Set<String> maskedFields) {
+        return (Map<String, Object>) redact(value, maskedFields, "");
+    }
+
+    private static Set<String> maskedFields(WorkflowModel workflow) {
+        WorkflowDef definition = workflow.getWorkflowDefinition();
+        if (definition == null
+                || definition.getMaskedFields() == null
+                || definition.getMaskedFields().isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(definition.getMaskedFields());
     }
 
     private String jsonString(Object value) {

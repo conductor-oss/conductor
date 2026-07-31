@@ -221,6 +221,32 @@ class OcgAgentRunExporterTest {
         assertThat(events.get(0).get("output").toString()).endsWith("…[truncated]");
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void honorsWorkflowMaskedFieldsAcrossRunAndToolPayloads() {
+        WorkflowModel workflow = workflow("https://unused.example", "session", "turn");
+        workflow.getWorkflowDefinition().setMaskedFields(List.of("customer_ssn", "result"));
+        workflow.setInput(Map.of("prompt", "help", "customer_ssn", "111-22-3333"));
+        workflow.setOutput(Map.of("result", "private final answer"));
+        TaskModel tool = task("SIMPLE", "lookup", 1);
+        tool.setInputData(Map.of("customer_ssn", "111-22-3333", "safe", "visible"));
+        tool.setOutputData(Map.of("result", "private tool result", "safe", "visible"));
+        workflow.setTasks(List.of(tool));
+
+        Map<String, Object> payload =
+                exporter(name -> "secret", 1)
+                        .buildPayload(
+                                workflow,
+                                LongTermMemoryConfig.builder().agent("agentspan").build());
+
+        assertThat(payload.get("result")).isEqualTo("[REDACTED]");
+        assertThat(payload.toString())
+                .doesNotContain("111-22-3333", "private final answer", "private tool result")
+                .contains("[REDACTED]", "visible");
+        List<Map<String, Object>> events = (List<Map<String, Object>>) payload.get("events");
+        assertThat(events).hasSize(1);
+    }
+
     private OcgAgentRunExporter exporter(
             java.util.function.Function<String, String> credentialResolver, int attempts) {
         return new OcgAgentRunExporter(mapper, client(credentialResolver, attempts));
