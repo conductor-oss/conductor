@@ -38,6 +38,9 @@ class GraphStructureCompiler {
 
     private static final Logger log = LoggerFactory.getLogger(GraphStructureCompiler.class);
 
+    /** Default {@code maxTokens} for an LLM node task when {@code AgentConfig} doesn't set one. */
+    private static final int DEFAULT_MAX_TOKENS = 16384;
+
     private final AgentCompiler agentCompiler;
 
     GraphStructureCompiler(AgentCompiler agentCompiler) {
@@ -99,7 +102,7 @@ class GraphStructureCompiler {
         mergeTask.setTaskReferenceName(mergeRef);
 
         Map<String, Object> mergeInputs = new LinkedHashMap<>();
-        mergeInputs.put("evaluatorType", "graaljs");
+        mergeInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
 
         // Build inputs: b0, b1, ... = each branch's state expression
         for (int i = 0; i < branchStateExprs.size(); i++) {
@@ -219,7 +222,7 @@ class GraphStructureCompiler {
         ptTask.setName("_sg_pt_" + nodeName);
         ptTask.setTaskReferenceName(ptRef);
         Map<String, Object> ptInputs = new LinkedHashMap<>();
-        ptInputs.put("evaluatorType", "graaljs");
+        ptInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
         ptInputs.put("expression", "(function(){return{state:$.state,result:$.result};})()");
         ptInputs.put("state", "${" + prepRef + ".output.state}");
         ptInputs.put("result", "${" + prepRef + ".output.result}");
@@ -280,7 +283,7 @@ class GraphStructureCompiler {
         coalTask.setName("_sg_out_" + nodeName);
         coalTask.setTaskReferenceName(coalRef);
         Map<String, Object> coalInputs = new LinkedHashMap<>();
-        coalInputs.put("evaluatorType", "graaljs");
+        coalInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
         coalInputs.put(
                 "expression",
                 "(function(){"
@@ -349,7 +352,7 @@ class GraphStructureCompiler {
         ptTask.setName("_llm_pt_" + nodeName);
         ptTask.setTaskReferenceName(ptRef);
         Map<String, Object> ptInputs = new LinkedHashMap<>();
-        ptInputs.put("evaluatorType", "graaljs");
+        ptInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
         ptInputs.put("expression", "(function(){return{state:$.state,result:$.result};})()");
         ptInputs.put("state", "${" + prepRef + ".output.state}");
         ptInputs.put("result", "${" + prepRef + ".output.result}");
@@ -367,7 +370,9 @@ class GraphStructureCompiler {
         Map<String, Object> llmInputs = new LinkedHashMap<>();
         llmInputs.put("llmProvider", parsed.getProvider());
         llmInputs.put("model", parsed.getModel());
-        llmInputs.put("maxTokens", config.getMaxTokens() != null ? config.getMaxTokens() : 16384);
+        llmInputs.put(
+                "maxTokens",
+                config.getMaxTokens() != null ? config.getMaxTokens() : DEFAULT_MAX_TOKENS);
         llmInputs.put("messages", "${" + prepRef + ".output.messages}");
         llmTask.setInputParameters(llmInputs);
 
@@ -392,7 +397,7 @@ class GraphStructureCompiler {
         coalTask.setName("_llm_out_" + nodeName);
         coalTask.setTaskReferenceName(coalRef);
         Map<String, Object> coalInputs = new LinkedHashMap<>();
-        coalInputs.put("evaluatorType", "graaljs");
+        coalInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
         coalInputs.put(
                 "expression",
                 "(function(){"
@@ -846,7 +851,7 @@ class GraphStructureCompiler {
                     workerMapJs.append("}");
 
                     Map<String, Object> enrichInputs = new LinkedHashMap<>();
-                    enrichInputs.put("evaluatorType", "graaljs");
+                    enrichInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
                     enrichInputs.put(
                             "dynamic_tasks", "${" + allocRouterRef + ".output.dynamic_tasks}");
                     enrichInputs.put(
@@ -908,7 +913,7 @@ class GraphStructureCompiler {
                     dynMergeTask.setTaskReferenceName(dynMergeRef);
 
                     Map<String, Object> dynMergeInputs = new LinkedHashMap<>();
-                    dynMergeInputs.put("evaluatorType", "graaljs");
+                    dynMergeInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
                     dynMergeInputs.put("joinOutput", "${" + dynJoinRef + ".output}");
                     dynMergeInputs.put("parentState", "${" + allocRouterRef + ".output.state}");
 
@@ -1034,7 +1039,7 @@ class GraphStructureCompiler {
                         bridgeTask.setTaskReferenceName(bridgeRef);
 
                         Map<String, Object> bridgeInputs = new LinkedHashMap<>();
-                        bridgeInputs.put("evaluatorType", "graaljs");
+                        bridgeInputs.put("evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
                         bridgeInputs.put("router_state", "${" + allocRouterRef + ".output.state}");
 
                         String entryStateRef = nodeEntryStateRef.get(backEdgeTarget);
@@ -1231,7 +1236,8 @@ class GraphStructureCompiler {
                             coalesceTask.setTaskReferenceName(coalesceRef);
 
                             Map<String, Object> coalesceInputs = new LinkedHashMap<>();
-                            coalesceInputs.put("evaluatorType", "graaljs");
+                            coalesceInputs.put(
+                                    "evaluatorType", AgentCompiler.GRAALJS_EVALUATOR_TYPE);
 
                             // Use the router's decision to select the correct branch output
                             // instead of || chaining which swallows falsy values (0, "", false).

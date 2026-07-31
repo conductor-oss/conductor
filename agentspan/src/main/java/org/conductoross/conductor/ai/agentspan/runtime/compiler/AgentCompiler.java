@@ -48,6 +48,18 @@ public class AgentCompiler {
      */
     static final int DEFAULT_THINKING_BUDGET_TOKENS = 8192;
 
+    /** JS evaluator identifier used by every INLINE task this package emits. */
+    static final String GRAALJS_EVALUATOR_TYPE = "graaljs";
+
+    /** Default {@code maxTokens} for an LLM task when {@code AgentConfig} doesn't set one. */
+    private static final int DEFAULT_MAX_TOKENS = 16384;
+
+    /** Default loop iteration cap when {@code AgentConfig.maxTurns} isn't set. */
+    private static final int DEFAULT_MAX_TURNS = 25;
+
+    /** Iteration cap on the outer required-tools-enforcement retry loop. */
+    private static final int REQUIRED_TOOLS_MAX_ITERATIONS = 3;
+
     static final List<String> WORKFLOW_INPUTS = List.of("prompt", "session_id", "media", "cwd");
     private static final Map<String, Object> USER_MESSAGE =
             Map.of(
@@ -320,7 +332,7 @@ public class AgentCompiler {
         // Guarded path: LLM + guardrails in DoWhile loop
         String contentRef = ref(llmRef + ".output.result");
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : DEFAULT_MAX_TURNS;
 
         List<WorkflowTask> loopTasks = new ArrayList<>();
         CallbackConfig beforeModel = findCallback(config, "before_model");
@@ -586,7 +598,7 @@ public class AgentCompiler {
 
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : DEFAULT_MAX_TURNS;
 
         String hasToolCalls =
                 String.format(
@@ -654,9 +666,12 @@ public class AgentCompiler {
         ctxResolve.setTaskReferenceName(ctxResolveRef);
         ctxResolve.setInputParameters(
                 Map.of(
-                        "evaluatorType", "graaljs",
-                        "ctx", "${workflow.input.context}",
-                        "expression", JavaScriptBuilder.nullCoalesceScript()));
+                        "evaluatorType",
+                        GRAALJS_EVALUATOR_TYPE,
+                        "ctx",
+                        "${workflow.input.context}",
+                        "expression",
+                        JavaScriptBuilder.nullCoalesceScript()));
         allTasks.add(ctxResolve);
 
         // Initialize workflow variables
@@ -687,7 +702,7 @@ public class AgentCompiler {
             checkTask.setTaskReferenceName(checkRef);
             checkTask.setInputParameters(
                     Map.of(
-                            "evaluatorType", "graaljs",
+                            "evaluatorType", GRAALJS_EVALUATOR_TYPE,
                             "expression",
                                     JavaScriptBuilder.requiredToolsCheckScript(
                                             config.getRequiredTools()),
@@ -696,8 +711,11 @@ public class AgentCompiler {
             String outerLoopRef = toRef(config.getName()) + "_required_tools_loop";
             String outerCondition =
                     String.format(
-                            "if ( $.%s.output.satisfied == false && $.%s['iteration'] < 3 ) { true; } else { false; }",
-                            checkRef, outerLoopRef);
+                            "if ( $.%s.output.satisfied == false && $.%s['iteration'] < "
+                                    + REQUIRED_TOOLS_MAX_ITERATIONS
+                                    + " ) { true; } else { false; }",
+                            checkRef,
+                            outerLoopRef);
             Map<String, Object> outerInputs = new LinkedHashMap<>();
             outerInputs.put(checkRef, "${" + checkRef + "}");
             outerInputs.put(outerLoopRef, "${" + outerLoopRef + "}");
@@ -856,7 +874,7 @@ public class AgentCompiler {
         checkTransferTask.setTaskReferenceName(checkTransferRef);
         checkTransferTask.setType("INLINE");
         Map<String, Object> ctInputs = new LinkedHashMap<>();
-        ctInputs.put("evaluatorType", "graaljs");
+        ctInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         ctInputs.put("tool_calls", ref(llmRef + ".output.toolCalls"));
         ctInputs.put("expression", JavaScriptBuilder.detectTransferScript(transferTargets));
         checkTransferTask.setInputParameters(ctInputs);
@@ -906,7 +924,7 @@ public class AgentCompiler {
         wireRetryParticipants(llmTask, retryRefs);
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : DEFAULT_MAX_TURNS;
 
         String hasToolCalls =
                 String.format(
@@ -965,9 +983,12 @@ public class AgentCompiler {
         hybridCtxResolve.setTaskReferenceName(hybridCtxResolveRef);
         hybridCtxResolve.setInputParameters(
                 Map.of(
-                        "evaluatorType", "graaljs",
-                        "ctx", "${workflow.input.context}",
-                        "expression", JavaScriptBuilder.nullCoalesceScript()));
+                        "evaluatorType",
+                        GRAALJS_EVALUATOR_TYPE,
+                        "ctx",
+                        "${workflow.input.context}",
+                        "expression",
+                        JavaScriptBuilder.nullCoalesceScript()));
 
         // Initialize workflow variables
         Map<String, Object> initHybridVars = new LinkedHashMap<>();
@@ -1108,7 +1129,7 @@ public class AgentCompiler {
         task.setInputParameters(
                 Map.of(
                         "evaluatorType",
-                        "graaljs",
+                        GRAALJS_EVALUATOR_TYPE,
                         "expression",
                         "(function(){ var v = $.raw; "
                                 + "return (v == null || v === undefined) ? '' : "
@@ -1364,7 +1385,9 @@ public class AgentCompiler {
         // Default maxTokens to 16384 when not explicitly configured.
         // Without this, Spring AI defaults to 500 which is too low for agents
         // that need to generate tool calls with complex arguments.
-        inputs.put("maxTokens", config.getMaxTokens() != null ? config.getMaxTokens() : 16384);
+        inputs.put(
+                "maxTokens",
+                config.getMaxTokens() != null ? config.getMaxTokens() : DEFAULT_MAX_TOKENS);
 
         // Context window budget for proactive condensation
         if (config.getContextWindowBudget() != null) {
@@ -1502,7 +1525,7 @@ public class AgentCompiler {
         normalizeTask.setTaskReferenceName(refName);
         normalizeTask.setType("INLINE");
         Map<String, Object> normalizeInputs = new LinkedHashMap<>();
-        normalizeInputs.put("evaluatorType", "graaljs");
+        normalizeInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         normalizeInputs.put("expression", JavaScriptBuilder.normalizeInstructionsScript());
         normalizeInputs.put("worker_output", "${" + workerRef + ".output}");
         normalizeTask.setInputParameters(normalizeInputs);
@@ -1584,7 +1607,7 @@ public class AgentCompiler {
         task.setTaskReferenceName(resolveRef);
 
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("evaluatorType", "graaljs");
+        inputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         inputs.put("expression", JavaScriptBuilder.resolveOutputScript());
         inputs.put("llm_result", ref(llmRef + ".output.result"));
         inputs.put("finish_reason", ref(llmRef + ".output.finishReason"));
@@ -1610,7 +1633,7 @@ public class AgentCompiler {
         task.setTaskReferenceName(synthRef);
 
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("evaluatorType", "graaljs");
+        inputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         // Self-contained inline so we don't depend on JavaScriptBuilder
         // for a one-off helper.
         inputs.put(
@@ -1699,7 +1722,7 @@ public class AgentCompiler {
         ctxInject.setType("INLINE");
         ctxInject.setTaskReferenceName(refPrefix + "_ctx_inject");
         Map<String, Object> ctxInjectInputs = new LinkedHashMap<>();
-        ctxInjectInputs.put("evaluatorType", "graaljs");
+        ctxInjectInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         ctxInjectInputs.put("state", "${workflow.variables._agent_state}");
         ctxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
         ctxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
