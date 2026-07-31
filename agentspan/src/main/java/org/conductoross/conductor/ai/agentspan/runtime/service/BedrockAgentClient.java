@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
@@ -104,7 +105,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId) {
+    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
         ExecutionState state = executions.get(executionId);
         if (state == null) {
             return ConductorAgentStatusResponse.builder()

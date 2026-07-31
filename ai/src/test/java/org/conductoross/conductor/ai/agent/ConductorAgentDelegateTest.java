@@ -221,7 +221,7 @@ class ConductorAgentDelegateTest {
         }
 
         @Override
-        public ConductorAgentStatusResponse getAgentStatus(String executionId) {
+        public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
             statusCalls++;
             return status;
         }
