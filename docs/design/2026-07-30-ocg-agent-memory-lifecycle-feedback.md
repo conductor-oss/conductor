@@ -109,30 +109,36 @@ The server must reject feedback for a child workflow. The root execution ID is t
 
 ### 1. Represent root and child compilation explicitly
 
-The compiler currently recursively compiles subagents through the same public entry point. Add an
-internal compilation context rather than inferring root status from agent names or workflow
+The compiler recursively compiles subagents through an internal path. Invoke the OCG subcompiler
+only from the public root path rather than inferring root status from agent names or workflow
 metadata after compilation.
 
 Conceptually:
 
 ```java
 public WorkflowDef compile(AgentConfig config) {
-    return compile(config, CompileContext.root());
+    return compile(config, true);
 }
 
 WorkflowDef compileSubagent(AgentConfig config) {
-    return compile(config, CompileContext.child());
+    return compile(config, false);
+}
+
+private WorkflowDef compile(AgentConfig config, boolean root) {
+    WorkflowDef workflow = compileNormalAgentShape(config);
+    stampAgentMetadata(workflow, config);
+    if (root) OcgAgentSubCompiler.apply(workflow, config, contextMaxValueSizeBytes);
+    return workflow;
 }
 ```
 
-The context controls only lifecycle behavior. It does not change normal tool, strategy, or
-subworkflow compilation.
+The root flag controls only whether the OCG subcompiler runs. It does not change normal tool,
+strategy, or subworkflow compilation.
 
 | Capability | Root | Child |
 |---|---:|---:|
 | Automatic `cg_search_memories` prelude | Yes | No |
 | Terminal OCG capture listener | Yes | No |
-| Feedback capability metadata | Yes | No |
 | Explicitly configured OCG MCP tools | Yes | Yes |
 
 `OcgAgentRunExporter` should retain its runtime `workflow.hasParent()` guard as defense in depth.
@@ -219,9 +225,10 @@ when the two conflict.
 
 The root model must see this message before it can call `issue_analyst` or another subagent. Where
 the selected multi-agent strategy constructs child requests without carrying the root model's
-context, the compiler must also attach the normalized recall to the initial agent state under a
-reserved internal key such as `_ocg_recall`. Strategy tests must prove that `issue_analyst` sees
-the recall; prompt wording is not considered sufficient evidence.
+context, the OCG subcompiler must pass normalized recall as the private `_ocg_recall` input of each
+inline child workflow and inject that input into the child's model context. External child
+definitions are not rewritten and receive no unused recall input. Strategy tests must prove that
+`issue_analyst` sees the recall; prompt wording is not considered sufficient evidence.
 
 Recall is best-effort. Discovery, MCP invocation, and normalization failures resolve to empty
 context and do not fail the agent workflow. Failures remain observable in task status and logs,
@@ -370,28 +377,14 @@ The UI data hook should follow the existing `fetchWithContext` and React Query p
 key includes the stack and execution ID. A successful mutation updates or invalidates the feedback
 query without refreshing the complete execution.
 
-### 8. Capability metadata
+### 8. Lifecycle configuration
 
-The compiler should stamp root definitions with non-secret capability metadata so server and UI
-behavior is inspectable:
+The existing `agentDef.longTermMemory` is the sole source of operational configuration and feature
+inspection. Separate OCG capability markers are unnecessary because no server or UI behavior
+consumes them, and they can drift from the actual configuration. Child definitions do not receive
+the automatic lifecycle, though they may still use explicitly configured MCP tools.
 
-```json
-{
-  "agent_capabilities": [
-    "ocg_recall",
-    "ocg_run_capture",
-    "ocg_feedback"
-  ]
-}
-```
-
-The existing `agentDef.longTermMemory` remains the source of operational configuration. Capability
-metadata is descriptive and must not contain the credential value. Child definitions do not
-receive automatic lifecycle capability markers, though they may still advertise explicitly
-configured MCP capabilities.
-
-No new SDK field is required. Valid `longTermMemory` configuration enables the complete root
-lifecycle.
+No new SDK field is required. Valid `longTermMemory` configuration enables the root lifecycle.
 
 ## Ordering and consistency
 
@@ -443,7 +436,7 @@ error only when the identity cannot eventually be reconciled.
 
 This design is additive to the Conductor Agent API. Existing agents without `longTermMemory`
 compile and execute unchanged. Existing OCG-enabled agent definitions gain deterministic root
-recall and feedback capability when recompiled.
+recall when recompiled.
 
 No Python SDK changes are required. In particular, this design does not add:
 
@@ -503,8 +496,8 @@ optional user identity through its existing OCG/long-term-memory configuration.
 - Recall is optional and failure does not terminate the workflow.
 - MCP `output.content` is normalized, bounded, and injected once.
 - Empty, malformed, and oversized responses are handled safely.
-- Root definitions enable the terminal listener and feedback capabilities.
-- Child definitions receive no automatic recall, listener, or feedback capability.
+- Root definitions enable the terminal listener.
+- Child definitions receive no automatic recall or listener.
 - Explicit child MCP tools continue to compile normally.
 - Agents without OCG configuration remain byte-for-byte behaviorally unchanged where practical.
 

@@ -169,9 +169,9 @@ public class ToolCompiler {
     // ── Public API ───────────────────────────────────────────────────────
 
     /**
-     * Expand an MCP server declaration with {@code config.tool_names} into concrete, model-callable
-     * tools from Conductor's compile-time OCG catalog. Explicit tools carry their schemas into the
-     * LLM request and therefore do not need a runtime LIST_MCP_TOOLS task.
+     * Expand server-managed OCG capability markers and explicit OCG MCP allowlists into concrete,
+     * model-callable tools from Conductor's compile-time catalog. Expanded tools carry their
+     * schemas into the LLM request and therefore do not need a runtime LIST_MCP_TOOLS task.
      */
     public List<ToolConfig> expandExplicitMcpTools(List<ToolConfig> tools) {
         if (tools == null || tools.isEmpty()) {
@@ -180,6 +180,10 @@ public class ToolCompiler {
 
         List<ToolConfig> expanded = new ArrayList<>();
         for (ToolConfig tool : tools) {
+            if ("ocg".equals(tool.getToolType())) {
+                expanded.addAll(expandOcgCapability(tool));
+                continue;
+            }
             if (!"mcp".equals(tool.getToolType()) || tool.getConfig() == null) {
                 expanded.add(tool);
                 continue;
@@ -240,6 +244,43 @@ public class ToolCompiler {
                                 .stateful(tool.isStateful())
                                 .build());
             }
+        }
+        return expanded;
+    }
+
+    private List<ToolConfig> expandOcgCapability(ToolConfig marker) {
+        if (marker.getConfig() == null) {
+            throw new IllegalArgumentException("OCG tool capability requires configuration");
+        }
+        String ocgUrl = String.valueOf(marker.getConfig().getOrDefault("ocg_url", "")).trim();
+        String credential =
+                String.valueOf(marker.getConfig().getOrDefault("credential", "")).trim();
+        if (ocgUrl.isEmpty() || credential.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "OCG tool capability requires ocg_url and credential name");
+        }
+
+        Map<String, Object> serverConfig = new LinkedHashMap<>();
+        serverConfig.put("server_url", ocgUrl.replaceAll("/+$", "") + "/mcp/");
+        serverConfig.put("headers", Map.of("X-API-Key", "${" + credential + "}"));
+        serverConfig.put("credentials", List.of(credential));
+
+        List<ToolConfig> expanded = new ArrayList<>();
+        for (Map.Entry<String, OcgToolCatalog.Definition> entry : OcgToolCatalog.entries()) {
+            OcgToolCatalog.Definition definition = entry.getValue();
+            expanded.add(
+                    ToolConfig.builder()
+                            .name(entry.getKey())
+                            .description(definition.description())
+                            .inputSchema(definition.inputSchema())
+                            .toolType("mcp")
+                            .approvalRequired(marker.isApprovalRequired())
+                            .timeoutSeconds(marker.getTimeoutSeconds())
+                            .maxCalls(marker.getMaxCalls())
+                            .config(new LinkedHashMap<>(serverConfig))
+                            .guardrails(marker.getGuardrails())
+                            .stateful(marker.isStateful())
+                            .build());
         }
         return expanded;
     }

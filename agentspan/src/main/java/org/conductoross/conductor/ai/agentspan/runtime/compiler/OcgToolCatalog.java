@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.agentspan.runtime.compiler;
 
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,10 @@ final class OcgToolCatalog {
         return DEFINITIONS.get(name);
     }
 
+    static List<Map.Entry<String, Definition>> entries() {
+        return List.copyOf(DEFINITIONS.entrySet());
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, Definition> load() {
         ObjectMapper mapper = new ObjectMapperProvider().getObjectMapper();
@@ -52,7 +57,7 @@ final class OcgToolCatalog {
                                 String.valueOf(item.get("description")),
                                 (Map<String, Object>) item.get("inputSchema")));
             }
-            return Map.copyOf(definitions);
+            return Collections.unmodifiableMap(definitions);
         } catch (Exception e) {
             throw new IllegalStateException("Unable to load " + RESOURCE, e);
         }

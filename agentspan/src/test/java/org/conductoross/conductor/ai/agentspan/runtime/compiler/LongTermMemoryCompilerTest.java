@@ -40,23 +40,29 @@ class LongTermMemoryCompilerTest {
         WorkflowDef workflow = compiler.compile(agent());
 
         assertThat(workflow.isWorkflowStatusListenerEnabled()).isTrue();
-        assertThat(workflow.getTasks()).hasSizeGreaterThan(2);
+        assertThat(workflow.getTasks()).hasSizeGreaterThan(3);
 
-        WorkflowTask search = workflow.getTasks().get(0);
+        WorkflowTask arguments = workflow.getTasks().get(0);
+        assertThat(arguments.getType()).isEqualTo("INLINE");
+        assertThat(arguments.isOptional()).isTrue();
+        assertThat(arguments.getInputParameters())
+                .containsEntry("query", "${workflow.input.prompt}")
+                .containsEntry("agent", "agentspan")
+                .containsEntry("configuredUser", "user:alice")
+                .containsEntry("runtimeUser", "${workflow.input.user}");
+
+        WorkflowTask search = workflow.getTasks().get(1);
         assertThat(search.getType()).isEqualTo("CALL_MCP_TOOL");
         assertThat(search.getInputParameters())
                 .containsEntry("mcpServer", "https://ocg.example/mcp/")
                 .containsEntry("method", "cg_search_memories");
         assertThat(search.isOptional()).isTrue();
-        assertThat((Map<String, Object>) search.getInputParameters().get("arguments"))
-                .containsEntry("query", "${workflow.input.prompt}")
-                .containsEntry("agent", "agentspan")
-                .containsEntry("include_shared", true)
-                .containsEntry("limit", 5);
+        assertThat(search.getInputParameters())
+                .containsEntry("arguments", "${memory_agent_ocg_recall_arguments.output.result}");
         assertThat((Map<String, Object>) search.getInputParameters().get("headers"))
                 .containsEntry("X-API-Key", "${workflow.secrets.OCG_KEY}");
 
-        WorkflowTask normalize = workflow.getTasks().get(1);
+        WorkflowTask normalize = workflow.getTasks().get(2);
         assertThat(normalize.getType()).isEqualTo("INLINE");
         assertThat(normalize.isOptional()).isTrue();
         assertThat(normalize.getInputParameters())
@@ -83,7 +89,44 @@ class LongTermMemoryCompilerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void stampsOnlyRootLifecycleCapabilitiesAndPropagatesRecallToChildModel() {
+    void scopesRecallToConfiguredOrNormalizedRuntimeUser() throws Exception {
+        WorkflowTask arguments = compiler.compile(agent()).getTasks().get(0);
+        String expression = String.valueOf(arguments.getInputParameters().get("expression"));
+
+        Map<String, Object> configured =
+                evaluateObject(
+                        expression,
+                        Map.of(
+                                "query", "q",
+                                "agent", "agentspan",
+                                "configuredUser", "alice",
+                                "runtimeUser", "bob"));
+        assertThat(configured).containsEntry("user", "user:alice");
+
+        Map<String, Object> runtime =
+                evaluateObject(
+                        expression,
+                        Map.of(
+                                "query", "q",
+                                "agent", "agentspan",
+                                "configuredUser", "",
+                                "runtimeUser", "bob"));
+        assertThat(runtime).containsEntry("user", "user:bob");
+
+        Map<String, Object> unscoped =
+                evaluateObject(
+                        expression,
+                        Map.of(
+                                "query", "q",
+                                "agent", "agentspan",
+                                "configuredUser", "",
+                                "runtimeUser", ""));
+        assertThat(unscoped).doesNotContainKey("user");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void appliesLifecycleOnlyToRootAndPropagatesRecallToInlineChildModel() {
         AgentConfig child =
                 AgentConfig.builder()
                         .name("issue_analyst")
@@ -101,8 +144,7 @@ class LongTermMemoryCompilerTest {
 
         WorkflowDef workflow = compiler.compile(root);
 
-        assertThat((List<String>) workflow.getMetadata().get("agent_capabilities"))
-                .contains("ocg_recall", "ocg_run_capture", "ocg_feedback");
+        assertThat(workflow.isWorkflowStatusListenerEnabled()).isTrue();
         WorkflowTask childTask =
                 allTasks(workflow).stream()
                         .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
@@ -110,12 +152,17 @@ class LongTermMemoryCompilerTest {
                         .orElseThrow();
         assertThat(childTask.getInputParameters())
                 .containsEntry("_ocg_recall", "${coordinator_ocg_recall_normalize.output.result}");
+        assertThat(allTasks(workflow))
+                .filteredOn(task -> "SET_VARIABLE".equals(task.getType()))
+                .allSatisfy(
+                        task ->
+                                assertThat(task.getInputParameters())
+                                        .doesNotContainKey("_ocg_recall"));
 
         WorkflowDef childWorkflow =
                 (WorkflowDef) childTask.getSubWorkflowParam().getWorkflowDefinition();
         assertThat(childWorkflow.isWorkflowStatusListenerEnabled()).isFalse();
-        assertThat((List<String>) childWorkflow.getMetadata().get("agent_capabilities"))
-                .doesNotContain("ocg_recall", "ocg_run_capture", "ocg_feedback");
+        assertThat(childWorkflow.getInputParameters()).doesNotContain("_ocg_recall");
         assertThat(allTasks(childWorkflow))
                 .noneMatch(
                         task ->
@@ -138,9 +185,37 @@ class LongTermMemoryCompilerTest {
     }
 
     @Test
+    void doesNotPassUnusedRecallInputToExternalChild() {
+        AgentConfig externalChild = AgentConfig.builder().name("external").external(true).build();
+        AgentConfig root =
+                agent().toBuilder()
+                        .name("coordinator")
+                        .tools(List.of())
+                        .agents(List.of(externalChild))
+                        .strategy(AgentConfig.Strategy.SEQUENTIAL)
+                        .build();
+
+        WorkflowTask childTask =
+                allTasks(compiler.compile(root)).stream()
+                        .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+
+        assertThat(childTask.getSubWorkflowParam().getWorkflowDefinition()).isNull();
+        assertThat(childTask.getInputParameters()).doesNotContainKey("_ocg_recall");
+    }
+
+    @Test
     void recallNormalizerConcatenatesTextHandlesMalformedContentAndCapsUtf8Bytes()
             throws Exception {
-        WorkflowTask normalize = compiler.compile(agent()).getTasks().get(1);
+        WorkflowTask normalize =
+                compiler.compile(agent()).getTasks().stream()
+                        .filter(
+                                task ->
+                                        "memory_agent_ocg_recall_normalize"
+                                                .equals(task.getTaskReferenceName()))
+                        .findFirst()
+                        .orElseThrow();
         String expression = String.valueOf(normalize.getInputParameters().get("expression"));
 
         assertThat(
@@ -287,6 +362,23 @@ class LongTermMemoryCompilerTest {
             return context.eval(
                             "js", "var $ = " + MAPPER.writeValueAsString(inputs) + ";" + expression)
                     .asString();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> evaluateObject(String expression, Map<String, Object> inputs)
+            throws Exception {
+        try (Context context = Context.create("js")) {
+            String json =
+                    context.eval(
+                                    "js",
+                                    "var $ = "
+                                            + MAPPER.writeValueAsString(inputs)
+                                            + "; JSON.stringify("
+                                            + expression
+                                            + ")")
+                            .asString();
+            return MAPPER.readValue(json, Map.class);
         }
     }
 

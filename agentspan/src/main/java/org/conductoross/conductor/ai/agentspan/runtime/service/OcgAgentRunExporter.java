@@ -72,16 +72,6 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
     }
 
     @Override
-    public void onWorkflowCompletedIfEnabled(WorkflowModel workflow) {
-        export(workflow);
-    }
-
-    @Override
-    public void onWorkflowTerminatedIfEnabled(WorkflowModel workflow) {
-        export(workflow);
-    }
-
-    @Override
     public void onWorkflowCompleted(WorkflowModel workflow) {
         export(workflow);
     }

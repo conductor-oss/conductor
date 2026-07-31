@@ -48,6 +48,28 @@ class OcgAgentRunExporterTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
+    void honorsWorkflowStatusListenerOptIn() {
+        AtomicInteger exports = new AtomicInteger();
+        OcgAgentRunExporter exporter =
+                new OcgAgentRunExporter(
+                        mapper,
+                        (config, payload) -> {
+                            exports.incrementAndGet();
+                            return java.util.concurrent.CompletableFuture.completedFuture(null);
+                        });
+        WorkflowModel workflow = workflow("https://unused.example", "session", "turn");
+
+        exporter.onWorkflowCompletedIfEnabled(workflow);
+        exporter.onWorkflowTerminatedIfEnabled(workflow);
+        assertThat(exports).hasValue(0);
+
+        workflow.getWorkflowDefinition().setWorkflowStatusListenerEnabled(true);
+        exporter.onWorkflowCompletedIfEnabled(workflow);
+        exporter.onWorkflowTerminatedIfEnabled(workflow);
+        assertThat(exports).hasValue(2);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void mapsCompletedRunIncludingToolErrorsAndReturnedSubagents() {
         WorkflowModel workflow = workflow("https://unused.example", "session-7", "wf-turn-9");

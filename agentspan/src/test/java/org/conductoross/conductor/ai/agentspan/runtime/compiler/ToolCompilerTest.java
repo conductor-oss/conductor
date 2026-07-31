@@ -121,6 +121,43 @@ class ToolCompilerTest {
     }
 
     @Test
+    void expandsServerManagedOcgCapabilityFromCatalog() {
+        ToolConfig marker =
+                ToolConfig.builder()
+                        .name("ocg")
+                        .toolType("ocg")
+                        .config(
+                                Map.of(
+                                        "ocg_url", "https://ocg.example/",
+                                        "credential", "OCG_KEY",
+                                        "credentials", List.of("OCG_KEY")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(marker));
+
+        assertThat(expanded)
+                .extracting(ToolConfig::getName)
+                .containsExactly(
+                        "cg_query",
+                        "cg_get_neighbors",
+                        "cg_traverse",
+                        "cg_shortest_path",
+                        "cg_has_path",
+                        "cg_find_all_paths");
+        assertThat(expanded)
+                .allSatisfy(
+                        tool -> {
+                            assertThat(tool.getToolType()).isEqualTo("mcp");
+                            assertThat(tool.getInputSchema()).isNotEmpty();
+                            assertThat(ToolCompiler.requiresMcpDiscovery(tool)).isFalse();
+                            assertThat(tool.getConfig())
+                                    .containsEntry("server_url", "https://ocg.example/mcp/")
+                                    .containsEntry("credentials", List.of("OCG_KEY"))
+                                    .containsEntry("headers", Map.of("X-API-Key", "${OCG_KEY}"));
+                        });
+    }
+
+    @Test
     void preservesGenericMcpAllowlistForFilteredDiscovery() {
         ToolConfig server =
                 ToolConfig.builder()
