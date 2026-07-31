@@ -280,7 +280,6 @@ export interface AgentTaskPresentation {
   badge: "A2A AGENT" | "CONDUCTOR AGENT" | "BEDROCK AGENT" | "AZURE FOUNDRY AGENT";
   name: string;
   taskReferenceName: string;
-  unresolved: boolean;
 }
 
 const AGENT_RUNTIME_BADGE: Record<AgentRuntimeType, AgentTaskPresentation["badge"]> =
@@ -291,26 +290,28 @@ const AGENT_RUNTIME_BADGE: Record<AgentRuntimeType, AgentTaskPresentation["badge
     "azure-foundry": "AZURE FOUNDRY AGENT",
   };
 
+// Resolution only ever runs through the workflow editor's save flow — a workflow
+// registered any other way (API, curl, SDK, an older save that predates the agent
+// snapshot feature) never gets a `metadata.agent` snapshot at all, and a resolution
+// attempt can also legitimately fail transiently. Neither case means the configured
+// agent is actually broken, so the card always shows the plain configured identity —
+// resolution state is surfaced in the task form's "Agent Card" panel instead.
 export const getAgentTaskPresentation = (
   task: Pick<TaskDef, "inputParameters" | "metadata" | "taskReferenceName">,
 ): AgentTaskPresentation => {
   const input = task.inputParameters ?? {};
+  // The configured agentType is always authoritative for the badge — a stored snapshot
+  // can lag behind a live edit (e.g. switching the radio from A2A to Bedrock) since
+  // resolution only runs on save. Only reuse the snapshot's enrichment (its resolved
+  // displayName) when its type still matches what's currently configured.
+  const type = agentRuntimeType(input);
   const snapshot = getAgentSnapshot(task);
-  const type = snapshot?.agentType ?? agentRuntimeType(input);
-  const identity = snapshot?.displayName || agentSourceIdentity(input);
+  const identity =
+    (snapshot?.agentType === type ? snapshot.displayName : undefined) ||
+    agentSourceIdentity(input);
   return {
     badge: AGENT_RUNTIME_BADGE[type],
     name: identity || AGENT_RUNTIME_DISPLAY_NAME[type],
     taskReferenceName: task.taskReferenceName,
-    // Conductor agents are registered locally and their configured name is
-    // authoritative. Bedrock/Azure Foundry have no discovery endpoint, so an
-    // unresolved snapshot is expected and not worth flagging. A2A identities
-    // depend on remote Agent Card discovery, which only ever runs through the
-    // workflow editor's save flow — a workflow registered any other way (API,
-    // curl, SDK, an older save that predates this snapshot feature) never gets
-    // a `metadata.agent` snapshot at all. Absence of a snapshot is "never
-    // checked", not "checked and failed": flag unresolved only when a snapshot
-    // exists and explicitly recorded a failed/pending resolution.
-    unresolved: type === "a2a" && !!snapshot && !snapshot.resolved,
   };
 };
