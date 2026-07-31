@@ -334,39 +334,13 @@ public class AgentCompiler {
         }
 
         // Compile guardrails inside loop
-        GuardrailCompiler gc = new GuardrailCompiler();
-        List<GuardrailCompiler.GuardrailTaskResult> guardrailResults =
-                gc.compileGuardrailTasks(outputGuardrails, config.getName(), contentRef);
-
         List<String[]> guardrailRefs = new ArrayList<>(); // [refName, isInline]
         List<String> retryRefs = new ArrayList<>();
-
-        for (int idx = 0; idx < guardrailResults.size(); idx++) {
-            GuardrailCompiler.GuardrailTaskResult gr = guardrailResults.get(idx);
-            String suffix = guardrailResults.size() > 1 ? "_" + idx : "";
-            GuardrailCompiler.GuardrailRoutingResult routing =
-                    gc.compileGuardrailRouting(
-                            outputGuardrails.get(idx),
-                            gr.getRefName(),
-                            contentRef,
-                            config.getName(),
-                            suffix,
-                            gr.isInline(),
-                            config.getModel());
-            loopTasks.addAll(gr.getTasks());
-            loopTasks.add(routing.getSwitchTask());
-            guardrailRefs.add(new String[] {gr.getRefName(), String.valueOf(gr.isInline())});
-            retryRefs.add(routing.getRetryRef());
-        }
+        compileOutputGuardrails(
+                outputGuardrails, config, contentRef, loopTasks, guardrailRefs, retryRefs);
 
         // Wire retry feedback into LLM participants
-        if (!retryRefs.isEmpty()) {
-            Map<String, Object> participants = new LinkedHashMap<>();
-            for (String rr : retryRefs) {
-                participants.put(rr, "user");
-            }
-            llmTask.getInputParameters().put("participants", participants);
-        }
+        wireRetryParticipants(llmTask, retryRefs);
 
         // Build termination condition
         String guardrailContinue = buildGuardrailContinue(guardrailRefs);
@@ -473,44 +447,9 @@ public class AgentCompiler {
         ResolvedInstructions resolvedInstructions = resolveInstructions(config, instructionsRef);
 
         // ── Discovery (pre-loop tasks) or static tool specs ──────────
-        ToolCompiler.DiscoveryResult discoveryResult = null;
-        List<Map<String, Object>> toolSpecs = null;
-
-        if (hasMcp || hasApi) {
-            List<ToolConfig> staticTools =
-                    tools.stream()
-                            .filter(
-                                    t ->
-                                            !"mcp".equals(t.getToolType())
-                                                    && !"api".equals(t.getToolType()))
-                            .toList();
-            List<ToolConfig> mcpTools =
-                    tools.stream().filter(t -> "mcp".equals(t.getToolType())).toList();
-            List<ToolConfig> apiTools =
-                    tools.stream().filter(t -> "api".equals(t.getToolType())).toList();
-
-            List<Map<String, Object>> staticSpecs = tc.compileToolSpecs(staticTools);
-
-            if (hasMcp && hasApi) {
-                discoveryResult =
-                        tc.buildDiscoveryTasks(
-                                config.getName(),
-                                mcpTools,
-                                apiTools,
-                                staticSpecs,
-                                config.getModel());
-            } else if (hasMcp) {
-                discoveryResult =
-                        tc.buildMcpDiscoveryTasks(
-                                config.getName(), mcpTools, staticSpecs, config.getModel());
-            } else {
-                discoveryResult =
-                        tc.buildApiDiscoveryTasks(
-                                config.getName(), apiTools, staticSpecs, config.getModel());
-            }
-        } else {
-            toolSpecs = tc.compileToolSpecs(tools);
-        }
+        ToolDiscoveryOutcome discovery = resolveToolDiscovery(tc, config, tools, hasMcp, hasApi);
+        ToolCompiler.DiscoveryResult discoveryResult = discovery.discoveryResult();
+        List<Map<String, Object>> toolSpecs = discovery.toolSpecs();
 
         // Compile prefill tool calls (pre-loop tasks + message refs)
         PrefillCompilationResult prefill = compilePrefillTasks(config);
@@ -578,19 +517,7 @@ public class AgentCompiler {
         // (prompt is appended via template).  Tool results are the durable observation channel for
         // a ReAct turn: without them a resumed LLM only sees the original user prompt and can
         // repeat a completed human/tool call indefinitely.
-        String ctxInjectRef = toRef(config.getName()) + "_ctx_inject";
-        WorkflowTask ctxInject = new WorkflowTask();
-        ctxInject.setType("INLINE");
-        ctxInject.setTaskReferenceName(ctxInjectRef);
-        Map<String, Object> ctxInjectInputs = new LinkedHashMap<>();
-        ctxInjectInputs.put("evaluatorType", "graaljs");
-        ctxInjectInputs.put("state", "${workflow.variables._agent_state}");
-        ctxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
-        ctxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
-        ctxInjectInputs.put("maxSize", contextMaxSizeBytes);
-        ctxInjectInputs.put("maxValueSize", contextMaxValueSizeBytes);
-        ctxInjectInputs.put("expression", JavaScriptBuilder.contextInjectionScript());
-        ctxInject.setInputParameters(ctxInjectInputs);
+        WorkflowTask ctxInject = buildContextInjectTask(toRef(config.getName()));
         loopTasks.add(ctxInject);
 
         // Replace user message prompt with context prefix + base prompt.
@@ -600,19 +527,7 @@ public class AgentCompiler {
         // no context to prepend. The base prompt is referenced once via
         // ${workflow.input.prompt} — Conductor resolves both ${} references but
         // only the prefix is stored per-turn.
-        @SuppressWarnings("unchecked")
-        List<Object> llmMessages = (List<Object>) llmTask.getInputParameters().get("messages");
-        for (int mi = 0; mi < llmMessages.size(); mi++) {
-            if (llmMessages.get(mi) instanceof Map<?, ?> msg && "user".equals(msg.get("role"))) {
-                Map<String, Object> injectedMsg = new LinkedHashMap<>();
-                injectedMsg.put("role", "user");
-                injectedMsg.put(
-                        "message", "${" + ctxInjectRef + ".output.result}${workflow.input.prompt}");
-                injectedMsg.put("media", "${workflow.input.media}");
-                llmMessages.set(mi, injectedMsg);
-                break;
-            }
-        }
+        injectContextIntoUserMessage(llmTask, ctxInject.getTaskReferenceName());
 
         // Callback: before_model (runs before each LLM call in the loop)
         CallbackConfig beforeModel = findCallback(config, "before_model");
@@ -632,31 +547,13 @@ public class AgentCompiler {
         List<GuardrailConfig> outputGuardrails = getOutputGuardrails(config);
         List<String[]> guardrailRefs = new ArrayList<>();
         List<String> retryRefs = new ArrayList<>();
-
-        if (!outputGuardrails.isEmpty()) {
-            String contentRef = ref(llmRef + ".output.result");
-            GuardrailCompiler gc = new GuardrailCompiler();
-            List<GuardrailCompiler.GuardrailTaskResult> guardrailResults =
-                    gc.compileGuardrailTasks(outputGuardrails, config.getName(), contentRef);
-
-            for (int idx = 0; idx < guardrailResults.size(); idx++) {
-                GuardrailCompiler.GuardrailTaskResult gr = guardrailResults.get(idx);
-                String suffix = guardrailResults.size() > 1 ? "_" + idx : "";
-                GuardrailCompiler.GuardrailRoutingResult routing =
-                        gc.compileGuardrailRouting(
-                                outputGuardrails.get(idx),
-                                gr.getRefName(),
-                                contentRef,
-                                config.getName(),
-                                suffix,
-                                gr.isInline(),
-                                config.getModel());
-                loopTasks.addAll(gr.getTasks());
-                loopTasks.add(routing.getSwitchTask());
-                guardrailRefs.add(new String[] {gr.getRefName(), String.valueOf(gr.isInline())});
-                retryRefs.add(routing.getRetryRef());
-            }
-        }
+        compileOutputGuardrails(
+                outputGuardrails,
+                config,
+                ref(llmRef + ".output.result"),
+                loopTasks,
+                guardrailRefs,
+                retryRefs);
 
         loopTasks.add(toolRouter);
 
@@ -665,13 +562,7 @@ public class AgentCompiler {
         retryRefs.addAll(toolRoutingResult.getToolGuardrailRetryRefs());
 
         // Wire all retry refs (agent + tool guardrails) into LLM participants
-        if (!retryRefs.isEmpty()) {
-            Map<String, Object> participants = new LinkedHashMap<>();
-            for (String rr : retryRefs) {
-                participants.put(rr, "user");
-            }
-            llmTask.getInputParameters().put("participants", participants);
-        }
+        wireRetryParticipants(llmTask, retryRefs);
 
         // Optional stop_when worker
         String stopWhenRef = null;
@@ -909,43 +800,9 @@ public class AgentCompiler {
         ResolvedInstructions resolvedInstructions = resolveInstructions(config, instructionsRef);
 
         // ── Discovery or static tool specs ───────────────────────────
-        ToolCompiler.DiscoveryResult discoveryResult = null;
-        List<Map<String, Object>> toolSpecs = null;
-
-        if (hasMcp || hasApi) {
-            List<ToolConfig> staticTools =
-                    allTools.stream()
-                            .filter(
-                                    t ->
-                                            !"mcp".equals(t.getToolType())
-                                                    && !"api".equals(t.getToolType()))
-                            .toList();
-            List<ToolConfig> mcpTools =
-                    allTools.stream().filter(t -> "mcp".equals(t.getToolType())).toList();
-            List<ToolConfig> apiTools =
-                    allTools.stream().filter(t -> "api".equals(t.getToolType())).toList();
-            List<Map<String, Object>> staticSpecs = tc.compileToolSpecs(staticTools);
-
-            if (hasMcp && hasApi) {
-                discoveryResult =
-                        tc.buildDiscoveryTasks(
-                                config.getName(),
-                                mcpTools,
-                                apiTools,
-                                staticSpecs,
-                                config.getModel());
-            } else if (hasMcp) {
-                discoveryResult =
-                        tc.buildMcpDiscoveryTasks(
-                                config.getName(), mcpTools, staticSpecs, config.getModel());
-            } else {
-                discoveryResult =
-                        tc.buildApiDiscoveryTasks(
-                                config.getName(), apiTools, staticSpecs, config.getModel());
-            }
-        } else {
-            toolSpecs = tc.compileToolSpecs(allTools);
-        }
+        ToolDiscoveryOutcome discovery = resolveToolDiscovery(tc, config, allTools, hasMcp, hasApi);
+        ToolCompiler.DiscoveryResult discoveryResult = discovery.discoveryResult();
+        List<Map<String, Object>> toolSpecs = discovery.toolSpecs();
 
         // Compile prefill tool calls (pre-loop tasks + message refs)
         PrefillCompilationResult hybridPrefill = compilePrefillTasks(config);
@@ -1014,41 +871,14 @@ public class AgentCompiler {
         List<WorkflowTask> loopTasks = new ArrayList<>();
 
         // Context injection for hybrid loop (state, signals, and recent tool-result prefix).
-        String hybridCtxInjectRef = toRef(config.getName()) + "_ctx_inject";
-        WorkflowTask hybridCtxInject = new WorkflowTask();
-        hybridCtxInject.setType("INLINE");
-        hybridCtxInject.setTaskReferenceName(hybridCtxInjectRef);
-        Map<String, Object> hybridCtxInjectInputs = new LinkedHashMap<>();
-        hybridCtxInjectInputs.put("evaluatorType", "graaljs");
-        hybridCtxInjectInputs.put("state", "${workflow.variables._agent_state}");
-        hybridCtxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
-        hybridCtxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
-        hybridCtxInjectInputs.put("maxSize", contextMaxSizeBytes);
-        hybridCtxInjectInputs.put("maxValueSize", contextMaxValueSizeBytes);
-        hybridCtxInjectInputs.put("expression", JavaScriptBuilder.contextInjectionScript());
-        hybridCtxInject.setInputParameters(hybridCtxInjectInputs);
+        WorkflowTask hybridCtxInject = buildContextInjectTask(toRef(config.getName()));
         loopTasks.add(hybridCtxInject);
 
         // Replace user message with context prefix + base prompt.
         // Prefix carries its own trailing '\n\n' when non-empty, empty otherwise —
         // see contextInjectionScript() docstring for why the joiner can't be a
         // literal here (leading whitespace shifts LLM behavior at temperature 0).
-        @SuppressWarnings("unchecked")
-        List<Object> hybridLlmMessages =
-                (List<Object>) llmTask.getInputParameters().get("messages");
-        for (int mi = 0; mi < hybridLlmMessages.size(); mi++) {
-            if (hybridLlmMessages.get(mi) instanceof Map<?, ?> msg
-                    && "user".equals(msg.get("role"))) {
-                Map<String, Object> injectedMsg = new LinkedHashMap<>();
-                injectedMsg.put("role", "user");
-                injectedMsg.put(
-                        "message",
-                        "${" + hybridCtxInjectRef + ".output.result}${workflow.input.prompt}");
-                injectedMsg.put("media", "${workflow.input.media}");
-                hybridLlmMessages.set(mi, injectedMsg);
-                break;
-            }
-        }
+        injectContextIntoUserMessage(llmTask, hybridCtxInject.getTaskReferenceName());
 
         loopTasks.add(llmTask);
 
@@ -1056,30 +886,13 @@ public class AgentCompiler {
         List<GuardrailConfig> outputGuardrails = getOutputGuardrails(config);
         List<String[]> guardrailRefs = new ArrayList<>();
         List<String> retryRefs = new ArrayList<>();
-
-        if (!outputGuardrails.isEmpty()) {
-            String contentRef = ref(llmRef + ".output.result");
-            GuardrailCompiler gc = new GuardrailCompiler();
-            List<GuardrailCompiler.GuardrailTaskResult> guardrailResults =
-                    gc.compileGuardrailTasks(outputGuardrails, config.getName(), contentRef);
-            for (int idx = 0; idx < guardrailResults.size(); idx++) {
-                GuardrailCompiler.GuardrailTaskResult gr = guardrailResults.get(idx);
-                String suffix = guardrailResults.size() > 1 ? "_" + idx : "";
-                GuardrailCompiler.GuardrailRoutingResult routing =
-                        gc.compileGuardrailRouting(
-                                outputGuardrails.get(idx),
-                                gr.getRefName(),
-                                contentRef,
-                                config.getName(),
-                                suffix,
-                                gr.isInline(),
-                                config.getModel());
-                loopTasks.addAll(gr.getTasks());
-                loopTasks.add(routing.getSwitchTask());
-                guardrailRefs.add(new String[] {gr.getRefName(), String.valueOf(gr.isInline())});
-                retryRefs.add(routing.getRetryRef());
-            }
-        }
+        compileOutputGuardrails(
+                outputGuardrails,
+                config,
+                ref(llmRef + ".output.result"),
+                loopTasks,
+                guardrailRefs,
+                retryRefs);
 
         // Detection must run before routing so a valid transfer does not reach the dynamic fork.
         loopTasks.add(checkTransferTask);
@@ -1090,11 +903,7 @@ public class AgentCompiler {
         retryRefs.addAll(toolRoutingResult.getToolGuardrailRetryRefs());
 
         // Wire all retry refs into LLM participants
-        if (!retryRefs.isEmpty()) {
-            Map<String, Object> participants = new LinkedHashMap<>();
-            for (String rr : retryRefs) participants.put(rr, "user");
-            llmTask.getInputParameters().put("participants", participants);
-        }
+        wireRetryParticipants(llmTask, retryRefs);
         // DoWhile loop
         String loopRef = toRef(config.getName()) + "_loop";
         int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
@@ -1867,6 +1676,141 @@ public class AgentCompiler {
             }
         }
         return sb.toString();
+    }
+
+    /** Wire guardrail/tool retry-feedback refs into the LLM task's participants map. */
+    private static void wireRetryParticipants(WorkflowTask llmTask, List<String> retryRefs) {
+        if (retryRefs.isEmpty()) return;
+        Map<String, Object> participants = new LinkedHashMap<>();
+        for (String rr : retryRefs) {
+            participants.put(rr, "user");
+        }
+        llmTask.getInputParameters().put("participants", participants);
+    }
+
+    /**
+     * Build the context-injection INLINE task: computes state, signals, and the immediately
+     * preceding tool-result prefix (prompt is appended via template). Tool results are the durable
+     * observation channel for a ReAct turn: without them a resumed LLM only sees the original user
+     * prompt and can repeat a completed human/tool call indefinitely.
+     */
+    private WorkflowTask buildContextInjectTask(String refPrefix) {
+        WorkflowTask ctxInject = new WorkflowTask();
+        ctxInject.setType("INLINE");
+        ctxInject.setTaskReferenceName(refPrefix + "_ctx_inject");
+        Map<String, Object> ctxInjectInputs = new LinkedHashMap<>();
+        ctxInjectInputs.put("evaluatorType", "graaljs");
+        ctxInjectInputs.put("state", "${workflow.variables._agent_state}");
+        ctxInjectInputs.put("signals", "${workflow.variables._signal_injection}");
+        ctxInjectInputs.put("toolResults", "${workflow.variables._last_tool_results}");
+        ctxInjectInputs.put("maxSize", contextMaxSizeBytes);
+        ctxInjectInputs.put("maxValueSize", contextMaxValueSizeBytes);
+        ctxInjectInputs.put("expression", JavaScriptBuilder.contextInjectionScript());
+        ctxInject.setInputParameters(ctxInjectInputs);
+        return ctxInject;
+    }
+
+    /**
+     * Replace the user message prompt with context prefix + base prompt. ctx_inject outputs only
+     * the state/signals prefix (small, changes per turn) with its own trailing '\n\n' separator
+     * when non-empty, empty otherwise — so concatenation never injects a leading-whitespace
+     * artifact when there's no context to prepend. The base prompt is referenced once via
+     * ${workflow.input.prompt} — Conductor resolves both ${} references but only the prefix is
+     * stored per-turn.
+     */
+    @SuppressWarnings("unchecked")
+    private void injectContextIntoUserMessage(WorkflowTask llmTask, String ctxInjectRef) {
+        List<Object> messages = (List<Object>) llmTask.getInputParameters().get("messages");
+        for (int mi = 0; mi < messages.size(); mi++) {
+            if (messages.get(mi) instanceof Map<?, ?> msg && "user".equals(msg.get("role"))) {
+                Map<String, Object> injectedMsg = new LinkedHashMap<>();
+                injectedMsg.put("role", "user");
+                injectedMsg.put(
+                        "message", "${" + ctxInjectRef + ".output.result}${workflow.input.prompt}");
+                injectedMsg.put("media", "${workflow.input.media}");
+                messages.set(mi, injectedMsg);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Compile output guardrails into {@code loopTasks}, appending each guardrail's ref/inline flag
+     * to {@code guardrailRefs} and its retry ref to {@code retryRefs}. No-op if {@code
+     * outputGuardrails} is empty.
+     */
+    private void compileOutputGuardrails(
+            List<GuardrailConfig> outputGuardrails,
+            AgentConfig config,
+            String contentRef,
+            List<WorkflowTask> loopTasks,
+            List<String[]> guardrailRefs,
+            List<String> retryRefs) {
+        if (outputGuardrails.isEmpty()) return;
+        GuardrailCompiler gc = new GuardrailCompiler();
+        List<GuardrailCompiler.GuardrailTaskResult> guardrailResults =
+                gc.compileGuardrailTasks(outputGuardrails, config.getName(), contentRef);
+        for (int idx = 0; idx < guardrailResults.size(); idx++) {
+            GuardrailCompiler.GuardrailTaskResult gr = guardrailResults.get(idx);
+            String suffix = guardrailResults.size() > 1 ? "_" + idx : "";
+            GuardrailCompiler.GuardrailRoutingResult routing =
+                    gc.compileGuardrailRouting(
+                            outputGuardrails.get(idx),
+                            gr.getRefName(),
+                            contentRef,
+                            config.getName(),
+                            suffix,
+                            gr.isInline(),
+                            config.getModel());
+            loopTasks.addAll(gr.getTasks());
+            loopTasks.add(routing.getSwitchTask());
+            guardrailRefs.add(new String[] {gr.getRefName(), String.valueOf(gr.isInline())});
+            retryRefs.add(routing.getRetryRef());
+        }
+    }
+
+    /** Either a discovery-task result (MCP/API) or a static tool-spec list, never both. */
+    private record ToolDiscoveryOutcome(
+            ToolCompiler.DiscoveryResult discoveryResult, List<Map<String, Object>> toolSpecs) {}
+
+    /** Build MCP/API discovery pre-loop tasks, or compile static tool specs if neither applies. */
+    private ToolDiscoveryOutcome resolveToolDiscovery(
+            ToolCompiler tc,
+            AgentConfig config,
+            List<ToolConfig> tools,
+            boolean hasMcp,
+            boolean hasApi) {
+        if (!hasMcp && !hasApi) {
+            return new ToolDiscoveryOutcome(null, tc.compileToolSpecs(tools));
+        }
+        List<ToolConfig> staticTools =
+                tools.stream()
+                        .filter(
+                                t ->
+                                        !"mcp".equals(t.getToolType())
+                                                && !"api".equals(t.getToolType()))
+                        .toList();
+        List<ToolConfig> mcpTools =
+                tools.stream().filter(t -> "mcp".equals(t.getToolType())).toList();
+        List<ToolConfig> apiTools =
+                tools.stream().filter(t -> "api".equals(t.getToolType())).toList();
+        List<Map<String, Object>> staticSpecs = tc.compileToolSpecs(staticTools);
+
+        ToolCompiler.DiscoveryResult discoveryResult;
+        if (hasMcp && hasApi) {
+            discoveryResult =
+                    tc.buildDiscoveryTasks(
+                            config.getName(), mcpTools, apiTools, staticSpecs, config.getModel());
+        } else if (hasMcp) {
+            discoveryResult =
+                    tc.buildMcpDiscoveryTasks(
+                            config.getName(), mcpTools, staticSpecs, config.getModel());
+        } else {
+            discoveryResult =
+                    tc.buildApiDiscoveryTasks(
+                            config.getName(), apiTools, staticSpecs, config.getModel());
+        }
+        return new ToolDiscoveryOutcome(discoveryResult, null);
     }
 
     // ── Callback helpers ───────────────────────────────────────────
