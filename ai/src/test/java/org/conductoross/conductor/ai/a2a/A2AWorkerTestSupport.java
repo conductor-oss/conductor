@@ -132,7 +132,8 @@ public final class A2AWorkerTestSupport {
         }
 
         @Override
-        public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+        public ConductorAgentStatusResponse getAgentStatus(
+                String executionId, ConductorAgentRequest request) {
             throw unexpectedInvocation();
         }
 

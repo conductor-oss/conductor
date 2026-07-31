@@ -48,7 +48,8 @@ public class VertexAiAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         throw new UnsupportedOperationException("VertexAiAgentClient is not yet implemented");
     }
 

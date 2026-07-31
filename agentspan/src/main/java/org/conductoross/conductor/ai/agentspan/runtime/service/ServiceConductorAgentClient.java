@@ -64,7 +64,8 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         AgentStatusResponse response = agentService.getStatus(executionId);
         Map<String, Object> pendingTool = response.getPendingTool();
         String pendingToolTaskRefName = value(pendingTool, "taskRefName");

@@ -87,7 +87,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private final OkHttpClient httpClient;
 
     // Keyed by threadId. Used only by respond() and cancelAgent(), which receive the compound
-    // executionId but no credentialRef — so they cannot re-authenticate statlessly. getAgentStatus()
+    // executionId but no credentialRef — so they cannot re-authenticate statlessly.
+    // getAgentStatus()
     // no longer relies on this map; it decodes run context from the compound executionId instead.
     private final ConcurrentHashMap<String, RespondContext> respondContexts =
             new ConcurrentHashMap<>();
@@ -137,8 +138,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String runId = runResult.path("id").asText();
 
         // Store context for respond() and cancelAgent() — those receive no credentialRef
-        respondContexts.put(threadId, new RespondContext(endpoint, assistantId, runId,
-                tokenProvider, apiVersion));
+        respondContexts.put(
+                threadId,
+                new RespondContext(endpoint, assistantId, runId, tokenProvider, apiVersion));
 
         return ConductorAgentStartResponse.builder()
                 .executionId(RunContext.encode(threadId, runId, endpoint, assistantId, apiVersion))
@@ -203,7 +205,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         RespondContext rc = respondContexts.get(ctx.threadId);
         if (rc == null) {
             throw new IllegalStateException(
-                    "No respond context for threadId " + ctx.threadId
+                    "No respond context for threadId "
+                            + ctx.threadId
                             + " — multi-turn respond requires the same server instance as startAgent");
         }
         String token = rc.tokenProvider.getToken();
@@ -220,13 +223,19 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             msgBody.put("role", "user");
             String content = request.getBody() != null ? request.getBody().toString() : "";
             msgBody.put("content", content);
-            post(rc.endpoint + "/threads/" + ctx.threadId + "/messages", msgBody, token,
+            post(
+                    rc.endpoint + "/threads/" + ctx.threadId + "/messages",
+                    msgBody,
+                    token,
                     rc.apiVersion);
 
             ObjectNode runBody = MAPPER.createObjectNode();
             runBody.put("assistant_id", rc.assistantId);
             JsonNode newRun =
-                    post(rc.endpoint + "/threads/" + ctx.threadId + "/runs", runBody, token,
+                    post(
+                            rc.endpoint + "/threads/" + ctx.threadId + "/runs",
+                            runBody,
+                            token,
                             rc.apiVersion);
             rc.runId = newRun.path("id").asText();
         }
@@ -256,7 +265,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             ConductorAgentRespondRequest request,
             String token) {
         JsonNode run =
-                get(rc.endpoint + "/threads/" + threadId + "/runs/" + rc.runId, token, rc.apiVersion);
+                get(
+                        rc.endpoint + "/threads/" + threadId + "/runs/" + rc.runId,
+                        token,
+                        rc.apiVersion);
         JsonNode toolCalls =
                 run.path("required_action").path("submit_tool_outputs").path("tool_calls");
 
@@ -272,12 +284,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
 
         String submitUrl =
-                rc.endpoint
-                        + "/threads/"
-                        + threadId
-                        + "/runs/"
-                        + rc.runId
-                        + "/submit_tool_outputs";
+                rc.endpoint + "/threads/" + threadId + "/runs/" + rc.runId + "/submit_tool_outputs";
         post(submitUrl, body, token, rc.apiVersion);
     }
 
@@ -297,7 +304,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         if (state == ConductorAgentState.COMPLETED) {
             JsonNode messages =
-                    get(ctx.endpoint + "/threads/" + ctx.threadId + "/messages", token, ctx.apiVersion);
+                    get(
+                            ctx.endpoint + "/threads/" + ctx.threadId + "/messages",
+                            token,
+                            ctx.apiVersion);
             for (JsonNode msg : messages.path("data")) {
                 if ("assistant".equals(msg.path("role").asText())) {
                     String text = msg.path("content").path(0).path("text").path("value").asText("");
@@ -457,7 +467,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         try {
             return RunContext.decode(executionId);
         } catch (Exception e) {
-            throw new IllegalStateException("Cannot decode Azure run context: " + e.getMessage(), e);
+            throw new IllegalStateException(
+                    "Cannot decode Azure run context: " + e.getMessage(), e);
         }
     }
 
@@ -473,7 +484,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         final String assistantId;
         final String apiVersion;
 
-        RunContext(String threadId, String runId, String endpoint, String assistantId,
+        RunContext(
+                String threadId,
+                String runId,
+                String endpoint,
+                String assistantId,
                 String apiVersion) {
             this.threadId = threadId;
             this.runId = runId;
@@ -486,7 +501,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             return encode(threadId, runId, endpoint, assistantId, apiVersion);
         }
 
-        static String encode(String threadId, String runId, String endpoint, String assistantId,
+        static String encode(
+                String threadId,
+                String runId,
+                String endpoint,
+                String assistantId,
                 String apiVersion) {
             try {
                 ObjectNode n = MAPPER.createObjectNode();
@@ -495,7 +514,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 n.put("e", endpoint);
                 n.put("a", assistantId);
                 n.put("v", apiVersion);
-                return Base64.getUrlEncoder().withoutPadding()
+                return Base64.getUrlEncoder()
+                        .withoutPadding()
                         .encodeToString(MAPPER.writeValueAsBytes(n));
             } catch (Exception ex) {
                 throw new RuntimeException("Failed to encode Azure run context", ex);
@@ -532,8 +552,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         final OAuthTokenProvider tokenProvider;
         final String apiVersion;
 
-        RespondContext(String endpoint, String assistantId, String runId,
-                OAuthTokenProvider tokenProvider, String apiVersion) {
+        RespondContext(
+                String endpoint,
+                String assistantId,
+                String runId,
+                OAuthTokenProvider tokenProvider,
+                String apiVersion) {
             this.endpoint = endpoint;
             this.assistantId = assistantId;
             this.runId = runId;

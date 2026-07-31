@@ -105,7 +105,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         ExecutionState state = executions.get(executionId);
         if (state == null) {
             return ConductorAgentStatusResponse.builder()

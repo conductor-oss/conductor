@@ -52,7 +52,8 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         throw new UnsupportedOperationException(
                 "OpenAiAssistantsAgentClient is not yet implemented");
     }
