@@ -624,14 +624,98 @@ class AgentCompilerTest {
         assertThat(outerLoop.getType()).isEqualTo("DO_WHILE");
         assertThat(outerLoop.getTaskReferenceName()).isEqualTo("filing_agent_required_tools_loop");
 
-        // Outer loop should contain: inner loop + INLINE check
+        // The outer loop holds the agent loop wrapped in a SUB_WORKFLOW, plus the check.
+        // The wrapper is required: Conductor rejects a DO_WHILE nested inside a DO_WHILE.
         assertThat(outerLoop.getLoopOver()).hasSize(2);
-        assertThat(outerLoop.getLoopOver().get(0).getType()).isEqualTo("DO_WHILE");
-        assertThat(outerLoop.getLoopOver().get(0).getTaskReferenceName())
-                .isEqualTo("filing_agent_loop");
+        WorkflowTask innerTask = outerLoop.getLoopOver().get(0);
+        assertThat(innerTask.getType()).isEqualTo("SUB_WORKFLOW");
+        assertThat(innerTask.getTaskReferenceName()).isEqualTo("filing_agent_required_tools_inner");
         assertThat(outerLoop.getLoopOver().get(1).getType()).isEqualTo("INLINE");
         assertThat(outerLoop.getLoopOver().get(1).getTaskReferenceName())
                 .isEqualTo("filing_agent_required_tools_check");
+
+        // The agent loop lives in the embedded definition, preceded by a SET_VARIABLE that
+        // seeds the variables the loop body reads (a sub-workflow starts with none).
+        WorkflowDef innerWf = innerTask.getSubWorkflowParam().getWorkflowDef();
+        assertThat(innerWf).isNotNull();
+        assertThat(innerWf.getTasks()).hasSize(2);
+        assertThat(innerWf.getTasks().get(0).getType()).isEqualTo("SET_VARIABLE");
+        assertThat(innerWf.getTasks().get(0).getInputParameters())
+                .containsKeys("_agent_state", "_stop_requested", "_signal_injection");
+        assertThat(innerWf.getTasks().get(1).getType()).isEqualTo("DO_WHILE");
+        assertThat(innerWf.getTasks().get(1).getTaskReferenceName()).isEqualTo("filing_agent_loop");
+        assertThat(innerTask.getInputParameters())
+                .containsEntry("_agent_state", "${workflow.variables._agent_state}");
+
+        // Task references cannot cross a workflow boundary, so everything the parent still
+        // needs from inside the loop is re-published through the sub-workflow's outputs.
+        assertThat(innerWf.getOutputParameters())
+                .containsEntry("loop", "${filing_agent_loop.output}")
+                .containsEntry("result", "${filing_agent_llm.output.result}")
+                .containsEntry("finishReason", "${filing_agent_llm.output.finishReason}")
+                .containsEntry("toolCalls", "${filing_agent_llm.output.toolCalls}");
+
+        assertThat(outerLoop.getLoopOver().get(1).getInputParameters())
+                .containsEntry(
+                        "completedTaskNames", "${filing_agent_required_tools_inner.output.loop}");
+
+        // Post-loop tasks must read the LLM result from the wrapper, never from the LLM
+        // task itself — that reference is unresolvable outside the sub-workflow and makes
+        // the whole definition fail registration with a 400.
+        assertNoParentRefsIntoSubWorkflow(wf, "filing_agent_llm");
+
+        // The invariant this shape exists to satisfy.
+        assertNoDoWhileNestedInDoWhile(wf);
+    }
+
+    /**
+     * Fails if any task in the parent workflow references {@code innerRef}, which lives inside an
+     * embedded sub-workflow. Conductor validates task references at registration and rejects the
+     * definition with a 400 when one cannot be resolved.
+     */
+    private static void assertNoParentRefsIntoSubWorkflow(WorkflowDef wf, String innerRef) {
+        for (WorkflowTask t : wf.getTasks()) {
+            if ("SUB_WORKFLOW".equals(t.getType())) continue;
+            String rendered = String.valueOf(t.getInputParameters());
+            if (rendered.contains("${" + innerRef + ".")) {
+                throw new AssertionError(
+                        "parent task '"
+                                + t.getTaskReferenceName()
+                                + "' references '"
+                                + innerRef
+                                + "', which lives inside the sub-workflow");
+            }
+        }
+    }
+
+    /**
+     * Walks a compiled definition (including embedded sub-workflow definitions) and fails if any
+     * DO_WHILE has another DO_WHILE among its loopOver tasks.
+     */
+    private static void assertNoDoWhileNestedInDoWhile(WorkflowDef wf) {
+        for (WorkflowTask t : wf.getTasks()) {
+            assertNoDoWhileNestedInDoWhile(t, false);
+        }
+    }
+
+    private static void assertNoDoWhileNestedInDoWhile(WorkflowTask task, boolean insideDoWhile) {
+        boolean isDoWhile = "DO_WHILE".equals(task.getType());
+        if (isDoWhile && insideDoWhile) {
+            throw new AssertionError(
+                    "DO_WHILE '"
+                            + task.getTaskReferenceName()
+                            + "' is nested directly inside another DO_WHILE");
+        }
+        if (task.getLoopOver() != null) {
+            for (WorkflowTask child : task.getLoopOver()) {
+                assertNoDoWhileNestedInDoWhile(child, insideDoWhile || isDoWhile);
+            }
+        }
+        // A SUB_WORKFLOW boundary resets the nesting context — that is the point of it.
+        if (task.getSubWorkflowParam() != null
+                && task.getSubWorkflowParam().getWorkflowDef() != null) {
+            assertNoDoWhileNestedInDoWhile(task.getSubWorkflowParam().getWorkflowDef());
+        }
     }
 
     @Test

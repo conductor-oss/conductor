@@ -789,8 +789,71 @@ public class AgentCompiler {
         // Prefill tool calls: execute before the loop so results are in LLM context
         allTasks.addAll(prefill.tasks());
 
-        // Required tools enforcement: wrap loop + check in outer DO_WHILE
+        // Task reference that post-loop tasks (after_agent, resolve_output, synthesize,
+        // workflow outputs) read the LLM result from. Normally the LLM task itself; when
+        // the loop is wrapped in a SUB_WORKFLOW below, the wrapper stands in for it,
+        // because a task reference cannot cross a workflow boundary.
+        String postLoopLlmRef = llmRef;
+
+        // Required tools enforcement: retry the agent loop until every required tool has
+        // been called (bounded at 3 attempts).
+        //
+        // The retry is an outer DO_WHILE and the agent loop it retries is itself a
+        // DO_WHILE. Conductor does not support a DO_WHILE nested directly inside another
+        // DO_WHILE, so the inner loop is wrapped in a SUB_WORKFLOW — the documented
+        // workaround, and the shape this compiler already uses for swarm agents.
         if (config.getRequiredTools() != null && !config.getRequiredTools().isEmpty()) {
+            String innerWfRef = toRef(config.getName()) + "_required_tools_inner";
+
+            // The loop body reads workflow VARIABLES (_agent_state, _last_tool_results,
+            // _stop_requested, _signal_injection, and _human_feedback when approval is on).
+            // A sub-workflow starts with an empty variable scope, so seed them from
+            // sub-workflow inputs, mirroring the parent's init_state. Every SET_VARIABLE in
+            // this compiler sits OUTSIDE the loop body, so the loop only reads these —
+            // seeding is enough and nothing needs writing back to the parent.
+            Map<String, Object> seedVars = new LinkedHashMap<>();
+            for (String v : initVars.keySet()) {
+                seedVars.put(v, "${workflow.input." + v + "}");
+            }
+            WorkflowTask seedState = new WorkflowTask();
+            seedState.setType("SET_VARIABLE");
+            seedState.setTaskReferenceName(innerWfRef + "_seed_state");
+            seedState.setInputParameters(seedVars);
+
+            WorkflowDef innerWf = createWorkflow(config);
+            innerWf.setName(config.getName() + "_required_tools_inner");
+            innerWf.setDescription(
+                    "Agent loop for " + config.getName() + " (required-tools retry body)");
+            innerWf.setTasks(List.of(seedState, loop));
+            // Re-publish everything the parent still needs from inside the loop. Task
+            // references do not cross workflow boundaries, so post-loop tasks read these
+            // as ${<innerWfRef>.output.<field>} — the same shape they used for the LLM
+            // task, which is why postLoopLlmRef can simply become innerWfRef.
+            Map<String, Object> innerOutputs = new LinkedHashMap<>();
+            innerOutputs.put("loop", "${" + loopRef + ".output}");
+            innerOutputs.put("result", "${" + llmRef + ".output.result}");
+            innerOutputs.put("finishReason", "${" + llmRef + ".output.finishReason}");
+            innerOutputs.put("toolCalls", "${" + llmRef + ".output.toolCalls}");
+            innerWf.setOutputParameters(innerOutputs);
+            WorkflowTaskUtils.ensureAllTaskNames(innerWf);
+
+            WorkflowTask innerTask = new WorkflowTask();
+            innerTask.setType("SUB_WORKFLOW");
+            innerTask.setName(innerWf.getName());
+            innerTask.setTaskReferenceName(innerWfRef);
+            innerTask.setSubWorkflowParam(new SubWorkflowParams());
+            innerTask.getSubWorkflowParam().setName(innerWf.getName());
+            innerTask.getSubWorkflowParam().setWorkflowDef(innerWf);
+            Map<String, Object> innerInputs = new LinkedHashMap<>();
+            for (String k : WORKFLOW_INPUTS) {
+                innerInputs.put(k, "${workflow.input." + k + "}");
+            }
+            for (String v : initVars.keySet()) {
+                innerInputs.put(v, "${workflow.variables." + v + "}");
+            }
+            innerTask.setInputParameters(innerInputs);
+            postLoopLlmRef = innerWfRef;
+
             String checkRef = toRef(config.getName()) + "_required_tools_check";
             WorkflowTask checkTask = new WorkflowTask();
             checkTask.setType("INLINE");
@@ -801,7 +864,7 @@ public class AgentCompiler {
                             "expression",
                                     JavaScriptBuilder.requiredToolsCheckScript(
                                             config.getRequiredTools()),
-                            "completedTaskNames", ref(loopRef + ".output")));
+                            "completedTaskNames", ref(innerWfRef + ".output.loop")));
 
             String outerLoopRef = toRef(config.getName()) + "_required_tools_loop";
             String outerCondition =
@@ -814,7 +877,10 @@ public class AgentCompiler {
 
             WorkflowTask outerLoop =
                     buildDoWhile(
-                            outerLoopRef, outerCondition, List.of(loop, checkTask), outerInputs);
+                            outerLoopRef,
+                            outerCondition,
+                            List.of(innerTask, checkTask),
+                            outerInputs);
             allTasks.add(outerLoop);
         } else {
             allTasks.add(loop);
@@ -823,14 +889,14 @@ public class AgentCompiler {
         // Callback: after_agent (runs once after the loop)
         CallbackConfig afterAgent = findCallback(config, "after_agent");
         if (afterAgent != null) {
-            allTasks.add(buildCallbackTask(afterAgent, config.getName(), llmRef));
+            allTasks.add(buildCallbackTask(afterAgent, config.getName(), postLoopLlmRef));
         }
 
         // Post-loop: resolve output (guardrail fix or human edit may override LLM output)
         List<GuardrailConfig> outGuardrails = getOutputGuardrails(config);
         if (!outGuardrails.isEmpty()) {
             String resolveRef = toRef(config.getName()) + "_resolve_output";
-            allTasks.add(buildResolveOutputTask(resolveRef, llmRef));
+            allTasks.add(buildResolveOutputTask(resolveRef, postLoopLlmRef));
 
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(resolveRef + ".output.result.result"));
@@ -848,11 +914,11 @@ public class AgentCompiler {
             // turn's tool-call inputs (which is where ``write_*`` tools put
             // their content arg).
             String synthRef = toRef(config.getName()) + "_synth_output";
-            allTasks.add(buildSynthesizeOutputTask(synthRef, llmRef));
+            allTasks.add(buildSynthesizeOutputTask(synthRef, postLoopLlmRef));
 
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(synthRef + ".output.result"));
-            outputParams.put("finishReason", ref(llmRef + ".output.finishReason"));
+            outputParams.put("finishReason", ref(postLoopLlmRef + ".output.finishReason"));
             outputParams.put("rejectionReason", "${workflow.variables.rejectionReason}");
             outputParams.put("context", "${workflow.variables._agent_state}");
             wf.setOutputParameters(outputParams);
