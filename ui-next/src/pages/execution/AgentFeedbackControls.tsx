@@ -1,4 +1,14 @@
-import { Alert, Box, Button, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { fetchWithContext, useFetchContext } from "plugins/fetch";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
@@ -24,6 +34,9 @@ export const AgentFeedbackControls = ({
   const authHeaders = useAuthHeaders();
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState(false);
+  const [pendingRating, setPendingRating] =
+    useState<AgentFeedbackRating | null>(null);
+  const [reason, setReason] = useState("");
   const queryKey = ["agent-feedback", fetchContext.stack, executionId];
   const path = `agent/executions/${encodeURIComponent(executionId)}/feedback`;
 
@@ -38,20 +51,26 @@ export const AgentFeedbackControls = ({
     },
   );
 
-  const submit = useMutation<AgentFeedbackState, unknown, AgentFeedbackRating>(
-    (rating) =>
+  const submit = useMutation<
+    AgentFeedbackState,
+    unknown,
+    { rating: AgentFeedbackRating; reason: string }
+  >(
+    ({ rating, reason: submittedReason }) =>
       fetchWithContext(path, fetchContext, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...authHeaders,
         },
-        body: JSON.stringify({ rating }),
+        body: JSON.stringify({ rating, reason: submittedReason }),
       }),
     {
       onSuccess: (state) => {
         setSubmitError(false);
         queryClient.setQueryData(queryKey, state);
+        setPendingRating(null);
+        setReason("");
       },
       onError: () => setSubmitError(true),
     },
@@ -64,6 +83,19 @@ export const AgentFeedbackControls = ({
   }
 
   const selected = feedback.data.rating;
+  const openFeedbackModal = (rating: AgentFeedbackRating) => {
+    setSubmitError(false);
+    setPendingRating(rating);
+    setReason("");
+  };
+  const closeFeedbackModal = () => {
+    if (submit.isLoading) return;
+    setPendingRating(null);
+    setReason("");
+    setSubmitError(false);
+  };
+  const trimmedReason = reason.trim();
+
   return (
     <Box display="flex" flexDirection="column" gap={0.5}>
       <Box display="flex" alignItems="center" gap={1}>
@@ -74,10 +106,7 @@ export const AgentFeedbackControls = ({
           size="small"
           variant={selected === "positive" ? "contained" : "outlined"}
           disabled={submit.isLoading}
-          onClick={() => {
-            setSubmitError(false);
-            submit.mutate("positive");
-          }}
+          onClick={() => openFeedbackModal("positive")}
         >
           Helpful
         </Button>
@@ -85,19 +114,68 @@ export const AgentFeedbackControls = ({
           size="small"
           variant={selected === "negative" ? "contained" : "outlined"}
           disabled={submit.isLoading}
-          onClick={() => {
-            setSubmitError(false);
-            submit.mutate("negative");
-          }}
+          onClick={() => openFeedbackModal("negative")}
         >
           Not helpful
         </Button>
       </Box>
-      {submitError && (
-        <Alert severity="error" sx={{ py: 0 }}>
-          Feedback could not be saved. Please try again.
-        </Alert>
-      )}
+      <Dialog
+        open={pendingRating !== null}
+        onClose={closeFeedbackModal}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="agent-feedback-title"
+      >
+        <DialogTitle id="agent-feedback-title">Share feedback</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            You marked this result as{" "}
+            <strong>
+              {pendingRating === "positive" ? "helpful" : "not helpful"}
+            </strong>
+            . Tell us why.
+          </Typography>
+          <TextField
+            autoFocus
+            required
+            fullWidth
+            multiline
+            minRows={4}
+            label="Reason"
+            placeholder="Describe what worked or what could be improved"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            disabled={submit.isLoading}
+            inputProps={{ maxLength: 2000 }}
+            helperText={`${reason.length}/2000 characters`}
+          />
+          {submitError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Feedback could not be saved. Please try again.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeFeedbackModal} disabled={submit.isLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={
+              pendingRating === null ||
+              trimmedReason.length === 0 ||
+              submit.isLoading
+            }
+            onClick={() => {
+              if (pendingRating === null || trimmedReason.length === 0) return;
+              setSubmitError(false);
+              submit.mutate({ rating: pendingRating, reason: trimmedReason });
+            }}
+          >
+            Submit feedback
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

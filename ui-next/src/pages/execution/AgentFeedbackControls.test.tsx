@@ -39,7 +39,7 @@ describe("AgentFeedbackControls", () => {
     expect(screen.queryByText("Helpful")).not.toBeInTheDocument();
   });
 
-  it("submits and displays the canonical selected rating", async () => {
+  it("requires a reason before submitting feedback", async () => {
     fetchWithContext
       .mockResolvedValueOnce({ enabled: true, rating: null })
       .mockResolvedValueOnce({ enabled: true, rating: "positive" });
@@ -48,10 +48,26 @@ describe("AgentFeedbackControls", () => {
     const helpful = await screen.findByRole("button", { name: "Helpful" });
     fireEvent.click(helpful);
 
+    expect(
+      screen.getByRole("dialog", { name: "Share feedback" }),
+    ).toBeVisible();
+    const submitButton = screen.getByRole("button", {
+      name: "Submit feedback",
+    });
+    expect(submitButton).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: /Reason/ }), {
+      target: { value: "  Accurate and easy to follow.  " },
+    });
+    expect(submitButton).toBeEnabled();
+    fireEvent.click(submitButton);
+
     await waitFor(() => expect(fetchWithContext).toHaveBeenCalledTimes(2));
     expect(fetchWithContext.mock.calls[1][2]).toMatchObject({
       method: "POST",
-      body: JSON.stringify({ rating: "positive" }),
+      body: JSON.stringify({
+        rating: "positive",
+        reason: "Accurate and easy to follow.",
+      }),
     });
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Helpful" })).toHaveClass(
@@ -67,10 +83,16 @@ describe("AgentFeedbackControls", () => {
 
     renderControls();
     fireEvent.click(await screen.findByRole("button", { name: "Not helpful" }));
+    fireEvent.change(screen.getByRole("textbox", { name: /Reason/ }), {
+      target: { value: "The conclusion is unsupported." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit feedback" }));
 
     expect(
       await screen.findByText("Feedback could not be saved. Please try again."),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Helpful" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Submit feedback" }),
+    ).toBeEnabled();
   });
 });

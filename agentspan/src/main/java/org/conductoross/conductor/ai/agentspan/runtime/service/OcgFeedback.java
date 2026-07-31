@@ -14,11 +14,5 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.time.Instant;
 
-/** Canonical feedback state returned to the execution UI. */
-public record AgentFeedbackState(
-        boolean enabled, String rating, String reason, Instant submittedAt) {
-
-    static AgentFeedbackState disabled(String reason) {
-        return new AgentFeedbackState(false, null, reason, null);
-    }
-}
+/** Canonical feedback returned by OCG for one completed root agent execution. */
+public record OcgFeedback(OcgFeedbackRating rating, String reason, Instant submittedAt) {}

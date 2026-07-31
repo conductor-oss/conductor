@@ -12,11 +12,18 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Default OCG HTTP transport with server-side credentials, bounded retries, and redacted logs. */
@@ -113,6 +121,141 @@ public class HttpOcgClient implements OcgClient {
                     rootMessage(e));
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    @Override
+    public OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+        StringBuilder endpoint = new StringBuilder(feedbackEndpoint(config)).append('?');
+        appendQuery(endpoint, "agent", identity.agent());
+        if (!isBlank(identity.user())) appendQuery(endpoint, "user", identity.user());
+        appendQuery(endpoint, "session_id", identity.sessionId());
+        appendQuery(endpoint, "execution_id", identity.executionId());
+
+        HttpRequest request =
+                feedbackRequest(config, URI.create(endpoint.toString())).GET().build();
+        return executeFeedback(request, identity.executionId());
+    }
+
+    @Override
+    public OcgFeedback setFeedback(
+            LongTermMemoryConfig config,
+            OcgExecutionIdentity identity,
+            OcgFeedbackRating rating,
+            String reason) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("agent", identity.agent());
+        if (!isBlank(identity.user())) payload.put("user", identity.user());
+        payload.put("session_id", identity.sessionId());
+        payload.put("execution_id", identity.executionId());
+        payload.put("rating", rating.value());
+        payload.put("reason", reason);
+        try {
+            HttpRequest request =
+                    feedbackRequest(config, URI.create(feedbackEndpoint(config)))
+                            .header("Content-Type", "application/json")
+                            .PUT(
+                                    HttpRequest.BodyPublishers.ofByteArray(
+                                            mapper.writeValueAsBytes(payload)))
+                            .build();
+            return executeFeedback(request, identity.executionId());
+        } catch (JsonProcessingException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, e);
+        }
+    }
+
+    private HttpRequest.Builder feedbackRequest(LongTermMemoryConfig config, URI endpoint) {
+        String credential;
+        try {
+            credential = credentialResolver.apply(config.getCredential());
+        } catch (Exception e) {
+            throw feedbackFailure(
+                    OcgFeedbackClientException.Failure.CREDENTIAL_UNAVAILABLE, null, e);
+        }
+        if (isBlank(credential)) {
+            throw feedbackFailure(
+                    OcgFeedbackClientException.Failure.CREDENTIAL_UNAVAILABLE, null, null);
+        }
+        return HttpRequest.newBuilder(endpoint).timeout(timeout).header("X-API-Key", credential);
+    }
+
+    private OcgFeedback executeFeedback(HttpRequest request, String executionId) {
+        try {
+            HttpResponse<byte[]> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOGGER.warn(
+                        "OCG feedback for execution {} returned HTTP {}",
+                        executionId,
+                        response.statusCode());
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.UPSTREAM_REJECTED,
+                        response.statusCode(),
+                        null);
+            }
+            return parseFeedback(response.body());
+        } catch (HttpTimeoutException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_TIMEOUT, null, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        } catch (IOException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        }
+    }
+
+    private OcgFeedback parseFeedback(byte[] body) {
+        try {
+            JsonNode response = mapper.readTree(body);
+            JsonNode ratingNode = response.get("rating");
+            if (ratingNode == null || (!ratingNode.isNull() && !ratingNode.isTextual())) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
+            }
+            OcgFeedbackRating rating =
+                    ratingNode.isNull()
+                            ? null
+                            : OcgFeedbackRating.fromValue(ratingNode.textValue());
+            JsonNode reasonNode = response.get("reason");
+            if (reasonNode != null && !reasonNode.isNull() && !reasonNode.isTextual()) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
+            }
+            if (rating != null && (reasonNode == null || reasonNode.isNull())) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
+            }
+            String reason =
+                    reasonNode == null || reasonNode.isNull() ? null : reasonNode.textValue();
+            JsonNode submittedNode = response.get("submitted_at");
+            Instant submittedAt =
+                    submittedNode == null || submittedNode.isNull()
+                            ? null
+                            : Instant.parse(submittedNode.textValue());
+            return new OcgFeedback(rating, reason, submittedAt);
+        } catch (IOException
+                | DateTimeParseException
+                | IllegalArgumentException
+                | NullPointerException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, e);
+        }
+    }
+
+    private static String feedbackEndpoint(LongTermMemoryConfig config) {
+        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/memories/agent-run/feedback";
+    }
+
+    private static void appendQuery(StringBuilder endpoint, String name, String value) {
+        if (endpoint.charAt(endpoint.length() - 1) != '?') endpoint.append('&');
+        endpoint.append(encode(name)).append('=').append(encode(value));
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private static OcgFeedbackClientException feedbackFailure(
+            OcgFeedbackClientException.Failure failure, Integer upstreamStatus, Throwable cause) {
+        return new OcgFeedbackClientException(failure, upstreamStatus, cause);
     }
 
     private CompletionStage<Void> send(

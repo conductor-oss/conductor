@@ -201,10 +201,11 @@ public class AgentController {
     @PostMapping("/executions/{executionId}/feedback")
     public AgentFeedbackState setExecutionFeedback(
             @PathVariable("executionId") String executionId,
-            @RequestBody Map<String, Object> request) {
-        Object ratingValue = request == null ? null : request.get("rating");
-        String rating = ratingValue instanceof String ? (String) ratingValue : null;
-        return agentFeedbackService.set(executionId, rating);
+            @RequestBody AgentFeedbackRequest request) {
+        return agentFeedbackService.set(
+                executionId,
+                request == null ? null : request.rating(),
+                request == null ? null : request.reason());
     }
 
     /** Return feedback failures with a stable machine-readable code. */
@@ -213,6 +214,8 @@ public class AgentController {
             AgentFeedbackException error) {
         return ResponseEntity.status(error.getStatus()).body(Map.of("code", error.getCode()));
     }
+
+    record AgentFeedbackRequest(String rating, String reason) {}
 
     /** Pause a running agent execution. */
     @PutMapping("/{executionId}/pause")

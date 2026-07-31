@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,9 +55,28 @@ class OcgAgentRunExporterTest {
         OcgAgentRunExporter exporter =
                 new OcgAgentRunExporter(
                         mapper,
-                        (config, payload) -> {
-                            exports.incrementAndGet();
-                            return java.util.concurrent.CompletableFuture.completedFuture(null);
+                        new OcgClient() {
+                            @Override
+                            public CompletionStage<Void> exportAgentRun(
+                                    LongTermMemoryConfig config, Map<String, Object> payload) {
+                                exports.incrementAndGet();
+                                return CompletableFuture.completedFuture(null);
+                            }
+
+                            @Override
+                            public OcgFeedback getFeedback(
+                                    LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+                                throw new UnsupportedOperationException();
+                            }
+
+                            @Override
+                            public OcgFeedback setFeedback(
+                                    LongTermMemoryConfig config,
+                                    OcgExecutionIdentity identity,
+                                    OcgFeedbackRating rating,
+                                    String reason) {
+                                throw new UnsupportedOperationException();
+                            }
                         });
         WorkflowModel workflow = workflow("https://unused.example", "session", "turn");
 

@@ -12,13 +12,25 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-import java.time.Instant;
+/** Ratings accepted by OCG's canonical agent-run feedback contract. */
+public enum OcgFeedbackRating {
+    POSITIVE("positive"),
+    NEGATIVE("negative");
 
-/** Canonical feedback state returned to the execution UI. */
-public record AgentFeedbackState(
-        boolean enabled, String rating, String reason, Instant submittedAt) {
+    private final String value;
 
-    static AgentFeedbackState disabled(String reason) {
-        return new AgentFeedbackState(false, null, reason, null);
+    OcgFeedbackRating(String value) {
+        this.value = value;
+    }
+
+    public String value() {
+        return value;
+    }
+
+    static OcgFeedbackRating fromValue(String value) {
+        for (OcgFeedbackRating rating : values()) {
+            if (rating.value.equals(value)) return rating;
+        }
+        throw new IllegalArgumentException("Unsupported OCG feedback rating");
     }
 }

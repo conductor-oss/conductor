@@ -119,16 +119,14 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         Set<String> maskedFields = maskedFields(workflow);
         Map<String, Object> safeInput = redactMap(input, maskedFields);
         Map<String, Object> safeOutput = redactMap(output, maskedFields);
-        String sessionId = stringValue(safeInput.get("session_id"), workflow.getWorkflowId());
+        OcgExecutionIdentity identity = OcgExecutionIdentity.from(workflow, config);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("agent", stringValue(config.getAgent(), "agentspan"));
-        String user = stringValue(config.getUser(), stringValue(safeInput.get("user"), null));
-        if (!isBlank(user) && !"[REDACTED]".equals(user)) {
-            payload.put("user", user.startsWith("user:") ? user : "user:" + user);
-        }
-        payload.put("session_id", sessionId);
-        payload.put("turn_id", workflow.getWorkflowId());
+        payload.put("agent", identity.agent());
+        if (!isBlank(identity.user())) payload.put("user", identity.user());
+        payload.put("session_id", identity.sessionId());
+        // Agent-run ingestion retains its existing turn_id field; it maps to the root execution.
+        payload.put("turn_id", identity.executionId());
         copyString(safeInput, payload, "repo");
         copyString(safeInput, payload, "branch");
         copyString(safeInput, payload, "cwd");

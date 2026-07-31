@@ -22,4 +22,14 @@ public interface OcgClient {
 
     /** Queue a raw terminal agent run. Implementations must contain all transport failures. */
     CompletionStage<Void> exportAgentRun(LongTermMemoryConfig config, Map<String, Object> payload);
+
+    /** Read canonical human feedback for a trusted completed root execution. */
+    OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity);
+
+    /** Upsert canonical human feedback for a trusted completed root execution. */
+    OcgFeedback setFeedback(
+            LongTermMemoryConfig config,
+            OcgExecutionIdentity identity,
+            OcgFeedbackRating rating,
+            String reason);
 }
