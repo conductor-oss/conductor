@@ -56,7 +56,7 @@ public class ConductorAgentDelegate {
         String executionId =
                 asString(result.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID));
         if (StringUtils.isNotBlank(executionId) && deadlineExceeded(result, request)) {
-            cancelBestEffort(executionId, "AGENT exceeded max duration");
+            cancelBestEffort(executionId, request, "AGENT exceeded max duration");
             return fail(
                     result,
                     "AGENT exceeded max duration of "
@@ -72,7 +72,7 @@ public class ConductorAgentDelegate {
             } else {
                 execution =
                         fromStatus(
-                                conductorAgentClient.getAgentStatus(executionId),
+                                conductorAgentClient.getAgentStatus(executionId, request),
                                 asString(
                                         result.getOutputData()
                                                 .get(ConductorAgentResults.KEY_AGENT_NAME)));
@@ -92,16 +92,19 @@ public class ConductorAgentDelegate {
 
     /** Best-effort cancellation hook used by embedded parent cancellation. */
     public void cancel(Task task, String reason) {
+        ConductorAgentRequest request = parseRequest(task);
         String executionId =
                 asString(
                         task.getOutputData() != null
                                 ? task.getOutputData().get(ConductorAgentResults.KEY_EXECUTION_ID)
                                 : null);
         if (StringUtils.isBlank(executionId)) {
-            executionId = StringUtils.trimToNull(parseRequest(task).getExecutionId());
+            executionId = StringUtils.trimToNull(request.getExecutionId());
         }
         cancelBestEffort(
-                executionId, StringUtils.defaultIfBlank(reason, "Cancelled by parent workflow"));
+                executionId,
+                request,
+                StringUtils.defaultIfBlank(reason, "Cancelled by parent workflow"));
     }
 
     private ConductorAgentExecution startOrResume(Task task, ConductorAgentRequest request) {
@@ -116,7 +119,7 @@ public class ConductorAgentDelegate {
                             .executionId(executionId)
                             .body(Map.of("result", request.getPrompt()))
                             .build());
-            return fromStatus(conductorAgentClient.getAgentStatus(executionId), null);
+            return fromStatus(conductorAgentClient.getAgentStatus(executionId, request), null);
         }
 
         if (StringUtils.isBlank(request.getPrompt())) {
@@ -140,7 +143,7 @@ public class ConductorAgentDelegate {
         result.getOutputData().put(ConductorAgentResults.KEY_POLL_FAILURES, failures);
         int maxFailures = maxPollFailures(request);
         if (failures >= maxFailures) {
-            cancelBestEffort(executionId, "Conductor agent unreachable");
+            cancelBestEffort(executionId, request, "Conductor agent unreachable");
             return fail(
                     result,
                     "Conductor agent unreachable after "
@@ -254,12 +257,14 @@ public class ConductorAgentDelegate {
         return text instanceof CharSequence ? text.toString() : null;
     }
 
-    private void cancelBestEffort(String executionId, String reason) {
+    private void cancelBestEffort(
+            String executionId, ConductorAgentRequest request, String reason) {
         if (StringUtils.isBlank(executionId)) {
             return;
         }
         try {
-            ConductorAgentStatusResponse status = conductorAgentClient.getAgentStatus(executionId);
+            ConductorAgentStatusResponse status =
+                    conductorAgentClient.getAgentStatus(executionId, request);
             if (status != null && status.isComplete()) {
                 return;
             }
