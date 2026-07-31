@@ -423,12 +423,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return StringUtils.isBlank(v) ? DEFAULT_API_VERSION : v;
     }
 
-    /**
-     * Returns the text value from the first content part with {@code "type": "text"}.
-     *
-     * <p>Assistants with code interpreter may return an {@code image_file} part before the text
-     * part, so we cannot assume {@code content[0]} is text.
-     */
+    // Returns the text value from the first content part with "type": "text".
+    // Assistants with code interpreter may return an image_file part before the text part,
+    // so content[0] is not always text.
     private static String extractText(JsonNode contentArray) {
         for (JsonNode part : contentArray) {
             if ("text".equals(part.path("type").asText())) {
