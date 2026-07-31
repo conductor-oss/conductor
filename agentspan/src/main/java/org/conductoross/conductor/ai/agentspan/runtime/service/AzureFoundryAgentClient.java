@@ -277,7 +277,13 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                     get(ctx.endpoint + "/threads/" + threadId + "/messages", token, ctx.apiVersion);
             for (JsonNode msg : messages.path("data")) {
                 if ("assistant".equals(msg.path("role").asText())) {
-                    String text = msg.path("content").path(0).path("text").path("value").asText("");
+                    String text = "";
+                    for (JsonNode part : msg.path("content")) {
+                        if ("text".equals(part.path("type").asText())) {
+                            text = part.path("text").path("value").asText("");
+                            break;
+                        }
+                    }
                     output = Map.of("result", text);
                     break;
                 }
