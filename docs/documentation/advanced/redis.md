@@ -57,4 +57,4 @@ Conductor's Redis backend (Jedis 6.0.0, Redisson 3.22.0) communicates using stan
 
 No new configuration is required. Point `conductor.redis.hosts` at your Valkey endpoint(s); `conductor.db.type` stays `redis_standalone`, `redis_cluster`, or `redis_sentinel` — these values select the wire protocol Conductor speaks, not the specific product serving it.
 
-Redisson, which backs Conductor's distributed locking, [officially supports Valkey 7.2 and above](https://redisson.pro/docs/data-and-services/data-partitioning/).
+Redisson, which backs Conductor's distributed locking, [officially supports Valkey 7.2.5 and above](https://github.com/redisson/redisson).
