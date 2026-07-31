@@ -108,17 +108,8 @@ public class AgentCompiler {
         }
     }
 
-    /** Public entry point: compile an {@link AgentConfig} into a root {@link WorkflowDef}. */
+    /** Compile an {@link AgentConfig} into a {@link WorkflowDef}. */
     public WorkflowDef compile(AgentConfig config) {
-        return compile(config, true);
-    }
-
-    /** Compile an embedded sub-agent without repeating root lifecycle behavior. */
-    WorkflowDef compileChild(AgentConfig config) {
-        return compile(config, false);
-    }
-
-    private WorkflowDef compile(AgentConfig config, boolean rootCompilation) {
         WorkflowDef wf;
 
         // Passthrough check MUST be first — passthrough configs have null model.
@@ -230,10 +221,14 @@ public class AgentCompiler {
         // workflow-only execution list.
         stampAgentMetadata(wf, config);
 
-        if (rootCompilation) {
-            OcgAgentSubCompiler.apply(wf, config, contextMaxValueSizeBytes);
-        }
+        finalizeWorkflow(wf);
+        return wf;
+    }
 
+    /**
+     * Apply the generic task-name and reference integrity checks after compiler post-processing.
+     */
+    void finalizeWorkflow(WorkflowDef wf) {
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {
             wf.getTasks().forEach(AgentCompiler::ensureTaskNames);
@@ -246,8 +241,6 @@ public class AgentCompiler {
         if (wf.getTasks() != null) {
             ensureUniqueRefNames(wf.getTasks(), wf);
         }
-
-        return wf;
     }
 
     /**
@@ -840,6 +833,7 @@ public class AgentCompiler {
         if (!outGuardrails.isEmpty()) {
             String resolveRef = toRef(config.getName()) + "_resolve_output";
             allTasks.add(buildResolveOutputTask(resolveRef, llmRef));
+
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(resolveRef + ".output.result.result"));
             outputParams.put("finishReason", ref(resolveRef + ".output.result.finishReason"));
@@ -857,6 +851,7 @@ public class AgentCompiler {
             // their content arg).
             String synthRef = toRef(config.getName()) + "_synth_output";
             allTasks.add(buildSynthesizeOutputTask(synthRef, llmRef));
+
             Map<String, Object> outputParams = new LinkedHashMap<>();
             outputParams.put("result", ref(synthRef + ".output.result"));
             outputParams.put("finishReason", ref(llmRef + ".output.finishReason"));
@@ -1274,7 +1269,7 @@ public class AgentCompiler {
             task.getSubWorkflowParam().setName(sub.getName());
             task.setInputParameters(inputs);
         } else {
-            WorkflowDef subWf = compileChild(sub);
+            WorkflowDef subWf = compile(sub);
             task.setType("SUB_WORKFLOW");
             task.setName(sub.getName());
             task.setSubWorkflowParam(new SubWorkflowParams());
@@ -1333,13 +1328,6 @@ public class AgentCompiler {
         wf.setTimeoutSeconds(60L);
         wf.setTimeoutPolicy(null);
         wf.setInputParameters(WORKFLOW_INPUTS);
-        // Default ``media`` to an empty list so ``${workflow.input.media}`` never
-        // resolves to null. The SDK/API start path (AgentService) already defaults
-        // this, but inbound-webhook starts bypass AgentService, leaving the user
-        // ChatMessage's media null — the upstream ChatCompleteTask then NPEs on
-        // ``getMedia().stream()`` while assembling multi-turn history. inputTemplate
-        // values are defaults only; a caller-supplied ``media`` still overrides.
-        wf.setInputTemplate(Map.of("media", List.of()));
         return wf;
     }
 

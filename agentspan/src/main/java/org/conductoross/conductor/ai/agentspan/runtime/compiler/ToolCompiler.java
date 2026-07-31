@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
@@ -285,12 +284,12 @@ public class ToolCompiler {
         return expanded;
     }
 
-    /** MCP declarations with a complete name and schema can bypass runtime discovery. */
+    /** Catalog-backed OCG declarations with complete schemas can bypass runtime discovery. */
     public static boolean requiresMcpDiscovery(ToolConfig tool) {
         if (!"mcp".equals(tool.getToolType())) {
             return false;
         }
-        return StringUtils.isBlank(tool.getName())
+        return OcgToolCatalog.get(tool.getName()) == null
                 || tool.getInputSchema() == null
                 || tool.getInputSchema().isEmpty();
     }

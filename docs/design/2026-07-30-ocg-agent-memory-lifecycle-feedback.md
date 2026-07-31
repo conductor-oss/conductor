@@ -74,9 +74,8 @@ The current implementation already provides part of the lifecycle:
 
 - `LongTermMemoryConfig` contains the OCG URL, server-side credential name, agent identity, and
   optional user identity.
-- `AgentCompiler.withOcgRecall` adds OCG's MCP endpoint to an OCG-enabled agent and marks discovery
-  optional.
-- `AgentCompiler.compile` enables the workflow status listener when long-term memory is configured.
+- `OcgAgentSubCompiler` wraps generic agent compilation with deterministic OCG recall and enables
+  the workflow status listener when long-term memory is configured.
 - `OcgAgentRunExporter` ignores child workflows, resolves the credential on the server, and sends
   raw terminal-run data to `${ocgUrl}/api/v1/memories/agent-run`.
 - The exporter already uses the workflow input `session_id` as `session_id` and the root workflow
@@ -107,33 +106,25 @@ The server must reject feedback for a child workflow. The root execution ID is t
 
 ## Detailed design
 
-### 1. Represent root and child compilation explicitly
+### 1. Keep OCG lifecycle outside generic agent compilation
 
-The compiler recursively compiles subagents through an internal path. Invoke the OCG subcompiler
-only from the public root path rather than inferring root status from agent names or workflow
-metadata after compilation.
+`AgentCompiler` recursively compiles embedded subagents and has no root/child lifecycle mode.
+`AgentService` invokes `OcgAgentSubCompiler` for definitions compiled through the agent API. The
+OCG subcompiler delegates generic graph construction to `AgentCompiler`, then applies OCG behavior
+once to the returned root definition.
 
 Conceptually:
 
 ```java
 public WorkflowDef compile(AgentConfig config) {
-    return compile(config, true);
-}
-
-WorkflowDef compileSubagent(AgentConfig config) {
-    return compile(config, false);
-}
-
-private WorkflowDef compile(AgentConfig config, boolean root) {
-    WorkflowDef workflow = compileNormalAgentShape(config);
-    stampAgentMetadata(workflow, config);
-    if (root) OcgAgentSubCompiler.apply(workflow, config, contextMaxValueSizeBytes);
+    WorkflowDef workflow = agentCompiler.compile(config);
+    applyOcgLifecycle(workflow, config);
     return workflow;
 }
 ```
 
-The root flag controls only whether the OCG subcompiler runs. It does not change normal tool,
-strategy, or subworkflow compilation.
+Recursive calls stay inside `AgentCompiler`, so they compile the normal tool, strategy, and
+subworkflow graph without repeating root lifecycle behavior.
 
 | Capability | Root | Child |
 |---|---:|---:|

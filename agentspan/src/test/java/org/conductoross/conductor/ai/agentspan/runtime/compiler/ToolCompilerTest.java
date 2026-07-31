@@ -183,6 +183,19 @@ class ToolCompilerTest {
     }
 
     @Test
+    void preservesDiscoveryForGenericMcpToolWithCallerSuppliedSchema() {
+        ToolConfig genericTool =
+                ToolConfig.builder()
+                        .name("lookup_ticket")
+                        .toolType("mcp")
+                        .inputSchema(Map.of("type", "object", "properties", Map.of()))
+                        .config(Map.of("server_url", "https://generic.example/mcp/"))
+                        .build();
+
+        assertThat(ToolCompiler.requiresMcpDiscovery(genericTool)).isTrue();
+    }
+
+    @Test
     void preservesEmptyMcpAllowlistForDenyAllDiscoveryFilter() {
         ToolConfig server =
                 ToolConfig.builder()

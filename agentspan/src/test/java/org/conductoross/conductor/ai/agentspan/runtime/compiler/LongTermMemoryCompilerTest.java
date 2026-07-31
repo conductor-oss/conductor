@@ -32,7 +32,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LongTermMemoryCompilerTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final AgentCompiler compiler = new AgentCompiler();
+    private final AgentCompiler agentCompiler = new AgentCompiler();
+    private final OcgAgentSubCompiler compiler = new OcgAgentSubCompiler(agentCompiler);
+
+    @Test
+    void genericCompilerDoesNotApplyOcgLifecycle() {
+        WorkflowDef workflow = agentCompiler.compile(agent());
+
+        assertThat(workflow.isWorkflowStatusListenerEnabled()).isFalse();
+        assertThat(allTasks(workflow))
+                .noneMatch(
+                        task ->
+                                "CALL_MCP_TOOL".equals(task.getType())
+                                        && "cg_search_memories"
+                                                .equals(task.getInputParameters().get("method")));
+    }
+
+    @Test
+    void ocgWrapperDoesNotChangeAgentsWithoutOcgMemory() {
+        AgentConfig plain = agent().toBuilder().longTermMemory(null).build();
+
+        WorkflowDef genericWorkflow = agentCompiler.compile(plain);
+        WorkflowDef wrappedWorkflow = compiler.compile(plain);
+
+        assertThat((Object) MAPPER.valueToTree(wrappedWorkflow))
+                .isEqualTo(MAPPER.valueToTree(genericWorkflow));
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -259,7 +284,7 @@ class LongTermMemoryCompilerTest {
         AgentConfig child =
                 agent().toBuilder().name("retriever").tools(List.of(explicitMcp)).build();
 
-        WorkflowDef childWorkflow = compiler.compileChild(child);
+        WorkflowDef childWorkflow = agentCompiler.compile(child);
 
         assertThat(childWorkflow.isWorkflowStatusListenerEnabled()).isFalse();
         assertThat(allTasks(childWorkflow))
@@ -297,7 +322,7 @@ class LongTermMemoryCompilerTest {
         AgentConfig child =
                 agent().toBuilder().name("retriever").tools(List.of(explicitOcg)).build();
 
-        WorkflowDef childWorkflow = compiler.compileChild(child);
+        WorkflowDef childWorkflow = agentCompiler.compile(child);
 
         assertThat(allTasks(childWorkflow)).noneMatch(t -> "LIST_MCP_TOOLS".equals(t.getType()));
         WorkflowTask llm =

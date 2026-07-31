@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.OcgAgentSubCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
@@ -63,7 +64,7 @@ public class AgentService {
 
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
-    private final AgentCompiler agentCompiler;
+    private final OcgAgentSubCompiler ocgAgentSubCompiler;
     private final NormalizerRegistry normalizerRegistry;
     private final ExecutionDAO executionDAO;
     private final MetadataDAO metadataDAO;
@@ -88,7 +89,7 @@ public class AgentService {
             config.setName("agent_plan");
         }
         log.info("Compiling agent: {}", config.getName());
-        WorkflowDef def = agentCompiler.compile(config);
+        WorkflowDef def = ocgAgentSubCompiler.compile(config);
 
         // Stamp agentDef into the compiled WorkflowDef so it is persisted when
         // the SDK passes the def inline to Conductor's start_workflow.
@@ -186,7 +187,7 @@ public class AgentService {
         registerAgentToolWorkflows(config);
 
         // 1. Compile
-        WorkflowDef def = agentCompiler.compile(config);
+        WorkflowDef def = ocgAgentSubCompiler.compile(config);
 
         // 1b. Stamp SDK metadata on the workflow definition
         String sdk = request.getFramework() != null ? request.getFramework() : "conductor";
@@ -236,7 +237,7 @@ public class AgentService {
             // the stored agent definition (and its registered version) is left untouched.
             config.setModel(request.getModel());
             registerAgentToolWorkflows(config);
-            executionDef = agentCompiler.compile(config);
+            executionDef = ocgAgentSubCompiler.compile(config);
             executionDef.setName(registeredDef.getName());
             executionDef.setVersion(registeredDef.getVersion());
             registerTaskDefinitions(config);
@@ -270,7 +271,7 @@ public class AgentService {
         registerAgentToolWorkflows(config);
 
         // 1. Compile
-        WorkflowDef def = agentCompiler.compile(config);
+        WorkflowDef def = ocgAgentSubCompiler.compile(config);
 
         // 1b. Stamp SDK metadata on the workflow definition
         String sdk = request.getFramework() != null ? request.getFramework() : "conductor";
@@ -1166,7 +1167,7 @@ public class AgentService {
                 registerAgentToolWorkflows(childConfig);
 
                 // Compile and register the child agent workflow
-                WorkflowDef childDef = agentCompiler.compile(childConfig);
+                WorkflowDef childDef = ocgAgentSubCompiler.compile(childConfig);
                 upsertWorkflowDef(childDef);
                 log.info(
                         "Registered agent_tool child workflow: {} for tool '{}'",

@@ -48,6 +48,7 @@ class AgentCompilerTest {
         assertThat(wf.getName()).isEqualTo("test_agent");
         assertThat(wf.getVersion()).isEqualTo(1);
         assertThat(wf.getInputParameters()).containsExactly("prompt", "session_id", "media", "cwd");
+        assertThat(wf.getInputTemplate()).isNullOrEmpty();
         assertThat(wf.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT)
                 .containsKey("agentDef");

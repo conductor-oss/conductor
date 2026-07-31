@@ -1777,7 +1777,7 @@ public class MultiAgentCompiler {
         String checkTransferRef = agent.getName() + "_check_transfer";
 
         // 1. Compile the agent normally to preserve its multi-agent strategy.
-        WorkflowDef innerWf = agentCompiler.compileChild(agent);
+        WorkflowDef innerWf = agentCompiler.compile(agent);
 
         // Inner agent as SUB_WORKFLOW
         WorkflowTask innerTask = new WorkflowTask();
