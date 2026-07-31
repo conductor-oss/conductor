@@ -221,14 +221,10 @@ public class AgentCompiler {
         // workflow-only execution list.
         stampAgentMetadata(wf, config);
 
-        finalizeWorkflow(wf);
-        return wf;
-    }
+        if (OcgAgentSubCompiler.isActive(config)) {
+            OcgAgentSubCompiler.apply(wf, config, contextMaxValueSizeBytes);
+        }
 
-    /**
-     * Apply the generic task-name and reference integrity checks after compiler post-processing.
-     */
-    void finalizeWorkflow(WorkflowDef wf) {
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {
             wf.getTasks().forEach(AgentCompiler::ensureTaskNames);
@@ -241,6 +237,8 @@ public class AgentCompiler {
         if (wf.getTasks() != null) {
             ensureUniqueRefNames(wf.getTasks(), wf);
         }
+
+        return wf;
     }
 
     /**

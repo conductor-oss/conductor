@@ -74,8 +74,8 @@ The current implementation already provides part of the lifecycle:
 
 - `LongTermMemoryConfig` contains the OCG URL, server-side credential name, agent identity, and
   optional user identity.
-- `OcgAgentSubCompiler` wraps generic agent compilation with deterministic OCG recall and enables
-  the workflow status listener when long-term memory is configured.
+- `AgentCompiler` invokes `OcgAgentSubCompiler` only for workflows with complete OCG memory
+  configuration. The subcompiler adds deterministic recall and enables the status listener.
 - `OcgAgentRunExporter` ignores child workflows, resolves the credential on the server, and sends
   raw terminal-run data to `${ocgUrl}/api/v1/memories/agent-run`.
 - The exporter already uses the workflow input `session_id` as `session_id` and the root workflow
@@ -106,38 +106,40 @@ The server must reject feedback for a child workflow. The root execution ID is t
 
 ## Detailed design
 
-### 1. Keep OCG lifecycle outside generic agent compilation
+### 1. Keep OCG behavior in a conditional subcompiler
 
-`AgentCompiler` recursively compiles embedded subagents and has no root/child lifecycle mode.
-`AgentService` invokes `OcgAgentSubCompiler` for definitions compiled through the agent API. The
-OCG subcompiler delegates generic graph construction to `AgentCompiler`, then applies OCG behavior
-once to the returned root definition.
+`AgentCompiler` owns compilation. After building and stamping a workflow, it checks whether that
+workflow's `AgentConfig` contains the complete OCG URL, credential, and agent identity. Only then
+does it invoke `OcgAgentSubCompiler` as a post-pass.
 
 Conceptually:
 
 ```java
 public WorkflowDef compile(AgentConfig config) {
-    WorkflowDef workflow = agentCompiler.compile(config);
-    applyOcgLifecycle(workflow, config);
+    WorkflowDef workflow = compileNormalAgentShape(config);
+    stampAgentMetadata(workflow, config);
+    if (OcgAgentSubCompiler.isActive(config)) {
+        OcgAgentSubCompiler.apply(workflow, config, contextMaxValueSizeBytes);
+    }
     return workflow;
 }
 ```
 
-Recursive calls stay inside `AgentCompiler`, so they compile the normal tool, strategy, and
-subworkflow graph without repeating root lifecycle behavior.
+Every recursively compiled workflow is evaluated independently. A child with its own complete OCG
+configuration receives its own recall prelude; a child without OCG configuration remains unchanged.
+Parent recall is not copied into child workflow inputs.
 
-| Capability | Root | Child |
+| Capability | OCG active | OCG inactive |
 |---|---:|---:|
 | Automatic `cg_search_memories` prelude | Yes | No |
 | Terminal OCG capture listener | Yes | No |
-| Explicitly configured OCG MCP tools | Yes | Yes |
+| Explicitly configured OCG MCP tools | If declared | If declared |
 
 `OcgAgentRunExporter` should retain its runtime `workflow.hasParent()` guard as defense in depth.
 
 ### 2. Compile deterministic memory recall before the first turn
 
-For a root workflow with a valid `longTermMemory` configuration, compile the following pre-loop
-tasks:
+For a workflow with a valid `longTermMemory` configuration, compile the following pre-loop tasks:
 
 ```text
 CALL_MCP_TOOL(method = cg_search_memories)
@@ -214,12 +216,9 @@ when the two conflict.
 <normalized recall>
 ```
 
-The root model must see this message before it can call `issue_analyst` or another subagent. Where
-the selected multi-agent strategy constructs child requests without carrying the root model's
-context, the OCG subcompiler must pass normalized recall as the private `_ocg_recall` input of each
-inline child workflow and inject that input into the child's model context. External child
-definitions are not rewritten and receive no unused recall input. Strategy tests must prove that
-`issue_analyst` sees the recall; prompt wording is not considered sufficient evidence.
+The model for the OCG-enabled workflow sees this message before its first turn. Inline and external
+child workflow definitions are not rewritten with parent recall. A child receives deterministic
+recall only when its own `AgentConfig` activates OCG.
 
 Recall is best-effort. Discovery, MCP invocation, and normalization failures resolve to empty
 context and do not fail the agent workflow. Failures remain observable in task status and logs,
@@ -444,12 +443,11 @@ optional user identity through its existing OCG/long-term-memory configuration.
 
 ### Phase 1: compiler-managed recall
 
-1. Add root/child compilation context.
-2. Stop applying automatic listener and recall behavior to child definitions.
-3. Compile direct `cg_search_memories` and MCP-content normalization before initial context.
-4. Inject the normalized result into the root's first model context.
-5. Prove propagation to the first subagent request for each supported multi-agent strategy.
-6. Keep the prelude best-effort and bounded.
+1. Detect complete OCG configuration before invoking the subcompiler.
+2. Compile direct `cg_search_memories` and MCP-content normalization before initial context.
+3. Inject the normalized result into that workflow's first model context.
+4. Keep parent and child recall independent.
+5. Keep the prelude best-effort and bounded.
 
 ### Phase 2: shared OCG client and feedback API
 
@@ -480,9 +478,9 @@ optional user identity through its existing OCG/long-term-memory configuration.
 
 ### Compiler unit tests
 
-- OCG-enabled root workflows call `cg_search_memories` directly without discovery.
+- OCG-enabled workflows call `cg_search_memories` directly without discovery.
 - Search and normalization occur before the first LLM task or subagent transfer.
-- Search uses the raw prompt and configured root agent identity.
+- Search uses the raw prompt and configured workflow agent identity.
 - The credential remains a `${workflow.secrets.NAME}` reference.
 - Recall is optional and failure does not terminate the workflow.
 - MCP `output.content` is normalized, bounded, and injected once.

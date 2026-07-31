@@ -32,36 +32,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LongTermMemoryCompilerTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final AgentCompiler agentCompiler = new AgentCompiler();
-    private final OcgAgentSubCompiler compiler = new OcgAgentSubCompiler(agentCompiler);
-
-    @Test
-    void genericCompilerDoesNotApplyOcgLifecycle() {
-        WorkflowDef workflow = agentCompiler.compile(agent());
-
-        assertThat(workflow.isWorkflowStatusListenerEnabled()).isFalse();
-        assertThat(allTasks(workflow))
-                .noneMatch(
-                        task ->
-                                "CALL_MCP_TOOL".equals(task.getType())
-                                        && "cg_search_memories"
-                                                .equals(task.getInputParameters().get("method")));
-    }
-
-    @Test
-    void ocgWrapperDoesNotChangeAgentsWithoutOcgMemory() {
-        AgentConfig plain = agent().toBuilder().longTermMemory(null).build();
-
-        WorkflowDef genericWorkflow = agentCompiler.compile(plain);
-        WorkflowDef wrappedWorkflow = compiler.compile(plain);
-
-        assertThat((Object) MAPPER.valueToTree(wrappedWorkflow))
-                .isEqualTo(MAPPER.valueToTree(genericWorkflow));
-    }
+    private final AgentCompiler compiler = new AgentCompiler();
 
     @Test
     @SuppressWarnings("unchecked")
-    void compilesDeterministicRootRecallBeforeAnyDomainTask() {
+    void compilesDeterministicOcgRecallBeforeAnyDomainTask() {
         WorkflowDef workflow = compiler.compile(agent());
 
         assertThat(workflow.isWorkflowStatusListenerEnabled()).isTrue();
@@ -151,7 +126,7 @@ class LongTermMemoryCompilerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void appliesLifecycleOnlyToRootAndPropagatesRecallToInlineChildModel() {
+    void appliesLifecycleIndependentlyToEachOcgEnabledWorkflow() {
         AgentConfig child =
                 AgentConfig.builder()
                         .name("issue_analyst")
@@ -175,8 +150,7 @@ class LongTermMemoryCompilerTest {
                         .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
                         .findFirst()
                         .orElseThrow();
-        assertThat(childTask.getInputParameters())
-                .containsEntry("_ocg_recall", "${coordinator_ocg_recall_normalize.output.result}");
+        assertThat(childTask.getInputParameters()).doesNotContainKey("_ocg_recall");
         assertThat(allTasks(workflow))
                 .filteredOn(task -> "SET_VARIABLE".equals(task.getType()))
                 .allSatisfy(
@@ -186,10 +160,10 @@ class LongTermMemoryCompilerTest {
 
         WorkflowDef childWorkflow =
                 (WorkflowDef) childTask.getSubWorkflowParam().getWorkflowDefinition();
-        assertThat(childWorkflow.isWorkflowStatusListenerEnabled()).isFalse();
+        assertThat(childWorkflow.isWorkflowStatusListenerEnabled()).isTrue();
         assertThat(childWorkflow.getInputParameters()).doesNotContain("_ocg_recall");
         assertThat(allTasks(childWorkflow))
-                .noneMatch(
+                .anyMatch(
                         task ->
                                 "CALL_MCP_TOOL".equals(task.getType())
                                         && "cg_search_memories"
@@ -206,7 +180,8 @@ class LongTermMemoryCompilerTest {
                 .anySatisfy(
                         message ->
                                 assertThat(message.get("message").toString())
-                                        .contains("${workflow.input._ocg_recall}"));
+                                        .contains(
+                                                "${issue_analyst_ocg_recall_normalize.output.result}"));
     }
 
     @Test
@@ -282,9 +257,13 @@ class LongTermMemoryCompilerTest {
                                         Map.of("X-API-Key", "${OCG_KEY}")))
                         .build();
         AgentConfig child =
-                agent().toBuilder().name("retriever").tools(List.of(explicitMcp)).build();
+                agent().toBuilder()
+                        .name("retriever")
+                        .longTermMemory(null)
+                        .tools(List.of(explicitMcp))
+                        .build();
 
-        WorkflowDef childWorkflow = agentCompiler.compile(child);
+        WorkflowDef childWorkflow = compiler.compile(child);
 
         assertThat(childWorkflow.isWorkflowStatusListenerEnabled()).isFalse();
         assertThat(allTasks(childWorkflow))
@@ -320,9 +299,13 @@ class LongTermMemoryCompilerTest {
                                                 "cg_find_all_paths")))
                         .build();
         AgentConfig child =
-                agent().toBuilder().name("retriever").tools(List.of(explicitOcg)).build();
+                agent().toBuilder()
+                        .name("retriever")
+                        .longTermMemory(null)
+                        .tools(List.of(explicitOcg))
+                        .build();
 
-        WorkflowDef childWorkflow = agentCompiler.compile(child);
+        WorkflowDef childWorkflow = compiler.compile(child);
 
         assertThat(allTasks(childWorkflow)).noneMatch(t -> "LIST_MCP_TOOLS".equals(t.getType()));
         WorkflowTask llm =
