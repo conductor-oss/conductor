@@ -46,32 +46,23 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/**
- * {@link ConductorAgentClient} backed by Azure AI Foundry Agents via the OpenAI
- * Assistants-compatible API.
+/*
+ * ConductorAgentClient backed by Azure AI Foundry Agents via the OpenAI Assistants-compatible API.
  *
- * <p>Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor secret
- * store using the {@code credentialRef} on the start request, with dotted-path sub-keys {@code
- * .client_id}, {@code .client_secret}, and {@code .tenant_id}.
+ * Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor secret
+ * store via credentialRef, with sub-keys .client_id, .client_secret, and .tenant_id.
  *
- * <p>Required rawConfig fields:
+ * Required rawConfig fields:
+ *   assistantId — the Azure AI Foundry assistant ID
+ *   endpoint    — the agentsEndpointUri for the AI Foundry project (or set AZURE_FOUNDRY_ENDPOINT)
  *
- * <ul>
- *   <li>{@code assistantId} - the Azure AI Foundry assistant ID (create it via portal or API first)
- *   <li>{@code endpoint} - the agentsEndpointUri for the AI Foundry project (optional if
- *       AZURE_FOUNDRY_ENDPOINT secret is set)
- * </ul>
+ * Activated by conductor.integrations.ai.enabled=true.
  *
- * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, so the client registers whether
- * or not Azure Foundry is configured; an unconfigured runtime fails only if a workflow routes to
- * it.
- *
- * <p>The executionId returned by {@link #startAgent} is a URL-safe base64 JSON encoding of the
- * non-sensitive run context {@code {threadId, runId, endpoint, assistantId, apiVersion}}. This
- * allows {@link #getAgentStatus} to reconstruct the Azure run from the task outputData alone —
- * without any in-process memory — making the client safe in multi-replica server deployments where
- * the status-poll invocation may arrive on a different pod than the start invocation.
+ * The executionId returned by startAgent is a URL-safe base64 JSON encoding of the non-sensitive
+ * run context {threadId, runId, endpoint, assistantId, apiVersion}. getAgentStatus decodes this
+ * to reconstruct the Azure API call on any server replica — no in-process memory required. This
+ * makes the client safe in multi-replica deployments where the status poll may arrive on a
+ * different pod than the one that called startAgent.
  */
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
@@ -105,11 +96,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return A2AService.AGENT_TYPE_AZURE_FOUNDRY;
     }
 
-    /**
-     * Creates a thread, posts the user message, and starts a run against the configured assistant.
-     * Returns a compound executionId that encodes all run context needed for stateless status
-     * polling in multi-replica environments.
-     */
+    // Creates a thread, posts the user message, and starts a run. Returns a compound executionId
+    // that encodes all run context needed for stateless status polling in multi-replica
+    // environments.
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         String endpoint = resolveEndpoint(request);
@@ -149,21 +138,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .build();
     }
 
-    /**
-     * Polls the current run status. Decodes the compound executionId to locate the Azure run
-     * without in-process memory, then re-authenticates using the original task's {@code
-     * credentialRef}. This makes the method safe when called on a different server replica from the
-     * one that ran {@link #startAgent}.
-     *
-     * <p>Maps Azure run states to {@link ConductorAgentState}:
-     *
-     * <ul>
-     *   <li>completed → COMPLETED with last assistant message as output
-     *   <li>requires_action → WAITING with tool call details as pendingTool
-     *   <li>failed / expired / cancelled → FAILED / CANCELED
-     *   <li>queued / in_progress → RUNNING
-     * </ul>
-     */
+    // Polls the current run status. Decodes the compound executionId and re-authenticates from
+    // the task credentialRef — safe to call on any replica regardless of which pod ran startAgent.
     @Override
     public ConductorAgentStatusResponse getAgentStatus(
             String executionId, ConductorAgentRequest request) {
@@ -195,10 +171,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return toStatusResponse(ctx, run, token);
     }
 
-    /**
-     * Submits a tool-call result (when the run is in {@code requires_action} state) or posts a new
-     * user message and starts a fresh run (for multi-turn conversation).
-     */
+    // Submits a tool-call result (requires_action state) or posts a new user message and starts a
+    // fresh run (multi-turn). Requires same-pod context — respond() has no credentialRef.
     @Override
     public void respond(ConductorAgentRespondRequest request) {
         RunContext ctx = decodeOrThrow(request.getExecutionId());

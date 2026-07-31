@@ -12,36 +12,23 @@
  */
 package org.conductoross.conductor.ai.agent;
 
-/**
- * Agent control-plane client used by portable Conductor workers.
- *
- * <p>The boundary uses only AI-module DTOs. Conductor-Agents injects an in-process implementation
- * and translates those models to its service layer; external workers inject an SDK-backed adapter.
- */
+// Agent control-plane client used by portable Conductor workers.
+// The boundary uses only AI-module DTOs. Conductor-Agents injects an in-process implementation
+// and translates those models to its service layer; external workers inject an SDK-backed adapter.
 public interface ConductorAgentClient extends AutoCloseable {
 
-    /**
-     * Agent type string that routes requests to this client (e.g. "conductor", "bedrock").
-     *
-     * <p>Defaults to {@code "conductor"} — the value of {@code A2AService.AGENT_TYPE_CONDUCTOR},
-     * inlined to keep this boundary interface free of imports — so existing implementations of the
-     * Conductor control plane keep compiling. Clients backing any other runtime must override.
-     */
+    // Agent type string that routes requests to this client (e.g. "conductor", "bedrock").
+    // Defaults to "conductor" so existing Conductor control plane implementations keep compiling.
+    // Clients backing any other runtime must override.
     default String agentType() {
         return "conductor";
     }
 
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
-    /**
-     * Polls the current status of a running agent execution.
-     *
-     * <p>The {@code request} carries the original task input — specifically {@code credentialRef}
-     * and {@code rawConfig} — so that stateless implementations can re-authenticate and locate the
-     * remote run without relying on in-process memory. This is required for correctness in
-     * multi-replica deployments where the status poll may arrive on a different server instance
-     * than the one that called {@link #startAgent}.
-     */
+    // Polls the current status of a running agent execution.
+    // The request carries the original task input (credentialRef, rawConfig) so stateless
+    // implementations can re-authenticate on any replica without relying on in-process memory.
     ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request);
 
     void respond(ConductorAgentRespondRequest request);
