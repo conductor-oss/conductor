@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -662,7 +663,7 @@ public class AgentCompiler {
         // Resolve input context with null fallback (INLINE → SET_VARIABLE pattern)
         String ctxResolveRef = toRef(config.getName()) + "_ctx_resolve";
         WorkflowTask ctxResolve = new WorkflowTask();
-        ctxResolve.setType("INLINE");
+        ctxResolve.setType(TaskType.TASK_TYPE_INLINE);
         ctxResolve.setTaskReferenceName(ctxResolveRef);
         ctxResolve.setInputParameters(
                 Map.of(
@@ -686,7 +687,7 @@ public class AgentCompiler {
             initVars.put("_human_feedback", "");
         }
         WorkflowTask initState = new WorkflowTask();
-        initState.setType("SET_VARIABLE");
+        initState.setType(TaskType.TASK_TYPE_SET_VARIABLE);
         initState.setTaskReferenceName(toRef(config.getName()) + "_init_state");
         initState.setInputParameters(initVars);
         allTasks.add(initState);
@@ -698,7 +699,7 @@ public class AgentCompiler {
         if (config.getRequiredTools() != null && !config.getRequiredTools().isEmpty()) {
             String checkRef = toRef(config.getName()) + "_required_tools_check";
             WorkflowTask checkTask = new WorkflowTask();
-            checkTask.setType("INLINE");
+            checkTask.setType(TaskType.TASK_TYPE_INLINE);
             checkTask.setTaskReferenceName(checkRef);
             checkTask.setInputParameters(
                     Map.of(
@@ -870,9 +871,9 @@ public class AgentCompiler {
         }
         String checkTransferRef = toRef(config.getName()) + "_check_transfer";
         WorkflowTask checkTransferTask = new WorkflowTask();
-        checkTransferTask.setName("INLINE");
+        checkTransferTask.setName(TaskType.TASK_TYPE_INLINE);
         checkTransferTask.setTaskReferenceName(checkTransferRef);
-        checkTransferTask.setType("INLINE");
+        checkTransferTask.setType(TaskType.TASK_TYPE_INLINE);
         Map<String, Object> ctInputs = new LinkedHashMap<>();
         ctInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         ctInputs.put("tool_calls", ref(llmRef + ".output.toolCalls"));
@@ -955,7 +956,7 @@ public class AgentCompiler {
 
         // After loop: SwitchTask routing to sub-agents
         WorkflowTask transferSwitch = new WorkflowTask();
-        transferSwitch.setType("SWITCH");
+        transferSwitch.setType(TaskType.TASK_TYPE_SWITCH);
         transferSwitch.setTaskReferenceName(toRef(config.getName()) + "_transfer_check");
         transferSwitch.setEvaluatorType("value-param");
         transferSwitch.setExpression("switchCaseValue");
@@ -979,7 +980,7 @@ public class AgentCompiler {
         // Resolve input context with null fallback (INLINE → SET_VARIABLE pattern)
         String hybridCtxResolveRef = toRef(config.getName()) + "_ctx_resolve";
         WorkflowTask hybridCtxResolve = new WorkflowTask();
-        hybridCtxResolve.setType("INLINE");
+        hybridCtxResolve.setType(TaskType.TASK_TYPE_INLINE);
         hybridCtxResolve.setTaskReferenceName(hybridCtxResolveRef);
         hybridCtxResolve.setInputParameters(
                 Map.of(
@@ -1000,7 +1001,7 @@ public class AgentCompiler {
             initHybridVars.put("_human_feedback", "");
         }
         WorkflowTask initStateHybrid = new WorkflowTask();
-        initStateHybrid.setType("SET_VARIABLE");
+        initStateHybrid.setType(TaskType.TASK_TYPE_SET_VARIABLE);
         initStateHybrid.setTaskReferenceName(toRef(config.getName()) + "_init_state");
         initStateHybrid.setInputParameters(initHybridVars);
 
@@ -1090,14 +1091,14 @@ public class AgentCompiler {
         }
 
         if (sub.isExternal()) {
-            task.setType("SUB_WORKFLOW");
+            task.setType(TaskType.TASK_TYPE_SUB_WORKFLOW);
             task.setName(sub.getName());
             task.setSubWorkflowParam(new SubWorkflowParams());
             task.getSubWorkflowParam().setName(sub.getName());
             task.setInputParameters(inputs);
         } else {
             WorkflowDef subWf = compile(sub);
-            task.setType("SUB_WORKFLOW");
+            task.setType(TaskType.TASK_TYPE_SUB_WORKFLOW);
             task.setName(sub.getName());
             task.setSubWorkflowParam(new SubWorkflowParams());
             task.getSubWorkflowParam().setName(subWf.getName());
@@ -1124,7 +1125,7 @@ public class AgentCompiler {
      */
     static WorkflowTask createCoerceTask(String rawRef, String coerceRefName) {
         WorkflowTask task = new WorkflowTask();
-        task.setType("INLINE");
+        task.setType(TaskType.TASK_TYPE_INLINE);
         task.setTaskReferenceName(coerceRefName);
         task.setInputParameters(
                 Map.of(
@@ -1182,7 +1183,7 @@ public class AgentCompiler {
             WorkflowTask task = new WorkflowTask();
             task.setName(ptc.getToolName());
             task.setTaskReferenceName(refName);
-            task.setType("SIMPLE");
+            task.setType(TaskType.TASK_TYPE_SIMPLE);
 
             Map<String, Object> inputs = new LinkedHashMap<>(ptc.getArguments());
             task.setInputParameters(inputs);
@@ -1195,12 +1196,12 @@ public class AgentCompiler {
         if (tasks.size() > 1) {
             List<List<WorkflowTask>> branches = tasks.stream().map(List::of).toList();
             WorkflowTask fork = new WorkflowTask();
-            fork.setType("FORK_JOIN");
+            fork.setType(TaskType.TASK_TYPE_FORK_JOIN);
             fork.setTaskReferenceName(toRef(config.getName()) + "_prefill_fork");
             fork.setForkTasks(branches);
 
             WorkflowTask join = new WorkflowTask();
-            join.setType("JOIN");
+            join.setType(TaskType.TASK_TYPE_JOIN);
             join.setTaskReferenceName(toRef(config.getName()) + "_prefill_join");
             join.setJoinOn(tasks.stream().map(WorkflowTask::getTaskReferenceName).toList());
 
@@ -1492,7 +1493,7 @@ public class AgentCompiler {
         WorkflowTask workerTask = new WorkflowTask();
         workerTask.setName(taskName);
         workerTask.setTaskReferenceName(workerRef);
-        workerTask.setType("SIMPLE");
+        workerTask.setType(TaskType.TASK_TYPE_SIMPLE);
 
         Map<String, Object> ctx = new LinkedHashMap<>();
         ctx.put("prompt", "${workflow.input.prompt}");
@@ -1523,7 +1524,7 @@ public class AgentCompiler {
 
         WorkflowTask normalizeTask = new WorkflowTask();
         normalizeTask.setTaskReferenceName(refName);
-        normalizeTask.setType("INLINE");
+        normalizeTask.setType(TaskType.TASK_TYPE_INLINE);
         Map<String, Object> normalizeInputs = new LinkedHashMap<>();
         normalizeInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
         normalizeInputs.put("expression", JavaScriptBuilder.normalizeInstructionsScript());
@@ -1582,7 +1583,7 @@ public class AgentCompiler {
             List<WorkflowTask> loopTasks,
             Map<String, Object> inputParams) {
         WorkflowTask doWhile = new WorkflowTask();
-        doWhile.setType("DO_WHILE");
+        doWhile.setType(TaskType.TASK_TYPE_DO_WHILE);
         doWhile.setTaskReferenceName(loopRef);
         doWhile.setLoopCondition(termCondition);
         doWhile.setLoopOver(loopTasks);
@@ -1603,7 +1604,7 @@ public class AgentCompiler {
      */
     WorkflowTask buildResolveOutputTask(String resolveRef, String llmRef) {
         WorkflowTask task = new WorkflowTask();
-        task.setType("INLINE");
+        task.setType(TaskType.TASK_TYPE_INLINE);
         task.setTaskReferenceName(resolveRef);
 
         Map<String, Object> inputs = new LinkedHashMap<>();
@@ -1629,7 +1630,7 @@ public class AgentCompiler {
      */
     WorkflowTask buildSynthesizeOutputTask(String synthRef, String llmRef) {
         WorkflowTask task = new WorkflowTask();
-        task.setType("INLINE");
+        task.setType(TaskType.TASK_TYPE_INLINE);
         task.setTaskReferenceName(synthRef);
 
         Map<String, Object> inputs = new LinkedHashMap<>();
@@ -1719,7 +1720,7 @@ public class AgentCompiler {
      */
     private WorkflowTask buildContextInjectTask(String refPrefix) {
         WorkflowTask ctxInject = new WorkflowTask();
-        ctxInject.setType("INLINE");
+        ctxInject.setType(TaskType.TASK_TYPE_INLINE);
         ctxInject.setTaskReferenceName(refPrefix + "_ctx_inject");
         Map<String, Object> ctxInjectInputs = new LinkedHashMap<>();
         ctxInjectInputs.put("evaluatorType", GRAALJS_EVALUATOR_TYPE);
@@ -1852,7 +1853,7 @@ public class AgentCompiler {
         WorkflowTask task = new WorkflowTask();
         task.setName(callback.getTaskName());
         task.setTaskReferenceName(agentName + "_" + callback.getPosition());
-        task.setType("SIMPLE");
+        task.setType(TaskType.TASK_TYPE_SIMPLE);
 
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("callback_position", callback.getPosition());
@@ -2039,7 +2040,7 @@ public class AgentCompiler {
         String workerName = config.getTools().get(0).getName();
 
         WorkflowTask fwTask = new WorkflowTask();
-        fwTask.setType("SIMPLE");
+        fwTask.setType(TaskType.TASK_TYPE_SIMPLE);
         fwTask.setName(workerName);
         fwTask.setTaskReferenceName("_fw_task");
         fwTask.setInputParameters(

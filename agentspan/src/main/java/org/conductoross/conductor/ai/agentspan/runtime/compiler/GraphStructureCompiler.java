@@ -25,6 +25,7 @@ import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -97,7 +98,7 @@ class GraphStructureCompiler {
             List<String> branchStateExprs,
             Map<String, String> reducers) {
         WorkflowTask mergeTask = new WorkflowTask();
-        mergeTask.setType("INLINE");
+        mergeTask.setType(TaskType.TASK_TYPE_INLINE);
         mergeTask.setName(mergeRef);
         mergeTask.setTaskReferenceName(mergeRef);
 
@@ -197,7 +198,7 @@ class GraphStructureCompiler {
 
         // 1. Prep SIMPLE task — captures subgraph input
         WorkflowTask prepTask = new WorkflowTask();
-        prepTask.setType("SIMPLE");
+        prepTask.setType(TaskType.TASK_TYPE_SIMPLE);
         prepTask.setName(prepName);
         prepTask.setTaskReferenceName(prepRef);
         prepTask.setInputParameters(new LinkedHashMap<>(Map.of("state", stateExpr)));
@@ -206,7 +207,7 @@ class GraphStructureCompiler {
         // 2. SWITCH: skip subgraph when prep sets _skip_subgraph=true
         String switchRef = allocRef(usedRefs, "_sg_skip_" + nodeName);
         WorkflowTask switchTask = new WorkflowTask();
-        switchTask.setType("SWITCH");
+        switchTask.setType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setName("_sg_skip_" + nodeName);
         switchTask.setTaskReferenceName(switchRef);
         switchTask.setEvaluatorType("value-param");
@@ -218,7 +219,7 @@ class GraphStructureCompiler {
         // Case "true": passthrough — use pre-computed state/result from prep
         String ptRef = allocRef(usedRefs, "_sg_pt_" + nodeName);
         WorkflowTask ptTask = new WorkflowTask();
-        ptTask.setType("INLINE");
+        ptTask.setType(TaskType.TASK_TYPE_INLINE);
         ptTask.setName("_sg_pt_" + nodeName);
         ptTask.setTaskReferenceName(ptRef);
         Map<String, Object> ptInputs = new LinkedHashMap<>();
@@ -248,7 +249,7 @@ class GraphStructureCompiler {
             String subRef = allocRef(usedRefs, "_sg_sub_" + nodeName);
 
             WorkflowTask subTask = new WorkflowTask();
-            subTask.setType("SUB_WORKFLOW");
+            subTask.setType(TaskType.TASK_TYPE_SUB_WORKFLOW);
             subTask.setName(subWf.getName());
             subTask.setTaskReferenceName(subRef);
             SubWorkflowParams subParams = new SubWorkflowParams();
@@ -263,7 +264,7 @@ class GraphStructureCompiler {
 
             // Finish SIMPLE task — maps subgraph output back to parent state
             WorkflowTask finishTask = new WorkflowTask();
-            finishTask.setType("SIMPLE");
+            finishTask.setType(TaskType.TASK_TYPE_SIMPLE);
             finishTask.setName(finishName);
             finishTask.setTaskReferenceName(finishRef);
             Map<String, Object> finishInputs = new LinkedHashMap<>();
@@ -279,7 +280,7 @@ class GraphStructureCompiler {
         // 3. Coalesce INLINE — unify output from either SWITCH branch
         String coalRef = allocRef(usedRefs, "_sg_out_" + nodeName);
         WorkflowTask coalTask = new WorkflowTask();
-        coalTask.setType("INLINE");
+        coalTask.setType(TaskType.TASK_TYPE_INLINE);
         coalTask.setName("_sg_out_" + nodeName);
         coalTask.setTaskReferenceName(coalRef);
         Map<String, Object> coalInputs = new LinkedHashMap<>();
@@ -326,7 +327,7 @@ class GraphStructureCompiler {
 
         // 1. Prep SIMPLE task
         WorkflowTask prepTask = new WorkflowTask();
-        prepTask.setType("SIMPLE");
+        prepTask.setType(TaskType.TASK_TYPE_SIMPLE);
         prepTask.setName((String) nodeSpec.get("_llm_prep_ref"));
         prepTask.setTaskReferenceName(prepRef);
         prepTask.setInputParameters(new LinkedHashMap<>(Map.of("state", stateExpr)));
@@ -336,7 +337,7 @@ class GraphStructureCompiler {
         // 2. SWITCH: skip LLM when prep sets _skip_llm=true
         String switchRef = allocRef(usedRefs, "_llm_skip_" + nodeName);
         WorkflowTask switchTask = new WorkflowTask();
-        switchTask.setType("SWITCH");
+        switchTask.setType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setName("_llm_skip_" + nodeName);
         switchTask.setTaskReferenceName(switchRef);
         switchTask.setEvaluatorType("value-param");
@@ -348,7 +349,7 @@ class GraphStructureCompiler {
         // Case "true": passthrough — use pre-computed state/result from prep
         String ptRef = allocRef(usedRefs, "_llm_pt_" + nodeName);
         WorkflowTask ptTask = new WorkflowTask();
-        ptTask.setType("INLINE");
+        ptTask.setType(TaskType.TASK_TYPE_INLINE);
         ptTask.setName("_llm_pt_" + nodeName);
         ptTask.setTaskReferenceName(ptRef);
         Map<String, Object> ptInputs = new LinkedHashMap<>();
@@ -377,7 +378,7 @@ class GraphStructureCompiler {
         llmTask.setInputParameters(llmInputs);
 
         WorkflowTask finishTask = new WorkflowTask();
-        finishTask.setType("SIMPLE");
+        finishTask.setType(TaskType.TASK_TYPE_SIMPLE);
         finishTask.setName((String) nodeSpec.get("_llm_finish_ref"));
         finishTask.setTaskReferenceName(finishRef);
         Map<String, Object> finishInputs = new LinkedHashMap<>();
@@ -393,7 +394,7 @@ class GraphStructureCompiler {
         // non-executed branch outputs (Conductor may resolve them to empty objects).
         String coalRef = allocRef(usedRefs, "_llm_out_" + nodeName);
         WorkflowTask coalTask = new WorkflowTask();
-        coalTask.setType("INLINE");
+        coalTask.setType(TaskType.TASK_TYPE_INLINE);
         coalTask.setName("_llm_out_" + nodeName);
         coalTask.setTaskReferenceName(coalRef);
         Map<String, Object> coalInputs = new LinkedHashMap<>();
@@ -636,7 +637,7 @@ class GraphStructureCompiler {
                     } else {
                         String nodeRef = allocRef(usedRefs, wRef);
                         WorkflowTask nodeTask = new WorkflowTask();
-                        nodeTask.setType("SIMPLE");
+                        nodeTask.setType(TaskType.TASK_TYPE_SIMPLE);
                         nodeTask.setName(wRef);
                         nodeTask.setTaskReferenceName(nodeRef);
                         nodeTask.setInputParameters(
@@ -665,7 +666,7 @@ class GraphStructureCompiler {
             // FORK_JOIN task
             String forkRef = allocRef(usedRefs, "_fork");
             WorkflowTask forkTask = new WorkflowTask();
-            forkTask.setType("FORK_JOIN");
+            forkTask.setType(TaskType.TASK_TYPE_FORK_JOIN);
             forkTask.setTaskReferenceName(forkRef);
             forkTask.setForkTasks(forkBranches);
             tasks.add(forkTask);
@@ -673,7 +674,7 @@ class GraphStructureCompiler {
             // JOIN task
             String joinRef = allocRef(usedRefs, "_join");
             WorkflowTask joinTask = new WorkflowTask();
-            joinTask.setType("JOIN");
+            joinTask.setType(TaskType.TASK_TYPE_JOIN);
             joinTask.setTaskReferenceName(joinRef);
             joinTask.setJoinOn(joinOnRefs);
             tasks.add(joinTask);
@@ -786,7 +787,7 @@ class GraphStructureCompiler {
                 // Regular non-LLM node: single SIMPLE task
                 String nodeRef = allocRef(usedRefs, workerRef);
                 WorkflowTask nodeTask = new WorkflowTask();
-                nodeTask.setType("SIMPLE");
+                nodeTask.setType(TaskType.TASK_TYPE_SIMPLE);
                 nodeTask.setName(workerRef);
                 nodeTask.setTaskReferenceName(nodeRef);
                 Map<String, Object> nodeInputs = new LinkedHashMap<>();
@@ -813,7 +814,7 @@ class GraphStructureCompiler {
                     // [...], state: {...}}
                     String allocRouterRef = allocRef(usedRefs, routerRef);
                     WorkflowTask routerTask = new WorkflowTask();
-                    routerTask.setType("SIMPLE");
+                    routerTask.setType(TaskType.TASK_TYPE_SIMPLE);
                     routerTask.setName(routerRef);
                     routerTask.setTaskReferenceName(allocRouterRef);
                     routerTask.setInputParameters(
@@ -827,7 +828,7 @@ class GraphStructureCompiler {
                     // ...]}
                     String enrichRef = allocRef(usedRefs, "_dyn_enrich_" + nodeName);
                     WorkflowTask enrichTask = new WorkflowTask();
-                    enrichTask.setType("INLINE");
+                    enrichTask.setType(TaskType.TASK_TYPE_INLINE);
                     enrichTask.setName("_dyn_enrich_" + nodeName);
                     enrichTask.setTaskReferenceName(enrichRef);
 
@@ -880,8 +881,8 @@ class GraphStructureCompiler {
                     // 3. FORK_JOIN_DYNAMIC task
                     String dynForkRef = allocRef(usedRefs, "_dyn_fork_" + nodeName);
                     WorkflowTask dynForkTask = new WorkflowTask();
-                    dynForkTask.setType("FORK_JOIN_DYNAMIC");
-                    dynForkTask.setName("FORK_JOIN_DYNAMIC");
+                    dynForkTask.setType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC);
+                    dynForkTask.setName(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC);
                     dynForkTask.setTaskReferenceName(dynForkRef);
                     dynForkTask.setDynamicForkTasksParam("dynamicTasks");
                     dynForkTask.setDynamicForkTasksInputParamName("dynamicTasksInputs");
@@ -897,8 +898,8 @@ class GraphStructureCompiler {
                     // 4. JOIN task
                     String dynJoinRef = allocRef(usedRefs, "_dyn_join_" + nodeName);
                     WorkflowTask dynJoinTask = new WorkflowTask();
-                    dynJoinTask.setType("JOIN");
-                    dynJoinTask.setName("JOIN");
+                    dynJoinTask.setType(TaskType.TASK_TYPE_JOIN);
+                    dynJoinTask.setName(TaskType.TASK_TYPE_JOIN);
                     dynJoinTask.setTaskReferenceName(dynJoinRef);
                     tasks.add(dynJoinTask);
 
@@ -908,7 +909,7 @@ class GraphStructureCompiler {
                     // output keys
                     String dynMergeRef = allocRef(usedRefs, "_dyn_merge_" + nodeName);
                     WorkflowTask dynMergeTask = new WorkflowTask();
-                    dynMergeTask.setType("INLINE");
+                    dynMergeTask.setType(TaskType.TASK_TYPE_INLINE);
                     dynMergeTask.setName("_dyn_merge_" + nodeName);
                     dynMergeTask.setTaskReferenceName(dynMergeRef);
 
@@ -1015,7 +1016,7 @@ class GraphStructureCompiler {
                         // 1. Build router task (will be last task in loop body)
                         String allocRouterRef = allocRef(usedRefs, routerRef);
                         WorkflowTask routerTask = new WorkflowTask();
-                        routerTask.setType("SIMPLE");
+                        routerTask.setType(TaskType.TASK_TYPE_SIMPLE);
                         routerTask.setName(routerRef);
                         routerTask.setTaskReferenceName(allocRouterRef);
                         routerTask.setInputParameters(
@@ -1034,7 +1035,7 @@ class GraphStructureCompiler {
                         // Iteration 1: uses pre-loop state; Iteration 2+: uses router state
                         String bridgeRef = allocRef(usedRefs, "_loop_bridge_" + backEdgeTarget);
                         WorkflowTask bridgeTask = new WorkflowTask();
-                        bridgeTask.setType("INLINE");
+                        bridgeTask.setType(TaskType.TASK_TYPE_INLINE);
                         bridgeTask.setName("_loop_bridge");
                         bridgeTask.setTaskReferenceName(bridgeRef);
 
@@ -1123,7 +1124,7 @@ class GraphStructureCompiler {
                         // Add router task
                         String allocRouterRef = allocRef(usedRefs, routerRef);
                         WorkflowTask routerTask = new WorkflowTask();
-                        routerTask.setType("SIMPLE");
+                        routerTask.setType(TaskType.TASK_TYPE_SIMPLE);
                         routerTask.setName(routerRef);
                         routerTask.setTaskReferenceName(allocRouterRef);
                         routerTask.setInputParameters(
@@ -1133,7 +1134,7 @@ class GraphStructureCompiler {
                         // SWITCH task: value-param evaluator
                         String switchRef = allocRef(usedRefs, "_route_" + nodeName);
                         WorkflowTask switchTask = new WorkflowTask();
-                        switchTask.setType("SWITCH");
+                        switchTask.setType(TaskType.TASK_TYPE_SWITCH);
                         switchTask.setName("_route_" + nodeName);
                         switchTask.setTaskReferenceName(switchRef);
                         switchTask.setEvaluatorType("value-param");
@@ -1208,7 +1209,7 @@ class GraphStructureCompiler {
                             } else {
                                 String tWorkerRef = allocRef(usedRefs, targetWorkerRef);
                                 WorkflowTask branchTask = new WorkflowTask();
-                                branchTask.setType("SIMPLE");
+                                branchTask.setType(TaskType.TASK_TYPE_SIMPLE);
                                 branchTask.setName(targetWorkerRef);
                                 branchTask.setTaskReferenceName(tWorkerRef);
                                 branchTask.setInputParameters(
@@ -1231,7 +1232,7 @@ class GraphStructureCompiler {
                         if (branchLastRefs.size() > 1) {
                             String coalesceRef = allocRef(usedRefs, "_coalesce_" + nodeName);
                             WorkflowTask coalesceTask = new WorkflowTask();
-                            coalesceTask.setType("INLINE");
+                            coalesceTask.setType(TaskType.TASK_TYPE_INLINE);
                             coalesceTask.setName("_coalesce_" + nodeName);
                             coalesceTask.setTaskReferenceName(coalesceRef);
 
@@ -1347,7 +1348,7 @@ class GraphStructureCompiler {
                             } else {
                                 String nodeRef = allocRef(usedRefs, wRef);
                                 WorkflowTask nodeTask = new WorkflowTask();
-                                nodeTask.setType("SIMPLE");
+                                nodeTask.setType(TaskType.TASK_TYPE_SIMPLE);
                                 nodeTask.setName(wRef);
                                 nodeTask.setTaskReferenceName(nodeRef);
                                 nodeTask.setInputParameters(
@@ -1377,7 +1378,7 @@ class GraphStructureCompiler {
                     // FORK_JOIN task
                     String midForkRef = allocRef(usedRefs, "_fork_" + nodeName);
                     WorkflowTask forkTask = new WorkflowTask();
-                    forkTask.setType("FORK_JOIN");
+                    forkTask.setType(TaskType.TASK_TYPE_FORK_JOIN);
                     forkTask.setTaskReferenceName(midForkRef);
                     forkTask.setForkTasks(midForkBranches);
                     tasks.add(forkTask);
@@ -1385,7 +1386,7 @@ class GraphStructureCompiler {
                     // JOIN task
                     String midJoinRef = allocRef(usedRefs, "_join_" + nodeName);
                     WorkflowTask joinTask = new WorkflowTask();
-                    joinTask.setType("JOIN");
+                    joinTask.setType(TaskType.TASK_TYPE_JOIN);
                     joinTask.setTaskReferenceName(midJoinRef);
                     joinTask.setJoinOn(midJoinOnRefs);
                     tasks.add(joinTask);
