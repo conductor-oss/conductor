@@ -22,13 +22,25 @@ vi.mock("components/FlatMapForm/ConductorAutocompleteVariables", () => ({
     value,
     onChange,
     onFocus,
+    helperText,
+    inputProps,
   }: any) => (
-    <input
-      aria-label={String(label)}
-      value={value ?? ""}
-      onChange={(event) => onChange(event.target.value)}
-      onFocus={() => onFocus?.()}
-    />
+    <div>
+      <input
+        aria-label={String(label)}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value)}
+        onFocus={() => onFocus?.()}
+      />
+      {helperText && (
+        <span data-testid={`${label}-helperText`}>{helperText}</span>
+      )}
+      {inputProps?.tooltip && (
+        <span data-testid={`${label}-tooltip`}>
+          {inputProps.tooltip.title}: {inputProps.tooltip.content}
+        </span>
+      )}
+    </div>
   ),
 }));
 
@@ -127,6 +139,19 @@ describe("LLMChatCompleteTaskForm — Prompt Template field", () => {
         stopWords: ["END"],
         promptVariables: { audience: "" },
       }),
+    );
+  });
+
+  it("renders a tooltip and helper text explaining the Instructions field", async () => {
+    render(<Harness initialTask={{ inputParameters: {} }} />);
+    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
+
+    expect(
+      screen.getByTestId("Prompt Template-helperText"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("Prompt Template-tooltip")).toBeInTheDocument();
+    expect(screen.getByTestId("Prompt Template-tooltip").textContent).toContain(
+      "Instructions",
     );
   });
 });

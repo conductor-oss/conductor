@@ -87,6 +87,15 @@ type PromptTemplateFieldConfig = {
    * Back-compat for text-complete tasks saved before this field wrote to promptName.
    */
   legacyReadKey?: string;
+  /**
+   * Tooltip shown on the "Prompt Template" input. Mirrors the inputProps.tooltip
+   * shape already used by sibling LLM fields (VECTOR_DB, NAMESPACE, MAX_TOKENS).
+   */
+  tooltip?: { title: string; content: string };
+  /**
+   * Short helper line rendered under the input, clarifying what the field does.
+   */
+  helperText?: string;
 };
 
 /**
@@ -102,6 +111,8 @@ const createPromptTemplateField = ({
   fieldType,
   selectEventType,
   legacyReadKey,
+  tooltip,
+  helperText,
 }: PromptTemplateFieldConfig): FieldComponentType =>
   function PromptTemplateField({ onChange, task, actor }) {
     const promptNames = useSelector(
@@ -146,6 +157,8 @@ const createPromptTemplateField = ({
             value={displayValue}
             otherOptions={options}
             label="Prompt Template"
+            helperText={helperText}
+            inputProps={tooltip ? { tooltip } : undefined}
             onFocus={() =>
               actor.send({
                 type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
@@ -654,6 +667,13 @@ const aiFieldTypes = {
   [UiIntegrationsFieldType.INSTRUCTIONS]: createPromptTemplateField({
     fieldType: UiIntegrationsFieldType.INSTRUCTIONS,
     selectEventType: LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS,
+    tooltip: {
+      title: "Instructions",
+      content:
+        "The prompt sent to the LLM. Enter the instruction text directly, or reference a saved AI Prompt by name. For Chat Complete tasks this becomes the system-level instruction that shapes the model's behavior for the conversation.",
+    },
+    helperText:
+      "The instruction text sent to the LLM, or the name of a saved AI Prompt to reuse.",
   }),
   [UiIntegrationsFieldType.MESSAGES]: ({ onChange, task }) => {
     const [setValue, ipValue] = useSetterGetter(
