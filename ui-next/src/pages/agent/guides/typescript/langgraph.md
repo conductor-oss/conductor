@@ -1,7 +1,7 @@
 ## 1. Install and configure
 
 ```bash
-npm install @io-orkes/conductor-javascript @langchain/langgraph @langchain/openai @langchain/core
+npm install @io-orkes/conductor-javascript@4.0.0-rc4 @langchain/langgraph @langchain/openai @langchain/core
 export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>

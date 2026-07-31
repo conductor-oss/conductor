@@ -1,5 +1,5 @@
 ```bash
-dotnet add package conductor-ai-openai
+dotnet add package conductor-ai-openai --version 3.0.0-rc3
 ```
 
 The adapter mirrors the OpenAI Agents authoring shape and routes the result through Conductor’s durable runtime.
