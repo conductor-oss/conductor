@@ -339,7 +339,9 @@ jobs:
         uses: mikepenz/action-junit-report@v6
         if: always()
         with:
-          report_paths: "test-harness/build/test-results/agentspanDeterministicE2E/TEST-*.xml,test-harness/build/test-results/agentspanRealE2E/TEST-*.xml"
+          report_paths: |
+            test-harness/build/test-results/agentspanDeterministicE2E/TEST-*.xml
+            test-harness/build/test-results/agentspanRealE2E/TEST-*.xml
           check_name: AgentSpan E2E Test Report
       - name: Upload AgentSpan E2E reports
         uses: actions/upload-artifact@v7
