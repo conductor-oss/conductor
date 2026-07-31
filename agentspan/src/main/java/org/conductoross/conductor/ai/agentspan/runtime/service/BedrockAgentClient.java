@@ -43,18 +43,11 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResp
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
 
-/**
- * {@link ConductorAgentClient} backed by AWS Bedrock Agent Runtime.
- *
- * <p>Bedrock agents use a streaming invoke model — there is no separate status API. Each call to
- * {@code startAgent} or {@code respond} streams the response and buffers it into an in-memory
- * {@link ExecutionState}. Subsequent {@code getAgentStatus} calls read from that state.
- *
- * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, falling back to the default AWS
- * credential chain, so the client registers whether or not Bedrock is configured; an unconfigured
- * runtime fails only if a workflow routes to it.
- */
+// ConductorAgentClient backed by AWS Bedrock Agent Runtime.
+// Bedrock uses a streaming invoke model — startAgent/respond stream the response into an
+// in-memory ExecutionState; getAgentStatus reads from that state (no separate status API).
+// Activated by conductor.integrations.ai.enabled=true. Credentials come from credentialRef
+// or the default AWS credential chain; an unconfigured runtime fails only if a workflow uses it.
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {

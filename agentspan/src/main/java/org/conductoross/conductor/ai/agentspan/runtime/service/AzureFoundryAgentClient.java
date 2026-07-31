@@ -44,23 +44,13 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-/**
- * {@link ConductorAgentClient} backed by Azure AI Foundry Agents via the OpenAI
- * Assistants-compatible API.
- *
- * <p>Auth uses Entra ID client credentials flow. Credentials are resolved from the Conductor secret
- * store using the {@code credentialRef} on the start request, with dotted-path sub-keys {@code
- * .client_id}, {@code .client_secret}, and {@code .tenant_id}.
- *
- * <p>Required fields: - agentUrl: the Azure OpenAI endpoint including the /openai suffix, e.g.
- * https://my-resource.openai.azure.com/openai (or set the AZURE_FOUNDRY_ENDPOINT secret) -
- * rawConfig.assistantId: the Azure AI Foundry assistant ID
- *
- * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, so the client registers whether
- * or not Azure Foundry is configured; an unconfigured runtime fails only if a workflow routes to
- * it.
- */
+// ConductorAgentClient backed by Azure AI Foundry Agents via the OpenAI Assistants-compatible API.
+// Auth uses Entra ID client credentials flow via credentialRef (.client_id, .client_secret,
+// .tenant_id).
+// Required: agentUrl (https://my-resource.openai.azure.com/openai) or AZURE_FOUNDRY_ENDPOINT
+// secret,
+// and rawConfig.assistantId.
+// Activated by conductor.integrations.ai.enabled=true; an unconfigured runtime fails only if used.
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AzureFoundryAgentClient implements ConductorAgentClient {
@@ -130,16 +120,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .build();
     }
 
-    /**
-     * Polls the current run status. Maps Azure run states to {@link ConductorAgentState}:
-     *
-     * <ul>
-     *   <li>completed → COMPLETED with last assistant message as output
-     *   <li>requires_action → WAITING with tool call details as pendingTool
-     *   <li>failed / expired / cancelled → FAILED / CANCELED
-     *   <li>queued / in_progress → RUNNING
-     * </ul>
-     */
+    // Polls the run status and maps Azure states to ConductorAgentState:
+    // completed → COMPLETED, requires_action → WAITING, failed/expired/cancelled → FAILED/CANCELED,
+    // queued/in_progress → RUNNING
     @Override
     public ConductorAgentStatusResponse getAgentStatus(String executionId) {
         ExecutionContext ctx = executions.get(executionId);
@@ -157,10 +140,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return toStatusResponse(executionId, run, ctx, token);
     }
 
-    /**
-     * Submits a tool-call result (when the run is in {@code requires_action} state) or posts a new
-     * user message and starts a fresh run (for multi-turn conversation).
-     */
+    // Submits a tool-call result (requires_action state) or posts a new user message for
+    // multi-turn.
     @Override
     public void respond(ConductorAgentRespondRequest request) {
         String executionId = request.getExecutionId();
