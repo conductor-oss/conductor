@@ -16,10 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentDagService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackException;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackState;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlanAndCompileTask;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -45,6 +49,7 @@ public class AgentController {
 
     private final AgentService agentService;
     private final AgentDagService agentDagService;
+    private final AgentFeedbackService agentFeedbackService;
 
     /**
      * Compile an agent configuration into an execution plan. Does not register or execute — useful
@@ -185,6 +190,30 @@ public class AgentController {
         return agentService.getExecutionDetail(executionId);
     }
 
+    /** Get canonical completed-execution feedback eligibility and state. */
+    @GetMapping("/executions/{executionId}/feedback")
+    public AgentFeedbackState getExecutionFeedback(
+            @PathVariable("executionId") String executionId) {
+        return agentFeedbackService.get(executionId);
+    }
+
+    /** Upsert human feedback for a completed root execution. */
+    @PostMapping("/executions/{executionId}/feedback")
+    public AgentFeedbackState setExecutionFeedback(
+            @PathVariable("executionId") String executionId,
+            @RequestBody Map<String, Object> request) {
+        Object ratingValue = request == null ? null : request.get("rating");
+        String rating = ratingValue instanceof String ? (String) ratingValue : null;
+        return agentFeedbackService.set(executionId, rating);
+    }
+
+    /** Return feedback failures with a stable machine-readable code. */
+    @ExceptionHandler(AgentFeedbackException.class)
+    public ResponseEntity<Map<String, Object>> handleFeedbackException(
+            AgentFeedbackException error) {
+        return ResponseEntity.status(error.getStatus()).body(Map.of("code", error.getCode()));
+    }
+
     /** Pause a running agent execution. */
     @PutMapping("/{executionId}/pause")
     public void pauseAgent(@PathVariable("executionId") String executionId) {
@@ -272,8 +301,8 @@ public class AgentController {
 
     /** Get full execution with tasks (Conductor Workflow object, used by UI). */
     @GetMapping("/executions/{executionId}/full")
-    public Workflow getFullExecution(@PathVariable("executionId") String executionId) {
-        return agentService.getFullExecution(executionId);
+    public Map<String, Object> getFullExecution(@PathVariable("executionId") String executionId) {
+        return agentService.getFullExecutionWithAggregate(executionId);
     }
 
     /** Restart a completed/failed execution. */

@@ -17,6 +17,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -1435,6 +1436,112 @@ public class AgentService {
 
     public Workflow getFullExecution(String executionId) {
         return workflowService.getExecutionStatus(executionId, true);
+    }
+
+    /**
+     * Returns the normal full execution payload with token usage aggregated across the complete
+     * sub-workflow tree. Descendants are loaded inside the server, avoiding one large HTTP response
+     * per child in the UI.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getFullExecutionWithAggregate(String executionId) {
+        Workflow root = getFullExecution(executionId);
+        Map<String, Object> response = MAPPER.convertValue(root, Map.class);
+        response.put(
+                "aggregateTokenUsage",
+                aggregateTokenUsage(
+                        root,
+                        childId -> {
+                            try {
+                                return workflowService.getExecutionStatus(childId, true);
+                            } catch (RuntimeException e) {
+                                // A pruned or temporarily unavailable child must not make the
+                                // parent execution page unavailable.
+                                log.warn(
+                                        "Unable to include sub-workflow {} in token aggregation for {}",
+                                        childId,
+                                        executionId,
+                                        e);
+                                return null;
+                            }
+                        }));
+        return response;
+    }
+
+    /**
+     * Walks each execution once and sums actual LLM usage. Child IDs on SUB_WORKFLOW tasks are the
+     * strongly consistent hierarchy source; the indexed parentWorkflowId field can lag active
+     * executions and does not contain task-level token values.
+     */
+    @VisibleForTesting
+    static Map<String, Long> aggregateTokenUsage(
+            Workflow root, Function<String, Workflow> childLoader) {
+        long promptTokens = 0;
+        long completionTokens = 0;
+        long totalTokens = 0;
+        Set<String> visited = new HashSet<>();
+        Set<String> scheduled = new HashSet<>();
+        Deque<Workflow> pending = new ArrayDeque<>();
+        pending.add(root);
+        if (StringUtils.isNotBlank(root.getWorkflowId())) {
+            scheduled.add(root.getWorkflowId());
+        }
+
+        while (!pending.isEmpty()) {
+            Workflow workflow = pending.removeFirst();
+            String workflowId = workflow.getWorkflowId();
+            if (workflowId != null && !visited.add(workflowId)) {
+                continue;
+            }
+
+            List<Task> workflowTasks = workflow.getTasks();
+            if (workflowTasks == null) {
+                continue;
+            }
+            for (Task task : workflowTasks) {
+                if ("LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType())) {
+                    Map<String, Object> output = task.getOutputData();
+                    if (output != null) {
+                        long taskPromptTokens = toLong(output.get("promptTokens"));
+                        long taskCompletionTokens = toLong(output.get("completionTokens"));
+                        long taskTotalTokens = toLong(output.get("tokenUsed"));
+                        promptTokens += taskPromptTokens;
+                        completionTokens += taskCompletionTokens;
+                        totalTokens +=
+                                taskTotalTokens > 0
+                                        ? taskTotalTokens
+                                        : taskPromptTokens + taskCompletionTokens;
+                    }
+                }
+
+                String childId = task.getSubWorkflowId();
+                // Mark a child before loading it so duplicate SUB_WORKFLOW references do not issue
+                // repeated database reads while the first copy is still waiting in the queue.
+                if (StringUtils.isNotBlank(childId) && scheduled.add(childId)) {
+                    Workflow child = childLoader.apply(childId);
+                    if (child != null) {
+                        pending.addLast(child);
+                    }
+                }
+            }
+        }
+
+        Map<String, Long> aggregate = new LinkedHashMap<>();
+        aggregate.put("promptTokens", promptTokens);
+        aggregate.put("completionTokens", completionTokens);
+        aggregate.put("totalTokens", totalTokens);
+        return aggregate;
+    }
+
+    private static long toLong(Object value) {
+        if (value instanceof Number) return ((Number) value).longValue();
+        if (value instanceof String) {
+            try {
+                return Long.parseLong((String) value);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return 0;
     }
 
     public void restartExecution(String executionId, boolean useLatestDefinitions) {

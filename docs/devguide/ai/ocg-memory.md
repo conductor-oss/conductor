@@ -52,7 +52,22 @@ Supply these stable inputs when starting a run:
 The Conductor workflow execution id is the stable `turn_id`. Retrying export for the same execution
 therefore sends the same `session_id` and `turn_id`.
 
-## Capture and recall
+## Recall, capture, and feedback
+
+For a root agent workflow, the compiler calls `cg_search_memories` directly through
+`{ocgUrl}/mcp/` before the first model or sub-agent task. The query is the original `prompt`, the
+owner is the configured `agent`, shared memories are included, and the initial result limit is five.
+Conductor normalizes MCP text blocks, caps the recalled text to the agent context value limit, and
+injects it as explicitly untrusted supporting context. Search and normalization are optional, so an
+OCG outage does not prevent the agent from running.
+
+This compiler-owned recall does not expose OCG tools to the model and does not run MCP discovery.
+An OCG MCP declaration with `config.tool_names` is compiled from Conductor's bundled schemas without
+`LIST_MCP_TOOLS`. The model-callable lookup catalog contains `cg_query`, `cg_get_neighbors`,
+`cg_traverse`, `cg_shortest_path`, `cg_has_path`, and `cg_find_all_paths`; lifecycle memory write,
+delete, sharing, history, and cleanup tools are not exposed. Compiled sub-agents do not receive
+their own automatic search or terminal listener, but the root recall is forwarded to their initial
+context.
 
 At root workflow completion or termination, the workflow listener reads the persisted task history,
 maps tool calls and sub-workflows (including outputs and errors), and asynchronously posts it to
@@ -60,7 +75,10 @@ maps tool calls and sub-workflows (including outputs and errors), and asynchrono
 not change the agent result. If the request approaches OCG's 10 MiB limit, only event detail and
 output are truncated; the original prompt and final result are preserved.
 
-The compiler also registers `{ocgUrl}/mcp/` as a best-effort MCP server with the same credential.
-Its discovered `cg_search_memories` tool lets the model recall prior work. `cg_get_memory`,
-`cg_list_memories`, and `cg_set_memory` remain available for deliberate explicit memory operations;
-none is used as the run-completion trigger. MCP discovery failure does not fail the run.
+Completed-execution feedback is exposed through Conductor at
+`GET/POST /api/agent/executions/{executionId}/feedback`; the browser never receives the OCG key.
+The current OCG `feature/memory-rework` API supports memory-key feedback through a signed-in JWT or
+signed capability link, but does not yet provide the API-key-authenticated turn-identity read/upsert
+contract required by these operations. Until OCG adds that contract, eligible executions return
+`enabled=false` with reason `OCG_FEEDBACK_CONTRACT_UNAVAILABLE`, and the execution UI hides the
+controls. Conductor does not translate a turn into a guessed memory key or invent an upstream route.

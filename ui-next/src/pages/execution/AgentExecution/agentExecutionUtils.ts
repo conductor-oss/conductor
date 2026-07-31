@@ -141,6 +141,17 @@ function toMs(value: string | number | undefined | null): number {
   return typeof value === "number" ? value : parseInt(value, 10) || 0;
 }
 
+/** Preserve the Conductor task type in metadata while giving MCP calls a useful diagram label. */
+function toolDisplayName(task: ExecutionTask): string {
+  if (task.taskType !== "CALL_MCP_TOOL") return task.taskType;
+
+  const input = task.inputData as Record<string, unknown> | undefined;
+  const semanticName = input?._agent_tool_name ?? input?.method;
+  return typeof semanticName === "string" && semanticName.trim()
+    ? `MCP_TOOL_${semanticName.trim().toUpperCase()}`
+    : task.taskType;
+}
+
 export function timelineItemId(turn: AgentTurn): string {
   return turn.id ?? `turn-${turn.turnNumber}`;
 }
@@ -965,7 +976,7 @@ export function transformWorkflowExecutionToAgentRun(
       for (const toolTask of toolWorkerTasks) {
         const idData = (toolTask.inputData ?? {}) as Record<string, unknown>;
         const od = (toolTask.outputData ?? {}) as Record<string, unknown>;
-        const toolName = toolTask.taskType;
+        const toolName = toolDisplayName(toolTask);
         const failed = isFailedTaskStatus(toolTask.status);
         const toolDuration =
           toolTask.endTime && toolTask.startTime
@@ -1423,6 +1434,7 @@ export function transformWorkflowExecutionToAgentRun(
         // Root-level tool worker task (no DO_WHILE iteration suffix)
         const od = (task.outputData ?? {}) as Record<string, unknown>;
         const idData = (task.inputData ?? {}) as Record<string, unknown>;
+        const toolName = toolDisplayName(task);
         const failed = isFailedTaskStatus(task.status);
         const dur =
           task.endTime && task.startTime ? task.endTime - task.startTime : 0;
@@ -1488,8 +1500,8 @@ export function transformWorkflowExecutionToAgentRun(
               id: `${task.taskId}-tool`,
               type: EventType.TOOL_CALL,
               timestamp: task.startTime ?? 0,
-              toolName: task.taskType,
-              summary: task.taskType,
+              toolName,
+              summary: toolName,
               detail: {
                 input: cleanInput,
                 output: failed ? task.reasonForIncompletion : od,
@@ -1743,7 +1755,7 @@ export function transformWorkflowExecutionToAgentRun(
     turns,
     status: mapWorkflowStatus(execution.status),
     agentDef,
-    totalTokens: {
+    totalTokens: execution.aggregateTokenUsage ?? {
       promptTokens: totalPromptTokens,
       completionTokens: totalCompletionTokens,
       totalTokens: totalPromptTokens + totalCompletionTokens,

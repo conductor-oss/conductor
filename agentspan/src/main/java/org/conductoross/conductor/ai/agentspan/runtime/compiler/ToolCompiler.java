@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
@@ -168,6 +169,72 @@ public class ToolCompiler {
     // ── Public API ───────────────────────────────────────────────────────
 
     /**
+     * Expand an MCP server declaration with {@code config.tool_names} into concrete, model-callable
+     * tools from Conductor's compile-time OCG catalog. Explicit tools carry their schemas into the
+     * LLM request and therefore do not need a runtime LIST_MCP_TOOLS task.
+     */
+    public List<ToolConfig> expandExplicitMcpTools(List<ToolConfig> tools) {
+        if (tools == null || tools.isEmpty()) {
+            return tools == null ? Collections.emptyList() : tools;
+        }
+
+        List<ToolConfig> expanded = new ArrayList<>();
+        for (ToolConfig tool : tools) {
+            if (!"mcp".equals(tool.getToolType()) || tool.getConfig() == null) {
+                expanded.add(tool);
+                continue;
+            }
+
+            Object configuredNames =
+                    tool.getConfig().containsKey("tool_names")
+                            ? tool.getConfig().get("tool_names")
+                            : tool.getConfig().get("toolNames");
+            if (!(configuredNames instanceof List<?> names) || names.isEmpty()) {
+                expanded.add(tool);
+                continue;
+            }
+
+            Map<String, Object> serverConfig = new LinkedHashMap<>(tool.getConfig());
+            serverConfig.remove("tool_names");
+            serverConfig.remove("toolNames");
+            for (Object configuredName : names) {
+                String name = String.valueOf(configuredName);
+                OcgToolCatalog.Definition definition = OcgToolCatalog.get(name);
+                if (definition == null) {
+                    throw new IllegalArgumentException(
+                            "Unknown explicit OCG MCP tool '"
+                                    + name
+                                    + "'. Add its schema to the Conductor OCG tool catalog before exposing it.");
+                }
+                expanded.add(
+                        ToolConfig.builder()
+                                .name(name)
+                                .description(definition.description())
+                                .inputSchema(definition.inputSchema())
+                                .toolType("mcp")
+                                .approvalRequired(tool.isApprovalRequired())
+                                .timeoutSeconds(tool.getTimeoutSeconds())
+                                .maxCalls(tool.getMaxCalls())
+                                .config(new LinkedHashMap<>(serverConfig))
+                                .guardrails(tool.getGuardrails())
+                                .stateful(tool.isStateful())
+                                .build());
+            }
+        }
+        return expanded;
+    }
+
+    /** MCP declarations with a complete name and schema can bypass runtime discovery. */
+    public static boolean requiresMcpDiscovery(ToolConfig tool) {
+        if (!"mcp".equals(tool.getToolType())) {
+            return false;
+        }
+        return StringUtils.isBlank(tool.getName())
+                || tool.getInputSchema() == null
+                || tool.getInputSchema().isEmpty();
+    }
+
+    /**
      * Compile a list of {@link ToolConfig} definitions into tool spec maps suitable for passing to
      * the LLM's {@code tools} parameter.
      *
@@ -215,7 +282,12 @@ public class ToolCompiler {
                 Map<String, Object> configParams = new LinkedHashMap<>();
                 configParams.put("mcpServer", tool.getConfig().getOrDefault("server_url", ""));
                 Object headers = tool.getConfig().get("headers");
-                if (headers != null) {
+                if (headers instanceof Map<?, ?> headerMap) {
+                    // Keep credential placeholders inert while the tool spec passes through the
+                    // LLM task. Enrichment converts them to workflow secret references only on the
+                    // eventual CALL_MCP_TOOL task.
+                    configParams.put("headers", escapeCredentialPlaceholders(headerMap));
+                } else if (headers != null) {
                     configParams.put("headers", headers);
                 }
                 spec.put("configParams", configParams);

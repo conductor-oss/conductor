@@ -84,6 +84,62 @@ class ToolCompilerTest {
     }
 
     @Test
+    void expandsExplicitOcgToolNamesWithoutDiscovery() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://ocg.example/mcp/",
+                                        "headers",
+                                        Map.of("X-API-Key", "${OCG_KEY}"),
+                                        "tool_names",
+                                        List.of("cg_query", "cg_shortest_path")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+
+        assertThat(expanded)
+                .extracting(ToolConfig::getName)
+                .containsExactly("cg_query", "cg_shortest_path");
+        assertThat(expanded)
+                .allSatisfy(
+                        tool -> {
+                            assertThat(tool.getInputSchema()).isNotEmpty();
+                            assertThat(ToolCompiler.requiresMcpDiscovery(tool)).isFalse();
+                            assertThat(tool.getConfig())
+                                    .containsEntry("server_url", "https://ocg.example/mcp/")
+                                    .doesNotContainKeys("tool_names", "toolNames");
+                        });
+        @SuppressWarnings("unchecked")
+        Map<String, Object> configParams =
+                (Map<String, Object>)
+                        new ToolCompiler().compileToolSpecs(expanded).get(0).get("configParams");
+        assertThat(configParams.get("headers")).isEqualTo(Map.of("X-API-Key", "#{OCG_KEY}"));
+    }
+
+    @Test
+    void rejectsUnknownExplicitOcgToolNameInsteadOfExposingTheServerCatalog() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://ocg.example/mcp/",
+                                        "tool_names",
+                                        List.of("cg_delete_memory")))
+                        .build();
+
+        assertThatThrownBy(() -> new ToolCompiler().expandExplicitMcpTools(List.of(server)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cg_delete_memory");
+    }
+
+    @Test
     void buildApiDiscoveryTasksUsesListApiToolsForEachUniqueSpec() {
         ToolConfig first = apiTool("https://api.example.test/openapi.json");
         ToolConfig duplicate = apiTool("https://api.example.test/openapi.json");

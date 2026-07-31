@@ -170,7 +170,7 @@ class OcgAgentRunExporterTest {
                         logs.add(event.getMessage().getFormattedMessage());
                     }
                 };
-        Logger logger = (Logger) LogManager.getLogger(OcgAgentRunExporter.class);
+        Logger logger = (Logger) LogManager.getLogger(HttpOcgClient.class);
         appender.start();
         logger.addAppender(appender);
         try {
@@ -192,7 +192,7 @@ class OcgAgentRunExporterTest {
     @Test
     @SuppressWarnings("unchecked")
     void oversizedPayloadReducesOnlyEventFields() throws Exception {
-        OcgAgentRunExporter exporter = exporter(name -> "secret", 1);
+        HttpOcgClient client = client(name -> "secret", 1);
         String originalInput = "preserve this input exactly";
         String finalResult = "preserve this result exactly";
         Map<String, Object> event = new LinkedHashMap<>();
@@ -208,7 +208,7 @@ class OcgAgentRunExporterTest {
         payload.put("events", List.of(event));
         payload.put("result", finalResult);
 
-        byte[] encoded = exporter.encodeWithinLimit(payload);
+        byte[] encoded = client.encodeWithinLimit(payload);
         Map<String, Object> reduced =
                 mapper.readValue(encoded, new TypeReference<Map<String, Object>>() {});
 
@@ -223,7 +223,12 @@ class OcgAgentRunExporterTest {
 
     private OcgAgentRunExporter exporter(
             java.util.function.Function<String, String> credentialResolver, int attempts) {
-        return new OcgAgentRunExporter(
+        return new OcgAgentRunExporter(mapper, client(credentialResolver, attempts));
+    }
+
+    private HttpOcgClient client(
+            java.util.function.Function<String, String> credentialResolver, int attempts) {
+        return new HttpOcgClient(
                 mapper,
                 credentialResolver,
                 HttpClient.newBuilder().connectTimeout(Duration.ofMillis(200)).build(),
