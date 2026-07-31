@@ -109,7 +109,7 @@ public class AgentCompiler {
                 ToolConfig.builder()
                         .name("ocg_memory")
                         .description(
-                                "Recall prior work with cg.search_memories using agent='"
+                                "Recall prior work with cg_search_memories using agent='"
                                         + (memory.getAgent() == null
                                                 ? "agentspan"
                                                 : memory.getAgent())
@@ -160,7 +160,7 @@ public class AgentCompiler {
     /**
      * Public entry point: compile an {@link AgentConfig} into a {@link WorkflowDef}. OCG memory is
      * the sole infrastructure capability added here: its MCP server is registered so the agent can
-     * recall prior work with {@code cg.search_memories}.
+     * recall prior work with {@code cg_search_memories}.
      */
     public WorkflowDef compile(AgentConfig config) {
         config = withOcgRecall(config);
@@ -274,6 +274,14 @@ public class AgentCompiler {
         // classifier is what execution search indexes, so agent runs do not appear in the
         // workflow-only execution list.
         stampAgentMetadata(wf, config);
+
+        // OCG run capture is driven by the terminal workflow lifecycle callback. Conductor
+        // intentionally gates those callbacks per workflow definition, so opt in whenever this
+        // agent has OCG long-term memory configured. The exporter ignores child workflows and
+        // remains best-effort, leaving the root agent execution as the only captured run.
+        if (config.getLongTermMemory() != null) {
+            wf.setWorkflowStatusListenerEnabled(true);
+        }
 
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {

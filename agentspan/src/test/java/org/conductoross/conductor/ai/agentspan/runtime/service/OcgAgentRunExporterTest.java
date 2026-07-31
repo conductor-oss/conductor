@@ -58,7 +58,7 @@ class OcgAgentRunExporterTest {
         failedTool.setStatus(TaskModel.Status.FAILED);
         failedTool.setInputData(
                 Map.of(
-                        "toolName", "cg.search_memories",
+                        "toolName", "cg_search_memories",
                         "query", "prior work",
                         "headers", Map.of("X-API-Key", "must-not-leak")));
         failedTool.setReasonForIncompletion("OCG unavailable");
@@ -90,7 +90,7 @@ class OcgAgentRunExporterTest {
         assertThat(events).hasSize(2);
         assertThat(events.get(0))
                 .containsEntry("type", "tool_call")
-                .containsEntry("name", "cg.search_memories")
+                .containsEntry("name", "cg_search_memories")
                 .containsEntry("output", "OCG unavailable")
                 .containsEntry("is_error", true);
         assertThat(events.get(0).get("detail").toString())

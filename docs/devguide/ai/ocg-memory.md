@@ -6,7 +6,7 @@ description: "Configure Orkes Context Graph memory capture and MCP recall for Ag
 
 AgentSpan sends completed runs to Orkes Context Graph (OCG) as raw events. OCG owns session
 folding, summarization, structural fallback, versioning, indexing, TTL, pinning, feedback, and
-ranking. AgentSpan does not create a local last-turn summary and does not call `cg.set_memory` when
+ranking. AgentSpan does not create a local last-turn summary and does not call `cg_set_memory` when
 a run finishes.
 
 ## Configuration
@@ -61,6 +61,6 @@ not change the agent result. If the request approaches OCG's 10 MiB limit, only 
 output are truncated; the original prompt and final result are preserved.
 
 The compiler also registers `{ocgUrl}/mcp/` as a best-effort MCP server with the same credential.
-Its discovered `cg.search_memories` tool lets the model recall prior work. `cg.get_memory`,
-`cg.list_memories`, and `cg.set_memory` remain available for deliberate explicit memory operations;
+Its discovered `cg_search_memories` tool lets the model recall prior work. `cg_get_memory`,
+`cg_list_memories`, and `cg_set_memory` remain available for deliberate explicit memory operations;
 none is used as the run-completion trigger. MCP discovery failure does not fail the run.

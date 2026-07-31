@@ -34,6 +34,8 @@ class LongTermMemoryCompilerTest {
     void registersOcgMcpRecallWithSecretReferenceAndBestEffortDiscovery() {
         WorkflowDef workflow = compiler.compile(agent());
 
+        assertThat(workflow.isWorkflowStatusListenerEnabled()).isTrue();
+
         WorkflowTask listTools =
                 workflow.getTasks().stream()
                         .filter(task -> "LIST_MCP_TOOLS".equals(task.getType()))
@@ -47,8 +49,13 @@ class LongTermMemoryCompilerTest {
         assertThat(headers).containsEntry("X-API-Key", "${workflow.secrets.OCG_KEY}");
 
         String definition = workflow.toString();
-        assertThat(workflow.getMetadata().get("agentDef").toString())
-                .contains("cg.search_memories");
+        Map<String, Object> agentDef = (Map<String, Object>) workflow.getMetadata().get("agentDef");
+        assertThat(agentDef.toString()).contains("cg_search_memories");
+        assertThat((Map<String, Object>) agentDef.get("longTermMemory"))
+                .containsEntry("ocgUrl", "https://ocg.example/")
+                .containsEntry("credential", "OCG_KEY")
+                .containsEntry("agent", "agentspan")
+                .containsEntry("user", "user:alice");
         assertThat(definition)
                 .doesNotContain("_ltm_distill")
                 .doesNotContain("_ltm_save")
@@ -61,6 +68,7 @@ class LongTermMemoryCompilerTest {
         AgentConfig withoutMemory = agent().toBuilder().longTermMemory(null).build();
         WorkflowDef workflow = compiler.compile(withoutMemory);
 
+        assertThat(workflow.isWorkflowStatusListenerEnabled()).isFalse();
         assertThat(workflow.getTasks()).noneMatch(task -> "LIST_MCP_TOOLS".equals(task.getType()));
     }
 

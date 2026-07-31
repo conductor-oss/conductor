@@ -183,6 +183,33 @@ public class JoinTest {
     }
 
     @Test
+    public void testAgentWorkflowDefRetainsNestedSubWorkflowOutput() {
+        ConductorProperties properties = mock(ConductorProperties.class);
+        Join join = new Join(properties);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+
+        Map<String, Object> subWorkflowOutput = Map.of("result", "issue analysis");
+        TaskModel subWorkflowTask = forkedTaskWithOutput("issue_analyst_0", subWorkflowOutput);
+        subWorkflowTask.setInputData(
+                Map.of("workflowInput", Map.of("_agent_tool_name", "issue_analyst")));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(subWorkflowTask));
+
+        TaskModel joinTask = joinTaskOn("issue_analyst_0");
+
+        assertTrue(join.execute(workflow, joinTask, mock(WorkflowExecutor.class)));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> compact =
+                (Map<String, Object>) joinTask.getOutputData().get("issue_analyst_0");
+        assertEquals("issue_analyst", compact.get("_agent_tool_name"));
+        assertEquals(subWorkflowOutput, compact.get("_agent_tool_output"));
+    }
+
+    @Test
     public void testNonAgentWorkflowDefCopiesFullForkOutput() {
         ConductorProperties properties = mock(ConductorProperties.class);
         Join join = new Join(properties);
