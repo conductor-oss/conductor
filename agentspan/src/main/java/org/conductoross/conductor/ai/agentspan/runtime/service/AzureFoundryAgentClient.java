@@ -349,13 +349,18 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     private String resolveEndpoint(ConductorAgentStartRequest request) {
-        String endpoint = rawConfig(request, "endpoint");
+        // Top-level agentUrl takes precedence (matches A2A pattern), then rawConfig.endpoint,
+        // then the AZURE_FOUNDRY_ENDPOINT secret as a last resort.
+        String endpoint = request.getAgentUrl();
+        if (StringUtils.isBlank(endpoint)) {
+            endpoint = rawConfig(request, "endpoint");
+        }
         if (StringUtils.isBlank(endpoint)) {
             endpoint = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
         }
         if (StringUtils.isBlank(endpoint)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided via rawConfig.endpoint or AZURE_FOUNDRY_ENDPOINT secret");
+                    "Azure Foundry endpoint must be provided via agentUrl, rawConfig.endpoint, or AZURE_FOUNDRY_ENDPOINT secret");
         }
         return endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }

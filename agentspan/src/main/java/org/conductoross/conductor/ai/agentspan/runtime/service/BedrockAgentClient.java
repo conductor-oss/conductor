@@ -79,9 +79,13 @@ public class BedrockAgentClient implements ConductorAgentClient {
         String sessionId =
                 StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
-        String agentId = rawConfig(request, "agentId");
-        String agentAliasId = rawConfig(request, "agentAliasId");
-        String region = StringUtils.defaultIfBlank(rawConfig(request, "region"), DEFAULT_REGION);
+        String[] agentCoords = resolveAgentCoords(request);
+        String agentId = agentCoords[0];
+        String agentAliasId = agentCoords[1];
+        String region =
+                agentCoords.length > 2 && StringUtils.isNotBlank(agentCoords[2])
+                        ? agentCoords[2]
+                        : StringUtils.defaultIfBlank(rawConfig(request, "region"), DEFAULT_REGION);
 
         BedrockAgentRuntimeAsyncClient runtimeClient = buildRuntimeClient(request, region);
         InvokeAgentRequest invokeRequest =
@@ -247,6 +251,36 @@ public class BedrockAgentClient implements ConductorAgentClient {
         }
         // Fall back to the default credential chain (instance role, env vars, ~/.aws/credentials)
         return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
+    }
+
+    /**
+     * Resolves [agentId, agentAliasId, region?] from either the top-level {@code agentUrl} (format:
+     * {@code bedrock://AGENTID/ALIASID} or {@code bedrock://AGENTID/ALIASID?region=us-west-2}) or
+     * the legacy {@code rawConfig.agentId} / {@code rawConfig.agentAliasId} fields.
+     */
+    private static String[] resolveAgentCoords(ConductorAgentStartRequest request) {
+        String agentUrl = request.getAgentUrl();
+        if (StringUtils.isNotBlank(agentUrl) && agentUrl.startsWith("bedrock://")) {
+            String path = agentUrl.substring("bedrock://".length());
+            String region = null;
+            if (path.contains("?")) {
+                String query = path.substring(path.indexOf('?') + 1);
+                path = path.substring(0, path.indexOf('?'));
+                for (String param : query.split("&")) {
+                    if (param.startsWith("region=")) {
+                        region = param.substring("region=".length());
+                    }
+                }
+            }
+            String[] parts = path.split("/", 2);
+            String agentId = parts[0];
+            String aliasId = parts.length > 1 ? parts[1] : "TSTALIASID";
+            return region != null
+                    ? new String[] {agentId, aliasId, region}
+                    : new String[] {agentId, aliasId};
+        }
+        // Legacy: rawConfig.agentId / rawConfig.agentAliasId
+        return new String[] {rawConfig(request, "agentId"), rawConfig(request, "agentAliasId")};
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
