@@ -25,10 +25,12 @@ export interface AgentFeedbackState {
 
 interface AgentFeedbackControlsProps {
   executionId: string;
+  executionStatus?: string;
 }
 
 export const AgentFeedbackControls = ({
   executionId,
+  executionStatus,
 }: AgentFeedbackControlsProps) => {
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
@@ -37,7 +39,14 @@ export const AgentFeedbackControls = ({
   const [pendingRating, setPendingRating] =
     useState<AgentFeedbackRating | null>(null);
   const [reason, setReason] = useState("");
-  const queryKey = ["agent-feedback", fetchContext.stack, executionId];
+  // A running execution is ineligible. Include its status so the terminal transition performs a
+  // fresh eligibility read without requiring the user to leave and reopen the execution page.
+  const queryKey = [
+    "agent-feedback",
+    fetchContext.stack,
+    executionId,
+    executionStatus,
+  ];
   const path = `agent/executions/${encodeURIComponent(executionId)}/feedback`;
 
   const feedback = useQuery<AgentFeedbackState>(

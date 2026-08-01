@@ -125,8 +125,8 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         payload.put("agent", identity.agent());
         if (!isBlank(identity.user())) payload.put("user", identity.user());
         payload.put("session_id", identity.sessionId());
-        // Agent-run ingestion retains its existing turn_id field; it maps to the root execution.
-        payload.put("turn_id", identity.executionId());
+        // OCG stores at most one folded memory per completed root execution.
+        payload.put("execution_id", identity.executionId());
         copyString(safeInput, payload, "repo");
         copyString(safeInput, payload, "branch");
         copyString(safeInput, payload, "cwd");

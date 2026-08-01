@@ -148,7 +148,10 @@ const SecondaryActions = ({
             refetch={refetch}
           />
           {isAgentWorkflowExecution(execution) && (
-            <AgentFeedbackControls executionId={execution.workflowId} />
+            <AgentFeedbackControls
+              executionId={execution.workflowId}
+              executionStatus={execution.status}
+            />
           )}
           <ActionModule
             execution={execution}

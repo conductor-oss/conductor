@@ -13,13 +13,21 @@ vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({ Authorization: "test" }),
 }));
 
-const renderControls = () => {
-  const queryClient = new QueryClient({
+const createQueryClient = () =>
+  new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+
+const renderControls = (
+  executionStatus?: string,
+  queryClient = createQueryClient(),
+) => {
   return render(
     <QueryClientProvider client={queryClient}>
-      <AgentFeedbackControls executionId="turn-1" />
+      <AgentFeedbackControls
+        executionId="turn-1"
+        executionStatus={executionStatus}
+      />
     </QueryClientProvider>,
   );
 };
@@ -37,6 +45,33 @@ describe("AgentFeedbackControls", () => {
 
     await waitFor(() => expect(fetchWithContext).toHaveBeenCalledTimes(1));
     expect(screen.queryByText("Helpful")).not.toBeInTheDocument();
+  });
+
+  it("reloads eligibility when an open execution becomes terminal", async () => {
+    fetchWithContext
+      .mockResolvedValueOnce({
+        enabled: false,
+        reason: "EXECUTION_NOT_TERMINAL",
+      })
+      .mockResolvedValueOnce({ enabled: true, rating: null });
+
+    const queryClient = createQueryClient();
+    const { rerender } = renderControls("RUNNING", queryClient);
+    await waitFor(() => expect(fetchWithContext).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Helpful")).not.toBeInTheDocument();
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <AgentFeedbackControls
+          executionId="turn-1"
+          executionStatus="COMPLETED"
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Helpful" }),
+    ).toBeVisible();
   });
 
   it("requires a reason before submitting feedback", async () => {

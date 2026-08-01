@@ -125,10 +125,11 @@ class OcgAgentRunExporterTest {
                 .containsEntry("agent", "agentspan")
                 .containsEntry("user", "user:alice")
                 .containsEntry("session_id", "session-7")
-                .containsEntry("turn_id", "wf-turn-9")
+                .containsEntry("execution_id", "wf-turn-9")
                 .containsEntry("input", "original request")
                 .containsEntry("result", "final answer")
                 .containsEntry("outcome", "success");
+        assertThat(payload).doesNotContainKey("turn_id");
         List<Map<String, Object>> events = (List<Map<String, Object>>) payload.get("events");
         assertThat(events).hasSize(2);
         assertThat(events.get(0))
@@ -185,7 +186,8 @@ class OcgAgentRunExporterTest {
                     mapper.readValue(bodies.get(0), new TypeReference<Map<String, Object>>() {});
             assertThat(sent)
                     .containsEntry("session_id", "stable-session")
-                    .containsEntry("turn_id", "stable-turn");
+                    .containsEntry("execution_id", "stable-turn")
+                    .doesNotContainKey("turn_id");
             assertThat(credentials).containsExactly("top-secret", "top-secret");
         } finally {
             server.stop(0);
