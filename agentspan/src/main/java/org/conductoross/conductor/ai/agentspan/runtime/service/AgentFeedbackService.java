@@ -17,20 +17,21 @@ import java.util.Set;
 
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 
 /** Eligibility and canonical-state boundary for completed-execution feedback. */
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AgentFeedbackService {
 
@@ -52,6 +53,24 @@ public class AgentFeedbackService {
     private final ExecutionDAO executionDAO;
     private final ObjectMapper mapper;
     private final OcgClient ocgClient;
+    private final WorkflowService workflowService;
+
+    public AgentFeedbackService(
+            ExecutionDAO executionDAO, ObjectMapper mapper, OcgClient ocgClient) {
+        this(executionDAO, mapper, ocgClient, null);
+    }
+
+    @Autowired
+    public AgentFeedbackService(
+            ExecutionDAO executionDAO,
+            ObjectMapper mapper,
+            OcgClient ocgClient,
+            WorkflowService workflowService) {
+        this.executionDAO = executionDAO;
+        this.mapper = mapper;
+        this.ocgClient = ocgClient;
+        this.workflowService = workflowService;
+    }
 
     public AgentFeedbackState get(String executionId) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
@@ -86,11 +105,27 @@ public class AgentFeedbackService {
         }
         FeedbackContext context = feedbackContext(workflow);
         try {
+            OcgExecutionMemory memory =
+                    ocgClient.getExecutionMemory(context.config(), context.identity());
+            Workflow capture = latestCapture(workflow.getWorkflowId());
             return new AgentExecutionMemoryState(
-                    ocgClient.getExecutionMemory(context.config(), context.identity()).summary());
+                    memory.summary(),
+                    capture == null ? null : capture.getWorkflowId(),
+                    capture == null || capture.getStatus() == null
+                            ? null
+                            : capture.getStatus().name());
         } catch (OcgFeedbackClientException error) {
             throw map(error);
         }
+    }
+
+    private Workflow latestCapture(String executionId) {
+        if (workflowService == null) return null;
+        return workflowService
+                .getWorkflows(OcgMemoryCaptureWorkflow.NAME, executionId, true, false)
+                .stream()
+                .max(java.util.Comparator.comparingLong(Workflow::getCreateTime))
+                .orElse(null);
     }
 
     AgentFeedbackState get(WorkflowModel workflow) {

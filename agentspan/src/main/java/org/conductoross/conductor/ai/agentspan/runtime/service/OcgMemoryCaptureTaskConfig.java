@@ -12,6 +12,18 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-/** Browser-safe projection of a completed root execution's OCG memory summary. */
-public record AgentExecutionMemoryState(
-        String summary, String captureWorkflowId, String captureWorkflowStatus) {}
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.netflix.conductor.dao.ExecutionDAO;
+
+@Configuration
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+public class OcgMemoryCaptureTaskConfig {
+    @Bean(OcgMemoryCaptureTask.TASK_TYPE)
+    OcgMemoryCaptureTask ocgMemoryCaptureTask(
+            ExecutionDAO executionDAO, OcgAgentRunExporter exporter, OcgClient ocgClient) {
+        return new OcgMemoryCaptureTask(executionDAO, exporter, ocgClient);
+    }
+}

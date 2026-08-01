@@ -44,7 +44,7 @@ class AgentControllerFeedbackTest {
         AgentController controller = new AgentController(null, null, feedbackService);
 
         assertThat(controller.getExecutionFeedbackMemory("root-execution"))
-                .isEqualTo(new AgentExecutionMemoryState("Stored execution summary."));
+                .isEqualTo(new AgentExecutionMemoryState("Stored execution summary.", null, null));
         assertThat(feedbackService.memoryExecutionId).isEqualTo("root-execution");
     }
 
@@ -69,7 +69,7 @@ class AgentControllerFeedbackTest {
         @Override
         public AgentExecutionMemoryState getMemory(String executionId) {
             this.memoryExecutionId = executionId;
-            return new AgentExecutionMemoryState("Stored execution summary.");
+            return new AgentExecutionMemoryState("Stored execution summary.", null, null);
         }
     }
 }

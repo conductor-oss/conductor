@@ -25,6 +25,8 @@ export interface AgentFeedbackState {
 
 interface AgentExecutionMemoryState {
   summary?: string | null;
+  captureWorkflowId?: string | null;
+  captureWorkflowStatus?: string | null;
 }
 
 interface AgentFeedbackControlsProps {
@@ -175,6 +177,14 @@ export const AgentFeedbackControls = ({
             InputProps={{ readOnly: true }}
             sx={{ mb: 2 }}
           />
+          {memory.data?.captureWorkflowId && (
+            <Typography variant="caption" display="block" sx={{ mb: 2 }}>
+              Memory capture: {memory.data.captureWorkflowStatus || "RUNNING"} —{" "}
+              <a href={`/execution/${memory.data.captureWorkflowId}`}>
+                View capture workflow
+              </a>
+            </Typography>
+          )}
           <TextField
             autoFocus
             required

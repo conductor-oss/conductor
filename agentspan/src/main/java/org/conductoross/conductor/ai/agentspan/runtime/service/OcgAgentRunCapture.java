@@ -12,6 +12,9 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-/** Browser-safe projection of a completed root execution's OCG memory summary. */
-public record AgentExecutionMemoryState(
-        String summary, String captureWorkflowId, String captureWorkflowStatus) {}
+import java.util.Map;
+
+import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
+
+/** Trusted, redacted payload prepared from one terminal root execution. */
+record OcgAgentRunCapture(LongTermMemoryConfig config, Map<String, Object> payload) {}

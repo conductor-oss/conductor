@@ -33,6 +33,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.service.WorkflowService;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,20 +66,29 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
 
     private final ObjectMapper mapper;
     private final OcgClient ocgClient;
+    private final WorkflowService workflowService;
 
-    public OcgAgentRunExporter(ObjectMapper mapper, OcgClient ocgClient) {
+    public OcgAgentRunExporter(
+            ObjectMapper mapper, OcgClient ocgClient, WorkflowService workflowService) {
         this.mapper = mapper;
         this.ocgClient = ocgClient;
+        this.workflowService = workflowService;
+    }
+
+    OcgAgentRunExporter(ObjectMapper mapper, OcgClient ocgClient) {
+        this(mapper, ocgClient, null);
     }
 
     @Override
     public void onWorkflowCompleted(WorkflowModel workflow) {
-        export(workflow);
+        if (workflowService == null) export(workflow);
+        else scheduleCapture(workflow);
     }
 
     @Override
     public void onWorkflowTerminated(WorkflowModel workflow) {
-        export(workflow);
+        if (workflowService == null) export(workflow);
+        else scheduleCapture(workflow);
     }
 
     /** Starts capture without waiting for OCG; all failures are contained in the returned stage. */
@@ -99,6 +109,34 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
                     workflow.getWorkflowId(),
                     e.getMessage());
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    OcgAgentRunCapture capture(WorkflowModel workflow) {
+        if (workflow == null || workflow.hasParent()) return null;
+        LongTermMemoryConfig config = memoryConfig(workflow);
+        if (config == null || isBlank(config.getOcgUrl()) || isBlank(config.getCredential()))
+            return null;
+        return new OcgAgentRunCapture(config, buildPayload(workflow, config));
+    }
+
+    private void scheduleCapture(WorkflowModel workflow) {
+        if (workflow == null || workflow.hasParent() || memoryConfig(workflow) == null) return;
+        try {
+            workflowService.startWorkflow(
+                    OcgMemoryCaptureWorkflow.NAME,
+                    1,
+                    workflow.getWorkflowId(),
+                    0,
+                    Map.of("sourceExecutionId", workflow.getWorkflowId()),
+                    null,
+                    Map.of(),
+                    OcgMemoryCaptureWorkflow.definition());
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Unable to start OCG memory capture for workflow {}",
+                    workflow.getWorkflowId(),
+                    e);
         }
     }
 

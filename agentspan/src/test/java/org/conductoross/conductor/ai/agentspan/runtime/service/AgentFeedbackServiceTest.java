@@ -105,7 +105,9 @@ class AgentFeedbackServiceTest {
         ocgClient.memory = new OcgExecutionMemory("The agent resolved the incident.");
 
         assertThat(service.getMemory(workflow("configured-user")))
-                .isEqualTo(new AgentExecutionMemoryState("The agent resolved the incident."));
+                .isEqualTo(
+                        new AgentExecutionMemoryState(
+                                "The agent resolved the incident.", null, null));
         assertThat(ocgClient.identity)
                 .isEqualTo(
                         new OcgExecutionIdentity(

@@ -124,6 +124,53 @@ public class HttpOcgClient implements OcgClient {
     }
 
     @Override
+    public void captureAgentRun(LongTermMemoryConfig config, Map<String, Object> payload) {
+        String executionId = stringValue(payload.get("execution_id"));
+        try {
+            String credential = credentialResolver.apply(config.getCredential());
+            if (isBlank(credential)) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.CREDENTIAL_UNAVAILABLE, null, null);
+            }
+            byte[] body = encodeWithinLimit(payload);
+            if (body.length > MAX_REQUEST_BYTES) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
+            }
+            URI endpoint =
+                    URI.create(
+                            config.getOcgUrl().replaceAll("/+$", "")
+                                    + "/api/v1/memories/agent-run");
+            HttpResponse<byte[]> response =
+                    client.send(
+                            HttpRequest.newBuilder(endpoint)
+                                    .timeout(timeout)
+                                    .header("X-API-Key", credential)
+                                    .header("Content-Type", "application/json")
+                                    .POST(HttpRequest.BodyPublishers.ofByteArray(body))
+                                    .build(),
+                            HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() != 202) {
+                LOGGER.warn(
+                        "OCG run capture for execution {} returned HTTP {}",
+                        executionId,
+                        response.statusCode());
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.UPSTREAM_REJECTED,
+                        response.statusCode(),
+                        null);
+            }
+        } catch (HttpTimeoutException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_TIMEOUT, null, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        } catch (IOException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        }
+    }
+
+    @Override
     public OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity) {
         StringBuilder endpoint = new StringBuilder(feedbackEndpoint(config)).append('?');
         appendQuery(endpoint, "agent", identity.agent());

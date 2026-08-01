@@ -23,6 +23,11 @@ public interface OcgClient {
     /** Queue a raw terminal agent run. Implementations must contain all transport failures. */
     CompletionStage<Void> exportAgentRun(LongTermMemoryConfig config, Map<String, Object> payload);
 
+    /** Submit a run for an observable capture workflow; failures are actionable. */
+    default void captureAgentRun(LongTermMemoryConfig config, Map<String, Object> payload) {
+        throw new UnsupportedOperationException("Observable agent-run capture is not supported");
+    }
+
     /** Read the OCG memory summary for a trusted completed root execution. */
     default OcgExecutionMemory getExecutionMemory(
             LongTermMemoryConfig config, OcgExecutionIdentity identity) {
