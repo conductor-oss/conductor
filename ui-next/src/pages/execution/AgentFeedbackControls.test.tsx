@@ -75,9 +75,17 @@ describe("AgentFeedbackControls", () => {
   });
 
   it("requires a reason before submitting feedback", async () => {
-    fetchWithContext
-      .mockResolvedValueOnce({ enabled: true, rating: null })
-      .mockResolvedValueOnce({ enabled: true, rating: "positive" });
+    fetchWithContext.mockImplementation((path, _context, options) => {
+      if (options?.method === "POST") {
+        return Promise.resolve({ enabled: true, rating: "positive" });
+      }
+      if (typeof path === "string" && path.endsWith("/memory")) {
+        return Promise.resolve({
+          summary: "The agent verified the service health.",
+        });
+      }
+      return Promise.resolve({ enabled: true, rating: null });
+    });
 
     renderControls();
     const helpful = await screen.findByRole("button", { name: "Helpful" });
@@ -86,6 +94,11 @@ describe("AgentFeedbackControls", () => {
     expect(
       screen.getByRole("dialog", { name: "Share feedback" }),
     ).toBeVisible();
+    const memory = await screen.findByRole("textbox", {
+      name: "Execution memory",
+    });
+    expect(memory).toHaveValue("The agent verified the service health.");
+    expect(memory).toHaveAttribute("readonly");
     const submitButton = screen.getByRole("button", {
       name: "Submit feedback",
     });
@@ -96,8 +109,17 @@ describe("AgentFeedbackControls", () => {
     expect(submitButton).toBeEnabled();
     fireEvent.click(submitButton);
 
-    await waitFor(() => expect(fetchWithContext).toHaveBeenCalledTimes(2));
-    expect(fetchWithContext.mock.calls[1][2]).toMatchObject({
+    await waitFor(() =>
+      expect(
+        fetchWithContext.mock.calls.some(
+          ([, , options]) => options?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+    const submission = fetchWithContext.mock.calls.find(
+      ([, , options]) => options?.method === "POST",
+    );
+    expect(submission?.[2]).toMatchObject({
       method: "POST",
       body: JSON.stringify({
         rating: "positive",
@@ -112,9 +134,13 @@ describe("AgentFeedbackControls", () => {
   });
 
   it("shows a local retryable error when submission fails", async () => {
-    fetchWithContext
-      .mockResolvedValueOnce({ enabled: true, rating: null })
-      .mockRejectedValueOnce(new Error("unavailable"));
+    fetchWithContext.mockImplementation((path, _context, options) => {
+      if (options?.method === "POST")
+        return Promise.reject(new Error("unavailable"));
+      if (typeof path === "string" && path.endsWith("/memory"))
+        return Promise.resolve({ summary: "Memory" });
+      return Promise.resolve({ enabled: true, rating: null });
+    });
 
     renderControls();
     fireEvent.click(await screen.findByRole("button", { name: "Not helpful" }));

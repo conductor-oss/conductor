@@ -23,6 +23,12 @@ public interface OcgClient {
     /** Queue a raw terminal agent run. Implementations must contain all transport failures. */
     CompletionStage<Void> exportAgentRun(LongTermMemoryConfig config, Map<String, Object> payload);
 
+    /** Read the OCG memory summary for a trusted completed root execution. */
+    default OcgExecutionMemory getExecutionMemory(
+            LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+        throw new UnsupportedOperationException("Execution memory reads are not supported");
+    }
+
     /** Read canonical human feedback for a trusted completed root execution. */
     OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity);
 

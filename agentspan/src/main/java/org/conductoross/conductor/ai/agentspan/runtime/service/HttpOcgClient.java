@@ -137,6 +137,21 @@ public class HttpOcgClient implements OcgClient {
     }
 
     @Override
+    public OcgExecutionMemory getExecutionMemory(
+            LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+        StringBuilder endpoint =
+                new StringBuilder(memoryEndpoint(config))
+                        .append('/')
+                        .append(encode(identity.executionId()))
+                        .append('?');
+        appendQuery(endpoint, "agent", identity.agent());
+        if (!isBlank(identity.user())) appendQuery(endpoint, "user", identity.user());
+        HttpRequest request =
+                feedbackRequest(config, URI.create(endpoint.toString())).GET().build();
+        return executeMemory(request, identity.executionId());
+    }
+
+    @Override
     public OcgFeedback setFeedback(
             LongTermMemoryConfig config,
             OcgExecutionIdentity identity,
@@ -203,6 +218,39 @@ public class HttpOcgClient implements OcgClient {
         }
     }
 
+    private OcgExecutionMemory executeMemory(HttpRequest request, String executionId) {
+        try {
+            HttpResponse<byte[]> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() == 404) return new OcgExecutionMemory(null);
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOGGER.warn(
+                        "OCG memory for execution {} returned HTTP {}",
+                        executionId,
+                        response.statusCode());
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.UPSTREAM_REJECTED,
+                        response.statusCode(),
+                        null);
+            }
+            JsonNode responseBody = mapper.readTree(response.body());
+            JsonNode description = responseBody.get("description");
+            if (description == null || description.isNull()) return new OcgExecutionMemory(null);
+            if (!description.isTextual()) {
+                throw feedbackFailure(
+                        OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
+            }
+            return new OcgExecutionMemory(description.textValue());
+        } catch (HttpTimeoutException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_TIMEOUT, null, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        } catch (IOException e) {
+            throw feedbackFailure(OcgFeedbackClientException.Failure.UPSTREAM_UNAVAILABLE, null, e);
+        }
+    }
+
     private OcgFeedback parseFeedback(byte[] body) {
         try {
             JsonNode response = mapper.readTree(body);
@@ -242,6 +290,10 @@ public class HttpOcgClient implements OcgClient {
 
     private static String feedbackEndpoint(LongTermMemoryConfig config) {
         return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/memories/agent-run/feedback";
+    }
+
+    private static String memoryEndpoint(LongTermMemoryConfig config) {
+        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/memories/run";
     }
 
     private static void appendQuery(StringBuilder endpoint, String name, String value) {

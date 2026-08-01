@@ -71,6 +71,28 @@ public class AgentFeedbackService {
         return set(workflow, rating, trimmedReason);
     }
 
+    public AgentExecutionMemoryState getMemory(String executionId) {
+        WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, "EXECUTION_NOT_FOUND");
+        }
+        return getMemory(workflow);
+    }
+
+    AgentExecutionMemoryState getMemory(WorkflowModel workflow) {
+        AgentFeedbackState state = state(workflow);
+        if (!state.enabled()) {
+            throw new AgentFeedbackException(HttpStatus.CONFLICT, state.reason());
+        }
+        FeedbackContext context = feedbackContext(workflow);
+        try {
+            return new AgentExecutionMemoryState(
+                    ocgClient.getExecutionMemory(context.config(), context.identity()).summary());
+        } catch (OcgFeedbackClientException error) {
+            throw map(error);
+        }
+    }
+
     AgentFeedbackState get(WorkflowModel workflow) {
         AgentFeedbackState state = state(workflow);
         if (!state.enabled()) return state;

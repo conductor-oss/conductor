@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentDagService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentExecutionMemoryState;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackException;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackState;
@@ -206,6 +207,13 @@ public class AgentController {
                 executionId,
                 request == null ? null : request.rating(),
                 request == null ? null : request.reason());
+    }
+
+    /** Read the OCG-generated memory summary for a completed root execution. */
+    @GetMapping("/executions/{executionId}/feedback/memory")
+    public AgentExecutionMemoryState getExecutionFeedbackMemory(
+            @PathVariable("executionId") String executionId) {
+        return agentFeedbackService.getMemory(executionId);
     }
 
     /** Return feedback failures with a stable machine-readable code. */

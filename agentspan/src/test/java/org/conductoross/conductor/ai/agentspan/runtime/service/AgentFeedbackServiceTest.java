@@ -101,6 +101,21 @@ class AgentFeedbackServiceTest {
     }
 
     @Test
+    void readsExecutionMemoryWithTrustedIdentity() {
+        ocgClient.memory = new OcgExecutionMemory("The agent resolved the incident.");
+
+        assertThat(service.getMemory(workflow("configured-user")))
+                .isEqualTo(new AgentExecutionMemoryState("The agent resolved the incident."));
+        assertThat(ocgClient.identity)
+                .isEqualTo(
+                        new OcgExecutionIdentity(
+                                "trusted-agent",
+                                "user:configured-user",
+                                "stored-session",
+                                "root-workflow"));
+    }
+
+    @Test
     void ignoresExecutionFieldsThatAttemptToOverrideOcgRoutingIdentity() {
         WorkflowModel workflow = workflow("configured-user");
         workflow.getInput().put("ocgUrl", "https://attacker.invalid");
@@ -210,6 +225,7 @@ class AgentFeedbackServiceTest {
         private OcgFeedbackRating rating;
         private String reason;
         private OcgFeedback feedback = new OcgFeedback(null, null, null);
+        private OcgExecutionMemory memory = new OcgExecutionMemory(null);
         private OcgFeedbackClientException failure;
 
         @Override
@@ -222,6 +238,13 @@ class AgentFeedbackServiceTest {
         public OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity) {
             record(config, identity, null, null);
             return feedback;
+        }
+
+        @Override
+        public OcgExecutionMemory getExecutionMemory(
+                LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+            record(config, identity, null, null);
+            return memory;
         }
 
         @Override

@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.controller;
 
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentExecutionMemoryState;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentFeedbackState;
 import org.junit.jupiter.api.Test;
@@ -37,10 +38,21 @@ class AgentControllerFeedbackTest {
         assertThat(response.enabled()).isTrue();
     }
 
+    @Test
+    void forwardsOnlyTheExecutionIdWhenReadingMemory() {
+        RecordingFeedbackService feedbackService = new RecordingFeedbackService();
+        AgentController controller = new AgentController(null, null, feedbackService);
+
+        assertThat(controller.getExecutionFeedbackMemory("root-execution"))
+                .isEqualTo(new AgentExecutionMemoryState("Stored execution summary."));
+        assertThat(feedbackService.memoryExecutionId).isEqualTo("root-execution");
+    }
+
     private static final class RecordingFeedbackService extends AgentFeedbackService {
         private String executionId;
         private String rating;
         private String reason;
+        private String memoryExecutionId;
 
         private RecordingFeedbackService() {
             super(null, null, null);
@@ -52,6 +64,12 @@ class AgentControllerFeedbackTest {
             this.rating = rating;
             this.reason = reason;
             return new AgentFeedbackState(true, rating, reason, null);
+        }
+
+        @Override
+        public AgentExecutionMemoryState getMemory(String executionId) {
+            this.memoryExecutionId = executionId;
+            return new AgentExecutionMemoryState("Stored execution summary.");
         }
     }
 }

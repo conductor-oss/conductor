@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class HttpOcgClientFeedbackTest {
 
     private static final String FEEDBACK_PATH = "/api/v1/memories/agent-run/feedback";
+    private static final String MEMORY_PATH = "/api/v1/memories/run/";
     private static final OcgExecutionIdentity IDENTITY =
             new OcgExecutionIdentity(
                     "agent/a b", "user:nicholas+test", "session/123", "execution?456");
@@ -78,6 +79,25 @@ class HttpOcgClientFeedbackTest {
                                     OcgFeedbackRating.NEGATIVE,
                                     "It omitted the requested evidence.",
                                     Instant.parse("2026-07-31T20:15:00Z")));
+        }
+    }
+
+    @Test
+    void readsExecutionMemoryWithEncodedIdentityAndApiKey() throws Exception {
+        try (FeedbackServer server = new FeedbackServer()) {
+            server.memorySummary.set("The agent resolved the incident.");
+
+            assertThat(
+                            client(server.url(), name -> "resolved-key", 500)
+                                    .getExecutionMemory(config(server.url()), IDENTITY))
+                    .isEqualTo(new OcgExecutionMemory("The agent resolved the incident."));
+            assertThat(server.apiKey.get()).isEqualTo("resolved-key");
+            assertThat(server.memoryPath.get()).isEqualTo(MEMORY_PATH + "execution%3F456");
+            assertThat(server.rawQuery.get())
+                    .contains("agent=agent%2Fa%20b")
+                    .contains("user=user%3Anicholas%2Btest")
+                    .doesNotContain("session_id")
+                    .doesNotContain("turn_id");
         }
     }
 
@@ -266,15 +286,18 @@ class HttpOcgClientFeedbackTest {
         private final AtomicInteger delayMillis = new AtomicInteger();
         private final AtomicReference<String> apiKey = new AtomicReference<>();
         private final AtomicReference<String> rawQuery = new AtomicReference<>();
+        private final AtomicReference<String> memoryPath = new AtomicReference<>();
         private final AtomicReference<String> rating = new AtomicReference<>();
         private final AtomicReference<String> reason = new AtomicReference<>();
         private final AtomicReference<Instant> submittedAt = new AtomicReference<>();
         private final AtomicReference<Map<String, Object>> lastPayload = new AtomicReference<>();
+        private final AtomicReference<String> memorySummary = new AtomicReference<>();
         private final AtomicBoolean includeReason = new AtomicBoolean(true);
 
         private FeedbackServer() throws IOException {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             server.createContext(FEEDBACK_PATH, this::handle);
+            server.createContext(MEMORY_PATH, this::handleMemory);
             server.start();
         }
 
@@ -322,6 +345,23 @@ class HttpOcgClientFeedbackTest {
                                 ? Instant.parse("2026-07-31T20:15:00Z")
                                 : previous.plusSeconds(1));
             }
+        }
+
+        private void handleMemory(HttpExchange exchange) throws IOException {
+            calls.incrementAndGet();
+            apiKey.set(exchange.getRequestHeaders().getFirst("X-API-Key"));
+            rawQuery.set(exchange.getRequestURI().getRawQuery());
+            memoryPath.set(exchange.getRequestURI().getRawPath());
+            if (memorySummary.get() == null) {
+                exchange.sendResponseHeaders(404, -1);
+                exchange.close();
+                return;
+            }
+            byte[] body = mapper.writeValueAsBytes(Map.of("description", memorySummary.get()));
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
         }
 
         private byte[] responseBody() throws IOException {

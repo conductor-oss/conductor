@@ -23,6 +23,10 @@ export interface AgentFeedbackState {
   reason?: string | null;
 }
 
+interface AgentExecutionMemoryState {
+  summary?: string | null;
+}
+
 interface AgentFeedbackControlsProps {
   executionId: string;
   executionStatus?: string;
@@ -48,6 +52,7 @@ export const AgentFeedbackControls = ({
     executionStatus,
   ];
   const path = `agent/executions/${encodeURIComponent(executionId)}/feedback`;
+  const memoryPath = `${path}/memory`;
 
   const feedback = useQuery<AgentFeedbackState>(
     queryKey,
@@ -82,6 +87,18 @@ export const AgentFeedbackControls = ({
         setReason("");
       },
       onError: () => setSubmitError(true),
+    },
+  );
+
+  const memory = useQuery<AgentExecutionMemoryState>(
+    ["agent-feedback-memory", fetchContext.stack, executionId],
+    () =>
+      fetchWithContext(memoryPath, fetchContext, {
+        headers: authHeaders,
+      }),
+    {
+      enabled: pendingRating !== null,
+      retry: false,
     },
   );
 
@@ -144,6 +161,20 @@ export const AgentFeedbackControls = ({
             </strong>
             . Tell us why.
           </Typography>
+          <TextField
+            fullWidth
+            multiline
+            minRows={4}
+            label="Execution memory"
+            value={
+              memory.isLoading
+                ? "Loading execution memory…"
+                : memory.data?.summary ||
+                  "No execution memory is available yet."
+            }
+            InputProps={{ readOnly: true }}
+            sx={{ mb: 2 }}
+          />
           <TextField
             autoFocus
             required
