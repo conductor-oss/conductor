@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
@@ -66,10 +68,11 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
 
     private final ObjectMapper mapper;
     private final OcgClient ocgClient;
-    private final WorkflowService workflowService;
+    private final ObjectProvider<WorkflowService> workflowService;
 
+    @Autowired
     public OcgAgentRunExporter(
-            ObjectMapper mapper, OcgClient ocgClient, WorkflowService workflowService) {
+            ObjectMapper mapper, OcgClient ocgClient, ObjectProvider<WorkflowService> workflowService) {
         this.mapper = mapper;
         this.ocgClient = ocgClient;
         this.workflowService = workflowService;
@@ -123,7 +126,9 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
     private void scheduleCapture(WorkflowModel workflow) {
         if (workflow == null || workflow.hasParent() || memoryConfig(workflow) == null) return;
         try {
-            workflowService.startWorkflow(
+            WorkflowService service = workflowService.getIfAvailable();
+            if (service == null) return;
+            service.startWorkflow(
                     OcgMemoryCaptureWorkflow.NAME,
                     1,
                     workflow.getWorkflowId(),

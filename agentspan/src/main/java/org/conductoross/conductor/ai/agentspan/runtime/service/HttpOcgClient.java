@@ -186,13 +186,23 @@ public class HttpOcgClient implements OcgClient {
     @Override
     public OcgExecutionMemory getExecutionMemory(
             LongTermMemoryConfig config, OcgExecutionIdentity identity) {
+        OcgExecutionMemory memory = getExecutionMemory(config, identity, identity.user());
+        // OCG assigns agent-scoped runs an inferred user when no user was supplied. Read that
+        // trusted fallback so the execution memory remains visible to Conductor.
+        return memory.summary() != null || !isBlank(identity.user())
+                ? memory
+                : getExecutionMemory(config, identity, "agent:" + identity.agent());
+    }
+
+    private OcgExecutionMemory getExecutionMemory(
+            LongTermMemoryConfig config, OcgExecutionIdentity identity, String user) {
         StringBuilder endpoint =
                 new StringBuilder(memoryEndpoint(config))
                         .append('/')
                         .append(encode(identity.executionId()))
                         .append('?');
         appendQuery(endpoint, "agent", identity.agent());
-        if (!isBlank(identity.user())) appendQuery(endpoint, "user", identity.user());
+        if (!isBlank(user)) appendQuery(endpoint, "user", user);
         HttpRequest request =
                 feedbackRequest(config, URI.create(endpoint.toString())).GET().build();
         return executeMemory(request, identity.executionId());

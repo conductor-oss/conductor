@@ -18,6 +18,7 @@ import java.util.Set;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -53,7 +54,7 @@ public class AgentFeedbackService {
     private final ExecutionDAO executionDAO;
     private final ObjectMapper mapper;
     private final OcgClient ocgClient;
-    private final WorkflowService workflowService;
+    private final ObjectProvider<WorkflowService> workflowService;
 
     public AgentFeedbackService(
             ExecutionDAO executionDAO, ObjectMapper mapper, OcgClient ocgClient) {
@@ -65,7 +66,7 @@ public class AgentFeedbackService {
             ExecutionDAO executionDAO,
             ObjectMapper mapper,
             OcgClient ocgClient,
-            WorkflowService workflowService) {
+            ObjectProvider<WorkflowService> workflowService) {
         this.executionDAO = executionDAO;
         this.mapper = mapper;
         this.ocgClient = ocgClient;
@@ -121,7 +122,9 @@ public class AgentFeedbackService {
 
     private Workflow latestCapture(String executionId) {
         if (workflowService == null) return null;
-        return workflowService
+        WorkflowService service = workflowService.getIfAvailable();
+        if (service == null) return null;
+        return service
                 .getWorkflows(OcgMemoryCaptureWorkflow.NAME, executionId, true, false)
                 .stream()
                 .max(java.util.Comparator.comparingLong(Workflow::getCreateTime))
