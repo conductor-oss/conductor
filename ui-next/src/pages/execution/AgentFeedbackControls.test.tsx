@@ -99,6 +99,7 @@ describe("AgentFeedbackControls", () => {
     });
     expect(memory).toHaveValue("The agent verified the service health.");
     expect(memory).toHaveAttribute("readonly");
+    expect(memory).toHaveStyle({ overflowY: "auto" });
     const submitButton = screen.getByRole("button", {
       name: "Submit feedback",
     });

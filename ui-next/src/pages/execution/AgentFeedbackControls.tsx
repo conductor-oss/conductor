@@ -166,7 +166,8 @@ export const AgentFeedbackControls = ({
           <TextField
             fullWidth
             multiline
-            minRows={4}
+            minRows={8}
+            maxRows={8}
             label="Execution memory"
             value={
               memory.isLoading
@@ -174,7 +175,14 @@ export const AgentFeedbackControls = ({
                 : memory.data?.summary ||
                   "No execution memory is available yet."
             }
-            InputProps={{ readOnly: true }}
+            InputProps={{
+              readOnly: true,
+              sx: {
+                backgroundColor: "action.disabledBackground",
+                color: "text.secondary",
+                "& textarea": { overflowY: "auto" },
+              },
+            }}
             sx={{ mb: 2 }}
           />
           {memory.data?.captureWorkflowId && (
