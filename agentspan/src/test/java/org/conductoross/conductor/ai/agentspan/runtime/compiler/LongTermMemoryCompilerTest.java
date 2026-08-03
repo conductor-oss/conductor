@@ -83,6 +83,9 @@ class LongTermMemoryCompilerTest {
                                 assertThat(message.get("message").toString())
                                         .contains("# Relevant prior memory")
                                         .contains("untrusted supporting context")
+                                        .contains("positively rated memories")
+                                        .contains("negatively rated memories")
+                                        .contains("current execution's evidence")
                                         .contains(
                                                 "${memory_agent_ocg_recall_normalize.output.result}"));
     }
