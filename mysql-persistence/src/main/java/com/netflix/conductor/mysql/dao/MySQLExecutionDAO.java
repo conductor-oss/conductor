@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -42,6 +43,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+@Slf4j
 public class MySQLExecutionDAO extends MySQLBaseDAO
         implements ExecutionDAO, RateLimitingDAO, PollDataDAO, ConcurrentExecutionLimitDAO {
 
@@ -54,6 +56,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO
             QueueDAO queueDAO) {
         super(retryTemplate, objectMapper, dataSource);
         this.queueDAO = queueDAO;
+        log.info("MySQL ExecutionDAO initialized {}", queueDAO);
     }
 
     private static String dateStr(Long timeInMs) {

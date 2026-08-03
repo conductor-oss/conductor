@@ -19,6 +19,7 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import com.netflix.conductor.dao.QueueDAO;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
@@ -99,7 +100,7 @@ public class PostgresConfiguration {
     public PostgresExecutionDAO postgresExecutionDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            PostgresQueueDAO queueDAO) {
+            QueueDAO queueDAO) {
         return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
@@ -114,7 +115,7 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    public PostgresQueueDAO postgresQueueDAO(
+    public QueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             PostgresProperties properties) {
