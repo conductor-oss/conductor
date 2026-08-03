@@ -35,8 +35,8 @@ final class OcgAgentSubCompiler {
                     + "current request and its key evidence. Reuse its conclusion or approach only when that "
                     + "validation confirms it. If validation is inconclusive or contradicts the memory, do not "
                     + "repeat its conclusion; pivot to independent discovery from the current evidence. Treat "
-                    + "negatively rated memories and their reasons as warnings: do not reuse their conclusions "
-                    + "or approaches without stronger independent confirmation.\n\n";
+                    + "negatively rated memories as rejected conclusions: never reuse their conclusions. Use "
+                    + "their reasons only to avoid repeating the failed approach.\n\n";
 
     private OcgAgentSubCompiler() {}
 

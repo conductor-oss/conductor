@@ -87,7 +87,8 @@ class LongTermMemoryCompilerTest {
                                         .contains("high-confidence hypothesis, not a final answer")
                                         .contains("smallest targeted validation")
                                         .contains("pivot to independent discovery")
-                                        .contains("stronger independent confirmation")
+                                        .contains("never reuse their conclusions")
+                                        .contains("avoid repeating the failed approach")
                                         .contains(
                                                 "${memory_agent_ocg_recall_normalize.output.result}"));
     }
