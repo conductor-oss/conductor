@@ -2028,6 +2028,13 @@ export function AgentDetailPanel({
       ? (selectedAttempt.reasonForIncompletion ?? null)
       : (selectedAttempt.outputData ?? null)
     : resolveOutput(node);
+  const outputMemorySearch = memorySearchResponse(outputValue);
+  const rawOutput =
+    outputValue !== null &&
+    typeof outputValue === "object" &&
+    !Array.isArray(outputValue)
+      ? (outputValue as Record<string, unknown>)
+      : null;
   const jsonData = selectedAttempt
     ? { ...selectedAttempt }
     : resolveJsonData(node);
@@ -2304,6 +2311,12 @@ export function AgentDetailPanel({
                 <Typography variant="body2" color="text.disabled" sx={{ p: 2 }}>
                   No output
                 </Typography>
+              ) : outputMemorySearch && rawOutput ? (
+                <McpMemorySearchOutput
+                  output={rawOutput}
+                  response={outputMemorySearch}
+                  workflowName="agent"
+                />
               ) : typeof outputValue === "string" ? (
                 <Box
                   component="pre"
