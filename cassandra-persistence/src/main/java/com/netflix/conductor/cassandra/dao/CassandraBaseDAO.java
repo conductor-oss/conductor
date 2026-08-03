@@ -25,6 +25,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
+import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -233,11 +234,24 @@ public abstract class CassandraBaseDAO {
                 .getQueryString();
     }
 
+    /**
+     * Rows in this table are written once and only ever removed by TTL expiry, and the rate limit
+     * check counts live rows in a clustering range. With the default gc_grace_seconds of 10 days
+     * the count would read through expired rows as tombstones long after their (usually seconds
+     * long) rate limit window closed, so a short gc_grace and time window compaction are used to
+     * let expired buckets drop out quickly.
+     */
     private String getCreateTaskRateLimitTableStatement() {
         return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_RATE_LIMIT)
                 .ifNotExists()
                 .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
                 .addClusteringColumn(RATE_LIMIT_BUCKET_ID_KEY, DataType.timeuuid())
+                .withOptions()
+                .gcGraceSeconds(3600)
+                .compactionOptions(
+                        SchemaBuilder.timeWindowCompactionStrategy()
+                                .compactionWindowUnit(CompactionWindowUnit.MINUTES)
+                                .compactionWindowSize(10))
                 .getQueryString();
     }
 

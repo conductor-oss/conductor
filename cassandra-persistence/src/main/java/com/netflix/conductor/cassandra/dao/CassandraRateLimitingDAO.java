@@ -38,6 +38,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Rate limits tasks using a "task_rate_limit" bucket table: one row per task execution within the
  * rate limit frequency window, keyed by a timeuuid and expiring via TTL once the window elapses.
+ *
+ * <p>The limit is approximate. Counting the window and recording the execution are two statements
+ * rather than one atomic operation, so concurrent pollers can admit more executions than the limit
+ * allows - the same is true of the redis implementation this mirrors. On a multi node cluster a
+ * {@code conductor.cassandra.readConsistencyLevel} below quorum can also count a stale window.
  */
 @Trace
 public class CassandraRateLimitingDAO extends CassandraBaseDAO implements RateLimitingDAO {

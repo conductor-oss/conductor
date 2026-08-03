@@ -30,7 +30,6 @@ import com.netflix.conductor.cassandra.dao.CassandraPollDataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraRateLimitingDAO;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
@@ -88,7 +87,7 @@ public class CassandraConfiguration {
     }
 
     @Bean
-    public ExecutionDAO cassandraExecutionDAO(
+    public CassandraExecutionDAO cassandraExecutionDAO(
             Session session,
             ObjectMapper objectMapper,
             CassandraProperties properties,
