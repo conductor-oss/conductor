@@ -26,10 +26,10 @@ import java.util.concurrent.CompletionStage;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
@@ -72,7 +72,9 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
 
     @Autowired
     public OcgAgentRunExporter(
-            ObjectMapper mapper, OcgClient ocgClient, ObjectProvider<WorkflowService> workflowService) {
+            ObjectMapper mapper,
+            OcgClient ocgClient,
+            ObjectProvider<WorkflowService> workflowService) {
         this.mapper = mapper;
         this.ocgClient = ocgClient;
         this.workflowService = workflowService;

@@ -17,8 +17,8 @@ import java.util.Set;
 
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
