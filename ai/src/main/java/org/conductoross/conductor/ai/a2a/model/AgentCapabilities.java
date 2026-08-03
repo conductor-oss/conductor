@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.a2a.model;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
@@ -23,4 +25,6 @@ public class AgentCapabilities {
     private boolean streaming;
     private boolean pushNotifications;
     private boolean stateTransitionHistory;
+    private boolean extendedAgentCard;
+    private List<AgentExtension> extensions;
 }

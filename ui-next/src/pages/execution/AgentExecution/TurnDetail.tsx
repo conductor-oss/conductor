@@ -1,6 +1,10 @@
 import { Box, Typography } from "@mui/material";
 import { AgentRunData, AgentTurn } from "./types";
-import { formatDuration, formatTokens } from "./agentExecutionUtils";
+import {
+  formatDuration,
+  formatTokens,
+  timelineItemLabel,
+} from "./agentExecutionUtils";
 import { EventRow } from "./EventRow";
 import { SubAgentTree } from "./SubAgentTree";
 
@@ -28,7 +32,7 @@ export function TurnDetail({ turn, onDrillIn }: TurnDetailProps) {
           variant="overline"
           sx={{ fontWeight: 700, letterSpacing: 1, lineHeight: 1.5 }}
         >
-          Turn {turn.turnNumber}
+          {timelineItemLabel(turn)}
         </Typography>
 
         <Box sx={{ flex: 1 }} />

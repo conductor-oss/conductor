@@ -31,7 +31,6 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.utils.SemaphoreUtil;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.ExecutionService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,7 +53,6 @@ public class TestSystemTaskWorker {
     private static final String ISOLATED_TASK = "system_task-isolated";
 
     private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
-    private ExecutionService executionService;
     private QueueDAO queueDAO;
     private ConductorProperties properties;
 
@@ -63,7 +61,6 @@ public class TestSystemTaskWorker {
     @Before
     public void setUp() {
         asyncSystemTaskExecutor = mock(AsyncSystemTaskExecutor.class);
-        executionService = mock(ExecutionService.class);
         queueDAO = mock(QueueDAO.class);
         properties = mock(ConductorProperties.class);
 
@@ -75,9 +72,7 @@ public class TestSystemTaskWorker {
         when(properties.getSystemTaskQueuePopTimeout()).thenReturn(Duration.ofMillis(100));
         when(properties.getTaskWorkerConfigs()).thenReturn(new HashMap<>());
 
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
     }
 
@@ -94,9 +89,7 @@ public class TestSystemTaskWorker {
     @Test
     public void testIsolatedQueueGetsOwnPoolAndSemaphore() {
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(7);
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig isolated = systemTaskWorker.getExecutionConfig("HTTP-iso");
         ExecutionConfig nonIsolated = systemTaskWorker.getExecutionConfig("HTTP");
@@ -116,8 +109,7 @@ public class TestSystemTaskWorker {
     public void testDefaultNonIsolatedQueueUsesSharedPoolWithPerQueueSemaphore() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(5);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig http = systemTaskWorker.getExecutionConfig("HTTP");
         ExecutionConfig subWorkflow = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
@@ -143,9 +135,7 @@ public class TestSystemTaskWorker {
     public void testNonIsolatedQueuesHaveIndependentSemaphoresButShareExecutor() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(3);
         when(properties.getTaskWorkerConfigs()).thenReturn(new HashMap<>());
-        systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig httpConfig = systemTaskWorker.getExecutionConfig("HTTP");
         ExecutionConfig subWorkflowConfig = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
@@ -176,8 +166,7 @@ public class TestSystemTaskWorker {
         configs.put("LLM_TEXT_COMPLETE", llmConfig);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig llmExecConfig = systemTaskWorker.getExecutionConfig("LLM_TEXT_COMPLETE");
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
@@ -200,8 +189,7 @@ public class TestSystemTaskWorker {
         configs.put("HTTP", httpConfig);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
         ExecutionConfig subWorkflowExecConfig = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
@@ -226,8 +214,7 @@ public class TestSystemTaskWorker {
         configs.put("HTTP", httpConfig);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
 
@@ -255,6 +242,9 @@ public class TestSystemTaskWorker {
         latch.await();
 
         verify(asyncSystemTaskExecutor).execute(any(), anyString());
+        // The poll must not remove the message (issue #1321) — the executor reserves it instead.
+        verify(queueDAO, Mockito.never()).ack(anyString(), anyString());
+        verify(queueDAO, Mockito.never()).remove(anyString(), anyString());
     }
 
     @Test
@@ -282,8 +272,7 @@ public class TestSystemTaskWorker {
         // Exactly 3 permits should be in-flight — not 10.
         when(properties.getSystemTaskMaxPollCount()).thenReturn(10);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t2", "t3"));
 
@@ -349,50 +338,77 @@ public class TestSystemTaskWorker {
     }
 
     @Test
-    public void testDispatchExceptionReleasesPermitImmediately() {
+    public void testDispatchExceptionReleasesPermitImmediately() throws Exception {
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t2"));
-        // ack throws for t1, succeeds for t2
+
+        // Block asyncSystemTaskExecutor.execute() so a successfully-submitted task stays
+        // in-flight (its permit not yet released) for the duration of this test.
+        CountDownLatch release = new CountDownLatch(1);
         doAnswer(
                         invocation -> {
-                            String taskId = invocation.getArgument(0);
-                            if ("t1".equals(taskId)) throw new RuntimeException("ack failed");
-                            return true;
+                            release.await();
+                            return null;
                         })
-                .when(executionService)
-                .ackTaskReceived(anyString());
+                .when(asyncSystemTaskExecutor)
+                .execute(any(), anyString());
 
-        int permitsBefore =
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots();
+        // The executor rejects the first submission (t1) and accepts the second (t2) — the real
+        // trigger for the dispatch loop's catch block is a RejectedExecutionException from a
+        // saturated/shutdown pool, not an ack failure (ack no longer happens at dispatch time).
+        ExecutorService realPool = systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService();
+        ExecutorService flakyExecutor = mock(ExecutorService.class);
+        doThrow(new RuntimeException("dispatch failed"))
+                .doAnswer(
+                        invocation -> {
+                            realPool.execute(invocation.getArgument(0));
+                            return null;
+                        })
+                .when(flakyExecutor)
+                .execute(any());
+        ExecutionConfig flakyConfig =
+                new ExecutionConfig(
+                        flakyExecutor,
+                        systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil());
+        systemTaskWorker.queueExecutionConfigMap.put(TEST_TASK, flakyConfig);
+
+        int permitsBefore = flakyConfig.getSemaphoreUtil().availableSlots();
         boolean executed = systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
-        // t1's permit released immediately on exception; t2's permit still held (async in-flight).
+        // t1's permit released immediately on the rejected submission; t2's permit still held
+        // (async in-flight, blocked on the latch).
         assertEquals(
                 "t1 permit released immediately, t2 still in-flight",
                 permitsBefore - 1,
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+                flakyConfig.getSemaphoreUtil().availableSlots());
         // A batch with at least one successful dispatch reports progress — the loop keeps polling.
         assertTrue("Partial dispatch failure must still report progress", executed);
+
+        release.countDown();
     }
 
     @Test
     public void testAllDispatchFailuresReportNoProgress() {
-        // Queue store healthy (pop succeeds) but execution store down (every ack throws). The
+        // Queue store healthy (pop succeeds) but the executor pool rejects every submission. The
         // poll must report no progress so the loop sleeps pollInterval instead of hot-spinning
         // through the backlog.
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("t1", "t2"));
-        doThrow(new RuntimeException("execution store down"))
-                .when(executionService)
-                .ackTaskReceived(anyString());
 
-        int permitsBefore =
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots();
+        ExecutorService flakyExecutor = mock(ExecutorService.class);
+        doThrow(new RuntimeException("pool rejected submission")).when(flakyExecutor).execute(any());
+        ExecutionConfig flakyConfig =
+                new ExecutionConfig(
+                        flakyExecutor,
+                        systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil());
+        systemTaskWorker.queueExecutionConfigMap.put(TEST_TASK, flakyConfig);
+
+        int permitsBefore = flakyConfig.getSemaphoreUtil().availableSlots();
         boolean executed = systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
         assertFalse("An all-failed batch must report no progress", executed);
         assertEquals(
                 "All permits must be released when every dispatch fails",
                 permitsBefore,
-                systemTaskWorker.getExecutionConfig(TEST_TASK).getSemaphoreUtil().availableSlots());
+                flakyConfig.getSemaphoreUtil().availableSlots());
         verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), anyString());
     }
 
@@ -439,8 +455,7 @@ public class TestSystemTaskWorker {
     public void testIsolatedQueueSemaphoreConsumedAndReleasedOnCompletion() throws Exception {
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(2);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
 
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("i1", "i2"));
@@ -489,8 +504,7 @@ public class TestSystemTaskWorker {
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
 
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("p1", "p2"));
@@ -536,8 +550,7 @@ public class TestSystemTaskWorker {
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         // TEST_TASK = "system_task" — lower-case; config key is "SYSTEM_TASK" — upper-case.
         ExecutionConfig execConfig = systemTaskWorker.getExecutionConfig(TEST_TASK);
@@ -587,8 +600,7 @@ public class TestSystemTaskWorker {
         // there previously escaped pollAndExecute entirely. It must not kill the poller loop.
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
 
         SemaphoreUtil flakySemaphore = mock(SemaphoreUtil.class);
@@ -634,8 +646,7 @@ public class TestSystemTaskWorker {
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(5));
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
 
         ExecutorService sharedPool =
@@ -665,7 +676,6 @@ public class TestSystemTaskWorker {
         systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
         verify(queueDAO).resetOffsetTime(TEST_TASK, "late-task");
-        verify(executionService, Mockito.never()).ackTaskReceived("late-task");
         verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), eq("late-task"));
     }
 
@@ -687,8 +697,7 @@ public class TestSystemTaskWorker {
         configs.put("HTTP", httpConfig);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
 
@@ -703,8 +712,7 @@ public class TestSystemTaskWorker {
     public void testPollerStartedBeforeLifecycleStartWaitsForStart() throws Exception {
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         // NOT started — simulates IsolatedTaskQueueProducer registering a queue during context
         // refresh, before SmartLifecycle.start() has run.
 
@@ -740,8 +748,7 @@ public class TestSystemTaskWorker {
         // than getting stuck in the idle branch forever.
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
         systemTaskWorker =
-                new SystemTaskWorker(
-                        queueDAO, asyncSystemTaskExecutor, properties, executionService);
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
 
         AtomicReference<CountDownLatch> poppedRef = new AtomicReference<>(new CountDownLatch(1));

@@ -24,7 +24,12 @@ public interface Constants {
     String TABLE_TASK_DEFS = "task_definitions";
     String TABLE_EVENT_HANDLERS = "event_handlers";
     String TABLE_EVENT_EXECUTIONS = "event_executions";
+    String TABLE_FILE_METADATA = "file_metadata";
+    String TABLE_FILE_METADATA_BY_WORKFLOW = "file_metadata_by_workflow";
+    String TABLE_FILE_METADATA_BY_TASK = "file_metadata_by_task";
 
+    String FILE_ID_KEY = "file_id";
+    String JSON_DATA_KEY = "json_data";
     String WORKFLOW_ID_KEY = "workflow_id";
     String SHARD_ID_KEY = "shard_id";
     String TASK_ID_KEY = "task_id";

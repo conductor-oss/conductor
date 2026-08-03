@@ -26,7 +26,6 @@ import org.springframework.core.io.ByteArrayResource;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.ExecutionService;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -64,10 +63,7 @@ public class TestTaskWorkerConfigBinding {
 
         SystemTaskWorker worker =
                 new SystemTaskWorker(
-                        mock(QueueDAO.class),
-                        mock(AsyncSystemTaskExecutor.class),
-                        properties,
-                        mock(ExecutionService.class));
+                        mock(QueueDAO.class), mock(AsyncSystemTaskExecutor.class), properties);
 
         // Uppercase key: HTTP gets a dedicated pool with permits == threadCount.
         assertEquals(

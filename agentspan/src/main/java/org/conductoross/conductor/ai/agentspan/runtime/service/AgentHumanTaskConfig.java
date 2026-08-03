@@ -21,7 +21,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUM
 
 /**
  * Registers {@link AgentHumanTask} as the {@code HUMAN} system task when running in embedded mode
- * ({@code agentspan.embedded=true}).
+ * ({@code conductor.integrations.ai.enabled=true}).
  *
  * <p>The {@code @Bean("HUMAN")} definition <em>overrides</em> Conductor's default {@code Human}
  * component (enabled via {@code spring.main.allow-bean-definition-overriding=true}), so exactly one
@@ -29,11 +29,11 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUM
  * duplicate taskType key in {@code SystemTaskRegistry} that would otherwise result from having two
  * {@code WorkflowSystemTask}s both reporting the {@code HUMAN} type.
  *
- * <p>When {@code agentspan.embedded} is unset (the standalone OSS server), this configuration is
- * skipped and Conductor's default {@code Human} task remains in effect.
+ * <p>When {@code conductor.integrations.ai.enabled} is disabled, this configuration is skipped and
+ * Conductor's default {@code Human} task remains in effect.
  */
 @Configuration
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AgentHumanTaskConfig {
 
     @Bean(TASK_TYPE_HUMAN)

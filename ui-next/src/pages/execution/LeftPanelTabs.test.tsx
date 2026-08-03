@@ -35,7 +35,7 @@ describe("LeftPanelTabs", () => {
     );
     expect(tabLabels()).toEqual([
       "Agent Execution",
-      "Debug View",
+      "Workflow View",
       "Task List",
       "Timeline",
       "Agent Definition",

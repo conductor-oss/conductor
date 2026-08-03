@@ -28,6 +28,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -425,6 +426,59 @@ public class NotificationResultTest {
                 task1.getReferenceTaskName(), workflowRun.getTasks().get(0).getReferenceTaskName());
         assertEquals(
                 task2.getReferenceTaskName(), workflowRun.getTasks().get(1).getReferenceTaskName());
+    }
+
+    @Test
+    public void testSignalTimeout_propagatedToWorkflowRun() {
+        NotificationResult result =
+                NotificationResult.builder()
+                        .targetWorkflow(targetWorkflow)
+                        .blockingWorkflow(blockingWorkflow)
+                        .blockingTasks(new ArrayList<>())
+                        .signalTimeout(true)
+                        .build();
+
+        SignalResponse response =
+                result.toResponse(WorkflowSignalReturnStrategy.TARGET_WORKFLOW, requestId);
+
+        assertTrue(response instanceof WorkflowRun);
+        assertTrue(((WorkflowRun) response).isSignalTimeout());
+    }
+
+    @Test
+    public void testSignalTimeout_propagatedToTaskRun() {
+        List<TaskModel> blockingTasks = new ArrayList<>();
+        blockingTasks.add(blockingTask);
+
+        NotificationResult result =
+                NotificationResult.builder()
+                        .targetWorkflow(targetWorkflow)
+                        .blockingWorkflow(blockingWorkflow)
+                        .blockingTasks(blockingTasks)
+                        .signalTimeout(true)
+                        .build();
+
+        SignalResponse response =
+                result.toResponse(WorkflowSignalReturnStrategy.BLOCKING_TASK, requestId);
+
+        assertTrue(response instanceof TaskRun);
+        assertTrue(((TaskRun) response).isSignalTimeout());
+    }
+
+    @Test
+    public void testSignalTimeout_falseByDefault() {
+        NotificationResult result =
+                NotificationResult.builder()
+                        .targetWorkflow(targetWorkflow)
+                        .blockingWorkflow(blockingWorkflow)
+                        .blockingTasks(new ArrayList<>())
+                        .build();
+
+        SignalResponse response =
+                result.toResponse(WorkflowSignalReturnStrategy.TARGET_WORKFLOW, requestId);
+
+        assertTrue(response instanceof WorkflowRun);
+        assertFalse(((WorkflowRun) response).isSignalTimeout());
     }
 
     // Helper methods
