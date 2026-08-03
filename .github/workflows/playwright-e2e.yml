@@ -1,0 +1,44 @@
+name: Trigger Playwright E2E Tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+    inputs:
+      conductor_ui_branch:
+        description: "conductor-ui branch to test against"
+        required: false
+        default: "main"
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve conductor-ui branch from PR body
+        id: resolve
+        run: |
+          if [ -n "${{ inputs.conductor_ui_branch }}" ]; then
+            echo "branch=${{ inputs.conductor_ui_branch }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          BODY=$(cat <<'PRBODY'
+          ${{ github.event.pull_request.body }}
+          PRBODY
+          )
+          PARSED=$(echo "$BODY" | grep -oP '(?<=conductor-ui-branch:\s).+' | head -1 | xargs)
+          if [ -n "$PARSED" ]; then
+            echo "branch=$PARSED" >> $GITHUB_OUTPUT
+          else
+            echo "branch=main" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger Playwright tests in conductor-ui
+        run: |
+          gh api repos/orkes-io/conductor-ui/dispatches \
+            -f event_type=oss-pr-playwright \
+            -f "client_payload[oss_ref]=${{ github.event.pull_request.head.sha || github.sha }}" \
+            -f "client_payload[oss_pr_number]=${{ github.event.pull_request.number || '' }}" \
+            -f "client_payload[oss_pr_title]=${{ github.event.pull_request.title || 'manual dispatch' }}" \
+            -f "client_payload[conductor_ui_branch]=${{ steps.resolve.outputs.branch }}"
+        env:
+          GH_TOKEN: ${{ secrets.ORKES_INTERNAL_RUNNER_SECRET }}
