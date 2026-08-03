@@ -84,8 +84,7 @@ public class WorkflowMonitorTest {
                 new WorkflowMonitor(
                         metadataService, queueDAO, executionDAOFacade, 1000, Set.of(), false);
 
-        when(metadataService.getWorkflowDefs())
-                .thenReturn(List.of(makeDef("test1", 1, "owner")));
+        when(metadataService.getWorkflowDefs()).thenReturn(List.of(makeDef("test1", 1, "owner")));
         when(metadataService.getTaskDefs()).thenReturn(List.of());
 
         monitor.reportMetrics();
