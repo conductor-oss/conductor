@@ -50,10 +50,6 @@ import { SummaryTask } from "./SummaryTask";
 import { dropdownIcon } from "./dropdownIcon";
 import { SecondaryActions } from "./SecondaryActions";
 import { getTaskOutputForDisplay } from "./taskOutput";
-import {
-  McpMemorySearchOutput,
-  memorySearchResponse,
-} from "./McpMemorySearchOutput";
 
 const executionTaskHeaderContainerQuery = {
   small: { maxWidth: 699 },
@@ -106,10 +102,6 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
 
   const dfOptions: ExecutionTask[] = maybeSiblings;
   const isAgentTask = selectedTask?.workflowTask.type === TaskType.AGENT;
-  const memorySearch = useMemo(
-    () => memorySearchResponse(selectedTask?.outputData),
-    [selectedTask?.outputData],
-  );
   const agentSnapshot = useMemo(() => {
     if (!isAgentTask || !selectedTask) return undefined;
     return (
@@ -421,12 +413,6 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
           {currentTab === OUTPUT_TAB &&
             (!selectedTask.outputData ? (
               prunedNotice
-            ) : memorySearch ? (
-              <McpMemorySearchOutput
-                output={getTaskOutputForDisplay(selectedTask)}
-                response={memorySearch}
-                workflowName={workflowName}
-              />
             ) : (
               <ReactJson
                 src={getTaskOutputForDisplay(selectedTask)}
