@@ -428,6 +428,45 @@ function isChainWorkflow(tasks: ExecutionTask[]): boolean {
   );
 }
 
+function parseAgentStrategy(raw: unknown): AgentStrategy | undefined {
+  if (typeof raw !== "string") return undefined;
+  const normalized = raw.toLowerCase();
+  return (Object.values(AgentStrategy) as string[]).includes(normalized)
+    ? (normalized as AgentStrategy)
+    : undefined;
+}
+
+/**
+ * Recursively index each agent definition's OWN strategy by name, mirroring how
+ * the Definition tab walks agentDef.agents[]. Only agents that actually have
+ * their own sub-agents get an entry — leaves are intentionally left unindexed
+ * so the Execution view shows no strategy badge for them (issue #1454).
+ */
+function indexAgentDefStrategies(
+  agentDef: Record<string, unknown> | undefined,
+  index: Map<string, AgentStrategy> = new Map(),
+): Map<string, AgentStrategy> {
+  if (!agentDef) return index;
+  const children =
+    (agentDef.agents as Array<Record<string, unknown>> | undefined) ?? [];
+  if (children.length > 0) {
+    const name = agentDef.name as string | undefined;
+    const strategy = parseAgentStrategy(agentDef.strategy);
+    if (name && strategy) index.set(name.toLowerCase(), strategy);
+  }
+  for (const child of children) {
+    indexAgentDefStrategies(child, index);
+  }
+  return index;
+}
+
+function lookupOwnStrategy(
+  index: Map<string, AgentStrategy>,
+  name: string | undefined,
+): AgentStrategy | undefined {
+  return name ? index.get(name.toLowerCase()) : undefined;
+}
+
 /**
  * Transform a sequential chain workflow into AgentRunData.
  * Each step becomes a "turn" whose only sub-agent is the step agent.
@@ -469,6 +508,11 @@ function transformChainWorkflowToAgentRun(
   // Grab the per-step agent configs from the definition metadata for gate label info
   const agentsDef = ((execution.workflowDefinition?.metadata?.agentDef as any)
     ?.agents ?? []) as Array<Record<string, unknown>>;
+  const strategyIndex = indexAgentDefStrategies(
+    execution.workflowDefinition?.metadata?.agentDef as
+      | Record<string, unknown>
+      | undefined,
+  );
 
   const turns: AgentTurn[] = sortedSteps.map(
     ([stepN, task], idx): AgentTurn => {
@@ -513,7 +557,7 @@ function transformChainWorkflowToAgentRun(
         status: mapTaskStatus(task.status),
         totalTokens: ZERO_TOKENS,
         totalDurationMs: durationMs,
-        strategy: AgentStrategy.SINGLE,
+        strategy: lookupOwnStrategy(strategyIndex, agentName),
         agentType: task.inputData?.agentType as string | undefined,
         invocationStrategy: AgentStrategy.SEQUENTIAL,
         input: task.inputData?.workflowInput ?? task.inputData,
@@ -672,6 +716,7 @@ export function transformWorkflowExecutionToAgentRun(
   const agentDefMeta = execution.workflowDefinition?.metadata?.agentDef as
     | Record<string, unknown>
     | undefined;
+  const strategyIndex = indexAgentDefStrategies(agentDefMeta);
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -871,7 +916,7 @@ export function transformWorkflowExecutionToAgentRun(
             status: mapTaskStatus(task.status),
             totalTokens: ZERO_TOKENS,
             totalDurationMs: durationMs,
-            strategy: AgentStrategy.SINGLE,
+            strategy: lookupOwnStrategy(strategyIndex, agentName),
             agentType: task.inputData?.agentType as string | undefined,
             invocationStrategy: AgentStrategy.HANDOFF,
             input: agentInput,
@@ -1302,6 +1347,7 @@ export function transformWorkflowExecutionToAgentRun(
       totalTokens: ZERO_TOKENS,
       totalDurationMs: dur,
       agentType: task.inputData?.agentType as string | undefined,
+      strategy: lookupOwnStrategy(strategyIndex, agentName),
       invocationStrategy:
         rootSubWorkflows.length > 1
           ? AgentStrategy.PARALLEL
@@ -1751,11 +1797,12 @@ export function transformWorkflowExecutionToAgentRun(
     totalDurationMs,
     finishReason,
     strategy:
-      rootSubWorkflows.length > 1
+      lookupOwnStrategy(strategyIndex, rootAgentName) ??
+      (rootSubWorkflows.length > 1
         ? AgentStrategy.PARALLEL
         : sortedIters.length > 0
           ? AgentStrategy.HANDOFF
-          : AgentStrategy.SINGLE,
+          : AgentStrategy.SINGLE),
     input: agentInput,
     output: execution.output ?? finalOutput,
   };
