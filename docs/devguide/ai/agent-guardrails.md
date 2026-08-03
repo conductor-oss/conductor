@@ -4,7 +4,7 @@
   <p class="integration-hero__eyebrow">Runtime safety controls</p>
   <h2 id="guardrails-hero-title">Protect every boundary. Pause before consequential action.</h2>
   <p>Guardrails turn policy into durable execution steps: validate requests, constrain model output, block unsafe tool arguments, and route acceptable writes through human approval.</p>
-  <img class="integration-hero__diagram" src="../../assets/images/ai/agent-guardrails.svg" alt="A request passes input and output guardrails around an agent; a tool-input guardrail and human approval protect a consequential write." loading="lazy" />
+  <img class="integration-hero__diagram" src="../../assets/images/ai/agent-guardrails.png" alt="A request passes input and output guardrails around an agent; a tool-input guardrail and human approval protect a consequential write." loading="lazy" />
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#choose-the-closest-enforcement-point">
       <span class="integration-action-card__title">Place the control</span>

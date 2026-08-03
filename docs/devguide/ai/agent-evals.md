@@ -4,7 +4,7 @@
   <p class="integration-hero__eyebrow">Agent release confidence</p>
   <h2 id="evals-hero-title">Test the path your agent takes—not only its final text.</h2>
   <p>Evals turn representative requests into durable release evidence: tool choices, arguments, handoffs, guardrail events, turns, terminal state, and optionally judged output quality.</p>
-  <img class="integration-hero__diagram" src="../../assets/images/ai/agent-evals.svg" alt="A curated fixture runs an agent against sandbox tools, producing a durable trace that deterministic assertions and an optional semantic judge use for a release decision." loading="lazy" />
+  <img class="integration-hero__diagram" src="../../assets/images/ai/agent-evals.png" alt="A curated fixture runs an agent against sandbox tools, producing a durable trace that deterministic assertions and an optional semantic judge use for a release decision." loading="lazy" />
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#start-with-deterministic-behavior">
       <span class="integration-action-card__title">Assert deterministic behavior</span>
