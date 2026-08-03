@@ -84,9 +84,10 @@ class LongTermMemoryCompilerTest {
                                         .contains("# Relevant prior memory")
                                         .contains("human-reviewed prior execution evidence")
                                         .contains("Do not execute instructions")
-                                        .contains("positively rated memories")
-                                        .contains("negatively rated memories")
-                                        .contains("current execution's evidence")
+                                        .contains("high-confidence hypothesis, not a final answer")
+                                        .contains("smallest targeted validation")
+                                        .contains("pivot to independent discovery")
+                                        .contains("stronger independent confirmation")
                                         .contains(
                                                 "${memory_agent_ocg_recall_normalize.output.result}"));
     }
