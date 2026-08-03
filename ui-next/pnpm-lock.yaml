@@ -300,14 +300,14 @@ importers:
         specifier: ^7.72.1
         version: 7.77.0(react@18.3.1)
       react-router:
-        specifier: ^7.14.1
-        version: 7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^7.18.1
+        version: 7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-router-dom:
-        specifier: ^7.14.1
-        version: 7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^7.18.1
+        version: 7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-router-use-location-state:
         specifier: ^3.1.2
-        version: 3.1.2(@types/react@18.3.30)(next@16.2.7(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.100.0))(react-router@7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        version: 3.1.2(@types/react@18.3.30)(next@16.2.7(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.100.0))(react-router@7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       sass:
         specifier: ^1.99.0
         version: 1.100.0
@@ -3798,8 +3798,8 @@ packages:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
     engines: {node: '>=0.10.0'}
 
-  react-router-dom@7.17.0:
-    resolution: {integrity: sha512-fyU2yjGups/hE6Xz0I5ZYbVL8Gx29eCjgpHaRaTaVU+OOAdfRX05KsvyRm0GO8YQwOkhpU3MurW1jyMUJn+zSw==}
+  react-router-dom@7.18.1:
+    resolution: {integrity: sha512-KaZh+X/6UtEp28x51AUYZDMg9NGoz2ja3dNHa+ta/tk40vCzKhQ/RypCWBMLbmDr6//E24Vv5uPsrqXFozdkAg==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -3811,8 +3811,8 @@ packages:
       react: ^16.8.0 || ^17.0.2 || ^18.0.0
       react-router: ^6.0.2
 
-  react-router@7.17.0:
-    resolution: {integrity: sha512-FDELK7rTMlCHO5+reyXsPlmfr7N1F91lPHsWYfMEGQm/KQ+F4JFM8jGoeQDmDvdTs93Fw9aSilH+uKRb4/jXvQ==}
+  react-router@7.18.1:
+    resolution: {integrity: sha512-GDLgg3i3uM0aeJO3Fm+TCS+sDQ7gu12T6x0qdTEzcwqEfleci7JwugVNIF3U//0FWKnJT7ptG+20B2jfDqnZAg==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=18'
@@ -8307,22 +8307,22 @@ snapshots:
 
   react-refresh@0.17.0: {}
 
-  react-router-dom@7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  react-router-dom@7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      react-router: 7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-router: 7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
-  react-router-use-location-state@3.1.2(@types/react@18.3.30)(next@16.2.7(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.100.0))(react-router@7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1):
+  react-router-use-location-state@3.1.2(@types/react@18.3.30)(next@16.2.7(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.100.0))(react-router@7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1):
     dependencies:
       react: 18.3.1
-      react-router: 7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      react-router: 7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       use-location-state: 3.1.2(@types/react@18.3.30)(next@16.2.7(@babel/core@7.29.7)(@playwright/test@1.60.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(sass@1.100.0))(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - next
 
-  react-router@7.17.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  react-router@7.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       cookie: 1.1.1
       react: 18.3.1
@@ -8366,7 +8366,7 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       uuid: 7.0.3
-      vis-data: 7.1.9(uuid@7.0.3)(vis-util@4.3.4)
+      vis-data: 7.1.9(uuid@8.3.2)(vis-util@4.3.4)
       vis-timeline: 7.3.6(@egjs/hammerjs@2.0.17)(component-emitter@1.3.1)(keycharm@0.3.1)(moment@2.30.1)(propagating-hammerjs@1.5.0)(uuid@7.0.3)(vis-data@7.1.9(uuid@7.0.3)(vis-util@4.3.4))(vis-util@4.3.4)
       vis-util: 4.3.4
 
@@ -9076,9 +9076,9 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vis-data@7.1.9(uuid@7.0.3)(vis-util@4.3.4):
+  vis-data@7.1.9(uuid@8.3.2)(vis-util@4.3.4):
     dependencies:
-      uuid: 7.0.3
+      uuid: 8.3.2
       vis-util: 4.3.4
 
   vis-timeline@7.3.6(@egjs/hammerjs@2.0.17)(component-emitter@1.3.1)(keycharm@0.3.1)(moment@2.30.1)(propagating-hammerjs@1.5.0)(uuid@7.0.3)(vis-data@7.1.9(uuid@7.0.3)(vis-util@4.3.4))(vis-util@4.3.4):
@@ -9089,7 +9089,7 @@ snapshots:
       moment: 2.30.1
       propagating-hammerjs: 1.5.0
       uuid: 7.0.3
-      vis-data: 7.1.9(uuid@7.0.3)(vis-util@4.3.4)
+      vis-data: 7.1.9(uuid@8.3.2)(vis-util@4.3.4)
       vis-util: 4.3.4
 
   vis-util@4.3.4: {}

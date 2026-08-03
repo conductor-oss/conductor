@@ -281,6 +281,11 @@ jobs:
   agentspan-e2e:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    # checks: write is required for the test-result check below; without it the
+    # default read-only token fails with "Resource not accessible by integration".
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
         with:
