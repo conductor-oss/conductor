@@ -33,8 +33,7 @@ const linkButtons = [
     icon: <SlackIcon />,
     linkTo:
       "https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg",
-    // hidden: !featureFlags.isEnabled(FEATURES.SHOW_JOIN_SLACK_COMMUNITY),
-    hidden: false,
+    hidden: !featureFlags.isEnabled(FEATURES.SHOW_JOIN_SLACK_COMMUNITY),
   },
 ];
 
