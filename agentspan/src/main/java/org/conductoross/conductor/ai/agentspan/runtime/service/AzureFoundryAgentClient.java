@@ -428,7 +428,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     //   2. client_id/secret/tenant   → ClientSecretCredential (Service Principal)
     //   3. clientId only             → ManagedIdentityCredential (user-assigned)
     //   4. no credentialRef or empty → DefaultAzureCredential (env vars → MI → CLI)
-    private AuthState buildAuthState(ConductorAgentStartRequest request, String endpoint) {
+    AuthState buildAuthState(ConductorAgentStartRequest request, String endpoint) {
         String scope = resolveScope(request, endpoint);
         String credentialRef = request.getCredentialRef();
 
@@ -521,7 +521,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     // Parses agent/assistant ID out of an agentUrl that embeds it in the path.
     // Returns null if neither /agents/ nor /assistants/ is present.
-    private static String extractAgentIdFromUrl(String url) {
+    static String extractAgentIdFromUrl(String url) {
         if (url == null) return null;
         for (String marker : new String[] {"/agents/", "/assistants/"}) {
             int idx = url.lastIndexOf(marker);
@@ -534,14 +534,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return null;
     }
 
-    private static boolean isInferenceEndpoint(String endpoint) {
+    static boolean isInferenceEndpoint(String endpoint) {
         return endpoint != null
                 && (endpoint.contains("inference.ml.azure.com")
                         || (endpoint.contains("services.ai.azure.com")
                                 && !endpoint.contains("/api/projects/")));
     }
 
-    private static boolean isFoundryProjectEndpoint(String endpoint) {
+    static boolean isFoundryProjectEndpoint(String endpoint) {
         return endpoint != null
                 && endpoint.contains("services.ai.azure.com")
                 && endpoint.contains("/api/projects/");
@@ -549,7 +549,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     // Adapts agent definition tools to the Responses API format.
     // code_interpreter needs a container object; other tools pass through unchanged.
-    private static JsonNode toResponsesApiTools(JsonNode definitionTools) {
+    static JsonNode toResponsesApiTools(JsonNode definitionTools) {
         ArrayNode result = MAPPER.createArrayNode();
         for (JsonNode tool : definitionTools) {
             String type = tool.path("type").asText();
@@ -697,10 +697,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     // Holds either a static API key or an Azure SDK TokenCredential + scope.
     // The SDK caches and auto-refreshes tokens, so headerValue() is fast on repeated calls.
-    private static class AuthState {
-        private final TokenCredential credential;
-        private final String scope;
-        private final String apiKey;
+    static class AuthState {
+        final TokenCredential credential;
+        final String scope;
+        final String apiKey;
 
         AuthState(String apiKey) {
             this.credential = null;
