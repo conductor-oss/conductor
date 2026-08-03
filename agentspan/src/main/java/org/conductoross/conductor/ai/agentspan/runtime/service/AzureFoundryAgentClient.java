@@ -53,14 +53,19 @@ import okhttp3.Response;
 //
 // Agent types (auto-detected from agentUrl):
 //   Classic Assistants:  https://my-resource.openai.azure.com/openai/assistants/asst_xxx
-//   Foundry project:     https://my-resource.services.ai.azure.com/api/projects/{proj}/agents/{name}
-//   AI Inference:        https://my-resource.services.ai.azure.com/models  (or *.inference.ml.azure.com)
+//   Foundry project:
+// https://my-resource.services.ai.azure.com/api/projects/{proj}/agents/{name}
+//   AI Inference:        https://my-resource.services.ai.azure.com/models  (or
+// *.inference.ml.azure.com)
 //
 // Auth modes (auto-detected from credentialRef secret fields):
 //   API key:             secret has apiKey → api-key header
-//   Client credentials:  secret has client_id + client_secret + tenant_id → Bearer via ClientSecretCredential
-//   Managed identity:    secret has clientId only → Bearer via ManagedIdentityCredential (user-assigned)
-//                        no credentialRef or empty secret → system-assigned MI / DefaultAzureCredential
+//   Client credentials:  secret has client_id + client_secret + tenant_id → Bearer via
+// ClientSecretCredential
+//   Managed identity:    secret has clientId only → Bearer via ManagedIdentityCredential
+// (user-assigned)
+//                        no credentialRef or empty secret → system-assigned MI /
+// DefaultAzureCredential
 //   DefaultAzureCredential: no credentialRef → full chain (env vars → workload identity → MI → CLI)
 //
 // Activated by conductor.integrations.ai.enabled=true; an unconfigured runtime fails only if used.
@@ -142,10 +147,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String apiVersion = isMlEndpoint ? null : INFERENCE_API_VERSION;
 
         JsonNode response = post(url, body, auth, apiVersion);
-        String text =
-                response.path("choices").path(0).path("message").path("content").asText("");
+        String text = response.path("choices").path(0).path("message").path("content").asText("");
         String execId =
-                StringUtils.defaultIfBlank(response.path("id").asText(), UUID.randomUUID().toString());
+                StringUtils.defaultIfBlank(
+                        response.path("id").asText(), UUID.randomUUID().toString());
 
         ExecutionContext ctx =
                 new ExecutionContext(endpoint, model, null, auth, INFERENCE_API_VERSION);
