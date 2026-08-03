@@ -32,10 +32,6 @@ import {
   transformWorkflowExecutionToAgentRun,
 } from "./agentExecutionUtils";
 import { WorkflowExecution } from "types/Execution";
-import {
-  McpMemorySearchOutput,
-  memorySearchResponse,
-} from "../RightPanel/McpMemorySearchOutput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -221,11 +217,6 @@ function formattedOutput(value: unknown): unknown {
 /** Keeps human-readable Markdown/text and the exact execution payload together. */
 function OutputView({ value }: { value: unknown }) {
   const [view, setView] = useState(FORMATTED_OUTPUT_TAB);
-  const memorySearch = memorySearchResponse(value);
-  const rawMcpOutput =
-    value !== null && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
   return (
     <Box
       sx={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}
@@ -244,18 +235,10 @@ function OutputView({ value }: { value: unknown }) {
       </Tabs>
       <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2 }}>
         {view === FORMATTED_OUTPUT_TAB ? (
-          memorySearch && rawMcpOutput ? (
-            <McpMemorySearchOutput
-              output={rawMcpOutput}
-              response={memorySearch}
-              workflowName="agent"
-            />
-          ) : (
-            <ContentView
-              value={formattedOutput(value)}
-              label="output captured for this execution"
-            />
-          )
+          <ContentView
+            value={formattedOutput(value)}
+            label="output captured for this execution"
+          />
         ) : value == null ? (
           <ContentView
             value={value}
