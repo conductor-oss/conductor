@@ -51,6 +51,13 @@ public class LongTermMemoryConfig {
     private String user;
 
     /**
+     * Visibility for newly captured execution memories. Defaults to {@code public}, which shares
+     * memories with other users of the configured agent. Set to {@code private} only when a run
+     * must be limited to its owning user.
+     */
+    private String visibility;
+
+    /**
      * @deprecated Retained for wire compatibility; OCG owns write scope.
      */
     @Deprecated private String scope;

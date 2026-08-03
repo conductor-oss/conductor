@@ -34,8 +34,10 @@ public record OcgExecutionIdentity(
         String runtimeUser =
                 masked(workflow, "user") ? "[REDACTED]" : stringValue(input.get("user"), null);
         String user = stringValue(config.getUser(), runtimeUser);
-        if ("[REDACTED]".equals(user)) user = null;
-        if (!isBlank(user) && !user.startsWith("user:")) user = "user:" + user;
+        if ("[REDACTED]".equals(user) || isBlank(user)) user = "agent:" + agent;
+        if (!isBlank(user) && !user.startsWith("user:") && !user.startsWith("agent:")) {
+            user = "user:" + user;
+        }
         return new OcgExecutionIdentity(agent, user, sessionId, executionId);
     }
 

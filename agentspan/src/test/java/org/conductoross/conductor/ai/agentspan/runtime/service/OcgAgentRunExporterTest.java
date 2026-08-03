@@ -126,6 +126,7 @@ class OcgAgentRunExporterTest {
                 .containsEntry("user", "user:alice")
                 .containsEntry("session_id", "session-7")
                 .containsEntry("execution_id", "wf-turn-9")
+                .containsEntry("visibility", "public")
                 .containsEntry("input", "original request")
                 .containsEntry("result", "final answer")
                 .containsEntry("outcome", "success");
@@ -187,6 +188,7 @@ class OcgAgentRunExporterTest {
             assertThat(sent)
                     .containsEntry("session_id", "stable-session")
                     .containsEntry("execution_id", "stable-turn")
+                    .containsEntry("visibility", "public")
                     .doesNotContainKey("turn_id");
             assertThat(credentials).containsExactly("top-secret", "top-secret");
         } finally {
@@ -284,12 +286,29 @@ class OcgAgentRunExporterTest {
                                 workflow,
                                 LongTermMemoryConfig.builder().agent("agentspan").build());
 
+        assertThat(payload).containsEntry("user", "agent:agentspan");
         assertThat(payload.get("result")).isEqualTo("[REDACTED]");
         assertThat(payload.toString())
                 .doesNotContain("111-22-3333", "private final answer", "private tool result")
                 .contains("[REDACTED]", "visible");
         List<Map<String, Object>> events = (List<Map<String, Object>>) payload.get("events");
         assertThat(events).hasSize(1);
+    }
+
+    @Test
+    void usesPrivateVisibilityOnlyWhenConfigured() {
+        WorkflowModel workflow = workflow("https://unused.example", "session", "execution");
+
+        Map<String, Object> payload =
+                exporter(name -> "secret", 1)
+                        .buildPayload(
+                                workflow,
+                                LongTermMemoryConfig.builder()
+                                        .agent("agentspan")
+                                        .visibility("private")
+                                        .build());
+
+        assertThat(payload).containsEntry("visibility", "private");
     }
 
     private OcgAgentRunExporter exporter(

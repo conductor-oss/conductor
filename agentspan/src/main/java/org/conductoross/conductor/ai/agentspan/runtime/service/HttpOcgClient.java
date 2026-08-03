@@ -84,7 +84,7 @@ public class HttpOcgClient implements OcgClient {
     @Override
     public CompletionStage<Void> exportAgentRun(
             LongTermMemoryConfig config, Map<String, Object> payload) {
-        String workflowId = stringValue(payload.get("turn_id"));
+        String workflowId = stringValue(payload.get("execution_id"));
         String sessionId = stringValue(payload.get("session_id"));
         try {
             String credential = credentialResolver.apply(config.getCredential());
@@ -200,6 +200,7 @@ public class HttpOcgClient implements OcgClient {
                 new StringBuilder(memoryEndpoint(config))
                         .append('/')
                         .append(encode(identity.executionId()))
+                        .append("/memory")
                         .append('?');
         appendQuery(endpoint, "agent", identity.agent());
         if (!isBlank(user)) appendQuery(endpoint, "user", user);
@@ -350,7 +351,7 @@ public class HttpOcgClient implements OcgClient {
     }
 
     private static String memoryEndpoint(LongTermMemoryConfig config) {
-        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/memories/run";
+        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/agent-runs";
     }
 
     private static void appendQuery(StringBuilder endpoint, String name, String value) {

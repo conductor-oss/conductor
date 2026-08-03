@@ -172,6 +172,9 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         payload.put("session_id", identity.sessionId());
         // OCG stores at most one folded memory per completed root execution.
         payload.put("execution_id", identity.executionId());
+        payload.put(
+                "visibility",
+                "private".equalsIgnoreCase(config.getVisibility()) ? "private" : "public");
         copyString(safeInput, payload, "repo");
         copyString(safeInput, payload, "branch");
         copyString(safeInput, payload, "cwd");

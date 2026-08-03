@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class HttpOcgClientFeedbackTest {
 
     private static final String FEEDBACK_PATH = "/api/v1/memories/agent-run/feedback";
-    private static final String MEMORY_PATH = "/api/v1/memories/run/";
+    private static final String MEMORY_PATH = "/api/v1/agent-runs/";
     private static final OcgExecutionIdentity IDENTITY =
             new OcgExecutionIdentity(
                     "agent/a b", "user:nicholas+test", "session/123", "execution?456");
@@ -92,7 +92,7 @@ class HttpOcgClientFeedbackTest {
                                     .getExecutionMemory(config(server.url()), IDENTITY))
                     .isEqualTo(new OcgExecutionMemory("The agent resolved the incident."));
             assertThat(server.apiKey.get()).isEqualTo("resolved-key");
-            assertThat(server.memoryPath.get()).isEqualTo(MEMORY_PATH + "execution%3F456");
+            assertThat(server.memoryPath.get()).isEqualTo(MEMORY_PATH + "execution%3F456/memory");
             assertThat(server.rawQuery.get())
                     .contains("agent=agent%2Fa%20b")
                     .contains("user=user%3Anicholas%2Btest")
