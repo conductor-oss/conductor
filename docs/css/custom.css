@@ -238,6 +238,21 @@ body {
   text-decoration-color: rgba(59, 130, 246, 0.6);
 }
 
+/*
+ * Inline code inside a link. Material colours it with --md-typeset-a-color,
+ * which in the default (light) scheme resolves to --md-primary-fg-color —
+ * white here — making linked inline code invisible on its light pill. The
+ * slate block already redefines --md-typeset-a-color; light mode does not,
+ * so colour it with the link blue explicitly.
+ */
+.md-typeset a code {
+  color: var(--c-blue) !important;
+}
+.md-typeset a:hover code,
+.md-typeset a:focus code {
+  color: #60a5fa !important;
+}
+
 /* ---------- Compact page summaries ---------- */
 .page-summary {
   display: flex;
