@@ -57,6 +57,20 @@ export type TerminateWorkflowAction = {
   };
 };
 
+export type StartAgentAction = {
+  action: "start_agent";
+  expandInlineJSON: boolean;
+  start_agent: {
+    name: string;
+    version?: string;
+    prompt?: string;
+    sessionId?: string;
+    idempotencyKey?: string;
+    media?: string[];
+    context?: Record<string, unknown>;
+  };
+};
+
 export type ConductorEvent = {
   name: string;
   description?: string;
@@ -69,6 +83,7 @@ export type ConductorEvent = {
     | UpdateWorkFlowVariableType
     | StartWorkflowAction
     | TerminateWorkflowAction
+    | StartAgentAction
   >;
   active: boolean;
   ownerEmail: string;

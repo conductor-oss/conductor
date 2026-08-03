@@ -1,5 +1,6 @@
 import { AlertColor } from "@mui/material";
 import { TaskDefinitionDto } from "./TaskDefinition";
+import { WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 export interface IObject {
   [key: string]: any;
@@ -145,6 +146,7 @@ export interface TaskDef {
   taskOutput?: Record<string, string>;
   iteration?: number;
   taskDefinition?: TaskDefinitionDto;
+  metadata?: WorkflowTaskMetadata;
 }
 
 export interface TaskDto extends TaskDef {

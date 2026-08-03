@@ -84,7 +84,6 @@ The server will be available at `http://localhost:3001/mcp`.
 | `20-extended-thinking.json` | Extended thinking with token budget for reasoning | Anthropic |
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
-| `30-rag-sqlite-vec.json` | Zero-infra RAG on the bundled SQLite + sqlite-vec store | OpenAI, SQLite (built-in) |
 
 ### A2A (Agent2Agent) examples
 
@@ -112,16 +111,16 @@ by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.e
 
 Conductor running an agent on its **embedded agentspan runtime** via the `AGENT` task with
 `agentType: "conductor"`. These require the server to run with the embedded agentspan runtime
-enabled (`agentspan.embedded=true`) and at least one agent registered with it (example 33 needs
+enabled (`conductor.integrations.ai.enabled=true`) and at least one agent registered with it (example 33 needs
 two: `planner` and `researcher`). The `AGENT` task is non-blocking — it starts the run and polls
 until it reaches a terminal (or `WAITING`) state.
 
 | File | Workflow name | Description | Requirements |
 |------|---------------|-------------|--------------|
-| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Single agent run to completion (poll mode) | `agentspan.embedded=true`, a registered agent |
-| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Waiting run resumed via a `HUMAN` task and `executionId` | `agentspan.embedded=true`, a registered agent |
-| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two agent branches via `FORK_JOIN` -> `JOIN` | `agentspan.embedded=true`, two registered agents |
-| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start a long agent run, then cancel it (`CANCELED` mapping) | `agentspan.embedded=true`, a registered agent |
+| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Single agent run to completion (poll mode) | `conductor.integrations.ai.enabled=true`, a registered agent |
+| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Waiting run resumed via a `HUMAN` task and `executionId` | `conductor.integrations.ai.enabled=true`, a registered agent |
+| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Two agent branches via `FORK_JOIN` -> `JOIN` | `conductor.integrations.ai.enabled=true`, two registered agents |
+| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Start a long agent run, then cancel it (`CANCELED` mapping) | `conductor.integrations.ai.enabled=true`, a registered agent |
 
 ---
 
@@ -252,26 +251,6 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/complete_rag_demo' \
   -H 'Content-Type: application/json' \
   -d '{}'
-```
-
-### 30. RAG on SQLite (sqlite-vec, zero infrastructure)
-
-Runs the full index → search → answer RAG loop against the **embedded** SQLite + sqlite-vec vector
-store — no PostgreSQL, MongoDB or Pinecone required. When the server runs with `conductor.db.type=sqlite`
-and `conductor.integrations.ai.enabled=true`, Conductor bundles the native `vec0` extension and
-auto-registers a vector DB instance named `default`, which this workflow targets. Embeddings are
-requested at 256 dimensions to match that default instance.
-
-```bash
-# Register
-curl -X POST 'http://localhost:8080/api/metadata/workflow' \
-  -H 'Content-Type: application/json' \
-  -d @30-rag-sqlite-vec.json
-
-# Execute with a question
-curl -X POST 'http://localhost:8080/api/workflow/rag_sqlite_vec_demo' \
-  -H 'Content-Type: application/json' \
-  -d '{"question": "What vector databases does Conductor support?"}'
 ```
 
 ### 8. MCP List Tools
@@ -499,7 +478,7 @@ curl -X POST 'http://localhost:8080/api/workflow/multi_turn_chain' \
 ### 31. Conductor Agent (Basic)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -519,7 +498,7 @@ transient poll-failure cap, default 30) input parameters on the `AGENT` task.
 ### 32. Conductor Agent (Human-in-the-Loop)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -536,7 +515,7 @@ curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_human_in_loop' 
 ### 33. Conductor Agent (Multi-Agent)
 
 ```bash
-# Requires agentspan.embedded=true and two registered agents: 'planner' and 'researcher'
+# Requires conductor.integrations.ai.enabled=true and two registered agents: 'planner' and 'researcher'
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \
@@ -552,7 +531,7 @@ curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_multi_agent' \
 ### 34. Conductor Agent (Cancel)
 
 ```bash
-# Requires agentspan.embedded=true and a registered 'planner' agent
+# Requires conductor.integrations.ai.enabled=true and a registered 'planner' agent
 
 # Register
 curl -X POST 'http://localhost:8080/api/metadata/workflow' \

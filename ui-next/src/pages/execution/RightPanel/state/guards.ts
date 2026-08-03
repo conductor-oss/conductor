@@ -26,6 +26,9 @@ export const isInputTab = ({ currentTab }: RightPanelContext) =>
 export const isOutputTab = ({ currentTab }: RightPanelContext) =>
   currentTab === TabsList.OUTPUT_TAB;
 
+export const isAgentCardTab = ({ currentTab }: RightPanelContext) =>
+  currentTab === TabsList.AGENT_CARD_TAB;
+
 export const isLogsTab = ({ currentTab }: RightPanelContext) =>
   currentTab === TabsList.LOGS_TAB;
 

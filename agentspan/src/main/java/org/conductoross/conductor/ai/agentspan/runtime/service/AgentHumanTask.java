@@ -36,11 +36,11 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HUM
  * {@code start()} to emit the SSE event directly.
  *
  * <p>Registered as the {@code HUMAN} system task by {@link AgentHumanTaskConfig}, which is gated on
- * {@code agentspan.embedded=true}. It is intentionally not a {@code @Component}: two beans named
- * {@code HUMAN} (this one and Conductor's {@code Human}) would collide during component scanning,
- * and both would land in {@code SystemTaskRegistry}'s taskType→task map as duplicate keys. The
- * config's {@code @Bean("HUMAN")} instead <em>overrides</em> Conductor's default so exactly one
- * {@code HUMAN} bean exists.
+ * {@code conductor.integrations.ai.enabled=true}. It is intentionally not a {@code @Component}: two
+ * beans named {@code HUMAN} (this one and Conductor's {@code Human}) would collide during component
+ * scanning, and both would land in {@code SystemTaskRegistry}'s taskType→task map as duplicate
+ * keys. The config's {@code @Bean("HUMAN")} instead <em>overrides</em> Conductor's default so
+ * exactly one {@code HUMAN} bean exists.
  */
 public class AgentHumanTask extends WorkflowSystemTask {
 

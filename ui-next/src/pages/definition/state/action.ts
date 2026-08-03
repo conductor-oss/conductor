@@ -125,6 +125,11 @@ export const persistWorkflowAttribs = assign<
       workflowTemplateId,
       // Keep agent collapsed by default to improve initial page load performance
       isAgentExpanded: context.isAgentExpanded ?? false,
+      // Clear any prior fetch error toast when loading a different name/version
+      message: {
+        text: undefined,
+        severity: undefined,
+      },
     };
   },
 );

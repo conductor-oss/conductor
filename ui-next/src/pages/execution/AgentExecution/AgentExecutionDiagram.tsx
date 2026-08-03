@@ -43,7 +43,10 @@ import { DetailNodeData } from "./AgentDetailPanel";
 import {
   formatTokens,
   formatDuration,
+  agentValuePreview,
   getModelIconPath,
+  timelineItemId,
+  timelineItemLabel,
 } from "./agentExecutionUtils";
 import "components/features/flow/ReaflowOverrides.scss";
 
@@ -127,7 +130,7 @@ interface DiagramNodeData {
   ts: TaskStatus;
   event?: AgentEvent;
   subAgentRun?: AgentRunData;
-  nextTurn?: number;
+  nextTurn?: string;
   /** For group nodes */
   groupType?: "agents" | "tools";
   groupAgents?: AgentRunData[];
@@ -351,6 +354,10 @@ function NodeCard({
 
   // ── "Next turn" node ─────────────────────────────────────────────────────────
   if (data.kind === "next") {
+    const turnLabel = data.label ?? "Turn";
+    const turnNumber = turnLabel.startsWith("Turn ")
+      ? turnLabel.slice("Turn ".length)
+      : undefined;
     return (
       <div
         onClick={(e) => {
@@ -367,8 +374,8 @@ function NodeCard({
       >
         <div
           style={{
-            width: 44,
-            height: 44,
+            width: 62,
+            height: 62,
             borderRadius: "50%",
             border: "2px dashed #f59e0b",
             backgroundColor: "#fef3c7",
@@ -377,29 +384,37 @@ function NodeCard({
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
+            boxSizing: "border-box",
+            overflow: "hidden",
+            padding: "4px",
           }}
         >
           <span
             style={{
-              fontSize: "0.5rem",
-              color: "#b45309",
-              lineHeight: 1,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Turn
-          </span>
-          <span
-            style={{
-              fontSize: "0.82rem",
+              fontSize: turnNumber ? "0.48rem" : "0.56rem",
               fontWeight: 700,
               color: "#92400e",
-              lineHeight: 1.2,
+              lineHeight: 1.1,
+              textAlign: "center",
+              textTransform: turnNumber ? "uppercase" : undefined,
+              letterSpacing: turnNumber ? "0.05em" : undefined,
+              overflowWrap: "anywhere",
             }}
           >
-            {data.nextTurn}
+            {turnNumber ? "Turn" : turnLabel}
           </span>
+          {turnNumber && (
+            <span
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                color: "#92400e",
+                lineHeight: 1.1,
+              }}
+            >
+              {turnNumber}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -968,7 +983,8 @@ function buildTurnNodes(
       label: sub.agentName,
       meta: sub.model,
       modelName: sub.model,
-      sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
+      sublabel:
+        agentValuePreview(sub.output, 55) ?? sub.failureReason?.slice(0, 55),
       strategy: turn.strategy,
       ts: toTS(sub.status),
       subAgentRun: sub,
@@ -994,18 +1010,32 @@ function buildTurnNodes(
     return; // Skip normal event + sub-agent processing below
   }
 
-  // Group consecutive TOOL_CALL events so large parallel batches collapse into one node
-  type Grp = AgentEvent | { type: "__toolGroup"; events: AgentEvent[] };
+  // Only explicit FORK/FORK_JOIN groups render as parallel. Adjacent discovery
+  // calls are sequential even when they are both TOOL_CALL events.
+  type Grp =
+    | AgentEvent
+    | { type: "__toolGroup"; id: string; events: AgentEvent[] };
   const groups: Grp[] = [];
   let toolBatch: AgentEvent[] = [];
+  let toolBatchGroup: string | undefined;
   const flushBatch = () => {
     if (toolBatch.length === 0) return;
-    groups.push({ type: "__toolGroup", events: [...toolBatch] });
+    groups.push({
+      type: "__toolGroup",
+      id: toolBatchGroup ?? `tool-${toolBatch[0].id}`,
+      events: [...toolBatch],
+    });
     toolBatch = [];
+    toolBatchGroup = undefined;
   };
   for (const ev of turn.events) {
-    if (ev.type === EventType.TOOL_CALL) {
+    if (ev.type === EventType.TOOL_CALL && ev.parallelGroup) {
+      if (toolBatchGroup && toolBatchGroup !== ev.parallelGroup) flushBatch();
+      toolBatchGroup = ev.parallelGroup;
       toolBatch.push(ev);
+    } else if (ev.type === EventType.TOOL_CALL) {
+      flushBatch();
+      groups.push({ type: "__toolGroup", id: `tool-${ev.id}`, events: [ev] });
     } else {
       flushBatch();
       groups.push(ev);
@@ -1016,7 +1046,7 @@ function buildTurnNodes(
   for (const grp of groups) {
     if ("type" in grp && grp.type === "__toolGroup") {
       const batch = (grp as any).events as AgentEvent[];
-      const groupId = `toolgroup-${turn.turnNumber}`;
+      const groupId = (grp as any).id as string;
       const isExpanded = expandedGroups.has(groupId);
 
       if (batch.length < COLLAPSE_THRESHOLD || isExpanded) {
@@ -1244,7 +1274,7 @@ function buildTurnNodes(
 
   // Sub-agents: single node if one; inline if < threshold; collapsed group if >= threshold
   if (turn.subAgents.length > 0) {
-    const subGroupId = `subgroup-${turn.turnNumber}`;
+    const subGroupId = `subgroup-${timelineItemId(turn)}`;
     const isSubExpanded = expandedGroups.has(subGroupId);
 
     if (turn.subAgents.length < COLLAPSE_THRESHOLD || isSubExpanded) {
@@ -1255,7 +1285,9 @@ function buildTurnNodes(
           label: sub.agentName,
           meta: sub.model,
           modelName: sub.model,
-          sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
+          sublabel:
+            agentValuePreview(sub.output, 55) ??
+            sub.failureReason?.slice(0, 55),
           strategy: turn.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
@@ -1290,7 +1322,9 @@ function buildTurnNodes(
           label: sub.agentName,
           meta: sub.model,
           modelName: sub.model,
-          sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
+          sublabel:
+            agentValuePreview(sub.output, 55) ??
+            sub.failureReason?.slice(0, 55),
           strategy: turn.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
@@ -1333,7 +1367,7 @@ function buildTurnNodes(
 
 function buildDiagram(
   agentRun: AgentRunData,
-  _activeTurnNum: number,
+  _activeTurnId: string,
   hasBack: boolean,
   expandedGroups: Set<string>,
 ) {
@@ -1346,8 +1380,8 @@ function buildDiagram(
   if (hasBack) {
     nodes.push({
       id: "back",
-      width: 56,
-      height: 56,
+      width: 72,
+      height: 72,
       data: { kind: "back", label: "", ts: TaskStatus.COMPLETED },
     });
     edges.push({ id: "back→start", from: "back", to: "start" });
@@ -1361,7 +1395,7 @@ function buildDiagram(
     data: {
       kind: "start",
       label: agentRun.agentName,
-      sublabel: agentRun.input?.slice(0, 55),
+      sublabel: agentValuePreview(agentRun.input, 55),
       meta: agentRun.model,
       modelName: agentRun.model,
       ts: toTS(agentRun.status),
@@ -1375,15 +1409,16 @@ function buildDiagram(
 
     // Insert orange "Turn N" separator before every turn after the first
     if (i > 0) {
-      const ntId = `turn-sep-${turn.turnNumber}`;
+      const turnId = timelineItemId(turn);
+      const ntId = `turn-sep-${turnId}`;
       nodes.push({
         id: ntId,
-        width: 56,
-        height: 56,
+        width: 72,
+        height: 72,
         data: {
           kind: "next",
-          label: String(turn.turnNumber),
-          nextTurn: turn.turnNumber,
+          label: timelineItemLabel(turn),
+          nextTurn: turnId,
           ts: toTS(turn.status),
         },
       });
@@ -1473,8 +1508,8 @@ function DiagramControls({
 // ─── Main component ───────────────────────────────────────────────────────────
 interface AgentExecutionDiagramProps {
   agentRun: AgentRunData;
-  activeTurn: number;
-  onSelectTurn: (n: number) => void;
+  activeTurn: string;
+  onSelectTurn: (id: string) => void;
   selectedId: string | null;
   onNodeSelect: (id: string | null, node: DetailNodeData | null) => void;
   onDrillIn?: (sub: AgentRunData) => void;
@@ -1555,7 +1590,7 @@ export function AgentExecutionDiagram({
   }, []);
 
   // Pan to center the selected turn's node when activeTurn changes
-  const prevTurnRef = useRef<number | null>(null);
+  const prevTurnRef = useRef<string | null>(null);
   useEffect(() => {
     if (prevTurnRef.current === null) {
       prevTurnRef.current = activeTurn;
@@ -1566,7 +1601,9 @@ export function AgentExecutionDiagram({
 
     if (!viewportRef.current || nodePositions.size === 0) return;
 
-    const firstTurn = agentRun.turns[0]?.turnNumber ?? 1;
+    const firstTurn = agentRun.turns[0]
+      ? timelineItemId(agentRun.turns[0])
+      : "turn-1";
     const targetId =
       activeTurn === firstTurn ? "start" : `turn-sep-${activeTurn}`;
     const pos = nodePositions.get(targetId);
@@ -1716,6 +1753,7 @@ export function AgentExecutionDiagram({
           kind: "start",
           label: nd.label,
           status,
+          strategy: nd.strategy,
           subAgentRun: agentRun,
         });
         return;
@@ -1726,6 +1764,7 @@ export function AgentExecutionDiagram({
           label: nd.label,
           status,
           groupType: nd.groupType,
+          strategy: nd.strategy,
           groupAgents: nd.groupAgents,
           groupEvents: nd.groupEvents,
         });
@@ -1736,6 +1775,7 @@ export function AgentExecutionDiagram({
         label: nd.label,
         status,
         event: nd.event,
+        strategy: nd.strategy,
         subAgentRun: nd.subAgentRun,
       });
     },

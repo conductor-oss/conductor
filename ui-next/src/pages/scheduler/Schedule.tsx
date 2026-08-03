@@ -28,7 +28,7 @@ import { formatScheduleNameConflictMessage } from "utils/constants/common";
 import { SCHEDULER_DEFINITION_URL } from "utils/constants/route";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { getErrors } from "utils/index";
-import { useWorkflowDefsByVersions } from "utils/query";
+import { useAgentNames, useWorkflowDefsByVersions } from "utils/query";
 import { CronExpressionSection } from "./components/CronExpressionSection";
 import { ScheduleTimingSection } from "./components/ScheduleTimingSection";
 import { WorkflowConfigSection } from "./components/WorkflowConfigSection";
@@ -94,6 +94,7 @@ export function Schedule() {
   );
 
   const workflowDefByVersions = useWorkflowDefsByVersions();
+  const agentNames = useAgentNames();
 
   // Custom hooks for state management
   const {
@@ -114,6 +115,7 @@ export function Schedule() {
     scheduleState.workflowType || null,
     scheduleState.workflowVersions,
     scheduleState.workflowInputTemplate,
+    agentNames,
   );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -701,6 +703,7 @@ export function Schedule() {
                           setWorkflowVersion={handleWorkflowVersionChange}
                           workflowVersions={workflowVersions}
                           workflowNames={workflowNames}
+                          agentNames={agentNames}
                           workflowInputTemplate={
                             scheduleState.workflowInputTemplate || ""
                           }
