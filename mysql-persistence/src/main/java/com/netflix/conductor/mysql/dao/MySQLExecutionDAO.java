@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -42,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MySQLExecutionDAO extends MySQLBaseDAO

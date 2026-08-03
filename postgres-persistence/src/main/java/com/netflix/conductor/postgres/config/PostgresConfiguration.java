@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
-import com.netflix.conductor.dao.QueueDAO;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
@@ -35,6 +34,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
