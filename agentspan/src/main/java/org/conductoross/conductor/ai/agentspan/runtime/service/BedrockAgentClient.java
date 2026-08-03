@@ -42,12 +42,21 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequ
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResponseHandler;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 // ConductorAgentClient backed by AWS Bedrock Agent Runtime.
 // Bedrock uses a streaming invoke model — startAgent/respond stream the response into an
 // in-memory ExecutionState; getAgentStatus reads from that state (no separate status API).
-// Activated by conductor.integrations.ai.enabled=true. Credentials come from credentialRef
-// or the default AWS credential chain; an unconfigured runtime fails only if a workflow uses it.
+//
+// Auth modes (auto-detected from credentialRef secret fields):
+//   Static credentials:  secret has accessKeyId + secretAccessKey → StaticCredentialsProvider
+//   AssumeRole:          secret has roleArn → StsAssumeRoleCredentialsProvider (temp creds,
+//                        auto-refresh); optional roleSessionName and externalId fields
+//   Default chain:       no credentialRef → SDK default (env vars, EC2/ECS role, ~/.aws)
+//
+// Activated by conductor.integrations.ai.enabled=true; an unconfigured runtime fails only if used.
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
@@ -225,6 +234,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
         }
     }
 
+    // Auth detection order — first match wins:
+    //   1. accessKeyId + secretAccessKey → static long-lived credentials
+    //   2. roleArn                       → AssumeRole (temp creds, auto-refreshed by SDK)
+    //   3. fallthrough                   → SDK default chain (env vars, EC2/ECS role, ~/.aws)
     private BedrockAgentRuntimeAsyncClient buildRuntimeClient(
             ConductorAgentStartRequest request, String region) {
         String credentialRef = request.getCredentialRef();
@@ -241,8 +254,35 @@ public class BedrockAgentClient implements ConductorAgentClient {
                                         AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
                         .build();
             }
+
+            String roleArn = credentialResolutionService.resolve(credentialRef + ".roleArn");
+            if (StringUtils.isNotBlank(roleArn)) {
+                String roleSessionName =
+                        StringUtils.defaultIfBlank(
+                                credentialResolutionService.resolve(
+                                        credentialRef + ".roleSessionName"),
+                                "conductor-bedrock");
+                String externalId =
+                        credentialResolutionService.resolve(credentialRef + ".externalId");
+                AssumeRoleRequest.Builder assumeReq =
+                        AssumeRoleRequest.builder()
+                                .roleArn(roleArn)
+                                .roleSessionName(roleSessionName);
+                if (StringUtils.isNotBlank(externalId)) {
+                    assumeReq.externalId(externalId);
+                }
+                StsAssumeRoleCredentialsProvider provider =
+                        StsAssumeRoleCredentialsProvider.builder()
+                                .stsClient(StsClient.builder().region(Region.of(region)).build())
+                                .refreshRequest(assumeReq.build())
+                                .build();
+                return BedrockAgentRuntimeAsyncClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(provider)
+                        .build();
+            }
         }
-        // Fall back to the default credential chain (instance role, env vars, ~/.aws/credentials)
+        // Fall back to the default credential chain (env vars, EC2/ECS role, ~/.aws/credentials)
         return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
     }
 
