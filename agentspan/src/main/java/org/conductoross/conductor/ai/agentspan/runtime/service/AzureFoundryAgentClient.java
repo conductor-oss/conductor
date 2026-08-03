@@ -166,16 +166,27 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     // Foundry project agents: POST /openai/responses — synchronous, result available immediately.
+    // Tools and instructions are fetched from the agent definition and forwarded to the Responses
+    // API so that web_search, code_interpreter, and file_search actually run.
     private ConductorAgentStartResponse startAgentResponses(
             ConductorAgentStartRequest request, String endpoint, AuthState auth) {
         String agentId = resolveAssistantId(request);
         String model = rawConfig(request, "model");
-        String instructions = resolveInstructions(request, endpoint, agentId, auth);
+
+        JsonNode agentDef = fetchAgentDefinition(endpoint, agentId, auth);
+        String instructions =
+                StringUtils.defaultIfBlank(
+                        rawConfig(request, "instructions"),
+                        agentDef.path("instructions").asText(""));
 
         ObjectNode body = MAPPER.createObjectNode();
         body.put("model", StringUtils.defaultIfBlank(model, "gpt-4o"));
         if (StringUtils.isNotBlank(instructions)) {
             body.put("instructions", instructions);
+        }
+        JsonNode tools = agentDef.path("tools");
+        if (tools.isArray() && !tools.isEmpty()) {
+            body.set("tools", toResponsesApiTools(tools));
         }
         ArrayNode input = body.putArray("input");
         ObjectNode userMsg = input.addObject();
@@ -536,22 +547,35 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 && endpoint.contains("/api/projects/");
     }
 
-    // Resolves agent instructions: rawConfig.instructions first, then fetches from agents API.
-    private String resolveInstructions(
-            ConductorAgentStartRequest request, String endpoint, String agentId, AuthState auth) {
-        String instructions = rawConfig(request, "instructions");
-        if (StringUtils.isNotBlank(instructions)) return instructions;
+    // Adapts agent definition tools to the Responses API format.
+    // code_interpreter needs a container object; other tools pass through unchanged.
+    private static JsonNode toResponsesApiTools(JsonNode definitionTools) {
+        ArrayNode result = MAPPER.createArrayNode();
+        for (JsonNode tool : definitionTools) {
+            String type = tool.path("type").asText();
+            if ("code_interpreter".equals(type)) {
+                ObjectNode t = MAPPER.createObjectNode();
+                t.put("type", "code_interpreter");
+                t.putObject("container").put("type", "auto");
+                result.add(t);
+            } else {
+                result.add(tool);
+            }
+        }
+        return result;
+    }
+
+    // Fetches the agent's latest version definition (instructions + tools) from the Foundry API.
+    // Returns an empty ObjectNode on failure so callers can safely path-navigate without null
+    // checks.
+    private JsonNode fetchAgentDefinition(String endpoint, String agentId, AuthState auth) {
         try {
             JsonNode agent =
                     get(endpoint + "/agents/" + agentId, auth, FOUNDRY_PROJECT_API_VERSION);
-            return agent.path("versions")
-                    .path("latest")
-                    .path("definition")
-                    .path("instructions")
-                    .asText("");
+            return agent.path("versions").path("latest").path("definition");
         } catch (Exception e) {
-            log.warn("Could not fetch instructions for agent {}: {}", agentId, e.getMessage());
-            return null;
+            log.warn("Could not fetch definition for agent {}: {}", agentId, e.getMessage());
+            return MAPPER.createObjectNode();
         }
     }
 
