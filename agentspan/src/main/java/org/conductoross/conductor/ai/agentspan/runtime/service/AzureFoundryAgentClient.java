@@ -48,9 +48,10 @@ import okhttp3.Response;
 // Supports two auth modes selected by the credential secret:
 //   OAuth (Entra ID client credentials): secret must contain client_id, client_secret, tenant_id.
 //   API key: secret must contain apiKey (used as the api-key header).
-// Required: agentUrl (https://my-resource.openai.azure.com/openai for classic, or
-//   https://my-resource.services.ai.azure.com/api/projects/{project} for new Foundry projects),
-//   and rawConfig.assistantId (classic asst_xxx) or rawConfig.agentId (new project agent name).
+// Required: agentUrl with the agent/assistant ID embedded in the path:
+//   Classic:      https://my-resource.openai.azure.com/openai/assistants/asst_xxx
+//   Foundry proj: https://my-resource.services.ai.azure.com/api/projects/{proj}/agents/{name}
+// rawConfig.assistantId is still accepted as a fallback for existing workflow definitions.
 // Activated by conductor.integrations.ai.enabled=true; an unconfigured runtime fails only if used.
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
@@ -93,7 +94,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return startAgentClassic(request, endpoint, auth);
     }
 
-    // New Foundry project agents: POST /openai/responses — synchronous, result available immediately.
+    // New Foundry project agents: POST /openai/responses — synchronous, result available
+    // immediately.
     private ConductorAgentStartResponse startAgentResponses(
             ConductorAgentStartRequest request, String endpoint, AuthState auth) {
         String agentId = resolveAssistantId(request);
@@ -110,11 +112,13 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         userMsg.put("role", "user");
         userMsg.put("content", request.getPrompt());
 
-        JsonNode response = post(endpoint + "/openai/responses", body, auth, FOUNDRY_PROJECT_API_VERSION);
+        JsonNode response =
+                post(endpoint + "/openai/responses", body, auth, FOUNDRY_PROJECT_API_VERSION);
         String responseId = response.path("id").asText();
         String text = extractResponseText(response);
 
-        ExecutionContext ctx = new ExecutionContext(endpoint, agentId, null, auth, FOUNDRY_PROJECT_API_VERSION);
+        ExecutionContext ctx =
+                new ExecutionContext(endpoint, agentId, null, auth, FOUNDRY_PROJECT_API_VERSION);
         ctx.output = Map.of("result", text);
         ctx.completed = true;
         executions.put(responseId, ctx);
@@ -147,7 +151,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 post(endpoint + "/threads/" + threadId + "/runs", runBody, auth, apiVersion);
         String runId = runResult.path("id").asText();
 
-        executions.put(threadId, new ExecutionContext(endpoint, assistantId, runId, auth, apiVersion));
+        executions.put(
+                threadId, new ExecutionContext(endpoint, assistantId, runId, auth, apiVersion));
 
         return ConductorAgentStartResponse.builder()
                 .executionId(threadId)
@@ -369,37 +374,70 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         credentialResolutionService.resolve(credentialRef + ".scope"));
         if (StringUtils.isBlank(scope)) {
             String endpoint = request.getAgentUrl();
-            scope = (endpoint != null && endpoint.contains("services.ai.azure.com"))
-                    ? FOUNDRY_SCOPE
-                    : DEFAULT_SCOPE;
+            scope =
+                    (endpoint != null && endpoint.contains("services.ai.azure.com"))
+                            ? FOUNDRY_SCOPE
+                            : DEFAULT_SCOPE;
         }
 
         return new AuthState(
-                OAuthTokenProvider.forAzureEntraId(httpClient, tenantId, clientId, clientSecret, scope));
+                OAuthTokenProvider.forAzureEntraId(
+                        httpClient, tenantId, clientId, clientSecret, scope));
     }
 
     private String resolveEndpoint(ConductorAgentStartRequest request) {
-        String endpoint = request.getAgentUrl();
-        if (StringUtils.isBlank(endpoint)) {
-            endpoint = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
+        String url = request.getAgentUrl();
+        if (StringUtils.isBlank(url)) {
+            url = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
         }
-        if (StringUtils.isBlank(endpoint)) {
+        if (StringUtils.isBlank(url)) {
             throw new IllegalArgumentException(
                     "Azure Foundry endpoint must be provided via agentUrl or the AZURE_FOUNDRY_ENDPOINT secret");
         }
-        return endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
+        // Strip embedded agent/assistant ID so callers always get the bare base endpoint.
+        // e.g. …/agents/shailesh-analyst  → …
+        //      …/assistants/asst_xxx      → …
+        for (String marker : new String[] {"/agents/", "/assistants/"}) {
+            int idx = url.lastIndexOf(marker);
+            if (idx >= 0) {
+                url = url.substring(0, idx);
+                break;
+            }
+        }
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
     private String resolveAssistantId(ConductorAgentStartRequest request) {
-        String id = rawConfig(request, "assistantId");
+        // Prefer ID embedded directly in agentUrl — no rawConfig needed.
+        // Supports …/agents/shailesh-analyst (new Foundry) and …/assistants/asst_xxx (classic).
+        String id = extractAgentIdFromUrl(request.getAgentUrl());
+        if (StringUtils.isBlank(id)) {
+            id = rawConfig(request, "assistantId");
+        }
         if (StringUtils.isBlank(id)) {
             id = rawConfig(request, "agentId");
         }
         if (StringUtils.isBlank(id)) {
             throw new IllegalArgumentException(
-                    "rawConfig.assistantId is required for Azure Foundry agent requests");
+                    "Agent ID must be in agentUrl (…/agents/NAME or …/assistants/asst_xxx)"
+                            + " or rawConfig.assistantId");
         }
         return id;
+    }
+
+    // Parses the agent/assistant ID out of an agentUrl that embeds it in the path.
+    // Returns null if neither /agents/ nor /assistants/ is present.
+    private static String extractAgentIdFromUrl(String url) {
+        if (url == null) return null;
+        for (String marker : new String[] {"/agents/", "/assistants/"}) {
+            int idx = url.lastIndexOf(marker);
+            if (idx >= 0) {
+                String id = url.substring(idx + marker.length());
+                if (id.endsWith("/")) id = id.substring(0, id.length() - 1);
+                return StringUtils.isBlank(id) ? null : id;
+            }
+        }
+        return null;
     }
 
     private JsonNode post(String url, ObjectNode body, AuthState auth, String apiVersion) {
@@ -460,8 +498,13 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             return instructions;
         }
         try {
-            JsonNode agent = get(endpoint + "/agents/" + agentId, auth, FOUNDRY_PROJECT_API_VERSION);
-            return agent.path("versions").path("latest").path("definition").path("instructions").asText("");
+            JsonNode agent =
+                    get(endpoint + "/agents/" + agentId, auth, FOUNDRY_PROJECT_API_VERSION);
+            return agent.path("versions")
+                    .path("latest")
+                    .path("definition")
+                    .path("instructions")
+                    .asText("");
         } catch (Exception e) {
             log.warn("Could not fetch instructions for agent {}: {}", agentId, e.getMessage());
             return null;
