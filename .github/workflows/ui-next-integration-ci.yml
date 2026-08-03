@@ -92,11 +92,22 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+      - name: Build UI (with coverage sourcemaps)
+        run: pnpm build
+        working-directory: ui-next
+        env:
+          E2E_COVERAGE: "true"
+          # Vite + sourcemaps needs a larger heap; keep this step separate from
+          # Playwright/Docker so the runner isn't sharing RAM with the JVM.
+          NODE_OPTIONS: --max-old-space-size=8192
+
       - name: Run integration E2E tests with coverage
         run: pnpm test:e2e:integration
         working-directory: ui-next
         env:
           E2E_COVERAGE: "true"
+          # dist/ already built above — webServer only needs vite preview.
+          SKIP_WEBSERVER_BUILD: "true"
 
       - name: Generate frontend coverage report
         if: success()

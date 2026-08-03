@@ -248,17 +248,28 @@ docker compose -p conductor-ui-e2e -f docker/docker-compose-ui-e2e.yaml down
 
 #### Running integration tests in CI
 
-`pnpm test:e2e:integration` automatically builds the app and starts `vite preview`
-before running the tests, so no explicit build step is needed in CI.
+Build the UI first (with a raised Node heap), then run Playwright with
+`SKIP_WEBSERVER_BUILD=true` so the webServer only starts `vite preview`. Building
+inside Playwright while Docker is also up can OOM the runner when
+`E2E_COVERAGE` enables sourcemaps.
 
 ```yaml
 - name: Install Playwright browsers
   run: pnpm exec playwright install --with-deps chromium
 
+- name: Build UI
+  run: pnpm build
+  env:
+    E2E_COVERAGE: "true"
+    NODE_OPTIONS: --max-old-space-size=8192
+
 - name: Run integration tests
-  # Global setup builds the conductor:server image automatically on first run.
-  # The Playwright webServer config then runs `pnpm build && pnpm preview`.
+  # Global setup builds/starts the conductor:server image automatically.
+  # SKIP_WEBSERVER_BUILD skips the Vite rebuild inside Playwright.
   run: pnpm test:e2e:integration
+  env:
+    E2E_COVERAGE: "true"
+    SKIP_WEBSERVER_BUILD: "true"
 
 - name: Upload integration report
   if: always()
