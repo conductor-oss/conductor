@@ -92,8 +92,15 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Run integration E2E tests
+      - name: Run integration E2E tests with coverage
         run: pnpm test:e2e:integration
+        working-directory: ui-next
+        env:
+          E2E_COVERAGE: "true"
+
+      - name: Generate frontend coverage report
+        if: success()
+        run: node scripts/playwright-coverage-report.mjs --min 50
         working-directory: ui-next
 
       - name: Upload Playwright integration report
@@ -103,3 +110,11 @@ jobs:
           name: playwright-integration-report
           path: ui-next/playwright-integration-report/
           retention-days: 7
+
+      - name: Upload frontend coverage report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: ui-next/playwright-coverage-report/
+          retention-days: 14
