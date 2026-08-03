@@ -16,9 +16,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.ToolConfig;
 import org.junit.jupiter.api.Test;
+
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -117,5 +121,78 @@ class OpenAINormalizerTest {
         AgentConfig nested = (AgentConfig) tool.getConfig().get("agentConfig");
         assertThat(nested.getName()).isEqualTo("sentiment_agent");
         assertThat(nested.getModel()).isEqualTo("openai/gpt-4o");
+    }
+
+    @Test
+    void normalizeWebSearchRecordsTheProviderNativeCapabilityWithoutCreatingAnHttpTool() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "name",
+                                "researcher",
+                                "tools",
+                                List.of(Map.of("_type", "WebSearchTool"))));
+
+        assertThat(config.getTools()).isNullOrEmpty();
+        assertThat(config.getMetadata()).containsEntry("_builtin_web_search", true);
+    }
+
+    @Test
+    void handoffDefaultsToNoSynthesisSoTheSpecialistRemainsTheFinalSpeaker() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "name", "support_triage",
+                                "model", "gpt-4o-mini",
+                                "instructions", "Hand off to the right specialist.",
+                                "handoffs",
+                                        List.of(
+                                                Map.of(
+                                                        "name", "billing_specialist",
+                                                        "model", "gpt-4o-mini",
+                                                        "instructions",
+                                                                "Begin your reply with 'BILLING:' ."))));
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+
+        assertThat(config.isSynthesize()).isFalse();
+        assertThat(flatten(workflow.getTasks()))
+                .noneMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
+    }
+
+    @Test
+    void handoffCanOptIntoSynthesis() {
+        AgentConfig config =
+                normalizer.normalize(
+                        Map.of(
+                                "name", "support_triage",
+                                "model", "gpt-4o-mini",
+                                "instructions", "Hand off to the right specialist.",
+                                "synthesize", true,
+                                "handoffs",
+                                        List.of(
+                                                Map.of(
+                                                        "name", "billing_specialist",
+                                                        "model", "gpt-4o-mini",
+                                                        "instructions",
+                                                                "Begin your reply with 'BILLING:' ."))));
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+
+        assertThat(config.isSynthesize()).isTrue();
+        assertThat(flatten(workflow.getTasks()))
+                .anyMatch(task -> task.getTaskReferenceName().equals("support_triage_final"));
+    }
+
+    private static List<WorkflowTask> flatten(List<WorkflowTask> tasks) {
+        return tasks.stream()
+                .flatMap(
+                        task ->
+                                java.util.stream.Stream.concat(
+                                        java.util.stream.Stream.of(task),
+                                        task.getLoopOver() == null
+                                                ? java.util.stream.Stream.empty()
+                                                : flatten(task.getLoopOver()).stream()))
+                .toList();
     }
 }

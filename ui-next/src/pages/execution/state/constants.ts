@@ -5,5 +5,6 @@ export const OUTPUT_TAB = 2;
 export const LOGS_TAB = 3;
 export const JSON_TAB = 4;
 export const DEFINITION_TAB = 5;
+export const AGENT_CARD_TAB = 6;
 // Base tab index for plugin-registered task execution panels (well above built-ins).
 export const PLUGIN_PANEL_TAB_BASE = 100;

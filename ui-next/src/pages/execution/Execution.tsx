@@ -14,6 +14,7 @@ import OpenIcon from "components/icons/OpenIcon";
 import ButtonLinks from "components/layout/header/ButtonLinks";
 import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
+import Error from "components/ui/Error";
 import MuiAlert from "components/ui/MuiAlert";
 import MuiTypography from "components/ui/MuiTypography";
 import NavLink from "components/ui/NavLink";
@@ -46,6 +47,7 @@ import ExecutionJson from "./ExecutionJson";
 import ExecutionSummary from "./ExecutionSummary";
 import { isAgentWorkflowExecution } from "./helpers";
 import LeftPanelTabs from "./LeftPanelTabs";
+import { ReasonForIncompletion } from "./ReasonForIncompletion";
 import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
@@ -208,42 +210,6 @@ const FailureAlert = ({ failedWFLink, alertText }: FailureAlertProps) => {
   );
 };
 
-interface ReasonForIncompletionProps {
-  reason: string;
-  navigate: (path: string) => void;
-  location: { pathname: string };
-}
-
-const ReasonForIncompletion = ({
-  reason,
-  navigate,
-  location,
-}: ReasonForIncompletionProps) => {
-  if (!reason) return null;
-
-  if (reason.length >= 300) {
-    return (
-      <Box>
-        {reason.substr(0, 60)}... [
-        <MuiTypography
-          component="span"
-          color="#1976d2"
-          fontWeight="bold"
-          cursor="pointer"
-          onClick={() => {
-            navigate(`${location.pathname}?tab=summary`);
-          }}
-        >
-          View full message
-        </MuiTypography>
-        ]
-      </Box>
-    );
-  }
-
-  return <>{reason}</>;
-};
-
 interface ExecutionAlertProps {
   execution: WorkflowExecution;
   openedTab: ExecutionTabs;
@@ -257,9 +223,6 @@ const ExecutionAlert = ({
   failedTaskWithReason,
   handleJumpToTask,
 }: ExecutionAlertProps) => {
-  const navigate = usePushHistory();
-  const location = useLocation();
-
   if (
     execution?.rateLimited ||
     (execution?.reasonForIncompletion &&
@@ -282,11 +245,7 @@ const ExecutionAlert = ({
           {execution?.rateLimited ? (
             "This execution is rate limited and will be executed once previous executions are completed."
           ) : (
-            <ReasonForIncompletion
-              reason={execution?.reasonForIncompletion}
-              navigate={navigate}
-              location={location}
-            />
+            <ReasonForIncompletion reason={execution?.reasonForIncompletion} />
           )}
         </Box>
 
@@ -343,6 +302,7 @@ export default function Execution() {
       taskListActor,
       rightPanelActor,
       isNoAccess,
+      isNotFound,
       doWhileSelection,
       nodes,
     },
@@ -471,7 +431,7 @@ export default function Execution() {
               (isAgentWorkflowExecution(execution) ? (
                 // Relabeled "Agent Definition" in LeftPanelTabs for agent
                 // executions — a graph of the agent's static structure
-                // (model/sub-agents/tools/guardrails), matching AgentSpan's
+                // (model/sub-agents/tools/guardrails), matching Conductor-Agents'
                 // own UI, instead of the plain Conductor execution summary.
                 <AgentDefinitionView execution={execution} />
               ) : (
@@ -616,6 +576,40 @@ export default function Execution() {
       selectNode(maybeSelectedNode);
     }
   };
+
+  if (isNotFound) {
+    const isAgentExecutionRoute = location.pathname.startsWith(
+      `${AGENT_EXECUTIONS_URL.BASE}/`,
+    );
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          p: 5,
+        }}
+      >
+        <Helmet>
+          <title>Execution Not Found - {executionId}</title>
+        </Helmet>
+        <MuiTypography fontSize={20} fontWeight={700} mb={8}>
+          ERROR
+        </MuiTypography>
+        <Error
+          title="404"
+          description="We're sorry but we couldn't locate that execution."
+          buttonText="BACK TO EXECUTIONS"
+          onClick={() =>
+            navigate(
+              isAgentExecutionRoute ? AGENT_EXECUTIONS_URL.BASE : "/executions",
+            )
+          }
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box

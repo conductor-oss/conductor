@@ -164,7 +164,7 @@ const columns = [
   {
     id: "startWorkflowRequest",
     name: "startWorkflowRequest",
-    label: "Workflow",
+    label: "Workflow/Agent",
     sortable: true,
     grow: 1.5,
     searchableFunc: (workflow: IStartWorkflowRequest) =>
@@ -177,7 +177,7 @@ const columns = [
       }
     },
     sortFunction: customSortForWorkflowColumn,
-    tooltip: "The workflow associated with the schedule",
+    tooltip: "The workflow or agent associated with the schedule",
   },
   {
     id: "createTime",

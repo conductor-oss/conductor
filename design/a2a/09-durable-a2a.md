@@ -79,19 +79,18 @@ action (charge a card, send an email, book a flight). The durable-execution haza
 between **performing the side effect** and **durably recording that we performed it**:
 
 ```
-AgentTask.start():
+A2AWorkers.agent():
   1. build message (messageId)
   2. a2aService.sendMessage(...)        ← agent may now START IRREVERSIBLE WORK
-  3. task.addOutput(taskId); IN_PROGRESS
+  3. return TaskResult(taskId, IN_PROGRESS)
   ── return to engine ──
-  4. executionDAOFacade.updateTask()    ← FIRST durable record of step 2
+  4. persist the returned task result   ← FIRST durable record of step 2
 ```
 
 If the server crashes **between 2 and 4**, the agent has acted but Conductor has no record. The
-task is still `SCHEDULED` in the store; the durable queue redelivers it (unack timeout); a worker
-runs `start()` **again**. Today step 1 generates a **fresh random `messageId`** (`UUID.randomUUID()`
-in `AgentTask.buildMessage`), so the re-send looks like a brand-new message → the agent does
-the work **twice**.
+task is still `SCHEDULED` in the store; the durable queue redelivers it and the worker method runs
+again. The original implementation generated a **fresh random `messageId`**, so the re-send looked
+like a brand-new message and the agent could do the work **twice**.
 
 You cannot eliminate this window from the client side alone — it is the same impossibility as
 exactly-once delivery. What you *can* do is the industry-standard pattern (Stripe idempotency
@@ -165,7 +164,7 @@ The matrix the claim must survive. "Today" = current code; "Target" = with §9.6
 Ordered by importance to the claim.
 
 **C1 — Deterministic `messageId` (closes P3). ✅ SHIPPED.**
-`AgentTask.buildMessage`, when the caller hasn't supplied one, derives
+`A2AWorkers.buildMessage`, when the caller hasn't supplied one, derives
 `messageId = "a2a-" + workflowInstanceId + ":" + referenceTaskName + ":" + iteration` instead of
 `UUID.randomUUID()`. (Readable concatenation rather than a hash — the value is an opaque string;
 debuggability wins and uniqueness/stability are what matter.) Stable across retries/restarts,
@@ -224,7 +223,7 @@ Each maps to a property and an automated test that **injects the failure**. All 
 
 | Test | Proves | Where | Status |
 |---|---|---|---|
-| **T1 crash-recovery** | P1 | `A2ADurabilityTest.t1_crashRecovery_resumesOnAFreshInstance` (fresh `A2AService`+`AgentTask` resume the persisted `TaskModel`) **and** `t1b_crashRecovery_survivesPersistenceRoundTrip` (the durable task state is serialized to JSON — as the execution DAO stores it — and a **cold** `TaskModel` reconstructed from that JSON alone resumes to completion) | ✅ |
+| **T1 crash-recovery** | P1 | `A2ADurabilityTest.t1_crashRecovery_resumesOnAFreshInstance` (fresh `A2AService` + `A2AWorkers` resume the persisted `Task`) **and** `t1b_crashRecovery_survivesPersistenceRoundTrip` (the durable task state is serialized to JSON and a **cold** `Task` reconstructed from that JSON alone resumes to completion) | ✅ |
 | **T2 idempotency key** | P3 | `t2_messageId_isStableAcrossRetries` — two attempts with the same `(workflowId, ref, iteration)` but different `taskId` send an **identical `messageId`** (+ `t2_callerCanOverrideMessageId`) | ✅ |
 | **T3 distinct per iteration** | P3 | `t3_messageId_distinctPerIteration` — different iteration → different `messageId` | ✅ |
 | **T4 liveness / dead agent** | P2 | `t4_deadAgent_failsWithinFailureCap` (failure cap) + `t4_deadline_failsTerminally` (absolute deadline) → terminal `FAILED`, not infinite polling | ✅ |
@@ -232,12 +231,11 @@ Each maps to a property and an automated test that **injects the failure**. All 
 | **T6 duplicate / expired callback** | P5 | `A2ACallbackResourceTest` — 2nd push is a no-op; expired & mismatched tokens rejected | ✅ |
 | **T7 retry safety** | P3/P4 | folded into T2 (a Conductor retry is a new `taskId`, same identity → same `messageId`) | ✅ |
 
-Why these prove crash-recovery without an OS-level kill: the engine's `AsyncSystemTaskExecutor`
-**reloads the `TaskModel` from the persistence store on every execution cycle** (`loadTaskQuietly`
-→ `getTaskModel(taskId)`) — it holds no in-memory state between cycles. So "a restarted worker
-re-drives the task" is operationally identical to "T1b reconstructs a cold `TaskModel` from the
-persisted JSON and a fresh `AgentTask` resumes it." T1b exercises exactly that data boundary in
-CI.
+Why these prove crash-recovery without an OS-level kill: the engine persists the returned
+`TaskResult` before a later annotated-worker invocation. The portable worker holds no in-memory
+state between cycles. So "a restarted worker re-drives the task" is operationally identical to
+"T1b reconstructs a cold `Task` from the persisted JSON and a fresh `A2AWorkers` instance resumes
+it." T1b exercises exactly that data boundary in CI.
 
 **Full-process proof (demonstrated).** The OS-level version now exists as a runnable demo —
 `ai/src/test/resources/a2a/durable-demo/run-durable-demo.sh`: it starts a real persistent

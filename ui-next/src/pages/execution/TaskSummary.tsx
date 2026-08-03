@@ -1,5 +1,6 @@
 import _isFinite from "lodash/isFinite";
 import _get from "lodash/get";
+import { durationRenderer } from "utils/date";
 import { NavLink, KeyValueTable } from "components";
 import { Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
@@ -104,10 +105,13 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
       value: taskResult.seq,
     });
   }
-  if (taskResult.queueWaitTime) {
+  if (_isFinite(taskResult.queueWaitTime)) {
+    // queueWaitTime is startTime - scheduledTime; sub-millisecond clock skew can
+    // make it slightly negative. Clamp to 0 and render with a unit so it reads
+    // consistently with the Duration row (e.g. "0ms") instead of a raw signed int.
     data.push({
       label: "Queue wait time",
-      value: taskResult.queueWaitTime,
+      value: durationRenderer(Math.max(0, taskResult.queueWaitTime as number)),
     });
   }
   if (shouldDisplayEvaluatedCase) {

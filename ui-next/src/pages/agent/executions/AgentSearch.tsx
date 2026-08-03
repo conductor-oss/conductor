@@ -12,6 +12,7 @@ import { colors } from "theme/tokens/variables";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
 import { RUN_AGENT_URL } from "utils/constants/route";
+import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
@@ -126,7 +127,7 @@ export default function AgentPanel() {
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <MuiTypography fontWeight={400} fontSize={14}>
-          {results.length} results
+          {pluralizeResults(results.length)}
         </MuiTypography>
         <MuiTypography color={colors.greyText} fontSize={12}>
           of {totalHits}

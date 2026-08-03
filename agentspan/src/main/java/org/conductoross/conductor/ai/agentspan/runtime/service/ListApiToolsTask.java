@@ -19,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
 
+import org.conductoross.conductor.ai.http.ExternalDataLimits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                 new ObjectMapper(),
                 HttpClient.newBuilder()
                         .connectTimeout(Duration.ofSeconds(10))
-                        .followRedirects(HttpClient.Redirect.NORMAL)
+                        .followRedirects(HttpClient.Redirect.NEVER)
                         .build());
     }
 
@@ -147,7 +148,6 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                     return;
                 }
             }
-
             Map<String, Object> output = new LinkedHashMap<>();
             output.put("tools", tools);
             output.put("baseUrl", baseUrl);
@@ -203,20 +203,17 @@ public class ListApiToolsTask extends WorkflowSystemTask {
     /** Returns a FetchResult if the response is valid JSON, otherwise null. */
     private FetchResult attemptFetch(String url, Map<String, String> headers) {
         try {
-            HttpRequest.Builder reqBuilder =
-                    HttpRequest.newBuilder().uri(URI.create(url)).timeout(REQUEST_TIMEOUT).GET();
-            if (headers != null) {
-                headers.forEach(reqBuilder::header);
-            }
-
-            HttpResponse<String> response =
-                    httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<byte[]> response = sendWithValidatedRedirects(url, headers);
 
             if (response.statusCode() >= 400) {
                 return null;
             }
 
-            String body = response.body();
+            if (response.body().length > ExternalDataLimits.MAX_PAYLOAD_BYTES) {
+                throw new IllegalArgumentException(
+                        "OpenAPI document exceeds the 10 MiB payload limit");
+            }
+            String body = new String(response.body(), java.nio.charset.StandardCharsets.UTF_8);
             if (body == null || body.isBlank()) {
                 return null;
             }
@@ -233,10 +230,74 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             }
             return new FetchResult(url, root);
 
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             logger.debug("Fetch attempt failed for {}: {}", url, e.getMessage());
             return null;
         }
+    }
+
+    /** Follows a bounded redirect chain only after each destination passes the outbound policy. */
+    private HttpResponse<byte[]> sendWithValidatedRedirects(String url, Map<String, String> headers)
+            throws Exception {
+        String currentUrl = url;
+        for (int redirects = 0; redirects <= 5; redirects++) {
+            HttpRequest.Builder request =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(currentUrl))
+                            .timeout(REQUEST_TIMEOUT)
+                            .GET();
+            addHeaders(request, headers);
+            HttpResponse<byte[]> response =
+                    httpClient.send(request.build(), HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() < 300 || response.statusCode() >= 400) {
+                return response;
+            }
+            String location = response.headers().firstValue("Location").orElse(null);
+            if (location == null) {
+                throw new IllegalArgumentException(
+                        "API spec redirect is missing a Location header");
+            }
+            String target = URI.create(currentUrl).resolve(location).toString();
+            if (hasSensitiveHeaders(headers) && !isSameOrigin(currentUrl, target)) {
+                throw new IllegalArgumentException(
+                        "Refusing to forward credentials across an API spec redirect");
+            }
+            currentUrl = target;
+        }
+        throw new IllegalArgumentException("API spec exceeded the redirect limit");
+    }
+
+    private void addHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
+        if (headers == null) {
+            return;
+        }
+        headers.forEach(
+                (name, value) -> {
+                    if (name == null
+                            || value == null
+                            || name.indexOf('\r') >= 0
+                            || name.indexOf('\n') >= 0
+                            || value.indexOf('\r') >= 0
+                            || value.indexOf('\n') >= 0) {
+                        throw new IllegalArgumentException(
+                                "API spec headers must not contain CR or LF characters");
+                    }
+                    builder.header(name, value);
+                });
+    }
+
+    private boolean hasSensitiveHeaders(Map<String, String> headers) {
+        if (headers == null) {
+            return false;
+        }
+        return headers.keySet().stream()
+                .anyMatch(
+                        name ->
+                                "authorization".equalsIgnoreCase(name)
+                                        || "cookie".equalsIgnoreCase(name)
+                                        || "proxy-authorization".equalsIgnoreCase(name));
     }
 
     // -----------------------------------------------------------------------
@@ -280,7 +341,13 @@ public class ListApiToolsTask extends WorkflowSystemTask {
         if (servers != null && servers.isArray() && !servers.isEmpty()) {
             String url = servers.get(0).path("url").asText("");
             if (!url.isBlank()) {
-                return url;
+                URI serverUrl = URI.create(url);
+                if (serverUrl.isAbsolute()) {
+                    return url;
+                }
+                URI fetchedUri = URI.create(fetchedUrl);
+                URI origin = URI.create(fetchedUri.getScheme() + "://" + fetchedUri.getAuthority());
+                return origin.resolve(serverUrl).toString();
             }
         }
         // Fallback: derive from the URL we fetched
@@ -676,6 +743,21 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             prop.put("in", "body");
             properties.put("body", prop);
         }
+    }
+
+    private boolean isSameOrigin(String firstUrl, String secondUrl) {
+        URI first = URI.create(firstUrl);
+        URI second = URI.create(secondUrl);
+        return first.getScheme().equalsIgnoreCase(second.getScheme())
+                && first.getHost().equalsIgnoreCase(second.getHost())
+                && effectivePort(first) == effectivePort(second);
+    }
+
+    private int effectivePort(URI uri) {
+        if (uri.getPort() != -1) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
     // -----------------------------------------------------------------------

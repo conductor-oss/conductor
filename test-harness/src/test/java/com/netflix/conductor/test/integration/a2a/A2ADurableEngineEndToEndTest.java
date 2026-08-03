@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -41,8 +42,12 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.execution.StartWorkflowInput;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
@@ -63,13 +68,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * output — <b>not</b> in a worker thread. So a process that lost all memory can reload the task
  * from the DAO and keep polling to completion. We model the crash by capturing only the workflow id
  * and resuming purely from {@code ExecutionService.getExecutionStatus} + a fresh {@code
- * WorkflowExecutor.decide} (which reloads each {@code TaskModel} from the DAO every cycle). The
- * embedded agent stands in for the external agent, which does <i>not</i> crash when Conductor does
- * — it keeps serving and eventually flips to {@code completed}.
+ * AsyncSystemTaskExecutor} invocation (which reloads each {@code TaskModel} from the DAO every
+ * cycle). The embedded agent stands in for the external agent, which does <i>not</i> crash when
+ * Conductor does — it keeps serving and eventually flips to {@code completed}.
  *
- * <p>{@code AGENT} is a synchronous system task, so the decider itself re-invokes its {@code
- * execute()} on each workflow sweep — we drive that deterministically here by calling {@code
- * WorkflowExecutor.decide(workflowId)}, the same re-evaluation the sweeper performs in production.
+ * <p>{@code AGENT} is an annotation-based asynchronous system task. The test drains the real Redis
+ * queue through {@link AsyncSystemTaskExecutor}, the same path used by the production system-task
+ * worker coordinator.
  */
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(
@@ -112,15 +117,18 @@ class A2ADurableEngineEndToEndTest {
     @Autowired private MetadataService metadataService;
     @Autowired private WorkflowExecutor workflowExecutor;
     @Autowired private ExecutionService executionService;
+    @Autowired private QueueDAO queueDAO;
+    @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
+
+    @Autowired
+    @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
+    private java.util.Set<WorkflowSystemTask> asyncSystemTasks;
 
     private SlowA2AAgent agent;
 
     @BeforeEach
     void startAgent() throws IOException {
-        // Completes on the 6th tasks/get poll. AGENT is synchronous, so start() (message/send) and
-        // the first execute() polls coalesce into the initial decide() — roughly two polls happen
-        // before startWorkflow() returns. A larger poll budget guarantees the task is still
-        // in-flight (working, taskId persisted) when the crash-capture loop first observes it.
+        // Complete late enough to capture the persisted in-flight state before the terminal poll.
         agent = SlowA2AAgent.start(6);
     }
 
@@ -144,6 +152,7 @@ class A2ADurableEngineEndToEndTest {
                 .until(
                         () -> {
                             workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             Task t = callAgentTask(workflowId);
                             return t != null
                                     && t.getStatus() == Task.Status.IN_PROGRESS
@@ -188,6 +197,7 @@ class A2ADurableEngineEndToEndTest {
                 .until(
                         () -> {
                             workflowExecutor.decide(workflowId);
+                            drainQueue("AGENT");
                             Workflow wf = executionService.getExecutionStatus(workflowId, true);
                             latest.set(wf);
                             return wf != null
@@ -195,6 +205,31 @@ class A2ADurableEngineEndToEndTest {
                                     && wf.getStatus().isTerminal();
                         });
         return latest.get();
+    }
+
+    /**
+     * Executes visible AGENT queue entries through the production asynchronous system-task path.
+     * Callback delays remain enforced by the Redis queue, so repeated calls cannot poll the remote
+     * agent faster than the configured interval.
+     */
+    private void drainQueue(String taskType) {
+        WorkflowSystemTask task = systemTask(taskType);
+        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+            asyncSystemTaskExecutor.execute(task, taskId);
+        }
+    }
+
+    private WorkflowSystemTask systemTask(String taskType) {
+        return asyncSystemTasks.stream()
+                .filter(t -> taskType.equals(t.getTaskType()))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        taskType
+                                                + " WorkflowSystemTask was not registered —"
+                                                + " conductor.integrations.ai.enabled must be"
+                                                + " true and the ai module on the classpath."));
     }
 
     private Task callAgentTask(String workflowId) {

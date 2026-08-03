@@ -1,5 +1,6 @@
 import {
   roleAdmin,
+  roleCustom,
   roleMetaManager,
   roleReadOnly,
   roleUser,
@@ -26,8 +27,10 @@ export const userRoleColorGenerator = (role: string) => {
     tagColor = roleWfManager;
   } else if (role === Role.METADATA_MANAGER) {
     tagColor = roleMetaManager;
-  } else {
+  } else if (role === Role.USER_READ_ONLY) {
     tagColor = roleReadOnly;
+  } else {
+    tagColor = roleCustom;
   }
   return { backgroundColor: tagColor };
 };

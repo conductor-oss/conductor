@@ -18,7 +18,7 @@ vi.mock("utils", async (importOriginal) => {
       PLAYGROUND: "PLAYGROUND",
       SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
       TASK_INDEXING: "TASK_INDEXING",
-      AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+      CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
     },
   };
 });
@@ -57,6 +57,7 @@ vi.mock("utils/constants/route", () => ({
     EDIT: "/remote-services/:id/edit",
   },
   RUN_WORKFLOW_URL: "/runWorkflow",
+  RUN_AGENT_URL: "/runAgent",
   SCHEDULER_DEFINITION_URL: {
     BASE: "/scheduleDef",
     NAME: "/scheduleDef/:name",
@@ -64,7 +65,11 @@ vi.mock("utils/constants/route", () => ({
   },
   SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
   SECRETS_URL: { BASE: "/secrets" },
-  AGENT_DEFINITION_URL: { BASE: "/agents" },
+  AGENT_DEFINITION_URL: {
+    BASE: "/agents",
+    NEW: "/agents/new",
+    NAME_VERSION: "/agents/:name/:version?",
+  },
   AGENT_EXECUTIONS_URL: {
     BASE: "/agentExecutions",
     ID_TASK_ID: "/agentExecutions/:id/:taskId?",
@@ -140,8 +145,11 @@ vi.mock("pages/tags/TagsDashboard", () => ({
   default: () => ({ type: "TagsDashboard" }),
 }));
 vi.mock("pages/agent", () => ({
+  AgentDefinition: () => ({ type: "AgentDefinition" }),
   AgentDefinitions: () => ({ type: "AgentDefinitions" }),
+  CreateAgentGuide: () => ({ type: "CreateAgentGuide" }),
   AgentExecutions: () => ({ type: "AgentExecutions" }),
+  RunAgent: () => ({ type: "RunAgent" }),
   Skills: () => ({ type: "Skills" }),
   Secrets: () => ({ type: "Secrets" }),
 }));
@@ -236,26 +244,40 @@ describe("router (OSS)", () => {
     expect(router).toBeDefined();
   });
 
-  describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
+  describe("Conductor AI integration gating", () => {
     const AGENT_PATHS = [
       "/agents",
+      "/agents/new",
+      "/agents/:name/:version?",
       "/agentExecutions",
+      "/runAgent",
       "/skills",
       "/agentSecrets",
     ];
 
-    it("omits agent routes when AGENTSPAN_ENABLED is off", () => {
+    it("omits agent routes when the AI integration is off", () => {
       mockFeatureFlags.isEnabled.mockReturnValue(false);
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).not.toContain(p));
     });
 
-    it("includes agent routes when AGENTSPAN_ENABLED is on", () => {
+    it("includes agent routes when the AI integration is on", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
+    });
+
+    it("registers the create-agent route before the agent detail route", () => {
+      mockFeatureFlags.isEnabled.mockImplementation(
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
+      );
+      const paths = collectPaths(getRoutes());
+
+      expect(paths.indexOf("/agents/new")).toBeLessThan(
+        paths.indexOf("/agents/:name/:version?"),
+      );
     });
   });
 

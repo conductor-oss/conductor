@@ -35,6 +35,11 @@ const fetchContext = fetchContextNonHook();
 export const isNewWorkflow = (context: DefinitionMachineContext) =>
   context.isNewWorkflow;
 
+export const isWorkflowNotFound = (
+  _context: DefinitionMachineContext,
+  event: DoneInvokeEvent<{ message?: string; status?: number }>,
+) => event?.data?.status === 404;
+
 export const isEditorTab = ({ openedTab }: DefinitionMachineContext) =>
   openedTab === CODE_TAB;
 

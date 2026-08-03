@@ -28,7 +28,7 @@ import { IObject } from "types/common";
 import { dateToEpoch, useLocalStorage } from "utils";
 import { ERROR_URL } from "utils/constants/route";
 import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInputValidation";
-import { useWorkflowNames, useWorkflowSearch } from "utils/query";
+import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
@@ -152,7 +152,7 @@ export default function BasicSearch({
   );
 
   // For dropdown
-  const workflowNames: string[] = useWorkflowNames();
+  const agentNames = useAgentNames();
 
   // for tooltip flag in localstorage
   const [tooltipFlags, setTooltipFlags] = useLocalStorage("tooltipFlags", {});
@@ -280,7 +280,7 @@ export default function BasicSearch({
       query: queryFT.query,
       freeText: queryFT.freeText,
       // Scope results to a single classifier: "workflow" for plain workflow
-      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      // executions, "agent" for Conductor-Agents runs on the Agents pages.
       classifier: "agent",
       topLevelOnly: hideSubWorkflows,
     },
@@ -413,6 +413,8 @@ export default function BasicSearch({
                 sort,
                 freeText,
                 query: buildQuery().query,
+                classifier: "agent",
+                topLevelOnly: hideSubWorkflows,
               }}
             />
           )}
@@ -434,7 +436,7 @@ export default function BasicSearch({
                 id="workflow-search-name-dropdown"
                 fullWidth
                 label="Agent name"
-                options={workflowNames.sort((a, b) =>
+                options={agentNames.sort((a, b) =>
                   a.toLowerCase().localeCompare(b.toLowerCase()),
                 )}
                 multiple

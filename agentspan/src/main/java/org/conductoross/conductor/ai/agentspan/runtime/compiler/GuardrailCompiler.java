@@ -86,8 +86,19 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        String iterationRef = "${" + agentName + "_loop.iteration}";
-        return compileGuardrailTasksInternal(outputGuardrails, agentName, contentRef, iterationRef);
+        // live loop counter:
+        // - lives under DO_WHILE task's OUTPUT ({input, output} per task ref)
+        // - must read as ${<loop>.output.iteration}
+        // - bare ${<loop>.iteration} = null mid-loop -> escalation below silently disabled
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
+        // Output guardrails must only judge final replies. On a tool-call turn the LLM task's
+        // output.result is empty (only non-tool turns produce a result), so a content guardrail
+        // would misfire every healthy tool round. Derive a reference to the agent LLM task's
+        // output.toolCalls (from the same task the content ref points at) so the generated scripts
+        // can short-circuit tool-call turns. Only output guardrails get this binding.
+        String toolCallsRef = contentRef.replace(".output.result", ".output.toolCalls");
+        return compileGuardrailTasksInternal(
+                outputGuardrails, agentName, contentRef, iterationRef, toolCallsRef);
     }
 
     /**
@@ -109,8 +120,15 @@ public class GuardrailCompiler {
             return new ArrayList<>();
         }
 
-        // Tool guardrails use a fixed iteration ref since retry is handled by the outer DoWhile
-        return compileGuardrailTasksInternal(guardrails, agentName + "_tool", contentRef, "1");
+        // tool-guardrail gate runs inside the agent's DoWhile turn loop
+        // - wire live loop counter (1-based turn number, from loop task ref's output)
+        // - lets retry->raise escalation at maxRetries fire (SDK worker + regex/llm scripts)
+        // - fixed "1" pinned the counter forever -> onFail=retry never escalated
+        // toolCallsRef is null: tool guardrails are supposed to evaluate tool calls, so they must
+        // not short-circuit on them.
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
+        return compileGuardrailTasksInternal(
+                guardrails, agentName + "_tool", contentRef, iterationRef, null);
     }
 
     /** Internal helper that compiles guardrails without position filtering. */
@@ -118,7 +136,8 @@ public class GuardrailCompiler {
             List<GuardrailConfig> guardrails,
             String prefix,
             String contentRef,
-            String iterationRef) {
+            String iterationRef,
+            String toolCallsRef) {
 
         List<GuardrailTaskResult> results = new ArrayList<>();
 
@@ -130,15 +149,21 @@ public class GuardrailCompiler {
 
             switch (type) {
                 case "regex" ->
-                        results.add(compileRegexGuardrail(guard, prefix, contentRef, iterationRef));
+                        results.add(
+                                compileRegexGuardrail(
+                                        guard, prefix, contentRef, iterationRef, toolCallsRef));
                 case "llm" ->
-                        results.add(compileLlmGuardrail(guard, prefix, contentRef, iterationRef));
+                        results.add(
+                                compileLlmGuardrail(
+                                        guard, prefix, contentRef, iterationRef, toolCallsRef));
                 case "custom" ->
                         results.add(
-                                compileCustomGuardrail(guard, prefix, contentRef, iterationRef));
+                                compileCustomGuardrail(
+                                        guard, prefix, contentRef, iterationRef, toolCallsRef));
                 case "external" ->
                         results.add(
-                                compileExternalGuardrail(guard, prefix, contentRef, iterationRef));
+                                compileExternalGuardrail(
+                                        guard, prefix, contentRef, iterationRef, toolCallsRef));
             }
         }
 
@@ -147,7 +172,11 @@ public class GuardrailCompiler {
 
     /** Compile a RegexGuardrail into an InlineTask. */
     private GuardrailTaskResult compileRegexGuardrail(
-            GuardrailConfig guard, String agentName, String contentRef, String iterationRef) {
+            GuardrailConfig guard,
+            String agentName,
+            String contentRef,
+            String iterationRef,
+            String toolCallsRef) {
 
         String refName = agentName + "_regex_guardrail_" + guard.getName();
         String patternsJson = JavaScriptBuilder.toJson(guard.getPatterns());
@@ -176,6 +205,9 @@ public class GuardrailCompiler {
         inputs.put("expression", script);
         inputs.put("content", contentRef);
         inputs.put("iteration", iterationRef);
+        if (toolCallsRef != null) {
+            inputs.put("toolCalls", toolCallsRef);
+        }
         task.setInputParameters(inputs);
 
         return new GuardrailTaskResult(List.of(task), refName, true);
@@ -183,7 +215,11 @@ public class GuardrailCompiler {
 
     /** Compile an LLMGuardrail into an LlmChatComplete task + InlineTask parser. */
     private GuardrailTaskResult compileLlmGuardrail(
-            GuardrailConfig guard, String agentName, String contentRef, String iterationRef) {
+            GuardrailConfig guard,
+            String agentName,
+            String contentRef,
+            String iterationRef,
+            String toolCallsRef) {
 
         String refName = agentName + "_llm_guardrail_" + guard.getName();
         String llmRef = refName + "_llm";
@@ -234,6 +270,9 @@ public class GuardrailCompiler {
         parserInputs.put("expression", parserScript);
         parserInputs.put("llm_result", "${" + llmRef + ".output.result}");
         parserInputs.put("iteration", iterationRef);
+        if (toolCallsRef != null) {
+            parserInputs.put("toolCalls", toolCallsRef);
+        }
         parserTask.setInputParameters(parserInputs);
 
         return new GuardrailTaskResult(List.of(llmTask, parserTask), refName, true);
@@ -241,7 +280,11 @@ public class GuardrailCompiler {
 
     /** Compile a custom guardrail into a SimpleTask referencing the worker task. */
     private GuardrailTaskResult compileCustomGuardrail(
-            GuardrailConfig guard, String agentName, String contentRef, String iterationRef) {
+            GuardrailConfig guard,
+            String agentName,
+            String contentRef,
+            String iterationRef,
+            String toolCallsRef) {
 
         String refName = agentName + "_output_guardrail_" + guard.getName();
         String workerRef = refName + "_worker";
@@ -271,6 +314,13 @@ public class GuardrailCompiler {
         normalizeInputs.put("worker_output", "${" + workerRef + ".output}");
         normalizeInputs.put("guardrail_name", guard.getName());
         normalizeInputs.put("default_on_fail", guard.getOnFail());
+        // iteration + max_retries -> normalize script can escalate retry -> raise
+        // (parity with regex/llm guardrails)
+        normalizeInputs.put("iteration", iterationRef);
+        normalizeInputs.put("max_retries", guard.getMaxRetries());
+        if (toolCallsRef != null) {
+            normalizeInputs.put("toolCalls", toolCallsRef);
+        }
         normalizeTask.setInputParameters(normalizeInputs);
 
         return new GuardrailTaskResult(List.of(task, normalizeTask), refName, true);
@@ -278,7 +328,11 @@ public class GuardrailCompiler {
 
     /** Compile an external guardrail into a SimpleTask referencing the remote worker. */
     private GuardrailTaskResult compileExternalGuardrail(
-            GuardrailConfig guard, String agentName, String contentRef, String iterationRef) {
+            GuardrailConfig guard,
+            String agentName,
+            String contentRef,
+            String iterationRef,
+            String toolCallsRef) {
 
         String refName = agentName + "_ext_guardrail_" + guard.getName();
 
@@ -295,6 +349,11 @@ public class GuardrailCompiler {
         inputs.put("agentOutput", contentRef);
         inputs.put("agent_output", contentRef);
         inputs.put("iteration", iterationRef);
+        // External guardrails run in a remote worker (no server-side script to short-circuit).
+        // Surface the tool-call turn so the worker can treat a tool-call turn as a pass.
+        if (toolCallsRef != null) {
+            inputs.put("toolCalls", toolCallsRef);
+        }
         task.setInputParameters(inputs);
 
         return new GuardrailTaskResult(List.of(task), refName, false);

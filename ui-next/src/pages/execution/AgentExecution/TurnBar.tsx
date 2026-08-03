@@ -1,12 +1,16 @@
 import { useRef, useLayoutEffect } from "react";
 import { Box, MenuItem, Select, Tooltip, Typography } from "@mui/material";
 import { AgentTurn, AgentStatus } from "./types";
-import { formatDuration } from "./agentExecutionUtils";
+import {
+  formatDuration,
+  timelineItemId,
+  timelineItemLabel,
+} from "./agentExecutionUtils";
 
 interface TurnBarProps {
   turns: AgentTurn[];
-  selectedTurn: number;
-  onSelectTurn: (turnNumber: number) => void;
+  selectedTurn: string;
+  onSelectTurn: (turnId: string) => void;
 }
 
 const GREEN = "#40BA56";
@@ -49,18 +53,20 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
         }}
       >
         {turns.map((turn, i) => {
-          const active = turn.turnNumber === selectedTurn;
+          const id = timelineItemId(turn);
+          const label = timelineItemLabel(turn);
+          const active = id === selectedTurn;
           const color = turnColor(turn.status);
           const isFirst = i === 0;
           const isLast = i === turns.length - 1;
 
           return (
             <Tooltip
-              key={turn.turnNumber}
+              key={id}
               title={
                 <Box sx={{ fontSize: "0.72rem" }}>
                   <div style={{ fontWeight: 700, marginBottom: 2 }}>
-                    Turn {turn.turnNumber}
+                    {label}
                   </div>
                   {formatDuration(turn.durationMs) !== "—" && (
                     <div>{formatDuration(turn.durationMs)}</div>
@@ -79,7 +85,7 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
               <Box
                 component="button"
                 ref={active ? selectedRef : undefined}
-                onClick={() => onSelectTurn(turn.turnNumber)}
+                onClick={() => onSelectTurn(id)}
                 sx={{
                   // Reset button styles
                   appearance: "none",
@@ -131,7 +137,7 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
                     letterSpacing: "0.01em",
                   }}
                 >
-                  {turn.turnNumber}
+                  {label}
                 </Typography>
 
                 {/* Tiny status dot — only failed/running */}
@@ -156,7 +162,7 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
       {turns.length > 8 && (
         <Select
           value={selectedTurn}
-          onChange={(e) => onSelectTurn(Number(e.target.value))}
+          onChange={(e) => onSelectTurn(String(e.target.value))}
           size="small"
           variant="outlined"
           sx={{
@@ -169,11 +175,11 @@ export function TurnBar({ turns, selectedTurn, onSelectTurn }: TurnBarProps) {
         >
           {turns.map((t) => (
             <MenuItem
-              key={t.turnNumber}
-              value={t.turnNumber}
+              key={timelineItemId(t)}
+              value={timelineItemId(t)}
               sx={{ fontSize: "0.78rem" }}
             >
-              Turn {t.turnNumber}
+              {timelineItemLabel(t)}
             </MenuItem>
           ))}
         </Select>
