@@ -110,6 +110,22 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
         return jedisCommands.zrangeByScore(queueKey, 0, Double.POSITIVE_INFINITY, 0, count);
     }
 
+    /**
+     * This queue keeps popped-but-unacked messages in the same zset with score now+unackTimeout, so
+     * a floor-less peek can return a message another worker is executing right now. The score floor
+     * restricts the result to messages postponed further out than any unack window.
+     */
+    @Override
+    public List<String> peekPostponedIds(String queueName, long minDelayMillis, int count) {
+        String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
+        return jedisCommands.zrangeByScore(
+                queueKey,
+                System.currentTimeMillis() + minDelayMillis,
+                Double.POSITIVE_INFINITY,
+                0,
+                count);
+    }
+
     @Override
     public final void push(String queueName, String id, long offsetTimeInSecond) {
         QueueMessage message = new QueueMessage(id, "", offsetTimeInSecond * 1000);

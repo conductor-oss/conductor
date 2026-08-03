@@ -613,7 +613,16 @@ public class ExecutionDAOFacade {
 
         String queueName = QueueUtils.getQueueName(taskModel);
         try {
-            List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
+            // Floor-restricted peek: on queues that keep popped-but-unacked messages visible
+            // (the Redis single-zset design), a floor-less peek can select a message another
+            // worker is executing RIGHT NOW, and resetting it would cause an immediate duplicate
+            // delivery. Only genuinely postponed messages are eligible; a sibling whose remaining
+            // postpone is already below the floor is left to expire naturally (bounded wait).
+            List<String> nextIds =
+                    queueDAO.peekPostponedIds(
+                            queueName,
+                            properties.getConcurrencySlotReleaseMinDelay().toMillis(),
+                            1);
             if (nextIds == null || nextIds.isEmpty()) {
                 return;
             }

@@ -76,6 +76,8 @@ public class ExecutionDAOFacadeTest {
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
         when(properties.isAsyncIndexingEnabled()).thenReturn(true);
         when(properties.isTaskIndexingEnabled()).thenReturn(true);
+        when(properties.getConcurrencySlotReleaseMinDelay())
+                .thenReturn(java.time.Duration.ofSeconds(35));
         executionDAOFacade =
                 new ExecutionDAOFacade(
                         executionDAO,
@@ -452,12 +454,15 @@ public class ExecutionDAOFacadeTest {
 
     @Test
     public void testTerminalTaskReleasesPostponedSuccessorWhenConcurrencyLimited() {
-        when(queueDAO.peekFirstIds(anyString(), eq(1)))
+        when(queueDAO.peekPostponedIds(anyString(), anyLong(), eq(1)))
                 .thenReturn(Collections.singletonList("postponed-id"));
 
         executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 1));
 
-        verify(queueDAO).peekFirstIds(anyString(), eq(1));
+        // The floor keeps the release away from due or popped-but-unacked (in-flight) messages:
+        // resetting one of those would cause an immediate duplicate delivery.
+        verify(queueDAO)
+                .peekPostponedIds(anyString(), eq(Duration.ofSeconds(35).toMillis()), eq(1));
         verify(queueDAO).resetOffsetTime(anyString(), eq("postponed-id"));
     }
 
@@ -465,7 +470,7 @@ public class ExecutionDAOFacadeTest {
     public void testNonTerminalTaskDoesNotReleaseSuccessor() {
         executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.SCHEDULED, 1));
 
-        verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
+        verify(queueDAO, never()).peekPostponedIds(anyString(), anyLong(), anyInt());
         verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
     }
 
@@ -473,7 +478,19 @@ public class ExecutionDAOFacadeTest {
     public void testTerminalTaskWithoutConcurrencyLimitDoesNotTouchTheQueue() {
         executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 0));
 
-        verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
+        verify(queueDAO, never()).peekPostponedIds(anyString(), anyLong(), anyInt());
+        verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
+    }
+
+    @Test
+    public void testNoResetWhenOnlyInFlightMessagesAreInTheQueue() {
+        // peekPostponedIds returns nothing when every queue member is due or in-flight;
+        // the release must then leave the queue alone rather than fall back to a raw peek.
+        when(queueDAO.peekPostponedIds(anyString(), anyLong(), eq(1)))
+                .thenReturn(Collections.emptyList());
+
+        executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 1));
+
         verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
     }
 
@@ -481,7 +498,7 @@ public class ExecutionDAOFacadeTest {
     public void testReleaseFailureDoesNotFailTheTaskUpdate() {
         // The task write already succeeded; a failed wakeup only costs the successor its
         // postpone window and must not propagate.
-        when(queueDAO.peekFirstIds(anyString(), eq(1)))
+        when(queueDAO.peekPostponedIds(anyString(), anyLong(), eq(1)))
                 .thenThrow(new RuntimeException("queue unavailable"));
 
         executionDAOFacade.updateTask(concurrencyLimitedTask(TaskModel.Status.COMPLETED, 1));

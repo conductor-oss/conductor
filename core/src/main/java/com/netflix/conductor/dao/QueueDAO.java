@@ -202,4 +202,21 @@ public interface QueueDAO {
     default List<String> peekFirstIds(String queueName, int count) {
         return List.of();
     }
+
+    /**
+     * Returns up to {@code count} message ids whose delivery time is at least {@code
+     * minDelayMillis} in the future — i.e. messages that are genuinely postponed, as opposed to due
+     * or popped-but-unacked. Callers that intend to {@link #resetOffsetTime} a message they did not
+     * pop (e.g. releasing a concurrency-limited successor) MUST use this instead of {@link
+     * #peekFirstIds}: on queue implementations that keep in-flight messages visible (the Redis
+     * single-zset design bumps a popped message's score to now+unackTimeout in place), peeking
+     * without a floor can select a message another worker is currently executing, and resetting it
+     * causes an immediate duplicate delivery.
+     *
+     * <p>The default delegates to {@link #peekFirstIds} for implementations whose peek already
+     * excludes in-flight messages (the SQL queues filter on {@code popped = false}).
+     */
+    default List<String> peekPostponedIds(String queueName, long minDelayMillis, int count) {
+        return peekFirstIds(queueName, count);
+    }
 }

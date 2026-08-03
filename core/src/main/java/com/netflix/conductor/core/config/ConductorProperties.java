@@ -97,6 +97,15 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskExecutionPostponeDuration = Duration.ofSeconds(60);
 
+    /**
+     * Only queue messages postponed at least this far into the future are woken up when a
+     * concurrency-limited task frees a slot. Must exceed every unack/visibility window in use
+     * (default system-task and worker pop windows are 30s): on queues that keep in-flight messages
+     * visible, a smaller value could wake a message another worker is still executing.
+     */
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration concurrencySlotReleaseMinDelay = Duration.ofSeconds(35);
+
     /** Used to enable/disable the indexing of tasks. */
     private boolean taskIndexingEnabled = true;
 
@@ -379,6 +388,14 @@ public class ConductorProperties {
 
     public void setTaskExecutionPostponeDuration(Duration taskExecutionPostponeDuration) {
         this.taskExecutionPostponeDuration = taskExecutionPostponeDuration;
+    }
+
+    public Duration getConcurrencySlotReleaseMinDelay() {
+        return concurrencySlotReleaseMinDelay;
+    }
+
+    public void setConcurrencySlotReleaseMinDelay(Duration concurrencySlotReleaseMinDelay) {
+        this.concurrencySlotReleaseMinDelay = concurrencySlotReleaseMinDelay;
     }
 
     public boolean isTaskExecLogIndexingEnabled() {
