@@ -145,7 +145,7 @@ export async function startWorkflow(
     const text = await res.text().catch(() => "");
     throw new Error(`POST /api/workflow → ${res.status}: ${text}`);
   }
-  return res.text();
+  return (await res.text()).trim();
 }
 
 export async function getWorkflowExecution(

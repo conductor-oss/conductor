@@ -14,7 +14,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import MuiButton from "components/ui/buttons/MuiButton";
 import MuiButtonGroup from "components/ui/buttons/MuiButtonGroup";
 import DocsIcon from "components/icons/DocsIcon";
-import SlackIcon from "images/svg/slack-logo-transparent.svg?react";
+import SlackIcon from "components/icons/SlackIcon";
 import { useRef, useState } from "react";
 import { colors } from "theme/tokens/variables";
 import { featureFlags, FEATURES } from "utils/flags";
@@ -33,7 +33,8 @@ const linkButtons = [
     icon: <SlackIcon />,
     linkTo:
       "https://join.slack.com/t/orkes-conductor/shared_invite/zt-xyxqyseb-YZ3hwwAgHJH97bsrYRnSZg",
-    hidden: !featureFlags.isEnabled(FEATURES.SHOW_JOIN_SLACK_COMMUNITY),
+    // hidden: !featureFlags.isEnabled(FEATURES.SHOW_JOIN_SLACK_COMMUNITY),
+    hidden: false,
   },
 ];
 
