@@ -731,12 +731,14 @@ public class TestSystemTaskWorker {
 
     @Test
     public void testPollingLoopResumesAfterStopStartCycle() throws Exception {
-        // stop() now drains and shuts down the executor pools (doStop()), matching real Spring
-        // shutdown semantics — SmartLifecycle.stop() fires once, right before process exit, so a
-        // genuine restart with the SAME pools accepting new work isn't a supported scenario. What
-        // must still hold is narrower: the poller loop itself never dies permanently when
-        // isRunning() flips back to false-then-true — it keeps calling pollAndExecute() rather
-        // than getting stuck in the idle branch forever.
+        // stop() drains and shuts down every executor pool it finds (doStop()) so that on a real
+        // process shutdown, in-flight tasks get a chance to finish instead of being truncated by
+        // Runtime.exit()/halt(). But this component is also restarted within a single JVM without
+        // ever being reconstructed — e.g. test-harness specs that arm/disarm the worker between
+        // features while sharing one cached Spring context (issue: the poller loop kept polling
+        // after such a restart, but every dispatch silently no-opped against dead executors,
+        // leaving polled tasks stuck SCHEDULED forever). doStart() must rebuild fresh pools so a
+        // restart is a genuine restart, not just a resumed idle loop.
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofMillis(10));
         systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
@@ -753,14 +755,31 @@ public class TestSystemTaskWorker {
         assertTrue("Poller must poll while running", poppedRef.get().await(5, TimeUnit.SECONDS));
 
         systemTaskWorker.stop();
+        assertTrue(
+                "stop() must shut down the shared pool",
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService().isShutdown());
         Thread.sleep(100); // let the loop observe the stop and park
 
-        poppedRef.set(new CountDownLatch(1));
         systemTaskWorker.start();
+        assertFalse(
+                "start() after a stop() must rebuild a fresh, usable pool",
+                systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService().isShutdown());
+
+        // Prove the rebuilt pool actually dispatches — not just that polling resumes.
+        CountDownLatch executed = new CountDownLatch(1);
+        doAnswer(
+                        invocation -> {
+                            executed.countDown();
+                            return null;
+                        })
+                .when(asyncSystemTaskExecutor)
+                .execute(any(), anyString());
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("post-restart"));
+
         assertTrue(
-                "Poller loop must resume calling pollAndExecute after stop()/start(), even though"
-                        + " stop() has shut down the executor pools",
-                poppedRef.get().await(5, TimeUnit.SECONDS));
+                "A task polled after restart must actually be dispatched, not silently dropped"
+                        + " against a dead executor",
+                executed.await(5, TimeUnit.SECONDS));
     }
 
     // -----------------------------------------------------------------------

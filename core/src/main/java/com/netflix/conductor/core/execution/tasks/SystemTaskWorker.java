@@ -53,7 +53,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final long pollInterval;
     private final QueueDAO queueDAO;
 
-    private final ExecutorService sharedExecutorService;
+    private volatile ExecutorService sharedExecutorService;
     private final int systemTaskWorkerThreadCount;
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
@@ -79,6 +79,27 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.queuePopTimeout = (int) properties.getSystemTaskQueuePopTimeout().toMillis();
 
         LOGGER.info("SystemTaskWorker initialized with {} threads", threadCount);
+    }
+
+    @Override
+    public void doStart() {
+        // doStop() permanently shuts down every pool it finds (matching real Spring shutdown
+        // semantics on process exit). But this component can also be legitimately stopped and
+        // restarted within the same JVM — e.g. test-harness specs that arm/disarm the worker
+        // between features while sharing one cached Spring context. Detect that case and rebuild:
+        // existing ExecutionConfig entries hold references to the now-dead executors, so they
+        // must be dropped too, not just the shared pool.
+        dispatchLock.writeLock().lock();
+        try {
+            if (sharedExecutorService.isShutdown()) {
+                sharedExecutorService =
+                        ExecutionConfig.newThreadPool(
+                                systemTaskWorkerThreadCount, "system-task-worker-%d");
+                queueExecutionConfigMap.clear();
+            }
+        } finally {
+            dispatchLock.writeLock().unlock();
+        }
     }
 
     @Override
