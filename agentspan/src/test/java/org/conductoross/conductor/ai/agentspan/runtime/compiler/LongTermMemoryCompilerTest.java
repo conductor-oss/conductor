@@ -113,7 +113,7 @@ class LongTermMemoryCompilerTest {
                                 "runtimeUser", "bob"));
         assertThat(runtime).containsEntry("user", "user:bob");
 
-        Map<String, Object> unscoped =
+        Map<String, Object> agentScoped =
                 evaluateObject(
                         expression,
                         Map.of(
@@ -121,7 +121,7 @@ class LongTermMemoryCompilerTest {
                                 "agent", "agentspan",
                                 "configuredUser", "",
                                 "runtimeUser", ""));
-        assertThat(unscoped).doesNotContainKey("user");
+        assertThat(agentScoped).containsEntry("user", "agent:agentspan");
     }
 
     @Test

@@ -138,7 +138,8 @@ final class OcgAgentSubCompiler {
         return "(function(){var a={query:$.query,agent:$.agent,include_shared:true,limit:5};"
                 + "var u=$.configuredUser;if(u==null||String(u).trim()==='')u=$.runtimeUser;"
                 + "if(u!=null&&String(u).trim()!==''){u=String(u).trim();"
-                + "a.user=u.indexOf('user:')===0?u:'user:'+u;}return a;})()";
+                + "a.user=u.indexOf('user:')===0?u:'user:'+u;}else{a.user='agent:'+$.agent;}"
+                + "return a;})()";
     }
 
     private static String recallNormalizerScript() {
