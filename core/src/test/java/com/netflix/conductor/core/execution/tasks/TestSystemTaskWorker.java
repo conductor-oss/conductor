@@ -126,10 +126,6 @@ public class TestSystemTaskWorker {
         assertSame(http.getExecutorService(), subWorkflow.getExecutorService());
     }
 
-    // -----------------------------------------------------------------------
-    // Scenario 3: taskWorkerConfigs entry present — dedicated pool + own semaphore
-    // -----------------------------------------------------------------------
-
     @Test
     public void testNonIsolatedQueuesHaveIndependentSemaphoresButShareExecutor() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(3);
@@ -156,26 +152,9 @@ public class TestSystemTaskWorker {
         assertSame(httpConfig.getExecutorService(), subWorkflowConfig.getExecutorService());
     }
 
-    @Test
-    public void testPerTaskPermitCountOverride() {
-        when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
-        ConductorProperties.TaskWorkerConfig llmConfig = new ConductorProperties.TaskWorkerConfig();
-        llmConfig.setPermitCount(3);
-        Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
-        configs.put("LLM_TEXT_COMPLETE", llmConfig);
-        when(properties.getTaskWorkerConfigs()).thenReturn(configs);
-        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
-
-        ExecutionConfig llmExecConfig = systemTaskWorker.getExecutionConfig("LLM_TEXT_COMPLETE");
-        ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
-
-        // LLM gets a capped semaphore of 3 even though the shared pool has 10 threads.
-        assertEquals(3, llmExecConfig.getSemaphoreUtil().availableSlots());
-        // HTTP falls through to the default of 10.
-        assertEquals(10, httpExecConfig.getSemaphoreUtil().availableSlots());
-        // Both still share the same pool.
-        assertSame(llmExecConfig.getExecutorService(), httpExecConfig.getExecutorService());
-    }
+    // -----------------------------------------------------------------------
+    // Scenario 3: taskWorkerConfigs entry present — dedicated pool, permits == threads
+    // -----------------------------------------------------------------------
 
     @Test
     public void testPerTaskDedicatedPoolOverride() {
@@ -191,7 +170,7 @@ public class TestSystemTaskWorker {
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
         ExecutionConfig subWorkflowExecConfig = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
 
-        // HTTP gets 20 permits from its dedicated pool.
+        // HTTP gets permits == its dedicated thread count.
         assertEquals(20, httpExecConfig.getSemaphoreUtil().availableSlots());
         // SUB_WORKFLOW still uses the shared pool with default permits.
         assertEquals(10, subWorkflowExecConfig.getSemaphoreUtil().availableSlots());
@@ -201,21 +180,21 @@ public class TestSystemTaskWorker {
     }
 
     @Test
-    public void testPerTaskDedicatedPoolWithExplicitPermitCount() {
+    public void testZeroThreadCountOverrideIsIgnored() {
+        // An entry without a positive threadCount is a no-op (warned at startup): the type shares
+        // the common pool with the default permit budget, exactly as if it had no entry at all.
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
-        ConductorProperties.TaskWorkerConfig httpConfig =
+        ConductorProperties.TaskWorkerConfig emptyConfig =
                 new ConductorProperties.TaskWorkerConfig();
-        httpConfig.setThreadCount(20);
-        httpConfig.setPermitCount(8); // dedicated pool of 20 threads, but cap in-flight at 8
         Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
-        configs.put("HTTP", httpConfig);
+        configs.put("HTTP", emptyConfig);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
         systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
 
-        assertEquals(8, httpExecConfig.getSemaphoreUtil().availableSlots());
-        assertNotSame(
+        assertEquals(10, httpExecConfig.getSemaphoreUtil().availableSlots());
+        assertSame(
                 httpExecConfig.getExecutorService(),
                 systemTaskWorker.getExecutionConfig("SUB_WORKFLOW").getExecutorService());
     }
@@ -492,10 +471,11 @@ public class TestSystemTaskWorker {
     // -----------------------------------------------------------------------
 
     @Test
-    public void testPerTaskPermitOverrideEnforcedDuringPolling() throws Exception {
-        // system_task configured with 2 permits — after 2 in-flight tasks the next poll is skipped.
+    public void testPerTaskThreadCountEnforcedDuringPolling() throws Exception {
+        // system_task configured with a dedicated pool of 2 threads (== 2 permits) — after 2
+        // in-flight tasks the next poll is skipped.
         ConductorProperties.TaskWorkerConfig cfg = new ConductorProperties.TaskWorkerConfig();
-        cfg.setPermitCount(2);
+        cfg.setThreadCount(2);
         Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
         configs.put(TEST_TASK, cfg);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
@@ -540,7 +520,7 @@ public class TestSystemTaskWorker {
     public void testCaseInsensitiveTaskWorkerConfigLookup() {
         // Config keyed with uppercase "SYSTEM_TASK" must apply to a queue named "system_task".
         ConductorProperties.TaskWorkerConfig cfg = new ConductorProperties.TaskWorkerConfig();
-        cfg.setPermitCount(4);
+        cfg.setThreadCount(4);
         Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
         configs.put("SYSTEM_TASK", cfg);
         when(properties.getTaskWorkerConfigs()).thenReturn(configs);
@@ -550,11 +530,11 @@ public class TestSystemTaskWorker {
         // TEST_TASK = "system_task" — lower-case; config key is "SYSTEM_TASK" — upper-case.
         ExecutionConfig execConfig = systemTaskWorker.getExecutionConfig(TEST_TASK);
         assertEquals(
-                "Case-insensitive lookup must apply the configured permitCount",
+                "Case-insensitive lookup must apply the configured threadCount as permits",
                 4,
                 execConfig.getSemaphoreUtil().availableSlots());
-        // Still uses the shared pool (no threadCount override).
-        assertSame(
+        // Dedicated pool — distinct from the shared pool other types use.
+        assertNotSame(
                 execConfig.getExecutorService(),
                 systemTaskWorker.getExecutionConfig("OTHER_TASK").getExecutorService());
     }
@@ -670,30 +650,6 @@ public class TestSystemTaskWorker {
 
         verify(queueDAO).resetOffsetTime(TEST_TASK, "late-task");
         verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), eq("late-task"));
-    }
-
-    // -----------------------------------------------------------------------
-    // permitCount/threadCount oversubscription — degrades gracefully, does not fail startup
-    // -----------------------------------------------------------------------
-
-    @Test
-    public void testOversubscribedPermitCountIsHonoredNotClamped() {
-        // permitCount=8 against a dedicated pool of only threadCount=2. This is an operator
-        // misconfiguration (warned about at startup), but must not fail construction — the
-        // semaphore is still sized to the configured permitCount; excess work simply queues in
-        // the pool instead of running concurrently.
-        ConductorProperties.TaskWorkerConfig httpConfig =
-                new ConductorProperties.TaskWorkerConfig();
-        httpConfig.setThreadCount(2);
-        httpConfig.setPermitCount(8);
-        Map<String, ConductorProperties.TaskWorkerConfig> configs = new HashMap<>();
-        configs.put("HTTP", httpConfig);
-        when(properties.getTaskWorkerConfigs()).thenReturn(configs);
-        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
-
-        ExecutionConfig httpExecConfig = systemTaskWorker.getExecutionConfig("HTTP");
-
-        assertEquals(8, httpExecConfig.getSemaphoreUtil().availableSlots());
     }
 
     // -----------------------------------------------------------------------

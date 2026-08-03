@@ -27,14 +27,9 @@ class ExecutionConfig {
     /** Dedicated pool size, or -1 when using the shared pool. */
     private final int poolSize;
 
-    /** Isolated queues: own dedicated pool + own semaphore, permits == threadCount. */
+    /** Dedicated pool (isolated queue or per-task-type override): permits == threadCount. */
     ExecutionConfig(int threadCount, String threadNameFormat) {
         this(newThreadPool(threadCount, threadNameFormat), threadCount, threadCount);
-    }
-
-    /** Per-task-type override: own dedicated pool with explicit permit count. */
-    ExecutionConfig(int threadCount, String threadNameFormat, int permits) {
-        this(newThreadPool(threadCount, threadNameFormat), permits, threadCount);
     }
 
     /**

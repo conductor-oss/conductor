@@ -324,41 +324,24 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
         if (override != null && override.getThreadCount() > 0) {
             // Dedicated pool: this task type gets its own threads, isolated from everything else.
+            // The thread count doubles as the type's in-flight cap (permits == threads), so the
+            // poller never pops more messages than it has free capacity to run.
             int threads = override.getThreadCount();
-            int permits = override.getPermitCount() > 0 ? override.getPermitCount() : threads;
-            warnIfOversubscribed(taskType, permits, threads);
-            LOGGER.info(
-                    "Task type {} using dedicated pool: threads={}, permits={}",
-                    taskType,
-                    threads,
-                    permits);
+            LOGGER.info("Task type {} using dedicated pool: {} threads", taskType, threads);
             return new ExecutionConfig(
-                    threads, "system-task-worker-" + taskType.toLowerCase() + "-%d", permits);
+                    threads, "system-task-worker-" + taskType.toLowerCase() + "-%d");
         }
-
-        // Shared pool, but own semaphore. A per-task permitCount override caps concurrency for
-        // this type without needing dedicated threads.
-        int permits =
-                (override != null && override.getPermitCount() > 0)
-                        ? override.getPermitCount()
-                        : systemTaskWorkerThreadCount;
         if (override != null) {
-            warnIfOversubscribed(taskType, permits, systemTaskWorkerThreadCount);
-            LOGGER.info("Task type {} using shared pool with permits={}", taskType, permits);
-        }
-        return new ExecutionConfig(sharedExecutorService, permits);
-    }
-
-    private void warnIfOversubscribed(String taskType, int permits, int poolSize) {
-        if (permits > poolSize) {
             LOGGER.warn(
-                    "Task type {} taskWorkerConfigs.permitCount={} exceeds its pool size of {} "
-                            + "threads; the excess will queue instead of running concurrently. "
-                            + "Consider raising threadCount or lowering permitCount.",
-                    taskType,
-                    permits,
-                    poolSize);
+                    "Task type {} has a taskWorkerConfigs entry without a positive threadCount"
+                            + " — ignored, sharing the common pool",
+                    taskType);
         }
+
+        // Shared pool, but own semaphore, so one slow/busy queue cannot starve other queues'
+        // polling. Permits default to the shared pool width — the same effective cap the old
+        // single shared semaphore imposed.
+        return new ExecutionConfig(sharedExecutorService, systemTaskWorkerThreadCount);
     }
 
     private ConductorProperties.TaskWorkerConfig findTaskWorkerConfig(String taskType) {

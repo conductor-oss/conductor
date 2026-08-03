@@ -58,7 +58,7 @@ public class TestTaskWorkerConfigBinding {
                 bindFromPropertiesFile(
                         """
                         conductor.app.taskWorkerConfigs.HTTP.threadCount=20
-                        conductor.app.taskWorkerConfigs.LLM_TEXT_COMPLETE.permitCount=3
+                        conductor.app.taskWorkerConfigs.LLM_TEXT_COMPLETE.threadCount=3
                         """);
 
         SystemTaskWorker worker =
@@ -70,7 +70,7 @@ public class TestTaskWorkerConfigBinding {
                 "HTTP override from .properties must resolve",
                 20,
                 worker.getExecutionConfig("HTTP").getSemaphoreUtil().availableSlots());
-        // Uppercase + underscores: permitCount override on the shared pool.
+        // Uppercase + underscores in the map key must also survive relaxed binding.
         assertEquals(
                 "LLM_TEXT_COMPLETE override from .properties must resolve",
                 3,

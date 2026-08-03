@@ -135,10 +135,11 @@ public class ConductorProperties {
     private int isolatedSystemTaskWorkerThreadCount = 1;
 
     /**
-     * Per-task-type overrides for thread count and permit count. Keyed by task type name (e.g.
-     * "HTTP", "LLM_TEXT_COMPLETE"). When {@code threadCount} is set the task type gets a dedicated
-     * pool; otherwise it shares the common pool. {@code permitCount} controls how many tasks of
-     * this type may be in-flight concurrently, defaulting to the effective thread count.
+     * Per-task-type worker overrides, keyed by task type name (e.g. "HTTP", "LLM_TEXT_COMPLETE"). A
+     * positive {@code threadCount} gives the task type its own dedicated pool of that many threads,
+     * which doubles as its in-flight cap: at most {@code threadCount} tasks of the type run
+     * concurrently, and the poller never pops more messages than it has free capacity for. Types
+     * without an entry share the common pool.
      *
      * <p>Example (YAML):
      *
@@ -150,21 +151,17 @@ public class ConductorProperties {
      *         threadCount: 20
      *       LLM_TEXT_COMPLETE:
      *         threadCount: 4
-     *         permitCount: 4
      * </pre>
      */
     private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
 
     public static class TaskWorkerConfig {
 
-        /** Number of dedicated threads for this task type. 0 = share the common pool. */
-        private int threadCount = 0;
-
         /**
-         * Maximum number of tasks of this type that may be in-flight at once (semaphore permits). 0
-         * = use effective thread count.
+         * Number of dedicated threads for this task type — also its maximum in-flight task count. 0
+         * = share the common pool.
          */
-        private int permitCount = 0;
+        private int threadCount = 0;
 
         public int getThreadCount() {
             return threadCount;
@@ -172,14 +169,6 @@ public class ConductorProperties {
 
         public void setThreadCount(int threadCount) {
             this.threadCount = threadCount;
-        }
-
-        public int getPermitCount() {
-            return permitCount;
-        }
-
-        public void setPermitCount(int permitCount) {
-            this.permitCount = permitCount;
         }
     }
 
