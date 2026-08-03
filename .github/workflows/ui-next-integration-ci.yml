@@ -108,6 +108,9 @@ jobs:
           E2E_COVERAGE: "true"
           # dist/ already built above — webServer only needs vite preview.
           SKIP_WEBSERVER_BUILD: "true"
+          # Forwarded into docker-compose-ui-e2e.yaml for LLM task execution;
+          # also gates the LLM "completes successfully" Playwright tests.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Generate frontend coverage report
         if: success()
