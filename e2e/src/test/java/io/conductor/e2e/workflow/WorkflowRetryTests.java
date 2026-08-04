@@ -989,13 +989,70 @@ public class WorkflowRetryTests {
     }
 
     private void awaitWorkflowStatus(String workflowId, Workflow.WorkflowStatus expected) {
-        await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () ->
-                                assertEquals(
-                                        expected,
-                                        workflowClient.getWorkflow(workflowId, false).getStatus(),
-                                        workflowId + " must reach " + expected));
+        try {
+            await().atMost(WF_AWAIT_SECS, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertEquals(
+                                            expected,
+                                            workflowClient
+                                                    .getWorkflow(workflowId, false)
+                                                    .getStatus(),
+                                            workflowId + " must reach " + expected));
+        } catch (Throwable t) {
+            dumpWorkflowTree(workflowId, "await " + expected + " TIMED OUT");
+            throw t;
+        }
+    }
+
+    /**
+     * DIAGNOSTIC (temporary): dump the full parent + child task tree so a stuck-completion timeout
+     * in CI shows exactly which task/JOIN/child is not terminal. Grep CI logs for WFDUMP.
+     */
+    private void dumpWorkflowTree(String workflowId, String label) {
+        try {
+            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+            System.out.println(
+                    "WFDUMP [" + label + "] parent=" + workflowId + " status=" + wf.getStatus());
+            for (Task t : wf.getTasks()) {
+                System.out.println(
+                        "WFDUMP   task ref="
+                                + t.getReferenceTaskName()
+                                + " type="
+                                + t.getTaskType()
+                                + " status="
+                                + t.getStatus()
+                                + " taskId="
+                                + t.getTaskId()
+                                + " subWfId="
+                                + t.getSubWorkflowId()
+                                + " reason="
+                                + t.getReasonForIncompletion());
+                if (t.getSubWorkflowId() != null) {
+                    try {
+                        Workflow child = workflowClient.getWorkflow(t.getSubWorkflowId(), true);
+                        System.out.println(
+                                "WFDUMP     child="
+                                        + t.getSubWorkflowId()
+                                        + " status="
+                                        + child.getStatus());
+                        for (Task ct : child.getTasks()) {
+                            System.out.println(
+                                    "WFDUMP       ctask ref="
+                                            + ct.getReferenceTaskName()
+                                            + " type="
+                                            + ct.getTaskType()
+                                            + " status="
+                                            + ct.getStatus());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("WFDUMP     child fetch failed: " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("WFDUMP failed for " + workflowId + ": " + e.getMessage());
+        }
     }
 
     private static final class Iter1Snapshot {
@@ -3044,12 +3101,19 @@ public class WorkflowRetryTests {
 
     private void awaitWorkflowStatus(
             String workflowId, Workflow.WorkflowStatus expected, int seconds, String message) {
-        await().atMost(seconds, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () ->
-                                assertEquals(
-                                        expected,
-                                        workflowClient.getWorkflow(workflowId, false).getStatus(),
-                                        message));
+        try {
+            await().atMost(seconds, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertEquals(
+                                            expected,
+                                            workflowClient
+                                                    .getWorkflow(workflowId, false)
+                                                    .getStatus(),
+                                            message));
+        } catch (Throwable t) {
+            dumpWorkflowTree(workflowId, message + " [await " + expected + " TIMED OUT]");
+            throw t;
+        }
     }
 }

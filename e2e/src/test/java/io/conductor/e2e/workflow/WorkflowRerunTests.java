@@ -4866,8 +4866,10 @@ public class WorkflowRerunTests {
         }
     }
 
-    /** Await the workflow reaching {@code expected} status (60s default: multi-hop sub-workflow
-     * progressions can compound several sweeper backstops under CI load). */
+    /**
+     * Await the workflow reaching {@code expected} status (60s default: multi-hop sub-workflow
+     * progressions can compound several sweeper backstops under CI load).
+     */
     private void awaitWorkflowStatus(
             String workflowId, Workflow.WorkflowStatus expected, String message) {
         awaitWorkflowStatus(workflowId, expected, 60, message);
