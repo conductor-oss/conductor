@@ -355,7 +355,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
             parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
-            executionDAOFacade.updateWorkflow(parentWorkflow);
+            // Deliberately NOT persisted yet (mirrors OrkesWorkflowExecutor): while the sibling
+            // tasks below are being repaired, the stored parent must stay terminal so any
+            // concurrent decide bounces off the terminal guard instead of evaluating a RUNNING
+            // parent whose CANCELED sibling still points at a not-yet-resumed TERMINATED child
+            // (that stale read terminated the freshly retried parent under CI load).
 
             for (TaskModel task : parentWorkflow.getTasks()) {
                 if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
@@ -403,6 +407,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
 
+            // Persist the RUNNING parent only after every sibling task above has been repaired,
+            // then decide inline (not via the decider queue) so the first evaluation of the
+            // revived parent happens on the fully repaired state — mirrors OrkesWorkflowExecutor.
+            executionDAOFacade.updateWorkflow(parentWorkflow);
+
             try {
                 WorkflowStatusListener.WorkflowEventType event =
                         WorkflowStatusListener.WorkflowEventType.valueOf(operation.toUpperCase());
@@ -411,7 +420,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 LOGGER.warn("Unknown workflow operation: {}", operation);
             }
 
-            expediteLazyWorkflowEvaluation(parentWorkflowId);
+            decide(parentWorkflowId);
 
             workflow = parentWorkflow;
         }
