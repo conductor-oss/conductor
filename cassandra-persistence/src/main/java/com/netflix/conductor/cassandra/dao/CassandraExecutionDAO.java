@@ -492,14 +492,14 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     /**
-     * No-op: Cassandra does not maintain a pending-workflows structure, so there is nothing to
-     * remove. This used to throw UnsupportedOperationException, which turned every
-     * completeWorkflow/terminateWorkflow call that hits the already-terminal branch into an HTTP
-     * 500 — the workflow write paths cannot be allowed to fail on a bookkeeping call whose state
-     * does not exist on this backend.
+     * This is a dummy implementation and this feature is not implemented for Cassandra backed
+     * Conductor
      */
     @Override
-    public void removeFromPendingWorkflow(String workflowType, String workflowId) {}
+    public void removeFromPendingWorkflow(String workflowType, String workflowId) {
+        throw new UnsupportedOperationException(
+                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
+    }
 
     @Override
     public WorkflowModel getWorkflow(String workflowId) {

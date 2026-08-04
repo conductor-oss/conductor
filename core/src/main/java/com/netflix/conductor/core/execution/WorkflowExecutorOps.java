@@ -1412,26 +1412,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     /**
-     * Re-queue every unfinished (SCHEDULED or IN_PROGRESS) JOIN in {@code parentWorkflowId} for
-     * immediate re-evaluation. Called when a fork branch's sub-workflow reaches a terminal state:
-     * the sibling JOIN may now be satisfiable, but as an async task it only re-polls on exponential
-     * backoff (Join#getEvaluationOffset, capped at maxPostponeDurationSeconds, default 3600s).
-     * Without this nudge the parent can hang until that backoff elapses after the last branch
-     * finishes. SCHEDULED matters as much as IN_PROGRESS: a JOIN stays SCHEDULED until all its
-     * branches are done (Join#execute only flips status on completion), so a JOIN recreated by
-     * retry/rerun waits out its backoff in SCHEDULED state. Mirrors {@link
+     * Re-queue every IN_PROGRESS JOIN in {@code parentWorkflowId} for immediate re-evaluation.
+     * Called when a fork branch's sub-workflow reaches a terminal state: the sibling JOIN may now
+     * be satisfiable, but as an async task it only re-polls on exponential backoff (capped at
+     * workflowOffsetTimeout, default 30s). Without this nudge the parent can hang for up to that
+     * cap after the last branch finishes before the JOIN notices. Mirrors {@link
      * #expediteLazyWorkflowEvaluation}: postpone the existing queue message to 0 if present, else
      * push a fresh one — idempotent by task id, so no duplicate queue entries.
      */
-    private void expediteUnfinishedJoinTasks(String parentWorkflowId) {
+    private void expediteInProgressJoinTasks(String parentWorkflowId) {
         WorkflowModel parentWorkflow = executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
         if (parentWorkflow == null) {
             return;
         }
         for (TaskModel joinTask : parentWorkflow.getTasks()) {
             if (!TaskType.TASK_TYPE_JOIN.equals(joinTask.getTaskType())
-                    || (joinTask.getStatus() != TaskModel.Status.IN_PROGRESS
-                            && joinTask.getStatus() != TaskModel.Status.SCHEDULED)) {
+                    || joinTask.getStatus() != TaskModel.Status.IN_PROGRESS) {
                 continue;
             }
             String queueName = QueueUtils.getQueueName(joinTask);
@@ -2515,7 +2511,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // This fork branch's sub-workflow just finished; a sibling JOIN waiting on it may now
             // be satisfiable. Nudge it off its exponential-backoff poll so the parent completes
             // promptly instead of stalling until the JOIN's next scheduled evaluation.
-            expediteUnfinishedJoinTasks(subWorkflowTask.getWorkflowInstanceId());
+            expediteInProgressJoinTasks(subWorkflowTask.getWorkflowInstanceId());
         }
     }
 

@@ -54,20 +54,6 @@ public class Join extends WorkflowSystemTask {
         this.properties = properties;
     }
 
-    /**
-     * A JOIN created by the task mappers starts life IN_PROGRESS, but retry/rerun recreate a FAILED
-     * JOIN as SCHEDULED ({@code taskToBeRescheduled}/{@code rerunWF}). The async executor invokes
-     * {@code execute()} only for IN_PROGRESS tasks and {@code start()} for SCHEDULED ones — with
-     * the default no-op start, a SCHEDULED JOIN is popped, never evaluated, and postponed forever
-     * (decide() does not evaluate async JOINs either), leaving the parent RUNNING indefinitely
-     * after all branches complete. Treat start as the first evaluation so a rescheduled JOIN can
-     * complete.
-     */
-    @Override
-    public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        execute(workflow, task, workflowExecutor);
-    }
-
     @Override
     @SuppressWarnings("unchecked")
     public boolean execute(
