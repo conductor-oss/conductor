@@ -6,10 +6,6 @@ services:
       - conductor.app.ownerEmailMandatory=false
     image: conductor:server
     container_name: conductor-server
-    # Cassandra can pass its healthcheck and still drop connections moments later on a loaded
-    # runner (512M heap); without a restart policy one boot-time "session is closed" kills the
-    # whole e2e job even though a retry would boot fine.
-    restart: on-failure:3
     build:
       context: ../
       dockerfile: docker/server/Dockerfile

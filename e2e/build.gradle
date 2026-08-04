@@ -17,15 +17,7 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform {
-        // engine-gap: tests that pin behavior conductor-oss does not implement yet (see the
-        // tagged tests for the specific gap each one documents). They stay enabled and
-        // compilable, but are excluded from the blocking run so the pipeline reflects
-        // regressions, not known gaps. Run them with: ./gradlew :conductor-e2e:test -PrunE2E -PincludeEngineGaps
-        if (!project.hasProperty('includeEngineGaps')) {
-            excludeTags 'engine-gap'
-        }
-    }
+    useJUnitPlatform()
     maxParallelForks = 4
     minHeapSize = '512m'
     maxHeapSize = '2g'

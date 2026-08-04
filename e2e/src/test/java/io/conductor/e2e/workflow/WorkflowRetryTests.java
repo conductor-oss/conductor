@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -1528,12 +1527,7 @@ public class WorkflowRetryTests {
      * Same shape, retry WITHOUT the resume flag — taskToBeRescheduled nulls the SUB_WORKFLOW
      * siblings' subWorkflowId so each FAILED/CANCELED dynamic branch gets a fresh child.
      */
-    // engine-gap: the retried JOIN is recreated SCHEDULED (taskToBeRescheduled) and its queue
-    // message can be lost under load, after which nothing re-evaluates it and the parent hangs
-    // RUNNING (WFDUMP evidence: CI run 30884774592). Engine fix: expedite SCHEDULED sibling
-    // JOINs in WorkflowExecutorOps. Un-tag once that fix is validated by the e2e census.
     @Test
-    @Tag("engine-gap")
     @DisplayName(
             "Retry without resumeSubworkflowTasks on FORK_JOIN_DYNAMIC: fresh children for unsuccessful branches, COMPLETED branch untouched")
     public void
