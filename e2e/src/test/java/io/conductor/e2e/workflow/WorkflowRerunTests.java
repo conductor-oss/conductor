@@ -1589,7 +1589,7 @@ public class WorkflowRerunTests {
             rerunRequest.setReRunFromTaskId(innerFailedTaskId);
             workflowClient.rerunWorkflow(workflowId, rerunRequest);
 
-            await().atMost(30, TimeUnit.SECONDS)
+            await().atMost(90, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow wf = workflowClient.getWorkflow(workflowId, true);
@@ -4327,7 +4327,7 @@ public class WorkflowRerunTests {
                     TaskResult.Status.FAILED);
 
             awaitWorkflowStatus(
-                    workflowId, Workflow.WorkflowStatus.FAILED, 10, "Parent should be FAILED");
+                    workflowId, Workflow.WorkflowStatus.FAILED, 60, "Parent should be FAILED");
 
             // === Direct rerun on the SUB_WORKFLOW task in the parent ===
             // Rerun semantics: a brand-new child workflow is spawned. The previous child
@@ -4520,7 +4520,7 @@ public class WorkflowRerunTests {
                         activeCancelledChildId, CANCELLED_INNER, "cancelled inner task not active"),
                 TaskResult.Status.COMPLETED);
         awaitWorkflowStatus(
-                parentId, Workflow.WorkflowStatus.COMPLETED, 20, "Parent should reach COMPLETED");
+                parentId, Workflow.WorkflowStatus.COMPLETED, 60, "Parent should reach COMPLETED");
     }
 
     /**
@@ -4866,10 +4866,11 @@ public class WorkflowRerunTests {
         }
     }
 
-    /** Await the workflow reaching {@code expected} status (15s default). */
+    /** Await the workflow reaching {@code expected} status (60s default: multi-hop sub-workflow
+     * progressions can compound several sweeper backstops under CI load). */
     private void awaitWorkflowStatus(
             String workflowId, Workflow.WorkflowStatus expected, String message) {
-        awaitWorkflowStatus(workflowId, expected, 15, message);
+        awaitWorkflowStatus(workflowId, expected, 60, message);
     }
 
     /** Await the workflow reaching {@code expected} status within {@code seconds}. */
