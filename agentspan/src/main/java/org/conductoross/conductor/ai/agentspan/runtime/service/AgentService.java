@@ -1218,6 +1218,7 @@ public class AgentService {
     /** Open an SSE stream for an agent execution. Replays missed events on reconnect. */
     public SseEmitter openStream(String executionId, Long lastEventId) {
         log.info("Opening SSE stream for execution {} (lastEventId={})", executionId, lastEventId);
+        workflowService.getExecutionStatus(executionId, false);
         return streamRegistry.register(executionId, lastEventId);
     }
 
