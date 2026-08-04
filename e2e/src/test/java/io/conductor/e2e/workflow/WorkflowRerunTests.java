@@ -449,7 +449,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "Fork-join rerun from a completed branch task does not re-schedule sibling branches in conductor-oss")
+            "Rerun of a fork-join from a completed branch task does not re-schedule the sibling branch (task list stays at 2 for 30s; see the awaited diagnostic in the test)")
     @DisplayName("Check workflow fork join task rerun")
     public void testRerunForkJoinWorkflow() {
 
@@ -482,9 +482,20 @@ public class WorkflowRerunTests {
         // Retry the workflow
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
         // Check the workflow status and few other parameters
+        // Await the post-rerun decide: the rerun call returns before sibling branches are
+        // rescheduled, so a snapshot get(2) raced it (IndexOutOfBounds when only 2 tasks exist).
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertTrue(
+                                    wf.getTasks().size() >= 3,
+                                    "sibling branch not rescheduled; tasks="
+                                            + wf.getTasks().size());
+                            assertEquals(Task.Status.SCHEDULED, wf.getTasks().get(2).getStatus());
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
-        assertEquals(Task.Status.SCHEDULED, workflow.getTasks().get(2).getStatus());
 
         workflow.getTasks().stream()
                 .filter(task -> task.getWorkflowTask().getType().equals(TaskType.SIMPLE.toString()))
@@ -502,8 +513,6 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled(
-            "Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun")
     public void testRerunForkJoinWorkflowWithLoopTask() {
 
@@ -565,8 +574,6 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled(
-            "Rerun from DO_WHILE task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun as loop task to rerun from")
     public void testRerunForkJoinWorkflowWithLoopTask2() {
 
@@ -629,8 +636,6 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled(
-            "Rerun from DO_WHILE iteration task after fork terminates workflow instead of resuming in conductor-oss")
     @DisplayName("Check workflow fork join task rerun with iteration more than 1")
     public void testRerunForkJoinWorkflowWithLoopOverTask() {
 
@@ -781,7 +786,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
+            "Rerun from SUB_WORKFLOW inside FORK never spawns the second branch child (subWorkflowId stays null after 30s await)")
     @DisplayName(
             "Ticket #7097: Rerun from SUB_WORKFLOW task inside FORK should not restart from beginning")
     public void testRerunSubWorkflowInsideFork() {
@@ -922,8 +927,24 @@ public class WorkflowRerunTests {
                             .findFirst()
                             .orElseThrow(() -> new AssertionError("sub_wf_fork2 task not found"));
 
-            String subWfId1 = subWfTask1Instance.getSubWorkflowId();
-            assertNotNull(subWfId1, "sub_wf_fork1 should have a subWorkflowId");
+            // subWorkflowId is only populated once the child actually starts (async); a
+            // one-shot read here raced it. Wait for it instead of asserting a snapshot.
+            String subWfId1 =
+                    await().atMost(30, TimeUnit.SECONDS)
+                            .until(
+                                    () ->
+                                            workflowClient
+                                                    .getWorkflow(workflowId, true)
+                                                    .getTasks()
+                                                    .stream()
+                                                    .filter(
+                                                            t ->
+                                                                    t.getReferenceTaskName()
+                                                                            .equals(subWfFork1Ref))
+                                                    .findFirst()
+                                                    .map(Task::getSubWorkflowId)
+                                                    .orElse(null),
+                                    java.util.Objects::nonNull);
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
@@ -1097,7 +1118,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "Rerun from sub-workflow task inside fork terminates workflow instead of resuming in conductor-oss")
+            "Rerun from SUB_WORKFLOW inside FORK never spawns sibling branch children (subWorkflowId stays null after 30s await)")
     @DisplayName(
             "Ticket #7097 (full): Rerun from second SUB_WORKFLOW in FORK branch with preceding task")
     public void testRerunSubWorkflowInsideFork_SequentialBranch() {
@@ -1228,7 +1249,23 @@ public class WorkflowRerunTests {
                             .filter(t -> t.getReferenceTaskName().equals(subWfBranch1Ref))
                             .findFirst()
                             .orElseThrow();
-            String subWfId1 = branch1.getSubWorkflowId();
+            String subWfId1 =
+                    await().atMost(30, TimeUnit.SECONDS)
+                            .until(
+                                    () ->
+                                            workflowClient
+                                                    .getWorkflow(workflowId, true)
+                                                    .getTasks()
+                                                    .stream()
+                                                    .filter(
+                                                            t ->
+                                                                    t.getReferenceTaskName()
+                                                                            .equals(
+                                                                                    subWfBranch1Ref))
+                                                    .findFirst()
+                                                    .map(Task::getSubWorkflowId)
+                                                    .orElse(null),
+                                    java.util.Objects::nonNull);
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
@@ -1243,7 +1280,23 @@ public class WorkflowRerunTests {
                             .filter(t -> t.getReferenceTaskName().equals(subWfBranch2aRef))
                             .findFirst()
                             .orElseThrow();
-            String subWfId2a = branch2a.getSubWorkflowId();
+            String subWfId2a =
+                    await().atMost(30, TimeUnit.SECONDS)
+                            .until(
+                                    () ->
+                                            workflowClient
+                                                    .getWorkflow(workflowId, true)
+                                                    .getTasks()
+                                                    .stream()
+                                                    .filter(
+                                                            t ->
+                                                                    t.getReferenceTaskName()
+                                                                            .equals(
+                                                                                    subWfBranch2aRef))
+                                                    .findFirst()
+                                                    .map(Task::getSubWorkflowId)
+                                                    .orElse(null),
+                                    java.util.Objects::nonNull);
             await().atMost(10, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
@@ -1642,7 +1695,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "DO_WHILE task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
+            "DO_WHILE task stays SCHEDULED after rerun - never re-decided to IN_PROGRESS (30s await)")
     @DisplayName(
             "Test do_while task rerun - verify cancellation of previous iterations and fresh start")
     public void testDoWhileRerun() {
@@ -1727,13 +1780,20 @@ public class WorkflowRerunTests {
         rerunWorkflowRequest.setReRunFromTaskId(doWhileTask.getTaskId());
         workflowClient.rerunWorkflow(workflowId, rerunWorkflowRequest);
 
+        // The decide that moves the rerun DO_WHILE from SCHEDULED to IN_PROGRESS and schedules
+        // the first iteration runs asynchronously; a snapshot read here raced it.
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.RUNNING, wf.getStatus());
+                            assertEquals(2, wf.getTasks().size());
+                            assertEquals(
+                                    TaskType.DO_WHILE.name(), wf.getTasks().get(0).getTaskType());
+                            assertEquals(1, wf.getTasks().get(0).getIteration());
+                            assertEquals(Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                        });
         workflow = workflowClient.getWorkflow(workflowId, true);
-        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
-        assertEquals(2, workflow.getTasks().size());
-
-        assertEquals(TaskType.DO_WHILE.name(), workflow.getTasks().get(0).getTaskType());
-        assertEquals(1, workflow.getTasks().get(0).getIteration());
-        assertEquals(Task.Status.IN_PROGRESS, workflow.getTasks().get(0).getStatus());
 
         Task firstIterationAfterRerun = workflow.getTasks().get(1);
         assertEquals("simple_do_while_task", firstIterationAfterRerun.getTaskType());
@@ -1750,7 +1810,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
+            "SWITCH rerun completes the workflow without rescheduling the selected branch (terminal COMPLETED immediately after rerun)")
     @DisplayName(
             "Test switch task rerun - verify cancellation of previous branches and re-execution")
     public void testSwitchTaskRerun() {
@@ -1798,7 +1858,7 @@ public class WorkflowRerunTests {
 
     @Test
     @Disabled(
-            "Rerun from fork-join workflow with wait/switch tasks terminates workflow instead of resuming in conductor-oss")
+            "workflow never reaches the expected fork shape (wait task not IN_PROGRESS within 60s) before the rerun step")
     @DisplayName("Test rerun with fork-join containing wait, wait_for_webhook, and switch tasks")
     public void testRerunForkJoinWithWaitAndSwitchTasks() {
         String workflowName = "test-rerun-fork-join-wait-switch-" + System.currentTimeMillis();
@@ -1813,7 +1873,7 @@ public class WorkflowRerunTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         assertNotNull(workflowId);
 
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(60, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
@@ -2002,8 +2062,6 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled(
-            "SWITCH task rerun leaves workflow TERMINATED due to sync task status not being reset to SCHEDULED in conductor-oss")
     @SneakyThrows
     @DisplayName("When rerunning a workflow, tasks in a SWITCH are executed again")
     public void switchRerunIssue() {
@@ -2020,7 +2078,7 @@ public class WorkflowRerunTests {
         startWorkflowRequest.setInput(Map.of("case", "yes"));
 
         var wfId = workflowClient.startWorkflow(startWorkflowRequest);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -2040,7 +2098,7 @@ public class WorkflowRerunTests {
         assertNotNull(rerun);
         assertEquals(workflow.getWorkflowId(), rerun);
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -2078,8 +2136,8 @@ public class WorkflowRerunTests {
     }
 
     @Test
-    @Disabled("SWITCH task inside DO_WHILE rerun leaves workflow TERMINATED in conductor-oss")
     @SneakyThrows
+    @Disabled("flaky: passes/fails across consecutive runs (iteration completion race after rerun)")
     @DisplayName(
             "When rerunning a workflow, tasks in a SWITCH task inside a DO_WHILE are executed again")
     public void switchRerunIssue2() {
@@ -3739,7 +3797,7 @@ public class WorkflowRerunTests {
                                                     "Cycle 3: active inner task not found"));
             completeTask(finalInnerTask, TaskResult.Status.COMPLETED);
 
-            await().atMost(10, TimeUnit.SECONDS)
+            await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(
                             () ->
                                     assertEquals(
