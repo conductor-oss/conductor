@@ -595,8 +595,8 @@ public class LLMHelperChatCompleteTest {
     // =================================================================
 
     /**
-     * Spring AI 1.1.x AssistantMessage.getMedia() can return null when no media was set.
-     * The helper must not NPE on the media-collection loop.
+     * Spring AI 1.1.x AssistantMessage.getMedia() can return null when no media was set. The helper
+     * must not NPE on the media-collection loop.
      */
     @Test
     void chatComplete_nullMediaFromSpringAI_doesNotNPE() {
