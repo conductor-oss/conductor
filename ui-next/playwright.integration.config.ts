@@ -31,10 +31,10 @@ export default defineConfig({
   testDir: "./e2e/integration",
 
   // Integration tests modify shared state, so run serially within each file.
-  // Files themselves can still run in parallel (fullyParallel: false means
-  // tests within a file run serially).
+  // Files themselves run in parallel across workers (fullyParallel: false
+  // means tests within a single file run serially).
   fullyParallel: false,
-  workers: process.env.CI ? 1 : 2,
+  workers: 2,
 
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
