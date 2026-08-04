@@ -104,7 +104,7 @@ export const LLMInstructionsWithPromptPicker = ({
     <Grid container spacing={3} sx={{ width: "100%" }}>
       {/* Primary: AI Prompt picker */}
       <Grid size={12}>
-        <MuiTypography sx={{ opacity: 0.5, mb: 2 }}>
+        <MuiTypography sx={{ opacity: 0.5, mb: 3 }}>
           Select a saved AI Prompt or{" "}
           <Link
             sx={{ fontWeight: 400 }}
@@ -120,7 +120,7 @@ export const LLMInstructionsWithPromptPicker = ({
           onChange={handleSelectPrompt}
           value={isUsingPrompt ? instructions : ""}
           otherOptions={promptOptions}
-          label="AI Prompt"
+          label="Prompt Template"
           placeholder="Select a saved AI Prompt..."
           onFocus={() =>
             actor.send({

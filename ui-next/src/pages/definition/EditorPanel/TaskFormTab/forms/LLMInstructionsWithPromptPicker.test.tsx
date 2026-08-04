@@ -103,7 +103,7 @@ describe("LLMInstructionsWithPromptPicker", () => {
   it("renders the AI Prompt picker and custom instructions toggle", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
 
-    expect(screen.getByLabelText("AI Prompt")).toBeInTheDocument();
+    expect(screen.getByLabelText("Prompt Template")).toBeInTheDocument();
     expect(screen.getByText("Write custom instructions")).toBeInTheDocument();
   });
 
@@ -168,7 +168,7 @@ describe("LLMInstructionsWithPromptPicker", () => {
   it("shows the AI Prompt picker with empty value when no prompt is selected", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
 
-    const picker = screen.getByLabelText("AI Prompt");
+    const picker = screen.getByLabelText("Prompt Template");
     expect(picker).toHaveValue("");
     expect(picker).toHaveAttribute(
       "placeholder",
