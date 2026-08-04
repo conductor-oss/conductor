@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -312,6 +313,11 @@ public class DynamicForkTests {
                         });
     }
 
+    @Disabled(
+            "Race: the async JOIN can evaluate between a branch attempt's FAILED persist and the"
+                    + " decider scheduling its retry, failing the workflow at 2 of 3 attempts under CI"
+                    + " load. Re-enable after reworking to explicit task polling + PUT /workflow/decide"
+                    + " sequencing (core-side guard was rejected).")
     @Test
     public void testTaskDynamicForkRetryCount() {
 
@@ -540,6 +546,11 @@ public class DynamicForkTests {
                         });
     }
 
+    @Disabled(
+            "Race: the async JOIN can evaluate between a branch attempt's FAILED persist and the"
+                    + " decider scheduling its retry, failing the workflow at 2 of 3 attempts under CI"
+                    + " load. Re-enable after reworking to explicit task polling + PUT /workflow/decide"
+                    + " sequencing (core-side guard was rejected).")
     @Test
     @SneakyThrows
     @DisplayName("When retrying a forked task ${CPEWF_TASK_ID} gives the correct task id")

@@ -73,11 +73,7 @@ public class Join extends WorkflowSystemTask {
         boolean allTasksTerminal =
                 joinOn.stream()
                         .map(workflow::getTaskByRefName)
-                        .allMatch(
-                                t ->
-                                        t != null
-                                                && t.getStatus().isTerminal()
-                                                && !isRetryDecisionPending(t));
+                        .allMatch(t -> t != null && t.getStatus().isTerminal());
 
         for (String joinOnRef : joinOn) {
             TaskModel forkedTask = workflow.getTaskByRefName(joinOnRef);
@@ -109,7 +105,6 @@ public class Join extends WorkflowSystemTask {
             var isJoinFailure =
                     !taskStatus.isSuccessful()
                             && !forkedTask.getWorkflowTask().isOptional()
-                            && !isRetryDecisionPending(forkedTask)
                             && (!forkedTask.getWorkflowTask().isPermissive() || allTasksTerminal);
             if (isJoinFailure) {
                 final String failureReasons =
@@ -151,25 +146,6 @@ public class Join extends WorkflowSystemTask {
 
         // Task execution not complete, waiting on more tasks to reach terminal state.
         return false;
-    }
-
-    /**
-     * True while a terminal-but-retriable branch failure is awaiting the decider's retry verdict.
-     * The async JOIN evaluation races the decider: after an attempt fails, decide either schedules
-     * a retry (old attempt gets {@code retried=true}, a fresh attempt becomes the ref's latest
-     * task), marks the task {@code executed=true} when it will not retry (optional/permissive), or
-     * fails the whole workflow when mandatory retries are exhausted. Until one of those happens, a
-     * FAILED/TIMED_OUT attempt with {@code retried=false, executed=false} means the retry decision
-     * is still pending — failing the JOIN here would kill the workflow although a retry is owed
-     * (chronic FORK retry flake under CI load).
-     */
-    private static boolean isRetryDecisionPending(TaskModel forkedTask) {
-        TaskModel.Status status = forkedTask.getStatus();
-        return status.isTerminal()
-                && !status.isSuccessful()
-                && status.isRetriable()
-                && !forkedTask.isRetried()
-                && !forkedTask.isExecuted();
     }
 
     private static boolean isAgentExecution(WorkflowModel workflow) {
