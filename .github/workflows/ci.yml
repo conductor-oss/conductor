@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       e2e_profiles:
-        description: 'E2E profiles to run in addition to redis-es7 (which always runs): "all", "none", or a comma separated subset of redis-es8, postgres, mysql, redis-os3, cassandra-es7'
+        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, redis-os3'
         required: false
         default: all
         type: string
@@ -370,14 +370,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          # redis-es7 runs on every trigger, so every push and pull request gets one full
+          # redis-es8 runs on every trigger, so every push and pull request gets one full
           # end-to-end run. It is listed first in the matrix.
-          always='[{"name":"redis-es7","script":"./e2e/run_tests-redis-es7.sh"}]'
-          optional='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"},
-                     {"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
+          # redis-es7 and cassandra-es7 are disabled: ES7 coverage is superseded by the
+          # redis-es8 flavor and cassandra support is partial. Re-enable by adding them back
+          # to the optional list (scripts remain in e2e/).
+          always='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]'
+          optional='[{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
                      {"name":"mysql","script":"./e2e/run_tests-mysql.sh"},
-                     {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"},
-                     {"name":"cassandra-es7","script":"./e2e/run_tests-cassandra-es7.sh"}]'
+                     {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"}]'
 
           case "$EVENT_NAME" in
             workflow_dispatch) selection="${E2E_PROFILES:-all}" ;;
@@ -389,13 +390,13 @@ jobs:
             all)  extra="$optional" ;;
             none) extra='[]' ;;
             *)
-              # Comma separated subset, e.g. "mysql,postgres". redis-es7 is always added.
+              # Comma separated subset, e.g. "mysql,postgres". redis-es8 is always added.
               unknown=$(jq -rn --argjson optional "$optional" --arg sel "$selection" '
                 ($sel | split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))) as $want
-                | (($optional | map(.name)) + ["redis-es7"]) as $known
+                | (($optional | map(.name)) + ["redis-es8"]) as $known
                 | [$want[] | select(. as $n | ($known | any(. == $n)) | not)] | join(", ")')
               if [ -n "$unknown" ]; then
-                echo "::error::Unknown e2e profile(s): $unknown. Valid values: all, none, redis-es7, $(jq -r --argjson o "$optional" -n '$o | map(.name) | join(", ")')"
+                echo "::error::Unknown e2e profile(s): $unknown. Valid values: all, none, redis-es8, $(jq -r --argjson o "$optional" -n '$o | map(.name) | join(", ")')"
                 exit 1
               fi
               extra=$(jq -c --arg sel "$selection" '
