@@ -371,8 +371,7 @@ jobs:
           set -euo pipefail
 
           # redis-es7 runs on every trigger, so every push and pull request gets one full
-          # end-to-end run. It is listed first because the matrix runs sequentially
-          # (max-parallel: 1), so it is also the first to report.
+          # end-to-end run. It is listed first in the matrix.
           always='[{"name":"redis-es7","script":"./e2e/run_tests-redis-es7.sh"}]'
           optional='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"},
                      {"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
@@ -418,8 +417,8 @@ jobs:
       checks: write
     strategy:
       fail-fast: false
-      # One backend at a time, in the order generate-e2e-matrix lists them (redis-es7 first).
-      max-parallel: 1
+      # All backends in parallel — each matrix job gets its own runner VM, so a full
+      # 6-flavor matrix completes in ~15 minutes instead of ~90 sequential.
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
