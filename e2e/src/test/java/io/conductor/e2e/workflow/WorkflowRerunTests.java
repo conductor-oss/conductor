@@ -4847,8 +4847,6 @@ public class WorkflowRerunTests {
                             + wf.getStatus()
                             + " reason="
                             + wf.getReasonForIncompletion()
-                            + " failedTaskId="
-                            + wf.getFailedTaskId()
                             + " failedRefs="
                             + wf.getFailedReferenceTaskNames());
             for (Task t : wf.getTasks()) {
