@@ -5350,10 +5350,20 @@ public class WorkflowRerunTests {
                         });
         workflow = workflowClient.getWorkflow(workflowId, true);
         Task wait_task =
-                workflow.getTasks().stream()
-                        .filter(t -> "WAIT".equals(t.getTaskType()) && t.getIteration() == 1)
-                        .findFirst()
-                        .orElseThrow();
+                await().atMost(30, TimeUnit.SECONDS)
+                        .until(
+                                () ->
+                                        workflowClient
+                                                .getWorkflow(workflowId, true)
+                                                .getTasks()
+                                                .stream()
+                                                .filter(
+                                                        t ->
+                                                                "WAIT".equals(t.getTaskType())
+                                                                        && t.getIteration() == 1)
+                                                .findFirst()
+                                                .orElse(null),
+                                java.util.Objects::nonNull);
         completeTask(wait_task, TaskResult.Status.COMPLETED);
 
         workflow = workflowClient.getWorkflow(workflowId, true);
@@ -5373,24 +5383,46 @@ public class WorkflowRerunTests {
                                                                             == Task.Status
                                                                                     .COMPLETED));
                         });
-        workflow = workflowClient.getWorkflow(workflowId, true);
+        // the iteration-2 WAIT task appears asynchronously - await it instead of a
+        // one-shot read (raced under CI load)
         wait_task =
-                workflow.getTasks().stream()
-                        .filter(t -> "WAIT".equals(t.getTaskType()) && t.getIteration() == 2)
-                        .findFirst()
-                        .orElseThrow();
+                await().atMost(30, TimeUnit.SECONDS)
+                        .until(
+                                () ->
+                                        workflowClient
+                                                .getWorkflow(workflowId, true)
+                                                .getTasks()
+                                                .stream()
+                                                .filter(
+                                                        t ->
+                                                                "WAIT".equals(t.getTaskType())
+                                                                        && t.getIteration() == 2)
+                                                .findFirst()
+                                                .orElse(null),
+                                java.util.Objects::nonNull);
         completeTask(wait_task, TaskResult.Status.COMPLETED);
         workflow = workflowClient.getWorkflow(workflowId, true);
 
         // Get the switch task from third iteration for rerun
         Task switchTask3 =
-                workflow.getTasks().stream()
-                        .filter(
-                                t ->
-                                        TaskType.SWITCH.name().equals(t.getTaskType())
-                                                && t.getIteration() == 2)
-                        .findFirst()
-                        .orElseThrow();
+                await().atMost(30, TimeUnit.SECONDS)
+                        .until(
+                                () ->
+                                        workflowClient
+                                                .getWorkflow(workflowId, true)
+                                                .getTasks()
+                                                .stream()
+                                                .filter(
+                                                        t ->
+                                                                TaskType.SWITCH
+                                                                                .name()
+                                                                                .equals(
+                                                                                        t
+                                                                                                .getTaskType())
+                                                                        && t.getIteration() == 2)
+                                                .findFirst()
+                                                .orElse(null),
+                                java.util.Objects::nonNull);
 
         // Rerun from third iteration switch task with different input to trigger case 'b'
         RerunWorkflowRequest rerunWorkflowRequest = new RerunWorkflowRequest();
