@@ -985,7 +985,7 @@ function buildTurnNodes(
       modelName: sub.model,
       sublabel:
         agentValuePreview(sub.output, 55) ?? sub.failureReason?.slice(0, 55),
-      strategy: turn.strategy,
+      strategy: sub.strategy,
       ts: toTS(sub.status),
       subAgentRun: sub,
     });
@@ -1288,7 +1288,7 @@ function buildTurnNodes(
           sublabel:
             agentValuePreview(sub.output, 55) ??
             sub.failureReason?.slice(0, 55),
-          strategy: turn.strategy,
+          strategy: sub.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
         },
@@ -1325,7 +1325,7 @@ function buildTurnNodes(
           sublabel:
             agentValuePreview(sub.output, 55) ??
             sub.failureReason?.slice(0, 55),
-          strategy: turn.strategy,
+          strategy: sub.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
         });
