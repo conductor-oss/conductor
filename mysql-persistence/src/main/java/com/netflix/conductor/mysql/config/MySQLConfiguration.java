@@ -35,6 +35,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
@@ -75,13 +76,13 @@ public class MySQLConfiguration {
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource,
-            MySQLQueueDAO queueDAO) {
+            QueueDAO queueDAO) {
         return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MySQLQueueDAO mySqlQueueDAO(
+    public QueueDAO mySqlQueueDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource) {
