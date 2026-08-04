@@ -930,6 +930,13 @@ class ConductorAgentEndToEndTest {
         task.setName("AGENT");
         task.setTaskReferenceName("callAgent");
         task.setType("AGENT");
+        // AI task definitions ship with retryCount 3 and LINEAR_BACKOFF at 2s (AIModelTaskMapper),
+        // so a failing AGENT task was retried after 2s, 4s and 6s - with each retry starting a fresh
+        // agent execution - before the workflow failed. None of the tests here assert retry
+        // behaviour; they assert how a failure surfaces on the AGENT task. Retry on the workflow task
+        // takes precedence over the task definition (DeciderService.retry), so this makes the first
+        // failure terminal without touching the shared task definition or production defaults.
+        task.setRetryCount(0);
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("agentType", "conductor");
         taskInput.put("name", agentName);
