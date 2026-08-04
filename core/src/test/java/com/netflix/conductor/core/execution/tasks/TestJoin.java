@@ -104,8 +104,10 @@ public class TestJoin {
 
     @Test
     public void testJoinFailsWhenMandatoryTaskFails() {
-        // Mandatory task fails
+        // Mandatory task fails; executed=true models the decider having already declined a
+        // retry (until then the failure is a pending retry decision and the join must wait).
         var task1 = createTask("task1", TaskModel.Status.FAILED, false, false);
+        task1.setExecuted(true);
         // Optional task completes with errors
         var task2 = createTask("task2", TaskModel.Status.COMPLETED_WITH_ERRORS, true, false);
 
@@ -118,6 +120,53 @@ public class TestJoin {
                 "Join task status should be FAILED when a mandatory task fails",
                 TaskModel.Status.FAILED,
                 wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testJoinWaitsWhileFailedTaskRetryDecisionIsPending() {
+        // FAILED with retried=false and executed=false: the decider has not yet decided whether
+        // this attempt will be retried — the async JOIN evaluation must not fail the join in
+        // that window (it would kill the workflow although a retry is owed).
+        var task1 = createTask("task1", TaskModel.Status.FAILED, false, false);
+        var task2 = createTask("task2", TaskModel.Status.COMPLETED, false, false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
+
+        var join = new Join(properties);
+        var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
+        assertFalse("Join must keep waiting while the retry decision is pending", result);
+        assertNotEquals(TaskModel.Status.FAILED, wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testJoinEvaluatesLatestAttemptAfterRetry() {
+        // Old FAILED attempt marked retried=true plus a fresh COMPLETED attempt with the same
+        // ref name: the join evaluates the latest attempt and completes.
+        var oldAttempt = createTask("task1", TaskModel.Status.FAILED, false, false);
+        oldAttempt.setRetried(true);
+        var retryAttempt = createTask("task1", TaskModel.Status.COMPLETED, false, false);
+        var task2 = createTask("task2", TaskModel.Status.COMPLETED, false, false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(oldAttempt, retryAttempt, task2));
+
+        var join = new Join(properties);
+        var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
+        assertTrue(result);
+        assertEquals(TaskModel.Status.COMPLETED, wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testJoinFailsImmediatelyOnNonRetriableFailure() {
+        // FAILED_WITH_TERMINAL_ERROR can never be retried — no reason to wait for the decider.
+        var task1 = createTask("task1", TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, false, false);
+        var task2 = createTask("task2", TaskModel.Status.COMPLETED, false, false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
+
+        var join = new Join(properties);
+        var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
+        assertTrue(result);
+        assertEquals(TaskModel.Status.FAILED, wfJoinPair.getRight().getStatus());
     }
 
     @Test
@@ -141,8 +190,10 @@ public class TestJoin {
     @Test
     public void testJoinAggregatesFailureReasonsCorrectly() {
         var task1 = createTask("task1", TaskModel.Status.FAILED, false, false);
+        task1.setExecuted(true);
         task1.setReasonForIncompletion("Task1 failed");
         var task2 = createTask("task2", TaskModel.Status.FAILED, false, false);
+        task2.setExecuted(true);
         task2.setReasonForIncompletion("Task2 failed");
 
         var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
@@ -165,8 +216,9 @@ public class TestJoin {
 
     @Test
     public void testJoinWaitsForAllTasksBeforeFailingDueToPermissiveTaskFailure() {
-        // Task 1 is a permissive task that fails.
+        // Task 1 is a permissive task that fails (decider already processed it: executed=true).
         var task1 = createTask("task1", TaskModel.Status.FAILED, false, true);
+        task1.setExecuted(true);
         // Task 2 is a non-permissive task that eventually succeeds.
         var task2 =
                 createTask(
