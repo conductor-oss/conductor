@@ -591,6 +591,33 @@ public class LLMHelperChatCompleteTest {
     }
 
     // =================================================================
+    // chatComplete — null media from Spring AI (issue-1416)
+    // =================================================================
+
+    /**
+     * Spring AI 1.1.x AssistantMessage.getMedia() can return null when no media was set.
+     * The helper must not NPE on the media-collection loop.
+     */
+    @Test
+    void chatComplete_nullMediaFromSpringAI_doesNotNPE() {
+        // Build an AssistantMessage whose getMedia() returns null (no-arg constructor default).
+        AssistantMessage assistant = new AssistantMessage("hello from self-hosted model");
+
+        StagedChatModel model = new StagedChatModel();
+        model.stage(responseOf(assistant, "stop", metaWithUsage(5, 10, 15)));
+
+        ChatCompletion in = new ChatCompletion();
+        in.setLlmProvider("fake");
+        in.setModel("self-hosted/llama3");
+        in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "Which host are you?"));
+
+        LLMResponse out =
+                helper.chatComplete(task("t17"), new FakeAIModel(model), in, null, x -> {});
+        assertEquals("hello from self-hosted model", out.getResult());
+        assertEquals("STOP", out.getFinishReason());
+    }
+
+    // =================================================================
     // generateEmbeddings — passthrough to the underlying AIModel
     // =================================================================
 

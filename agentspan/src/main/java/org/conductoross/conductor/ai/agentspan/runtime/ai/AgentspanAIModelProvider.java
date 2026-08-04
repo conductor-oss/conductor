@@ -199,15 +199,18 @@ public class AgentspanAIModelProvider extends AIModelProvider {
     }
 
     /**
-     * Resolve the credential-store base URL for a provider (e.g. {@code OLLAMA_BASE_URL} for
-     * ollama), or null when none is stored. Used by the provider-status endpoint — the server-side
-     * source of truth that doctor and the UI query.
+     * Resolve the configured base URL for a provider. Checks the credential store first, then
+     * falls back to {@link System#getenv} so that {@code OPENAI_BASE_URL} (and equivalents) work
+     * in standalone OSS mode. Used by the provider-status endpoint — the server-side source of
+     * truth that doctor and the UI query.
      */
     public String resolveConfiguredBaseUrl(String provider) {
         String envVarName = PROVIDER_TO_BASE_URL_ENV.get(provider.toLowerCase());
         if (envVarName == null) return null;
         String value = resolveUserCredential(envVarName);
-        return (value != null && !value.isBlank()) ? value : null;
+        if (value != null && !value.isBlank()) return value;
+        String sysVal = getSystemEnv(envVarName);
+        return (sysVal != null && !sysVal.isBlank()) ? sysVal : null;
     }
 
     /** Resolve any named credential from the (global) credential store. */
@@ -221,11 +224,11 @@ public class AgentspanAIModelProvider extends AIModelProvider {
     }
 
     /**
-     * Resolve base URL: per-agent (from task input) &gt; credential store &gt; null.
+     * Resolve base URL: per-agent (from task input) &gt; credential store &gt; System.getenv()
+     * &gt; null.
      *
-     * <p>The credential store is the single source of truth. Env-var-set base URLs are seeded into
-     * the store at startup by the host's credential env-seeder, so {@code System.getenv()} is never
-     * read directly here.
+     * <p>The System.getenv() fallback covers standalone OSS mode where no credential store
+     * env-seeder is active, ensuring OPENAI_BASE_URL and similar variables take effect.
      */
     @SuppressWarnings("unchecked")
     private String resolveBaseUrl(String provider) {
@@ -248,16 +251,29 @@ public class AgentspanAIModelProvider extends AIModelProvider {
 
         // 2. Credential store — covers both env-var-seeded credentials (populated at startup
         //    by the host's env-seeder) and credentials added manually via the UI.
-        //    Direct System.getenv() is intentionally not used here: env vars are always
-        //    seeded into the credential store at startup, so the store is the single
-        //    source of truth and avoids bypassing external credential stores.
         String credVal = resolveUserCredential(envVarName);
         if (credVal != null && !credVal.isBlank()) {
             log.debug("Using credential {} for provider '{}': {}", envVarName, provider, credVal);
             return credVal;
         }
 
+        // 3. Direct System.getenv() fallback for standalone OSS mode where no credential
+        //    store / env-seeder is wired up.  Without this, OPENAI_BASE_URL (and similar)
+        //    are silently ignored: the agent appears to work but routes to the real provider
+        //    instead of the configured self-hosted host.
+        String sysEnvVal = getSystemEnv(envVarName);
+        if (sysEnvVal != null && !sysEnvVal.isBlank()) {
+            log.debug(
+                    "Using system env {} for provider '{}': {}", envVarName, provider, sysEnvVal);
+            return sysEnvVal;
+        }
+
         return null;
+    }
+
+    /** Reads an env variable. Protected so tests can override without PowerMock. */
+    protected String getSystemEnv(String name) {
+        return System.getenv(name);
     }
 
     /** Create a fresh AIModel instance with a per-user API key and optional base URL. */
