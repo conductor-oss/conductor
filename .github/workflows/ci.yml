@@ -10,9 +10,23 @@ on:
     paths-ignore:
       - "conductor-clients/**"
   workflow_dispatch:
+    inputs:
+      e2e_profiles:
+        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, redis-os3'
+        required: false
+        default: all
+        type: string
   # GitHub Actions cron expressions are UTC.
   schedule:
     - cron: "0 2 * * *"
+
+# A new push to a PR supersedes that PR's in-flight run - cancel it instead of
+# burning runners on a stale sha (same pattern as orkes-conductor's workflows).
+# Groups are separated by event type so nightly/dispatch/push runs never
+# cross-cancel each other or PR runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   detect-changes:
@@ -350,12 +364,50 @@ jobs:
     steps:
       - id: set-matrix
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          E2E_PROFILES: ${{ inputs.e2e_profiles }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "schedule" ]; then
-            echo 'matrix={"include":[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"},{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},{"name":"mysql","script":"./e2e/run_tests-mysql.sh"},{"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"},{"name":"redis-es7","script":"./e2e/run_tests-redis-es7.sh"},{"name":"cassandra-es7","script":"./e2e/run_tests-cassandra-es7.sh"}]}' >> "$GITHUB_OUTPUT"
-          else
-            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+
+          # redis-es8 runs on every trigger, so every push and pull request gets one full
+          # end-to-end run. It is listed first in the matrix.
+          # redis-es7 and cassandra-es7 are disabled: ES7 coverage is superseded by the
+          # redis-es8 flavor and cassandra support is partial. Re-enable by adding them back
+          # to the optional list (scripts remain in e2e/).
+          always='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]'
+          optional='[{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
+                     {"name":"mysql","script":"./e2e/run_tests-mysql.sh"},
+                     {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"}]'
+
+          case "$EVENT_NAME" in
+            workflow_dispatch) selection="${E2E_PROFILES:-all}" ;;
+            schedule)          selection="all" ;;
+            *)                 selection="none" ;;
+          esac
+
+          case "$selection" in
+            all)  extra="$optional" ;;
+            none) extra='[]' ;;
+            *)
+              # Comma separated subset, e.g. "mysql,postgres". redis-es8 is always added.
+              unknown=$(jq -rn --argjson optional "$optional" --arg sel "$selection" '
+                ($sel | split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))) as $want
+                | (($optional | map(.name)) + ["redis-es8"]) as $known
+                | [$want[] | select(. as $n | ($known | any(. == $n)) | not)] | join(", ")')
+              if [ -n "$unknown" ]; then
+                echo "::error::Unknown e2e profile(s): $unknown. Valid values: all, none, redis-es8, $(jq -r --argjson o "$optional" -n '$o | map(.name) | join(", ")')"
+                exit 1
+              fi
+              extra=$(jq -c --arg sel "$selection" '
+                ($sel | split(",") | map(gsub("^\\s+|\\s+$";""))) as $want
+                | map(select(.name as $n | $want | any(. == $n)))' <<< "$optional")
+              ;;
+          esac
+
+          include=$(jq -cn --argjson always "$always" --argjson extra "$extra" '$always + $extra')
+          echo "Selected e2e profiles: $(jq -r 'map(.name) | join(", ")' <<< "$include")"
+          echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
 
   e2e:
     needs: generate-e2e-matrix
@@ -366,6 +418,8 @@ jobs:
       checks: write
     strategy:
       fail-fast: false
+      # All backends in parallel — each matrix job gets its own runner VM, so a full
+      # 6-flavor matrix completes in ~15 minutes instead of ~90 sequential.
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7

@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import com.netflix.conductor.client.http.MetadataClient;
@@ -64,6 +65,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * server so failure-path tests fail fast. If a shared server already owns that task definition, the
  * suite preserves it and allows enough time for its configured retries.
  */
+@DisabledIfSystemProperty(
+        named = "E2E_DISABLED_CAPABILITIES",
+        matches = ".*\\bai\\b.*",
+        disabledReason = "target server runs without AI integrations (no agent endpoints)")
 class AgentTaskTests {
 
     private static final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
