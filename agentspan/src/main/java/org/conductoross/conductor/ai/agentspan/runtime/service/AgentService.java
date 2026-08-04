@@ -41,6 +41,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -558,7 +559,11 @@ public class AgentService {
 
     /** Resume a paused agent execution. */
     public void resumeAgent(String executionId) {
-        workflowService.resumeWorkflow(executionId);
+        try {
+            workflowService.resumeWorkflow(executionId);
+        } catch (IllegalStateException e) {
+            throw new ConflictException(e.getMessage());
+        }
     }
 
     /** Cancel a running agent execution. */
@@ -674,6 +679,9 @@ public class AgentService {
         // Set the stop flag — the DoWhile loop condition checks this variable.
         // Get the workflow model, update its variables map, and persist.
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_stop_requested", true);
         executionDAO.updateWorkflow(workflow);
         // Note: the SDK also sends a WMQ unblock message via the Conductor client
@@ -689,6 +697,9 @@ public class AgentService {
      */
     public void signalAgent(String executionId, String message) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_signal_injection", message != null ? message : "");
         executionDAO.updateWorkflow(workflow);
     }
@@ -1209,6 +1220,10 @@ public class AgentService {
                 request.setRawConfig(skillRegistryService.resolveRawConfig(request.getSkillRef()));
             }
             return normalizerRegistry.normalize(request.getFramework(), request.getRawConfig());
+        }
+        if (request.getAgentConfig() == null) {
+            throw new IllegalArgumentException(
+                    "agentConfig is required when framework is not specified");
         }
         return request.getAgentConfig();
     }
