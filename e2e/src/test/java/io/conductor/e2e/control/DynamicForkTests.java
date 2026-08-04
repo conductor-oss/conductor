@@ -571,17 +571,6 @@ public class DynamicForkTests {
                         () -> {
                             var wf = workflowAdminClient.getWorkflow(workflowId, true);
                             assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
-                            // All 3 attempts (original + 2 retries) must be present. The final
-                            // retry's task record can lag the workflow FAILED status under load,
-                            // so assert the count inside the await rather than in a follow-up read.
-                            var attempts =
-                                    wf.getTasks().stream()
-                                            .filter(
-                                                    it ->
-                                                            "fail_on_purpose"
-                                                                    .equals(it.getTaskDefName()))
-                                            .toList();
-                            assertEquals(3, attempts.size());
                         });
 
         var workflow = workflowAdminClient.getWorkflow(workflowId, true);
@@ -590,9 +579,80 @@ public class DynamicForkTests {
                         .filter(it -> "fail_on_purpose".equals(it.getTaskDefName()))
                         .toList();
 
+        // How many attempts a failing branch gets inside a FORK_JOIN_DYNAMIC is not deterministic:
+        // JOIN is evaluated from its own queue and fails the workflow as soon as it observes the
+        // failed branch, which can happen before the decider schedules a pending retry. So this
+        // test asserts what it is about - that ${CPEWF_TASK_ID} resolves to the id of the task it
+        // is evaluated for, on every attempt that did run. testCorrectTaskIdOnRetriesWithoutFork
+        // covers the retry sequence deterministically, outside a fork.
+        assertFalse(tasks.isEmpty(), "the forked task must have run at least once");
         for (Task t : tasks) {
             assertEquals(t.getTaskId(), t.getInputData().get("task_id"));
         }
+    }
+
+    @Test
+    @SneakyThrows
+    @DisplayName("${CPEWF_TASK_ID} gives the correct task id on every retry of a plain task")
+    public void testCorrectTaskIdOnRetriesWithoutFork() {
+        startFailureWorkers();
+        var workflowAdminClient = ApiUtil.WORKFLOW_CLIENT;
+        var metadataAdminClient = ApiUtil.METADATA_CLIENT;
+
+        var mapper = new ObjectMapperProvider().getObjectMapper();
+        var taskDef =
+                mapper.readValue(
+                        TestUtil.getResourceAsString(
+                                "metadata/cpewf_task_id_dyn_fork_task_def.json"),
+                        TaskDef.class);
+        metadataAdminClient.registerTaskDefs(List.of(taskDef));
+
+        // No fork and no JOIN, so the retry sequence is driven only by the failing task itself:
+        // retryCount 2 on the task definition means exactly 3 attempts before the workflow fails.
+        var task = new WorkflowTask();
+        task.setName("fail_on_purpose");
+        task.setTaskReferenceName("fail_on_purpose_ref");
+        task.setType(TaskType.TASK_TYPE_SIMPLE);
+        task.setInputParameters(Map.of("task_id", "${CPEWF_TASK_ID}"));
+
+        var workflowDef = new WorkflowDef();
+        workflowDef.setName("cpewf_task_id_retries_no_fork");
+        workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("test@conductor.io");
+        workflowDef.setSchemaVersion(2);
+        workflowDef.setTimeoutSeconds(0);
+        workflowDef.setTasks(List.of(task));
+        metadataAdminClient.updateWorkflowDefs(List.of(workflowDef));
+
+        var startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(workflowDef.getName());
+        startWorkflowRequest.setVersion(workflowDef.getVersion());
+        var workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
+
+        await().atMost(1, TimeUnit.MINUTES)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            var wf = workflowAdminClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.FAILED, wf.getStatus());
+                            assertEquals(
+                                    3,
+                                    attemptsOf(wf).size(),
+                                    "original attempt plus the 2 retries from the task definition");
+                        });
+
+        for (Task t : attemptsOf(workflowAdminClient.getWorkflow(workflowId, true))) {
+            assertEquals(
+                    t.getTaskId(),
+                    t.getInputData().get("task_id"),
+                    "${CPEWF_TASK_ID} must resolve to the id of the attempt it is evaluated for");
+        }
+    }
+
+    private static List<Task> attemptsOf(Workflow workflow) {
+        return workflow.getTasks().stream()
+                .filter(it -> "fail_on_purpose".equals(it.getTaskDefName()))
+                .collect(Collectors.toList());
     }
 
     @Test
