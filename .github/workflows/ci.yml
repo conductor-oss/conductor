@@ -586,23 +586,16 @@ jobs:
       # at unreleased SDK work without a commit here. The `_BUNDLE_` in the name is vestigial;
       # it matches the repository variable already configured in GitHub settings.
       CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
-      # Canonical names, and what the suite reads as of 2.0.0-rc4: its conftest migrated from
-      # AGENTSPAN_SERVER_URL / AGENTSPAN_LLM_MODEL to these. Do not rename back — and if the pin
-      # is ever moved DOWN to rc2 or earlier, these must go back with it, since those refs
-      # read only the AGENTSPAN_* names and would silently fall through to conftest's defaults.
-      # No AGENTSPAN_CLI_* here: rc4 dropped the agentspan CLI entirely (no CredentialsCLI, no
-      # CLI_PATH, and test_suite16_cli_skills.py is gone), so provisioning it bought nothing.
-      # It WAS load-bearing under rc2 — the credential suites reached their read-only skip by
-      # invoking it, and removing it there turned clean skips into FileNotFoundError failures.
-      # So don't restore it on the assumption it is needed unless the pin goes back.
+      # The names the suite's conftest reads. Verify against the pinned ref before renaming:
+      # a name the suite does not read falls through to conftest's defaults silently, so the
+      # lane would run green against the wrong server and model.
       CONDUCTOR_SERVER_URL: http://localhost:8080/api
       CONDUCTOR_AGENT_LLM_MODEL: openai/gpt-4o-mini
       MCP_TESTKIT_URL: http://localhost:3001
       # Suite21 probes GET {this}/scheduler/schedules and skips the whole suite unless it
-      # answers 200. Its default is port 8089, so without this the 11 scheduling tests
-      # skipped silently on every run. conductor-oss serves the scheduler itself
+      # answers 200; its own default is port 8089. conductor-oss serves the scheduler itself
       # (conductor.scheduler.enabled=true by default, SchedulerResource at /api/scheduler),
-      # so point it at the same server — verified 200, and 10 of the 11 then pass.
+      # so point it at the same server or the scheduling tests silently do not run.
       SCHEDULER_CONDUCTOR_URL: http://localhost:8080/api
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -619,18 +612,9 @@ jobs:
       # server change that breaks a test's setup silently converts pass -> skip and the lane
       # stays green while covering less. This floor is the backstop: if fewer than this many
       # tests pass, fail regardless of whether anything reported a failure. RAISE it when real
-      # coverage is added; LOWER it only with a written reason — lowering silently is exactly
-      # the regression this guards against. History:
-      #   127 — rc2 baseline (CI runs 30398185123 / 30400603109: 127 passed / 27 skipped)
-      #   137 — +10 from wiring up SCHEDULER_CONDUCTOR_URL, which un-skipped suite21
-      #   135 — pin moved to rc4, which DELETED test_suite16_cli_skills.py. Three of those
-      #         tests were xfail-ed here, but two were genuinely PASSING
-      #         (test_cli_skill_load_serve_and_run_by_name,
-      #         test_cli_skill_run_ephemeral_executes_script_worker), so real coverage of the
-      #         ephemeral/by-name CLI skill paths went away with the file. This -2 is a
-      #         coverage LOSS, not a fix — it is invisible in pass/fail terms because the
-      #         tests ceased to exist. Verified locally on rc4: 135 passed / 7 skipped /
-      #         3 xfailed.
+      # coverage is added; LOWER it only with a written reason — a silent lowering is exactly
+      # the regression this guards against. Moving the pin can change the test set, so
+      # re-measure against the new ref rather than assuming this number still fits.
       E2E_MIN_PASSED: "135"
     steps:
       - uses: actions/checkout@v7
@@ -654,7 +638,6 @@ jobs:
           # Pinned: mcp-testkit 1.0.3 declares `mcp[cli]>=1.0.0` with no upper bound, and mcp
           # 2.0.0 dropped mcp.server.fastmcp, which the testkit imports at start-up — so an
           # unpinned install yields a testkit that exits immediately and every MCP suite skips.
-          # Same pin as #1408, which fixed the equivalent install in the test-harness.
           python -m pip install --quiet 'mcp-testkit==1.0.3' 'mcp<2' || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
           nohup mcp-testkit --transport http --port 3001 > mcp-testkit.log 2>&1 &
           # Readiness = "the port answers HTTP at all", NOT 2xx. mcp-testkit serves 404 on /,
