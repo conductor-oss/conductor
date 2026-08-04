@@ -2530,6 +2530,25 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // orphan sub-workflow: parent task was cleared (e.g. parent workflow restarted)
             return;
         }
+        // Generation fence: a rerun replaces the parent's fork generation wholesale — the old
+        // SUB_WORKFLOW task rows survive in the task store but are no longer part of the
+        // parent's task list. A late terminal event from the superseded generation's child
+        // must not propagate through that stale task record, or it fails the parent's fresh
+        // generation (observed in CI: parent FAILED citing a task absent from its own task
+        // list). Retry has an analogous fence via isRetried(); rerun needs list membership.
+        WorkflowModel parentWorkflow =
+                executionDAOFacade.getWorkflowModel(subWorkflowTask.getWorkflowInstanceId(), true);
+        if (parentWorkflow != null
+                && parentWorkflow.getTasks().stream()
+                        .noneMatch(t -> t.getTaskId().equals(subWorkflowTask.getTaskId()))) {
+            LOGGER.info(
+                    "Sub-workflow {} finished but its parent task {} is no longer part of parent {}"
+                            + " (superseded by rerun/restart) — dropping stale propagation",
+                    subWorkflow.getWorkflowId(),
+                    subWorkflowTask.getTaskId(),
+                    subWorkflowTask.getWorkflowInstanceId());
+            return;
+        }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
         executionDAOFacade.updateTask(subWorkflowTask);
         if (subWorkflowTask.getStatus().isTerminal()) {
