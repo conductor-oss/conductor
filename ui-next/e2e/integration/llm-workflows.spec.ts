@@ -35,7 +35,7 @@ const LLM_EXECUTION_TIMEOUT_MS = 180_000;
 const LLM_EXECUTION_ATTEMPTS = 2;
 
 const CHAT_INSTRUCTIONS =
-  "You are a helpful math assistant. Be concise. Reply with just the number.";
+  "You are a helpful math assistant. Reply with just the number — no words.";
 const TEXT_PROMPT =
   "Reply with exactly the single word HELLO and nothing else.";
 const MULTI_CHAT_INSTRUCTIONS =
@@ -74,6 +74,26 @@ async function expectExecutionStatusChip(
       .filter({ hasText: new RegExp(`^${label}$`) })
       .first(),
   ).toBeVisible({ timeout: 15_000 });
+}
+
+/**
+ * Open a task on the execution diagram and assert its Output tab shows
+ * `expected`. The diagram itself does not render LLM text — that lives in the
+ * right-panel Output tab (workflow-level Output is empty unless outputParameters
+ * are defined).
+ */
+async function expectTaskOutputVisible(
+  page: import("@playwright/test").Page,
+  taskRefName: string,
+  expected: RegExp,
+) {
+  await page.getByText(taskRefName).first().click();
+  const rightPanel = page.locator("#execution-page-right-panel");
+  await expect(rightPanel).toBeVisible({ timeout: 15_000 });
+  await rightPanel.getByRole("tab", { name: "Output" }).click();
+  await expect(rightPanel.getByText(expected).first()).toBeVisible({
+    timeout: 15_000,
+  });
 }
 
 /**
@@ -123,7 +143,7 @@ const WF_CHAT_COMPLETE: WorkflowDef = {
         messages: [
           {
             role: "user",
-            message: "What is 2 + 2? Reply with just the number.",
+            message: "What is 2 + 2?",
           },
         ],
         temperature: 0,
@@ -572,7 +592,8 @@ test("LLM_CHAT_COMPLETE workflow execution completes successfully", async ({
     timeout: 15_000,
   });
   await expectExecutionStatusChip(page, "COMPLETED");
-  // API already validated the model output; UI only needs the completed run.
+  // Diagram nodes don't show the model text — open the task Output panel.
+  await expectTaskOutputVisible(page, "chat_complete_ref", /4/);
 });
 
 test("LLM_TEXT_COMPLETE workflow execution completes successfully", async ({
@@ -608,6 +629,7 @@ test("LLM_TEXT_COMPLETE workflow execution completes successfully", async ({
     timeout: 15_000,
   });
   await expectExecutionStatusChip(page, "COMPLETED");
+  await expectTaskOutputVisible(page, "text_complete_ref", /hello/i);
 });
 
 test("LLM_CHAT_COMPLETE completed execution appears in the executions search", async ({
