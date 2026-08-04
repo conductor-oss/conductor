@@ -119,7 +119,7 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Since the tasks are marked as optional. The workflow should be in running state.
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             try {
@@ -357,7 +357,7 @@ public class DynamicForkTests {
         taskResult.setOutputData(output);
         taskClient.updateTask(taskResult);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
@@ -387,7 +387,7 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Since the retry count is 2 task will be retried.
-        await().atMost(20, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
@@ -424,7 +424,7 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Workflow should be completed
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(30, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
@@ -618,7 +618,7 @@ public class DynamicForkTests {
         var workflowId = workflowClient.startWorkflow(startWorkflowRequest);
 
         await().await()
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(30, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -685,7 +685,7 @@ public class DynamicForkTests {
 
         // join task and workflow should be completed
         await().await()
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(30, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {

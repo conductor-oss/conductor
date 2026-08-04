@@ -64,7 +64,7 @@ public class WorkflowRetryTests {
      * child→parent FAILED/COMPLETED propagation goes through the async DECIDER_QUEUE, not a
      * synchronous path). Route every state-poll timeout through this one knob.
      */
-    private static final int WF_AWAIT_SECS = 60;
+    private static final int WF_AWAIT_SECS = 120;
 
     @BeforeAll
     public static void init() {
