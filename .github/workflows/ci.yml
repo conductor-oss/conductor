@@ -576,13 +576,19 @@ jobs:
       contents: read
       checks: write   # publish the junit test-report check
     env:
-      # Pinned python-sdk release bundle (conductor-python[agents] resolves to the same version).
-      # python-sdk release tags carry no `v` prefix. Override without a commit by setting the
-      # `CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION` repo/org variable; the fallback below is the pin.
+      # Pinned python-sdk version. The suite is not downloaded as a released bundle — the SDK
+      # repo is checked out at the tag derived from this value and its e2e/ is run in place
+      # (see run-suite.sh), so the SDK under test is built from that source rather than
+      # resolved from PyPI. python-sdk release tags carry no `v` prefix.
+      #
+      # Because nothing has to be published for a ref to work, this can be any tag, branch or
+      # SHA — set the `CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION` repo/org variable to point the lane
+      # at unreleased SDK work without a commit here. The `_BUNDLE_` in the name is vestigial;
+      # it matches the repository variable already configured in GitHub settings.
       CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
-      # Canonical names, and what the bundle reads as of 2.0.0-rc4: its conftest migrated from
+      # Canonical names, and what the suite reads as of 2.0.0-rc4: its conftest migrated from
       # AGENTSPAN_SERVER_URL / AGENTSPAN_LLM_MODEL to these. Do not rename back — and if the pin
-      # is ever moved DOWN to rc2 or earlier, these must go back with it, since those bundles
+      # is ever moved DOWN to rc2 or earlier, these must go back with it, since those refs
       # read only the AGENTSPAN_* names and would silently fall through to conftest's defaults.
       # No AGENTSPAN_CLI_* here: rc4 dropped the agentspan CLI entirely (no CredentialsCLI, no
       # CLI_PATH, and test_suite16_cli_skills.py is gone), so provisioning it bought nothing.
@@ -601,14 +607,14 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       E2E_KNOWN_FAILURES: ${{ github.workspace }}/.github/agent-e2e/known-failures-python.json
-      # KNOWN RISK, accepted: the bundle's run.sh pip-installs at run time and its
-      # requirements.txt pins only conductor-python — pytest, langgraph, mcp-testkit and the
+      # KNOWN RISK, accepted: run-suite.sh pip-installs at run time from the SDK's own
+      # package metadata, which bounds only its direct deps — pytest, langgraph and the
       # provider SDKs all float. An upstream release can therefore redden this lane with no
       # change to this repo, and it will present as a server regression rather than a
       # dependency bump. If this lane fails for no apparent reason, suspect that first and
       # check the pip install output in the log before hunting a server cause. (Pinning the
       # transitive set via PIP_CONSTRAINT works, but the lockfile has to be regenerated on
-      # every bundle bump, which was judged not worth the upkeep.)
+      # every SDK bump, which was judged not worth the upkeep.)
       # Minimum number of tests that must actually PASS. A pytest skip is not a failure, so a
       # server change that breaks a test's setup silently converts pass -> skip and the lane
       # stays green while covering less. This floor is the backstop: if fewer than this many
@@ -645,7 +651,11 @@ jobs:
 
       - name: Start mcp-testkit (best effort)
         run: |
-          python -m pip install --quiet mcp-testkit || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
+          # Pinned: mcp-testkit 1.0.3 declares `mcp[cli]>=1.0.0` with no upper bound, and mcp
+          # 2.0.0 dropped mcp.server.fastmcp, which the testkit imports at start-up — so an
+          # unpinned install yields a testkit that exits immediately and every MCP suite skips.
+          # Same pin as #1408, which fixed the equivalent install in the test-harness.
+          python -m pip install --quiet 'mcp-testkit==1.0.3' 'mcp<2' || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
           nohup mcp-testkit --transport http --port 3001 > mcp-testkit.log 2>&1 &
           # Readiness = "the port answers HTTP at all", NOT 2xx. mcp-testkit serves 404 on /,
           # so `curl -sf` (which treats 404 as failure) never succeeded: the loop always ran
@@ -677,33 +687,40 @@ jobs:
             sleep 3
           done
 
-      - name: Fetch python e2e bundle
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve the pinned SDK ref
+        id: sdk
         run: |
           V="${CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION}"
-          NAME="conductor-ai-e2e-python-${V}"
-          gh release download "${V}" --repo conductor-oss/python-sdk \
-            --pattern "${NAME}.tar.gz" --pattern "${NAME}.tar.gz.sha256" --dir .
-          echo "$(cat "${NAME}.tar.gz.sha256")  ${NAME}.tar.gz" | sha256sum -c -
-          tar -xzf "${NAME}.tar.gz"
-          echo "BUNDLE_DIR=${NAME}" >> "$GITHUB_ENV"
+          # python-sdk tags bare versions — no `v` prefix.
+          echo "ref=${V}" >> "$GITHUB_OUTPUT"
+          echo "e2e suite: conductor-oss/python-sdk @ ${V}"
 
-      # `run.sh` forwards extra args to pytest, so `-p known_failures_plugin` loads the
-      # orkes-style xfail plugin (found via PYTHONPATH) without editing the bundle. Gating:
-      # a genuine failure fails the job; entries in known-failures-python.json are xfail-ed
-      # green. `-rs` prints the reason for every skip in the log — without it a test that
-      # quietly stops running is invisible in the output.
+      # The ref can be any tag, branch or SHA — override the version variable above to point
+      # this lane at unreleased SDK work. python-sdk is public, so the default GITHUB_TOKEN
+      # is enough.
+      - name: Check out the SDK e2e suite at the pinned ref
+        uses: actions/checkout@v7
+        with:
+          repository: conductor-oss/python-sdk
+          ref: ${{ steps.sdk.outputs.ref }}
+          path: .github/agent-e2e/src-python
+
+      # run-suite.sh forwards trailing args to pytest, so `-p known_failures_plugin` loads the
+      # orkes-style xfail plugin (found via PYTHONPATH) without touching the upstream suite.
+      # Gating: a genuine failure fails the job; entries in known-failures-python.json are
+      # xfail-ed green. `-rs` prints the reason for every skip in the log — without it a test
+      # that quietly stops running is invisible in the output.
       - name: Run python e2e (SQLite; known failures xfail-ed)
         env:
           PYTHONPATH: ${{ github.workspace }}/.github/agent-e2e
-        working-directory: ${{ env.BUNDLE_DIR }}
-        run: bash run.sh -p known_failures_plugin -rs
+        run: |
+          bash .github/agent-e2e/run-suite.sh \
+            .github/agent-e2e/src-python -p known_failures_plugin -rs
 
       # Skips are free — CI only reddens on failure — so a broken test setup degrades this
       # lane silently. Enforce a floor on the PASSED count so lost coverage is loud.
       - name: Enforce passed-count floor
-        working-directory: ${{ env.BUNDLE_DIR }}
+        working-directory: .github/agent-e2e/src-python
         run: |
           python - <<'PY'
           import os, sys, xml.etree.ElementTree as ET
@@ -738,7 +755,7 @@ jobs:
         continue-on-error: true   # gating is the e2e run step's exit code; a checks-API hiccup must not fail the job
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: "${{ env.BUNDLE_DIR }}/results/junit-e2e.xml"
+          report_paths: ".github/agent-e2e/src-python/results/junit-e2e.xml"
           check_name: "Python SDK E2E (SQLite)"
           fail_on_failure: false
           require_tests: false
@@ -749,7 +766,7 @@ jobs:
         with:
           name: python-sdk-e2e-results
           path: |
-            ${{ env.BUNDLE_DIR }}/results/**
+            .github/agent-e2e/src-python/results/**
             conductor-server.log
             mcp-testkit.log
           if-no-files-found: ignore
