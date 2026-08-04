@@ -10,6 +10,12 @@ on:
     paths-ignore:
       - "conductor-clients/**"
   workflow_dispatch:
+    inputs:
+      e2e_profiles:
+        description: 'E2E profiles to run in addition to redis-es7 (which always runs): "all", "none", or a comma separated subset of redis-es8, postgres, mysql, redis-os3, cassandra-es7'
+        required: false
+        default: all
+        type: string
   # GitHub Actions cron expressions are UTC.
   schedule:
     - cron: "0 2 * * *"
@@ -350,12 +356,50 @@ jobs:
     steps:
       - id: set-matrix
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          E2E_PROFILES: ${{ inputs.e2e_profiles }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "schedule" ]; then
-            echo 'matrix={"include":[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"},{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},{"name":"mysql","script":"./e2e/run_tests-mysql.sh"},{"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"},{"name":"redis-es7","script":"./e2e/run_tests-redis-es7.sh"},{"name":"cassandra-es7","script":"./e2e/run_tests-cassandra-es7.sh"}]}' >> "$GITHUB_OUTPUT"
-          else
-            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+
+          # redis-es7 runs on every trigger, so every push and pull request gets one full
+          # end-to-end run. It is listed first because the matrix runs sequentially
+          # (max-parallel: 1), so it is also the first to report.
+          always='[{"name":"redis-es7","script":"./e2e/run_tests-redis-es7.sh"}]'
+          optional='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"},
+                     {"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
+                     {"name":"mysql","script":"./e2e/run_tests-mysql.sh"},
+                     {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"},
+                     {"name":"cassandra-es7","script":"./e2e/run_tests-cassandra-es7.sh"}]'
+
+          case "$EVENT_NAME" in
+            workflow_dispatch) selection="${E2E_PROFILES:-all}" ;;
+            schedule)          selection="all" ;;
+            *)                 selection="none" ;;
+          esac
+
+          case "$selection" in
+            all)  extra="$optional" ;;
+            none) extra='[]' ;;
+            *)
+              # Comma separated subset, e.g. "mysql,postgres". redis-es7 is always added.
+              unknown=$(jq -rn --argjson optional "$optional" --arg sel "$selection" '
+                ($sel | split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))) as $want
+                | (($optional | map(.name)) + ["redis-es7"]) as $known
+                | [$want[] | select(. as $n | ($known | any(. == $n)) | not)] | join(", ")')
+              if [ -n "$unknown" ]; then
+                echo "::error::Unknown e2e profile(s): $unknown. Valid values: all, none, redis-es7, $(jq -r --argjson o "$optional" -n '$o | map(.name) | join(", ")')"
+                exit 1
+              fi
+              extra=$(jq -c --arg sel "$selection" '
+                ($sel | split(",") | map(gsub("^\\s+|\\s+$";""))) as $want
+                | map(select(.name as $n | $want | any(. == $n)))' <<< "$optional")
+              ;;
+          esac
+
+          include=$(jq -cn --argjson always "$always" --argjson extra "$extra" '$always + $extra')
+          echo "Selected e2e profiles: $(jq -r 'map(.name) | join(", ")' <<< "$include")"
+          echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
 
   e2e:
     needs: generate-e2e-matrix
@@ -366,6 +410,8 @@ jobs:
       checks: write
     strategy:
       fail-fast: false
+      # One backend at a time, in the order generate-e2e-matrix lists them (redis-es7 first).
+      max-parallel: 1
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7

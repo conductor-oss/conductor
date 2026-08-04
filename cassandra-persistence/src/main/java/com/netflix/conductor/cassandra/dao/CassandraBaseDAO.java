@@ -25,6 +25,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
+import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +40,7 @@ import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.JSON_DATA_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.RATE_LIMIT_BUCKET_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
@@ -48,6 +50,7 @@ import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_RATE_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
@@ -80,6 +83,9 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  *
  * <p>CREATE TABLE IF NOT EXISTS conductor.task_def_limit( task_def_name text, task_id uuid,
  * workflow_id uuid, PRIMARY KEY ((task_def_name), task_id_key) );
+ *
+ * <p>CREATE TABLE IF NOT EXISTS conductor.task_rate_limit( task_def_name text, rate_limit_bucket_id
+ * timeuuid, PRIMARY KEY ((task_def_name), rate_limit_bucket_id) );
  *
  * <p>CREATE TABLE IF NOT EXISTS conductor.workflow_definitions( workflow_def_name text, version
  * int, workflow_definition text, PRIMARY KEY ((workflow_def_name), version) );
@@ -132,6 +138,7 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateWorkflowsTableStatement());
                 session.execute(getCreateTaskLookupTableStatement());
                 session.execute(getCreateTaskDefLimitTableStatement());
+                session.execute(getCreateTaskRateLimitTableStatement());
                 session.execute(getCreateWorkflowDefsTableStatement());
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
@@ -224,6 +231,27 @@ public abstract class CassandraBaseDAO {
                 .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
                 .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
                 .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+                .getQueryString();
+    }
+
+    /**
+     * Rows in this table are written once and only ever removed by TTL expiry, and the rate limit
+     * check counts live rows in a clustering range. With the default gc_grace_seconds of 10 days
+     * the count would read through expired rows as tombstones long after their (usually seconds
+     * long) rate limit window closed, so a short gc_grace and time window compaction are used to
+     * let expired buckets drop out quickly.
+     */
+    private String getCreateTaskRateLimitTableStatement() {
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_RATE_LIMIT)
+                .ifNotExists()
+                .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
+                .addClusteringColumn(RATE_LIMIT_BUCKET_ID_KEY, DataType.timeuuid())
+                .withOptions()
+                .gcGraceSeconds(3600)
+                .compactionOptions(
+                        SchemaBuilder.timeWindowCompactionStrategy()
+                                .compactionWindowUnit(CompactionWindowUnit.MINUTES)
+                                .compactionWindowSize(10))
                 .getQueryString();
     }
 
