@@ -345,88 +345,76 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             executionDAOFacade.addTaskExecLog(Collections.singletonList(log));
             LOGGER.info("Task {} updated. {}", log.getTaskId(), log.getLog());
 
-            // Hold the parent's execution lock across load -> sibling repair -> persist, so a
-            // concurrent decide holding a pre-revival snapshot cannot interleave its stale
-            // verdict with the revival (observed in CI: a just-revived mid-level parent
-            // re-TERMINATED citing a sibling's superseded state). The inline decide below runs
-            // after release — by then the repaired state is fully persisted, so any decide
-            // ordering is safe.
+            // push the parent workflow to decider queue for asynchronous 'decide'
             String parentWorkflowId = workflow.getParentWorkflowId();
-            executionLockService.acquireLock(parentWorkflowId, 60000);
-            WorkflowModel parentWorkflow;
-            try {
-                parentWorkflow = executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
-                parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
-                parentWorkflow.setReasonForIncompletion(null);
-                parentWorkflow.setFailedTaskId(null);
-                parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
-                parentWorkflow.setFailedTaskNames(new HashSet<>());
-                parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
-                // Deliberately NOT persisted yet (mirrors OrkesWorkflowExecutor): while the sibling
-                // tasks below are being repaired, the stored parent must stay terminal so any
-                // concurrent decide bounces off the terminal guard instead of evaluating a RUNNING
-                // parent whose CANCELED sibling still points at a not-yet-resumed TERMINATED child
-                // (that stale read terminated the freshly retried parent under CI load).
+            WorkflowModel parentWorkflow =
+                    executionDAOFacade.getWorkflowModel(parentWorkflowId, true);
+            parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+            parentWorkflow.setReasonForIncompletion(null);
+            parentWorkflow.setFailedTaskId(null);
+            parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
+            parentWorkflow.setFailedTaskNames(new HashSet<>());
+            parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
+            // Deliberately NOT persisted yet (mirrors OrkesWorkflowExecutor): while the sibling
+            // tasks below are being repaired, the stored parent must stay terminal so any
+            // concurrent decide bounces off the terminal guard instead of evaluating a RUNNING
+            // parent whose CANCELED sibling still points at a not-yet-resumed TERMINATED child
+            // (that stale read terminated the freshly retried parent under CI load).
 
-                for (TaskModel task : parentWorkflow.getTasks()) {
-                    if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
-                            && task.getSubWorkflowId() != null
-                            && UNSUCCESSFUL_TERMINAL_TASK.test(task)) {
-                        // retry sibling sub-workflows that are still in a failed/timed-out state
-                        WorkflowModel child =
-                                executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
-                        if (child != null) {
-                            if (child.getStatus() == WorkflowModel.Status.RUNNING) {
-                                // Child was already set RUNNING by an in-progress rerun; surfacing
-                                // that
-                                // to the parent task without calling retry() avoids creating a
-                                // spurious
-                                // new task instance that conflicts with the rerun's own
-                                // finalizeRerun.
-                                task.setStatus(IN_PROGRESS);
-                                task.setReasonForIncompletion(null);
-                                task.setSubworkflowChanged(true);
-                                executionDAOFacade.updateTask(task);
-                            } else if (child.getTasks().stream()
-                                    .anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
-                                retry(child);
-                                task.setStatus(IN_PROGRESS);
-                                task.setReasonForIncompletion(null);
-                                task.setSubworkflowChanged(true);
-                                executionDAOFacade.updateTask(task);
-                            }
-                        }
-                    } else if (task.getStatus() == CANCELED) {
-                        if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
-                                || task.getTaskType()
-                                        .equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
+            for (TaskModel task : parentWorkflow.getTasks()) {
+                if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
+                        && task.getSubWorkflowId() != null
+                        && UNSUCCESSFUL_TERMINAL_TASK.test(task)) {
+                    // retry sibling sub-workflows that are still in a failed/timed-out state
+                    WorkflowModel child =
+                            executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
+                    if (child != null) {
+                        if (child.getStatus() == WorkflowModel.Status.RUNNING) {
+                            // Child was already set RUNNING by an in-progress rerun; surfacing
+                            // that
+                            // to the parent task without calling retry() avoids creating a
+                            // spurious
+                            // new task instance that conflicts with the rerun's own
+                            // finalizeRerun.
                             task.setStatus(IN_PROGRESS);
-                            executionDAOFacade.updateTask(task);
-                        } else {
-                            task.setRetryCount(task.getRetryCount() + 1);
                             task.setReasonForIncompletion(null);
-                            task.setPollCount(0);
-                            task.setWorkerId(null);
-                            task.setScheduledTime(System.currentTimeMillis());
-                            task.setStartTime(0);
-                            task.setEndTime(0);
-                            task.setRetried(false);
-                            task.setExecuted(false);
-                            task.setStatus(SCHEDULED);
+                            task.setSubworkflowChanged(true);
                             executionDAOFacade.updateTask(task);
-                            addTaskToQueue(task);
+                        } else if (child.getTasks().stream().anyMatch(UNSUCCESSFUL_TERMINAL_TASK)) {
+                            retry(child);
+                            task.setStatus(IN_PROGRESS);
+                            task.setReasonForIncompletion(null);
+                            task.setSubworkflowChanged(true);
+                            executionDAOFacade.updateTask(task);
                         }
                     }
+                } else if (task.getStatus() == CANCELED) {
+                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
+                            || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
+                        task.setStatus(IN_PROGRESS);
+                        executionDAOFacade.updateTask(task);
+                    } else {
+                        task.setRetryCount(task.getRetryCount() + 1);
+                        task.setReasonForIncompletion(null);
+                        task.setPollCount(0);
+                        task.setWorkerId(null);
+                        task.setScheduledTime(System.currentTimeMillis());
+                        task.setStartTime(0);
+                        task.setEndTime(0);
+                        task.setRetried(false);
+                        task.setExecuted(false);
+                        task.setStatus(SCHEDULED);
+                        executionDAOFacade.updateTask(task);
+                        addTaskToQueue(task);
+                    }
                 }
-
-                // Persist the RUNNING parent only after every sibling task above has been
-                // repaired, then decide inline (not via the decider queue) so the first
-                // evaluation of the revived parent happens on the fully repaired state —
-                // mirrors OrkesWorkflowExecutor.
-                executionDAOFacade.updateWorkflow(parentWorkflow);
-            } finally {
-                executionLockService.releaseLock(parentWorkflowId);
             }
+
+            // Persist the RUNNING parent only after every sibling task above has been
+            // repaired, then decide inline (not via the decider queue) so the first evaluation
+            // of the revived parent happens on the fully repaired state — mirrors
+            // OrkesWorkflowExecutor.
+            executionDAOFacade.updateWorkflow(parentWorkflow);
 
             try {
                 WorkflowStatusListener.WorkflowEventType event =
