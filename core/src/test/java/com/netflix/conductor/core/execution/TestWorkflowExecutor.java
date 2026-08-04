@@ -2409,6 +2409,72 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testUpdateParentWorkflowTaskExpeditesUnfinishedJoins() {
+        String parentWorkflowTaskId = "parent_workflow_task_id";
+        String parentWorkflowId = "parent_workflow_id";
+        String subWorkflowId = "sub_workflow_id";
+
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setWorkflowId(subWorkflowId);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        subWorkflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel subWorkflowTask = new TaskModel();
+        subWorkflowTask.setSubWorkflowId(subWorkflowId);
+        subWorkflowTask.setWorkflowInstanceId(parentWorkflowId);
+        subWorkflowTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        // A JOIN recreated by retry/rerun stays SCHEDULED until every branch is done, so it
+        // must be expedited just like an IN_PROGRESS one; a message lost to the queue (e.g.
+        // popped but never executed) must be re-pushed, not just postponed.
+        TaskModel scheduledJoin = new TaskModel();
+        scheduledJoin.setTaskType(TaskType.TASK_TYPE_JOIN);
+        scheduledJoin.setReferenceTaskName("scheduled_join");
+        scheduledJoin.setTaskId("scheduled-join-task-id");
+        scheduledJoin.setStatus(TaskModel.Status.SCHEDULED);
+
+        TaskModel inProgressJoin = new TaskModel();
+        inProgressJoin.setTaskType(TaskType.TASK_TYPE_JOIN);
+        inProgressJoin.setReferenceTaskName("in_progress_join");
+        inProgressJoin.setTaskId("in-progress-join-task-id");
+        inProgressJoin.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        TaskModel completedJoin = new TaskModel();
+        completedJoin.setTaskType(TaskType.TASK_TYPE_JOIN);
+        completedJoin.setReferenceTaskName("completed_join");
+        completedJoin.setTaskId("completed-join-task-id");
+        completedJoin.setStatus(TaskModel.Status.COMPLETED);
+
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId(parentWorkflowId);
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow
+                .getTasks()
+                .addAll(Arrays.asList(scheduledJoin, inProgressJoin, completedJoin));
+
+        when(executionDAOFacade.getTaskModel(parentWorkflowTaskId)).thenReturn(subWorkflowTask);
+        when(executionDAOFacade.getWorkflowModel(subWorkflowId, false)).thenReturn(subWorkflow);
+        when(executionDAOFacade.getWorkflowModel(parentWorkflowId, true))
+                .thenReturn(parentWorkflow);
+        // SCHEDULED join's queue message is gone (popped-and-dropped under load); the
+        // IN_PROGRESS join's message is still present (backed off).
+        when(queueDAO.containsMessage(anyString(), eq("scheduled-join-task-id"))).thenReturn(false);
+        when(queueDAO.containsMessage(anyString(), eq("in-progress-join-task-id")))
+                .thenReturn(true);
+
+        workflowExecutor.updateParentWorkflowTask(subWorkflow);
+
+        verify(queueDAO, times(1))
+                .push(anyString(), eq("scheduled-join-task-id"), anyInt(), eq(0L));
+        verify(queueDAO, times(1))
+                .postpone(anyString(), eq("in-progress-join-task-id"), anyInt(), eq(0L));
+        verify(queueDAO, never())
+                .push(anyString(), eq("completed-join-task-id"), anyInt(), anyLong());
+        verify(queueDAO, never())
+                .postpone(anyString(), eq("completed-join-task-id"), anyInt(), anyLong());
+    }
+
+    @Test
     public void testScheduleNextIteration() {
         WorkflowModel workflow = generateSampleWorkflow();
         workflow.setTaskToDomain(
