@@ -55,8 +55,8 @@ class AgentspanAIModelProviderTest {
     // =================================================================
 
     /**
-     * resolveConfiguredBaseUrl returns the value from the env-var fallback path when the
-     * credential store has nothing — verified via a subclass that injects a fake env value.
+     * resolveConfiguredBaseUrl returns the value from the env-var fallback path when the credential
+     * store has nothing — verified via a subclass that injects a fake env value.
      */
     @Test
     void resolveConfiguredBaseUrl_returnsEnvVarFallbackWhenCredentialStoreEmpty() {

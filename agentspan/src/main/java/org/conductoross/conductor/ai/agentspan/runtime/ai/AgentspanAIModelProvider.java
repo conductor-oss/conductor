@@ -199,10 +199,10 @@ public class AgentspanAIModelProvider extends AIModelProvider {
     }
 
     /**
-     * Resolve the configured base URL for a provider. Checks the credential store first, then
-     * falls back to {@link System#getenv} so that {@code OPENAI_BASE_URL} (and equivalents) work
-     * in standalone OSS mode. Used by the provider-status endpoint — the server-side source of
-     * truth that doctor and the UI query.
+     * Resolve the configured base URL for a provider. Checks the credential store first, then falls
+     * back to {@link System#getenv} so that {@code OPENAI_BASE_URL} (and equivalents) work in
+     * standalone OSS mode. Used by the provider-status endpoint — the server-side source of truth
+     * that doctor and the UI query.
      */
     public String resolveConfiguredBaseUrl(String provider) {
         String envVarName = PROVIDER_TO_BASE_URL_ENV.get(provider.toLowerCase());
@@ -224,8 +224,8 @@ public class AgentspanAIModelProvider extends AIModelProvider {
     }
 
     /**
-     * Resolve base URL: per-agent (from task input) &gt; credential store &gt; System.getenv()
-     * &gt; null.
+     * Resolve base URL: per-agent (from task input) &gt; credential store &gt; System.getenv() &gt;
+     * null.
      *
      * <p>The System.getenv() fallback covers standalone OSS mode where no credential store
      * env-seeder is active, ensuring OPENAI_BASE_URL and similar variables take effect.
@@ -263,8 +263,7 @@ public class AgentspanAIModelProvider extends AIModelProvider {
         //    instead of the configured self-hosted host.
         String sysEnvVal = getSystemEnv(envVarName);
         if (sysEnvVal != null && !sysEnvVal.isBlank()) {
-            log.debug(
-                    "Using system env {} for provider '{}': {}", envVarName, provider, sysEnvVal);
+            log.debug("Using system env {} for provider '{}': {}", envVarName, provider, sysEnvVal);
             return sysEnvVal;
         }
 
