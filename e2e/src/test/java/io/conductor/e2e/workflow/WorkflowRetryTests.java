@@ -1013,7 +1013,18 @@ public class WorkflowRetryTests {
         try {
             Workflow wf = workflowClient.getWorkflow(workflowId, true);
             System.out.println(
-                    "WFDUMP [" + label + "] parent=" + workflowId + " status=" + wf.getStatus());
+                    "WFDUMP ["
+                            + label
+                            + "] parent="
+                            + workflowId
+                            + " status="
+                            + wf.getStatus()
+                            + " reason="
+                            + wf.getReasonForIncompletion()
+                            + " failedTaskId="
+                            + wf.getFailedTaskId()
+                            + " failedRefs="
+                            + wf.getFailedReferenceTaskNames());
             for (Task t : wf.getTasks()) {
                 System.out.println(
                         "WFDUMP   task ref="
@@ -1022,6 +1033,10 @@ public class WorkflowRetryTests {
                                 + t.getTaskType()
                                 + " status="
                                 + t.getStatus()
+                                + " retried="
+                                + t.isRetried()
+                                + " executed="
+                                + t.isExecuted()
                                 + " taskId="
                                 + t.getTaskId()
                                 + " subWfId="
@@ -1035,7 +1050,9 @@ public class WorkflowRetryTests {
                                 "WFDUMP     child="
                                         + t.getSubWorkflowId()
                                         + " status="
-                                        + child.getStatus());
+                                        + child.getStatus()
+                                        + " reason="
+                                        + child.getReasonForIncompletion());
                         for (Task ct : child.getTasks()) {
                             System.out.println(
                                     "WFDUMP       ctask ref="

@@ -4814,13 +4814,92 @@ public class WorkflowRerunTests {
     /** Await the workflow reaching {@code expected} status within {@code seconds}. */
     private void awaitWorkflowStatus(
             String workflowId, Workflow.WorkflowStatus expected, int seconds, String message) {
-        await().atMost(seconds, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () ->
-                                assertEquals(
-                                        expected,
-                                        workflowClient.getWorkflow(workflowId, true).getStatus(),
-                                        message));
+        try {
+            await().atMost(seconds, TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () ->
+                                    assertEquals(
+                                            expected,
+                                            workflowClient
+                                                    .getWorkflow(workflowId, true)
+                                                    .getStatus(),
+                                            message));
+        } catch (Throwable t) {
+            dumpWorkflowTree(workflowId, "await " + expected + " TIMED OUT");
+            throw t;
+        }
+    }
+
+    /**
+     * DIAGNOSTIC (temporary): dump the workflow + child task tree with the retry/executed flags and
+     * failure reasons, so a wrong-status timeout in CI shows why the workflow moved. Grep CI logs
+     * for WFDUMP.
+     */
+    private void dumpWorkflowTree(String workflowId, String label) {
+        try {
+            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+            System.out.println(
+                    "WFDUMP ["
+                            + label
+                            + "] wf="
+                            + workflowId
+                            + " status="
+                            + wf.getStatus()
+                            + " reason="
+                            + wf.getReasonForIncompletion()
+                            + " failedTaskId="
+                            + wf.getFailedTaskId()
+                            + " failedRefs="
+                            + wf.getFailedReferenceTaskNames());
+            for (Task t : wf.getTasks()) {
+                System.out.println(
+                        "WFDUMP   task ref="
+                                + t.getReferenceTaskName()
+                                + " type="
+                                + t.getTaskType()
+                                + " status="
+                                + t.getStatus()
+                                + " retried="
+                                + t.isRetried()
+                                + " executed="
+                                + t.isExecuted()
+                                + " taskId="
+                                + t.getTaskId()
+                                + " subWfId="
+                                + t.getSubWorkflowId()
+                                + " reason="
+                                + t.getReasonForIncompletion());
+                if (t.getSubWorkflowId() != null) {
+                    try {
+                        Workflow child = workflowClient.getWorkflow(t.getSubWorkflowId(), true);
+                        System.out.println(
+                                "WFDUMP     child="
+                                        + t.getSubWorkflowId()
+                                        + " status="
+                                        + child.getStatus()
+                                        + " reason="
+                                        + child.getReasonForIncompletion());
+                        for (Task ct : child.getTasks()) {
+                            System.out.println(
+                                    "WFDUMP       ctask ref="
+                                            + ct.getReferenceTaskName()
+                                            + " type="
+                                            + ct.getTaskType()
+                                            + " status="
+                                            + ct.getStatus()
+                                            + " retried="
+                                            + ct.isRetried()
+                                            + " reason="
+                                            + ct.getReasonForIncompletion());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("WFDUMP     child fetch failed: " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("WFDUMP failed for " + workflowId + ": " + e.getMessage());
+        }
     }
 
     @Test
