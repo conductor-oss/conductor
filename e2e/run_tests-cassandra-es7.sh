@@ -26,7 +26,10 @@ for i in $(seq 1 60); do
 done
 
 cd "$SCRIPT_DIR/.."
-./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
+# ai: config-cassandra-es7.properties sets conductor.integrations.ai.enabled=false (cassandra has
+#     no skill DAOs), so the agent endpoints do not exist on this flavor.
+# filestorage: the /api/files resource is not available on the cassandra server.
+./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" -DE2E_DISABLED_CAPABILITIES=ai,filestorage "$@"
 EXIT_CODE=$?
 
 docker compose -f "$COMPOSE_FILE" down -v
