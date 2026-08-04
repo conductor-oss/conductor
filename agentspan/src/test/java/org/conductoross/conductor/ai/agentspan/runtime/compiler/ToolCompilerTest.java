@@ -84,6 +84,161 @@ class ToolCompilerTest {
     }
 
     @Test
+    void expandsExplicitOcgToolNamesWithoutDiscovery() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://ocg.example/mcp/",
+                                        "headers",
+                                        Map.of("X-API-Key", "${OCG_KEY}"),
+                                        "tool_names",
+                                        List.of("cg_query", "cg_shortest_path")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+
+        assertThat(expanded)
+                .extracting(ToolConfig::getName)
+                .containsExactly("cg_query", "cg_shortest_path");
+        assertThat(expanded)
+                .allSatisfy(
+                        tool -> {
+                            assertThat(tool.getInputSchema()).isNotEmpty();
+                            assertThat(ToolCompiler.requiresMcpDiscovery(tool)).isFalse();
+                            assertThat(tool.getConfig())
+                                    .containsEntry("server_url", "https://ocg.example/mcp/")
+                                    .doesNotContainKeys("tool_names", "toolNames");
+                        });
+        @SuppressWarnings("unchecked")
+        Map<String, Object> configParams =
+                (Map<String, Object>)
+                        new ToolCompiler().compileToolSpecs(expanded).get(0).get("configParams");
+        assertThat(configParams.get("headers")).isEqualTo(Map.of("X-API-Key", "#{OCG_KEY}"));
+    }
+
+    @Test
+    void expandsServerManagedOcgCapabilityFromCatalog() {
+        ToolConfig marker =
+                ToolConfig.builder()
+                        .name("ocg")
+                        .toolType("ocg")
+                        .config(
+                                Map.of(
+                                        "ocg_url", "https://ocg.example/",
+                                        "credential", "OCG_KEY",
+                                        "credentials", List.of("OCG_KEY")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(marker));
+
+        assertThat(expanded)
+                .extracting(ToolConfig::getName)
+                .containsExactly(
+                        "cg_query",
+                        "cg_get_neighbors",
+                        "cg_traverse",
+                        "cg_shortest_path",
+                        "cg_has_path",
+                        "cg_find_all_paths");
+        assertThat(expanded)
+                .allSatisfy(
+                        tool -> {
+                            assertThat(tool.getToolType()).isEqualTo("mcp");
+                            assertThat(tool.getInputSchema()).isNotEmpty();
+                            assertThat(ToolCompiler.requiresMcpDiscovery(tool)).isFalse();
+                            assertThat(tool.getConfig())
+                                    .containsEntry("server_url", "https://ocg.example/mcp/")
+                                    .containsEntry("credentials", List.of("OCG_KEY"))
+                                    .containsEntry("headers", Map.of("X-API-Key", "${OCG_KEY}"));
+                        });
+    }
+
+    @Test
+    void preservesGenericMcpAllowlistForFilteredDiscovery() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of("lookup_ticket")))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+
+        assertThat(expanded).containsExactly(server);
+        assertThat(ToolCompiler.requiresMcpDiscovery(expanded.get(0))).isTrue();
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks("support", expanded, List.of(), "openai/gpt-4o");
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("lookup_ticket");
+    }
+
+    @Test
+    void preservesDiscoveryForGenericMcpToolWithCallerSuppliedSchema() {
+        ToolConfig genericTool =
+                ToolConfig.builder()
+                        .name("lookup_ticket")
+                        .toolType("mcp")
+                        .inputSchema(Map.of("type", "object", "properties", Map.of()))
+                        .config(Map.of("server_url", "https://generic.example/mcp/"))
+                        .build();
+
+        assertThat(ToolCompiler.requiresMcpDiscovery(genericTool)).isTrue();
+    }
+
+    @Test
+    void preservesEmptyMcpAllowlistForDenyAllDiscoveryFilter() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("generic")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of()))
+                        .build();
+
+        List<ToolConfig> expanded = new ToolCompiler().expandExplicitMcpTools(List.of(server));
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks("support", expanded, List.of(), "openai/gpt-4o");
+
+        assertThat(expanded).containsExactly(server);
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("\"toolNames\":[]");
+    }
+
+    @Test
+    void stillRejectsUnknownToolsInTheOcgNamespace() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://ocg.example/mcp/",
+                                        "tool_names",
+                                        List.of("cg_delete_memory")))
+                        .build();
+
+        assertThatThrownBy(() -> new ToolCompiler().expandExplicitMcpTools(List.of(server)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cg_delete_memory");
+    }
+
+    @Test
     void buildApiDiscoveryTasksUsesListApiToolsForEachUniqueSpec() {
         ToolConfig first = apiTool("https://api.example.test/openapi.json");
         ToolConfig duplicate = apiTool("https://api.example.test/openapi.json");

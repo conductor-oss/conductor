@@ -116,6 +116,34 @@ describe("isFailedTaskStatus", () => {
 });
 
 describe("transformWorkflowExecutionToAgentRun timeline", () => {
+  it("uses the server-provided aggregate token usage", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "root_llm",
+            taskType: "LLM_CHAT_COMPLETE",
+            inputData: { model: "gpt", messages: [] },
+            outputData: { promptTokens: 10, completionTokens: 2 },
+          }),
+        ],
+        {
+          aggregateTokenUsage: {
+            promptTokens: 60,
+            completionTokens: 12,
+            totalTokens: 72,
+          },
+        },
+      ),
+    );
+
+    expect(run.totalTokens).toEqual({
+      promptTokens: 60,
+      completionTokens: 12,
+      totalTokens: 72,
+    });
+  });
+
   it("preserves structured execution input, output, and runtime type for inspection", () => {
     const run = transformWorkflowExecutionToAgentRun(
       execution([], {
@@ -273,6 +301,50 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     expect(
       discoveryCalls.every((event) => event.parallelGroup === undefined),
     ).toBe(true);
+  });
+
+  it("labels an MCP call in a loop with its semantic tool name", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "call_123__1",
+          taskType: "CALL_MCP_TOOL",
+          loopOverTask: true,
+          inputData: {
+            _agent_tool_name: "cg_query",
+            method: "cg_query",
+            arguments: { query: "health checks" },
+          },
+          outputData: { content: [] },
+        }),
+      ]),
+    );
+
+    const event = run.turns[0].events[0];
+    expect(event.toolName).toBe("MCP_TOOL_CG_QUERY");
+    expect(event.summary).toContain("MCP_TOOL_CG_QUERY");
+    expect(event.taskMeta?.taskType).toBe("CALL_MCP_TOOL");
+  });
+
+  it("uses the MCP method as the semantic name for a root-level call", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "call_456",
+          taskType: "CALL_MCP_TOOL",
+          inputData: {
+            method: "cg_get_neighbors",
+            arguments: { entity_id: "entity-1" },
+          },
+          outputData: { content: [] },
+        }),
+      ]),
+    );
+
+    const event = run.turns.flatMap((turn) => turn.events)[0];
+    expect(event.toolName).toBe("MCP_TOOL_CG_GET_NEIGHBORS");
+    expect(event.summary).toBe("MCP_TOOL_CG_GET_NEIGHBORS");
+    expect(event.taskMeta?.taskType).toBe("CALL_MCP_TOOL");
   });
 
   it("renders root work after a loop as finalization", () => {

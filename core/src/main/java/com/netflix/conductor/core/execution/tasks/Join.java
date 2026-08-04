@@ -162,7 +162,7 @@ public class Join extends WorkflowSystemTask {
     private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
-        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        Object agentToolName = getAgentToolName(forkedTask);
         if (agentToolName != null) {
             compact.put("_agent_tool_name", agentToolName);
             compact.put("_agent_tool_output", output);
@@ -176,6 +176,22 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return compact;
+    }
+
+    private static Object getAgentToolName(TaskModel forkedTask) {
+        Map<String, Object> input = forkedTask.getInputData();
+        Object agentToolName = input.get("_agent_tool_name");
+        if (agentToolName != null) {
+            return agentToolName;
+        }
+
+        // SUB_WORKFLOW tasks keep the original task input under workflowInput. Read the agent
+        // dispatch metadata there without changing the mapper's established input contract.
+        Object workflowInput = input.get("workflowInput");
+        if (workflowInput instanceof Map<?, ?> nestedInput) {
+            return nestedInput.get("_agent_tool_name");
+        }
+        return null;
     }
 
     @Override

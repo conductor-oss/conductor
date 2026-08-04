@@ -73,6 +73,31 @@ class AgentConfigTest {
     }
 
     @Test
+    void longTermMemoryDeserializesFromSdkPayload() throws Exception {
+        String json =
+                """
+                {
+                  "name": "memory_agent",
+                  "model": "openai/gpt-4o",
+                  "longTermMemory": {
+                    "ocgUrl": "https://ocg.example",
+                    "credential": "OCG_PUBLIC_KEY",
+                    "agent": "agentspan",
+                    "user": "user:alice"
+                  }
+                }
+                """;
+
+        AgentConfig config = mapper.readValue(json, AgentConfig.class);
+
+        assertThat(config.getLongTermMemory()).isNotNull();
+        assertThat(config.getLongTermMemory().getOcgUrl()).isEqualTo("https://ocg.example");
+        assertThat(config.getLongTermMemory().getCredential()).isEqualTo("OCG_PUBLIC_KEY");
+        assertThat(config.getLongTermMemory().getAgent()).isEqualTo("agentspan");
+        assertThat(config.getLongTermMemory().getUser()).isEqualTo("user:alice");
+    }
+
+    @Test
     void testNestedAgentSerialization() throws Exception {
         AgentConfig config =
                 AgentConfig.builder()
