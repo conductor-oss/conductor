@@ -556,6 +556,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @return new instance of a task with "SCHEDULED" status
      */
     private TaskModel taskToBeRescheduled(WorkflowModel workflow, TaskModel task) {
+        // Container and join tasks are retried in place (same task id), mirroring
+        // OrkesWorkflowExecutor#taskToBeRescheduled. JOIN/EXCLUSIVE_JOIN are included here
+        // because conductor-oss's Join is async (Orkes' is sync and takes the sync-system-task
+        // copy branch there): a JOIN must never be SCHEDULED — the mappers create joins
+        // IN_PROGRESS because the async executor evaluates a JOIN only via execute() (called
+        // for IN_PROGRESS tasks), so a fresh SCHEDULED copy is popped, never evaluated, and
+        // postponed forever, leaving the workflow RUNNING after every branch completes.
+        if (task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.FORK_JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.EXCLUSIVE_JOIN.name())) {
+            task.setRetried(false);
+            task.setRetryCount(task.getRetryCount() + 1);
+            task.setStatus(IN_PROGRESS);
+            return task;
+        }
         TaskModel taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(idGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
