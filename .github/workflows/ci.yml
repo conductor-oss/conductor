@@ -20,6 +20,14 @@ on:
   schedule:
     - cron: "0 2 * * *"
 
+# A new push to a PR supersedes that PR's in-flight run - cancel it instead of
+# burning runners on a stale sha (same pattern as orkes-conductor's workflows).
+# Groups are separated by event type so nightly/dispatch/push runs never
+# cross-cancel each other or PR runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
