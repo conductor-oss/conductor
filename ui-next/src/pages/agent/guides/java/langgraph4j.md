@@ -1,7 +1,7 @@
 ## 1. Add dependencies
 
 ```groovy
-implementation 'org.conductoross:conductor-ai:5.1.0'
+implementation 'org.conductoross:conductor-client-ai:6.0.0.rc4'
 compileOnly 'dev.langchain4j:langchain4j-open-ai:1.0.0'
 compileOnly 'org.bsc.langgraph4j:langgraph4j-agent-executor:1.6.0-beta5'
 ```
