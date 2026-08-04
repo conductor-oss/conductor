@@ -79,8 +79,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.db.type=redis_standalone",
             "conductor.queue.type=redis_standalone",
             "conductor.app.sweeperThreadCount=1",
-            "conductor.app.sweeper.sweepBatchSize=1",
-            "conductor.app.sweeper.queuePopTimeout=750",
+            "conductor.app.sweeper.sweepBatchSize=10",
+            "conductor.app.sweeper.queuePopTimeout=10",
             "conductor.integrations.ai.enabled=true"
         })
 class ConductorAgentEndToEndTest {
@@ -732,7 +732,7 @@ class ConductorAgentEndToEndTest {
      */
     private void drainQueue(String taskType) {
         WorkflowSystemTask task = systemTask(taskType);
-        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+        for (String taskId : queueDAO.pop(taskType, 5, 0)) {
             asyncSystemTaskExecutor.execute(task, taskId);
         }
     }
