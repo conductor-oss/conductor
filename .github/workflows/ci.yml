@@ -409,35 +409,8 @@ jobs:
           echo "Selected e2e profiles: $(jq -r 'map(.name) | join(", ")' <<< "$include")"
           echo "matrix={\"include\":$include}" >> "$GITHUB_OUTPUT"
 
-  # The conductor server image is byte-identical for every e2e flavor (the flavors differ
-  # only in CONFIG_PROP and their compose sidecars), so build it once and let the matrix
-  # jobs load it instead of rebuilding the same image six times (~6 min each).
-  build-server-image:
-    needs: generate-e2e-matrix
-    if: ${{ needs.generate-e2e-matrix.outputs.matrix != '{"include":[]}' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-      - name: Build server image
-        run: docker build -t conductor:server -f docker/server/Dockerfile .
-      - name: Save image
-        run: docker save conductor:server | gzip > /tmp/conductor-server-image.tar.gz
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: conductor-server-image
-          path: /tmp/conductor-server-image.tar.gz
-          retention-days: 1
-
   e2e:
-    needs: [generate-e2e-matrix, build-server-image]
+    needs: generate-e2e-matrix
     if: ${{ needs.generate-e2e-matrix.outputs.matrix != '{"include":[]}' }}
     runs-on: ubuntu-latest
     permissions:
@@ -448,8 +421,6 @@ jobs:
       # All backends in parallel — each matrix job gets its own runner VM, so a full
       # 6-flavor matrix completes in ~15 minutes instead of ~90 sequential.
       matrix: ${{ fromJson(needs.generate-e2e-matrix.outputs.matrix) }}
-    env:
-      SKIP_SERVER_BUILD: "1"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -460,13 +431,6 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Download server image
-        uses: actions/download-artifact@v7
-        with:
-          name: conductor-server-image
-          path: /tmp
-      - name: Load server image
-        run: docker load < /tmp/conductor-server-image.tar.gz
       - name: Set up Zulu JDK 21
         uses: actions/setup-java@v5
         with:
