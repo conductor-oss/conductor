@@ -110,6 +110,13 @@ dependencies {
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
 
+    // reactor-netty brings netty-transport-classes-epoll along with the linux-x86_64 native library
+    // only. The cassandra driver probes for the epoll transport with Class.forName (NettyUtil), and
+    // on linux-aarch_64 the missing native library surfaces as an UnsatisfiedLinkError, which the
+    // driver does not catch - the server then fails to start on arm64. Ship both architectures.
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-x86_64'
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-aarch_64'
+
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')
     testImplementation "io.grpc:grpc-testing:${revGrpc}"
