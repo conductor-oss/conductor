@@ -387,7 +387,10 @@ public class DynamicForkTests {
         taskClient.updateTask(taskResult);
 
         // Since the retry count is 2 task will be retried.
-        await().atMost(30, TimeUnit.SECONDS)
+        // 90s: the workflow only turns FAILED when the JOIN's backed-off async evaluation
+        // observes the exhausted branch — nothing expedites a JOIN on plain task failure, so
+        // under CI load this regularly exceeds 30s.
+        await().atMost(90, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowAdminClient.getWorkflow(workflowId, true);
@@ -565,7 +568,9 @@ public class DynamicForkTests {
 
         var workflowId = workflowAdminClient.startWorkflow(startWorkflowRequest);
 
-        await().atMost(1, TimeUnit.MINUTES)
+        // 150s: each retry attempt is gated by the JOIN's backed-off evaluation plus the retry
+        // delay; the census showed only 2 of 3 attempts landing within 60s under CI load.
+        await().atMost(150, TimeUnit.SECONDS)
                 .pollInterval(2, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
