@@ -143,7 +143,7 @@ public class AgentspanAIModelProvider extends AIModelProvider {
                 // If we have a base URL but no user key, try the server-wide key
                 if (userApiKey == null && !keyless) {
                     String envVar = PROVIDER_TO_ENV_VAR.get(provider.toLowerCase());
-                    userApiKey = envVar != null ? System.getenv(envVar) : null;
+                    userApiKey = envVar != null ? getSystemEnv(envVar) : null;
                 }
                 if (userApiKey != null || keyless) {
                     AIModel model = createModelWithKey(provider, userApiKey, baseUrl);
@@ -270,8 +270,14 @@ public class AgentspanAIModelProvider extends AIModelProvider {
         return null;
     }
 
-    /** Reads an env variable. Protected so tests can override without PowerMock. */
+    /** Reads an env variable, stripping surrounding whitespace. Protected so tests can override. */
     protected String getSystemEnv(String name) {
+        String value = readRawEnv(name);
+        return value != null ? value.strip() : null;
+    }
+
+    /** Returns the raw value of an env variable. Package-private for testing. */
+    String readRawEnv(String name) {
         return System.getenv(name);
     }
 
