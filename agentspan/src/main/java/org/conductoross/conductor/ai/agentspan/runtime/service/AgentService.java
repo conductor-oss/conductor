@@ -886,19 +886,14 @@ public class AgentService {
 
     /**
      * Persist an agent-generated workflow with the metadata lifecycle used by normal workflow
-     * definitions. Direct DAO updates bypass {@link MetadataService} and leave a newly deployed
-     * agent's create time at zero, which prevents the definitions table from rendering it.
+     * definitions, routing to {@link MetadataService#registerWorkflowDef}/{@link
+     * MetadataService#updateWorkflowDef} so the create/update {@link
+     * org.conductoross.conductor.core.listener.MetadataChangeListener} events fire correctly.
+     * {@code createTime} itself no longer needs juggling here — {@link
+     * MetadataService#updateWorkflowDef} preserves it on update.
      */
     private void upsertWorkflowDef(WorkflowDef def) {
-        Optional<WorkflowDef> existing =
-                metadataDAO.getWorkflowDef(def.getName(), def.getVersion());
-        if (existing.isPresent()) {
-            // Older direct-DAO deployments have no create time; repair it on their next deploy.
-            if (existing.get().getCreateTime() == 0) {
-                def.setCreateTime(System.currentTimeMillis());
-            } else {
-                def.setCreateTime(existing.get().getCreateTime());
-            }
+        if (metadataDAO.getWorkflowDef(def.getName(), def.getVersion()).isPresent()) {
             metadataService.updateWorkflowDef(def);
         } else {
             metadataService.registerWorkflowDef(def);

@@ -42,6 +42,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.conductoross.conductor.common.metadata.agent.CallbackConfig;
 import org.conductoross.conductor.common.metadata.agent.CompileResponse;
 import org.conductoross.conductor.common.metadata.agent.CreateTrackingWorkflowRequest;
@@ -525,6 +526,52 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertFalse(workflow.getInput().containsKey("credentials"));
         assertFalse(workflow.getInput().containsKey("SHOULD_NOT_BE_WORKFLOW_INPUT"));
         assertTrue(first.getRequiredWorkers().contains(statefulTool));
+    }
+
+    @Test
+    void deployStampsCreateTimeAndRedeployPreservesIt() {
+        String agent = "createtime_agent_" + UUID.randomUUID().toString().replace('-', '_');
+
+        agentService.deploy(
+                AgentStartRequest.builder()
+                        .agentConfig(
+                                AgentConfig.builder()
+                                        .name(agent)
+                                        .model("openai/gpt-4o-mini")
+                                        .build())
+                        .build());
+
+        long firstCreateTime = createTimeOf(agent);
+        assertTrue(firstCreateTime > 0);
+
+        // Redeploy the same agent (same name -> same version, per AgentCompiler) with a real
+        // change, and confirm createTime is carried forward rather than reset.
+        agentService.deploy(
+                AgentStartRequest.builder()
+                        .agentConfig(
+                                AgentConfig.builder()
+                                        .name(agent)
+                                        .model("openai/gpt-4o-mini")
+                                        .tools(
+                                                List.of(
+                                                        ToolConfig.builder()
+                                                                .name("createtime_tool_" + agent)
+                                                                .description("Added on redeploy")
+                                                                .toolType("worker")
+                                                                .build()))
+                                        .build())
+                        .build());
+
+        assertEquals(firstCreateTime, createTimeOf(agent));
+    }
+
+    private long createTimeOf(String agentName) {
+        return agentService.listAgents().stream()
+                .filter(summary -> agentName.equals(summary.getName()))
+                .findFirst()
+                .map(AgentSummary::getCreateTime)
+                .orElseThrow(
+                        () -> new AssertionError("Agent not found in listAgents(): " + agentName));
     }
 
     @Test

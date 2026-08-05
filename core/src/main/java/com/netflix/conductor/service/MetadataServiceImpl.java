@@ -124,6 +124,12 @@ public class MetadataServiceImpl implements MetadataService {
      * @param workflowDef Workflow definition to be updated
      */
     public void updateWorkflowDef(WorkflowDef workflowDef) {
+        long createTime =
+                metadataDAO
+                        .getWorkflowDef(workflowDef.getName(), workflowDef.getVersion())
+                        .map(WorkflowDef::getCreateTime)
+                        .orElse(0L);
+        workflowDef.setCreateTime(createTime == 0 ? System.currentTimeMillis() : createTime);
         workflowDef.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateWorkflowDef(workflowDef);
         metadataChangeListener.onWorkflowDefUpdated(workflowDef);

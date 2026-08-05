@@ -332,6 +332,36 @@ public class MetadataServiceTest {
         verify(metadataDAO, times(1)).updateWorkflowDef(workflowDef);
     }
 
+    @Test
+    public void testUpdateWorkflowDefPreservesCreateTime() {
+        String workflowName = "another-workflow";
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(workflowName);
+        workflowDef.setOwnerEmail("sample@test.com");
+        List<WorkflowTask> tasks = new ArrayList<>();
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("hello");
+        workflowTask.setName("hello");
+        tasks.add(workflowTask);
+        workflowDef.setTasks(tasks);
+
+        metadataService.registerWorkflowDef(workflowDef);
+        long originalCreateTime = workflowDef.getCreateTime();
+        assertTrue(originalCreateTime > 0);
+        when(metadataDAO.getWorkflowDef(workflowName, workflowDef.getVersion()))
+                .thenReturn(Optional.of(workflowDef));
+
+        WorkflowDef updated = new WorkflowDef();
+        updated.setName(workflowName);
+        updated.setVersion(workflowDef.getVersion());
+        updated.setOwnerEmail("sample@test.com");
+        updated.setTasks(tasks);
+        updated.setCreateTime(999L); // caller attempts to overwrite createTime
+        metadataService.updateWorkflowDef(Collections.singletonList(updated));
+
+        assertEquals(originalCreateTime, updated.getCreateTime().longValue());
+    }
+
     @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefWithCaseExpression() {
         WorkflowDef workflowDef = new WorkflowDef();
