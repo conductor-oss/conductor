@@ -18,6 +18,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -27,6 +29,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.WorkflowService;
 
 /** Aggregates LLM token usage across an execution and its sub-workflow tree. */
+@Component
 public final class AgentExecutionTokenUsageAggregator {
 
     private static final Logger log =
@@ -34,18 +37,15 @@ public final class AgentExecutionTokenUsageAggregator {
 
     private final WorkflowService workflowService;
     private final Map<String, Workflow> childWorkflows;
-    private final String rootExecutionId;
 
-    public AgentExecutionTokenUsageAggregator(
-            WorkflowService workflowService, String rootExecutionId) {
+    @Autowired
+    public AgentExecutionTokenUsageAggregator(WorkflowService workflowService) {
         this.workflowService = workflowService;
-        this.rootExecutionId = rootExecutionId;
         this.childWorkflows = null;
     }
 
     public AgentExecutionTokenUsageAggregator(Map<String, Workflow> childWorkflows) {
         this.workflowService = null;
-        this.rootExecutionId = null;
         this.childWorkflows = childWorkflows;
     }
 
@@ -108,11 +108,7 @@ public final class AgentExecutionTokenUsageAggregator {
         try {
             return workflowService.getExecutionStatus(childId, true);
         } catch (RuntimeException e) {
-            log.warn(
-                    "Unable to include sub-workflow {} in token aggregation for {}",
-                    childId,
-                    rootExecutionId,
-                    e);
+            log.warn("Unable to include sub-workflow {} in token aggregation", childId, e);
             return null;
         }
     }

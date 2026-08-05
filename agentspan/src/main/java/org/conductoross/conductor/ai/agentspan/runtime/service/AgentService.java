@@ -70,6 +70,7 @@ public class AgentService {
     private final MetadataDAO metadataDAO;
 
     private final WorkflowService workflowService;
+    private final AgentExecutionTokenUsageAggregator executionTokenUsageAggregator;
     private final TaskService taskService;
     private final WorkflowExecutor workflowExecutor;
 
@@ -1461,9 +1462,7 @@ public class AgentService {
      */
     public Workflow getFullExecutionWithAggregate(String executionId) {
         Workflow root = getFullExecution(executionId);
-        root.setAggregateTokenUsage(
-                new AgentExecutionTokenUsageAggregator(workflowService, executionId)
-                        .aggregate(root));
+        root.setAggregateTokenUsage(executionTokenUsageAggregator.aggregate(root));
         return root;
     }
 
