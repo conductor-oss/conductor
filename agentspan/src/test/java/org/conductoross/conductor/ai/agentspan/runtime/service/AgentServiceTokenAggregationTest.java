@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -38,7 +39,8 @@ class AgentServiceTokenAggregationTest {
         Map<String, Workflow> executions =
                 Map.of("root", root, "child", child, "grandchild", grandchild);
 
-        Workflow.AggregateTokenUsage aggregate = AgentService.aggregateTokenUsage(root, executions);
+        Workflow.AggregateTokenUsage aggregate =
+                new AgentExecutionTokenUsageAggregator(executions).aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
@@ -52,7 +54,10 @@ class AgentServiceTokenAggregationTest {
     void fallsBackToPromptPlusCompletionWhenProviderOmitsTotal() {
         Workflow root = workflow("root", llmTask(7, 3, 0));
 
-        assertThat(AgentService.aggregateTokenUsage(root, Map.of()).getTotalTokens())
+        assertThat(
+                        new AgentExecutionTokenUsageAggregator(Map.of())
+                                .aggregate(root)
+                                .getTotalTokens())
                 .isEqualTo(10L);
     }
 
@@ -66,7 +71,7 @@ class AgentServiceTokenAggregationTest {
                         subWorkflowTask("child"),
                         subWorkflowTask("child"));
         Workflow.AggregateTokenUsage aggregate =
-                AgentService.aggregateTokenUsage(root, Map.of("child", child));
+                new AgentExecutionTokenUsageAggregator(Map.of("child", child)).aggregate(root);
 
         assertThat(aggregate.getTotalTokens()).isEqualTo(36L);
     }
@@ -82,7 +87,8 @@ class AgentServiceTokenAggregationTest {
         Workflow available = workflow("available", llmTask(20, 4, 24));
 
         Workflow.AggregateTokenUsage aggregate =
-                AgentService.aggregateTokenUsage(root, Map.of("available", available));
+                new AgentExecutionTokenUsageAggregator(Map.of("available", available))
+                        .aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
@@ -97,7 +103,7 @@ class AgentServiceTokenAggregationTest {
         long largeTokenCount = (long) Integer.MAX_VALUE + 1;
         Workflow root = workflow("root", llmTask(largeTokenCount, "2", largeTokenCount + 2));
 
-        assertThat(AgentService.aggregateTokenUsage(root, Map.of()))
+        assertThat(new AgentExecutionTokenUsageAggregator(Map.of()).aggregate(root))
                 .extracting(
                         Workflow.AggregateTokenUsage::getPromptTokens,
                         Workflow.AggregateTokenUsage::getCompletionTokens,
