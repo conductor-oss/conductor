@@ -21,6 +21,7 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.AggregateTokenUsage;
 import com.netflix.conductor.common.run.Workflow;
 
@@ -29,17 +30,47 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AgentServiceTokenAggregationTest {
 
     @Test
-    void aggregatesTokensAcrossNestedSubWorkflowsOnce() {
-        Workflow root = workflow("root", llmTask(10, 2, 12), subWorkflowTask("child"));
-        Workflow child = workflow("child", llmTask(20, 4, 24), subWorkflowTask("grandchild"));
-        Workflow grandchild =
+    void aggregatesTokensAcrossSiblingAndNestedSubWorkflowsOnce() {
+        Workflow root =
                 workflow(
-                        "grandchild",
+                        "root",
+                        llmTask(10, 2, 12),
+                        llmTask(20, 4, 24),
                         llmTask(30, 6, 36),
+                        subWorkflowTask("researcher"),
+                        subWorkflowTask("writer"));
+        Workflow researcher =
+                workflow(
+                        "researcher",
+                        llmTask(40, 8, 48),
+                        llmTask(50, 10, 60),
+                        subWorkflowTask("search"),
+                        subWorkflowTask("analysis"));
+        Workflow writer =
+                workflow(
+                        "writer",
+                        llmTask(60, 12, 72),
+                        llmTask(70, 14, 84),
+                        subWorkflowTask("outline"),
+                        subWorkflowTask("review"));
+        Workflow search = workflow("search", llmTask(80, 16, 96));
+        Workflow analysis = workflow("analysis", llmTask(90, 18, 108));
+        Workflow outline = workflow("outline", llmTask(100, 20, 120));
+        Workflow review =
+                workflow(
+                        "review",
+                        llmTask(110, 22, 132),
                         // A malformed cycle must not duplicate root usage.
                         subWorkflowTask("root"));
         Map<String, Workflow> executions =
-                Map.of("root", root, "child", child, "grandchild", grandchild);
+                Map.of(
+                        "root", root,
+                        "researcher", researcher,
+                        "writer", writer,
+                        "search", search,
+                        "analysis", analysis,
+                        "outline", outline,
+                        "review", review);
 
         AggregateTokenUsage aggregate =
                 new AgentExecutionTokenUsageAggregator(executions).aggregate(root);
@@ -49,7 +80,7 @@ class AgentServiceTokenAggregationTest {
                         AggregateTokenUsage::getPromptTokens,
                         AggregateTokenUsage::getCompletionTokens,
                         AggregateTokenUsage::getTotalTokens)
-                .containsExactly(60L, 12L, 72L);
+                .containsExactly(660L, 132L, 792L);
     }
 
     @Test
@@ -122,7 +153,7 @@ class AgentServiceTokenAggregationTest {
 
     private static Task llmTask(Object promptTokens, Object completionTokens, Object tokenUsed) {
         Task task = new Task();
-        task.setTaskType("LLM_CHAT_COMPLETE");
+        task.setTaskType(TaskType.LLM_CHAT_COMPLETE.name());
         Map<String, Object> output = new HashMap<>();
         output.put(LLMResponse.PROMPT_TOKENS, promptTokens);
         output.put(LLMResponse.COMPLETION_TOKENS, completionTokens);
@@ -133,7 +164,7 @@ class AgentServiceTokenAggregationTest {
 
     private static Task subWorkflowTask(String childId) {
         Task task = new Task();
-        task.setTaskType("SUB_WORKFLOW");
+        task.setTaskType(TaskType.SUB_WORKFLOW.name());
         task.setSubWorkflowId(childId);
         return task;
     }
