@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.AggregateTokenUsage;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.WorkflowService;
 
@@ -45,7 +46,7 @@ public final class AgentExecutionTokenUsageAggregator {
         this.childWorkflows = childWorkflows;
     }
 
-    public Workflow.AggregateTokenUsage aggregate(Workflow root) {
+    public AggregateTokenUsage aggregate(Workflow root) {
         long promptTokens = 0;
         long completionTokens = 0;
         long totalTokens = 0;
@@ -94,7 +95,7 @@ public final class AgentExecutionTokenUsageAggregator {
             }
         }
 
-        return new Workflow.AggregateTokenUsage(promptTokens, completionTokens, totalTokens);
+        return new AggregateTokenUsage(promptTokens, completionTokens, totalTokens);
     }
 
     private Workflow loadChild(String childId) {

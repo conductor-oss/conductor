@@ -20,6 +20,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenU
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.run.AggregateTokenUsage;
 import com.netflix.conductor.common.run.Workflow;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,14 +40,14 @@ class AgentServiceTokenAggregationTest {
         Map<String, Workflow> executions =
                 Map.of("root", root, "child", child, "grandchild", grandchild);
 
-        Workflow.AggregateTokenUsage aggregate =
+        AggregateTokenUsage aggregate =
                 new AgentExecutionTokenUsageAggregator(executions).aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
-                        Workflow.AggregateTokenUsage::getPromptTokens,
-                        Workflow.AggregateTokenUsage::getCompletionTokens,
-                        Workflow.AggregateTokenUsage::getTotalTokens)
+                        AggregateTokenUsage::getPromptTokens,
+                        AggregateTokenUsage::getCompletionTokens,
+                        AggregateTokenUsage::getTotalTokens)
                 .containsExactly(60L, 12L, 72L);
     }
 
@@ -70,7 +71,7 @@ class AgentServiceTokenAggregationTest {
                         llmTask(10, 2, 12),
                         subWorkflowTask("child"),
                         subWorkflowTask("child"));
-        Workflow.AggregateTokenUsage aggregate =
+        AggregateTokenUsage aggregate =
                 new AgentExecutionTokenUsageAggregator(Map.of("child", child)).aggregate(root);
 
         assertThat(aggregate.getTotalTokens()).isEqualTo(36L);
@@ -86,15 +87,15 @@ class AgentServiceTokenAggregationTest {
                         subWorkflowTask("available"));
         Workflow available = workflow("available", llmTask(20, 4, 24));
 
-        Workflow.AggregateTokenUsage aggregate =
+        AggregateTokenUsage aggregate =
                 new AgentExecutionTokenUsageAggregator(Map.of("available", available))
                         .aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
-                        Workflow.AggregateTokenUsage::getPromptTokens,
-                        Workflow.AggregateTokenUsage::getCompletionTokens,
-                        Workflow.AggregateTokenUsage::getTotalTokens)
+                        AggregateTokenUsage::getPromptTokens,
+                        AggregateTokenUsage::getCompletionTokens,
+                        AggregateTokenUsage::getTotalTokens)
                 .containsExactly(30L, 6L, 36L);
     }
 
@@ -105,9 +106,9 @@ class AgentServiceTokenAggregationTest {
 
         assertThat(new AgentExecutionTokenUsageAggregator(Map.of()).aggregate(root))
                 .extracting(
-                        Workflow.AggregateTokenUsage::getPromptTokens,
-                        Workflow.AggregateTokenUsage::getCompletionTokens,
-                        Workflow.AggregateTokenUsage::getTotalTokens)
+                        AggregateTokenUsage::getPromptTokens,
+                        AggregateTokenUsage::getCompletionTokens,
+                        AggregateTokenUsage::getTotalTokens)
                 .containsExactly(largeTokenCount, 2L, largeTokenCount + 2);
     }
 

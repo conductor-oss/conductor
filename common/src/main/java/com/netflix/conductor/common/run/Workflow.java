@@ -136,44 +136,6 @@ public class Workflow extends Auditable {
     /** Token usage summed across this workflow and its sub-workflow tree. */
     private AggregateTokenUsage aggregateTokenUsage;
 
-    public static class AggregateTokenUsage {
-        private long promptTokens;
-        private long completionTokens;
-        private long totalTokens;
-
-        public AggregateTokenUsage() {}
-
-        public AggregateTokenUsage(long promptTokens, long completionTokens, long totalTokens) {
-            this.promptTokens = promptTokens;
-            this.completionTokens = completionTokens;
-            this.totalTokens = totalTokens;
-        }
-
-        public long getPromptTokens() {
-            return promptTokens;
-        }
-
-        public void setPromptTokens(long promptTokens) {
-            this.promptTokens = promptTokens;
-        }
-
-        public long getCompletionTokens() {
-            return completionTokens;
-        }
-
-        public void setCompletionTokens(long completionTokens) {
-            this.completionTokens = completionTokens;
-        }
-
-        public long getTotalTokens() {
-            return totalTokens;
-        }
-
-        public void setTotalTokens(long totalTokens) {
-            this.totalTokens = totalTokens;
-        }
-    }
-
     public Workflow() {}
 
     public String getIdempotencyKey() {
