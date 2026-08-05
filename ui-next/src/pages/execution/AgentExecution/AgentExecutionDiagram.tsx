@@ -1513,6 +1513,8 @@ interface AgentExecutionDiagramProps {
   selectedId: string | null;
   onNodeSelect: (id: string | null, node: DetailNodeData | null) => void;
   onDrillIn?: (sub: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (sub: AgentRunData) => void;
   onBack?: () => void;
 }
 
