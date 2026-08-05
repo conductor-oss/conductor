@@ -7,13 +7,15 @@ import SectionHeader from "components/layout/SectionHeader";
 import { ConductorAutoComplete } from "components/ui/inputs/ConductorAutoComplete";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import SectionContainer from "components/ui/layout/SectionContainer";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate } from "react-router";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
-import { useAction, useFetch } from "utils/query";
+import { useAction, useAuthHeaders, useFetch } from "utils/query";
 import { useLocalStorage } from "utils";
 import { v4 as uuidv4 } from "uuid";
+import { fetchWithContext, useFetchContext } from "plugins/fetch";
+import { IntegrationCategory, IntegrationI, ModelDto } from "types/Integrations";
 import { AgentSummary } from "./types";
 
 type AgentStartResponse = {
@@ -39,6 +41,34 @@ export default function RunAgent() {
     agentVersion?: number;
   } | null;
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
+  const { data: aiProviders = [] } = useFetch<IntegrationI[]>(
+    `/integrations/provider?category=${IntegrationCategory.AI_MODEL}&activeOnly=true`,
+  );
+  const fetchContext = useFetchContext();
+  const authHeaders = useAuthHeaders();
+  const [rawModelOptions, setRawModelOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!aiProviders.length) return;
+    Promise.all(
+      aiProviders.map((p) =>
+        fetchWithContext(
+          `/integrations/provider/${p.name}/integration?activeOnly=true`,
+          fetchContext,
+          { headers: authHeaders },
+        )
+          .then((models: ModelDto[]) => models.map((m) => `${p.name}/${m.api}`))
+          .catch(() => [] as string[]),
+      ),
+    ).then((results) => setRawModelOptions(results.flat()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiProviders]);
+
+  const modelOptions = useMemo(
+    () => [...new Set(rawModelOptions)].sort(),
+    [rawModelOptions],
+  );
+
   const [agentName, setAgentName] = useState(selectedAgent?.agentName || "");
   const [agentVersion, setAgentVersion] = useState<number | undefined>(
     selectedAgent?.agentVersion,
@@ -198,14 +228,23 @@ export default function RunAgent() {
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorInput
+                  <ConductorAutoComplete
                     id="run-agent-model"
                     fullWidth
+                    freeSolo
                     label="Model override"
-                    placeholder="Use the deployed agent model"
+                    placeholder={
+                      modelOptions.length > 0
+                        ? "Select or type a model"
+                        : "e.g. openai/gpt-4o"
+                    }
+                    options={modelOptions}
                     value={model}
+                    onChange={(_: unknown, value: string | null) =>
+                      setModel(value || "")
+                    }
                     onTextInputChange={setModel}
-                    helperText="Optional. This applies only to this execution."
+                    helperText="Optional. Overrides the agent's configured model for this run only."
                   />
                 </Grid>
                 <Grid size={12}>
