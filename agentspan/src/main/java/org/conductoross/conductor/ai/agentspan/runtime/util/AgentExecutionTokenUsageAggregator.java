@@ -17,6 +17,7 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.AggregateTokenUsage;
@@ -55,14 +56,12 @@ public final class AgentExecutionTokenUsageAggregator {
     private void aggregateWorkflow(
             Workflow workflow, AggregateTokenUsage tokenUsage, Set<String> visitedWorkflowIds) {
         String workflowId = workflow.getWorkflowId();
-        if (StringUtils.isNotBlank(workflowId) && !visitedWorkflowIds.add(workflowId)) {
+        List<Task> tasks = workflow.getTasks();
+        if ((StringUtils.isNotBlank(workflowId) && !visitedWorkflowIds.add(workflowId))
+                || CollectionUtils.isEmpty(tasks)) {
             return;
         }
 
-        List<Task> tasks = workflow.getTasks();
-        if (tasks == null) {
-            return;
-        }
         for (Task task : tasks) {
             addTokenUsage(tokenUsage, task);
             aggregateChildWorkflow(task.getSubWorkflowId(), tokenUsage, visitedWorkflowIds);
