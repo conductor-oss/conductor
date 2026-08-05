@@ -3,13 +3,17 @@
   "version": "0.0.0",
   "description": "Open Source Conductor UI - Core components, pages, and plugin infrastructure",
   "type": "module",
-  "main": "./dist/conductor-ui.js",
-  "module": "./dist/conductor-ui.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/conductor-ui.js",
+      "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     },
     "./styles.css": "./dist/style.css",
     "./global.css": "./dist/global.css"
@@ -20,7 +24,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:lib": "vite build --mode lib && cp src/index.css dist/global.css",
+    "build:lib": "node scripts/clear-lib-watch.mjs && vite build --mode lib && tsc --emitDeclarationOnly --outDir dist --declaration --rootDir src --noEmit false && cp src/index.css dist/global.css",
+    "build:lib:watch": "node scripts/build-lib-watch.mjs",
     "build:all": "vite build && vite build --mode lib",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

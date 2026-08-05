@@ -20,7 +20,9 @@ vi.mock("reaflow", () => ({
         <div key={node.id}>
           {node.data.sublabel && <span>{node.data.sublabel}</span>}
           {node.data.strategy && (
-            <span data-testid={`strategy-${node.id}`}>{node.data.strategy}</span>
+            <span data-testid={`strategy-${node.id}`}>
+              {node.data.strategy}
+            </span>
           )}
           {node.data.maxTurns !== undefined && (
             <span data-testid={`turns-${node.id}`}>
@@ -116,7 +118,9 @@ describe("AgentDefinitionDiagram — strategy / maxTurns visibility", () => {
       />,
     );
 
-    expect(screen.getByTestId("strategy-agent")).toHaveTextContent("sequential");
+    expect(screen.getByTestId("strategy-agent")).toHaveTextContent(
+      "sequential",
+    );
     expect(screen.getByTestId("turns-agent")).toHaveTextContent("10 turns");
   });
 
@@ -142,7 +146,9 @@ describe("AgentDefinitionDiagram — strategy / maxTurns visibility", () => {
     );
 
     // Coordinator root: strategy and turns shown
-    expect(screen.getByTestId("strategy-agent")).toHaveTextContent("sequential");
+    expect(screen.getByTestId("strategy-agent")).toHaveTextContent(
+      "sequential",
+    );
     expect(screen.getByTestId("turns-agent")).toHaveTextContent("5 turns");
 
     // Leaf sub-agent: strategy and turns suppressed
