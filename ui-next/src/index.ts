@@ -194,6 +194,20 @@ export {
 } from "./utils/constants/route";
 
 // =============================================================================
+// LLM Task Form Components (for enterprise extension)
+// =============================================================================
+export { LLMInstructionsWithPromptPicker } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMInstructionsWithPromptPicker";
+export type { LLMInstructionsWithPromptPickerProps } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMInstructionsWithPromptPicker";
+export { LLMFormFields } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMFormFields";
+export { default as LLMFormFieldsWrapper } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMFormFieldsWrapper";
+export { default as TaskFormSection } from "./pages/definition/EditorPanel/TaskFormTab/forms/TaskFormSection";
+export {
+  fieldsToFieldsFieldsComponents,
+  updateField,
+} from "./utils/fieldHelpers";
+export { UiIntegrationsFieldType } from "./types/FormFieldTypes";
+
+// =============================================================================
 // Types
 // =============================================================================
 export * from "./types";
