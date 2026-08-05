@@ -18,7 +18,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -36,17 +35,9 @@ public final class AgentExecutionTokenUsageAggregator {
             LoggerFactory.getLogger(AgentExecutionTokenUsageAggregator.class);
 
     private final WorkflowService workflowService;
-    private final Map<String, Workflow> childWorkflows;
 
-    @Autowired
     public AgentExecutionTokenUsageAggregator(WorkflowService workflowService) {
         this.workflowService = workflowService;
-        this.childWorkflows = null;
-    }
-
-    public AgentExecutionTokenUsageAggregator(Map<String, Workflow> childWorkflows) {
-        this.workflowService = null;
-        this.childWorkflows = childWorkflows;
     }
 
     public AggregateTokenUsage aggregate(Workflow root) {
@@ -102,9 +93,6 @@ public final class AgentExecutionTokenUsageAggregator {
     }
 
     private Workflow loadChild(String childId) {
-        if (childWorkflows != null) {
-            return childWorkflows.get(childId);
-        }
         try {
             return workflowService.getExecutionStatus(childId, true);
         } catch (RuntimeException e) {

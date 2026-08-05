@@ -24,8 +24,13 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.AggregateTokenUsage;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.service.WorkflowService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AgentServiceTokenAggregationTest {
 
@@ -72,8 +77,7 @@ class AgentServiceTokenAggregationTest {
                         "outline", outline,
                         "review", review);
 
-        AggregateTokenUsage aggregate =
-                new AgentExecutionTokenUsageAggregator(executions).aggregate(root);
+        AggregateTokenUsage aggregate = aggregatorWith(executions).aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
@@ -87,11 +91,7 @@ class AgentServiceTokenAggregationTest {
     void fallsBackToPromptPlusCompletionWhenProviderOmitsTotal() {
         Workflow root = workflow("root", llmTask(7, 3, 0));
 
-        assertThat(
-                        new AgentExecutionTokenUsageAggregator(Map.of())
-                                .aggregate(root)
-                                .getTotalTokens())
-                .isEqualTo(10L);
+        assertThat(aggregatorWith(Map.of()).aggregate(root).getTotalTokens()).isEqualTo(10L);
     }
 
     @Test
@@ -103,8 +103,7 @@ class AgentServiceTokenAggregationTest {
                         llmTask(10, 2, 12),
                         subWorkflowTask("child"),
                         subWorkflowTask("child"));
-        AggregateTokenUsage aggregate =
-                new AgentExecutionTokenUsageAggregator(Map.of("child", child)).aggregate(root);
+        AggregateTokenUsage aggregate = aggregatorWith(Map.of("child", child)).aggregate(root);
 
         assertThat(aggregate.getTotalTokens()).isEqualTo(36L);
     }
@@ -120,8 +119,7 @@ class AgentServiceTokenAggregationTest {
         Workflow available = workflow("available", llmTask(20, 4, 24));
 
         AggregateTokenUsage aggregate =
-                new AgentExecutionTokenUsageAggregator(Map.of("available", available))
-                        .aggregate(root);
+                aggregatorWith(Map.of("available", available)).aggregate(root);
 
         assertThat(aggregate)
                 .extracting(
@@ -136,7 +134,7 @@ class AgentServiceTokenAggregationTest {
         long largeTokenCount = (long) Integer.MAX_VALUE + 1;
         Workflow root = workflow("root", llmTask(largeTokenCount, "2", largeTokenCount + 2));
 
-        assertThat(new AgentExecutionTokenUsageAggregator(Map.of()).aggregate(root))
+        assertThat(aggregatorWith(Map.of()).aggregate(root))
                 .extracting(
                         AggregateTokenUsage::getPromptTokens,
                         AggregateTokenUsage::getCompletionTokens,
@@ -149,6 +147,14 @@ class AgentServiceTokenAggregationTest {
         workflow.setWorkflowId(id);
         workflow.setTasks(List.of(tasks));
         return workflow;
+    }
+
+    private static AgentExecutionTokenUsageAggregator aggregatorWith(
+            Map<String, Workflow> executions) {
+        WorkflowService workflowService = mock(WorkflowService.class);
+        when(workflowService.getExecutionStatus(anyString(), eq(true)))
+                .thenAnswer(invocation -> executions.get(invocation.getArgument(0)));
+        return new AgentExecutionTokenUsageAggregator(workflowService);
     }
 
     private static Task llmTask(Object promptTokens, Object completionTokens, Object tokenUsed) {
