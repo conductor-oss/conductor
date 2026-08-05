@@ -47,55 +47,78 @@ public final class AgentExecutionTokenUsageAggregator {
     }
 
     public AggregateTokenUsage aggregate(Workflow root) {
-        long promptTokens = 0;
-        long completionTokens = 0;
-        long totalTokens = 0;
+        AggregateTokenUsage tokenUsage = new AggregateTokenUsage();
         Set<String> visited = new HashSet<>();
         Set<String> scheduled = new HashSet<>();
         Deque<Workflow> pending = new ArrayDeque<>();
-        pending.add(root);
-        if (StringUtils.isNotBlank(root.getWorkflowId())) {
-            scheduled.add(root.getWorkflowId());
-        }
+        schedule(root, pending, scheduled);
 
         while (!pending.isEmpty()) {
             Workflow workflow = pending.removeFirst();
-            String workflowId = workflow.getWorkflowId();
-            if (workflowId != null && !visited.add(workflowId)) {
+            if (alreadyVisited(workflow, visited)) {
                 continue;
             }
-
-            List<Task> workflowTasks = workflow.getTasks();
-            if (workflowTasks == null) {
-                continue;
-            }
-            for (Task task : workflowTasks) {
-                if ("LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType())) {
-                    Map<String, Object> output = task.getOutputData();
-                    if (output != null) {
-                        long taskPromptTokens = toLong(output.get("promptTokens"));
-                        long taskCompletionTokens = toLong(output.get("completionTokens"));
-                        long taskTotalTokens = toLong(output.get("tokenUsed"));
-                        promptTokens += taskPromptTokens;
-                        completionTokens += taskCompletionTokens;
-                        totalTokens +=
-                                taskTotalTokens > 0
-                                        ? taskTotalTokens
-                                        : taskPromptTokens + taskCompletionTokens;
-                    }
-                }
-
-                String childId = task.getSubWorkflowId();
-                if (StringUtils.isNotBlank(childId) && scheduled.add(childId)) {
-                    Workflow child = loadChild(childId);
-                    if (child != null) {
-                        pending.addLast(child);
-                    }
-                }
-            }
+            processTasks(workflow, tokenUsage, pending, scheduled);
         }
 
-        return new AggregateTokenUsage(promptTokens, completionTokens, totalTokens);
+        return tokenUsage;
+    }
+
+    private static boolean alreadyVisited(Workflow workflow, Set<String> visited) {
+        String workflowId = workflow.getWorkflowId();
+        return workflowId != null && !visited.add(workflowId);
+    }
+
+    private void processTasks(
+            Workflow workflow,
+            AggregateTokenUsage tokenUsage,
+            Deque<Workflow> pending,
+            Set<String> scheduled) {
+        List<Task> tasks = workflow.getTasks();
+        if (tasks == null) {
+            return;
+        }
+        for (Task task : tasks) {
+            addTokenUsage(tokenUsage, task);
+            scheduleChild(task.getSubWorkflowId(), pending, scheduled);
+        }
+    }
+
+    private static void addTokenUsage(AggregateTokenUsage aggregate, Task task) {
+        if (!"LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType())) {
+            return;
+        }
+        Map<String, Object> output = task.getOutputData();
+        if (output == null) {
+            return;
+        }
+
+        long promptTokens = toLong(output.get("promptTokens"));
+        long completionTokens = toLong(output.get("completionTokens"));
+        long totalTokens = toLong(output.get("tokenUsed"));
+        aggregate.setPromptTokens(aggregate.getPromptTokens() + promptTokens);
+        aggregate.setCompletionTokens(aggregate.getCompletionTokens() + completionTokens);
+        aggregate.setTotalTokens(
+                aggregate.getTotalTokens()
+                        + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
+    }
+
+    private void scheduleChild(String childId, Deque<Workflow> pending, Set<String> scheduled) {
+        if (StringUtils.isBlank(childId) || !scheduled.add(childId)) {
+            return;
+        }
+        Workflow child = loadChild(childId);
+        if (child != null) {
+            pending.addLast(child);
+        }
+    }
+
+    private static void schedule(
+            Workflow workflow, Deque<Workflow> pending, Set<String> scheduled) {
+        pending.add(workflow);
+        if (StringUtils.isNotBlank(workflow.getWorkflowId())) {
+            scheduled.add(workflow.getWorkflowId());
+        }
     }
 
     private Workflow loadChild(String childId) {
