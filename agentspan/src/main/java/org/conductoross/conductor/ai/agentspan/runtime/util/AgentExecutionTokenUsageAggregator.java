@@ -49,19 +49,21 @@ public final class AgentExecutionTokenUsageAggregator {
     public AggregateTokenUsage aggregate(Workflow root) {
         AggregateTokenUsage tokenUsage = new AggregateTokenUsage();
         Set<String> visited = new HashSet<>();
-        Set<String> scheduled = new HashSet<>();
-        List<Workflow> pendingWorkflows = new ArrayList<>();
-        pendingWorkflows.add(root);
+        Set<String> queuedWorkflowIds = new HashSet<>();
+        List<Workflow> currentWorkflows = List.of(root);
         if (StringUtils.isNotBlank(root.getWorkflowId())) {
-            scheduled.add(root.getWorkflowId());
+            queuedWorkflowIds.add(root.getWorkflowId());
         }
 
-        for (int workflowIndex = 0; workflowIndex < pendingWorkflows.size(); workflowIndex++) {
-            Workflow workflow = pendingWorkflows.get(workflowIndex);
-            if (alreadyVisited(workflow, visited)) {
-                continue;
+        while (!currentWorkflows.isEmpty()) {
+            List<Workflow> nextWorkflows = new ArrayList<>();
+            for (Workflow workflow : currentWorkflows) {
+                if (alreadyVisited(workflow, visited)) {
+                    continue;
+                }
+                processTasks(workflow, tokenUsage, nextWorkflows, queuedWorkflowIds);
             }
-            processTasks(workflow, tokenUsage, pendingWorkflows, scheduled);
+            currentWorkflows = nextWorkflows;
         }
 
         return tokenUsage;
@@ -75,15 +77,15 @@ public final class AgentExecutionTokenUsageAggregator {
     private void processTasks(
             Workflow workflow,
             AggregateTokenUsage tokenUsage,
-            List<Workflow> pendingWorkflows,
-            Set<String> scheduled) {
+            List<Workflow> nextWorkflows,
+            Set<String> queuedWorkflowIds) {
         List<Task> tasks = workflow.getTasks();
         if (tasks == null) {
             return;
         }
         for (Task task : tasks) {
             addTokenUsage(tokenUsage, task);
-            scheduleChild(task.getSubWorkflowId(), pendingWorkflows, scheduled);
+            queueChild(task.getSubWorkflowId(), nextWorkflows, queuedWorkflowIds);
         }
     }
 
@@ -106,14 +108,14 @@ public final class AgentExecutionTokenUsageAggregator {
                         + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
     }
 
-    private void scheduleChild(
-            String childId, List<Workflow> pendingWorkflows, Set<String> scheduled) {
-        if (StringUtils.isBlank(childId) || !scheduled.add(childId)) {
+    private void queueChild(
+            String childId, List<Workflow> nextWorkflows, Set<String> queuedWorkflowIds) {
+        if (StringUtils.isBlank(childId) || !queuedWorkflowIds.add(childId)) {
             return;
         }
         Workflow child = loadChild(childId);
         if (child != null) {
-            pendingWorkflows.add(child);
+            nextWorkflows.add(child);
         }
     }
 
