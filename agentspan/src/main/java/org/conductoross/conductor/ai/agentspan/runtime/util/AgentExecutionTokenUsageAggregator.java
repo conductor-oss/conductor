@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.util;
 import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.model.LLMResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -76,9 +77,9 @@ public final class AgentExecutionTokenUsageAggregator {
             return;
         }
 
-        long promptTokens = toLong(output.get("promptTokens"));
-        long completionTokens = toLong(output.get("completionTokens"));
-        long totalTokens = toLong(output.get("tokenUsed"));
+        long promptTokens = toLong(output.get(LLMResponse.PROMPT_TOKENS));
+        long completionTokens = toLong(output.get(LLMResponse.COMPLETION_TOKENS));
+        long totalTokens = toLong(output.get(LLMResponse.TOKEN_USED));
         aggregate.setPromptTokens(aggregate.getPromptTokens() + promptTokens);
         aggregate.setCompletionTokens(aggregate.getCompletionTokens() + completionTokens);
         aggregate.setTotalTokens(

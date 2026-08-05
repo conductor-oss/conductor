@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
+import org.conductoross.conductor.ai.model.LLMResponse;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -123,9 +124,9 @@ class AgentServiceTokenAggregationTest {
         Task task = new Task();
         task.setTaskType("LLM_CHAT_COMPLETE");
         Map<String, Object> output = new HashMap<>();
-        output.put("promptTokens", promptTokens);
-        output.put("completionTokens", completionTokens);
-        output.put("tokenUsed", tokenUsed);
+        output.put(LLMResponse.PROMPT_TOKENS, promptTokens);
+        output.put(LLMResponse.COMPLETION_TOKENS, completionTokens);
+        output.put(LLMResponse.TOKEN_USED, tokenUsed);
         task.setOutputData(output);
         return task;
     }
