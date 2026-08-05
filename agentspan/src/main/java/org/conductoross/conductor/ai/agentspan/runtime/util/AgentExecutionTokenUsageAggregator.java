@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.run.AggregateTokenUsage;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.WorkflowService;
@@ -70,7 +71,8 @@ public final class AgentExecutionTokenUsageAggregator {
 
     private static void addTokenUsage(AggregateTokenUsage aggregate, Task task) {
         Map<String, Object> output = task.getOutputData();
-        if (!"LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType()) || output == null) {
+        if (!TaskType.LLM_CHAT_COMPLETE.name().equalsIgnoreCase(task.getTaskType())
+                || output == null) {
             return;
         }
 
