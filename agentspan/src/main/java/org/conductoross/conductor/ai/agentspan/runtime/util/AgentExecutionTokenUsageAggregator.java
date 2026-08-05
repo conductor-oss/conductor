@@ -58,10 +58,9 @@ public final class AgentExecutionTokenUsageAggregator {
         while (!currentWorkflows.isEmpty()) {
             List<Workflow> nextWorkflows = new ArrayList<>();
             for (Workflow workflow : currentWorkflows) {
-                if (alreadyVisited(workflow, visited)) {
-                    continue;
+                if (!alreadyVisited(workflow, visited)) {
+                    processTasks(workflow, tokenUsage, nextWorkflows, queuedWorkflowIds);
                 }
-                processTasks(workflow, tokenUsage, nextWorkflows, queuedWorkflowIds);
             }
             currentWorkflows = nextWorkflows;
         }
