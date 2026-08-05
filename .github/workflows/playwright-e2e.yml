@@ -10,6 +10,11 @@ on:
         required: false
         default: "main"
 
+# The commit status key used both here (to set pending) and in conductor-ui
+# (to post the final result). Must be identical in both places.
+env:
+  STATUS_CONTEXT: "playwright-e2e / conductor-ui"
+
 jobs:
   dispatch:
     runs-on: ubuntu-latest
@@ -31,6 +36,16 @@ jobs:
           else
             echo "branch=main" >> $GITHUB_OUTPUT
           fi
+
+      - name: Set commit status → pending
+        run: |
+          gh api "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha || github.sha }}" \
+            -f state=pending \
+            -f context="${{ env.STATUS_CONTEXT }}" \
+            -f description="Waiting for Playwright E2E tests…" \
+            -f target_url="https://github.com/orkes-io/conductor-ui/actions"
+        env:
+          GH_TOKEN: ${{ secrets.ORKES_INTERNAL_RUNNER_SECRET }}
 
       - name: Trigger Playwright tests in conductor-ui
         run: |
