@@ -35,6 +35,17 @@ interface AgentRunViewProps {
 
 type ViewMode = "diagram" | "timeline";
 
+function findSubAgent(run: AgentRunData, id: string): AgentRunData | undefined {
+  for (const turn of run.turns) {
+    for (const subAgent of turn.subAgents) {
+      if (subAgent.id === id) return subAgent;
+      const nested = findSubAgent(subAgent, id);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
+}
+
 // ─── Status chip ──────────────────────────────────────────────────────────────
 
 function StatusChip({ status }: { status: AgentStatus }) {
@@ -318,6 +329,25 @@ export function AgentRunView({
       agentRun.turns[0] ? timelineItemId(agentRun.turns[0]) : "turn-1",
     );
   }, [agentRun.id]);
+
+  // A selected node may outlive the execution snapshot from which it was
+  // created. Keep its sub-agent data synchronized as polling adds the final
+  // status and output to the parent execution.
+  useEffect(() => {
+    if (!selectedId) return;
+    setSelectedNode((current) => {
+      const selectedRunId = current?.subAgentRun?.id;
+      if (!current || !selectedRunId) return current;
+
+      const latestRun = findSubAgent(agentRun, selectedRunId);
+      if (!latestRun || latestRun === current.subAgentRun) return current;
+      return {
+        ...current,
+        status: latestRun.status,
+        subAgentRun: latestRun,
+      };
+    });
+  }, [agentRun, selectedId]);
 
   const handleDragStart = useCallback((e: ReactMouseEvent) => {
     isDragging.current = true;
