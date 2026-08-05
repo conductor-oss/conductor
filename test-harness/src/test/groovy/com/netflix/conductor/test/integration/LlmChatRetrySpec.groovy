@@ -12,20 +12,42 @@
  */
 package com.netflix.conductor.test.integration
 
-import org.conductoross.conductor.ai.tasks.worker.LLMWorkers
-import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.CopyOnWriteArrayList
 
+import org.conductoross.conductor.ai.AIModelProvider
+import org.conductoross.conductor.ai.LLMs
+import org.conductoross.conductor.ai.model.ChatCompletion
+import org.conductoross.conductor.ai.model.LLMResponse
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Primary
+import org.springframework.core.env.StandardEnvironment
+import org.springframework.test.context.ContextConfiguration
+import org.springframework.test.context.TestPropertySource
+
+import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
+import com.netflix.conductor.core.execution.tasks.SystemTaskWorker
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
+import okhttp3.OkHttpClient
+
 /** Regression coverage for rematerializing workflow-derived LLM chat input when it is executed. */
+@ContextConfiguration(classes = [LlmChatRetryTestConfiguration])
+@TestPropertySource(properties = [
+        'conductor.system-task-workers.enabled=true',
+        'conductor.app.systemTaskWorkerThreadCount=2',
+        'conductor.app.systemTaskWorkerPollInterval=50ms',
+        'conductor.app.systemTaskQueuePopTimeout=100ms'
+])
 class LlmChatRetrySpec extends AbstractSpecification {
 
     private static final String WORKFLOW_NAME = 'retry_llm_chat_input'
@@ -37,9 +59,13 @@ class LlmChatRetrySpec extends AbstractSpecification {
     ExecutionDAOFacade executionDAOFacade
 
     @Autowired
-    LLMWorkers llmWorkers
+    SystemTaskWorker systemTaskWorker
+
+    @Autowired
+    RecordingLLMs recordingLLMs
 
     def setup() {
+        systemTaskWorker.stop()
         registerChatTaskDefinition()
         metadataService.registerWorkflowDef(workflowDefinition())
     }
@@ -50,6 +76,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
         } catch (ignored) {
             // The definition may already have been removed when setup failed.
         }
+        systemTaskWorker.stop()
     }
 
     def "LLM chat retry enriches mapper input when the task is picked up"() {
@@ -107,11 +134,14 @@ class LlmChatRetrySpec extends AbstractSpecification {
             assert workflowTask.taskReferenceName == ADD_TASK
         }
 
-        when: "The LLM worker rematerializes the chat request for this execution"
-        llmWorkers.enrichInput(retryWorkflow, retryChat)
+        when: "The system task worker polls and executes the queued retry"
+        systemTaskWorker.start()
 
-        then: "The mapper adds the workflow-derived history without changing the definition"
-        messageTexts(retryChat) == [DEFINITION_MESSAGE, '3']
+        then: "The LLM provider receives rematerialized history"
+        conditions.eventually {
+            assert recordingLLMs.chatRequests.size() == 1
+        }
+        chatMessageTexts(recordingLLMs.chatRequests[0]) == [DEFINITION_MESSAGE, '3']
         definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
     }
 
@@ -162,10 +192,39 @@ class LlmChatRetrySpec extends AbstractSpecification {
         return (task.inputData.messages as List<Map<String, Object>>)*.message
     }
 
+    private static List<String> chatMessageTexts(ChatCompletion chatCompletion) {
+        return chatCompletion.messages*.message
+    }
+
     private static List<String> definitionMessageTexts(WorkflowModel workflow) {
         WorkflowTask chat = workflow.workflowDefinition.tasks.find {
             it.taskReferenceName == CHAT_TASK
         }
         return (chat.inputParameters.messages as List<Map<String, Object>>)*.message
+    }
+}
+
+@TestConfiguration
+class LlmChatRetryTestConfiguration {
+
+    @Bean
+    @Primary
+    RecordingLLMs recordingLLMs() {
+        return new RecordingLLMs()
+    }
+}
+
+class RecordingLLMs extends LLMs {
+
+    final List<ChatCompletion> chatRequests = new CopyOnWriteArrayList<>()
+
+    RecordingLLMs() {
+        super([], null, new AIModelProvider([], new StandardEnvironment()), new OkHttpClient())
+    }
+
+    @Override
+    LLMResponse chatComplete(Task task, ChatCompletion chatCompletion) {
+        chatRequests.add(chatCompletion)
+        return LLMResponse.builder().result('stubbed response').build()
     }
 }

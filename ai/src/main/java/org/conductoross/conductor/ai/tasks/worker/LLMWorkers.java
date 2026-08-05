@@ -25,15 +25,17 @@ import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.TextCompletion;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.dal.ExecutionDAOFacade;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -56,42 +58,62 @@ public class LLMWorkers implements AnnotatedSystemTaskWorker {
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final LLMs llm;
-    private final ChatCompleteTaskMapper chatTaskMapper;
+    private final Map<String, TaskMapper> taskMappers;
     private final ParametersUtils parametersUtils;
+    private final ExecutionDAOFacade executionDAOFacade;
 
     public LLMWorkers(
-            LLMs llm, ChatCompleteTaskMapper chatTaskMapper, ParametersUtils parametersUtils) {
+            LLMs llm,
+            @Qualifier("taskMappersByTaskType") Map<String, TaskMapper> taskMappers,
+            ParametersUtils parametersUtils,
+            ExecutionDAOFacade executionDAOFacade) {
         this.llm = llm;
-        this.chatTaskMapper = chatTaskMapper;
+        this.taskMappers = taskMappers;
         this.parametersUtils = parametersUtils;
+        this.executionDAOFacade = executionDAOFacade;
         log.info("AI Workers initialized {}", llm.getClass());
     }
 
-    public void enrichInput(WorkflowModel workflow, TaskModel task) {
-        if (!ChatCompletion.NAME.equals(task.getTaskType()) || task.getWorkflowTask() == null) {
-            return;
+    private ChatCompletion resolveChatCompletion(Task task) {
+        WorkflowModel workflow =
+                executionDAOFacade.getWorkflowModel(task.getWorkflowInstanceId(), true);
+        TaskModel taskModel =
+                workflow.getTasks().stream()
+                        .filter(candidate -> task.getTaskId().equals(candidate.getTaskId()))
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Cannot find task %s in workflow %s"
+                                                        .formatted(
+                                                                task.getTaskId(),
+                                                                task.getWorkflowInstanceId())));
+        TaskMapper taskMapper = taskMappers.get(taskModel.getTaskType());
+        if (taskMapper == null) {
+            throw new IllegalStateException(
+                    "No task mapper registered for " + taskModel.getTaskType());
         }
         var input =
                 parametersUtils.getTaskInput(
-                        task.getWorkflowTask().getInputParameters(),
+                        taskModel.getWorkflowTask().getInputParameters(),
                         workflow,
-                        task.getWorkflowTask().getTaskDefinition(),
-                        task.getTaskId());
-        TaskModel enriched =
-                chatTaskMapper
+                        taskModel.getWorkflowTask().getTaskDefinition(),
+                        taskModel.getTaskId());
+        TaskModel rematerialized =
+                taskMapper
                         .getMappedTasks(
                                 TaskMapperContext.newBuilder()
                                         .withWorkflowModel(workflow)
-                                        .withWorkflowTask(task.getWorkflowTask())
+                                        .withWorkflowTask(taskModel.getWorkflowTask())
                                         .withTaskDefinition(
-                                                task.getWorkflowTask().getTaskDefinition())
+                                                taskModel.getWorkflowTask().getTaskDefinition())
                                         .withTaskInput(input)
-                                        .withTaskId(task.getTaskId())
-                                        .withRetryCount(task.getRetryCount())
-                                        .withRetryTaskId(task.getRetriedTaskId())
+                                        .withTaskId(taskModel.getTaskId())
+                                        .withRetryCount(taskModel.getRetryCount())
+                                        .withRetryTaskId(taskModel.getRetriedTaskId())
                                         .build())
                         .getFirst();
-        task.setInputData(enriched.getInputData());
+        return objectMapper.convertValue(rematerialized.getInputData(), ChatCompletion.class);
     }
 
     @WorkerTask(value = "GENERATE_IMAGE")
@@ -162,7 +184,8 @@ public class LLMWorkers implements AnnotatedSystemTaskWorker {
     @SneakyThrows
     @WorkerTask("LLM_CHAT_COMPLETE")
     public LLMResponse chatCompletion(ChatCompletion chatCompletion) {
-        return llm.chatComplete(TaskContext.get().getTask(), chatCompletion);
+        Task task = TaskContext.get().getTask();
+        return llm.chatComplete(task, resolveChatCompletion(task));
     }
 
     @WorkerTask("LLM_GENERATE_EMBEDDINGS")
