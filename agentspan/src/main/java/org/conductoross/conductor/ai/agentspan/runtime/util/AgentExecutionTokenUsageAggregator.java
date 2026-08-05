@@ -51,7 +51,10 @@ public final class AgentExecutionTokenUsageAggregator {
         Set<String> visited = new HashSet<>();
         Set<String> scheduled = new HashSet<>();
         List<Workflow> pendingWorkflows = new ArrayList<>();
-        schedule(root, pendingWorkflows, scheduled);
+        pendingWorkflows.add(root);
+        if (StringUtils.isNotBlank(root.getWorkflowId())) {
+            scheduled.add(root.getWorkflowId());
+        }
 
         for (int workflowIndex = 0; workflowIndex < pendingWorkflows.size(); workflowIndex++) {
             Workflow workflow = pendingWorkflows.get(workflowIndex);
@@ -111,14 +114,6 @@ public final class AgentExecutionTokenUsageAggregator {
         Workflow child = loadChild(childId);
         if (child != null) {
             pendingWorkflows.add(child);
-        }
-    }
-
-    private static void schedule(
-            Workflow workflow, List<Workflow> pendingWorkflows, Set<String> scheduled) {
-        pendingWorkflows.add(workflow);
-        if (StringUtils.isNotBlank(workflow.getWorkflowId())) {
-            scheduled.add(workflow.getWorkflowId());
         }
     }
 
