@@ -1789,7 +1789,7 @@ export function transformWorkflowExecutionToAgentRun(
     turns,
     status: mapWorkflowStatus(execution.status),
     agentDef,
-    totalTokens: {
+    totalTokens: execution.aggregateTokenUsage ?? {
       promptTokens: totalPromptTokens,
       completionTokens: totalCompletionTokens,
       totalTokens: totalPromptTokens + totalCompletionTokens,
