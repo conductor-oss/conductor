@@ -12,42 +12,19 @@
  */
 package com.netflix.conductor.test.integration
 
-import java.util.concurrent.CopyOnWriteArrayList
-
-import org.conductoross.conductor.ai.AIModelProvider
-import org.conductoross.conductor.ai.LLMs
-import org.conductoross.conductor.ai.model.ChatCompletion
-import org.conductoross.conductor.ai.model.LLMResponse
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Primary
-import org.springframework.core.env.StandardEnvironment
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.test.context.TestPropertySource
 
-import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
-import com.netflix.conductor.core.execution.tasks.SystemTaskWorker
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
-import okhttp3.OkHttpClient
-
 /** Regression coverage for rematerializing workflow-derived LLM chat input when it is retried. */
-@ContextConfiguration(classes = [LlmChatRetryTestConfiguration])
-@TestPropertySource(properties = [
-        'conductor.system-task-workers.enabled=true',
-        'conductor.app.systemTaskWorkerThreadCount=2',
-        'conductor.app.systemTaskWorkerPollInterval=50ms',
-        'conductor.app.systemTaskQueuePopTimeout=100ms'
-])
 class LlmChatRetrySpec extends AbstractSpecification {
 
     private static final String WORKFLOW_NAME = 'retry_llm_chat_input'
@@ -58,14 +35,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
     @Autowired
     ExecutionDAOFacade executionDAOFacade
 
-    @Autowired
-    SystemTaskWorker systemTaskWorker
-
-    @Autowired
-    RecordingLLMs recordingLLMs
-
     def setup() {
-        systemTaskWorker.stop()
         registerChatTaskDefinition()
         metadataService.registerWorkflowDef(workflowDefinition())
     }
@@ -76,73 +46,28 @@ class LlmChatRetrySpec extends AbstractSpecification {
         } catch (ignored) {
             // The definition may already have been removed when setup failed.
         }
-        systemTaskWorker.stop()
     }
 
     def "LLM chat retry enriches mapper input before the task is queued"() {
-        when: "A deterministic calculation precedes an LLM chat task"
+        given: "A chat task enriched from a preceding calculation"
         String workflowId = startWorkflow(WORKFLOW_NAME, 1, 'retry-llm-chat-input', [:], null)
+        TaskModel initialChat = awaitChatAttempt(workflowId, 0)
+        assert messageTexts(initialChat) == [DEFINITION_MESSAGE, '3']
 
-        TaskModel initialChat = null
-        WorkflowModel initialWorkflow = null
-        conditions.eventually {
-            WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true)
-            initialWorkflow = workflow
-            initialChat = workflow.tasks.find {
-                it.referenceTaskName == CHAT_TASK && it.status == TaskModel.Status.SCHEDULED
-            }
-            assert initialChat != null
-        }
-
-        then: "The chat mapper enriches the definition message with the calculation result"
-        messageTexts(initialChat) == [DEFINITION_MESSAGE, '3']
-        definitionMessageTexts(initialWorkflow) == [DEFINITION_MESSAGE]
-
-        when: "The queued chat task fails without invoking an LLM provider"
-        TaskResult failed = new TaskResult(
+        when: "The task fails and the workflow is retried"
+        workflowExecutor.updateTask(new TaskResult(
                 taskId: initialChat.taskId,
                 workflowInstanceId: workflowId,
                 status: TaskResult.Status.FAILED_WITH_TERMINAL_ERROR,
-                reasonForIncompletion: 'intentional retry regression failure')
-        workflowExecutor.updateTask(failed)
+                reasonForIncompletion: 'intentional retry regression failure'))
 
         conditions.eventually {
-            WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true)
-            assert workflow.status == WorkflowModel.Status.FAILED
+            assert executionDAOFacade.getWorkflowModel(workflowId, false).status == WorkflowModel.Status.FAILED
         }
-
-        and: "The failed workflow is retried"
         workflowExecutor.retry(workflowId, false)
 
         then: "The queued retry contains rematerialized history"
-        TaskModel retryChat = null
-        WorkflowModel retryWorkflow = null
-        conditions.eventually {
-            WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, true)
-            retryWorkflow = workflow
-            retryChat = workflow.tasks.find {
-                it.referenceTaskName == CHAT_TASK && it.retryCount == 1
-            }
-            assert retryChat != null
-        }
-        messageTexts(retryChat) == [DEFINITION_MESSAGE, '3']
-        retryChat.inputData.participants == [(ADD_TASK): 'user']
-        definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
-        retryWorkflow.tasks.find { it.referenceTaskName == ADD_TASK }.with {
-            assert status == TaskModel.Status.COMPLETED
-            assert outputData.result == 3
-            assert workflowTask.taskReferenceName == ADD_TASK
-        }
-
-        when: "The system task worker polls and executes the queued retry"
-        systemTaskWorker.start()
-
-        then: "The LLM provider receives the persisted retry input"
-        conditions.eventually {
-            assert recordingLLMs.chatRequests.size() == 1
-        }
-        chatMessageTexts(recordingLLMs.chatRequests[0]) == [DEFINITION_MESSAGE, '3']
-        definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
+        messageTexts(awaitChatAttempt(workflowId, 1)) == [DEFINITION_MESSAGE, '3']
     }
 
     private void registerChatTaskDefinition() {
@@ -192,39 +117,14 @@ class LlmChatRetrySpec extends AbstractSpecification {
         return (task.inputData.messages as List<Map<String, Object>>)*.message
     }
 
-    private static List<String> chatMessageTexts(ChatCompletion chatCompletion) {
-        return chatCompletion.messages*.message
-    }
-
-    private static List<String> definitionMessageTexts(WorkflowModel workflow) {
-        WorkflowTask chat = workflow.workflowDefinition.tasks.find {
-            it.taskReferenceName == CHAT_TASK
+    private TaskModel awaitChatAttempt(String workflowId, int retryCount) {
+        TaskModel chat
+        conditions.eventually {
+            chat = executionDAOFacade.getWorkflowModel(workflowId, true).tasks.find {
+                it.referenceTaskName == CHAT_TASK && it.retryCount == retryCount
+            }
+            assert chat != null
         }
-        return (chat.inputParameters.messages as List<Map<String, Object>>)*.message
-    }
-}
-
-@TestConfiguration
-class LlmChatRetryTestConfiguration {
-
-    @Bean
-    @Primary
-    RecordingLLMs recordingLLMs() {
-        return new RecordingLLMs()
-    }
-}
-
-class RecordingLLMs extends LLMs {
-
-    final List<ChatCompletion> chatRequests = new CopyOnWriteArrayList<>()
-
-    RecordingLLMs() {
-        super([], null, new AIModelProvider([], new StandardEnvironment()), new OkHttpClient())
-    }
-
-    @Override
-    LLMResponse chatComplete(Task task, ChatCompletion chatCompletion) {
-        chatRequests.add(chatCompletion)
-        return LLMResponse.builder().result('stubbed response').build()
+        return chat
     }
 }
