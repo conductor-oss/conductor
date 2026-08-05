@@ -50,15 +50,15 @@ public final class AgentExecutionTokenUsageAggregator {
         AggregateTokenUsage tokenUsage = new AggregateTokenUsage();
         Set<String> visited = new HashSet<>();
         Set<String> scheduled = new HashSet<>();
-        Deque<Workflow> pending = new ArrayDeque<>();
-        schedule(root, pending, scheduled);
+        List<Workflow> pendingWorkflows = new ArrayList<>();
+        schedule(root, pendingWorkflows, scheduled);
 
-        while (!pending.isEmpty()) {
-            Workflow workflow = pending.removeFirst();
+        for (int workflowIndex = 0; workflowIndex < pendingWorkflows.size(); workflowIndex++) {
+            Workflow workflow = pendingWorkflows.get(workflowIndex);
             if (alreadyVisited(workflow, visited)) {
                 continue;
             }
-            processTasks(workflow, tokenUsage, pending, scheduled);
+            processTasks(workflow, tokenUsage, pendingWorkflows, scheduled);
         }
 
         return tokenUsage;
@@ -72,7 +72,7 @@ public final class AgentExecutionTokenUsageAggregator {
     private void processTasks(
             Workflow workflow,
             AggregateTokenUsage tokenUsage,
-            Deque<Workflow> pending,
+            List<Workflow> pendingWorkflows,
             Set<String> scheduled) {
         List<Task> tasks = workflow.getTasks();
         if (tasks == null) {
@@ -80,7 +80,7 @@ public final class AgentExecutionTokenUsageAggregator {
         }
         for (Task task : tasks) {
             addTokenUsage(tokenUsage, task);
-            scheduleChild(task.getSubWorkflowId(), pending, scheduled);
+            scheduleChild(task.getSubWorkflowId(), pendingWorkflows, scheduled);
         }
     }
 
@@ -103,19 +103,20 @@ public final class AgentExecutionTokenUsageAggregator {
                         + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
     }
 
-    private void scheduleChild(String childId, Deque<Workflow> pending, Set<String> scheduled) {
+    private void scheduleChild(
+            String childId, List<Workflow> pendingWorkflows, Set<String> scheduled) {
         if (StringUtils.isBlank(childId) || !scheduled.add(childId)) {
             return;
         }
         Workflow child = loadChild(childId);
         if (child != null) {
-            pending.addLast(child);
+            pendingWorkflows.add(child);
         }
     }
 
     private static void schedule(
-            Workflow workflow, Deque<Workflow> pending, Set<String> scheduled) {
-        pending.add(workflow);
+            Workflow workflow, List<Workflow> pendingWorkflows, Set<String> scheduled) {
+        pendingWorkflows.add(workflow);
         if (StringUtils.isNotBlank(workflow.getWorkflowId())) {
             scheduled.add(workflow.getWorkflowId());
         }
