@@ -564,8 +564,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
       badgeBg: "#e8eeff",
       borderColor: "#93c5fd",
       modelName: defModel,
-      strategy,
-      maxTurns,
+      // Only show strategy/maxTurns when the root actually coordinates sub-agents;
+      // a lone agent carries SDK defaults (e.g. HANDOFF/25) that are meaningless here.
+      strategy: allSubAgents.length > 0 ? strategy : undefined,
+      maxTurns: allSubAgents.length > 0 ? maxTurns : undefined,
     },
   });
 
@@ -597,8 +599,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
           badgeBg: "#e8eeff",
           borderColor: "#93c5fd",
           modelName: sa.model,
-          strategy: sa.strategy,
-          maxTurns: sa.maxTurns,
+          // Suppress strategy/maxTurns for leaf sub-agents — the server may echo
+          // SDK defaults (HANDOFF/25) even when the agent has no sub-agents.
+          strategy: sa.subAgentCount > 0 ? sa.strategy : undefined,
+          maxTurns: sa.subAgentCount > 0 ? sa.maxTurns : undefined,
           subAgentCount: sa.subAgentCount || undefined,
         },
       });
