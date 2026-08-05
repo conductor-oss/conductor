@@ -24,19 +24,12 @@ import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.TextCompletion;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.dal.ExecutionDAOFacade;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.utils.ParametersUtils;
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
@@ -46,9 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Drives every {@code @WorkerTask} method on {@link LLMWorkers} with a stubbed {@link LLMs} so the
@@ -65,6 +55,7 @@ public class LLMWorkersTest {
     @BeforeEach
     void setUp() {
         llms = new RecordingLLMs();
+        workers = new LLMWorkers(llms);
         task = new Task();
         task.setTaskId("task-" + System.nanoTime());
         task.setWorkflowInstanceId("wf-" + System.nanoTime());
@@ -75,28 +66,6 @@ public class LLMWorkersTest {
         // SystemTaskWorker normally seeds this before invoking @WorkerTask methods. In a
         // unit test we have to do that ourselves.
         TaskContext.set(task);
-
-        WorkflowTask workflowTask = new WorkflowTask();
-        workflowTask.setType(ChatCompletion.NAME);
-        workflowTask.setTaskReferenceName("chat");
-        workflowTask.setInputParameters(Map.of("llmProvider", "fake", "model", "fake-1"));
-        TaskModel taskModel = new TaskModel();
-        taskModel.setTaskId(task.getTaskId());
-        taskModel.setTaskType(ChatCompletion.NAME);
-        taskModel.setWorkflowTask(workflowTask);
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId(task.getWorkflowInstanceId());
-        workflow.setTasks(List.of(taskModel));
-
-        ExecutionDAOFacade executionDAOFacade = mock(ExecutionDAOFacade.class);
-        when(executionDAOFacade.getWorkflowModel(eq(task.getWorkflowInstanceId()), eq(true)))
-                .thenReturn(workflow);
-        workers =
-                new LLMWorkers(
-                        llms,
-                        Map.<String, TaskMapper>of(ChatCompletion.NAME, new ChatCompleteTaskMapper()),
-                        new ParametersUtils(null),
-                        executionDAOFacade);
     }
 
     @AfterEach
@@ -123,7 +92,7 @@ public class LLMWorkersTest {
 
         assertSame(canned, out, "worker must return whatever LLMs.chatComplete produced");
         assertSame(task, llms.lastChatTask, "worker must forward the TaskContext-bound task");
-        assertEquals("fake", llms.lastChatCompletion.getLlmProvider());
+        assertSame(in, llms.lastChatCompletion, "worker must pass through the ChatCompletion");
     }
 
     // =================================================================

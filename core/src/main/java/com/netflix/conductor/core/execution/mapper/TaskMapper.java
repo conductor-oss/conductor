@@ -16,6 +16,7 @@ import java.util.List;
 
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 
 public interface TaskMapper {
 
@@ -23,4 +24,8 @@ public interface TaskMapper {
 
     List<TaskModel> getMappedTasks(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException;
+
+    /** Enriches recomputed input for a retried task when a mapper derives additional input. */
+    default void enrichTaskInput(WorkflowModel workflowModel, TaskModel taskModel)
+            throws TerminateWorkflowException {}
 }

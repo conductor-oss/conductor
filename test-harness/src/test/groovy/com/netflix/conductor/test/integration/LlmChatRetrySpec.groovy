@@ -40,7 +40,7 @@ import com.netflix.conductor.test.base.AbstractSpecification
 
 import okhttp3.OkHttpClient
 
-/** Regression coverage for rematerializing workflow-derived LLM chat input when it is executed. */
+/** Regression coverage for rematerializing workflow-derived LLM chat input when it is retried. */
 @ContextConfiguration(classes = [LlmChatRetryTestConfiguration])
 @TestPropertySource(properties = [
         'conductor.system-task-workers.enabled=true',
@@ -79,7 +79,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
         systemTaskWorker.stop()
     }
 
-    def "LLM chat retry enriches mapper input when the task is picked up"() {
+    def "LLM chat retry enriches mapper input before the task is queued"() {
         when: "A deterministic calculation precedes an LLM chat task"
         String workflowId = startWorkflow(WORKFLOW_NAME, 1, 'retry-llm-chat-input', [:], null)
 
@@ -114,7 +114,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
         and: "The failed workflow is retried"
         workflowExecutor.retry(workflowId, false)
 
-        then: "The queued retry contains only the workflow-definition input"
+        then: "The queued retry contains rematerialized history"
         TaskModel retryChat = null
         WorkflowModel retryWorkflow = null
         conditions.eventually {
@@ -125,7 +125,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
             }
             assert retryChat != null
         }
-        messageTexts(retryChat) == [DEFINITION_MESSAGE]
+        messageTexts(retryChat) == [DEFINITION_MESSAGE, '3']
         retryChat.inputData.participants == [(ADD_TASK): 'user']
         definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
         retryWorkflow.tasks.find { it.referenceTaskName == ADD_TASK }.with {
@@ -137,7 +137,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
         when: "The system task worker polls and executes the queued retry"
         systemTaskWorker.start()
 
-        then: "The LLM provider receives rematerialized history"
+        then: "The LLM provider receives the persisted retry input"
         conditions.eventually {
             assert recordingLLMs.chatRequests.size() == 1
         }

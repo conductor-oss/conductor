@@ -123,8 +123,13 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
         // Call AIModelTaskMapper.getMappedTask() to create the base TaskModel
         // (skips ChatCompleteTaskMapper's broken getHistory)
         TaskModel taskModel = super.getMappedTask(taskMapperContext);
-        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
+        enrichTaskInput(taskMapperContext.getWorkflowModel(), taskModel);
+        return taskModel;
+    }
 
+    @Override
+    public void enrichTaskInput(WorkflowModel workflowModel, TaskModel taskModel)
+            throws TerminateWorkflowException {
         // LLM credentials are the host's concern: embedded, the AI integration supplies the key
         // (OrkesAIModelProvider); standalone, AgentspanAIModelProvider resolves it. Nothing to
         // stamp here.
@@ -158,7 +163,6 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                                 "Error preparing chat completion task input: %s", e.getMessage()));
             }
         }
-        return taskModel;
     }
 
     /**

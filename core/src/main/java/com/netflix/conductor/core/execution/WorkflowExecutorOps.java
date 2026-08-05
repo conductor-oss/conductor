@@ -611,6 +611,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             taskToBeRetried.getWorkflowTask().getTaskDefinition(),
                             taskToBeRetried.getTaskId());
             taskToBeRetried.getInputData().putAll(taskInput);
+            deciderService.enrichTaskInput(workflow, taskToBeRetried);
         }
         clearLegacySubWorkflowId(taskToBeRetried);
 

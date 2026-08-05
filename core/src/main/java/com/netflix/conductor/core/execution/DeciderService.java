@@ -706,9 +706,18 @@ public class DeciderService {
                             rescheduled.getTaskId(),
                             taskDefinition);
             rescheduled.addInput(taskInput);
+            enrichTaskInput(workflow, rescheduled);
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
+    }
+
+    public void enrichTaskInput(WorkflowModel workflow, TaskModel task)
+            throws TerminateWorkflowException {
+        TaskMapper taskMapper = taskMappers.get(task.getTaskType());
+        if (taskMapper != null) {
+            taskMapper.enrichTaskInput(workflow, task);
+        }
     }
 
     private void resetRetriedTaskRuntimeState(TaskModel task) {

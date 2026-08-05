@@ -76,8 +76,13 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
     protected TaskModel getMappedTask(TaskMapperContext taskMapperContext)
             throws TerminateWorkflowException {
         TaskModel taskModel = super.getMappedTask(taskMapperContext);
-        WorkflowModel workflowModel = taskMapperContext.getWorkflowModel();
+        enrichTaskInput(taskMapperContext.getWorkflowModel(), taskModel);
+        return taskModel;
+    }
 
+    @Override
+    public void enrichTaskInput(WorkflowModel workflowModel, TaskModel taskModel)
+            throws TerminateWorkflowException {
         try {
             ChatCompletion chatCompletion =
                     objectMapper.convertValue(taskModel.getInputData(), ChatCompletion.class);
@@ -106,7 +111,6 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                                 "Error preparing chat completion task input: %s", e.getMessage()));
             }
         }
-        return taskModel;
     }
 
     protected void updateTaskModel(ChatCompletion chatCompletion, TaskModel simpleTask) {
