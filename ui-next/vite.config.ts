@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { createHash } from "crypto";
-import { globSync } from "fs";
-import { dirname, resolve } from "path";
+import { readdirSync } from "fs";
+import { dirname, resolve, sep } from "path";
 import { fileURLToPath } from "url";
 import { defineConfig, loadEnv, Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -40,18 +40,21 @@ export default defineConfig(({ mode }) => {
   // directory structure so enterprise can consume pre-built dist/ files via
   // deep imports (e.g. "conductor-ui/pages/definition/...").
   if (mode === "lib") {
-    const srcFiles = globSync("src/**/*.{ts,tsx}", {
-      cwd: __dirname,
-      exclude: (f) =>
-        f.includes(".test.") ||
-        f.includes(".spec.") ||
-        f.endsWith("setupTests.ts"),
-    });
+    const srcDir = resolve(__dirname, "src");
+    const srcFiles = readdirSync(srcDir, { recursive: true })
+      .map((entry) => entry.toString().split(sep).join("/"))
+      .filter(
+        (file) =>
+          /\.tsx?$/.test(file) &&
+          !file.includes(".test.") &&
+          !file.includes(".spec.") &&
+          !file.endsWith("setupTests.ts"),
+      );
 
     const input = Object.fromEntries(
       srcFiles.map((file) => [
-        file.replace(/^src\//, "").replace(/\.[^.]+$/, ""),
-        resolve(__dirname, file),
+        file.replace(/\.[^.]+$/, ""),
+        resolve(srcDir, file),
       ]),
     );
 
