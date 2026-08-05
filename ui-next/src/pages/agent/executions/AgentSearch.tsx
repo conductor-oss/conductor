@@ -15,7 +15,7 @@ import { RUN_AGENT_URL } from "utils/constants/route";
 import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
-import { usePushHistory } from "utils/hooks/usePushHistory";
+import { useNavigate } from "react-router";
 import { tryToJson } from "utils/utils";
 import AdvancedSearch from "./workflowSearchComponents/AdvancedSearch";
 import BasicSearch from "./workflowSearchComponents/BasicSearch";
@@ -120,7 +120,7 @@ export default function AgentPanel() {
     setRecentTaskSearch?.();
   };
 
-  const pushHistory = usePushHistory();
+  const navigate = useNavigate();
 
   const getTableTitle = (resultObj: TaskExecutionResult) => {
     const { results, totalHits } = resultObj;
@@ -150,7 +150,7 @@ export default function AgentPanel() {
               {
                 label: "Run agent",
                 color: "secondary",
-                onClick: () => pushHistory(RUN_AGENT_URL),
+                onClick: () => navigate(RUN_AGENT_URL),
                 startIcon: <PlayIcon />,
               },
             ]}

@@ -45,8 +45,8 @@ export default function Error({
       return;
     }
 
-    // If there's no previous history, go to home
-    if (navigate.length <= 1) {
+    // If there's no previous history entry, go to home
+    if (window.history.length <= 1) {
       navigate("/");
     } else {
       navigate(-1);
