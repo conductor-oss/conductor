@@ -16,6 +16,7 @@ import { useLocalStorage } from "utils";
 import { v4 as uuidv4 } from "uuid";
 import { fetchWithContext, useFetchContext } from "plugins/fetch";
 import { IntegrationCategory, IntegrationI, ModelDto } from "types/Integrations";
+import { FEATURES } from "utils/flags";
 import { AgentSummary } from "./types";
 
 type AgentStartResponse = {
@@ -43,6 +44,7 @@ export default function RunAgent() {
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
   const { data: aiProviders = [] } = useFetch<IntegrationI[]>(
     `/integrations/provider?category=${IntegrationCategory.AI_MODEL}&activeOnly=true`,
+    { enterpriseApiFeature: FEATURES.INTEGRATIONS },
   );
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
