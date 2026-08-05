@@ -65,29 +65,38 @@ public final class AgentExecutionTokenUsageAggregator {
         }
 
         for (Task task : tasks) {
-            Map<String, Object> output = task.getOutputData();
-            if (TaskType.LLM_CHAT_COMPLETE.name().equalsIgnoreCase(task.getTaskType())
-                    && output != null) {
-                long promptTokens = toLong(output.get(LLMResponse.PROMPT_TOKENS));
-                long completionTokens = toLong(output.get(LLMResponse.COMPLETION_TOKENS));
-                long totalTokens = toLong(output.get(LLMResponse.TOKEN_USED));
-                tokenUsage.setPromptTokens(tokenUsage.getPromptTokens() + promptTokens);
-                tokenUsage.setCompletionTokens(tokenUsage.getCompletionTokens() + completionTokens);
-                tokenUsage.setTotalTokens(
-                        tokenUsage.getTotalTokens()
-                                + (totalTokens > 0
-                                        ? totalTokens
-                                        : promptTokens + completionTokens));
-            }
+            addLlmTaskTokenUsage(tokenUsage, task);
+            aggregateSubWorkflowTokenUsage(task, tokenUsage, visitedWorkflowIds);
+        }
+    }
 
-            String childWorkflowId = task.getSubWorkflowId();
-            if (StringUtils.isNotBlank(childWorkflowId)
-                    && !visitedWorkflowIds.contains(childWorkflowId)) {
-                Workflow childWorkflow = loadChild(childWorkflowId);
-                if (childWorkflow != null) {
-                    aggregateWorkflow(childWorkflow, tokenUsage, visitedWorkflowIds);
-                }
-            }
+    private static void addLlmTaskTokenUsage(AggregateTokenUsage aggregate, Task task) {
+        Map<String, Object> output = task.getOutputData();
+        if (!TaskType.LLM_CHAT_COMPLETE.name().equalsIgnoreCase(task.getTaskType())
+                || output == null) {
+            return;
+        }
+
+        long promptTokens = toLong(output.get(LLMResponse.PROMPT_TOKENS));
+        long completionTokens = toLong(output.get(LLMResponse.COMPLETION_TOKENS));
+        long totalTokens = toLong(output.get(LLMResponse.TOKEN_USED));
+        aggregate.setPromptTokens(aggregate.getPromptTokens() + promptTokens);
+        aggregate.setCompletionTokens(aggregate.getCompletionTokens() + completionTokens);
+        aggregate.setTotalTokens(
+                aggregate.getTotalTokens()
+                        + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
+    }
+
+    private void aggregateSubWorkflowTokenUsage(
+            Task task, AggregateTokenUsage tokenUsage, Set<String> visitedWorkflowIds) {
+        String childWorkflowId = task.getSubWorkflowId();
+        if (StringUtils.isBlank(childWorkflowId) || visitedWorkflowIds.contains(childWorkflowId)) {
+            return;
+        }
+
+        Workflow childWorkflow = loadChild(childWorkflowId);
+        if (childWorkflow != null) {
+            aggregateWorkflow(childWorkflow, tokenUsage, visitedWorkflowIds);
         }
     }
 
