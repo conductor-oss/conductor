@@ -81,4 +81,40 @@ class AgentspanAIModelProviderTest {
     void resolveConfiguredBaseUrl_returnsNullWhenNeitherStoreNorEnvHasValue() {
         assertThat(provider.resolveConfiguredBaseUrl("openai")).isNull();
     }
+
+    // =================================================================
+    // API key trimming (issue-1437)
+    // =================================================================
+
+    private AgentspanAIModelProvider providerWithRawEnv(String envName, String rawValue) {
+        return new AgentspanAIModelProvider(
+                List.of(),
+                new StandardEnvironment(),
+                new OkHttpClient(),
+                new CredentialResolutionService(new NoopSecretsDAO())) {
+            @Override
+            String readRawEnv(String name) {
+                return envName.equals(name) ? rawValue : null;
+            }
+        };
+    }
+
+    @Test
+    void getSystemEnv_stripsTrailingNewline() {
+        assertThat(providerWithRawEnv("OPENAI_API_KEY", "sk-key\n").getSystemEnv("OPENAI_API_KEY"))
+                .isEqualTo("sk-key");
+    }
+
+    @Test
+    void getSystemEnv_stripsLeadingAndTrailingWhitespace() {
+        assertThat(
+                        providerWithRawEnv("OPENAI_API_KEY", "  sk-key  ")
+                                .getSystemEnv("OPENAI_API_KEY"))
+                .isEqualTo("sk-key");
+    }
+
+    @Test
+    void getSystemEnv_returnsNullWhenEnvVarAbsent() {
+        assertThat(provider.getSystemEnv("OPENAI_API_KEY_NONEXISTENT_XYZ")).isNull();
+    }
 }
