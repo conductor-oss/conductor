@@ -69,11 +69,8 @@ public final class AgentExecutionTokenUsageAggregator {
     }
 
     private static void addTokenUsage(AggregateTokenUsage aggregate, Task task) {
-        if (!"LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType())) {
-            return;
-        }
         Map<String, Object> output = task.getOutputData();
-        if (output == null) {
+        if (!"LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType()) || output == null) {
             return;
         }
 
