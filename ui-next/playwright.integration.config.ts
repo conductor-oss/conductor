@@ -31,10 +31,10 @@ export default defineConfig({
   testDir: "./e2e/integration",
 
   // Integration tests modify shared state, so run serially within each file.
-  // Files themselves can still run in parallel (fullyParallel: false means
-  // tests within a file run serially).
+  // Files themselves run in parallel across workers (fullyParallel: false
+  // means tests within a single file run serially).
   fullyParallel: false,
-  workers: process.env.CI ? 1 : 2,
+  workers: 2,
 
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -68,13 +68,24 @@ export default defineConfig({
   // so they exercise the same artifact that gets deployed.
   // VITE_WF_SERVER is passed to both the build step (ignored) and the preview
   // step (picked up by preview.proxy in vite.config.ts).
+  //
+  // In CI, build separately first (see ui-next-integration-ci.yml) and set
+  // SKIP_WEBSERVER_BUILD=true so the webServer only runs the lightweight
+  // preview — vite build + E2E_COVERAGE sourcemaps can OOM on the runner when
+  // combined with Docker.
   webServer: {
-    command: "pnpm build && pnpm preview",
+    command:
+      process.env.SKIP_WEBSERVER_BUILD === "true"
+        ? "pnpm preview"
+        : "pnpm build && pnpm preview",
     url: "http://localhost:1234",
     reuseExistingServer: !process.env.CI,
     timeout: 300_000, // allow up to 5 min for a cold build
     env: {
       VITE_WF_SERVER: CONDUCTOR_SERVER_URL,
+      // Raise the heap for `vite build` (especially with E2E_COVERAGE sourcemaps).
+      // CI pre-builds with SKIP_WEBSERVER_BUILD so this mainly helps local runs.
+      NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=8192",
     },
   },
 });
