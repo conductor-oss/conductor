@@ -116,6 +116,34 @@ describe("isFailedTaskStatus", () => {
 });
 
 describe("transformWorkflowExecutionToAgentRun timeline", () => {
+  it("uses the server-provided aggregate token usage", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "root_llm",
+            taskType: "LLM_CHAT_COMPLETE",
+            inputData: { model: "gpt", messages: [] },
+            outputData: { promptTokens: 10, completionTokens: 2 },
+          }),
+        ],
+        {
+          aggregateTokenUsage: {
+            promptTokens: 60,
+            completionTokens: 12,
+            totalTokens: 72,
+          },
+        },
+      ),
+    );
+
+    expect(run.totalTokens).toEqual({
+      promptTokens: 60,
+      completionTokens: 12,
+      totalTokens: 72,
+    });
+  });
+
   it("preserves structured execution input, output, and runtime type for inspection", () => {
     const run = transformWorkflowExecutionToAgentRun(
       execution([], {
