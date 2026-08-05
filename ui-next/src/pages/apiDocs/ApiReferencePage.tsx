@@ -13,8 +13,7 @@ const getSwaggerUrl = () =>
 
 export default function ApiReferencePage() {
   useEffect(() => {
-    // Redirect to Swagger UI
-    window.location.href = getSwaggerUrl();
+    window.location.replace(getSwaggerUrl());
   }, []);
 
   return (

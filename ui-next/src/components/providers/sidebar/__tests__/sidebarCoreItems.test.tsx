@@ -216,5 +216,12 @@ describe("getCoreSidebarItems", () => {
       expect(childIds).toContain("eventHandlerDefItem");
       expect(childIds).toContain("schedulerDefItem");
     });
+
+    it("returns swaggerItem configured to open in a new tab", () => {
+      const swaggerItem = findItem(items, "swaggerItem");
+      expect(swaggerItem).toBeDefined();
+      expect(swaggerItem?.linkTo).toBe("/api-reference");
+      expect(swaggerItem?.isOpenNewTab).toBe(true);
+    });
   });
 });
