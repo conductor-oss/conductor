@@ -87,6 +87,7 @@ public final class AgentExecutionTokenUsageAggregator {
                         + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
     }
 
+    /** Recursively aggregates token usage from the task's sub-workflow. */
     private void aggregateSubWorkflowTokenUsage(
             Task task, AggregateTokenUsage tokenUsage, Set<String> visitedWorkflowIds) {
         String childWorkflowId = task.getSubWorkflowId();
