@@ -15,7 +15,9 @@ storybook-static
 /playwright-report/
 /playwright-integration-report/
 /playwright-snapshots-report/
+/playwright-coverage-report/
 /playwright/.cache/
+/.playwright-coverage/
 
 # pnpm store (created inside project when running in Docker)
 .pnpm-store/

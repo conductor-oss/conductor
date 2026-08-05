@@ -138,6 +138,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
+      sourcemap: !!process.env.E2E_COVERAGE,
     },
     test: {
       globals: true,
