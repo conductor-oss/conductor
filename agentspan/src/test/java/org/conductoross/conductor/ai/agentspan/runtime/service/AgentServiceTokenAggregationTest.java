@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -39,24 +38,26 @@ class AgentServiceTokenAggregationTest {
         Map<String, Workflow> executions =
                 Map.of("root", root, "child", child, "grandchild", grandchild);
 
-        Map<String, Long> aggregate = AgentService.aggregateTokenUsage(root, executions::get);
+        Workflow.AggregateTokenUsage aggregate = AgentService.aggregateTokenUsage(root, executions);
 
         assertThat(aggregate)
-                .containsEntry("promptTokens", 60L)
-                .containsEntry("completionTokens", 12L)
-                .containsEntry("totalTokens", 72L);
+                .extracting(
+                        Workflow.AggregateTokenUsage::getPromptTokens,
+                        Workflow.AggregateTokenUsage::getCompletionTokens,
+                        Workflow.AggregateTokenUsage::getTotalTokens)
+                .containsExactly(60L, 12L, 72L);
     }
 
     @Test
     void fallsBackToPromptPlusCompletionWhenProviderOmitsTotal() {
         Workflow root = workflow("root", llmTask(7, 3, 0));
 
-        assertThat(AgentService.aggregateTokenUsage(root, ignored -> null))
-                .containsEntry("totalTokens", 10L);
+        assertThat(AgentService.aggregateTokenUsage(root, Map.of()).getTotalTokens())
+                .isEqualTo(10L);
     }
 
     @Test
-    void loadsARepeatedDescendantOnlyOnce() {
+    void countsARepeatedDescendantOnlyOnce() {
         Workflow child = workflow("child", llmTask(20, 4, 24));
         Workflow root =
                 workflow(
@@ -64,18 +65,10 @@ class AgentServiceTokenAggregationTest {
                         llmTask(10, 2, 12),
                         subWorkflowTask("child"),
                         subWorkflowTask("child"));
-        AtomicInteger childLoads = new AtomicInteger();
+        Workflow.AggregateTokenUsage aggregate =
+                AgentService.aggregateTokenUsage(root, Map.of("child", child));
 
-        Map<String, Long> aggregate =
-                AgentService.aggregateTokenUsage(
-                        root,
-                        ignored -> {
-                            childLoads.incrementAndGet();
-                            return child;
-                        });
-
-        assertThat(childLoads).hasValue(1);
-        assertThat(aggregate).containsEntry("totalTokens", 36L);
+        assertThat(aggregate.getTotalTokens()).isEqualTo(36L);
     }
 
     @Test
@@ -88,14 +81,15 @@ class AgentServiceTokenAggregationTest {
                         subWorkflowTask("available"));
         Workflow available = workflow("available", llmTask(20, 4, 24));
 
-        Map<String, Long> aggregate =
-                AgentService.aggregateTokenUsage(
-                        root, childId -> "available".equals(childId) ? available : null);
+        Workflow.AggregateTokenUsage aggregate =
+                AgentService.aggregateTokenUsage(root, Map.of("available", available));
 
         assertThat(aggregate)
-                .containsEntry("promptTokens", 30L)
-                .containsEntry("completionTokens", 6L)
-                .containsEntry("totalTokens", 36L);
+                .extracting(
+                        Workflow.AggregateTokenUsage::getPromptTokens,
+                        Workflow.AggregateTokenUsage::getCompletionTokens,
+                        Workflow.AggregateTokenUsage::getTotalTokens)
+                .containsExactly(30L, 6L, 36L);
     }
 
     @Test
@@ -103,10 +97,12 @@ class AgentServiceTokenAggregationTest {
         long largeTokenCount = (long) Integer.MAX_VALUE + 1;
         Workflow root = workflow("root", llmTask(largeTokenCount, "2", largeTokenCount + 2));
 
-        assertThat(AgentService.aggregateTokenUsage(root, ignored -> null))
-                .containsEntry("promptTokens", largeTokenCount)
-                .containsEntry("completionTokens", 2L)
-                .containsEntry("totalTokens", largeTokenCount + 2);
+        assertThat(AgentService.aggregateTokenUsage(root, Map.of()))
+                .extracting(
+                        Workflow.AggregateTokenUsage::getPromptTokens,
+                        Workflow.AggregateTokenUsage::getCompletionTokens,
+                        Workflow.AggregateTokenUsage::getTotalTokens)
+                .containsExactly(largeTokenCount, 2L, largeTokenCount + 2);
     }
 
     private static Workflow workflow(String id, Task... tasks) {
