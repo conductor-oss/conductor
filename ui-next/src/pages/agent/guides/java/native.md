@@ -2,7 +2,7 @@
 
 ```groovy
 dependencies {
-    implementation 'org.conductoross:conductor-ai:6.0.0'
+    implementation 'org.conductoross:conductor-ai'
 }
 ```
 
