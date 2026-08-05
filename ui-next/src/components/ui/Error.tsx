@@ -3,7 +3,7 @@ import Chip from "@mui/material/Chip";
 import { Theme } from "@mui/material/styles";
 import MuiButton from "components/ui/buttons/MuiButton";
 import MuiTypography from "components/ui/MuiTypography";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { HttpStatusCode } from "utils/constants/httpStatusCode";
 import { clear as clearTokens } from "components/features/auth/tokenManagerJotai";
 
@@ -28,6 +28,7 @@ export default function Error({
   error,
 }: ErrorProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleClick = () => {
     if (onClick) {
@@ -45,8 +46,9 @@ export default function Error({
       return;
     }
 
-    // If there's no previous history entry, go to home
-    if (window.history.length <= 1) {
+    // location.key is "default" on a direct/fresh load; a UUID when the user
+    // navigated here within the app — only go back if there's something to go back to.
+    if (location.key === "default") {
       navigate("/");
     } else {
       navigate(-1);
