@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.integration
 
+import org.conductoross.conductor.ai.tasks.worker.LLMWorkers
 import org.springframework.beans.factory.annotation.Autowired
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef
@@ -20,7 +21,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.core.dal.ExecutionDAOFacade
-import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -37,7 +37,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
     ExecutionDAOFacade executionDAOFacade
 
     @Autowired
-    SystemTaskRegistry systemTaskRegistry
+    LLMWorkers llmWorkers
 
     def setup() {
         registerChatTaskDefinition()
@@ -99,14 +99,20 @@ class LlmChatRetrySpec extends AbstractSpecification {
             assert retryChat != null
         }
         messageTexts(retryChat) == [DEFINITION_MESSAGE]
+        retryChat.inputData.participants == [(ADD_TASK): 'user']
         definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
+        retryWorkflow.tasks.find { it.referenceTaskName == ADD_TASK }.with {
+            assert status == TaskModel.Status.COMPLETED
+            assert outputData.result == 3
+            assert workflowTask.taskReferenceName == ADD_TASK
+        }
 
-        when: "The retry is picked up by its annotated system task"
-        systemTaskRegistry.get(TaskType.LLM_CHAT_COMPLETE.name()).execute(
-                retryWorkflow, retryChat, workflowExecutor)
+        when: "The LLM worker rematerializes the chat request for this execution"
+        llmWorkers.enrichInput(retryWorkflow, retryChat)
 
-        then: "The same chat mapper rematerializes the workflow-derived history before execution"
+        then: "The mapper adds the workflow-derived history without changing the definition"
         messageTexts(retryChat) == [DEFINITION_MESSAGE, '3']
+        definitionMessageTexts(retryWorkflow) == [DEFINITION_MESSAGE]
     }
 
     private void registerChatTaskDefinition() {
