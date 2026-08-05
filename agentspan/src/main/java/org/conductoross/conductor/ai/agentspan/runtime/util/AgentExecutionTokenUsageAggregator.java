@@ -48,43 +48,24 @@ public final class AgentExecutionTokenUsageAggregator {
 
     public AggregateTokenUsage aggregate(Workflow root) {
         AggregateTokenUsage tokenUsage = new AggregateTokenUsage();
-        Set<String> visited = new HashSet<>();
-        Set<String> queuedWorkflowIds = new HashSet<>();
-        List<Workflow> currentWorkflows = List.of(root);
-        if (StringUtils.isNotBlank(root.getWorkflowId())) {
-            queuedWorkflowIds.add(root.getWorkflowId());
-        }
-
-        while (!currentWorkflows.isEmpty()) {
-            List<Workflow> nextWorkflows = new ArrayList<>();
-            for (Workflow workflow : currentWorkflows) {
-                if (!alreadyVisited(workflow, visited)) {
-                    processTasks(workflow, tokenUsage, nextWorkflows, queuedWorkflowIds);
-                }
-            }
-            currentWorkflows = nextWorkflows;
-        }
-
+        aggregateWorkflow(root, tokenUsage, new HashSet<>());
         return tokenUsage;
     }
 
-    private static boolean alreadyVisited(Workflow workflow, Set<String> visited) {
+    private void aggregateWorkflow(
+            Workflow workflow, AggregateTokenUsage tokenUsage, Set<String> visitedWorkflowIds) {
         String workflowId = workflow.getWorkflowId();
-        return workflowId != null && !visited.add(workflowId);
-    }
+        if (StringUtils.isNotBlank(workflowId) && !visitedWorkflowIds.add(workflowId)) {
+            return;
+        }
 
-    private void processTasks(
-            Workflow workflow,
-            AggregateTokenUsage tokenUsage,
-            List<Workflow> nextWorkflows,
-            Set<String> queuedWorkflowIds) {
         List<Task> tasks = workflow.getTasks();
         if (tasks == null) {
             return;
         }
         for (Task task : tasks) {
             addTokenUsage(tokenUsage, task);
-            queueChild(task.getSubWorkflowId(), nextWorkflows, queuedWorkflowIds);
+            aggregateChildWorkflow(task.getSubWorkflowId(), tokenUsage, visitedWorkflowIds);
         }
     }
 
@@ -107,14 +88,14 @@ public final class AgentExecutionTokenUsageAggregator {
                         + (totalTokens > 0 ? totalTokens : promptTokens + completionTokens));
     }
 
-    private void queueChild(
-            String childId, List<Workflow> nextWorkflows, Set<String> queuedWorkflowIds) {
-        if (StringUtils.isBlank(childId) || !queuedWorkflowIds.add(childId)) {
+    private void aggregateChildWorkflow(
+            String childId, AggregateTokenUsage tokenUsage, Set<String> visitedWorkflowIds) {
+        if (StringUtils.isBlank(childId) || visitedWorkflowIds.contains(childId)) {
             return;
         }
         Workflow child = loadChild(childId);
         if (child != null) {
-            nextWorkflows.add(child);
+            aggregateWorkflow(child, tokenUsage, visitedWorkflowIds);
         }
     }
 
