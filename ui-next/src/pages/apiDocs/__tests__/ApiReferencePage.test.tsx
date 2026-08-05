@@ -1,10 +1,16 @@
 import { render } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import ApiReferencePage from "../ApiReferencePage";
 
 describe("ApiReferencePage", () => {
+  const originalLocation = window.location;
+
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    window.location = originalLocation;
   });
 
   it("replaces location with swagger url on mount", () => {
