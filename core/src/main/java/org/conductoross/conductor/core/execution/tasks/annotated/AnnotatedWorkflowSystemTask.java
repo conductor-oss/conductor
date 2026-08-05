@@ -48,14 +48,6 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    /**
-     * Creates a new AnnotatedWorkflowSystemTask.
-     *
-     * @param taskType The task type name
-     * @param method The annotated method to invoke
-     * @param bean The Spring bean instance containing the method
-     * @param annotation The @WorkerTask annotation metadata
-     */
     public AnnotatedWorkflowSystemTask(
             String taskType, Method method, Object bean, WorkerTask annotation) {
         super(taskType);

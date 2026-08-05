@@ -24,12 +24,14 @@ import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.TextCompletion;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
@@ -55,7 +57,7 @@ public class LLMWorkersTest {
     @BeforeEach
     void setUp() {
         llms = new RecordingLLMs();
-        workers = new LLMWorkers(llms);
+        workers = new LLMWorkers(llms, new ChatCompleteTaskMapper(), new ParametersUtils(null));
         task = new Task();
         task.setTaskId("task-" + System.nanoTime());
         task.setWorkflowInstanceId("wf-" + System.nanoTime());

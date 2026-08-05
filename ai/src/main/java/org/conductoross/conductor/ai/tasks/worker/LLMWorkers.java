@@ -25,6 +25,7 @@ import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.TextCompletion;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.tasks.mapper.ChatCompleteTaskMapper;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;
@@ -33,6 +34,10 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
+import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.model.TaskModel;
+import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
@@ -51,10 +56,42 @@ public class LLMWorkers implements AnnotatedSystemTaskWorker {
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final LLMs llm;
+    private final ChatCompleteTaskMapper chatTaskMapper;
+    private final ParametersUtils parametersUtils;
 
-    public LLMWorkers(LLMs llm) {
+    public LLMWorkers(
+            LLMs llm, ChatCompleteTaskMapper chatTaskMapper, ParametersUtils parametersUtils) {
         this.llm = llm;
+        this.chatTaskMapper = chatTaskMapper;
+        this.parametersUtils = parametersUtils;
         log.info("AI Workers initialized {}", llm.getClass());
+    }
+
+    public void enrichInput(WorkflowModel workflow, TaskModel task) {
+        if (!ChatCompletion.NAME.equals(task.getTaskType()) || task.getWorkflowTask() == null) {
+            return;
+        }
+        var input =
+                parametersUtils.getTaskInput(
+                        task.getWorkflowTask().getInputParameters(),
+                        workflow,
+                        task.getWorkflowTask().getTaskDefinition(),
+                        task.getTaskId());
+        TaskModel enriched =
+                chatTaskMapper
+                        .getMappedTasks(
+                                TaskMapperContext.newBuilder()
+                                        .withWorkflowModel(workflow)
+                                        .withWorkflowTask(task.getWorkflowTask())
+                                        .withTaskDefinition(
+                                                task.getWorkflowTask().getTaskDefinition())
+                                        .withTaskInput(input)
+                                        .withTaskId(task.getTaskId())
+                                        .withRetryCount(task.getRetryCount())
+                                        .withRetryTaskId(task.getRetriedTaskId())
+                                        .build())
+                        .getFirst();
+        task.setInputData(enriched.getInputData());
     }
 
     @WorkerTask(value = "GENERATE_IMAGE")

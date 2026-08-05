@@ -93,6 +93,9 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                                 beanName,
                                 taskType);
 
+                        AnnotatedSystemTaskMapper annotatedMapper =
+                                new AnnotatedSystemTaskMapper(
+                                        taskType, parametersUtils, metadataDAO);
                         AnnotatedWorkflowSystemTask task =
                                 new AnnotatedWorkflowSystemTask(taskType, method, bean, annotation);
 
@@ -100,11 +103,8 @@ public class WorkerTaskAnnotationScanner implements InitializingBean {
                         asyncSystemTasks.add(task);
 
                         // Register a TaskMapper for this task type so DeciderService can find it
-                        AnnotatedSystemTaskMapper mapper =
-                                new AnnotatedSystemTaskMapper(
-                                        taskType, parametersUtils, metadataDAO);
-                        LOGGER.info("Adding task mapper {} for task {}", mapper, taskType);
-                        taskMappers.put(taskType, mapper);
+                        LOGGER.info("Adding task mapper {} for task {}", annotatedMapper, taskType);
+                        taskMappers.put(taskType, annotatedMapper);
 
                         LOGGER.debug("Registered TaskMapper for annotated task type: {}", taskType);
                         foundMethods++;
