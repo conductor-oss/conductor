@@ -48,13 +48,18 @@ class LlmChatRetrySpec extends AbstractSpecification {
         }
     }
 
-    def "LLM chat retry enriches mapper input before the task is queued"() {
+    def "LLM chat retry preserves the originally assembled input"() {
         given: "A chat task enriched from a preceding calculation"
         String workflowId = startWorkflow(WORKFLOW_NAME, 1, 'retry-llm-chat-input', [:], null)
         TaskModel initialChat = awaitChatAttempt(workflowId, 0)
         assert messageTexts(initialChat) == [DEFINITION_MESSAGE, '3']
 
-        when: "The task fails and the workflow is retried"
+        when: "The participant output changes after the chat input was assembled"
+        TaskModel addTask = executionDAOFacade.getWorkflowModel(workflowId, true).getTaskByRefName(ADD_TASK)
+        addTask.outputData.result = 4
+        executionDAOFacade.updateTask(addTask)
+
+        and: "The chat task fails and the workflow is retried"
         workflowExecutor.updateTask(new TaskResult(
                 taskId: initialChat.taskId,
                 workflowInstanceId: workflowId,
@@ -66,7 +71,7 @@ class LlmChatRetrySpec extends AbstractSpecification {
         }
         workflowExecutor.retry(workflowId, false)
 
-        then: "The queued retry contains rematerialized history"
+        then: "The queued retry keeps the conversation assembled for the original attempt"
         messageTexts(awaitChatAttempt(workflowId, 1)) == [DEFINITION_MESSAGE, '3']
     }
 
