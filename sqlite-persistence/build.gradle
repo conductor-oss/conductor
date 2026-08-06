@@ -35,4 +35,8 @@ dependencies {
 test {
     //the MySQL unit tests must run within the same JVM to share the same embedded DB
     maxParallelForks = 1
+    // Issue #1497 regression tests need a non-UTC zone to be meaningful; CI runs UTC, where a
+    // local-time/UTC mismatch is invisible. TZ reaches both the forked JVM's default zone and
+    // the native SQLite library's localtime, so they agree.
+    environment 'TZ', 'America/Asuncion'
 }

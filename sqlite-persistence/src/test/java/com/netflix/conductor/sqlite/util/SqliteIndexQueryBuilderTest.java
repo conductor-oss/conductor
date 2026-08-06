@@ -213,6 +213,31 @@ public class SqliteIndexQueryBuilderTest {
         verifyNoMoreInteractions(mockQuery);
     }
 
+    // Issue #1497: the bound for a *_time comparison must be rendered in the same canonical UTC
+    // text format the write path now uses (yyyy-MM-dd HH:mm:ss.SSS), and the column must NOT be
+    // wrapped in datetime() -- datetime() truncates to whole seconds, so 'start_time < ?' wrongly
+    // excluded a row stored at exactly '...03.000' ('...03.000' < '...03' is false: longer
+    // string, same prefix).
+    @Test
+    void shouldGenerateQueryForStartTimeGreaterThanInCanonicalUtc() throws SQLException {
+        String inputQuery = "startTime>1675702498000";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE start_time > ? LIMIT ? OFFSET ?",
+                generatedQuery);
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06 16:54:58.000");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
     @Test
     void shouldGenerateQueryForParentWorkflowId() throws SQLException {
         String inputQuery = "parentWorkflowId=\"\"";
