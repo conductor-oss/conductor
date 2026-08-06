@@ -147,7 +147,13 @@ public class SignalTaskTest {
     public void testAsyncSignalWorkflowNotFound() throws IOException {
         Request req =
                 new Request.Builder()
-                        .url(ApiUtil.SERVER_ROOT_URI + "/tasks/non-existent-wf-id/COMPLETED/signal")
+                        // A random UUID: cassandra parses workflow ids as UUIDs and returns 400
+                        // on a malformed id before reaching the not-found path all backends 404 on.
+                        .url(
+                                ApiUtil.SERVER_ROOT_URI
+                                        + "/tasks/"
+                                        + java.util.UUID.randomUUID()
+                                        + "/COMPLETED/signal")
                         .post(RequestBody.create("{}", JSON))
                         .build();
         try (Response response = httpClient.newCall(req).execute()) {
@@ -160,9 +166,13 @@ public class SignalTaskTest {
     public void testSyncSignalWorkflowNotFound() throws IOException {
         Request req =
                 new Request.Builder()
+                        // A random UUID: cassandra parses workflow ids as UUIDs and returns 400
+                        // on a malformed id before reaching the not-found path all backends 404 on.
                         .url(
                                 ApiUtil.SERVER_ROOT_URI
-                                        + "/tasks/non-existent-wf-id/COMPLETED/signal/sync")
+                                        + "/tasks/"
+                                        + java.util.UUID.randomUUID()
+                                        + "/COMPLETED/signal/sync")
                         .post(RequestBody.create("{}", JSON))
                         .build();
         try (Response response = httpClient.newCall(req).execute()) {

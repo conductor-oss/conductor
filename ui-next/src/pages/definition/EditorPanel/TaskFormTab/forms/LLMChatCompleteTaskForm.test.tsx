@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { ReactNode, useState } from "react";
 import { queryClient } from "queryClient";
 import { TaskDef } from "types";
 import { LLMChatCompleteTaskForm } from "./LLMChatCompleteTaskForm";
@@ -16,28 +16,26 @@ vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({}),
 }));
 
-vi.mock("components/FlatMapForm/ConductorAutocompleteVariables", () => ({
-  ConductorAutocompleteVariables: ({
+vi.mock("components/ui/inputs/ConductorInput", () => ({
+  default: ({
     label,
     value,
-    onChange,
-    onFocus,
+    onTextInputChange,
     helperText,
-    inputProps,
+    tooltip,
   }: any) => (
     <div>
-      <input
-        aria-label={String(label)}
+      <textarea
+        aria-label={label}
         value={value ?? ""}
-        onChange={(event) => onChange(event.target.value)}
-        onFocus={() => onFocus?.()}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
       />
       {helperText && (
         <span data-testid={`${label}-helperText`}>{helperText}</span>
       )}
-      {inputProps?.tooltip && (
+      {tooltip && (
         <span data-testid={`${label}-tooltip`}>
-          {inputProps.tooltip.title}: {inputProps.tooltip.content}
+          {tooltip.title}: {tooltip.content}
         </span>
       )}
     </div>
@@ -53,10 +51,21 @@ vi.mock(
   "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/ConductorArrayMapForm",
   () => ({ ConductorArrayMapFormBase: () => null }),
 );
+vi.mock("./LLMFormFields/LLMFormFields", () => ({
+  LLMFormFields: () => null,
+}));
 vi.mock("./ConductorCacheOutputForm", () => ({
   ConductorCacheOutput: () => null,
 }));
 vi.mock("./OptionalFieldForm", () => ({ Optional: () => null }));
+vi.mock("./TaskFormSection", () => ({
+  default: ({ title, children }: { title?: string; children: ReactNode }) => (
+    <section data-testid={title ? `section-${title}` : "section-untitled"}>
+      {title ? <h3 id={`${title}-header`}>{title}</h3> : null}
+      {children}
+    </section>
+  ),
+}));
 
 function Harness({ initialTask }: { initialTask: Partial<TaskDef> }) {
   const [task, setTask] = useState(initialTask);
@@ -71,86 +80,77 @@ function Harness({ initialTask }: { initialTask: Partial<TaskDef> }) {
 const savedTask = (): Partial<TaskDef> =>
   JSON.parse(screen.getByTestId("task-json").textContent ?? "{}");
 
-describe("LLMChatCompleteTaskForm — Prompt Template field", () => {
+describe("LLMChatCompleteTaskForm — Instructions field", () => {
   beforeEach(() => {
     fetchWithContext.mockReset();
     fetchWithContext.mockResolvedValue([]);
     queryClient.clear();
   });
 
-  it("labels the field Prompt Template, not Prompt Name", async () => {
+  it("labels the field Instructions (OSS plain textarea, not Prompt Template)", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
-    expect(screen.getByLabelText("Prompt Template")).toBeInTheDocument();
+
+    expect(screen.getByLabelText("Instructions")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Prompt Template")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Prompt Name")).not.toBeInTheDocument();
-    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
   });
 
-  it("writes free text to instructions and sets allowRawPrompts (no registry match — the OSS / raw-text path)", async () => {
+  it("renders the Instructions and Provider and Model section headers", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
-    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
 
-    fireEvent.change(screen.getByLabelText("Prompt Template"), {
-      target: { value: "You are a helpful assistant." },
+    expect(document.getElementById("Instructions-header")).toBeInTheDocument();
+    expect(
+      document.getElementById("Provider and Model-header"),
+    ).toBeInTheDocument();
+  });
+
+  it("displays existing instructions from the task", () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: { instructions: "You are a helpful assistant." },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Instructions")).toHaveValue(
+      "You are a helpful assistant.",
+    );
+  });
+
+  it("writes free text to inputParameters.instructions", () => {
+    render(<Harness initialTask={{ inputParameters: {} }} />);
+
+    fireEvent.change(screen.getByLabelText("Instructions"), {
+      target: { value: "You are a concise assistant." },
     });
 
     expect(savedTask().inputParameters?.instructions).toBe(
-      "You are a helpful assistant.",
-    );
-    // ChatCompletion.getPrompt() returns instructions server-side, so this is
-    // subject to the same checkPromptAccess/allowRawPrompts gate as promptName.
-    expect(savedTask().inputParameters?.allowRawPrompts).toBe(true);
-  });
-
-  it("selecting a known template auto-populates variables/temperature/stopWords and clears allowRawPrompts", async () => {
-    fetchWithContext.mockImplementation((path: string) => {
-      if (path === "/prompts") {
-        return Promise.resolve([
-          {
-            name: "system-greeting",
-            variables: ["audience"],
-            integrations: [],
-            topP: 0.9,
-            stopWords: ["END"],
-          },
-        ]);
-      }
-      return Promise.resolve([]);
-    });
-
-    render(<Harness initialTask={{ inputParameters: {} }} />);
-    const field = screen.getByLabelText("Prompt Template");
-
-    await waitFor(() => {
-      fireEvent.focus(field);
-      expect(fetchWithContext).toHaveBeenCalledWith(
-        "/prompts",
-        expect.anything(),
-        expect.anything(),
-      );
-    });
-
-    fireEvent.change(field, { target: { value: "system-greeting" } });
-
-    await waitFor(() =>
-      expect(savedTask().inputParameters).toMatchObject({
-        instructions: "system-greeting",
-        allowRawPrompts: false,
-        topP: 0.9,
-        stopWords: ["END"],
-        promptVariables: { audience: "" },
-      }),
+      "You are a concise assistant.",
     );
   });
 
-  it("renders a tooltip and helper text explaining the Instructions field", async () => {
+  it("does not set allowRawPrompts when editing instructions", () => {
+    // OSS writes instructions directly via updateField. Enterprise plugins own
+    // the prompt-template picker and allowRawPrompts gating.
     render(<Harness initialTask={{ inputParameters: {} }} />);
-    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText("Instructions"), {
+      target: { value: "System prompt" },
+    });
+
+    expect(savedTask().inputParameters?.instructions).toBe("System prompt");
+    expect(savedTask().inputParameters?.allowRawPrompts).toBeUndefined();
+  });
+
+  it("renders a tooltip and helper text explaining the Instructions field", () => {
+    render(<Harness initialTask={{ inputParameters: {} }} />);
 
     expect(
-      screen.getByTestId("Prompt Template-helperText"),
+      screen.getByTestId("Instructions-helperText"),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("Prompt Template-tooltip")).toBeInTheDocument();
-    expect(screen.getByTestId("Prompt Template-tooltip").textContent).toContain(
+    expect(screen.getByTestId("Instructions-tooltip")).toBeInTheDocument();
+    expect(screen.getByTestId("Instructions-tooltip").textContent).toContain(
       "Instructions",
     );
   });
