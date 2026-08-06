@@ -4,12 +4,24 @@ description: "Conductor Skills — teach your AI coding agent to create, run, mo
 
 # Build with AI agents
 
+**Time:** about 2 minutes to install; your agent does the rest.
+
 Conductor Skills teaches your AI coding agent to create, run, monitor, and manage Conductor workflows. Instead of writing JSON definitions and CLI commands by hand, describe what you want in natural language and your agent builds it for you — complete workflows, workers, error handling, and monitoring.
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
 For a source-backed technical map that any assistant can consume, start with [Conductor for AI assistants](../ai/conductor-for-ai-assistants.md) and [/llms.txt](../../llms.txt). The full context is generated from canonical docs at [/llms-full.txt](../../llms-full.txt).
 
+## Prerequisite: a Conductor server
+
+Your agent needs a server to talk to. If you don't have one, start a local server first:
+
+```bash
+npm install -g @conductor-oss/conductor-cli
+conductor server start
+```
+
+Or use a free hosted server — [Connect to Conductor](../../quickstart/connect.md) covers the Developer Edition path and credentials.
 
 ## Install
 
@@ -282,7 +294,8 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 
 ## Next steps
 
+**Next:** [Write your first workflow and worker](../../quickstart/first-worker.md) to see what your agent builds on — or go straight to [your first agent](../../quickstart/first-agent.md).
+
 - **[conductor-skills repository](https://github.com/conductor-oss/conductor-skills)** &mdash; Full documentation, more examples, and source code.
-- **[Quickstart](../../quickstart/first-workflow.md)** &mdash; Get a Conductor server running to use with your agent.
-- **[AI & Agents](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
+- **[Agents overview](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
 - **[Client SDKs](../../documentation/clientsdks/index.md)** &mdash; Language SDKs for writing workers and programmatic access.

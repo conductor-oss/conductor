@@ -8,6 +8,8 @@ description: Run your first Conductor Agent and verify its durable execution wit
 
 **Outcome:** a completed agent run that is compiled to and executed as a Conductor workflow.
 
+**Time:** about 5 minutes.
+
 Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#. Choose a language below to see its complete install and first-run steps.
 
 For an existing framework agent, such as LangChain, use [framework agent quickstarts](framework-agents.md). For a declarative LLM and tool workflow, start from [Agents & AI](../devguide/ai/index.md).
@@ -16,13 +18,9 @@ For an existing framework agent, such as LangChain, use [framework agent quickst
 
 Complete [Connect to Conductor](connect.md), including the hosted model integration or local provider API-key setup required by the selected model. You also need the runtime or SDK tooling for the language you select.
 
-## Run your first workflow
-
-If your work starts with services, APIs, timers, or workers, begin with [Run your first workflow](first-workflow.md). It creates and inspects a durable two-step workflow without requiring an agent or model-provider credential.
-
 ## Language-specific quickstart
 
-`AGENTSPAN_SERVER_URL` and its access credentials are configured in [Connect to Conductor](connect.md). Keep provider credentials in the environment or secret system used by the agent workers; do not put them in workflow input.
+The `CONDUCTOR_SERVER_URL` connection variables (and `CONDUCTOR_AUTH_KEY`/`CONDUCTOR_AUTH_SECRET` when required) are configured in [Connect to Conductor](connect.md). Keep provider credentials in the environment or secret system used by the agent workers; do not put them in workflow input.
 
 <div class="agent-language-picker" markdown="1">
   <label for="agent-language-select">Language</label>
@@ -228,5 +226,7 @@ The task records the agent execution ID, state, text, and structured output, so 
 Each language uses the same durable execution model: the runtime compiles and runs the agent as a Conductor workflow, preserving an inspectable execution record. A later design can add approval, waits, retries, composition, and operational recovery without moving the agent logic into one long-lived process.
 
 ## Next production step
+
+**Next:** [Bring your framework agent](framework-agents.md) — run an existing OpenAI Agents, LangChain, LangGraph, or ADK agent through the same durable runtime.
 
 Continue with the [production agent architecture](../devguide/ai/production-agent-architecture.md). It covers governance, evaluation, deployment, composition, recovery, and operations.

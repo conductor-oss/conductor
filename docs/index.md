@@ -33,7 +33,7 @@ description: Conductor is an open-source durable execution platform for workflow
     </script>
   </div>
   <div class="integration-action-grid integration-action-grid--three home-journey-grid">
-    <a class="integration-action-card" href="quickstart/first-workflow.html">
+    <a class="integration-action-card" href="quickstart/first-worker.html">
       <span class="integration-action-card__title">Build a workflow</span>
       <span>Coordinate APIs, services, timers, and workers with durable control flow.</span>
     </a>

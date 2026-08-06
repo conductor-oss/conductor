@@ -8,8 +8,8 @@ Paths for going deeper once you have run your first workflow or agent.
 
 ## Start here
 
-- [Choose your path](../quickstart/choose-path.md) — pick the authoring model that matches how you work.
-- [Run your first workflow](../quickstart/first-workflow.md) and [write your first worker](../quickstart/first-worker.md).
+- [Get started with Conductor](../quickstart/index.md) — pick the path that matches how you work, from AI-agent-assisted to SDK-first.
+- [Write your first workflow and worker](../quickstart/first-worker.md), or [run a workflow from JSON](../quickstart/first-workflow.md) with no code.
 - [Run your first agent](../quickstart/first-agent.md), or bring an existing one with the [framework agent quickstarts](../quickstart/framework-agents.md).
 
 ## Learn by example

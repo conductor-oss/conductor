@@ -40,15 +40,7 @@ The final command verifies the connection without changing server state. Use thi
 
 For hosted AI workflows and agents, configure the model-provider integration in Developer Edition. Do not put provider API keys in workflow input or source files.
 
-The Python agent runtime uses its own connection variable names:
-
-```bash
-export AGENTSPAN_SERVER_URL=https://developer.orkescloud.com/api
-export AGENTSPAN_AUTH_KEY=<your-access-key>
-export AGENTSPAN_AUTH_SECRET=<your-access-secret>
-```
-
-Use the provider configuration required by your selected framework and model. The agent quickstarts and the [Python SDK agent guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/getting-started.md) cover the runtime-specific details.
+The agent runtime reads the same `CONDUCTOR_SERVER_URL`, `CONDUCTOR_AUTH_KEY`, and `CONDUCTOR_AUTH_SECRET` variables configured above — no separate configuration is needed. Use the provider configuration required by your selected framework and model. The agent quickstarts and the [Python SDK agent guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/getting-started.md) cover the runtime-specific details.
 
 ## Local alternative: Conductor CLI
 
@@ -67,18 +59,14 @@ export OPENAI_API_KEY=<your-openai-api-key>
 conductor server start
 ```
 
-Then point the Python agent runtime at the local server:
-
-```bash
-export AGENTSPAN_SERVER_URL=http://localhost:8080/api
-```
+The agent runtime uses the same `CONDUCTOR_SERVER_URL=http://localhost:8080/api` exported above.
 
 ## Docker fallback
 
 If you cannot use the CLI server, run a local container instead:
 
 ```bash
-docker run --rm -p 8080:8080 conductoross/conductor:latest
+docker run --rm -p 8080:8080 conductoross/conductor:3.32.0-rc.23
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 conductor workflow list
 ```
@@ -94,20 +82,20 @@ conductor workflow list
 With the connection verified, choose the first result you want to build:
 
 <div class="integration-action-grid integration-action-grid--four">
-  <a class="integration-action-card" href="first-workflow.md">
-    <span class="integration-action-card__title">Run your first workflow</span>
-    <span>Coordinate an API call and a JSON transformation with built-in tasks.</span>
-  </a>
   <a class="integration-action-card" href="first-worker.html">
-    <span class="integration-action-card__title">Write your first worker</span>
-    <span>Poll a <code>SIMPLE</code> task, run business logic, and return a result.</span>
+    <span class="integration-action-card__title">Your first workflow &amp; worker</span>
+    <span>Author and run a durable <code>greetings</code> workflow in your language.</span>
   </a>
-  <a class="integration-action-card" href="first-agent.md">
+  <a class="integration-action-card" href="first-agent.html">
     <span class="integration-action-card__title">Run your first agent</span>
     <span>Author and run a Conductor Agent with Python, Java, TypeScript/JavaScript, or C#.</span>
   </a>
-  <a class="integration-action-card" href="framework-agents.md">
+  <a class="integration-action-card" href="framework-agents.html">
     <span class="integration-action-card__title">Bring a framework agent</span>
     <span>Run an existing OpenAI Agents, LangChain, LangGraph, or ADK agent through Conductor.</span>
+  </a>
+  <a class="integration-action-card" href="first-workflow.html">
+    <span class="integration-action-card__title">No-code: workflow from JSON</span>
+    <span>Register and run a two-step workflow with the CLI — no SDK required.</span>
   </a>
 </div>

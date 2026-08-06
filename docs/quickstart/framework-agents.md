@@ -155,6 +155,8 @@ For every bridge, verify the printed result and find the corresponding execution
 
 ## Next production step
 
+**Next:** every entry in [Design Patterns → Agent Recipes](../devguide/ai/cookbook/index.md) is a complete, runnable example — handoffs, memory, guardrails, parallel agents, and more.
+
 Use the [production agent architecture](../devguide/ai/production-agent-architecture.md) to add governance, evaluations, deployment, composition, and operations. The [Python SDK framework-agent guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md) remains the source for the current bridge API and support matrix.
 
 ## SDK examples

@@ -14,8 +14,8 @@ not_in_nav: |
   devguide/labs/**
   documentation/advanced/annotation-processor.md
   launch/**
+  quickstart/choose-path.md
   resources/license.md
-  quickstart/index.md
   wmq/**
 
 nav:
@@ -23,13 +23,13 @@ nav:
     - index.md
     - FAQ: devguide/faq.md
   - Getting Started:
-    - Conductor Skills — Build with AI Agents: devguide/how-tos/conductor-skills.md
-    - Choose Your Path: quickstart/choose-path.md
+    - quickstart/index.md
+    - Build with Your AI Agent: devguide/how-tos/conductor-skills.md
     - Connect to Conductor: quickstart/connect.md
-    - Run Your First Workflow: quickstart/first-workflow.md
-    - Write Your First Worker: quickstart/first-worker.md
-    - Run Your First Agent: quickstart/first-agent.md
-    - Framework Agents: quickstart/framework-agents.md
+    - Your First Workflow & Worker: quickstart/first-worker.md
+    - Your First Agent: quickstart/first-agent.md
+    - Bring Your Framework Agent: quickstart/framework-agents.md
+    - "No-Code: Run a Workflow from JSON": quickstart/first-workflow.md
     - Conductor for AI Assistants: devguide/ai/conductor-for-ai-assistants.md
   - Platform:
     - Core Concepts: devguide/concepts/index.md

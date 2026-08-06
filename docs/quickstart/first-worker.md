@@ -1,12 +1,14 @@
 ---
-description: Write, run, and verify your first Conductor worker in Python, Java, TypeScript/JavaScript, C#, or Rust.
+description: Write, run, and verify your first Conductor workflow and worker in Python, Java, TypeScript/JavaScript, C#, or Rust.
 ---
 
-# Write your first worker
+# Write your first workflow and worker
 
-**Audience:** developers who need a workflow to run their own business logic.
+**Audience:** developers building their first Conductor workflow in code.
 
 **Outcome:** a `greetings` workflow that queues a `greet` task and returns `Hello Conductor` from a worker.
+
+**Time:** about 5 minutes.
 
 Complete [Connect to Conductor](connect.md) first. This guide uses the SDK connection variables configured there: `CONDUCTOR_SERVER_URL`, plus `CONDUCTOR_AUTH_KEY` and `CONDUCTOR_AUTH_SECRET` when your server requires them.
 
@@ -437,6 +439,18 @@ In the Conductor UI, open the `greetings` execution and inspect the completed `g
 - If workflow registration says the definition already exists, use a new version or update the local test definition before running it again.
 - If `greet_ref` fails, inspect the task's input, output, and failure reason in the UI; fix the worker, restart it, and start a new execution.
 
+## See durability happen
+
+Durability means the execution outlives your process. The quickstart app exits after it prints, so no worker is running now. Start a new execution with only the CLI:
+
+```bash
+conductor workflow start -w greetings -i '{"name":"Conductor"}'
+```
+
+Open the execution in the UI: the workflow is `RUNNING` and `greet_ref` stays `SCHEDULED` — durably queued, not lost. Now run your quickstart app again. The moment the worker polls, the waiting task completes and the execution finishes with `result: Hello Conductor`.
+
 ## Keep learning
 
-The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.
+**Next:** [Run your first agent](first-agent.md) — the same durable execution model, applied to an LLM-powered agent.
+
+Prefer no code? [Run a workflow from JSON](first-workflow.md) registers a two-step workflow with the CLI alone. The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.
