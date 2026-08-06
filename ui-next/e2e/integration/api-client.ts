@@ -20,6 +20,23 @@ export interface TaskRef {
   taskReferenceName: string;
   type: string;
   inputParameters?: Record<string, unknown>;
+  /** SWITCH: named case → task list */
+  decisionCases?: Record<string, TaskRef[]>;
+  /** SWITCH: fallback branch */
+  defaultCase?: TaskRef[];
+  /** FORK_JOIN: parallel branches */
+  forkTasks?: TaskRef[][];
+  /** JOIN / FORK_JOIN: branch refs to wait on */
+  joinOn?: string[];
+  /** SWITCH / INLINE evaluator */
+  evaluatorType?: string;
+  /** SWITCH expression / INLINE script key (also used by DO_WHILE as loopCondition sibling) */
+  expression?: string;
+  /** DO_WHILE */
+  loopCondition?: string;
+  loopOver?: TaskRef[];
+  /** SUB_WORKFLOW */
+  subWorkflowParam?: { name: string; version?: number };
 }
 
 export interface WorkflowDef {
@@ -30,6 +47,8 @@ export interface WorkflowDef {
   inputParameters?: string[];
   outputParameters?: Record<string, unknown>;
   timeoutSeconds?: number;
+  ownerEmail?: string;
+  schemaVersion?: number;
 }
 
 export interface TaskDef {
@@ -62,8 +81,13 @@ export interface WorkflowTaskExecution {
 export interface WorkflowExecution {
   workflowId: string;
   status: string;
-  workflowType: string;
+  /** Present on search hits; GET /workflow/{id} uses workflowName instead. */
+  workflowType?: string;
+  workflowName?: string;
   tasks?: WorkflowTaskExecution[];
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  variables?: Record<string, unknown>;
 }
 
 export interface SearchResult<T> {
@@ -214,4 +238,197 @@ export async function getTaskDef(taskType: string): Promise<TaskDef> {
 
 export async function deleteTaskDef(taskType: string): Promise<void> {
   await request<void>("DELETE", `/metadata/taskdefs/${taskType}`);
+}
+
+// ── Event handlers ─────────────────────────────────────────────────────────────
+
+export interface EventHandlerAction {
+  action: string;
+  expandInlineJSON?: boolean;
+  complete_task?: {
+    workflowId: string;
+    taskRefName: string;
+  };
+  start_workflow?: {
+    name: string;
+    version?: string | number;
+  };
+  [key: string]: unknown;
+}
+
+export interface EventHandlerDef {
+  name: string;
+  event: string;
+  condition?: string;
+  actions: EventHandlerAction[];
+  active?: boolean;
+  description?: string;
+  evaluatorType?: string;
+}
+
+export async function createEventHandler(def: EventHandlerDef): Promise<void> {
+  await request<void>("POST", "/event", def);
+}
+
+export async function getEventHandlers(): Promise<EventHandlerDef[]> {
+  return request<EventHandlerDef[]>("GET", "/event");
+}
+
+export async function deleteEventHandler(name: string): Promise<void> {
+  await request<void>("DELETE", `/event/${encodeURIComponent(name)}`);
+}
+
+// ── Scheduler definitions & executions ─────────────────────────────────────────
+
+export interface StartWorkflowRequest {
+  name: string;
+  version?: number;
+  input?: Record<string, unknown>;
+  correlationId?: string;
+  taskToDomain?: Record<string, string>;
+  priority?: number;
+}
+
+export interface WorkflowSchedule {
+  name: string;
+  cronExpression: string;
+  runCatchupScheduleInstances?: boolean;
+  paused?: boolean;
+  pausedReason?: string;
+  zoneId?: string;
+  scheduleStartTime?: number;
+  scheduleEndTime?: number;
+  description?: string;
+  startWorkflowRequest: StartWorkflowRequest;
+  createTime?: number;
+  updatedTime?: number;
+  nextRunTime?: number;
+}
+
+export type SchedulerExecutionState = "POLLED" | "EXECUTED" | "FAILED";
+
+export interface WorkflowScheduleExecution {
+  executionId: string;
+  scheduleName: string;
+  scheduledTime: number;
+  executionTime: number;
+  workflowName: string;
+  workflowId?: string;
+  state: SchedulerExecutionState;
+  reason?: string;
+  stackTrace?: string;
+  zoneId?: string;
+}
+
+export async function createSchedule(
+  schedule: WorkflowSchedule,
+): Promise<WorkflowSchedule> {
+  return request<WorkflowSchedule>("POST", "/scheduler/schedules", schedule);
+}
+
+export async function getSchedule(name: string): Promise<WorkflowSchedule> {
+  return request<WorkflowSchedule>(
+    "GET",
+    `/scheduler/schedules/${encodeURIComponent(name)}`,
+  );
+}
+
+export async function deleteSchedule(name: string): Promise<void> {
+  await request<void>(
+    "DELETE",
+    `/scheduler/schedules/${encodeURIComponent(name)}`,
+  );
+}
+
+export async function pauseSchedule(
+  name: string,
+  reason = "e2e test pause",
+): Promise<void> {
+  await request<void>(
+    "PUT",
+    `/scheduler/schedules/${encodeURIComponent(name)}/pause?reason=${encodeURIComponent(reason)}`,
+  );
+}
+
+export async function resumeSchedule(name: string): Promise<void> {
+  await request<void>(
+    "PUT",
+    `/scheduler/schedules/${encodeURIComponent(name)}/resume`,
+  );
+}
+
+export async function searchSchedules(params: {
+  scheduleName?: string;
+  workflowName?: string;
+  paused?: boolean;
+  freeText?: string;
+  start?: number;
+  size?: number;
+  sort?: string;
+}): Promise<SearchResult<WorkflowSchedule>> {
+  const qs = new URLSearchParams();
+  if (params.scheduleName) qs.set("scheduleName", params.scheduleName);
+  if (params.workflowName) qs.set("workflowName", params.workflowName);
+  if (params.paused !== undefined) qs.set("paused", String(params.paused));
+  if (params.freeText) qs.set("freeText", params.freeText);
+  if (params.start !== undefined) qs.set("start", String(params.start));
+  if (params.size !== undefined) qs.set("size", String(params.size));
+  if (params.sort) qs.set("sort", params.sort);
+  return request("GET", `/scheduler/schedules/search?${qs}`);
+}
+
+export async function searchSchedulerExecutions(params: {
+  query?: string;
+  freeText?: string;
+  start?: number;
+  size?: number;
+  sort?: string;
+}): Promise<SearchResult<WorkflowScheduleExecution>> {
+  const qs = new URLSearchParams();
+  if (params.query) qs.set("query", params.query);
+  qs.set("freeText", params.freeText ?? "*");
+  if (params.start !== undefined) qs.set("start", String(params.start));
+  if (params.size !== undefined) qs.set("size", String(params.size));
+  if (params.sort) qs.set("sort", params.sort);
+  return request("GET", `/scheduler/search/executions?${qs}`);
+}
+
+/**
+ * Polls until at least one scheduler execution for `scheduleName` reaches
+ * `EXECUTED` (or another expected state), accounting for the ~15s scheduler
+ * startup delay and archival lag in the default Docker config.
+ */
+export async function waitForSchedulerExecution(
+  scheduleName: string,
+  {
+    timeoutMs = 120_000,
+    pollMs = 2_000,
+    state = "EXECUTED" as SchedulerExecutionState,
+  }: {
+    timeoutMs?: number;
+    pollMs?: number;
+    state?: SchedulerExecutionState;
+  } = {},
+): Promise<WorkflowScheduleExecution> {
+  const deadline = Date.now() + timeoutMs;
+  const query = `scheduleName IN (${scheduleName})`;
+  let lastHits = 0;
+  while (Date.now() < deadline) {
+    const res = await searchSchedulerExecutions({
+      query,
+      start: 0,
+      size: 10,
+      sort: "scheduledTime:DESC",
+    });
+    lastHits = res.totalHits;
+    const match = res.results?.find((r) => r.state === state);
+    if (match) {
+      return match;
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  throw new Error(
+    `No ${state} scheduler execution for ${scheduleName} within ${timeoutMs}ms` +
+      ` (last totalHits=${lastHits})`,
+  );
 }

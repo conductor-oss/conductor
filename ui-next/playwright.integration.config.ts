@@ -23,6 +23,10 @@
  */
 
 import { defineConfig, devices } from "@playwright/test";
+import { loadIntegrationEnv } from "./e2e/integration/load-env";
+
+// Pick up ui-next/.env.local (e.g. OPENAI_API_KEY) before tests / docker start.
+loadIntegrationEnv();
 
 const CONDUCTOR_SERVER_URL =
   process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8000";
@@ -47,6 +51,15 @@ export default defineConfig({
   globalSetup: "./e2e/integration/global-setup.ts",
   globalTeardown: "./e2e/integration/global-teardown.ts",
 
+  // Visual snapshots for integration specs (definition / execution pages).
+  // Dynamic names and IDs are masked in helpers.expectMainContentScreenshot.
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.06,
+    },
+  },
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFileName}/{arg}{ext}",
+
   use: {
     baseURL: "http://localhost:1234",
     trace: "on-first-retry",
@@ -54,6 +67,8 @@ export default defineConfig({
     // Integration tests can be slower due to real API calls.
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    // Fixed viewport so screenshot baselines are comparable across runs.
+    viewport: { width: 1280, height: 800 },
   },
 
   projects: [

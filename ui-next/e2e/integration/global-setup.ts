@@ -14,6 +14,11 @@ import { existsSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname } from "path";
 import { tmpdir } from "os";
 import { fileURLToPath } from "url";
+import { loadIntegrationEnv } from "./load-env";
+
+// Ensure OPENAI_API_KEY from .env.local is in process.env before `compose up`
+// interpolates ${OPENAI_API_KEY:-} into the server container.
+loadIntegrationEnv();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

@@ -5,7 +5,7 @@
  * correctly in the list and in the per-task editor.
  */
 
-import { expect, test } from "../coverage-fixture";
+import { expect, test } from "@playwright/test";
 import { createTaskDef, deleteTaskDef, type TaskDef } from "./api-client";
 
 const RUN_ID = Date.now();
@@ -77,10 +77,11 @@ test("navigating directly to a task definition URL opens the editor", async ({
   await expect(page.getByText(TASK_EDITOR.name).first()).toBeVisible();
 });
 
-test("navigating to /taskDef/new opens the new task form", async ({ page }) => {
-  await page.goto("/taskDef/new");
+test("navigating to /newTaskDef opens the new task form", async ({ page }) => {
+  await page.goto("/newTaskDef");
   await page.waitForLoadState("networkidle");
 
-  await expect(page).toHaveURL(/\/taskDef\/new/);
+  await expect(page).toHaveURL(/\/newTaskDef/);
   await expect(page.locator("#main-content")).toBeVisible();
+  await expect(page.locator("#task-form-container")).toBeVisible();
 });

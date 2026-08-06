@@ -8,9 +8,10 @@
  * OSS LLM chat/text forms use plain Instructions / Prompt textareas (not the
  * enterprise prompt-template picker).
  *
- * Execution tests require OPENAI_API_KEY on the host (forwarded into
- * docker/docker-compose-ui-e2e.yaml) and assert the workflow completes
- * successfully. Without a key they are skipped.
+ * Execution tests require OPENAI_API_KEY (Playwright loads ui-next/.env.local).
+ * docker-compose-ui-e2e.yaml forwards it into the server at `compose up` time.
+ * Without a key they are skipped. If the server was started earlier without a
+ * key (SKIP_DOCKER), recreate the container after adding the key.
  */
 
 import type { Locator } from "@playwright/test";
