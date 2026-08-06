@@ -15,7 +15,7 @@ interface TurnDetailProps {
   onExpand?: (agentRun: AgentRunData) => void;
 }
 
-export function TurnDetail({ turn, onDrillIn }: TurnDetailProps) {
+export function TurnDetail({ turn, onDrillIn, onExpand }: TurnDetailProps) {
   return (
     <Box>
       {/* Header bar */}
@@ -64,6 +64,7 @@ export function TurnDetail({ turn, onDrillIn }: TurnDetailProps) {
             subAgents={turn.subAgents}
             strategy={turn.strategy}
             onDrillIn={onDrillIn}
+            onExpand={onExpand}
           />
         </Box>
       )}
