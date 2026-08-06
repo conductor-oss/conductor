@@ -1392,17 +1392,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         workflow,
                                         timeout,
                                         properties.getMaxPostponeDurationSeconds());
-                        if (updatedOffset.getSeconds() != timeout.getSeconds()) {
-                            // we have a new value, setUnack uses time in millis
-                            LOGGER.debug(
-                                    "Pushing the workflow {} into decider queue by {} millis",
-                                    workflow.getWorkflowId(),
-                                    updatedOffset.getSeconds() * 1000);
-                            queueDAO.setUnackTimeout(
-                                    DECIDER_QUEUE,
-                                    workflow.getWorkflowId(),
-                                    updatedOffset.getSeconds() * 1000);
-                        }
+                        // Always write the postpone, even when updatedOffset equals the default
+                        // workflowOffsetTimeout — e.g. a workflow whose only active task is a
+                        // WAIT with no explicit timeout computes exactly this value on every
+                        // decide(). Skipping the write here left deliver_on frozen at whatever
+                        // value preceded it (often the workflow's original decider-queue push),
+                        // which is always "due" and gets re-swept roughly every 60s forever via
+                        // the unrelated queue-unack recovery cycle instead of the intended
+                        // workflowOffsetTimeout cadence.
+                        LOGGER.debug(
+                                "Pushing the workflow {} into decider queue by {} millis",
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
+                        queueDAO.setUnackTimeout(
+                                DECIDER_QUEUE,
+                                workflow.getWorkflowId(),
+                                updatedOffset.getSeconds() * 1000);
                     }
                 }
             }

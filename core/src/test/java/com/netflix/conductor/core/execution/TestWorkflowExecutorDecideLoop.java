@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -177,6 +178,45 @@ public class TestWorkflowExecutorDecideLoop {
         verify(executionDAOFacade, atLeastOnce()).updateWorkflow(workflow);
         verify(queueDAO, atLeastOnce())
                 .push(eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), eq(0L));
+    }
+
+    /**
+     * Regression test for the decider-queue postpone write-skip bug.
+     *
+     * <p>Before the fix, {@code setUnackTimeout} was only called when {@code computePostpone}
+     * returned a value different from {@code workflowOffsetTimeout}. A workflow whose only active
+     * task is a WAIT with no explicit timeout always computes exactly {@code workflowOffsetTimeout}
+     * — so the write was skipped on every single decide() call, leaving {@code deliver_on} frozen
+     * indefinitely and causing the workflow to be re-swept roughly every 60 seconds forever (via
+     * the unrelated queue-unack recovery cycle) instead of once per {@code workflowOffsetTimeout}
+     * as intended.
+     */
+    @Test
+    public void testDecidePostponesEvenWhenOffsetEqualsWorkflowOffsetTimeout() throws Exception {
+        when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
+
+        WorkflowModel workflow = runningWorkflow("test-wf-wait-no-timeout");
+        TaskModel waitTask = new TaskModel();
+        waitTask.setTaskId("wait-task-1");
+        waitTask.setReferenceTaskName("wait_ref");
+        waitTask.setTaskType(TaskType.TASK_TYPE_WAIT);
+        waitTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        waitTask.setWaitTimeout(0);
+        workflow.getTasks().add(waitTask);
+
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        // No scheduling changes on this decide() call — matches a WAIT-blocked workflow with
+        // nothing new to schedule, which is the case that reaches the postpone tail directly.
+        when(deciderService.decide(any(WorkflowModel.class))).thenReturn(newOutcome());
+
+        // Act
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        // Assert: setUnackTimeout must still be called, at exactly workflowOffsetTimeout
+        // (30s, per the mocked property), even though that value equals the default.
+        verify(queueDAO)
+                .setUnackTimeout(eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), eq(30_000L));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
