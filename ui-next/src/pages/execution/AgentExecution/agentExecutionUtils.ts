@@ -952,11 +952,17 @@ export function transformWorkflowExecutionToAgentRun(
             : 0;
         const isStop = finishReason === "stop";
 
-        // Show instructions (system prompt) + last user message only
+        // Show instructions (system prompt) + last user message only.
+        // instructions live on inputData (prepended in-memory by the worker),
+        // not as a stored system role in messages.
         const sysMsg = messages.find((m) => m.role === "system");
         const lastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        const instructionsText =
+          (typeof llmTask.inputData?.instructions === "string" &&
+            llmTask.inputData.instructions) ||
+          sysMsg?.message;
 
         // ONE block: LLM call — instructions + last message + output
         events.push({
@@ -968,7 +974,7 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(sysMsg ? { instructions: sysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
             output: llmTask.outputData,
@@ -1407,6 +1413,14 @@ export function transformWorkflowExecutionToAgentRun(
         const rootLastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        // Task input stores system text in inputData.instructions; the worker
+        // prepends it as a system message only in-memory, so it never appears
+        // in stored messages. Surface instructions here so the UI matches what
+        // the model actually received.
+        const instructionsText =
+          (typeof task.inputData?.instructions === "string" &&
+            task.inputData.instructions) ||
+          rootSysMsg?.message;
 
         rootEvents.push({
           id: `${task.taskId}-llm`,
@@ -1417,7 +1431,7 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(rootSysMsg ? { instructions: rootSysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
             output: task.outputData,
@@ -1789,7 +1803,7 @@ export function transformWorkflowExecutionToAgentRun(
     turns,
     status: mapWorkflowStatus(execution.status),
     agentDef,
-    totalTokens: {
+    totalTokens: execution.aggregateTokenUsage ?? {
       promptTokens: totalPromptTokens,
       completionTokens: totalCompletionTokens,
       totalTokens: totalPromptTokens + totalCompletionTokens,
