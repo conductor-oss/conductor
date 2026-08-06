@@ -91,6 +91,10 @@ export default defineConfig(({ mode }) => {
         // Without this, Vite emits asset references like "/assets/logo-xxxx.svg"
         // which only resolve within the OSS app's own build output.
         assetsInlineLimit: Infinity,
+        // Vite strips CSS imports out of the emitted JS, so per-chunk CSS would
+        // be orphaned — nothing in dist/ imports it. Collect it into one
+        // dist/style.css that consumers import via "conductor-ui/styles.css".
+        cssCodeSplit: false,
         rollupOptions: {
           input,
           external: isExternal,
@@ -101,6 +105,12 @@ export default defineConfig(({ mode }) => {
             preserveModules: true,
             preserveModulesRoot: "src",
             entryFileNames: "[name].js",
+            assetFileNames: (asset) => {
+              const name = asset.names?.[0] ?? "";
+              return name.endsWith(".css")
+                ? "style.css"
+                : "assets/[name]-[hash][extname]";
+            },
           },
         },
         sourcemap: true,
