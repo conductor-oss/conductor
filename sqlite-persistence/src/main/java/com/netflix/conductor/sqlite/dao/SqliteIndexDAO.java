@@ -14,8 +14,8 @@ package com.netflix.conductor.sqlite.dao;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -44,6 +44,12 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
     private static final int CORE_POOL_SIZE = 6;
     private static final long KEEP_ALIVE_TIME = 1L;
+
+    // Canonical UTC text format for start_time/update_time in the index tables. Matches SQLite's
+    // strftime('%Y-%m-%d %H:%M:%f', ...) byte for byte so migrated and newly written rows compare
+    // correctly (issue #1497).
+    private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
     private boolean onlyIndexOnStatusChange;
 
@@ -76,6 +82,17 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                         });
     }
 
+    /**
+     * Renders an ISO-8601 instant as the canonical UTC text stored in the index tables. Matches
+     * SQLite's strftime('%Y-%m-%d %H:%M:%f', ...) byte for byte so migrated and newly written rows
+     * compare correctly. java.sql.Timestamp is deliberately avoided here: its toString() renders in
+     * the JVM default zone, which is what issue #1497 was.
+     */
+    private static String toSqliteUtcTimestamp(String isoInstant) {
+        return SQLITE_UTC_TIMESTAMP.format(
+                Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoInstant)));
+    }
+
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
@@ -91,11 +108,8 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
             INSERT_WORKFLOW_INDEX_SQL += " AND workflow_index.status != excluded.status";
         }
 
-        TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(workflow.getUpdateTime());
-        Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
-
-        TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(workflow.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(ta));
+        String updateTime = toSqliteUtcTimestamp(workflow.getUpdateTime());
+        String startTime = toSqliteUtcTimestamp(workflow.getStartTime());
 
         int rowsUpdated =
                 queryWithTransaction(
@@ -104,8 +118,8 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                 q.addParameter(workflow.getWorkflowId())
                                         .addParameter(workflow.getCorrelationId())
                                         .addParameter(workflow.getWorkflowType())
-                                        .addParameter(startTime.toString())
-                                        .addParameter(updateTime.toString())
+                                        .addParameter(startTime)
+                                        .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
                                         .addParameter(
                                                 workflow.getParentWorkflowId() != null
@@ -158,11 +172,8 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
             INSERT_TASK_INDEX_SQL += " AND task_index.status != excluded.status";
         }
 
-        TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(task.getUpdateTime());
-        Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
-
-        TemporalAccessor startTa = DateTimeFormatter.ISO_INSTANT.parse(task.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(startTa));
+        String updateTime = toSqliteUtcTimestamp(task.getUpdateTime());
+        String startTime = toSqliteUtcTimestamp(task.getStartTime());
 
         int rowsUpdated =
                 queryWithTransaction(
@@ -172,8 +183,8 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                         .addParameter(task.getTaskType())
                                         .addParameter(task.getTaskDefName())
                                         .addParameter(task.getStatus().toString())
-                                        .addParameter(startTime.toString())
-                                        .addParameter(updateTime.toString())
+                                        .addParameter(startTime)
+                                        .addParameter(updateTime)
                                         .addParameter(task.getWorkflowType())
                                         .addJsonParameter(task)
                                         .executeUpdate());

@@ -15,7 +15,6 @@ package com.netflix.conductor.sqlite.util;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -62,6 +61,12 @@ public class SqliteIndexQueryBuilder {
         private List<String> values;
         private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
 
+        // Canonical UTC text format the *_time columns are stored in (issue #1497). Must match
+        // SqliteIndexDAO's write-path formatter byte for byte so a bound value compares correctly
+        // against stored text.
+        private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
+
         public Condition() {}
 
         public Condition(String query) {
@@ -103,7 +108,12 @@ public class SqliteIndexQueryBuilder {
                 return "lower(" + attribute + ") LIKE ?";
             } else {
                 if (attribute.endsWith("_time")) {
-                    return attribute + " " + operator + " datetime(?)";
+                    // No datetime() wrapper: it truncates to whole seconds, so
+                    // 'start_time < ?' wrongly excluded a row stored at exactly '...03.000'
+                    // ('...03.000' < '...03' is false -- longer string, same prefix). With
+                    // identical canonical-UTC text on both sides the comparison is exact
+                    // (issue #1497).
+                    return attribute + " " + operator + " ?";
                 } else if (operator.equals("=")
                         && values.size() == 1
                         && values.get(0).contains("*")) {
@@ -151,10 +161,7 @@ public class SqliteIndexQueryBuilder {
         }
 
         private String millisToUtc(String millis) {
-            Long startTimeMilli = Long.parseLong(millis);
-            ZonedDateTime startDate =
-                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTimeMilli), ZoneOffset.UTC);
-            return DateTimeFormatter.ISO_DATE_TIME.format(startDate);
+            return SQLITE_UTC_TIMESTAMP.format(Instant.ofEpochMilli(Long.parseLong(millis)));
         }
 
         private boolean isValid() {
