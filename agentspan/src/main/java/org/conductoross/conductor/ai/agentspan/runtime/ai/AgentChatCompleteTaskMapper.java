@@ -147,6 +147,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             validateRunnableConversation(chatCompletion);
             ensureEndsWithUserMessage(chatCompletion, taskModel);
             ensureJsonOutputUserMessage(chatCompletion);
+            preserveAssembledChatInputOnRetry(taskModel, "messages", "tools");
         } catch (Exception e) {
             if (e instanceof TerminateWorkflowException) {
                 throw (TerminateWorkflowException) e;
