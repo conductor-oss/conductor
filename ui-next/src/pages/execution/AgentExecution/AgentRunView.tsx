@@ -29,6 +29,8 @@ import { TurnDetail } from "./TurnDetail";
 interface AgentRunViewProps {
   agentRun: AgentRunData;
   onDrillIn: (subAgentRun: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (subAgentRun: AgentRunData) => void;
   onBack?: () => void;
   isRoot?: boolean;
 }
@@ -305,6 +307,7 @@ function AgentRunHeader({
 export function AgentRunView({
   agentRun,
   onDrillIn,
+  onExpand,
   onBack,
   isRoot,
 }: AgentRunViewProps) {
@@ -580,6 +583,7 @@ export function AgentRunView({
               selectedId={selectedId}
               onNodeSelect={handleNodeSelect}
               onDrillIn={onDrillIn}
+              onExpand={onExpand}
               onBack={onBack}
             />
           ) : (
@@ -594,7 +598,11 @@ export function AgentRunView({
               }}
             >
               {activeTurnData && (
-                <TurnDetail turn={activeTurnData} onDrillIn={onDrillIn} />
+                <TurnDetail
+                  turn={activeTurnData}
+                  onDrillIn={onDrillIn}
+                  onExpand={onExpand}
+                />
               )}
             </Box>
           )}

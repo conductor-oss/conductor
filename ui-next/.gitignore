@@ -10,6 +10,9 @@ dist
 build
 storybook-static
 
+# Marker written by build:lib:watch (detected by enterprise conductor-ui)
+.lib-watch
+
 # Test / Playwright
 /test-results/
 /playwright-report/
