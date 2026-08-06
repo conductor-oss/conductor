@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -212,5 +214,82 @@ class VectorDBProviderTest {
 
         // The explicitly configured instance wins; putIfAbsent does not overwrite it.
         assertEquals("postgres", provider.get("default", mock(TaskContext.class)).getType());
+    }
+
+    @Test
+    void testDispose_closesCloseableInstances() throws IOException {
+        // A VectorDB that implements Closeable
+        CloseableVectorDB closeableDB = mock(CloseableVectorDB.class);
+        when(closeableDB.getName()).thenReturn("closeable");
+        when(closeableDB.getType()).thenReturn("valkey");
+
+        Map<String, VectorDB> instances = new HashMap<>();
+        instances.put("closeable", closeableDB);
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
+
+        // Invoke dispose (the @PreDestroy method)
+        provider.dispose();
+
+        // Verify close was called
+        verify(closeableDB).close();
+    }
+
+    @Test
+    void testDispose_continuesAfterOneCloseThrows() throws IOException {
+        // Two closeable instances — first one throws
+        CloseableVectorDB failingDB = mock(CloseableVectorDB.class);
+        when(failingDB.getName()).thenReturn("failing");
+        when(failingDB.getType()).thenReturn("valkey");
+        doThrow(new IOException("close failed")).when(failingDB).close();
+
+        CloseableVectorDB healthyDB = mock(CloseableVectorDB.class);
+        when(healthyDB.getName()).thenReturn("healthy");
+        when(healthyDB.getType()).thenReturn("valkey");
+
+        Map<String, VectorDB> instances = new HashMap<>();
+        instances.put("failing", failingDB);
+        instances.put("healthy", healthyDB);
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
+
+        // Should NOT throw even though one close() fails
+        assertDoesNotThrow(provider::dispose);
+
+        // Both close() should have been attempted
+        verify(failingDB).close();
+        verify(healthyDB).close();
+    }
+
+    @Test
+    void testDispose_skipsNonCloseableInstances() {
+        // A plain VectorDB mock (not Closeable) should not cause errors
+        VectorDB plainDB = mock(VectorDB.class);
+        when(plainDB.getName()).thenReturn("plain");
+        when(plainDB.getType()).thenReturn("postgres");
+
+        Map<String, VectorDB> instances = new HashMap<>();
+        instances.put("plain", plainDB);
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
+
+        // dispose should succeed silently
+        assertDoesNotThrow(provider::dispose);
+    }
+
+    /** Test helper — an abstract class that combines VectorDB and Closeable for mocking. */
+    abstract static class CloseableVectorDB extends VectorDB implements Closeable {
+        CloseableVectorDB() {
+            super("mock", "mock");
+        }
     }
 }

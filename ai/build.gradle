@@ -43,6 +43,11 @@ dependencies {
 
     //Vector Databases
 
+    // Valkey GLIDE client for the Valkey vector store provider.
+    // The uber jar bundles Rust natives for 7 platforms (~40 MB). Upgrades require re-auditing
+    // native code because Java-layer patches cannot reach the bundled binaries.
+    api "io.valkey:valkey-glide:${revValkeyGlide}"
+
     api "org.mongodb:mongodb-driver-sync:${mongodb}"
     api "org.mongodb:mongodb-driver-core:${mongodb}"
     api "org.mongodb:bson:${mongodb}"

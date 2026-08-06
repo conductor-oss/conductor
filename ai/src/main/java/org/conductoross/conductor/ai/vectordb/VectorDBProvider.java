@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -91,5 +93,28 @@ public class VectorDBProvider {
                     vectorDBs.keySet());
         }
         return db;
+    }
+
+    /**
+     * Closes all registered VectorDB instances that implement {@link Closeable}. Each instance is
+     * closed independently so that one failure does not prevent others from releasing resources.
+     */
+    @PreDestroy
+    void dispose() {
+        for (Map.Entry<String, VectorDB> entry : vectorDBs.entrySet()) {
+            VectorDB db = entry.getValue();
+            if (db instanceof Closeable) {
+                try {
+                    ((Closeable) db).close();
+                    log.info(
+                            "Closed vector DB instance: {} (type: {})", db.getName(), db.getType());
+                } catch (Exception e) {
+                    log.warn(
+                            "Failed to close vector DB instance '{}': {}",
+                            entry.getKey(),
+                            e.getMessage());
+                }
+            }
+        }
     }
 }
