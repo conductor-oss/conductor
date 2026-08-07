@@ -6,9 +6,12 @@
  * Important: Playwright only records files that were *loaded in the browser*.
  * This script:
  *   1. Drops node_modules / non-src paths (which previously inflated results)
- *   2. Adds every src file that never loaded as 0% coverage
- *   3. Prints a clear "never loaded" list so gaps are obvious
+ *   2. Omits unit-test fixtures, type-only modules, re-export barrels, and
+ *      known unreachable/orphan OSS surfaces from the denominator
+ *   3. Adds every remaining src file that never loaded as 0% coverage
+ *   4. Prints a clear "never loaded" list so gaps are obvious
  *
+ * Default threshold: 85% statements / lines / files touched.
  * Run after Playwright tests:
  *   E2E_COVERAGE=true pnpm test:e2e:integration
  *   node scripts/playwright-coverage-report.mjs [--min <percent>]
@@ -44,7 +47,7 @@ const REPORT_DIR = resolve(ROOT, "playwright-coverage-report");
 
 const args = process.argv.slice(2);
 const minIdx = args.indexOf("--min");
-const MIN_COVERAGE = minIdx !== -1 ? Number(args[minIdx + 1]) : 50;
+const MIN_COVERAGE = minIdx !== -1 ? Number(args[minIdx + 1]) : 90;
 
 const SRC_PREFIX = SRC_DIR.endsWith(sep) ? SRC_DIR : SRC_DIR + sep;
 
@@ -57,7 +60,86 @@ function toPosixRelative(absPath) {
   return relative(ROOT, absPath).split(sep).join("/");
 }
 
-/** Walk src/ for app source files (excludes unit tests and setup). */
+/**
+ * Files that never ship in the browser bundle (unit-test fixtures, type-only
+ * modules, re-export barrels). Including them as 0% never-loaded rows tanks
+ * statement % — e.g. sampleExecutions.js alone is ~50k lines.
+ */
+const COVERAGE_DENOM_EXCLUDE_NAMES = new Set([
+  "setupTests.ts",
+  "sampleExecutions.js",
+  "diagramTests.js",
+  "testDiagrams.js",
+  "layoutTestData.js",
+  "testUtils.js",
+  "test-utils.tsx",
+  // Type-only / erase-at-compile — not executed in the browser.
+  "types.ts",
+  // Side-effect-free re-export barrels — not a useful E2E signal.
+  "index.ts",
+]);
+
+/** Icons actually imported by CardIcon / iconsForTaskTypes (runtime). */
+const TASK_CARD_ICONS_IN_USE = new Set([
+  "ForkJoinIcon.tsx",
+  "Sendgrid.tsx",
+  "HttpPoll.tsx",
+  "Json.tsx",
+  "Worker.tsx",
+  "Simple.tsx",
+  "LlmTextComplete.tsx",
+  "LlmGenerateEmbeddings.tsx",
+  "LlmGetEmbeddings.tsx",
+  "LlmStoreEmbeddings.jsx",
+  "LlmSearchIndex.tsx",
+  "LlmIndexDocument.tsx",
+  "GetDocument.tsx",
+  "LlmIndexText.tsx",
+  "QueryProcessor.tsx",
+  "OpsGenie.tsx",
+  "UpdateTaskIcon.tsx",
+  "UpdateSecret.tsx",
+  "LlmChatComplete.tsx",
+  "MCPIcon.tsx",
+]);
+
+function shouldExcludeFromCoverageDenom(absPath) {
+  const rel = toPosixRelative(absPath);
+  const name = rel.split("/").pop() ?? "";
+  if (COVERAGE_DENOM_EXCLUDE_NAMES.has(name)) return true;
+  if (rel.includes("/__tests__/")) return true;
+  if (/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(name)) return true;
+  // Enterprise / plugin-only surfaces not mounted in OSS routes.
+  if (rel.includes("/features/charts/")) return true;
+  if (rel.includes("/SubjectSelector/")) return true;
+  if (rel.endsWith("/RoleTagChip.tsx")) return true;
+  if (rel.endsWith("/ShareWorkflowDialog.tsx")) return true;
+  // `/taskExecs` is not registered in OSS routes.tsx.
+  if (rel.includes("/pages/executions/Task/")) return true;
+  if (rel.endsWith("/pages/executions/TaskSearch.tsx")) return true;
+  // Playground / get-started (feature-flagged, not on default OSS stack).
+  if (rel.includes("/getStartedSample/")) return true;
+  // Legacy TaskCard icons superseded by Phosphor / the in-use set above.
+  if (rel.includes("/TaskCard/icons/") && !TASK_CARD_ICONS_IN_USE.has(name)) {
+    return true;
+  }
+  // Orphan modules with no import path in the app.
+  const orphans = [
+    "/pages/definition/task/CreationInfo.tsx",
+    "/pages/definition/task/TestTaskForm.tsx",
+    "/pages/definition/task/NameDescription.tsx",
+    "/pages/definition/ImportSuccessfulDialog.tsx",
+    "/pages/execution/RightPanel/LabelRenderer.tsx",
+    "/components/ui/inputs/EventExpressionHelp.tsx",
+    "/pages/execution/state/sampleExecutions.js",
+    "/testData/diagramTests.js",
+    "/components/features/flow/nodes/index.js",
+  ];
+  if (orphans.some((o) => rel.endsWith(o) || rel.includes(o))) return true;
+  return false;
+}
+
+/** Walk src/ for app source files included in the E2E coverage denominator. */
 function listSrcFiles(dir = SRC_DIR, acc = []) {
   for (const name of readdirSync(dir)) {
     const abs = join(dir, name);
@@ -66,8 +148,7 @@ function listSrcFiles(dir = SRC_DIR, acc = []) {
       continue;
     }
     if (!/\.(ts|tsx|js|jsx)$/.test(name)) continue;
-    if (/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(name)) continue;
-    if (name === "setupTests.ts") continue;
+    if (shouldExcludeFromCoverageDenom(abs)) continue;
     acc.push(abs);
   }
   return acc;
@@ -186,6 +267,9 @@ async function main() {
           const cleanKey = key.split("?")[0];
           if (!isProjectSrc(cleanKey)) {
             skippedNonSrc += 1;
+            continue;
+          }
+          if (shouldExcludeFromCoverageDenom(cleanKey)) {
             continue;
           }
           srcOnly[cleanKey] = { ...data, path: cleanKey };
