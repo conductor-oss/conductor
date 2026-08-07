@@ -12,7 +12,10 @@ import {
 import { Flow } from "components/features/flow/Flow";
 import OpenIcon from "components/icons/OpenIcon";
 import ButtonLinks from "components/layout/header/ButtonLinks";
-import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
+import {
+  ConductorSectionHeader,
+  ConductorSectionHeaderProps,
+} from "components/layout/section/ConductorSectionHeader";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
 import Error from "components/ui/Error";
 import MuiAlert from "components/ui/MuiAlert";
@@ -271,6 +274,35 @@ const ExecutionAlert = ({
     );
   }
   return null;
+};
+
+type ExecutionBreadcrumbItem = NonNullable<
+  ConductorSectionHeaderProps["breadcrumbItems"]
+>[number];
+
+export const getExecutionBreadcrumbItems = (
+  pathname: string,
+  workflowId: string | undefined,
+  executionId: string,
+): ExecutionBreadcrumbItem[] => {
+  const isAgentExecutionRoute = pathname.startsWith(
+    `${AGENT_EXECUTIONS_URL.BASE}/`,
+  );
+  const displayedExecutionId = isAgentExecutionRoute
+    ? executionId
+    : workflowId || "";
+
+  return [
+    {
+      label: isAgentExecutionRoute ? "Agent Executions" : "Workflow Executions",
+      to: isAgentExecutionRoute ? AGENT_EXECUTIONS_URL.BASE : "/executions",
+    },
+    {
+      label: displayedExecutionId,
+      to: "",
+      icon: <CopyClipboardButton text={displayedExecutionId} />,
+    },
+  ];
 };
 
 export default function Execution() {
@@ -707,14 +739,11 @@ export default function Execution() {
                   />
                 </Stack>
               }
-              breadcrumbItems={[
-                { label: "Workflow Executions", to: "/executions" },
-                {
-                  label: execution.workflowId || "",
-                  to: "",
-                  icon: <CopyClipboardButton text={execution.workflowId} />,
-                },
-              ]}
+              breadcrumbItems={getExecutionBreadcrumbItems(
+                location.pathname,
+                execution.workflowId,
+                executionId,
+              )}
               buttonsComponent={
                 <Stack
                   flexDirection="row"
