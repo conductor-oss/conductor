@@ -183,6 +183,100 @@ public class JoinTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    public void testAgentJoinUsesWorkflowTaskMarkerForIterationQualifiedDynamicTool() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        Map<String, Object> httpOutput =
+                Map.of(
+                        "response",
+                        Map.of(
+                                "statusCode",
+                                200,
+                                "body",
+                                Map.of("temperature", 64)));
+        TaskModel forkedTask = forkedTaskWithOutput("weather_0__1", httpOutput);
+        WorkflowTask dynamicTool = new WorkflowTask();
+        dynamicTool.setInputParameters(Map.of("_agent_tool_name", "weather"));
+        forkedTask.setWorkflowTask(dynamicTool);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("weather_0");
+        joinTask.setIteration(1);
+
+        assertTrue(join.execute(workflow, joinTask, null));
+        assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
+        assertEquals(
+                Map.of("_agent_tool_name", "weather", "_agent_tool_output", httpOutput),
+                joinTask.getOutputData().get("weather_0__1"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testAgentJoinPrefersRuntimeToolMarkerOverWorkflowTaskMarker() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        Map<String, Object> toolOutput = Map.of("content", List.of("forecast"), "isError", false);
+        TaskModel forkedTask = forkedTaskWithOutput("weather", toolOutput);
+        forkedTask.setInputData(Map.of("_agent_tool_name", "runtime-weather"));
+        forkedTask
+                .getWorkflowTask()
+                .setInputParameters(Map.of("_agent_tool_name", "definition-weather"));
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("weather");
+
+        assertTrue(join.execute(workflow, joinTask, null));
+        Map<String, Object> compact =
+                (Map<String, Object>) joinTask.getOutputData().get("weather");
+        assertEquals("runtime-weather", compact.get("_agent_tool_name"));
+        assertEquals(toolOutput, compact.get("_agent_tool_output"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testUnmarkedAgentWorkflowDefCompactsOnlyStateKeys() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        Map<String, Object> forkOutput =
+                Map.of(
+                        "state",
+                        "running",
+                        "_state_updates",
+                        Map.of("temperatureUnit", "fahrenheit"),
+                        "response",
+                        Map.of("statusCode", 200));
+        TaskModel forkedTask = forkedTaskWithOutput("t1", forkOutput);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("t1");
+
+        assertTrue(join.execute(workflow, joinTask, null));
+        assertEquals(
+                Map.of(
+                        "state",
+                        "running",
+                        "_state_updates",
+                        Map.of("temperatureUnit", "fahrenheit")),
+                joinTask.getOutputData().get("t1"));
+    }
+
+    @Test
     public void testNonAgentWorkflowDefCopiesFullForkOutput() {
         ConductorProperties properties = mock(ConductorProperties.class);
         Join join = new Join(properties);
@@ -232,5 +326,25 @@ public class JoinTest {
         assertTrue(done);
         assertNull(workflow.getWorkflowDefinition());
         assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
+    }
+
+    @Test
+    public void testNullWorkflowMetadataAndForkWorkflowTaskDoNotCreateAgentEnvelope() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        Map<String, Object> forkOutput = Map.of("response", Map.of("statusCode", 200));
+        TaskModel forkedTask = forkedTaskWithOutput("tool", forkOutput);
+        forkedTask.setWorkflowTask(null);
+        forkedTask.setInputData(Map.of("_agent_tool_name", "weather"));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(new WorkflowDef());
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("tool");
+
+        assertTrue(join.execute(workflow, joinTask, null));
+        assertEquals(TaskModel.Status.COMPLETED, joinTask.getStatus());
+        assertEquals(forkOutput, joinTask.getOutputData().get("tool"));
     }
 }

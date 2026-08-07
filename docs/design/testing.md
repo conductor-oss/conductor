@@ -45,11 +45,40 @@ Core annotation tests cover:
 
 These tests keep the reusable worker contract independent from engine-internal task models.
 
-## 4. Commands
+## 4. Agent loop JOIN regression
+
+`JoinTest` covers the engine boundary with real `WorkflowDef`, `WorkflowTask`, `WorkflowModel`, and
+`TaskModel` instances. Add a focused regression for the issue #1499 execution shape:
+
+1. Mark the workflow as an agent with `metadata.agentDef`.
+2. Create a completed dynamic tool task whose iteration-qualified reference is joined from a
+   `DO_WHILE` iteration.
+3. Put `_agent_tool_name` only in `TaskModel.workflowTask.inputParameters`; omit it from
+   `TaskModel.inputData` to model the failing runtime representation.
+4. Give the task a non-empty HTTP- or MCP-shaped output.
+5. Execute JOIN and assert that it completes with a non-empty entry containing the logical name and
+   the complete output under `_agent_tool_output`.
+
+The same test class retains explicit compatibility cases:
+
+- a marker already present in `TaskModel.inputData` takes precedence;
+- an unmarked agent branch still propagates only `_state_updates` and `state`;
+- a non-agent JOIN still copies the full fork output; and
+- missing workflow metadata does not throw or enable agent compaction.
+
+`AgentToolJoinStateMergeScriptTest` exercises the consumer boundary by passing the JOIN envelope to
+`stateMergeScript()` and asserting that `toolResults` contains `{name, output}` for the next agent
+turn. This test uses both an HTTP-shaped response and an MCP-shaped response so the contract stays
+provider-neutral.
+
+No live LLM, MCP server, HTTP server, or full example execution is required for the regression.
+
+## 5. Commands
 
 ```bash
 ./gradlew spotlessApply
-./gradlew :conductor-ai:test
+./gradlew :conductor-core:test --tests com.netflix.conductor.core.execution.tasks.JoinTest
+./gradlew :conductor-agentspan:test --tests org.conductoross.conductor.ai.agentspan.runtime.util.AgentToolJoinStateMergeScriptTest
 ```
 
 Credentialed or live-server integration tests remain opt-in and skip when their prerequisites are
