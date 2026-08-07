@@ -31,6 +31,8 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.TaskMetricInfo;
+import com.netflix.conductor.dao.WorkflowMetricInfo;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
@@ -227,6 +229,51 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         return queryWithTransaction(
                 GET_ALL_WORKFLOW_DEF_LATEST_VERSIONS_QUERY,
                 q -> q.executeAndFetch(WorkflowDef.class));
+    }
+
+    @Override
+    public List<WorkflowMetricInfo> getWorkflowMetricInfo() {
+        final String QUERY =
+                "SELECT name, json_data::jsonb->>'ownerApp' AS owner_app "
+                        + "FROM meta_workflow_def wd WHERE wd.version = "
+                        + "(SELECT MAX(version) FROM meta_workflow_def wd2 WHERE wd2.name = wd.name)";
+        return queryWithTransaction(
+                QUERY,
+                q ->
+                        q.executeAndFetch(
+                                rs -> {
+                                    List<WorkflowMetricInfo> result = new ArrayList<>();
+                                    while (rs.next()) {
+                                        result.add(
+                                                new WorkflowMetricInfo(
+                                                        rs.getString("name"),
+                                                        rs.getString("owner_app")));
+                                    }
+                                    return result;
+                                }));
+    }
+
+    @Override
+    public List<TaskMetricInfo> getTaskMetricInfo() {
+        final String QUERY =
+                "SELECT name, json_data::jsonb->>'ownerApp' AS owner_app, "
+                        + "COALESCE((json_data::jsonb->>'concurrentExecLimit')::int, 0) AS concurrency_limit "
+                        + "FROM meta_task_def";
+        return queryWithTransaction(
+                QUERY,
+                q ->
+                        q.executeAndFetch(
+                                rs -> {
+                                    List<TaskMetricInfo> result = new ArrayList<>();
+                                    while (rs.next()) {
+                                        result.add(
+                                                new TaskMetricInfo(
+                                                        rs.getString("name"),
+                                                        rs.getString("owner_app"),
+                                                        rs.getInt("concurrency_limit")));
+                                    }
+                                    return result;
+                                }));
     }
 
     public List<WorkflowDef> getAllLatest() {

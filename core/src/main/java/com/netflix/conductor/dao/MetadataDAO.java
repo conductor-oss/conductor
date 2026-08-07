@@ -125,4 +125,38 @@ public interface MetadataDAO {
                         })
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Lightweight projection of the latest version of each workflow definition, used to publish
+     * monitoring metrics without loading full definition bodies.
+     *
+     * <p>The default implementation projects from {@link #getAllWorkflowDefsLatestVersions()}.
+     * Persistence modules backed by a query-capable store should override this to project the
+     * fields at the database.
+     *
+     * @return one {@link WorkflowMetricInfo} per workflow name (latest version)
+     */
+    default List<WorkflowMetricInfo> getWorkflowMetricInfo() {
+        return getAllWorkflowDefsLatestVersions().stream()
+                .map(def -> new WorkflowMetricInfo(def.getName(), def.getOwnerApp()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lightweight projection of task definitions, used to publish monitoring metrics without
+     * loading full definition bodies.
+     *
+     * <p>The default implementation projects from {@link #getAllTaskDefs()}. Persistence modules
+     * backed by a query-capable store should override this to project the fields at the database.
+     *
+     * @return one {@link TaskMetricInfo} per task definition
+     */
+    default List<TaskMetricInfo> getTaskMetricInfo() {
+        return getAllTaskDefs().stream()
+                .map(
+                        def ->
+                                new TaskMetricInfo(
+                                        def.getName(), def.getOwnerApp(), def.concurrencyLimit()))
+                .collect(Collectors.toList());
+    }
 }
