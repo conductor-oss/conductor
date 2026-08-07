@@ -57,6 +57,20 @@ class ValkeyConfigTest {
     }
 
     @Test
+    void getWithNullName_throwsIllegalArgument() {
+        // A blank name would otherwise reach clientName sanitization and NPE opaquely; reject it
+        // here with a clear configuration error instead.
+        ValkeyConfig config = new ValkeyConfig();
+        assertThrows(IllegalArgumentException.class, () -> config.get(null));
+    }
+
+    @Test
+    void getWithBlankName_throwsIllegalArgument() {
+        ValkeyConfig config = new ValkeyConfig();
+        assertThrows(IllegalArgumentException.class, () -> config.get("   "));
+    }
+
+    @Test
     void passwordIsExcludedFromToString() {
         ValkeyConfig config = new ValkeyConfig();
         config.setPassword("s3cret");

@@ -80,7 +80,11 @@ public class ValkeyConfig implements VectorDBConfig<ValkeyVectorDB> {
     }
 
     public ValkeyVectorDB get(String name) {
-        // Validate metric and algorithm eagerly so mis-configuration fails at startup
+        // Validate name, metric, and algorithm eagerly so mis-configuration fails at startup with a
+        // clear message instead of surfacing later as an opaque NullPointerException.
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Valkey vector DB instance name must not be blank");
+        }
         resolveDistanceMetric(distanceMetric);
         resolveIndexingMethod(indexingMethod);
         return new ValkeyVectorDB(name, this);

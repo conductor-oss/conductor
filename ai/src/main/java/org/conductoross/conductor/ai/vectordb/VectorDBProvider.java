@@ -88,8 +88,10 @@ public class VectorDBProvider {
     }
 
     /**
-     * Closes all registered VectorDB instances that implement {@link Closeable}. Each instance is
-     * closed independently so that one failure does not prevent others from releasing resources.
+     * Closes all registered VectorDB instances that implement {@link Closeable}, then clears the
+     * map so a lookup after shutdown reports "not found" instead of handing back an already-closed
+     * instance. Each instance is closed independently so that one failure does not prevent others
+     * from releasing resources.
      */
     @PreDestroy
     void dispose() {
@@ -101,12 +103,10 @@ public class VectorDBProvider {
                     log.info(
                             "Closed vector DB instance: {} (type: {})", db.getName(), db.getType());
                 } catch (Exception e) {
-                    log.warn(
-                            "Failed to close vector DB instance '{}': {}",
-                            entry.getKey(),
-                            e.getMessage());
+                    log.warn("Failed to close vector DB instance '{}'", entry.getKey(), e);
                 }
             }
         }
+        vectorDBs.clear();
     }
 }

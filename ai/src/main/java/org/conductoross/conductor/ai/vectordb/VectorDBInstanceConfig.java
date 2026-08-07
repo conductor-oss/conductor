@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -92,13 +93,28 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
                             instance.getName(),
                             instance.getType());
                 }
-            } catch (Exception e) {
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                // The configuration itself is invalid (bad enum value, blank name, etc.) and needs
+                // an operator fix, not a retry, so fail startup loudly.
                 failedNames.add(instance.getName() + " (type: " + instance.getType() + ")");
                 failures.add(e);
+            } catch (RuntimeException e) {
+                // A runtime/connectivity failure (e.g. Valkey unreachable at boot). Unlike the
+                // other
+                // vector DB backends, ValkeyVectorDB connects eagerly at construction, so without
+                // this distinction a transient network blip would abort the entire server instead
+                // of just this instance. Log and skip, matching how the other backends already
+                // tolerate this.
+                log.error(
+                        "Failed to initialize vector DB instance: {} (type: {}), reason: {}",
+                        instance.getName(),
+                        instance.getType(),
+                        e.getMessage());
             }
         }
 
         if (!failures.isEmpty()) {
+            closeAlreadyCreated(vectorDBMap);
             IllegalStateException aggregate =
                     new IllegalStateException(
                             "Failed to initialize vector DB instance(s): "
@@ -108,6 +124,27 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         }
 
         return vectorDBMap;
+    }
+
+    /**
+     * Closes any instances that were successfully created before a later instance failed. Without
+     * this, a successfully-connected instance (e.g. an open GLIDE client) would be discarded along
+     * with the map when the aggregate exception below is thrown, since {@link VectorDBProvider} is
+     * never constructed to close it later.
+     */
+    private void closeAlreadyCreated(Map<String, VectorDB> vectorDBMap) {
+        for (Map.Entry<String, VectorDB> entry : vectorDBMap.entrySet()) {
+            if (entry.getValue() instanceof Closeable) {
+                try {
+                    ((Closeable) entry.getValue()).close();
+                } catch (Exception e) {
+                    log.warn(
+                            "Failed to close vector DB instance '{}' during startup failure cleanup",
+                            entry.getKey(),
+                            e);
+                }
+            }
+        }
     }
 
     /** Creates a VectorDB instance based on the configuration type. */

@@ -279,6 +279,26 @@ class VectorDBProviderTest {
     }
 
     @Test
+    void testDispose_clearsMapSoSubsequentLookupReturnsNull() throws IOException {
+        // Without clearing the map, get() could hand back an already-closed instance to a caller
+        // racing shutdown instead of a clean "not found".
+        CloseableVectorDB closeableDB = mock(CloseableVectorDB.class);
+        when(closeableDB.getName()).thenReturn("closeable");
+        when(closeableDB.getType()).thenReturn("valkey");
+
+        Map<String, VectorDB> instances = new HashMap<>();
+        instances.put("closeable", closeableDB);
+
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
+
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults());
+        provider.dispose();
+
+        assertNull(provider.get("closeable", mock(TaskContext.class)));
+    }
+
+    @Test
     void testDispose_skipsNonCloseableInstances() {
         // A plain VectorDB mock (not Closeable) should not cause errors
         VectorDB plainDB = mock(VectorDB.class);
