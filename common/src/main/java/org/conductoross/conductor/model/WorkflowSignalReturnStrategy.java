@@ -35,7 +35,12 @@ public enum WorkflowSignalReturnStrategy {
      * The input for the task that is currently blocking is returned. This might be a task in a
      * potentially deep subworkflow of the workflow specified in the initial API request.
      */
-    BLOCKING_TASK_INPUT;
+    BLOCKING_TASK_INPUT,
+
+    /**
+     * Only the output of the workflow that was specified via workflow (execution) ID is returned.
+     */
+    TARGET_WORKFLOW_OUTPUT;
 
     // This unfortunately got much more difficult to implement when the notification service was
     // made to notify with
