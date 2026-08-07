@@ -195,8 +195,8 @@ class ValkeyVectorDBTest {
 
     @Test
     void updateEmbeddings_idWithColon_throws() {
-        // Fix #N1: an id with a delimiter character must be rejected before key construction,
-        // consistent with how indexName/namespace are already validated.
+        // An id with a delimiter character must be rejected before key construction, consistent
+        // with how indexName/namespace are already validated.
         GlideClient mockClient = mock(GlideClient.class);
         ValkeyVectorDB db = createMockValkeyDB(defaultConfig(), mockClient);
 
@@ -379,8 +379,8 @@ class ValkeyVectorDBTest {
 
     @Test
     void isAlreadyExistsError_substringElsewhereInMessage_notMatched() {
-        // Fix #M1: a free-floating contains() would have matched this; the anchored endsWith()
-        // check must not, since the message does not actually end in "already exists."
+        // A free-floating contains() would have matched this; the anchored endsWith() check must
+        // not, since the message does not actually end in "already exists."
         RequestException reqEx =
                 new RequestException("already exists. but something else failed after that");
         RuntimeException wrapper = new RuntimeException(reqEx);
@@ -389,15 +389,15 @@ class ValkeyVectorDBTest {
 
     @Test
     void isAlreadyExistsError_punctuationVariant_notMatched() {
-        // Fix #M1: dropping the trailing period must not match. Wording drift should fail loud
-        // (surface as a real error) rather than being silently misclassified either way.
+        // Dropping the trailing period must not match. Wording drift should fail loud (surface as
+        // a real error) rather than being silently misclassified either way.
         RequestException reqEx =
                 new RequestException("Index: test_idx in database 0 already exists");
         RuntimeException wrapper = new RuntimeException(reqEx);
         assertFalse(ValkeyVectorDB.isAlreadyExistsError(wrapper));
     }
 
-    // ----- Unknown-command error classification (Fix #M1) -----
+    // ----- Unknown-command error classification -----
 
     @Test
     void isUnknownCommandError_requestException_true() {
@@ -416,9 +416,8 @@ class ValkeyVectorDBTest {
 
     @Test
     void isUnknownCommandError_plainRuntimeException_false() {
-        // Fix #M1: a non-GLIDE exception must NOT be classified as unknown-command, even if its
-        // message happens to contain the phrase. The prior fallback bypassed the RequestException
-        // type guard for this case; it must not anymore.
+        // A non-GLIDE exception must NOT be classified as unknown-command, even if its message
+        // happens to contain the phrase.
         RuntimeException plain = new RuntimeException("ERR unknown command 'FT.CREATE'");
         assertFalse(ValkeyVectorDB.isUnknownCommandError(plain));
     }
@@ -800,7 +799,7 @@ class ValkeyVectorDBTest {
 
     // ----- Helpers -----
 
-    // ----- Client configuration: clientName for CLIENT LIST observability (Fix #L1) -----
+    // ----- Client configuration: clientName for CLIENT LIST observability -----
 
     @Test
     void buildClientConfiguration_setsClientName() {

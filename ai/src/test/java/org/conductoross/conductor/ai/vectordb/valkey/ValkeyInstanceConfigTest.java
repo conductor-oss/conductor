@@ -135,7 +135,7 @@ class ValkeyInstanceConfigTest {
 
     @Test
     void instanceConstructionFailure_throwsAggregateException() {
-        // Fix #M0: an instance whose construction throws must fail startup loudly, not
+        // An instance whose construction throws must fail startup loudly, not
         // disappear silently the way a missing-config or unknown-type instance does.
         VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
         VectorDBInstance instance = new VectorDBInstance();
