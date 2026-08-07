@@ -179,6 +179,17 @@ class VectorDBProviderTest {
     }
 
     @Test
+    void constructorPropagatesInstanceConfigFailure() {
+        // Fix #M0: the provider must not swallow initialization failures into an empty map.
+        VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
+        when(instanceConfig.getVectorDBInstances()).thenThrow(new IllegalStateException("boom"));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> new VectorDBProvider(instanceConfig, defaults()));
+    }
+
+    @Test
     void testDefaultInstanceIsMerged() {
         VectorDB defaultCustom = mock(VectorDB.class);
         when(defaultCustom.getName()).thenReturn("default");

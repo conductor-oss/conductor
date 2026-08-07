@@ -25,6 +25,7 @@ import glide.api.commands.servermodules.FT;
 import glide.api.models.GlideString;
 import glide.api.models.commands.FT.FTCreateOptions;
 import glide.api.models.commands.FT.FTSearchOptions;
+import glide.api.models.configuration.GlideClientConfiguration;
 import glide.api.models.exceptions.RequestException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -189,6 +190,22 @@ class ValkeyVectorDBTest {
         assertThrows(
                 NullPointerException.class,
                 () -> db.updateEmbeddings("index", "ns", "doc", "parent", null, embeddings, null));
+        verifyNoInteractions(mockClient);
+    }
+
+    @Test
+    void updateEmbeddings_idWithColon_throws() {
+        // Fix #N1: an id with a delimiter character must be rejected before key construction,
+        // consistent with how indexName/namespace are already validated.
+        GlideClient mockClient = mock(GlideClient.class);
+        ValkeyVectorDB db = createMockValkeyDB(defaultConfig(), mockClient);
+
+        List<Float> embeddings = List.of(1.0f, 0.0f, 0.0f, 0.0f);
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        db.updateEmbeddings(
+                                "index", "ns", "doc", "parent", "bad:id", embeddings, null));
         verifyNoInteractions(mockClient);
     }
 
@@ -358,6 +375,60 @@ class ValkeyVectorDBTest {
         // RequestException itself (as the top-level RuntimeException) should work too
         RequestException reqEx = new RequestException("Index already exists.");
         assertTrue(ValkeyVectorDB.isAlreadyExistsError(reqEx));
+    }
+
+    @Test
+    void isAlreadyExistsError_substringElsewhereInMessage_notMatched() {
+        // Fix #M1: a free-floating contains() would have matched this; the anchored endsWith()
+        // check must not, since the message does not actually end in "already exists."
+        RequestException reqEx =
+                new RequestException("already exists. but something else failed after that");
+        RuntimeException wrapper = new RuntimeException(reqEx);
+        assertFalse(ValkeyVectorDB.isAlreadyExistsError(wrapper));
+    }
+
+    @Test
+    void isAlreadyExistsError_punctuationVariant_notMatched() {
+        // Fix #M1: dropping the trailing period must not match. Wording drift should fail loud
+        // (surface as a real error) rather than being silently misclassified either way.
+        RequestException reqEx =
+                new RequestException("Index: test_idx in database 0 already exists");
+        RuntimeException wrapper = new RuntimeException(reqEx);
+        assertFalse(ValkeyVectorDB.isAlreadyExistsError(wrapper));
+    }
+
+    // ----- Unknown-command error classification (Fix #M1) -----
+
+    @Test
+    void isUnknownCommandError_requestException_true() {
+        RequestException reqEx =
+                new RequestException(
+                        "ERR unknown command 'FT.CREATE', with args beginning with: 'idx'");
+        RuntimeException wrapper = new RuntimeException(reqEx);
+        assertTrue(ValkeyVectorDB.isUnknownCommandError(wrapper));
+    }
+
+    @Test
+    void isUnknownCommandError_directRequestException_true() {
+        RequestException reqEx = new RequestException("ERR unknown command 'FT.SEARCH'");
+        assertTrue(ValkeyVectorDB.isUnknownCommandError(reqEx));
+    }
+
+    @Test
+    void isUnknownCommandError_plainRuntimeException_false() {
+        // Fix #M1: a non-GLIDE exception must NOT be classified as unknown-command, even if its
+        // message happens to contain the phrase. The prior fallback bypassed the RequestException
+        // type guard for this case; it must not anymore.
+        RuntimeException plain = new RuntimeException("ERR unknown command 'FT.CREATE'");
+        assertFalse(ValkeyVectorDB.isUnknownCommandError(plain));
+    }
+
+    @Test
+    void isUnknownCommandError_alreadyExistsMessage_false() {
+        RequestException reqEx =
+                new RequestException("Index: test_idx in database 0 already exists.");
+        RuntimeException wrapper = new RuntimeException(reqEx);
+        assertFalse(ValkeyVectorDB.isUnknownCommandError(wrapper));
     }
 
     // ----- ConcurrentHashMap recursion fix (Fix #2) -----
@@ -728,6 +799,24 @@ class ValkeyVectorDBTest {
     }
 
     // ----- Helpers -----
+
+    // ----- Client configuration: clientName for CLIENT LIST observability (Fix #L1) -----
+
+    @Test
+    void buildClientConfiguration_setsClientName() {
+        GlideClientConfiguration built =
+                ValkeyVectorDB.buildClientConfiguration("my-instance", defaultConfig(), 2000L);
+        assertEquals("conductor-vectordb-my-instance", built.getClientName());
+    }
+
+    @Test
+    void buildClientConfiguration_sanitizesWhitespaceInName() {
+        // A human-readable instance name with a space must not fail CLIENT SETNAME at connection
+        // time; the space is sanitized rather than passed through verbatim.
+        GlideClientConfiguration built =
+                ValkeyVectorDB.buildClientConfiguration("my instance", defaultConfig(), 2000L);
+        assertEquals("conductor-vectordb-my_instance", built.getClientName());
+    }
 
     private static ValkeyConfig defaultConfig() {
         ValkeyConfig config = new ValkeyConfig();

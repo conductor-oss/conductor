@@ -122,4 +122,55 @@ class ValkeyInstanceConfigTest {
         Map<String, VectorDB> result = instanceConfig.getVectorDBInstances();
         assertTrue(result.isEmpty());
     }
+
+    /**
+     * A ValkeyConfig subclass whose get(String) always throws, simulating a construction failure.
+     */
+    static class ThrowingValkeyConfig extends ValkeyConfig {
+        @Override
+        public ValkeyVectorDB get(String name) {
+            throw new IllegalArgumentException("invalid distanceMetric for instance " + name);
+        }
+    }
+
+    @Test
+    void instanceConstructionFailure_throwsAggregateException() {
+        // Fix #M0: an instance whose construction throws must fail startup loudly, not
+        // disappear silently the way a missing-config or unknown-type instance does.
+        VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
+        VectorDBInstance instance = new VectorDBInstance();
+        instance.setName("bad-valkey");
+        instance.setType("valkey");
+        instance.setValkey(new ThrowingValkeyConfig());
+        instanceConfig.setInstances(List.of(instance));
+
+        IllegalStateException ex =
+                assertThrows(IllegalStateException.class, instanceConfig::getVectorDBInstances);
+        assertTrue(ex.getMessage().contains("bad-valkey"));
+        assertEquals(1, ex.getSuppressed().length);
+        assertInstanceOf(IllegalArgumentException.class, ex.getSuppressed()[0]);
+    }
+
+    @Test
+    void multipleInstanceFailures_areAllReportedInAggregateException() {
+        VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
+
+        VectorDBInstance first = new VectorDBInstance();
+        first.setName("bad-valkey-1");
+        first.setType("valkey");
+        first.setValkey(new ThrowingValkeyConfig());
+
+        VectorDBInstance second = new VectorDBInstance();
+        second.setName("bad-valkey-2");
+        second.setType("valkey");
+        second.setValkey(new ThrowingValkeyConfig());
+
+        instanceConfig.setInstances(List.of(first, second));
+
+        IllegalStateException ex =
+                assertThrows(IllegalStateException.class, instanceConfig::getVectorDBInstances);
+        assertTrue(ex.getMessage().contains("bad-valkey-1"));
+        assertTrue(ex.getMessage().contains("bad-valkey-2"));
+        assertEquals(2, ex.getSuppressed().length);
+    }
 }

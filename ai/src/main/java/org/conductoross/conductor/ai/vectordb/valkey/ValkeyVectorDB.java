@@ -112,7 +112,7 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
         this.requestTimeoutMs =
                 config.getRequestTimeoutMs() != null ? config.getRequestTimeoutMs() : 2000L;
         this.distanceMetric = ValkeyConfig.resolveDistanceMetric(config.getDistanceMetric());
-        this.client = createClient ? buildClient(config, requestTimeoutMs) : injectedClient;
+        this.client = createClient ? buildClient(name, config, requestTimeoutMs) : injectedClient;
     }
 
     private static ValkeyConfig validateAndReturn(ValkeyConfig config) {
@@ -126,7 +126,16 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
 
     // ----- Client lifecycle -----
 
-    private static GlideClient buildClient(ValkeyConfig cfg, long timeoutMs) {
+    private static final String CLIENT_NAME_PREFIX = "conductor-vectordb-";
+
+    /**
+     * Builds the GLIDE client configuration, including a {@code clientName} so this instance's
+     * connections are identifiable in {@code CLIENT LIST} on a shared Valkey server.
+     * Package-private (and split out from {@link #buildClient}) so it can be unit-tested without a
+     * live connection.
+     */
+    static GlideClientConfiguration buildClientConfiguration(
+            String name, ValkeyConfig cfg, long timeoutMs) {
         GlideClientConfiguration.GlideClientConfigurationBuilder<?, ?> builder =
                 GlideClientConfiguration.builder()
                         .address(
@@ -134,7 +143,8 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
                                         .host(cfg.getHost() != null ? cfg.getHost() : "localhost")
                                         .port(cfg.getPort() != null ? cfg.getPort() : 6379)
                                         .build())
-                        .requestTimeout(Math.toIntExact(timeoutMs));
+                        .requestTimeout(Math.toIntExact(timeoutMs))
+                        .clientName(CLIENT_NAME_PREFIX + sanitizeClientName(name));
 
         if (Boolean.TRUE.equals(cfg.getUseTls())) {
             builder.useTLS(true);
@@ -155,9 +165,24 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
             builder.databaseId(cfg.getDatabase());
         }
 
+        return builder.build();
+    }
+
+    /**
+     * CLIENT SETNAME rejects names containing spaces or newlines. The configured instance name is
+     * an operator-provided config key with no character restrictions at that layer, so it is
+     * sanitized here rather than letting an otherwise-valid config fail client creation.
+     */
+    private static String sanitizeClientName(String name) {
+        return name.replaceAll("\\s+", "_");
+    }
+
+    private static GlideClient buildClient(String name, ValkeyConfig cfg, long timeoutMs) {
         try {
             return awaitFuture(
-                    GlideClient.createClient(builder.build()), timeoutMs, "GLIDE client creation");
+                    GlideClient.createClient(buildClientConfiguration(name, cfg, timeoutMs)),
+                    timeoutMs,
+                    "GLIDE client creation");
         } catch (RuntimeException e) {
             throw new RuntimeException(
                     "Failed to create Valkey GLIDE client for "
@@ -202,7 +227,7 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
         validateName("indexName", indexName);
         validateName("namespace", namespace);
         Objects.requireNonNull(doc, "doc must not be null");
-        Objects.requireNonNull(id, "id must not be null");
+        validateId(id);
         validateEmbeddings(embeddings);
 
         if (parentDocId == null) {
@@ -555,6 +580,20 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
     }
 
     /**
+     * Validates the document id before it is concatenated into the Valkey key. Null still throws
+     * {@link NullPointerException} (unchanged contract, matches sibling {@code doc} parameter); a
+     * non-null id must match the same allowlist as {@code indexName}/{@code namespace} so that a
+     * colon or other delimiter cannot produce an ambiguous or unexpectedly-scoped key.
+     */
+    private void validateId(String id) {
+        Objects.requireNonNull(id, "id must not be null");
+        if (!VALID_NAME.matcher(id).matches()) {
+            throw new IllegalArgumentException(
+                    "Invalid id: '" + id + "'. Must match [a-zA-Z0-9_-]+");
+        }
+    }
+
+    /**
      * Validates embedding vector: non-null, correct dimension count, each element non-null and
      * finite.
      */
@@ -629,7 +668,10 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
 
     /**
      * Classifies whether an exception represents an "index already exists" error from Valkey.
-     * Requires the cause chain to contain a GLIDE {@link RequestException} specifically.
+     * Requires the cause chain to contain a GLIDE {@link RequestException} specifically. Anchored
+     * to the verified message shape ({@code "Index: <name> in database <db> already exists."}) via
+     * a suffix check, rather than a free-floating substring match, so an unrelated message that
+     * happens to mention "already exists." elsewhere is not misclassified.
      */
     static boolean isAlreadyExistsError(RuntimeException e) {
         RequestException reqEx = findRequestException(e);
@@ -637,18 +679,22 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
             return false;
         }
         String msg = reqEx.getMessage();
-        return msg != null && msg.contains("already exists.");
+        return msg != null && msg.endsWith(" already exists.");
     }
 
-    private boolean isUnknownCommandError(RuntimeException e) {
+    /**
+     * Classifies whether an exception represents an "unknown command" error (search module not
+     * loaded). Requires the cause chain to contain a GLIDE {@link RequestException} specifically --
+     * unlike the prior implementation, this does not fall back to matching non-RequestException
+     * messages, so errors from other exception types are never suppressed here.
+     */
+    static boolean isUnknownCommandError(RuntimeException e) {
         RequestException reqEx = findRequestException(e);
-        if (reqEx != null) {
-            String msg = reqEx.getMessage();
-            return msg != null && msg.contains("ERR unknown command");
+        if (reqEx == null) {
+            return false;
         }
-        // Fallback: check the top-level message for non-RequestException wrappers
-        String msg = e.getMessage();
-        return msg != null && msg.contains("ERR unknown command");
+        String msg = reqEx.getMessage();
+        return msg != null && msg.startsWith("ERR unknown command");
     }
 
     /**

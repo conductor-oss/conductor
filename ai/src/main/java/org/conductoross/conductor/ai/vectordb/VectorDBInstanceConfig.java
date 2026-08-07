@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -79,6 +80,8 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             return vectorDBMap;
         }
 
+        List<String> failedNames = new ArrayList<>();
+        List<Exception> failures = new ArrayList<>();
         for (VectorDBInstance instance : instances) {
             try {
                 VectorDB vectorDB = createVectorDB(instance);
@@ -90,12 +93,18 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
                             instance.getType());
                 }
             } catch (Exception e) {
-                log.error(
-                        "Failed to initialize vector DB instance: {} (type: {}), reason: {}",
-                        instance.getName(),
-                        instance.getType(),
-                        e.getMessage());
+                failedNames.add(instance.getName() + " (type: " + instance.getType() + ")");
+                failures.add(e);
             }
+        }
+
+        if (!failures.isEmpty()) {
+            IllegalStateException aggregate =
+                    new IllegalStateException(
+                            "Failed to initialize vector DB instance(s): "
+                                    + String.join(", ", failedNames));
+            failures.forEach(aggregate::addSuppressed);
+            throw aggregate;
         }
 
         return vectorDBMap;

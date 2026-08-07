@@ -46,35 +46,27 @@ public class VectorDBProvider {
      */
     public VectorDBProvider(
             VectorDBInstanceConfig instanceConfig, ObjectProvider<VectorDB> defaultInstances) {
-        try {
-            Map<String, VectorDB> instances = instanceConfig.getVectorDBInstances();
-            vectorDBs.putAll(instances);
-            defaultInstances.forEach(
-                    db -> {
-                        if (vectorDBs.putIfAbsent(db.getName(), db) == null) {
-                            log.info(
-                                    "Registered default vector DB instance: {} (type: {})",
-                                    db.getName(),
-                                    db.getType());
-                        } else {
-                            log.warn(
-                                    "Vector DB instance '{}' already registered explicitly; "
-                                            + "auto-registered default not applied",
-                                    db.getName());
-                        }
-                    });
-            log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
-            vectorDBs
-                    .keySet()
-                    .forEach(
-                            name ->
-                                    log.info(
-                                            "  - {} (type: {})",
-                                            name,
-                                            vectorDBs.get(name).getType()));
-        } catch (Exception e) {
-            log.error("Failed to initialize VectorDBProvider: {}", e.getMessage(), e);
-        }
+        Map<String, VectorDB> instances = instanceConfig.getVectorDBInstances();
+        vectorDBs.putAll(instances);
+        defaultInstances.forEach(
+                db -> {
+                    if (vectorDBs.putIfAbsent(db.getName(), db) == null) {
+                        log.info(
+                                "Registered default vector DB instance: {} (type: {})",
+                                db.getName(),
+                                db.getType());
+                    } else {
+                        log.warn(
+                                "Vector DB instance '{}' already registered explicitly; "
+                                        + "auto-registered default not applied",
+                                db.getName());
+                    }
+                });
+        log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
+        vectorDBs
+                .keySet()
+                .forEach(
+                        name -> log.info("  - {} (type: {})", name, vectorDBs.get(name).getType()));
     }
 
     /**
