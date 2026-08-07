@@ -39,6 +39,7 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 | **PostgreSQL (pgvector)** | ✅ | ✅ | Postgres with vector extension |
 | **Pinecone** | ✅ | ✅ | Managed vector database |
 | **MongoDB Atlas** | ✅ | ✅ | MongoDB vector search |
+| **Valkey** | ✅ | ✅ | In-memory vector search via the valkey-search module |
 
 > **Note**: Multiple named instances of these providers can be configured. See [Vector Database Configuration](VECTORDB_CONFIGURATION.md) for details.
 

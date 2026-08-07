@@ -15,6 +15,7 @@ Conductor supports multiple vector database providers with the ability to config
 - **PostgreSQL** (with pgvector extension)
 - **MongoDB** (with Atlas Vector Search)
 - **Pinecone**
+- **Valkey** (with the valkey-search module)
 
 ## Configuration Format
 
@@ -25,7 +26,7 @@ conductor:
   vectordb:
     instances:
       - name: "instance-name"        # Unique identifier for this instance
-        type: "database-type"        # Type: postgres, mongodb, or pinecone
+        type: "database-type"        # Type: postgres, mongodb, pinecone, or valkey
         <type-specific-config>:      # Configuration block for the database type
           # ... type-specific properties
 ```
@@ -100,6 +101,48 @@ conductor:
         pinecone:
           apiKey: "your-pinecone-api-key"
 ```
+
+### Valkey (valkey-search)
+
+Requires a Valkey server with the [valkey-search](https://github.com/valkey-io/valkey-search)
+module loaded, which provides the `FT.CREATE` and `FT.SEARCH` commands. The
+`valkey/valkey-bundle` image ships the module; the plain `valkey` image does not.
+
+```yaml
+conductor:
+  vectordb:
+    instances:
+      - name: "valkey-embeddings"
+        type: "valkey"
+        valkey:
+          host: "localhost"
+          port: 6379
+          password: "${VALKEY_PASSWORD}"   # Resolve from the environment, never inline
+          database: 0
+          useTls: false
+          dimensions: 1536
+          distanceMetric: "cosine"         # Options: cosine, l2, ip
+          indexingMethod: "hnsw"           # Options: hnsw, flat
+          keyPrefix: "conductor"
+          requestTimeoutMs: 2000
+```
+
+**Limitations of this release:**
+
+- Standalone mode only. Valkey Cluster is not supported yet, because a clustered
+  deployment requires additional key-slot design.
+- Not compatible with managed services that do not ship the search module. Verify
+  module availability with your provider before choosing this backend.
+
+**Score semantics:** `score` on returned documents is the raw cosine distance, so
+**lower is closer** — an exact match scores `0.0` and an orthogonal vector scores `1.0`.
+This matches the PostgreSQL backend. MongoDB and Pinecone instead return a similarity
+where higher is closer, so do not compare score values across backends.
+
+**Keys and indexes:** documents are stored as hashes under
+`<keyPrefix>:<indexName>:<namespace>:<docId>`, and each `(indexName, namespace)` pair
+gets its own search index named `<keyPrefix>:<indexName>:<namespace>`. Two namespaces
+sharing an index name therefore stay isolated.
 
 ### Mixed Configuration (Multiple Types)
 
@@ -176,6 +219,22 @@ When using vector database tasks in your workflows, reference the instance by it
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `apiKey` | String | Required | Pinecone API key |
+
+## Valkey Configuration Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `host` | String | "localhost" | Valkey server hostname. Must not be blank |
+| `port` | Integer | 6379 | Valkey server port. Must be 1-65535 |
+| `username` | String | null | Username for ACL authentication |
+| `password` | String | null | Password. Source from the environment, not the config file |
+| `database` | Integer | 0 | Logical database index. Must be >= 0 |
+| `useTls` | Boolean | false | Enable TLS with full certificate and hostname verification |
+| `dimensions` | Integer | 256 | Vector dimensions. Must be positive and match your embedding model |
+| `distanceMetric` | String | "cosine" | Distance metric (cosine, l2, ip). Unknown values are rejected at startup |
+| `indexingMethod` | String | "hnsw" | Index algorithm (hnsw or flat). Unknown values are rejected at startup |
+| `keyPrefix` | String | "conductor" | Root segment for keys and index names. Trailing colons are stripped; must match `[a-zA-Z0-9_.-]+` |
+| `requestTimeoutMs` | Integer | 2000 | Per-request timeout in milliseconds. Must be positive |
 
 ## Migration from Old Configuration
 
@@ -256,4 +315,18 @@ If you see an error like "Vector DB instance not found: xyz", check:
 
 - Verify API key is valid and has necessary permissions
 - Ensure index exists in your Pinecone account before using it
+
+### Valkey
+
+- `unknown command 'FT.CREATE'` means the server is running without the
+  `valkey-search` module. Load the module, or use the `valkey/valkey-bundle` image
+  instead of the plain `valkey` image.
+- Searches returning no results after successful writes usually means `dimensions`
+  does not match the vector length your embedding model produces. Compare the
+  configured value against `FT.INFO <keyPrefix>:<indexName>:<namespace>` and check
+  whether its `hash_indexing_failures` counter is climbing.
+- `dimensions` is fixed when the index is created and there is no ALTER equivalent.
+  Changing it requires `FT.DROPINDEX` on the affected index followed by re-indexing.
+- Remember that `score` is a distance, so ascending order is closest-first. Sorting
+  descending will return the least relevant documents.
 

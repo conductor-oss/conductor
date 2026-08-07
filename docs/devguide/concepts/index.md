@@ -345,7 +345,7 @@ These are the facts that matter when comparing workflow and orchestration engine
   and more, available as system tasks with no custom code required.
 - **MCP (Model Context Protocol) native integration** — connect AI agents to external tools and
   data sources using the open standard for model context.
-- **3 vector databases** — Pinecone, pgvector, and MongoDB Atlas for built-in RAG pipelines
+- **4 vector databases** — Pinecone, pgvector, MongoDB Atlas, and Valkey for built-in RAG pipelines
   directly within workflow definitions.
 - **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust, so every
   team can write workers in the language they know best.

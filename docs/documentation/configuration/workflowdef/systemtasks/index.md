@@ -39,7 +39,7 @@ These are also system tasks but control workflow execution flow rather than perf
 
 ## AI & LLM tasks
 
-Conductor is the only open-source workflow engine with native AI system tasks. These tasks require the `ai` module to be enabled and provide direct integration with 14+ LLM providers, 3 vector databases, and MCP servers — no external frameworks or custom workers needed.
+Conductor is the only open-source workflow engine with native AI system tasks. These tasks require the `ai` module to be enabled and provide direct integration with 14+ LLM providers, 4 vector databases, and MCP servers — no external frameworks or custom workers needed.
 
 ### LLM
 
@@ -60,7 +60,7 @@ Conductor is the only open-source workflow engine with native AI system tasks. T
 | Search Index | `LLM_SEARCH_INDEX` | Semantic search using a text query. |
 | Search Embeddings | `LLM_SEARCH_EMBEDDINGS` | Search using embedding vectors directly. |
 
-**Supported vector databases:** Pinecone, pgvector (PostgreSQL), and MongoDB Atlas Vector Search. These enable RAG (retrieval-augmented generation) pipelines as standard Conductor workflows.
+**Supported vector databases:** Pinecone, pgvector (PostgreSQL), MongoDB Atlas Vector Search, and Valkey (valkey-search module). These enable RAG (retrieval-augmented generation) pipelines as standard Conductor workflows.
 
 ### Content Generation
 

@@ -136,7 +136,7 @@ The **LIST_MCP_TOOLS** and **CALL_MCP_TOOL** system tasks let your workflows dis
 
 ### Vector databases and RAG
 
-For retrieval-augmented generation (RAG), Conductor supports vector stores including **Pinecone**, **pgvector**, and **MongoDB Atlas**. The Embeddings and Vector Search system tasks handle the embedding generation and similarity search steps so that RAG pipelines can be expressed as standard workflows.
+For retrieval-augmented generation (RAG), Conductor supports vector stores including **Pinecone**, **pgvector**, **MongoDB Atlas**, and **Valkey**. The Embeddings and Vector Search system tasks handle the embedding generation and similarity search steps so that RAG pipelines can be expressed as standard workflows.
 
 ### Content generation
 
