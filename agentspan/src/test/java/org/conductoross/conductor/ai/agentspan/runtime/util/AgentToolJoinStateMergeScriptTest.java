@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.util;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,7 @@ class AgentToolJoinStateMergeScriptTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Test
-    void appendsHttpAndMcpJoinEnvelopesWhilePreservingPriorResultsAndMergingState()
+    void appendsHttpAndMcpJoinEnvelopesWhilePreservingPriorResultsAndShallowMergingState()
             throws Exception {
         Map<String, Object> httpOutput =
                 map(
@@ -41,7 +40,7 @@ class AgentToolJoinStateMergeScriptTest {
                                 "body",
                                 map("temperature", 64, "conditions", "clear")),
                         "_state_updates",
-                        map("weatherLoaded", true, "regions", List.of("us-east")));
+                        map("weatherLoaded", true, "region", "us-east"));
         Map<String, Object> mcpOutput =
                 map(
                         "content",
@@ -49,7 +48,7 @@ class AgentToolJoinStateMergeScriptTest {
                         "isError",
                         false,
                         "_state_updates",
-                        map("nextPage", "forecast-2", "regions", List.of("us-west", "eu-west")));
+                        map("nextPage", "forecast-2", "region", "eu-west"));
 
         Map<String, Object> joinOutput = new LinkedHashMap<>();
         joinOutput.put(
@@ -63,11 +62,7 @@ class AgentToolJoinStateMergeScriptTest {
                 evaluate(
                         map(
                                 "currentState",
-                                map(
-                                        "requestId",
-                                        "request-1",
-                                        "regions",
-                                        new ArrayList<>(List.of("us-west"))),
+                                map("requestId", "request-1", "region", "us-west"),
                                 "previousToolResults",
                                 List.of(map("name", "catalog", "output", map("count", 3))),
                                 "joinOutput",
@@ -87,8 +82,8 @@ class AgentToolJoinStateMergeScriptTest {
                         map(
                                 "requestId",
                                 "request-1",
-                                "regions",
-                                List.of("us-west", "us-east", "eu-west"),
+                                "region",
+                                "eu-west",
                                 "weatherLoaded",
                                 true,
                                 "nextPage",
@@ -98,7 +93,8 @@ class AgentToolJoinStateMergeScriptTest {
     @SuppressWarnings("unchecked")
     private Map<String, Object> evaluate(Map<String, Object> inputs) throws Exception {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
-            context.getBindings("js").putMember("$", inputs);
+            context.getBindings("js").putMember("inputsJson", MAPPER.writeValueAsString(inputs));
+            context.eval("js", "var $ = JSON.parse(inputsJson);");
             String result =
                     context.eval(
                                     "js",
