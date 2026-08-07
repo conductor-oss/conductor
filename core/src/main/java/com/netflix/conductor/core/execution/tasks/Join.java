@@ -163,6 +163,14 @@ public class Join extends WorkflowSystemTask {
         Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
         Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        if (agentToolName == null) {
+            WorkflowTask workflowTask = forkedTask.getWorkflowTask();
+            Map<String, Object> inputParameters =
+                    workflowTask == null ? null : workflowTask.getInputParameters();
+            if (inputParameters != null) {
+                agentToolName = inputParameters.get("_agent_tool_name");
+            }
+        }
         if (agentToolName != null) {
             compact.put("_agent_tool_name", agentToolName);
             compact.put("_agent_tool_output", output);
