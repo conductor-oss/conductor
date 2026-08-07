@@ -135,6 +135,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Generate frontend coverage report and enforce threshold
+        if: success() || failure()
         run: node scripts/playwright-coverage-report.mjs
         working-directory: ui-next
 

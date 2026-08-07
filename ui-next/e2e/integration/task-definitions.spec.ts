@@ -68,6 +68,34 @@ test("task definition appears in the /taskDef list with expected row data", asyn
   // tests instead.
 });
 
+test("DataTable Columns button opens ColumnSelector with MuiCheckbox items", async ({
+  page,
+}) => {
+  await page.goto("/taskDef");
+  await page.waitForLoadState("networkidle");
+
+  // The DataTable renders a "Columns" button (showColumnSelector defaults to
+  // true) that opens ColumnSelector, which uses MuiCheckbox for each column.
+  const columnsBtn = page.getByRole("button", { name: /columns/i }).first();
+  await expect(columnsBtn).toBeVisible({ timeout: 10_000 });
+  await columnsBtn.click();
+
+  // The column menu should be open and contain at least one checkbox item.
+  const menu = page.locator('[role="menu"]');
+  await expect(menu).toBeVisible({ timeout: 5_000 });
+
+  // Each column item renders a MuiCheckbox — assert at least one is visible.
+  const checkboxes = menu.locator('[type="checkbox"]');
+  await expect(checkboxes.first()).toBeAttached({ timeout: 5_000 });
+
+  // "Task name" column should appear as an entry.
+  await expect(menu.getByText(/task name/i).first()).toBeVisible();
+
+  // Close the menu by pressing Escape.
+  await page.keyboard.press("Escape");
+  await expect(menu).not.toBeVisible();
+});
+
 test("clicking a task definition opens the task editor", async ({ page }) => {
   await page.goto("/taskDef");
   await page.waitForLoadState("networkidle");

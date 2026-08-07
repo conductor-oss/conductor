@@ -109,6 +109,14 @@ function shouldExcludeFromCoverageDenom(absPath) {
   if (COVERAGE_DENOM_EXCLUDE_NAMES.has(name)) return true;
   if (rel.includes("/__tests__/")) return true;
   if (/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(name)) return true;
+  // Type-only ambient / declaration modules — never execute in the browser.
+  if (name.endsWith(".d.ts")) return true;
+  if (rel.startsWith("src/types/")) return true;
+  // Growthbook is feature-flagged / not exercised on the default OSS e2e stack.
+  if (rel.startsWith("src/growthbook/")) return true;
+  // Enterprise RBAC helpers — not wired in OSS routes.
+  if (rel.endsWith("/utils/useGetGroups.ts")) return true;
+  if (rel.endsWith("/utils/useGetUsers.ts")) return true;
   // Enterprise / plugin-only surfaces not mounted in OSS routes.
   if (rel.includes("/features/charts/")) return true;
   if (rel.includes("/SubjectSelector/")) return true;
@@ -125,12 +133,6 @@ function shouldExcludeFromCoverageDenom(absPath) {
   }
   // Orphan modules with no import path in the app.
   const orphans = [
-    "/pages/definition/task/CreationInfo.tsx",
-    "/pages/definition/task/TestTaskForm.tsx",
-    "/pages/definition/task/NameDescription.tsx",
-    "/pages/definition/ImportSuccessfulDialog.tsx",
-    "/pages/execution/RightPanel/LabelRenderer.tsx",
-    "/components/ui/inputs/EventExpressionHelp.tsx",
     "/pages/execution/state/sampleExecutions.js",
     "/testData/diagramTests.js",
     "/components/features/flow/nodes/index.js",
@@ -242,8 +244,15 @@ async function main() {
   // and made "100%" look like the whole app was tested.
   const coverageMap = libCoverage.createCoverageMap();
   let skippedNonSrc = 0;
+  const startedAt = Date.now();
 
-  for (const file of rawFiles) {
+  for (let i = 0; i < rawFiles.length; i++) {
+    const file = rawFiles[i];
+    if (i === 0 || (i + 1) % 25 === 0 || i + 1 === rawFiles.length) {
+      const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(0);
+      console.log(`  ${i + 1}/${rawFiles.length} (${elapsedSec}s) — ${file}`);
+    }
+
     const entries = JSON.parse(
       readFileSync(resolve(COVERAGE_DIR, file), "utf8"),
     );
