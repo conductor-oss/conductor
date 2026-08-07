@@ -5,7 +5,7 @@
  * and delete it from the definitions list with typed confirmation.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import { deleteWorkflowDef } from "./api-client";
 import { confirmDeleteByTyping, searchDefinitionsList } from "./helpers";
 

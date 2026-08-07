@@ -26,11 +26,15 @@
 
 import { expect, test } from "../coverage-fixture";
 import {
+  createTaskDef,
   createWorkflowDef,
+  deleteTaskDef,
   deleteWorkflowDef,
   getWorkflowDef,
+  getWorkflowExecution,
   startWorkflow,
   terminateWorkflow,
+  updateTask,
   waitForWorkflow,
   type WorkflowDef,
   type WorkflowExecution,
@@ -48,6 +52,15 @@ const CHILD_WF_NAME = `e2e_multi_child_${RUN_ID}`;
 const PARENT_WF_NAME = `e2e_multi_parent_${RUN_ID}`;
 const SEARCH_INDEX_TIMEOUT_MS = 45_000;
 const EXECUTION_TIMEOUT_MS = 60_000;
+
+// Extra task-type workflow names
+const EVENT_WF_NAME = `e2e_event_wf_${RUN_ID}`;
+/** A unique conductor sink per run so events don't bleed between test runs. */
+const EVENT_SINK = `conductor:e2e_evt_${RUN_ID}`;
+/** Task type for the SIMPLE worker test — must be registered as a TaskDef. */
+const SIMPLE_TASK_TYPE = `e2e_simple_${RUN_ID}`;
+const SIMPLE_WF_NAME = `e2e_simple_wf_${RUN_ID}`;
+const LAUNCH_WF_NAME = `e2e_launch_wf_${RUN_ID}`;
 
 const ORDER_INPUT = {
   orderId: "ORD-42",
@@ -540,6 +553,57 @@ test("definition editor shows every top-level and nested task ref", async ({
     timeout: 15_000,
   });
 
+  // Complex control-flow forms (coverage targets for SWITCH / DO_WHILE / etc.).
+  // After fit, lower-node labels can be tiny / partially clipped — scroll +
+  // force click keeps the tour reliable. DO_WHILE cards show the task *name*
+  // (not reference) on the diagram shell.
+  const clickDiagramLabel = async (label: string) => {
+    const node = page.getByText(label, { exact: true }).first();
+    await node.scrollIntoViewIfNeeded();
+    await node.click({ force: true });
+  };
+
+  await clickDiagramLabel("route_by_region_ref");
+  await expect(
+    page.locator("#maybe-task-form").getByText("SWITCH", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  await clickDiagramLabel("parallel_enrich_ref");
+  await expect(
+    page.locator("#maybe-task-form").getByText("FORK_JOIN", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  await clickDiagramLabel("join_parallel_ref");
+  await expect(
+    page.locator("#maybe-task-form").getByText("JOIN", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  await fitDiagramToScreen(page);
+  await clickDiagramLabel("once_loop");
+  await expect(
+    page.locator("#maybe-task-form").getByText("DO_WHILE", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  await clickDiagramLabel("call_child_ref");
+  await expect(
+    page.locator("#maybe-task-form").getByText("SUB_WORKFLOW", { exact: true }),
+  ).toBeVisible({ timeout: 15_000 });
+
+  // Workflow properties tab (WorkflowPropertiesFormTab).
+  await page.getByRole("tab", { name: "Workflow" }).click();
+  await expect(page.locator("#workflow-properties-form")).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.locator("#workflow-name-field")).toBeVisible();
+  await expect(page.locator("#workflow-description-field")).toBeVisible();
+
+  // Return to Task tab so the snapshot still shows the diagram + task panel.
+  await page.getByRole("tab", { name: "Task" }).click();
+  await page.getByText("capture_input_ref").first().click();
+  await expect(
+    page.locator("#maybe-task-form").getByText("SET_VARIABLE", { exact: true }),
+  ).toBeVisible();
+
   await expectMainContentScreenshot(
     page,
     "multi-task-workflow-definition.png",
@@ -742,5 +806,504 @@ test("Run Workflow UI starts the multi-task workflow and it completes", async ({
   await expectExecutionStatusChip(page, "COMPLETED");
   await expect(page.getByText("enrich_order_ref").first()).toBeVisible({
     timeout: 15_000,
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Extra task types — EVENT, HTTP_POLL, SIMPLE worker, START_WORKFLOW,
+//                   GET_WORKFLOW
+// Each workflow is minimal (1-2 tasks) so tests stay focused on the task
+// type being exercised rather than repeating the full topology tour.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Workflow definitions ──────────────────────────────────────────────────────
+
+/**
+ * EVENT → SET_VARIABLE
+ *
+ * EVENT tasks fire a message onto the specified conductor queue and complete
+ * immediately without a worker.  The SET_VARIABLE captures a flag so we have
+ * a workflow variable to assert on.
+ */
+const EVENT_WORKFLOW: WorkflowDef = {
+  name: EVENT_WF_NAME,
+  version: 1,
+  description: "EVENT task e2e — safe to delete",
+  ownerEmail: "e2e@conductor.test",
+  schemaVersion: 2,
+  inputParameters: ["payload"],
+  outputParameters: {
+    eventFired: "${workflow.variables.eventFired}",
+  },
+  tasks: [
+    {
+      name: "fire_event",
+      taskReferenceName: "fire_event_ref",
+      type: "EVENT",
+      sink: EVENT_SINK,
+      inputParameters: { payload: "${workflow.input.payload}" },
+    },
+    {
+      name: "mark_event_sent",
+      taskReferenceName: "mark_event_ref",
+      type: "SET_VARIABLE",
+      inputParameters: { eventFired: true },
+    },
+  ],
+};
+
+/**
+ * SIMPLE worker → SET_VARIABLE
+ *
+ * SIMPLE tasks park in SCHEDULED/IN_PROGRESS until a worker calls
+ * POST /api/tasks.  The test acts as the worker: it polls the execution until
+ * the task is SCHEDULED, then calls updateTask() to complete it and waits for
+ * the workflow to finish.
+ */
+const SIMPLE_WORKFLOW: WorkflowDef = {
+  name: SIMPLE_WF_NAME,
+  version: 1,
+  description: "SIMPLE worker task e2e — safe to delete",
+  ownerEmail: "e2e@conductor.test",
+  schemaVersion: 2,
+  inputParameters: ["jobId"],
+  outputParameters: {
+    workerResult: "${worker_task_ref.output.workerResult}",
+    done: "${workflow.variables.done}",
+  },
+  tasks: [
+    {
+      name: SIMPLE_TASK_TYPE,
+      taskReferenceName: "worker_task_ref",
+      type: "SIMPLE",
+      inputParameters: { jobId: "${workflow.input.jobId}" },
+    },
+    {
+      name: "mark_done",
+      taskReferenceName: "mark_done_ref",
+      type: "SET_VARIABLE",
+      inputParameters: { done: true },
+    },
+  ],
+};
+
+/**
+ * START_WORKFLOW → GET_WORKFLOW → SET_VARIABLE
+ *
+ * START_WORKFLOW launches an existing workflow and surfaces its ID in output.
+ * GET_WORKFLOW fetches the execution status of that newly-launched child.
+ * Both task types complete automatically without a worker.
+ *
+ * Uses CHILD_WF_NAME (SET_VARIABLE only) as the target so the child finishes
+ * before GET_WORKFLOW inspects it (child completes in < 1s).
+ */
+const LAUNCH_WORKFLOW: WorkflowDef = {
+  name: LAUNCH_WF_NAME,
+  version: 1,
+  description: "START_WORKFLOW + GET_WORKFLOW e2e — safe to delete",
+  ownerEmail: "e2e@conductor.test",
+  schemaVersion: 2,
+  outputParameters: {
+    launchedId: "${launch_child_ref.output.workflowId}",
+    childStatus: "${get_child_ref.output.status}",
+  },
+  tasks: [
+    {
+      name: "launch_child",
+      taskReferenceName: "launch_child_ref",
+      type: "START_WORKFLOW",
+      inputParameters: {
+        startWorkflow: {
+          name: CHILD_WF_NAME,
+          version: 1,
+          input: { parentOrderId: "e2e-launch-test" },
+        },
+      },
+    },
+    {
+      name: "wait_child_done",
+      taskReferenceName: "wait_child_ref",
+      type: "WAIT",
+      inputParameters: { duration: "3 seconds" },
+    },
+    {
+      name: "get_child",
+      taskReferenceName: "get_child_ref",
+      type: "GET_WORKFLOW",
+      inputParameters: {
+        id: "${launch_child_ref.output.workflowId}",
+        includeTasks: false,
+      },
+    },
+    {
+      name: "store_launch_result",
+      taskReferenceName: "store_launch_ref",
+      type: "SET_VARIABLE",
+      inputParameters: { launchedId: "${launch_child_ref.output.workflowId}" },
+    },
+  ],
+};
+
+// ── Helper — wait until a specific task reaches SCHEDULED or IN_PROGRESS ─────
+
+async function waitForTaskScheduled(
+  workflowId: string,
+  taskRef: string,
+  timeoutMs = 15_000,
+): Promise<WorkflowTaskExecution> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const wf = await getWorkflowExecution(workflowId);
+    const task = wf.tasks?.find((t) => t.referenceTaskName === taskRef);
+    if (
+      task?.taskId &&
+      (task.status === "SCHEDULED" || task.status === "IN_PROGRESS")
+    ) {
+      return task;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(
+    `Task ${taskRef} in workflow ${workflowId} did not reach SCHEDULED/IN_PROGRESS within ${timeoutMs}ms`,
+  );
+}
+
+// ── Test suite ────────────────────────────────────────────────────────────────
+
+test.describe("Extra task types", () => {
+  const extraWorkflowIds: string[] = [];
+
+  test.beforeAll(async () => {
+    // Register the SIMPLE worker's task definition before the workflow that uses it.
+    await createTaskDef({
+      name: SIMPLE_TASK_TYPE,
+      description: "SIMPLE worker for Playwright E2E — safe to delete",
+      retryCount: 0,
+      inputKeys: ["jobId"],
+      outputKeys: ["workerResult"],
+    });
+
+    // CHILD_WF_NAME (SET_VARIABLE-only) is already registered by the outer
+    // beforeAll.  Register only the new workflow definitions here.
+    await createWorkflowDef(EVENT_WORKFLOW);
+    await createWorkflowDef(SIMPLE_WORKFLOW);
+    await createWorkflowDef(LAUNCH_WORKFLOW);
+  });
+
+  test.afterAll(async () => {
+    await Promise.allSettled(extraWorkflowIds.map((id) => terminateWorkflow(id)));
+    await deleteWorkflowDef(EVENT_WF_NAME).catch(() => {});
+    await deleteWorkflowDef(SIMPLE_WF_NAME).catch(() => {});
+    await deleteWorkflowDef(LAUNCH_WF_NAME).catch(() => {});
+    await deleteTaskDef(SIMPLE_TASK_TYPE).catch(() => {});
+  });
+
+  // ── EVENT task ───────────────────────────────────────────────────────────────
+
+  test("EVENT task workflow completes and fires the event (API)", async () => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS);
+
+    const workflowId = await startWorkflow(EVENT_WF_NAME, {
+      payload: "e2e-test-event-payload",
+    });
+    extraWorkflowIds.push(workflowId);
+
+    const wf = await waitForWorkflow(workflowId, {
+      timeoutMs: EXECUTION_TIMEOUT_MS,
+    });
+
+    expect(wf.status).toBe("COMPLETED");
+
+    const eventTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "fire_event_ref",
+    );
+    expect(eventTask?.taskType).toBe("EVENT");
+    expect(eventTask?.status).toBe("COMPLETED");
+
+    const markTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "mark_event_ref",
+    );
+    expect(markTask?.taskType).toBe("SET_VARIABLE");
+    expect(markTask?.status).toBe("COMPLETED");
+
+    expect(wf.variables?.eventFired).toBe(true);
+    expect(wf.output?.eventFired).toBe(true);
+  });
+
+  test("EVENT task shows correct type and COMPLETED status in UI", async ({
+    page,
+  }) => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS + 30_000);
+
+    const workflowId = await startWorkflow(EVENT_WF_NAME, {
+      payload: "e2e-ui-test",
+    });
+    extraWorkflowIds.push(workflowId);
+
+    const wf = await waitForWorkflow(workflowId, {
+      timeoutMs: EXECUTION_TIMEOUT_MS,
+    });
+    expect(wf.status).toBe("COMPLETED");
+
+    await page.goto(`/execution/${workflowId}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(EVENT_WF_NAME).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expectExecutionStatusChip(page, "COMPLETED");
+
+    // Diagram shows both task reference labels.
+    await expect(page.getByText("fire_event_ref").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByText("mark_event_ref").first()).toBeVisible();
+
+    // Click the EVENT task card to open the right panel.
+    await page.getByText("fire_event_ref").first().click();
+    const rightPanel = page.locator("#execution-page-right-panel");
+    await expect(rightPanel).toBeVisible({ timeout: 15_000 });
+
+    // Summary tab — TaskSummary KeyValueTable rows
+    await expect(rightPanel.getByText("Task type").first()).toBeVisible();
+    await expect(rightPanel.getByText("EVENT").first()).toBeVisible();
+    await expect(rightPanel.getByText("Task reference").first()).toBeVisible();
+    await expect(rightPanel.getByText("fire_event_ref").first()).toBeVisible();
+    await expect(
+      rightPanel
+        .locator(".MuiChip-label")
+        .filter({ hasText: /^Completed$/ })
+        .first(),
+    ).toBeVisible();
+
+    // Input tab — payload and sink parameters
+    await rightPanel.getByRole("tab", { name: "Input" }).click();
+    await expect(
+      rightPanel.getByText(/e2e-ui-test|payload/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+  });
+
+  // ── SIMPLE worker task ────────────────────────────────────────────────────────
+
+  test("SIMPLE worker task: test acts as worker via API to complete it", async () => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS);
+
+    const workflowId = await startWorkflow(SIMPLE_WF_NAME, {
+      jobId: "e2e-job-42",
+    });
+    extraWorkflowIds.push(workflowId);
+
+    // Wait until the workflow schedules the SIMPLE task.
+    const task = await waitForTaskScheduled(workflowId, "worker_task_ref");
+    expect(task.taskId).toBeTruthy();
+
+    // The test acts as the worker: complete the task with a known output.
+    await updateTask({
+      taskId: task.taskId!,
+      workflowInstanceId: workflowId,
+      status: "COMPLETED",
+      outputData: { workerResult: "processed-e2e-job-42" },
+    });
+
+    const wf = await waitForWorkflow(workflowId, {
+      timeoutMs: EXECUTION_TIMEOUT_MS,
+    });
+
+    expect(wf.status).toBe("COMPLETED");
+
+    const workerTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "worker_task_ref",
+    );
+    expect(workerTask?.taskType).toBe("SIMPLE");
+    expect(workerTask?.status).toBe("COMPLETED");
+    expect(workerTask?.outputData?.workerResult).toBe("processed-e2e-job-42");
+
+    const markTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "mark_done_ref",
+    );
+    expect(markTask?.status).toBe("COMPLETED");
+
+    expect(wf.variables?.done).toBe(true);
+    expect(wf.output?.workerResult).toBe("processed-e2e-job-42");
+  });
+
+  test("SIMPLE task shows SCHEDULED state in UI while waiting for worker", async ({
+    page,
+  }) => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS + 30_000);
+
+    const workflowId = await startWorkflow(SIMPLE_WF_NAME, {
+      jobId: "e2e-ui-job",
+    });
+    extraWorkflowIds.push(workflowId);
+
+    // Navigate to the execution before completing the task so we can assert
+    // the SCHEDULED / IN_PROGRESS state in the UI.
+    const task = await waitForTaskScheduled(workflowId, "worker_task_ref");
+
+    await page.goto(`/execution/${workflowId}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(SIMPLE_WF_NAME).first()).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // The workflow is RUNNING while the worker task waits.
+    await expect(
+      page
+        .locator(".MuiChip-label")
+        .filter({ hasText: /^Running$/ })
+        .first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Click the SIMPLE task node to open the right panel.
+    await page.getByText("worker_task_ref").first().click();
+    const rightPanel = page.locator("#execution-page-right-panel");
+    await expect(rightPanel).toBeVisible({ timeout: 15_000 });
+
+    // Summary: task type is SIMPLE, status is SCHEDULED or IN_PROGRESS.
+    await expect(rightPanel.getByText("Task type").first()).toBeVisible();
+    await expect(rightPanel.getByText("SIMPLE").first()).toBeVisible();
+    await expect(rightPanel.getByText("Task reference").first()).toBeVisible();
+    await expect(rightPanel.getByText("worker_task_ref").first()).toBeVisible();
+    // Status chip shows Scheduled or In Progress.
+    await expect(
+      rightPanel
+        .locator(".MuiChip-label")
+        .filter({ hasText: /^(Scheduled|In progress)$/ })
+        .first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Input tab: the jobId parameter is present.
+    await rightPanel.getByRole("tab", { name: "Input" }).click();
+    await expect(
+      rightPanel.getByText(/e2e-ui-job|jobId/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Now complete the task so the workflow finishes (clean up state).
+    await updateTask({
+      taskId: task.taskId!,
+      workflowInstanceId: workflowId,
+      status: "COMPLETED",
+      outputData: { workerResult: "done-from-ui-test" },
+    });
+    await waitForWorkflow(workflowId, { timeoutMs: EXECUTION_TIMEOUT_MS });
+  });
+
+  // ── START_WORKFLOW + GET_WORKFLOW tasks ───────────────────────────────────────
+
+  test("START_WORKFLOW + GET_WORKFLOW workflow completes (API)", async () => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS + 30_000);
+
+    const workflowId = await startWorkflow(LAUNCH_WF_NAME, {});
+    extraWorkflowIds.push(workflowId);
+
+    const wf = await waitForWorkflow(workflowId, {
+      timeoutMs: EXECUTION_TIMEOUT_MS + 15_000,
+    });
+
+    expect(wf.status).toBe("COMPLETED");
+
+    // START_WORKFLOW task
+    const launchTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "launch_child_ref",
+    );
+    expect(launchTask?.taskType).toBe("START_WORKFLOW");
+    expect(launchTask?.status).toBe("COMPLETED");
+    // The launched child workflow ID is in outputData.workflowId.
+    const launchedId = launchTask?.outputData?.workflowId as string | undefined;
+    expect(launchedId).toBeTruthy();
+
+    // WAIT task (3 seconds to let child finish)
+    const waitTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "wait_child_ref",
+    );
+    expect(waitTask?.taskType).toBe("WAIT");
+    expect(waitTask?.status).toBe("COMPLETED");
+
+    // GET_WORKFLOW task
+    const getTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "get_child_ref",
+    );
+    expect(getTask?.taskType).toBe("GET_WORKFLOW");
+    expect(getTask?.status).toBe("COMPLETED");
+    // GET_WORKFLOW surfaces workflow status in output.
+    const childStatus = getTask?.outputData?.status as string | undefined;
+    expect(childStatus).toBe("COMPLETED");
+
+    // Workflow-level outputs
+    expect(wf.output?.launchedId).toBeTruthy();
+    expect(wf.output?.childStatus).toBe("COMPLETED");
+  });
+
+  test("START_WORKFLOW task shows launched child link in right panel", async ({
+    page,
+  }) => {
+    test.setTimeout(EXECUTION_TIMEOUT_MS + 60_000);
+
+    const workflowId = await startWorkflow(LAUNCH_WF_NAME, {});
+    extraWorkflowIds.push(workflowId);
+
+    const wf = await waitForWorkflow(workflowId, {
+      timeoutMs: EXECUTION_TIMEOUT_MS + 15_000,
+    });
+    expect(wf.status).toBe("COMPLETED");
+
+    const launchedId = wf.tasks
+      ?.find((t) => t.referenceTaskName === "launch_child_ref")
+      ?.outputData?.workflowId as string | undefined;
+    expect(launchedId).toBeTruthy();
+
+    await page.goto(`/execution/${workflowId}`);
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText(LAUNCH_WF_NAME).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expectExecutionStatusChip(page, "COMPLETED");
+
+    // Diagram shows all task reference labels.
+    for (const ref of [
+      "launch_child_ref",
+      "wait_child_ref",
+      "get_child_ref",
+      "store_launch_ref",
+    ]) {
+      await expectTaskRefVisible(page, ref);
+    }
+
+    // Open START_WORKFLOW task right panel.
+    await page.getByText("launch_child_ref").first().click();
+    const rightPanel = page.locator("#execution-page-right-panel");
+    await expect(rightPanel).toBeVisible({ timeout: 15_000 });
+
+    await expect(rightPanel.getByText("Task type").first()).toBeVisible();
+    await expect(rightPanel.getByText("START_WORKFLOW").first()).toBeVisible();
+    await expect(rightPanel.getByText("Task reference").first()).toBeVisible();
+    await expect(
+      rightPanel.getByText("launch_child_ref").first(),
+    ).toBeVisible();
+    await expect(
+      rightPanel
+        .locator(".MuiChip-label")
+        .filter({ hasText: /^Completed$/ })
+        .first(),
+    ).toBeVisible();
+
+    // Output tab: the launched workflow ID link is rendered by TaskSummary.
+    await rightPanel.getByRole("tab", { name: "Output" }).click();
+    await expect(
+      rightPanel.getByText(/workflowId|Start workflow/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Open GET_WORKFLOW task right panel.
+    await page.getByText("get_child_ref").first().click();
+    await expect(rightPanel).toBeVisible({ timeout: 15_000 });
+
+    await expect(rightPanel.getByText("Task type").first()).toBeVisible();
+    await expect(rightPanel.getByText("GET_WORKFLOW").first()).toBeVisible();
+
+    // Output tab: child workflow status (COMPLETED) is present.
+    await rightPanel.getByRole("tab", { name: "Output" }).click();
+    await expect(
+      rightPanel.getByText(/COMPLETED|status/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
   });
 });

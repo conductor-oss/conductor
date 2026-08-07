@@ -5,7 +5,7 @@
  * using the typed confirmation dialog.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import { deleteTaskDef } from "./api-client";
 import { confirmDeleteByTyping, searchDefinitionsList } from "./helpers";
 

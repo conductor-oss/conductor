@@ -37,6 +37,16 @@ export interface TaskRef {
   loopOver?: TaskRef[];
   /** SUB_WORKFLOW */
   subWorkflowParam?: { name: string; version?: number };
+  /** EVENT */
+  sink?: string;
+  /** DYNAMIC */
+  dynamicTaskNameParam?: string;
+  /** FORK_JOIN_DYNAMIC */
+  dynamicForkTasksParam?: string;
+  dynamicForkTasksInputParamName?: string;
+  optional?: boolean;
+  asyncComplete?: boolean;
+  startDelay?: number;
 }
 
 export interface WorkflowDef {
@@ -75,6 +85,7 @@ export interface WorkflowTaskExecution {
   taskType: string;
   referenceTaskName: string;
   status: string;
+  taskId?: string;
   outputData?: Record<string, unknown>;
 }
 
@@ -157,13 +168,24 @@ export async function deleteWorkflowDef(
 export async function startWorkflow(
   name: string,
   input: Record<string, unknown> = {},
-  version = 1,
+  options: { version?: number; correlationId?: string } | number = 1,
 ): Promise<string> {
+  // Accept a plain version number for backwards compatibility.
+  const version =
+    typeof options === "number" ? options : (options.version ?? 1);
+  const correlationId =
+    typeof options === "number" ? undefined : options.correlationId;
+
   // POST /api/workflow returns the workflow ID as plain text (not JSON).
   const res = await fetch(`${BASE}/workflow`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, version, input }),
+    body: JSON.stringify({
+      name,
+      version,
+      input,
+      ...(correlationId ? { correlationId } : {}),
+    }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -223,6 +245,32 @@ export async function terminateWorkflow(
     "DELETE",
     `/workflow/${workflowId}?reason=${encodeURIComponent(reason)}`,
   );
+}
+
+/**
+ * Reports a task result back to the server (the same call a real worker makes).
+ * Use this to programmatically complete SIMPLE tasks from tests so the workflow
+ * can reach a terminal state without running an actual worker process.
+ */
+export async function updateTask(taskResult: {
+  taskId: string;
+  workflowInstanceId: string;
+  status: "COMPLETED" | "FAILED" | "IN_PROGRESS";
+  outputData?: Record<string, unknown>;
+  workerId?: string;
+  reasonForIncompletion?: string;
+}): Promise<void> {
+  // POST /api/tasks returns a bare integer (number of tasks ack'd), not a JSON
+  // object, so we cannot use the shared request<T> helper that calls JSON.parse.
+  const res = await fetch(`${BASE}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workerId: "e2e-test-worker", ...taskResult }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`POST ${BASE}/tasks → ${res.status}: ${text}`);
+  }
 }
 
 // ── Task definitions ──────────────────────────────────────────────────────────

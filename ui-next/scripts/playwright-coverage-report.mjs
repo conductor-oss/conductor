@@ -11,7 +11,7 @@
  *   3. Adds every remaining src file that never loaded as 0% coverage
  *   4. Prints a clear "never loaded" list so gaps are obvious
  *
- * Default threshold: 85% statements / lines / files touched.
+ * Default threshold: 90% statements / lines / files touched.
  * Run after Playwright tests:
  *   E2E_COVERAGE=true pnpm test:e2e:integration
  *   node scripts/playwright-coverage-report.mjs [--min <percent>]

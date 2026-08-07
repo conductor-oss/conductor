@@ -5,7 +5,7 @@
  * and delete flows with typed confirmation.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import {
   createEventHandler,
   deleteEventHandler,
