@@ -120,6 +120,65 @@ State mapping:
 | `ai/.../agent/ConductorAgentDelegate.java` | Durable Conductor-agent state machine |
 | `agentspan/.../service/ServiceAgentClient.java` | In-process AgentService implementation |
 | `ai/.../a2a/A2AService.java` | Remote Agent2Agent transport |
+| `agentspan/.../runtime/util/JavaScriptBuilder.java` | Builds dynamic tool tasks and stamps each task definition with `_agent_tool_name` |
+| `agentspan/.../runtime/compiler/ToolCompiler.java` | Compiles `FORK_JOIN_DYNAMIC` → `JOIN` → state/tool-result merge chains |
+| `core/.../execution/tasks/Join.java` | Aggregates fork outputs and preserves agent tool observations across loop iterations |
 
 The test strategy is documented in [testing.md](./testing.md), with the coverage matrix in
 [test-plan.md](./test-plan.md).
+
+## 7. Agent loop JOIN contract
+
+Issue-specific rationale, the implementation sequence, and regression coverage are documented in
+[`issue-1499-agent-loop-join/`](./issue-1499-agent-loop-join/architecture.md). This section remains
+the source of truth for the shared runtime contract and exact names.
+
+Tool-enabled agents compile each tool turn into this durable sequence:
+
+```text
+LLM_CHAT_COMPLETE
+  → enrich dynamic tool definitions
+  → FORK_JOIN_DYNAMIC
+  → JOIN
+  → merge state and tool observations
+  → SET_VARIABLE(_agent_state, _last_tool_results)
+  → next DO_WHILE iteration
+```
+
+`JavaScriptBuilder` writes the logical tool name to the generated `WorkflowTask` input parameters
+as `_agent_tool_name`. The marker is orchestration metadata, not a provider argument. A mapped
+`TaskModel` normally also carries it in `inputData`, but JOIN correctness must not depend on that
+resolved copy: task mappers, payload storage, and system-task request models may retain the marker
+only on `TaskModel.workflowTask.inputParameters`.
+
+For an agent workflow, `Join.compactAgentOutput(TaskModel)` resolves the marker in this order:
+
+1. `forkedTask.inputData["_agent_tool_name"]`;
+2. `forkedTask.workflowTask.inputParameters["_agent_tool_name"]` when the runtime input does not
+   contain it.
+
+When a marker is found, JOIN writes one namespaced observation under the forked task's actual
+iteration-qualified reference name:
+
+```json
+{
+  "<forked-task-ref>": {
+    "_agent_tool_name": "<logical-tool-name>",
+    "_agent_tool_output": { "<complete-tool-output>": "..." }
+  }
+}
+```
+
+The complete tool output is preserved inside `_agent_tool_output`; it is not reduced to the
+general agent merge keys. `JavaScriptBuilder.stateMergeScript()` consumes this envelope, appends
+`{name, output}` to `workflow.variables._last_tool_results`, and makes the observation available to
+the next LLM turn.
+
+Agent fork branches without `_agent_tool_name` retain the existing compact behavior and propagate
+only `_state_updates` and `state`. Non-agent workflows retain stock JOIN behavior and copy the full
+fork output directly. JOIN completion, failure, optional-task, permissive-task, and DO_WHILE
+iteration semantics do not change.
+
+The implementation is limited to `Join.compactAgentOutput(TaskModel)` plus focused tests. It does
+not change `FORK_JOIN_DYNAMIC`, `DO_WHILE`, task mapping, payload storage, workflow metadata,
+`JavaScriptBuilder.stateMergeScript()`, or any public API.
