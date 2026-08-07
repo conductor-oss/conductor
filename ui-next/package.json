@@ -3,13 +3,17 @@
   "version": "0.0.0",
   "description": "Open Source Conductor UI - Core components, pages, and plugin infrastructure",
   "type": "module",
-  "main": "./dist/conductor-ui.js",
-  "module": "./dist/conductor-ui.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/conductor-ui.js",
+      "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     },
     "./styles.css": "./dist/style.css",
     "./global.css": "./dist/global.css"
@@ -20,7 +24,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:lib": "vite build --mode lib && cp src/index.css dist/global.css",
+    "build:lib": "node scripts/clear-lib-watch.mjs && vite build --mode lib && tsc --emitDeclarationOnly --outDir dist --declaration --rootDir src --noEmit false && cp src/index.css dist/global.css",
+    "build:lib:watch": "node scripts/build-lib-watch.mjs",
     "build:all": "vite build && vite build --mode lib",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -32,6 +37,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:integration": "playwright test --config playwright.integration.config.ts",
+    "test:e2e:integration:coverage": "E2E_COVERAGE=true playwright test --config playwright.integration.config.ts && node scripts/playwright-coverage-report.mjs",
     "test:e2e:integration:ui": "playwright test --config playwright.integration.config.ts --ui",
     "test:e2e:integration:headed": "playwright test --config playwright.integration.config.ts --headed",
     "test:e2e:snapshots": "docker compose -f docker-compose.snapshots.yml run --rm playwright",
@@ -173,13 +179,17 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.72.1",
-    "react-router": "^7.14.1",
-    "react-router-dom": "^7.14.1",
+    "react-router": "^7.18.1",
+    "react-router-dom": "^7.18.1",
     "react-router-use-location-state": "^3.1.2",
+    "istanbul-lib-coverage": "^3.2.2",
+    "istanbul-lib-report": "^3.0.1",
+    "istanbul-reports": "^3.1.7",
     "sass": "^1.99.0",
     "styled-components": "^5.3.8",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0",
+    "v8-to-istanbul": "^9.3.0",
     "vite": "^7.1.11",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^6.1.1",

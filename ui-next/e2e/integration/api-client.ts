@@ -52,10 +52,31 @@ export interface WorkflowSummary {
   endTime?: string;
 }
 
+export interface WorkflowTaskExecution {
+  taskType: string;
+  referenceTaskName: string;
+  status: string;
+  outputData?: Record<string, unknown>;
+}
+
+export interface WorkflowExecution {
+  workflowId: string;
+  status: string;
+  workflowType: string;
+  tasks?: WorkflowTaskExecution[];
+}
+
 export interface SearchResult<T> {
   totalHits: number;
   results: T[];
 }
+
+const TERMINAL_WORKFLOW_STATUSES = new Set([
+  "COMPLETED",
+  "FAILED",
+  "TIMED_OUT",
+  "TERMINATED",
+]);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -124,13 +145,36 @@ export async function startWorkflow(
     const text = await res.text().catch(() => "");
     throw new Error(`POST /api/workflow → ${res.status}: ${text}`);
   }
-  return res.text();
+  return (await res.text()).trim();
 }
 
 export async function getWorkflowExecution(
   workflowId: string,
-): Promise<{ workflowId: string; status: string; workflowType: string }> {
+): Promise<WorkflowExecution> {
   return request("GET", `/workflow/${workflowId}`);
+}
+
+/** Polls until the workflow reaches a terminal status or the timeout elapses. */
+export async function waitForWorkflow(
+  workflowId: string,
+  {
+    timeoutMs = 60_000,
+    pollMs = 1_000,
+  }: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<WorkflowExecution> {
+  const deadline = Date.now() + timeoutMs;
+  let last: WorkflowExecution | undefined;
+  while (Date.now() < deadline) {
+    last = await getWorkflowExecution(workflowId);
+    if (TERMINAL_WORKFLOW_STATUSES.has(last.status)) {
+      return last;
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  throw new Error(
+    `Workflow ${workflowId} did not reach a terminal status within ${timeoutMs}ms` +
+      (last ? ` (last status: ${last.status})` : ""),
+  );
 }
 
 export async function searchWorkflows(params: {

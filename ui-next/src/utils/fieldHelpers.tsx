@@ -20,9 +20,15 @@ import { PromptDef } from "types/Prompts";
 import { ActorRef, State } from "xstate";
 import { MEDIA_TYPE_SUGGESTIONS } from "./constants/httpSuggestions";
 
-/** LLM text complete stores the prompt in promptName; chat complete uses instructions. */
+/**
+ * LLM text complete stores the prompt template name in promptName; chat complete
+ * uses instructions. Legacy text-complete tasks (saved before the Prompt Template
+ * field existed) may only have the deprecated free-text `prompt` key.
+ */
 const selectedPromptNameFromTask = (task: Partial<TaskDef>) =>
-  task?.inputParameters?.promptName ?? task?.inputParameters?.instructions;
+  task?.inputParameters?.promptName ??
+  task?.inputParameters?.instructions ??
+  task?.inputParameters?.prompt;
 
 export type FieldComponentType = FunctionComponent<{
   onChange: (t: Partial<TaskDef>) => void;
@@ -68,6 +74,98 @@ const useSetterGetter = (
   (value: unknown) => updateField(`inputParameters.${type}`, value, task),
   fieldValue(task, type),
 ];
+
+type PromptTemplateFieldConfig = {
+  fieldType:
+    | UiIntegrationsFieldType.PROMPT_NAME
+    | UiIntegrationsFieldType.INSTRUCTIONS;
+  selectEventType:
+    | LLMFormFieldsMachineEventTypes.SELECT_PROMPT_NAME
+    | LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS;
+  /**
+   * Legacy inputParameters key to read from when fieldType's own key is unset.
+   * Back-compat for text-complete tasks saved before this field wrote to promptName.
+   */
+  legacyReadKey?: string;
+};
+
+/**
+ * Shared "Prompt Template" field for LLM_TEXT_COMPLETE (promptName) and
+ * LLM_CHAT_COMPLETE (instructions). Free text always works (ConductorAutocompleteVariables
+ * is freeSolo) and self-fetches known prompt templates via promptNameOptions, which
+ * degrades to an empty list (pure free text) when the server has no /prompts registry
+ * (OSS) and populates a picker when it does (Orkes). Selecting a known template
+ * auto-populates its variables/temperature/topP/stopWords; any other value is treated
+ * as a raw prompt (see allowRawPrompts handling in LLMFormFieldsWrapper).
+ */
+const createPromptTemplateField = ({
+  fieldType,
+  selectEventType,
+  legacyReadKey,
+}: PromptTemplateFieldConfig): FieldComponentType =>
+  function PromptTemplateField({ onChange, task, actor }) {
+    const promptNames = useSelector(
+      actor,
+      (state) => state.context.promptNameOptions,
+    );
+    const options = useMemo(
+      () => promptNames.map(({ name }: { name: string }) => name),
+      [promptNames],
+    );
+
+    const [setValue, ipValue] = useSetterGetter(fieldType, task);
+    const legacyValue = legacyReadKey
+      ? _path(`inputParameters.${legacyReadKey}`, task)
+      : undefined;
+    const displayValue = ipValue || legacyValue || "";
+
+    const currentVariables = task.inputParameters?.promptVariables || {};
+    return (
+      <Grid container spacing={3} sx={{ width: "100%" }}>
+        <Grid size={12}>
+          <MuiTypography sx={{ opacity: 0.5, mb: 3 }}>
+            Enter a prompt, or reference a saved AI Prompt by name —{" "}
+            <Link
+              sx={{ fontWeight: 400 }}
+              target="_blank"
+              href="/ai_prompts/new_ai_prompt_model"
+              rel="noreferrer"
+            >
+              create a new one.
+            </Link>
+          </MuiTypography>
+          <ConductorAutocompleteVariables
+            openOnFocus
+            multiline
+            onChange={(value) => {
+              actor.send({
+                type: selectEventType,
+                task: setValue(value),
+              });
+            }}
+            value={displayValue}
+            otherOptions={options}
+            label="Prompt Template"
+            onFocus={() =>
+              actor.send({
+                type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
+                task,
+              })
+            }
+          />
+        </Grid>
+        <MuiTypography sx={{ opacity: 0.5 }}>
+          {`Variables to be used in the prompt (e.g. "What's the weather in {$userLocation}?").`}
+        </MuiTypography>
+        <PromptVariables
+          currentVariables={currentVariables}
+          onChange={onChange}
+          updateField={updateField}
+          task={task}
+        />
+      </Grid>
+    );
+  };
 
 const aiFieldTypes = {
   [UiIntegrationsFieldType.LLM_PROVIDER]: ({ onChange, task, actor }) => {
@@ -191,70 +289,11 @@ const aiFieldTypes = {
       />
     );
   },
-  [UiIntegrationsFieldType.PROMPT_NAME]: ({ onChange, task, actor }) => {
-    const promptNames = useSelector(
-      actor,
-      (state) => state.context.promptNameOptions,
-    );
-    const [options] = useMemo(() => {
-      return [
-        promptNames.map(
-          ({ name }: { name: string }) => name, // Fix types
-        ),
-      ];
-    }, [promptNames]);
-
-    const [setValue, ipValue] = useSetterGetter(
-      UiIntegrationsFieldType.PROMPT_NAME,
-      task,
-    );
-
-    const currentVariables = task.inputParameters?.promptVariables || {};
-    return (
-      <Grid container spacing={3} sx={{ width: "100%" }}>
-        <Grid size={6}>
-          <MuiTypography sx={{ opacity: 0.5, mb: 3 }}>
-            Enter a saved AI Prompt name or{" "}
-            <Link
-              sx={{ fontWeight: 400 }}
-              target="_blank"
-              href="/ai_prompts/new_ai_prompt_model"
-              rel="noreferrer"
-            >
-              create a new one.
-            </Link>
-          </MuiTypography>
-          <ConductorAutocompleteVariables
-            openOnFocus
-            onChange={(value) => {
-              actor.send({
-                type: LLMFormFieldsMachineEventTypes.SELECT_PROMPT_NAME,
-                task: setValue(value),
-              });
-            }}
-            value={ipValue}
-            otherOptions={options}
-            label="Prompt Name"
-            onFocus={() =>
-              actor.send({
-                type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
-                task,
-              })
-            }
-          />
-        </Grid>
-        <MuiTypography sx={{ opacity: 0.5 }}>
-          {`Variables to be used in the prompt (e.g. "What's the weather in {$userLocation}?").`}
-        </MuiTypography>
-        <PromptVariables
-          currentVariables={currentVariables}
-          onChange={onChange}
-          updateField={updateField}
-          task={task}
-        />
-      </Grid>
-    );
-  },
+  [UiIntegrationsFieldType.PROMPT_NAME]: createPromptTemplateField({
+    fieldType: UiIntegrationsFieldType.PROMPT_NAME,
+    selectEventType: LLMFormFieldsMachineEventTypes.SELECT_PROMPT_NAME,
+    legacyReadKey: "prompt",
+  }),
   [UiIntegrationsFieldType.TEXT]: ({ onChange, task }) => {
     const [setValue, ipValue] = useSetterGetter(
       UiIntegrationsFieldType.TEXT,
@@ -612,64 +651,10 @@ const aiFieldTypes = {
     );
   },
 
-  [UiIntegrationsFieldType.INSTRUCTIONS]: ({ onChange, task, actor }) => {
-    const options = useSelector(
-      actor,
-      (state: State<LLMFormFieldsMachineContext>) =>
-        state.context.promptNameOptions.map(({ name }) => name),
-    );
-
-    const [setValue, ipValue] = useSetterGetter(
-      UiIntegrationsFieldType.INSTRUCTIONS,
-      task,
-    );
-
-    const currentVariables = task.inputParameters?.promptVariables || {};
-    return (
-      <Grid container spacing={3} sx={{ width: "100%" }}>
-        <Grid size={12}>
-          <MuiTypography sx={{ opacity: 0.5, mb: 3 }}>
-            Enter a saved AI Prompt name or{" "}
-            <Link
-              sx={{ fontWeight: 400 }}
-              target="_blank"
-              href="/ai_prompts/new_ai_prompt_model"
-              rel="noreferrer"
-            >
-              create a new one.
-            </Link>
-          </MuiTypography>
-          <ConductorAutocompleteVariables
-            value={ipValue}
-            otherOptions={options}
-            label="Prompt Name"
-            onChange={(value) => {
-              actor.send({
-                type: LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS,
-                task: setValue(value),
-              });
-            }}
-            onFocus={() =>
-              actor.send({
-                type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
-                task,
-              })
-            }
-            openOnFocus
-          />
-        </Grid>
-        <MuiTypography sx={{ opacity: 0.5 }}>
-          {`Variables to be used in the prompt (e.g. "What's the weather in {$userLocation}?").`}
-        </MuiTypography>
-        <PromptVariables
-          currentVariables={currentVariables}
-          onChange={onChange}
-          updateField={updateField}
-          task={task}
-        />
-      </Grid>
-    );
-  },
+  [UiIntegrationsFieldType.INSTRUCTIONS]: createPromptTemplateField({
+    fieldType: UiIntegrationsFieldType.INSTRUCTIONS,
+    selectEventType: LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS,
+  }),
   [UiIntegrationsFieldType.MESSAGES]: ({ onChange, task }) => {
     const [setValue, ipValue] = useSetterGetter(
       UiIntegrationsFieldType.MESSAGES,
