@@ -22,7 +22,7 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.9'
 
     implementation 'org.opensearch.client:opensearch-java:2.18.0'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
