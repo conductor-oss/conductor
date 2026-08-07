@@ -30,18 +30,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Issue #1497: the pre-fix {@code SqliteIndexDAO} wrote {@code start_time}/{@code update_time} as
- * local-time text (JVM default zone), while searches bound their range in UTC. The shipped V6
- * migration rewrites existing rows to the canonical UTC text so old and new rows compare correctly.
+ * Issue #1497: the V6 migration rewrites the index {@code start_time}/{@code update_time} columns
+ * in UTC, reading the instant from {@code json_data}.
  *
- * <p>The migration rebuilds those columns from {@code json_data}, which already holds the
- * authoritative instant as an ISO-8601 string. It therefore never interprets the local-time text
- * and never consults a tz database, so every expectation here is an absolute constant and these
- * tests are deterministic in any host zone -- unlike {@link SqliteIndexDAOTest}, which exercises
- * the write and search paths and does need a non-UTC zone to be meaningful.
- *
- * <p>This test reads the real migration file off the classpath -- rather than pasting the SQL -- so
- * it exercises the artifact that actually ships.
+ * <p>Because no timezone is involved, every expectation here is a constant and these tests pass in
+ * any host zone. The SQL is read off the classpath so the test covers the file that ships.
  */
 public class SqliteIndexTimestampMigrationTest {
 
@@ -196,20 +189,12 @@ public class SqliteIndexTimestampMigrationTest {
     }
 
     /**
-     * The reason this migration reads json_data instead of reinterpreting the stored local text.
-     *
-     * <p>The bad values were rendered against the JVM's bundled tz database; any SQL that converts
-     * them back has to use the host's. Those disagree whenever the JVM's tzdata is older --
-     * observed on JDK 21 (tzdata 2023c) on macOS (tzdata 2026c), where Paraguay's 2024b switch to
-     * permanent UTC-3 left the JVM writing America/Asuncion at -04:00 and SQLite reading it at
-     * -03:00, so every row came out an hour short. Rebuilding from json_data is exact under any
-     * such skew.
+     * The stored text is ignored, so a row lands on the right instant whatever offset it was
+     * written with and whatever a previous migration left behind.
      */
     @Test
-    public void repairsRowsWrittenUnderTzdataSkew() throws Exception {
+    public void repairsRowsWhateverTheStoredTextSays() throws Exception {
         insertWorkflow("wf-skew", "2026-08-06 23:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
-        // A row an earlier 'utc'-modifier migration already shifted by the wrong amount: the
-        // rebuild is absolute, so it lands on the truth regardless of what the column held.
         insertWorkflow("wf-half-fixed", "2026-08-07 02:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
 
         runMigration();
