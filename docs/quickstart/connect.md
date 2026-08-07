@@ -16,11 +16,13 @@ export CONDUCTOR_AUTH_KEY=<your-access-key>
 export CONDUCTOR_AUTH_SECRET=<your-access-secret>
 ```
 
-The CLI registers workflows and starts executions against your chosen Conductor server.
+You can then proceed to configure the local CLI and core SDKs.
 
 </section>
 
 ## Install the CLI
+
+The CLI registers workflows and starts executions against your chosen Conductor server.
 
 ```bash
 npm install -g @conductor-oss/conductor-cli
