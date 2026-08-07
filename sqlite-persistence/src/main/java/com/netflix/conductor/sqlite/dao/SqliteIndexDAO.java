@@ -45,9 +45,6 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     private static final int CORE_POOL_SIZE = 6;
     private static final long KEEP_ALIVE_TIME = 1L;
 
-    // Canonical UTC text format for start_time/update_time in the index tables. Matches SQLite's
-    // strftime('%Y-%m-%d %H:%M:%f', ...) byte for byte so migrated and newly written rows compare
-    // correctly (issue #1497).
     private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 

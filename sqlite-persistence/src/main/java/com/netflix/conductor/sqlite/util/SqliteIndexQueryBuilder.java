@@ -61,9 +61,7 @@ public class SqliteIndexQueryBuilder {
         private List<String> values;
         private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
 
-        // Canonical UTC text format the *_time columns are stored in (issue #1497). Must match
-        // SqliteIndexDAO's write-path formatter byte for byte so a bound value compares correctly
-        // against stored text.
+        /** Must match {@code SqliteIndexDAO}'s write-path format exactly. */
         private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 

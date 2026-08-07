@@ -373,8 +373,8 @@ public class SqliteIndexDAOTest {
     // Issue #1497 regression: on a negative-UTC-offset host, start_time was written in the JVM's
     // default zone but the search bound was rendered in UTC. A workflow started "now" was
     // therefore invisible to a search bound anchored an hour in the past. This test only proves
-    // anything when the JVM zone differs from UTC, hence the TZ='America/Los_Angeles' env set on the
-    // `test` task in sqlite-persistence/build.gradle.
+    // anything when the JVM zone differs from UTC, hence the TZ env set on the `test` task in
+    // sqlite-persistence/build.gradle.
     @Test
     public void searchesFindWorkflowsIndexedInANonUtcZone() {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-non-utc-zone");
