@@ -134,9 +134,8 @@ jobs:
           # also gates the LLM "completes successfully" Playwright tests.
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Generate frontend coverage report
-        if: success()
-        run: node scripts/playwright-coverage-report.mjs --min 50
+      - name: Generate frontend coverage report and enforce threshold
+        run: node scripts/playwright-coverage-report.mjs
         working-directory: ui-next
 
       - name: Upload Playwright integration report
