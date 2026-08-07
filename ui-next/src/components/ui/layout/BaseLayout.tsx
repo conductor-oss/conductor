@@ -12,10 +12,10 @@ import AnnouncementBanner from "components/layout/header/AnnouncementBanner";
 import { ReactNode, useContext } from "react";
 import { UISidebar } from "components/providers/sidebar/UiSidebar";
 import { releaseVersion } from "utils/releaseVersion";
+import { useAPIReleaseVersion } from "utils";
 import AppBarModules from "plugins/AppBarModules";
 import { useAuth } from "components/features/auth";
 
-const apiVersion = localStorage.getItem("version");
 const toolBarHeight = 60;
 
 type Props = {
@@ -23,6 +23,8 @@ type Props = {
 };
 
 export const BaseLayout = ({ children }: Props) => {
+  const { data: apiVersion } = useAPIReleaseVersion();
+
   const {
     toggleMenu,
     isMobile,
