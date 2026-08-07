@@ -46,6 +46,7 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -281,6 +282,38 @@ public class SwitchTaskMapperTest {
         // Only the SWITCH task itself; defaultCase task must not be scheduled.
         assertEquals(1, mappedTasks.size());
         assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
+        // The SWITCH task is completed at map time rather than left IN_PROGRESS.
+        assertEquals(TaskModel.Status.COMPLETED, mappedTasks.get(0).getStatus());
+    }
+
+    @Test
+    public void getSwitchCaseTasks() {
+        WorkflowTask switchTask = new WorkflowTask();
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("CASE-1", Collections.emptyList());
+        decisionCases.put("", Collections.emptyList());
+        decisionCases.put("CASE-2", Collections.singletonList(task2));
+        List<WorkflowTask> defaultCase = Collections.singletonList(task1);
+        switchTask.setDefaultCase(defaultCase);
+        switchTask.setDecisionCases(decisionCases);
+
+        // No matching key -> defaultCase.
+        assertEquals(
+                defaultCase, SwitchTaskMapper.getSwitchCaseTasks(switchTask, "case-not-exist"));
+        // Matched empty cases -> the (empty) matched list, NOT defaultCase.
+        assertEquals(decisionCases.get(""), SwitchTaskMapper.getSwitchCaseTasks(switchTask, ""));
+        assertEquals(
+                decisionCases.get("CASE-1"),
+                SwitchTaskMapper.getSwitchCaseTasks(switchTask, "CASE-1"));
+        // Matched non-empty case -> its tasks.
+        assertEquals(
+                decisionCases.get("CASE-2"),
+                SwitchTaskMapper.getSwitchCaseTasks(switchTask, "CASE-2"));
+        // Known case-sensitivity quirk: the fallthrough check is case-insensitive but the case
+        // lookup is exact. An evaluated result that matches a key only case-insensitively is NOT
+        // treated as "non-existent" (so defaultCase is skipped), yet the exact lookup misses — so
+        // neither the matched case nor the default is selected (returns null).
+        assertNull(SwitchTaskMapper.getSwitchCaseTasks(switchTask, "case-2"));
     }
 
     @Test
