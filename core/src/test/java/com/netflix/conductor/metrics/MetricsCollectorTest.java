@@ -24,7 +24,7 @@ public class MetricsCollectorTest {
     @Test
     public void constructor_wiresRegistryIntoMonitors() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        new MetricsCollector(registry);
+        new MetricsCollector(true, registry);
 
         Monitors.getCounter("mc_test_counter", "source", "test").increment(7);
 

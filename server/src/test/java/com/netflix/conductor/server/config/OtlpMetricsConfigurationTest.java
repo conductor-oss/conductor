@@ -154,7 +154,7 @@ public class OtlpMetricsConfigurationTest {
 
         @Bean
         MetricsCollector metricsCollector(MeterRegistry... registries) {
-            return new MetricsCollector(registries);
+            return new MetricsCollector(true, registries);
         }
     }
 
