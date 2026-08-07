@@ -1172,6 +1172,9 @@ body {
   gap: 12px;
   margin-top: 20px;
 }
+.integration-hero > .integration-action-grid:first-child {
+  margin-top: 0;
+}
 .integration-action-grid--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

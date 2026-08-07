@@ -24,12 +24,12 @@ nav:
     - FAQ: devguide/faq.md
   - Getting Started:
     - quickstart/index.md
-    - Build with Your AI Agent: devguide/how-tos/conductor-skills.md
     - Connect to Conductor: quickstart/connect.md
+    - Build with Your AI Coding Agent: devguide/how-tos/conductor-skills.md
     - Your First Workflow & Worker: quickstart/first-worker.md
     - Your First Agent: quickstart/first-agent.md
     - Bring Your Framework Agent: quickstart/framework-agents.md
-    - "No-Code: Run a Workflow from JSON": quickstart/first-workflow.md
+    - Run a Workflow from JSON: quickstart/first-workflow.md
     - Conductor for AI Assistants: devguide/ai/conductor-for-ai-assistants.md
   - Platform:
     - Core Concepts: devguide/concepts/index.md
