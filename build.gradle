@@ -64,7 +64,7 @@ allprojects {
             resolutionStrategy.eachDependency { details ->
                 // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
                 if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
-                    details.useVersion "2.17.0"
+                    details.useVersion "2.18.9"
                 }
                 // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
