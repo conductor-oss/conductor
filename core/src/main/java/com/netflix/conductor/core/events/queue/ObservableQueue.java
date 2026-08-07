@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.context.Lifecycle;
@@ -24,6 +26,21 @@ public interface ObservableQueue extends Lifecycle {
      * @return An observable for the given queue
      */
     Observable<Message> observe();
+
+    /**
+     * Passive batched read used by the adaptive event scheduler. Unlike {@link #observe()}, the
+     * caller drives the cadence: the scheduler computes a per-lane budget from buffer headroom and
+     * asks each queue for up to {@code batchSize} messages, blocking at most {@code timeout}.
+     *
+     * <p>The default implementation returns an empty list so legacy queue providers continue to
+     * compile unchanged; the adaptive scheduler simply observes zero throughput on those queues
+     * until they implement this method. Implementations backed by a batched broker primitive (e.g.
+     * {@code QueueDAO.pollMessages}, {@code SqsClient.receiveMessage}, Kafka {@code Consumer.poll})
+     * should override this for the scheduler to be useful.
+     */
+    default List<Message> poll(int batchSize, Duration timeout) {
+        return Collections.emptyList();
+    }
 
     /**
      * @return Type of the queue
