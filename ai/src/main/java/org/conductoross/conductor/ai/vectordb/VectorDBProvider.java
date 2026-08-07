@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.vectordb;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class VectorDBProvider {
 
     private final Map<String, VectorDB> vectorDBs = new ConcurrentHashMap<>();
+    private final AtomicBoolean disposed = new AtomicBoolean(false);
 
     /**
      * Initializes the provider with configured vector database instances, then merges in any
@@ -77,6 +79,10 @@ public class VectorDBProvider {
      * @return The VectorDB instance, or null if not found
      */
     public VectorDB get(String name, TaskContext taskContext) {
+        if (disposed.get()) {
+            log.warn("VectorDBProvider is shut down; returning null for '{}'", name);
+            return null;
+        }
         VectorDB db = vectorDBs.get(name);
         if (db == null) {
             log.warn(
@@ -88,13 +94,14 @@ public class VectorDBProvider {
     }
 
     /**
-     * Closes all registered VectorDB instances that implement {@link Closeable}, then clears the
-     * map so a lookup after shutdown reports "not found" instead of handing back an already-closed
-     * instance. Each instance is closed independently so that one failure does not prevent others
-     * from releasing resources.
+     * Marks the provider disposed (so concurrent {@link #get} calls immediately start returning
+     * null instead of racing the close loop below), then closes all registered VectorDB instances
+     * that implement {@link Closeable} and clears the map. Each instance is closed independently so
+     * that one failure does not prevent others from releasing resources.
      */
     @PreDestroy
     void dispose() {
+        disposed.set(true);
         for (Map.Entry<String, VectorDB> entry : vectorDBs.entrySet()) {
             VectorDB db = entry.getValue();
             if (db instanceof Closeable) {

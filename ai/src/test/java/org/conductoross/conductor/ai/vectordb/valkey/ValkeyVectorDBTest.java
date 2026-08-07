@@ -817,6 +817,22 @@ class ValkeyVectorDBTest {
         assertEquals("conductor-vectordb-my_instance", built.getClientName());
     }
 
+    // ----- Client creation timeout: separate from the per-command requestTimeoutMs -----
+
+    @Test
+    void creationTimeoutMs_hasAFiveSecondFloor() {
+        // A short requestTimeoutMs (tuned for a single command) must not also starve the one-time
+        // TCP+TLS+AUTH+SELECT connection handshake, which routinely takes longer than a command.
+        assertEquals(5000L, ValkeyVectorDB.creationTimeoutMs(1000L));
+        assertEquals(5000L, ValkeyVectorDB.creationTimeoutMs(1500L));
+    }
+
+    @Test
+    void creationTimeoutMs_scalesAboveTheFloor() {
+        assertEquals(9000L, ValkeyVectorDB.creationTimeoutMs(3000L));
+        assertEquals(15000L, ValkeyVectorDB.creationTimeoutMs(5000L));
+    }
+
     private static ValkeyConfig defaultConfig() {
         ValkeyConfig config = new ValkeyConfig();
         config.setDimensions(4);

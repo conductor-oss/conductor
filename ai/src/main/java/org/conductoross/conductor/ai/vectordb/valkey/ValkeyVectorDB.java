@@ -177,11 +177,21 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
         return name.replaceAll("\\s+", "_");
     }
 
+    /**
+     * Client creation (TCP connect + TLS handshake + AUTH + SELECT) routinely takes longer than a
+     * single command, especially across AZs, so it gets a more generous timeout than the
+     * per-command {@code requestTimeoutMs} used for regular operations. Package-private static so
+     * the floor/multiplier behavior is directly unit-testable.
+     */
+    static long creationTimeoutMs(long requestTimeoutMs) {
+        return Math.max(requestTimeoutMs * 3, 5000L);
+    }
+
     private static GlideClient buildClient(String name, ValkeyConfig cfg, long timeoutMs) {
         try {
             return awaitFuture(
                     GlideClient.createClient(buildClientConfiguration(name, cfg, timeoutMs)),
-                    timeoutMs,
+                    creationTimeoutMs(timeoutMs),
                     "GLIDE client creation");
         } catch (RuntimeException e) {
             // A distinct type (not a bare RuntimeException) so callers can tell "the server was
