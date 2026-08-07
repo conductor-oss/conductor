@@ -1,0 +1,27 @@
+[
+  {
+    "name": "crabbox_run",
+    "description": "Execute a command through Crabbox from an external Conductor worker.",
+    "retryCount": 1,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 30,
+    "timeoutSeconds": 1800,
+    "responseTimeoutSeconds": 120,
+    "pollTimeoutSeconds": 60,
+    "inputKeys": [
+      "command",
+      "provider",
+      "workspaceDir",
+      "timeoutSeconds"
+    ],
+    "outputKeys": [
+      "status",
+      "exitCode",
+      "reason",
+      "provider",
+      "durationSeconds",
+      "outputTail",
+      "timing"
+    ]
+  }
+]

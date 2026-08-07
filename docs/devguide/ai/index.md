@@ -83,6 +83,7 @@ Conductor provides all of this as infrastructure. Your agent code focuses on the
 - **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, built-in tools, vector databases, and content generation.
 - **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
 - **[Conductor Agents](conductor-agents.md)** &mdash; Run an agent on the embedded agentspan runtime as a durable `AGENT` task, with human-in-the-loop resume.
+- **[Crabbox Remote Execution](crabbox-sandbox.md)** &mdash; Run trusted agent, build, and test steps on remote Crabbox capacity through a worker or MCP bridge.
 - **[Production Agent Architecture](production-agent-architecture.md)** &mdash; The canonical reference architecture for a durable production agent. End-to-end pattern with every primitive mapped.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** &mdash; The exact failure contract: what happens under crashes, retries, duplicates, long waits, and partial side effects.
 - **[Why Conductor for Agents](why-conductor.md)** &mdash; What Conductor gives you out of the box for agentic workflows.

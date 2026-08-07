@@ -1,0 +1,32 @@
+{
+  "name": "crabbox_mcp_run_workflow",
+  "description": "Run a trusted command through a Crabbox-backed MCP tool.",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": [
+    "mcpServer",
+    "command",
+    "workspaceDir"
+  ],
+  "tasks": [
+    {
+      "name": "run_with_crabbox",
+      "taskReferenceName": "crabbox_run",
+      "type": "CALL_MCP_TOOL",
+      "inputParameters": {
+        "mcpServer": "${workflow.input.mcpServer}",
+        "method": "crabbox_run_command",
+        "arguments": {
+          "provider": "local-container",
+          "command": "${workflow.input.command}",
+          "workspace_dir": "${workflow.input.workspaceDir}",
+          "shell": true,
+          "timeout_seconds": 900
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "result": "${crabbox_run.output.content}"
+  }
+}
