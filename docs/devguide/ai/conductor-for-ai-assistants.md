@@ -2,7 +2,7 @@
 description: Canonical, source-backed guidance for AI coding assistants that build or operate Conductor workflows and agents.
 ---
 
-# Conductor for AI assistants
+# Conductor for AI Assistants
 
 Use this page as the canonical starting point when an AI coding assistant needs to help build, review, run, or operate Conductor workflows.
 

@@ -2,7 +2,7 @@
 description: Write, run, and verify your first Conductor workflow and worker in Python, Java, TypeScript/JavaScript, C#, or Rust.
 ---
 
-# Write your first workflow and worker
+# Your First Workflow & Worker
 
 **Audience:** developers building their first Conductor workflow in code.
 

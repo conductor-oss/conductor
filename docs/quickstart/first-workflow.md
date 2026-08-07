@@ -2,7 +2,7 @@
 description: Register and run a Conductor workflow from JSON with the CLI — no SDK or worker required.
 ---
 
-# Run a workflow from JSON
+# Run a Workflow from JSON
 
 **Audience:** anyone who wants the fastest no-code path to a durable workflow — including operators and AI assistants that emit workflow definitions.
 

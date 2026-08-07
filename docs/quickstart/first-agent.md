@@ -2,7 +2,7 @@
 description: Run your first Conductor Agent and verify its durable execution with the SDK language you choose.
 ---
 
-# Run your first Conductor Agent
+# Your First Agent
 
 **Audience:** developers authoring a new Conductor Agent with Python, Java, TypeScript/JavaScript, or C#.
 

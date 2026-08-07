@@ -2,7 +2,7 @@
 description: "Conductor Skills — teach your AI coding agent to create, run, monitor, and manage Conductor workflows. Works with Claude Code, Cursor, Copilot, Gemini CLI, and more."
 ---
 
-# Build with AI agents
+# Build with Your AI Coding Agent
 
 **Time:** about 2 minutes to install; your agent does the rest.
 
