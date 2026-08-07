@@ -176,19 +176,20 @@ class ValkeyInstanceConfigTest {
     }
 
     /**
-     * A ValkeyConfig subclass whose get(String) throws a plain RuntimeException, simulating a
-     * connectivity failure (e.g. an unreachable server) rather than a configuration error.
+     * A ValkeyConfig subclass whose get(String) throws ValkeyConnectionException, simulating a
+     * connectivity failure (e.g. an unreachable server) rather than a configuration error. Matches
+     * the specific type ValkeyVectorDB.buildClient() actually throws on a connection failure.
      */
     static class ConnectionFailingValkeyConfig extends ValkeyConfig {
         @Override
         public ValkeyVectorDB get(String name) {
-            throw new RuntimeException("Connection refused");
+            throw new ValkeyConnectionException("Connection refused", new RuntimeException());
         }
     }
 
     @Test
     void connectionFailure_isLoggedAndSkipped_doesNotAbortStartup() {
-        // Unlike a configuration error (IllegalArgumentException/IllegalStateException), a runtime
+        // Unlike a configuration error (IllegalArgumentException/IllegalStateException), a
         // connectivity failure must not take down the whole server -- it should behave like the
         // other vector DB backends, which tolerate an unreachable instance at boot.
         VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
@@ -228,5 +229,32 @@ class ValkeyInstanceConfigTest {
         assertThrows(IllegalStateException.class, instanceConfig::getVectorDBInstances);
 
         verify(mockClient).close();
+    }
+
+    /**
+     * A ValkeyConfig subclass whose get(String) throws a bare RuntimeException that is NOT
+     * ValkeyConnectionException, simulating a genuine bug (e.g. a NullPointerException deep in a
+     * backend's construction path) rather than a connectivity failure.
+     */
+    static class BuggyValkeyConfig extends ValkeyConfig {
+        @Override
+        public ValkeyVectorDB get(String name) {
+            throw new NullPointerException("simulated bug, not a connection failure");
+        }
+    }
+
+    @Test
+    void genuineBug_isNotSilentlySwallowedByConnectivitySkipPath() {
+        // The skip path must be narrow: only ValkeyConnectionException is tolerated. A different
+        // RuntimeException (a real bug) must propagate and fail loudly, not be logged and dropped
+        // the way an unreachable-server ValkeyConnectionException is.
+        VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
+        VectorDBInstance instance = new VectorDBInstance();
+        instance.setName("buggy-valkey");
+        instance.setType("valkey");
+        instance.setValkey(new BuggyValkeyConfig());
+        instanceConfig.setInstances(List.of(instance));
+
+        assertThrows(NullPointerException.class, instanceConfig::getVectorDBInstances);
     }
 }

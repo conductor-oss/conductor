@@ -184,7 +184,9 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
                     timeoutMs,
                     "GLIDE client creation");
         } catch (RuntimeException e) {
-            throw new RuntimeException(
+            // A distinct type (not a bare RuntimeException) so callers can tell "the server was
+            // unreachable" apart from a genuine bug and choose to tolerate only the former.
+            throw new ValkeyConnectionException(
                     "Failed to create Valkey GLIDE client for "
                             + cfg.getHost()
                             + ":"

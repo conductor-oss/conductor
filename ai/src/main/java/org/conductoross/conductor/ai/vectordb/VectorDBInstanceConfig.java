@@ -23,6 +23,7 @@ import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.pinecone.PineconeConfig;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresConfig;
 import org.conductoross.conductor.ai.vectordb.valkey.ValkeyConfig;
+import org.conductoross.conductor.ai.vectordb.valkey.ValkeyConnectionException;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -98,13 +99,14 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
                 // an operator fix, not a retry, so fail startup loudly.
                 failedNames.add(instance.getName() + " (type: " + instance.getType() + ")");
                 failures.add(e);
-            } catch (RuntimeException e) {
-                // A runtime/connectivity failure (e.g. Valkey unreachable at boot). Unlike the
-                // other
-                // vector DB backends, ValkeyVectorDB connects eagerly at construction, so without
-                // this distinction a transient network blip would abort the entire server instead
-                // of just this instance. Log and skip, matching how the other backends already
-                // tolerate this.
+            } catch (ValkeyConnectionException e) {
+                // A connectivity failure (e.g. Valkey unreachable at boot), not a configuration
+                // error. Unlike the other vector DB backends, ValkeyVectorDB connects eagerly at
+                // construction, so without this distinction a transient network blip would abort
+                // the entire server instead of just this instance. Log and skip, matching how the
+                // other backends already tolerate this. Deliberately narrower than catching
+                // RuntimeException: a genuine bug (NPE, ClassCastException, etc.) from any backend
+                // must still propagate and fail loudly rather than being silently dropped here.
                 log.error(
                         "Failed to initialize vector DB instance: {} (type: {}), reason: {}",
                         instance.getName(),
