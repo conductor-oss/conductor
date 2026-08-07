@@ -61,6 +61,9 @@ dependencies {
     testImplementation "com.squareup.okhttp3:mockwebserver:4.12.0"
     testImplementation "org.testcontainers:mongodb:${revTestContainer}"
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
+    // Core Testcontainers is used directly by ValkeyVectorDBRoundTripTest via GenericContainer.
+    // Declared explicitly rather than relied upon transitively through the modules above.
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation "org.postgresql:postgresql:${revPostgres}"
     testImplementation "org.apache.commons:commons-compress:${revCommonsCompress}"
     testImplementation "com.h2database:h2:2.4.240"
