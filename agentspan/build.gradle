@@ -12,6 +12,9 @@ dependencies {
     // AWS Bedrock Agent Runtime — for BedrockAgentClient
     implementation "software.amazon.awssdk:bedrockagentruntime:${revAwsSdk}"
 
+    // Azure Identity SDK — for AzureFoundryAgentClient (ClientSecretCredential, ManagedIdentityCredential, DefaultAzureCredential)
+    implementation "com.azure:azure-identity:${revAzureIdentitySdk}"
+
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
     // conductor-sqlite-persistence keeps the driver on its own implementation classpath, so the

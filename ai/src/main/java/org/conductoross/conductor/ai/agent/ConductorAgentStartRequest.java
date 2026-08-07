@@ -51,4 +51,10 @@ public class ConductorAgentStartRequest {
     private Map<String, Object> staticPlan;
 
     private String credentialRef;
+
+    // Remote agent URL — same field name as A2A so all agent types use a consistent top-level
+    // field.
+    // Azure Foundry: https://my-resource.openai.azure.com/openai
+    // Bedrock: bedrock://AGENTID/ALIASID  (optional ?region=us-west-2 query param)
+    private String agentUrl;
 }

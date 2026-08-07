@@ -31,8 +31,25 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export const isDynamicAgentIdentity = (value: unknown): value is string =>
   typeof value === "string" && value.includes("${");
 
-export const agentRuntimeType = (input: unknown): AgentRuntimeType =>
-  isRecord(input) && input.agentType === "conductor" ? "conductor" : "a2a";
+const NATIVE_AGENT_RUNTIME_TYPES: ReadonlySet<string> = new Set([
+  "conductor",
+  "bedrock",
+  "azure-foundry",
+]);
+
+export const agentRuntimeType = (input: unknown): AgentRuntimeType => {
+  const type = isRecord(input) ? input.agentType : undefined;
+  return typeof type === "string" && NATIVE_AGENT_RUNTIME_TYPES.has(type)
+    ? (type as AgentRuntimeType)
+    : "a2a";
+};
+
+const AGENT_RUNTIME_DISPLAY_NAME: Record<AgentRuntimeType, string> = {
+  conductor: "Conductor agent",
+  a2a: "A2A agent",
+  bedrock: "Bedrock agent",
+  "azure-foundry": "Azure Foundry agent",
+};
 
 export const agentSourceIdentity = (input: unknown): string => {
   if (!isRecord(input)) return "";
@@ -64,8 +81,7 @@ export const createUnresolvedAgentSnapshot = (
   return {
     schemaVersion: AGENT_SNAPSHOT_SCHEMA_VERSION,
     agentType: type,
-    displayName:
-      identity || (type === "conductor" ? "Conductor agent" : "A2A agent"),
+    displayName: identity || AGENT_RUNTIME_DISPLAY_NAME[type],
     source: {
       ...(type === "conductor"
         ? { name: identity, requestedVersion }
@@ -179,7 +195,9 @@ export async function resolveAgentSnapshot(
     return createUnresolvedAgentSnapshot(input);
   }
 
-  if (agentRuntimeType(input) === "conductor") {
+  const runtimeType = agentRuntimeType(input);
+
+  if (runtimeType === "conductor") {
     const version =
       "version" in input && typeof input.version === "number"
         ? `?version=${encodeURIComponent(input.version)}`
@@ -188,6 +206,12 @@ export async function resolveAgentSnapshot(
       `/agent/definitions/${encodeURIComponent(identity)}${version}`,
     )) as AgentWorkflowDefinition;
     return buildConductorAgentSnapshot(input, definition);
+  }
+
+  if (runtimeType !== "a2a") {
+    // Bedrock / Azure Foundry have no Agent Card-style discovery endpoint; the configured
+    // agentUrl is the only identity available, so there is nothing further to resolve.
+    return createUnresolvedAgentSnapshot(input);
   }
 
   const inputRecord = input as unknown as Record<string, unknown>;
@@ -253,27 +277,41 @@ export async function resolveAgentSnapshotsInWorkflow(
 }
 
 export interface AgentTaskPresentation {
-  badge: "A2A AGENT" | "CONDUCTOR AGENT";
+  badge: "A2A AGENT" | "CONDUCTOR AGENT" | "BEDROCK AGENT" | "AZURE FOUNDRY AGENT";
   name: string;
   taskReferenceName: string;
-  unresolved: boolean;
 }
 
+const AGENT_RUNTIME_BADGE: Record<AgentRuntimeType, AgentTaskPresentation["badge"]> =
+  {
+    conductor: "CONDUCTOR AGENT",
+    a2a: "A2A AGENT",
+    bedrock: "BEDROCK AGENT",
+    "azure-foundry": "AZURE FOUNDRY AGENT",
+  };
+
+// Resolution only ever runs through the workflow editor's save flow — a workflow
+// registered any other way (API, curl, SDK, an older save that predates the agent
+// snapshot feature) never gets a `metadata.agent` snapshot at all, and a resolution
+// attempt can also legitimately fail transiently. Neither case means the configured
+// agent is actually broken, so the card always shows the plain configured identity —
+// resolution state is surfaced in the task form's "Agent Card" panel instead.
 export const getAgentTaskPresentation = (
   task: Pick<TaskDef, "inputParameters" | "metadata" | "taskReferenceName">,
 ): AgentTaskPresentation => {
   const input = task.inputParameters ?? {};
+  // The configured agentType is always authoritative for the badge — a stored snapshot
+  // can lag behind a live edit (e.g. switching the radio from A2A to Bedrock) since
+  // resolution only runs on save. Only reuse the snapshot's enrichment (its resolved
+  // displayName) when its type still matches what's currently configured.
+  const type = agentRuntimeType(input);
   const snapshot = getAgentSnapshot(task);
-  const type = snapshot?.agentType ?? agentRuntimeType(input);
-  const identity = snapshot?.displayName || agentSourceIdentity(input);
+  const identity =
+    (snapshot?.agentType === type ? snapshot.displayName : undefined) ||
+    agentSourceIdentity(input);
   return {
-    badge: type === "conductor" ? "CONDUCTOR AGENT" : "A2A AGENT",
-    name: identity || (type === "conductor" ? "Conductor agent" : "A2A agent"),
+    badge: AGENT_RUNTIME_BADGE[type],
+    name: identity || AGENT_RUNTIME_DISPLAY_NAME[type],
     taskReferenceName: task.taskReferenceName,
-    // Conductor agents are registered locally and their configured name is
-    // authoritative. A missing editor snapshot only means that the optional
-    // detail hydration has not completed; it does not make the agent itself
-    // unresolved. A2A identities depend on remote Agent Card discovery.
-    unresolved: type === "a2a" && !snapshot?.resolved,
   };
 };

@@ -71,7 +71,7 @@ describe("AGENT task diagram card", () => {
     expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
   });
 
-  it("renders configured identity as unresolved in the execution diagram", () => {
+  it("never shows an UNRESOLVED label, even for a dynamic identity with a failed snapshot", () => {
     render(
       <TaskCard
         nodeData={{
@@ -103,9 +103,103 @@ describe("AGENT task diagram card", () => {
     );
 
     expect(
-      screen.getByText("UNRESOLVED: ${workflow.input.agentUrl}"),
+      screen.getByText("${workflow.input.agentUrl}"),
     ).toBeInTheDocument();
     expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
+    expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
+  });
+
+  it("renders a static A2A agent URL without a snapshot as resolved, not unresolved", () => {
+    // Workflows registered outside the UI editor (curl, SDK, an older save) never get a
+    // `metadata.agent` snapshot stamped — absence of a snapshot must not read as a failed
+    // resolution for a concrete, non-expression agentUrl.
+    render(
+      <TaskCard
+        nodeData={{
+          crumbs: [],
+          status: TaskStatus.IN_PROGRESS,
+          task: {
+            ...baseTask,
+            taskReferenceName: "call_summarizer_ref",
+            inputParameters: {
+              agentType: "a2a",
+              agentUrl: "https://agents.example.com/summarizer",
+            },
+          } as AgentTaskDef,
+        }}
+        onClick={vi.fn()}
+        isInconsistent={false}
+      />,
+    );
+
+    expect(
+      screen.getByText("https://agents.example.com/summarizer"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
+    expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
+  });
+
+  it("badges Bedrock and Azure Foundry by their own type, not A2A", () => {
+    render(
+      <TaskCard
+        nodeData={{
+          crumbs: [],
+          task: {
+            ...baseTask,
+            taskReferenceName: "bedrock_ref",
+            inputParameters: {
+              agentType: "bedrock",
+              agentUrl: "bedrock://AGENTID/ALIASID",
+            },
+          } as AgentTaskDef,
+        }}
+        onClick={vi.fn()}
+        isInconsistent={false}
+      />,
+    );
+
+    expect(screen.getByText("bedrock://AGENTID/ALIASID")).toBeInTheDocument();
+    expect(screen.getByText("BEDROCK AGENT")).toBeInTheDocument();
+    expect(screen.queryByText("A2A AGENT")).not.toBeInTheDocument();
+  });
+
+  it("prefers the live configured agentType over a stale cached snapshot", () => {
+    // Switching the radio from A2A to Azure Foundry updates inputParameters immediately, but
+    // metadata.agent only refreshes on the next save — the badge must reflect the live value.
+    render(
+      <TaskCard
+        nodeData={{
+          crumbs: [],
+          task: {
+            ...baseTask,
+            taskReferenceName: "switched_ref",
+            inputParameters: {
+              agentType: "azure-foundry",
+              agentUrl: "https://my-resource.openai.azure.com/openai",
+            },
+            metadata: {
+              agent: {
+                schemaVersion: 1,
+                agentType: "a2a",
+                displayName: "Stale A2A Agent",
+                source: { url: "https://old-url.example" },
+                resolved: true,
+                a2a: { url: "https://old-url.example" },
+              },
+            },
+          } as AgentTaskDef,
+        }}
+        onClick={vi.fn()}
+        isInconsistent={false}
+      />,
+    );
+
+    expect(screen.getByText("AZURE FOUNDRY AGENT")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://my-resource.openai.azure.com/openai"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("A2A AGENT")).not.toBeInTheDocument();
+    expect(screen.queryByText("Stale A2A Agent")).not.toBeInTheDocument();
   });
 
   it("keeps the compact agent identity legible in dark mode", () => {

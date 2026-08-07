@@ -42,19 +42,21 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequ
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResponseHandler;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
-/**
- * {@link ConductorAgentClient} backed by AWS Bedrock Agent Runtime.
- *
- * <p>Bedrock agents use a streaming invoke model — there is no separate status API. Each call to
- * {@code startAgent} or {@code respond} streams the response and buffers it into an in-memory
- * {@link ExecutionState}. Subsequent {@code getAgentStatus} calls read from that state.
- *
- * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, falling back to the default AWS
- * credential chain, so the client registers whether or not Bedrock is configured; an unconfigured
- * runtime fails only if a workflow routes to it.
- */
+// ConductorAgentClient backed by AWS Bedrock Agent Runtime.
+// Bedrock uses a streaming invoke model — startAgent/respond stream the response into an
+// in-memory ExecutionState; getAgentStatus reads from that state (no separate status API).
+//
+// Auth modes (auto-detected from credentialRef secret fields):
+//   Static credentials:  secret has accessKeyId + secretAccessKey → StaticCredentialsProvider
+//   AssumeRole:          secret has roleArn → StsAssumeRoleCredentialsProvider (temp creds,
+//                        auto-refresh); optional roleSessionName and externalId fields
+//   Default chain:       no credentialRef → SDK default (env vars, EC2/ECS role, ~/.aws)
+//
+// Activated by conductor.integrations.ai.enabled=true; an unconfigured runtime fails only if used.
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
@@ -79,9 +81,13 @@ public class BedrockAgentClient implements ConductorAgentClient {
         String sessionId =
                 StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
-        String agentId = rawConfig(request, "agentId");
-        String agentAliasId = rawConfig(request, "agentAliasId");
-        String region = StringUtils.defaultIfBlank(rawConfig(request, "region"), DEFAULT_REGION);
+        String[] agentCoords = resolveAgentCoords(request);
+        String agentId = agentCoords[0];
+        String agentAliasId = agentCoords[1];
+        String region =
+                agentCoords.length > 2 && StringUtils.isNotBlank(agentCoords[2])
+                        ? agentCoords[2]
+                        : StringUtils.defaultIfBlank(rawConfig(request, "region"), DEFAULT_REGION);
 
         BedrockAgentRuntimeAsyncClient runtimeClient = buildRuntimeClient(request, region);
         InvokeAgentRequest invokeRequest =
@@ -228,6 +234,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
         }
     }
 
+    // Auth detection order — first match wins:
+    //   1. accessKeyId + secretAccessKey → static long-lived credentials
+    //   2. roleArn                       → AssumeRole (temp creds, auto-refreshed by SDK)
+    //   3. fallthrough                   → SDK default chain (env vars, EC2/ECS role, ~/.aws)
     private BedrockAgentRuntimeAsyncClient buildRuntimeClient(
             ConductorAgentStartRequest request, String region) {
         String credentialRef = request.getCredentialRef();
@@ -244,9 +254,73 @@ public class BedrockAgentClient implements ConductorAgentClient {
                                         AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
                         .build();
             }
+
+            String roleArn = credentialResolutionService.resolve(credentialRef + ".roleArn");
+            if (StringUtils.isNotBlank(roleArn)) {
+                String roleSessionName =
+                        StringUtils.defaultIfBlank(
+                                credentialResolutionService.resolve(
+                                        credentialRef + ".roleSessionName"),
+                                "conductor-bedrock");
+                String externalId =
+                        credentialResolutionService.resolve(credentialRef + ".externalId");
+                AssumeRoleRequest.Builder assumeReq =
+                        AssumeRoleRequest.builder()
+                                .roleArn(roleArn)
+                                .roleSessionName(roleSessionName);
+                if (StringUtils.isNotBlank(externalId)) {
+                    assumeReq.externalId(externalId);
+                }
+                StsAssumeRoleCredentialsProvider provider =
+                        StsAssumeRoleCredentialsProvider.builder()
+                                .stsClient(StsClient.builder().region(Region.of(region)).build())
+                                .refreshRequest(assumeReq.build())
+                                .build();
+                return BedrockAgentRuntimeAsyncClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(provider)
+                        .build();
+            }
         }
-        // Fall back to the default credential chain (instance role, env vars, ~/.aws/credentials)
+        // Fall back to the default credential chain (env vars, EC2/ECS role, ~/.aws/credentials)
         return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
+    }
+
+    // Parses agentUrl (bedrock://AGENTID/ALIASID or bedrock://AGENTID/ALIASID?region=us-west-2)
+    // into [agentId, aliasId] or [agentId, aliasId, region]. Throws if either ID is missing.
+    private static String[] resolveAgentCoords(ConductorAgentStartRequest request) {
+        String agentUrl = request.getAgentUrl();
+        if (StringUtils.isBlank(agentUrl) || !agentUrl.startsWith("bedrock://")) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl must be in the form bedrock://AGENTID/ALIASID"
+                            + " (optionally with ?region=<region>)");
+        }
+        String path = agentUrl.substring("bedrock://".length());
+        String region = null;
+        if (path.contains("?")) {
+            String query = path.substring(path.indexOf('?') + 1);
+            path = path.substring(0, path.indexOf('?'));
+            for (String param : query.split("&")) {
+                if (param.startsWith("region=")) {
+                    region = param.substring("region=".length());
+                }
+            }
+        }
+        String[] parts = path.split("/", 2);
+        String agentId = parts[0];
+        if (StringUtils.isBlank(agentId)) {
+            throw new IllegalArgumentException("Bedrock agentUrl is missing agentId: " + agentUrl);
+        }
+        if (parts.length < 2 || StringUtils.isBlank(parts[1])) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl is missing aliasId: "
+                            + agentUrl
+                            + " — use bedrock://AGENTID/ALIASID");
+        }
+        String aliasId = parts[1];
+        return region != null
+                ? new String[] {agentId, aliasId, region}
+                : new String[] {agentId, aliasId};
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {
