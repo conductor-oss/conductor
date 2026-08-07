@@ -3,7 +3,7 @@
 ## 1. Install
 
 ```bash
-python -m pip install 'conductor-python[agents]'
+python -m pip install 'conductor-python'
 ```
 
 ## 2. Configure

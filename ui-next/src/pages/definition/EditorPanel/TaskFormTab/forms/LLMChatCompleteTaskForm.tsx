@@ -58,7 +58,9 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
       {(actor) => (
         <Box padding={1} width="100%">
           {/* OSS: plain textarea for system instructions / prompt.
-              Enterprise plugins replace this section with a prompt-template picker. */}
+              Enterprise plugins replace this section with a prompt-template picker.
+              At runtime the server prepends this as a system message before
+              inputParameters.messages (see LLMHelper.chatComplete). */}
           <TaskFormSection
             accordionAdditionalProps={{ defaultExpanded: true }}
             title="Instructions"
@@ -77,7 +79,8 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
                   multiline
                   rows={6}
                   fullWidth
-                  placeholder="Enter system instructions or prompt for the model..."
+                  placeholder="You are a helpful assistant. Be concise..."
+                  helperText="System prompt for the model. Conductor prepends this as a system message before the Structured Messages below — it is not a substitute for user/assistant turns."
                 />
               </Grid>
             </Grid>

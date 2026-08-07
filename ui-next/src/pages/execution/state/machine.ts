@@ -31,6 +31,7 @@ export const executionMachine = createMachine<
     context: {
       execution: undefined,
       executionId: undefined,
+      agentExecution: false,
       flowChild: undefined,
       error: undefined,
       expandedDynamic: [],

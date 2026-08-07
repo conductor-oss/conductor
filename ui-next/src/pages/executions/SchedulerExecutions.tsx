@@ -233,9 +233,11 @@ export default function SchedulerExecutions() {
           <Grid container sx={{ width: "100%" }} spacing={3} p={6}>
             <Grid
               size={{
-                xs: 6,
+                xs: 12,
+                sm: 6,
                 md: 4,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorAutoComplete
                 fullWidth
@@ -254,9 +256,10 @@ export default function SchedulerExecutions() {
             <Grid
               size={{
                 xs: 12,
-                sm: 8,
+                sm: 6,
                 md: 4,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorAutoComplete
                 fullWidth
@@ -272,9 +275,10 @@ export default function SchedulerExecutions() {
             <Grid
               size={{
                 xs: 12,
-                sm: 8,
+                sm: 6,
                 md: 4,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorInput
                 fullWidth
@@ -288,9 +292,9 @@ export default function SchedulerExecutions() {
             <Grid
               size={{
                 xs: 12,
-                sm: 8,
-                md: 5,
+                md: 6,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorDateRangePicker
                 disabled={!_isEmpty(lookback)}
@@ -305,10 +309,11 @@ export default function SchedulerExecutions() {
 
             <Grid
               size={{
-                xs: 4,
-                sm: 4,
-                md: 2,
+                xs: 12,
+                sm: 6,
+                md: 3,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorInput
                 fullWidth
@@ -323,9 +328,11 @@ export default function SchedulerExecutions() {
 
             <Grid
               size={{
-                xs: 4,
-                md: 2,
+                xs: 12,
+                sm: 6,
+                md: 3,
               }}
+              sx={{ minWidth: 0 }}
             >
               <ConductorAutoComplete
                 fullWidth
@@ -344,33 +351,26 @@ export default function SchedulerExecutions() {
             </Grid>
 
             <Grid
-              alignSelf="center"
-              size={{
-                xs: 12,
-                sm: 2,
-                md: 1,
-                lg: 1,
+              size={12}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: {
+                  xs: "flex-start",
+                  sm: "flex-end",
+                },
+                flexWrap: "wrap",
+                gap: 1,
               }}
             >
               <Button
                 id="reset-workflow-btn"
                 variant="text"
                 onClick={handleReset}
-                style={{ width: "100%" }}
                 startIcon={<ResetIcon />}
               >
                 Reset
               </Button>
-            </Grid>
-
-            <Grid
-              alignSelf="center"
-              size={{
-                xs: 12,
-                sm: 2,
-                md: 2,
-              }}
-            >
               <SplitButton
                 startIcon={<SearchIcon />}
                 options={[

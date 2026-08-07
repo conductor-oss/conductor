@@ -261,6 +261,10 @@ interface FetchedAgentExecution {
 
 const fetchedAgentExecutions = new Map<string, FetchedAgentExecution | null>();
 
+function isTerminalExecution(execution: WorkflowExecution): boolean {
+  return execution.status !== "RUNNING" && execution.status !== "PAUSED";
+}
+
 function useAgentExecutionDetail(run: AgentRunData): {
   data: FetchedAgentExecution | null;
   loading: boolean;
@@ -277,8 +281,9 @@ function useAgentExecutionDetail(run: AgentRunData): {
       setLoading(false);
       return;
     }
-    if (fetchedAgentExecutions.has(executionId)) {
-      setData(fetchedAgentExecutions.get(executionId) ?? null);
+    const cached = fetchedAgentExecutions.get(executionId);
+    if (cached && isTerminalExecution(cached.rawExecution)) {
+      setData(cached);
       setLoading(false);
       return;
     }
@@ -296,7 +301,11 @@ function useAgentExecutionDetail(run: AgentRunData): {
               rawExecution,
             }
           : null;
-        fetchedAgentExecutions.set(executionId, detail);
+        if (rawExecution && isTerminalExecution(rawExecution)) {
+          fetchedAgentExecutions.set(executionId, detail);
+        } else {
+          fetchedAgentExecutions.delete(executionId);
+        }
         setData(detail);
       })
       .catch(() => {
@@ -311,7 +320,7 @@ function useAgentExecutionDetail(run: AgentRunData): {
     return () => {
       cancelled = true;
     };
-  }, [executionId]);
+  }, [executionId, run.status]);
 
   return { data, loading };
 }
