@@ -56,9 +56,7 @@ test("task definition appears in the /taskDef list with expected row data", asyn
   await page.waitForLoadState("networkidle");
 
   // Name column: rendered as a NavLink.
-  await expect(
-    page.getByRole("link", { name: TASK_LIST.name }),
-  ).toBeVisible();
+  await expect(page.getByRole("link", { name: TASK_LIST.name })).toBeVisible();
 
   // Description column: exact value used when creating the task.
   await expect(
@@ -115,15 +113,11 @@ test("task editor form tab shows field values matching the API definition", asyn
 
   // ── Rate limit settings ────────────────────────────────────────────────────
   await expect(page.getByText("Rate limit settings").first()).toBeVisible();
-  await expect(
-    page.locator("#task-rateLimitPerFrequency-field"),
-  ).toBeVisible();
+  await expect(page.locator("#task-rateLimitPerFrequency-field")).toBeVisible();
   await expect(
     page.locator("#task-rateLimitFrequencyInSeconds-field"),
   ).toBeVisible();
-  await expect(
-    page.locator("#task-concurrentExecLimit-field"),
-  ).toBeVisible();
+  await expect(page.locator("#task-concurrentExecLimit-field")).toBeVisible();
 
   // ── Retry settings ─────────────────────────────────────────────────────────
   await expect(page.getByText("Retry settings").first()).toBeVisible();
@@ -214,7 +208,13 @@ test("task editor Code tab shows task definition JSON", async ({ page }) => {
     .poll(
       async () => {
         const text = await page.evaluate(() => {
-          const monaco = (window as { monaco?: { editor: { getModels(): Array<{ getValue(): string }> } } }).monaco;
+          const monaco = (
+            window as {
+              monaco?: {
+                editor: { getModels(): Array<{ getValue(): string }> };
+              };
+            }
+          ).monaco;
           return (
             monaco?.editor
               .getModels()
@@ -229,7 +229,11 @@ test("task editor Code tab shows task definition JSON", async ({ page }) => {
     .toContain(TASK_EDITOR.name);
 
   const codeContent = await page.evaluate(() => {
-    const monaco = (window as { monaco?: { editor: { getModels(): Array<{ getValue(): string }> } } }).monaco;
+    const monaco = (
+      window as {
+        monaco?: { editor: { getModels(): Array<{ getValue(): string }> } };
+      }
+    ).monaco;
     return (
       monaco?.editor
         .getModels()
@@ -268,9 +272,9 @@ test("task editor Reset dialog opens on a dirty form", async ({ page }) => {
   await resetBtn.click();
 
   // Confirmation dialog appears.
-  await expect(
-    page.getByText(/Resetting Confirmation/i).first(),
-  ).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/Resetting Confirmation/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
   await page.keyboard.press("Escape");
 
   // After dismissing, description field retains the dirty value (reset was cancelled).

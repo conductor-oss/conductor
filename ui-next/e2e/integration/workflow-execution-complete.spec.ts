@@ -891,21 +891,17 @@ const SIMPLE_WORKFLOW: WorkflowDef = {
  * START_WORKFLOW → GET_WORKFLOW → SET_VARIABLE
  *
  * START_WORKFLOW launches an existing workflow and surfaces its ID in output.
- * GET_WORKFLOW fetches the execution status of that newly-launched child.
- * Both task types complete automatically without a worker.
- *
- * Uses CHILD_WF_NAME (SET_VARIABLE only) as the target so the child finishes
- * before GET_WORKFLOW inspects it (child completes in < 1s).
+ * GET_WORKFLOW is not exercised here because that system task executor is not
+ * available in the OSS Docker image used for integration tests.
  */
 const LAUNCH_WORKFLOW: WorkflowDef = {
   name: LAUNCH_WF_NAME,
   version: 1,
-  description: "START_WORKFLOW + GET_WORKFLOW e2e — safe to delete",
+  description: "START_WORKFLOW e2e — safe to delete",
   ownerEmail: "e2e@conductor.test",
   schemaVersion: 2,
   outputParameters: {
     launchedId: "${launch_child_ref.output.workflowId}",
-    childStatus: "${get_child_ref.output.status}",
   },
   tasks: [
     {
@@ -918,21 +914,6 @@ const LAUNCH_WORKFLOW: WorkflowDef = {
           version: 1,
           input: { parentOrderId: "e2e-launch-test" },
         },
-      },
-    },
-    {
-      name: "wait_child_done",
-      taskReferenceName: "wait_child_ref",
-      type: "WAIT",
-      inputParameters: { duration: "3 seconds" },
-    },
-    {
-      name: "get_child",
-      taskReferenceName: "get_child_ref",
-      type: "GET_WORKFLOW",
-      inputParameters: {
-        id: "${launch_child_ref.output.workflowId}",
-        includeTasks: false,
       },
     },
     {
@@ -991,7 +972,9 @@ test.describe("Extra task types", () => {
   });
 
   test.afterAll(async () => {
-    await Promise.allSettled(extraWorkflowIds.map((id) => terminateWorkflow(id)));
+    await Promise.allSettled(
+      extraWorkflowIds.map((id) => terminateWorkflow(id)),
+    );
     await deleteWorkflowDef(EVENT_WF_NAME).catch(() => {});
     await deleteWorkflowDef(SIMPLE_WF_NAME).catch(() => {});
     await deleteWorkflowDef(LAUNCH_WF_NAME).catch(() => {});
@@ -1113,7 +1096,9 @@ test.describe("Extra task types", () => {
     const workerTask = wf.tasks?.find(
       (t) => t.referenceTaskName === "worker_task_ref",
     );
-    expect(workerTask?.taskType).toBe("SIMPLE");
+    // taskType on an executed task is the registered task-def name, not the
+    // schema keyword "SIMPLE".
+    expect(workerTask?.taskType).toBe(SIMPLE_TASK_TYPE);
     expect(workerTask?.status).toBe("COMPLETED");
     expect(workerTask?.outputData?.workerResult).toBe("processed-e2e-job-42");
 
@@ -1174,9 +1159,9 @@ test.describe("Extra task types", () => {
 
     // Input tab: the jobId parameter is present.
     await rightPanel.getByRole("tab", { name: "Input" }).click();
-    await expect(
-      rightPanel.getByText(/e2e-ui-job|jobId/i).first(),
-    ).toBeVisible({ timeout: 15_000 });
+    await expect(rightPanel.getByText(/e2e-ui-job|jobId/i).first()).toBeVisible(
+      { timeout: 15_000 },
+    );
 
     // Now complete the task so the workflow finishes (clean up state).
     await updateTask({
@@ -1188,9 +1173,9 @@ test.describe("Extra task types", () => {
     await waitForWorkflow(workflowId, { timeoutMs: EXECUTION_TIMEOUT_MS });
   });
 
-  // ── START_WORKFLOW + GET_WORKFLOW tasks ───────────────────────────────────────
+  // ── START_WORKFLOW task ───────────────────────────────────────────────────────
 
-  test("START_WORKFLOW + GET_WORKFLOW workflow completes (API)", async () => {
+  test("START_WORKFLOW workflow launches child and completes (API)", async () => {
     test.setTimeout(EXECUTION_TIMEOUT_MS + 30_000);
 
     const workflowId = await startWorkflow(LAUNCH_WF_NAME, {});
@@ -1208,30 +1193,18 @@ test.describe("Extra task types", () => {
     );
     expect(launchTask?.taskType).toBe("START_WORKFLOW");
     expect(launchTask?.status).toBe("COMPLETED");
-    // The launched child workflow ID is in outputData.workflowId.
+    // The launched child workflow ID is surfaced in outputData.workflowId.
     const launchedId = launchTask?.outputData?.workflowId as string | undefined;
     expect(launchedId).toBeTruthy();
 
-    // WAIT task (3 seconds to let child finish)
-    const waitTask = wf.tasks?.find(
-      (t) => t.referenceTaskName === "wait_child_ref",
+    // SET_VARIABLE stores the child ID in workflow variables.
+    const storeTask = wf.tasks?.find(
+      (t) => t.referenceTaskName === "store_launch_ref",
     );
-    expect(waitTask?.taskType).toBe("WAIT");
-    expect(waitTask?.status).toBe("COMPLETED");
+    expect(storeTask?.status).toBe("COMPLETED");
 
-    // GET_WORKFLOW task
-    const getTask = wf.tasks?.find(
-      (t) => t.referenceTaskName === "get_child_ref",
-    );
-    expect(getTask?.taskType).toBe("GET_WORKFLOW");
-    expect(getTask?.status).toBe("COMPLETED");
-    // GET_WORKFLOW surfaces workflow status in output.
-    const childStatus = getTask?.outputData?.status as string | undefined;
-    expect(childStatus).toBe("COMPLETED");
-
-    // Workflow-level outputs
+    // Workflow-level output contains the launched child ID.
     expect(wf.output?.launchedId).toBeTruthy();
-    expect(wf.output?.childStatus).toBe("COMPLETED");
   });
 
   test("START_WORKFLOW task shows launched child link in right panel", async ({
@@ -1247,9 +1220,9 @@ test.describe("Extra task types", () => {
     });
     expect(wf.status).toBe("COMPLETED");
 
-    const launchedId = wf.tasks
-      ?.find((t) => t.referenceTaskName === "launch_child_ref")
-      ?.outputData?.workflowId as string | undefined;
+    const launchedId = wf.tasks?.find(
+      (t) => t.referenceTaskName === "launch_child_ref",
+    )?.outputData?.workflowId as string | undefined;
     expect(launchedId).toBeTruthy();
 
     await page.goto(`/execution/${workflowId}`);
@@ -1259,13 +1232,8 @@ test.describe("Extra task types", () => {
     });
     await expectExecutionStatusChip(page, "COMPLETED");
 
-    // Diagram shows all task reference labels.
-    for (const ref of [
-      "launch_child_ref",
-      "wait_child_ref",
-      "get_child_ref",
-      "store_launch_ref",
-    ]) {
+    // Diagram shows both task reference labels.
+    for (const ref of ["launch_child_ref", "store_launch_ref"]) {
       await expectTaskRefVisible(page, ref);
     }
 
@@ -1291,19 +1259,6 @@ test.describe("Extra task types", () => {
     await rightPanel.getByRole("tab", { name: "Output" }).click();
     await expect(
       rightPanel.getByText(/workflowId|Start workflow/i).first(),
-    ).toBeVisible({ timeout: 15_000 });
-
-    // Open GET_WORKFLOW task right panel.
-    await page.getByText("get_child_ref").first().click();
-    await expect(rightPanel).toBeVisible({ timeout: 15_000 });
-
-    await expect(rightPanel.getByText("Task type").first()).toBeVisible();
-    await expect(rightPanel.getByText("GET_WORKFLOW").first()).toBeVisible();
-
-    // Output tab: child workflow status (COMPLETED) is present.
-    await rightPanel.getByRole("tab", { name: "Output" }).click();
-    await expect(
-      rightPanel.getByText(/COMPLETED|status/i).first(),
     ).toBeVisible({ timeout: 15_000 });
   });
 });

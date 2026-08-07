@@ -86,7 +86,11 @@ async function openExecutionsSearch(
  */
 async function startAndFindExecution(page: import("@playwright/test").Page) {
   const workflowId = (
-    await startWorkflow(WF_NAME, { value: "test" }, { correlationId: CORRELATION_ID })
+    await startWorkflow(
+      WF_NAME,
+      { value: "test" },
+      { correlationId: CORRELATION_ID },
+    )
   ).trim();
   startedWorkflowIds.push(workflowId);
 
@@ -343,7 +347,11 @@ test("task list — clicking task ID opens right panel with task metadata", asyn
     timeout: 15_000,
   });
   const taskJsonContainsId = await page.evaluate(() => {
-    const monaco = (window as { monaco?: { editor: { getModels(): Array<{ getValue(): string }> } } }).monaco;
+    const monaco = (
+      window as {
+        monaco?: { editor: { getModels(): Array<{ getValue(): string }> } };
+      }
+    ).monaco;
     return (
       monaco?.editor
         .getModels()
@@ -382,9 +390,7 @@ test("execution deep-link with taskId opens the task panel", async ({
   await expect(rightPanel.getByText("set_var_ref").first()).toBeVisible({
     timeout: 15_000,
   });
-  await expect(
-    rightPanel.getByText("Task reference").first(),
-  ).toBeVisible();
+  await expect(rightPanel.getByText("Task reference").first()).toBeVisible();
   await expect(rightPanel.getByText("set_var_ref").first()).toBeVisible();
 
   // The full taskId from the URL should appear in the panel header.
@@ -405,9 +411,7 @@ test("executions page renders the search form and workflow name filter", async (
   await expect(page.locator("#main-content input").first()).toBeVisible();
 
   // The URL filter param is reflected in the workflow-type input.
-  await page.goto(
-    `/executions?workflowType=${encodeURIComponent(WF_NAME)}`,
-  );
+  await page.goto(`/executions?workflowType=${encodeURIComponent(WF_NAME)}`);
   await page.waitForLoadState("networkidle");
   await expect(
     page.locator("#main-content input[value]").filter({ hasText: "" }).first(),
