@@ -1,4 +1,4 @@
-site_name: Durable Execution for workflows and agents
+site_name: Durable execution for workflows and agents
 site_description: Conductor is an open-source durable code execution engine and agentic workflow engine. Orchestrate distributed workflows with saga pattern compensation, at-least-once task delivery, and polyglot workers in Java, Python, Go, and more.
 repo_url: https://github.com/conductor-oss/conductor
 site_url: https://conductor-oss.github.io/conductor
