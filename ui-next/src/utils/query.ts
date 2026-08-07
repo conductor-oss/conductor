@@ -799,9 +799,6 @@ export const useAPIReleaseVersion = ({
         }
         return failureCount - 2 > 0;
       },
-      onSuccess: (data: string) => {
-        localStorage.setItem("version", data);
-      },
       ...option,
     },
   );
