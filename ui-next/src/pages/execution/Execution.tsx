@@ -708,7 +708,9 @@ export default function Execution() {
                 </Stack>
               }
               breadcrumbItems={[
-                { label: "Workflow Executions", to: "/executions" },
+                isAgentExecution
+                  ? { label: "Agent Executions", to: AGENT_EXECUTIONS_URL.BASE }
+                  : { label: "Workflow Executions", to: "/executions" },
                 {
                   label: execution.workflowId || "",
                   to: "",
