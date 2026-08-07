@@ -82,7 +82,7 @@ export function SidebarVersionBlock({
               sx={{ justifyContent: "center" }}
             >
               <Typography fontSize="12px" color={theme.palette.text.secondary}>
-                {`${conductorVersion ?? "unknown"} | ${uiVersion}`}
+                {`${conductorVersion ?? "Unknown"} | ${uiVersion}`}
               </Typography>
             </ClipboardCopy>
           )}
