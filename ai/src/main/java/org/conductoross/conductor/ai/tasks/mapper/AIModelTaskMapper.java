@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.tasks.mapper;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -179,5 +180,44 @@ public abstract class AIModelTaskMapper<T extends LLMWorkerInput> implements Tas
                 return;
             }
         }
+    }
+
+    /**
+     * Preserves the chat input assembled during initial task mapping when the task is retried.
+     *
+     * <p>A retry copies the previous task input and then resolves the workflow task's input
+     * parameters again. That would replace the assembled conversation and tools with their original
+     * definitions. Removing those parameters from the task's private copy of the definition
+     * prevents that overwrite.
+     *
+     * <p>The workflow task is copied first because its original definition may be shared by later
+     * retries or other tasks in the workflow.
+     *
+     * <p>This method is best-effort: if the copy fails, the original definition is left intact and
+     * a retry will lose the assembled input.
+     */
+    protected void preserveAssembledChatInputOnRetry(TaskModel task, String... assembledKeys) {
+        WorkflowTask sharedDefinition = task.getWorkflowTask();
+        if (sharedDefinition == null || sharedDefinition.getInputParameters() == null) {
+            return;
+        }
+        WorkflowTask taskOwnedDefinition;
+        try {
+            taskOwnedDefinition = objectMapper.convertValue(sharedDefinition, WorkflowTask.class);
+        } catch (IllegalArgumentException e) {
+            log.warn(
+                    "Could not copy the task definition for {} — a retry of this task would fall back"
+                            + " to the static template",
+                    task.getTaskId(),
+                    e);
+            return;
+        }
+        Map<String, Object> inputParameters =
+                new HashMap<>(taskOwnedDefinition.getInputParameters());
+        for (String key : assembledKeys) {
+            inputParameters.remove(key);
+        }
+        taskOwnedDefinition.setInputParameters(inputParameters);
+        task.setWorkflowTask(taskOwnedDefinition);
     }
 }

@@ -94,6 +94,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             // calls, and sub-workflow context are still preserved in both cases.
             getHistory(workflowModel, taskModel, chatCompletion);
             updateTaskModel(chatCompletion, taskModel);
+            preserveAssembledChatInputOnRetry(taskModel, "messages", "tools");
 
         } catch (Exception e) {
             if (e instanceof TerminateWorkflowException) {
