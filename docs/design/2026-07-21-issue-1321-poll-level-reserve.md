@@ -158,10 +158,12 @@ and is the price of not letting repair fight in-flight tasks.
   This is safe while a queue's semaphore permits equal its pool threads
   (`ExecutionConfig`): a popped id always has a free thread, so it reserves within
   milliseconds — far inside the default unack timeout. If a future change decouples
-  in-flight permits from thread count (e.g. a per-type `permitCount`, PR #1204), a
-  popped id could queue behind busy threads and the pre-reserve gap could exceed the
-  unack timeout → redelivery → the very duplicate this fixes. In that case, reserve on
-  the poller thread immediately after `pop` instead of in the executor.
+  in-flight permits from thread count, a popped id could queue behind busy threads and
+  the pre-reserve gap could exceed the unack timeout → redelivery → the very duplicate
+  this fixes. (PR #1204 originally proposed a per-type `permitCount` doing exactly this;
+  it was dropped in favor of a single `threadCount` knob partly for this reason.) If it
+  is ever reintroduced, reserve on the poller thread immediately after `pop` instead of
+  in the executor.
 - **Extra persistence on the schedule path.** Persisting `startTime` before `start()`
   adds one `executionDAOFacade.updateTask` (and its index write) per async system task,
   **once per task** (only on the first, `SCHEDULED` invocation — not per callback).

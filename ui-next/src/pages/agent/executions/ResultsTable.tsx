@@ -338,8 +338,8 @@ export default function ResultsTable({
         />
       )}
       <DataTable
-        expandableRows={!hideSubWorkflows}
-        expandOnRowClicked={!hideSubWorkflows}
+        expandableRows
+        expandOnRowClicked
         expandableRowsComponent={({ data: row }: { data: any }) => {
           const wfId = row.workflowId;
           if (!subAgentCache[wfId]) {

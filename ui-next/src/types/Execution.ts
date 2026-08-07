@@ -109,6 +109,11 @@ export interface WorkflowExecution {
   event?: string;
   variables?: Record<string, unknown>;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
+  aggregateTokenUsage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 export interface DetailedTime {
