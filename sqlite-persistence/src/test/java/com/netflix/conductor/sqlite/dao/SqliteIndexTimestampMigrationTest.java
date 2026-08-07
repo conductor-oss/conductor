@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
  *
  * <p>Like {@link SqliteIndexDAOTest}, this is only a meaningful regression test when the JVM's
  * default zone is not UTC, which is why {@code sqlite-persistence/build.gradle} pins the {@code
- * test} task to {@code TZ=America/Asuncion}.
+ * test} task to {@code TZ=America/Los_Angeles}.
  */
 public class SqliteIndexTimestampMigrationTest {
 
