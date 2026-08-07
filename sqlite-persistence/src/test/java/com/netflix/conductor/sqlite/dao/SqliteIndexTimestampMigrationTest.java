@@ -21,10 +21,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 
 import org.junit.After;
 import org.junit.Before;
@@ -38,25 +34,25 @@ import static org.junit.Assert.assertTrue;
  * local-time text (JVM default zone), while searches bound their range in UTC. The shipped V6
  * migration rewrites existing rows to the canonical UTC text so old and new rows compare correctly.
  *
- * <p>This test reads the real migration file off the classpath -- rather than pasting the SQL -- so
- * it exercises the artifact that actually ships. It requires {@code
- * db/migration_sqlite/V6__index_timestamps_to_utc.sql} to exist on the test classpath; if the
- * migration hasn't been added yet, {@link #readMigrationSql()} fails every test in this class with
- * an explicit "migration file not found" message.
+ * <p>The migration rebuilds those columns from {@code json_data}, which already holds the
+ * authoritative instant as an ISO-8601 string. It therefore never interprets the local-time text
+ * and never consults a tz database, so every expectation here is an absolute constant and these
+ * tests are deterministic in any host zone -- unlike {@link SqliteIndexDAOTest}, which exercises
+ * the write and search paths and does need a non-UTC zone to be meaningful.
  *
- * <p>Like {@link SqliteIndexDAOTest}, this is only a meaningful regression test when the JVM's
- * default zone is not UTC, which is why {@code sqlite-persistence/build.gradle} pins the {@code
- * test} task to {@code TZ=America/Los_Angeles}.
+ * <p>This test reads the real migration file off the classpath -- rather than pasting the SQL -- so
+ * it exercises the artifact that actually ships.
  */
 public class SqliteIndexTimestampMigrationTest {
 
     private static final String MIGRATION_RESOURCE =
             "db/migration_sqlite/V6__index_timestamps_to_utc.sql";
 
-    private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
-    private static final DateTimeFormatter LOCAL_NAIVE =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    /** The authoritative instant, as SqliteIndexDAO writes it into json_data. */
+    private static final String TRUTH_ISO = "2026-08-07T03:17:36.285Z";
+
+    /** The canonical UTC text the migration must produce for {@link #TRUTH_ISO}. */
+    private static final String TRUTH_CANONICAL = "2026-08-07 03:17:36.285";
 
     private Path dbFile;
     private Connection connection;
@@ -134,105 +130,161 @@ public class SqliteIndexTimestampMigrationTest {
         }
     }
 
-    /** What the pre-fix SqliteIndexDAO wrote: Timestamp.toString() text in the JVM default zone. */
-    private static String localNaive(LocalDateTime localDateTime) {
-        return LOCAL_NAIVE.format(localDateTime);
+    private void insertWorkflow(String id, String storedTime, String json) throws Exception {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(
+                    "INSERT INTO workflow_index (workflow_id, workflow_type, start_time, update_time, status, json_data) VALUES ('"
+                            + id
+                            + "', 'wf-type', '"
+                            + storedTime
+                            + "', '"
+                            + storedTime
+                            + "', 'COMPLETED', '"
+                            + json
+                            + "')");
+        }
     }
 
-    /** The canonical UTC text the migration is expected to produce for a given local instant. */
-    private static String expectedUtc(LocalDateTime localDateTime) {
-        return SQLITE_UTC_TIMESTAMP.format(
-                localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    private String[] readTimes(String table, String idColumn, String id) throws Exception {
+        try (Statement statement = connection.createStatement();
+                ResultSet rs =
+                        statement.executeQuery(
+                                "SELECT start_time, update_time FROM "
+                                        + table
+                                        + " WHERE "
+                                        + idColumn
+                                        + " = '"
+                                        + id
+                                        + "'")) {
+            assertTrue("Expected exactly one row", rs.next());
+            return new String[] {rs.getString("start_time"), rs.getString("update_time")};
+        }
+    }
+
+    private static String json(String startTime, String updateTime) {
+        return "{\"startTime\":\"" + startTime + "\",\"updateTime\":\"" + updateTime + "\"}";
     }
 
     @Test
     public void rewritesWorkflowIndexLocalTimeToUtc() throws Exception {
-        LocalDateTime local = LocalDateTime.of(2023, 2, 7, 8, 42, 45, 0);
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(
-                    "INSERT INTO workflow_index (workflow_id, workflow_type, start_time, update_time, status, json_data) VALUES "
-                            + "('wf-1', 'wf-type', '"
-                            + localNaive(local)
-                            + "', '"
-                            + localNaive(local)
-                            + "', 'COMPLETED', '{}')");
-        }
+        // '2026-08-06 23:17:36.285' is the same instant rendered at -04:00, i.e. what the pre-fix
+        // write path stored on a JVM whose default zone is four hours behind UTC.
+        insertWorkflow("wf-1", "2026-08-06 23:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
 
         runMigration();
 
-        try (Statement statement = connection.createStatement();
-                ResultSet rs =
-                        statement.executeQuery(
-                                "SELECT start_time, update_time FROM workflow_index WHERE workflow_id = 'wf-1'")) {
-            assertTrue("Expected exactly one row", rs.next());
-            assertEquals(
-                    "start_time should be rewritten to canonical UTC text",
-                    expectedUtc(local),
-                    rs.getString("start_time"));
-            assertEquals(
-                    "update_time should be rewritten to canonical UTC text",
-                    expectedUtc(local),
-                    rs.getString("update_time"));
-        }
+        String[] times = readTimes("workflow_index", "workflow_id", "wf-1");
+        assertEquals("start_time should be rebuilt from json_data", TRUTH_CANONICAL, times[0]);
+        assertEquals("update_time should be rebuilt from json_data", TRUTH_CANONICAL, times[1]);
     }
 
     @Test
     public void rewritesTaskIndexLocalTimeToUtc() throws Exception {
-        LocalDateTime local = LocalDateTime.of(2023, 2, 7, 9, 41, 45, 0);
         try (Statement statement = connection.createStatement()) {
             statement.execute(
                     "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, update_time, workflow_type, json_data) VALUES "
-                            + "('task-1', 'task-type', 'task-def', 'COMPLETED', '"
-                            + localNaive(local)
-                            + "', '"
-                            + localNaive(local)
-                            + "', 'wf-type', '{}')");
+                            + "('task-1', 'task-type', 'task-def', 'COMPLETED', '2026-08-06 23:17:36.285', '2026-08-06 23:17:36.285', 'wf-type', '"
+                            + json(TRUTH_ISO, TRUTH_ISO)
+                            + "')");
         }
 
         runMigration();
 
-        try (Statement statement = connection.createStatement();
-                ResultSet rs =
-                        statement.executeQuery(
-                                "SELECT start_time, update_time FROM task_index WHERE task_id = 'task-1'")) {
-            assertTrue("Expected exactly one row", rs.next());
-            assertEquals(
-                    "start_time should be rewritten to canonical UTC text",
-                    expectedUtc(local),
-                    rs.getString("start_time"));
-            assertEquals(
-                    "update_time should be rewritten to canonical UTC text",
-                    expectedUtc(local),
-                    rs.getString("update_time"));
-        }
+        String[] times = readTimes("task_index", "task_id", "task-1");
+        assertEquals("start_time should be rebuilt from json_data", TRUTH_CANONICAL, times[0]);
+        assertEquals("update_time should be rebuilt from json_data", TRUTH_CANONICAL, times[1]);
     }
 
+    /**
+     * The reason this migration reads json_data instead of reinterpreting the stored local text.
+     *
+     * <p>The bad values were rendered against the JVM's bundled tz database; any SQL that converts
+     * them back has to use the host's. Those disagree whenever the JVM's tzdata is older --
+     * observed on JDK 21 (tzdata 2023c) on macOS (tzdata 2026c), where Paraguay's 2024b switch to
+     * permanent UTC-3 left the JVM writing America/Asuncion at -04:00 and SQLite reading it at
+     * -03:00, so every row came out an hour short. Rebuilding from json_data is exact under any
+     * such skew.
+     */
     @Test
-    public void malformedValueSurvivesUntouched() throws Exception {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(
-                    "INSERT INTO workflow_index (workflow_id, workflow_type, start_time, update_time, status, json_data) VALUES "
-                            + "('wf-malformed', 'wf-type', 'not-a-timestamp', 'not-a-timestamp', 'COMPLETED', '{}')");
-        }
+    public void repairsRowsWrittenUnderTzdataSkew() throws Exception {
+        insertWorkflow("wf-skew", "2026-08-06 23:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
+        // A row an earlier 'utc'-modifier migration already shifted by the wrong amount: the
+        // rebuild is absolute, so it lands on the truth regardless of what the column held.
+        insertWorkflow("wf-half-fixed", "2026-08-07 02:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
 
         runMigration();
 
-        try (Statement statement = connection.createStatement();
-                ResultSet rs =
-                        statement.executeQuery(
-                                "SELECT start_time, update_time FROM workflow_index WHERE workflow_id = 'wf-malformed'")) {
-            assertTrue("Expected exactly one row", rs.next());
-            assertEquals(
-                    "COALESCE guard should leave an unparseable value untouched rather than"
-                            + " nulling the NOT NULL column",
-                    "not-a-timestamp",
-                    rs.getString("start_time"));
-            assertEquals(
-                    "COALESCE guard should leave an unparseable value untouched rather than"
-                            + " nulling the NOT NULL column",
-                    "not-a-timestamp",
-                    rs.getString("update_time"));
-        }
+        assertEquals(TRUTH_CANONICAL, readTimes("workflow_index", "workflow_id", "wf-skew")[0]);
+        assertEquals(
+                "a row left wrong by an earlier migration attempt should be repaired, not shifted"
+                        + " again",
+                TRUTH_CANONICAL,
+                readTimes("workflow_index", "workflow_id", "wf-half-fixed")[0]);
+    }
+
+    /** Running the migration twice must not move a row that is already correct. */
+    @Test
+    public void isIdempotent() throws Exception {
+        insertWorkflow("wf-twice", "2026-08-06 23:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
+
+        runMigration();
+        runMigration();
+
+        assertEquals(TRUTH_CANONICAL, readTimes("workflow_index", "workflow_id", "wf-twice")[0]);
+    }
+
+    /** ISO_INSTANT omits the fraction when the instant lands on a whole second. */
+    @Test
+    public void handlesInstantsWithoutAFractionalPart() throws Exception {
+        insertWorkflow(
+                "wf-no-millis",
+                "2026-08-06 23:17:36.0",
+                json("2026-08-07T03:17:36Z", "2026-08-07T03:17:36Z"));
+
+        runMigration();
+
+        assertEquals(
+                "a whole-second instant should still be padded to three fractional digits",
+                "2026-08-07 03:17:36.000",
+                readTimes("workflow_index", "workflow_id", "wf-no-millis")[0]);
+    }
+
+    /**
+     * json_extract() raises "malformed JSON" and aborts the whole statement, so without the
+     * json_valid() guard one bad row would fail the migration and stop the server booting.
+     */
+    @Test
+    public void malformedJsonDoesNotAbortTheMigration() throws Exception {
+        insertWorkflow("wf-bad-json", "2026-08-06 23:17:36.285", "not json at all");
+        insertWorkflow("wf-good", "2026-08-06 23:17:36.285", json(TRUTH_ISO, TRUTH_ISO));
+
+        runMigration();
+
+        assertEquals(
+                "the row with unreadable json_data should keep its existing value",
+                "2026-08-06 23:17:36.285",
+                readTimes("workflow_index", "workflow_id", "wf-bad-json")[0]);
+        assertEquals(
+                "a valid row alongside it should still be migrated",
+                TRUTH_CANONICAL,
+                readTimes("workflow_index", "workflow_id", "wf-good")[0]);
+    }
+
+    /** Valid JSON that simply lacks the field yields NULL, which COALESCE must absorb. */
+    @Test
+    public void missingJsonFieldLeavesTheColumnUntouched() throws Exception {
+        insertWorkflow(
+                "wf-no-field", "2026-08-06 23:17:36.285", "{\"workflowId\":\"wf-no-field\"}");
+
+        runMigration();
+
+        String[] times = readTimes("workflow_index", "workflow_id", "wf-no-field");
+        assertEquals(
+                "COALESCE guard should leave the value untouched rather than nulling a NOT NULL"
+                        + " column",
+                "2026-08-06 23:17:36.285",
+                times[0]);
+        assertEquals("2026-08-06 23:17:36.285", times[1]);
     }
 
     @Test
