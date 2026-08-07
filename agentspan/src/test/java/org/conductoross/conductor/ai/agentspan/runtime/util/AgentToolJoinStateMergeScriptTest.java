@@ -94,11 +94,12 @@ class AgentToolJoinStateMergeScriptTest {
     private Map<String, Object> evaluate(Map<String, Object> inputs) throws Exception {
         try (Context context = Context.newBuilder("js").allowAllAccess(true).build()) {
             context.getBindings("js").putMember("inputsJson", MAPPER.writeValueAsString(inputs));
-            context.eval("js", "var $ = JSON.parse(inputsJson);");
             String result =
                     context.eval(
                                     "js",
-                                    "JSON.stringify(" + JavaScriptBuilder.stateMergeScript() + ");")
+                                    "(function($) { return JSON.stringify("
+                                            + JavaScriptBuilder.stateMergeScript()
+                                            + "); })(JSON.parse(inputsJson));")
                             .asString();
             return MAPPER.readValue(result, Map.class);
         }
