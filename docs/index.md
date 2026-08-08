@@ -37,7 +37,6 @@ description: Conductor is an open-source platform for building production-grade 
 <div class="home-section home-section--alt">
   <div class="section-header-inline">
     <h2>Code in any language</h2>
-    <p class="home-section-sub">Conductor orchestrates across languages and services instead of forcing workflow logic into a single application runtime</p>
   </div>
   <div class="home-sdk-grid">
     <a class="home-sdk-card" href="documentation/clientsdks/python-sdk.html">
