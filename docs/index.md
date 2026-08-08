@@ -123,15 +123,9 @@ description: Conductor is an open-source platform for building production-grade 
 
 <div class="home-section home-section--alt">
   <div class="section-header-inline">
-    <h2>Conductor Resources</h2>
+    <h2>More Resources</h2>
   </div>
-  <div class="integration-action-grid integration-action-grid--four">
-    <a class="integration-action-card" href="quickstart/index.html">
-      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
-      <span class="integration-action-card__title">Documentation</span>
-      <span>Documentation curated to enable developers to start building using Conductor.</span>
-      <span class="home-card-cta">Read docs &rarr;</span>
-    </a>
+  <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="https://orkes.io/blog">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span>
       <span class="integration-action-card__title">Blogs</span>
