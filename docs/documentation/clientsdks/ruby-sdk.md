@@ -303,7 +303,7 @@ workflow = Conductor.workflow :ai_assistant, executor: executor do
   # Generate image
   generate_image :create_image,
     provider: 'openai',
-    model: 'dall-e-3',
+    model: 'gpt-image-1',
     prompt: 'A sunset over mountains',
     size: '1024x1024'
 
