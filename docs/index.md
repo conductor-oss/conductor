@@ -9,7 +9,7 @@ description: Conductor is an open-source platform for building production-grade 
 
 <div class="hero">
   <div class="hero-badge">Apache 2.0 Licensed &middot; Originally created at Netflix</div>
-  <h1 class="hero-title">Build production-grade<br/>AI Agents and Workflows</h1>
+  <h1 class="hero-title">Build production-grade<br/>AI agents and workflows</h1>
   <p class="hero-subtitle">Open sourced by Netflix Engineering, and built for performance and scale. Cloud, language, and deployment agnostic.</p>
   <p class="hero-subtitle">Build native workflows and agents, or bring your own agents from any framework.</p>
   <div class="hero-actions">
