@@ -79,7 +79,7 @@ description: Conductor is an open-source platform for building production-grade 
 
 <div class="home-section">
   <div class="section-header-inline">
-    <h2>Get Started</h2>
+    <h2>Get started</h2>
   </div>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="quickstart/index.html">
@@ -123,7 +123,7 @@ description: Conductor is an open-source platform for building production-grade 
 
 <div class="home-section home-section--alt">
   <div class="section-header-inline">
-    <h2>More Resources</h2>
+    <h2>More resources</h2>
   </div>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="https://orkes.io/blog">
@@ -149,7 +149,7 @@ description: Conductor is an open-source platform for building production-grade 
 
 <div class="home-section">
   <div class="section-header-inline">
-    <h2>Join the Community</h2>
+    <h2>Join the community</h2>
   </div>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA">
