@@ -1,12 +1,12 @@
 ---
-description: "Conductor Skills — teach your AI coding agent to create, run, monitor, and manage Conductor workflows. Works with Claude Code, Cursor, Copilot, Gemini CLI, and more."
+description: "Conductor Skills teach your AI coding agent to create, run, monitor, and manage Conductor workflows. Works with Claude Code, Cursor, Copilot, Gemini CLI, and more."
 ---
 
 # Build with Your AI Coding Agent
 
-**Time:** about 2 minutes to install; your agent does the rest.
+**Time:** about 2 minutes to install; your agent does the rest!
 
-Conductor Skills teaches your AI coding agent to create, run, monitor, and manage Conductor workflows. Instead of writing JSON definitions and CLI commands by hand, describe what you want in natural language and your agent builds it for you — complete workflows, workers, error handling, and monitoring.
+[Conductor Skills](https://github.com/conductor-oss/conductor-skills) teaches your AI coding agent to create, run, monitor, and manage Conductor workflows. Instead of writing JSON definitions and CLI commands by hand, describe what you want in natural language and your agent builds it for you — complete workflows, workers, error handling, and monitoring.
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
@@ -21,11 +21,11 @@ npm install -g @conductor-oss/conductor-cli
 conductor server start
 ```
 
-Or use a free hosted server — [Connect to Conductor](../../quickstart/connect.md) covers the Developer Edition path and credentials.
+You can also use the free hosted [Developer Edition](https://developer.orkescloud.com/). See [Connect to Conductor](../../quickstart/connect.md).
 
 ## Install
 
-One command installs for all detected agents on your system:
+One command detects the AI coding agents installed on your machine and installs Conductor Skills for each of them:
 
 === "macOS / Linux"
 
@@ -39,7 +39,7 @@ One command installs for all detected agents on your system:
     irm https://conductor-oss.github.io/conductor-skills/install.ps1 -OutFile install.ps1; .\install.ps1 -All
     ```
 
-To install for a specific agent only:
+To install for a single agent, pass its flag with `--agent` — for example, Claude Code:
 
 ```bash
 curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s -- --agent claude
