@@ -1,6 +1,6 @@
 {
   "name": "image_to_video_pipeline",
-  "description": "A two-step creative pipeline: generates a still image with DALL-E, then creates a video continuation using OpenAI Sora with a prompt inspired by the scene.",
+  "description": "A two-step creative pipeline: generates a still image with gpt-image-1, then creates a video continuation using OpenAI Sora with a prompt inspired by the scene.",
   "version": 1,
   "schemaVersion": 2,
   "tasks": [
@@ -10,7 +10,7 @@
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water, photorealistic, wide landscape",
         "width": 1792,
         "height": 1024,
