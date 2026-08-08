@@ -1265,7 +1265,7 @@ body {
 }
 .home-skills-line {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 32px;
   font-size: 0.95rem;
   color: var(--home-slate);
 }
