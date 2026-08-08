@@ -88,6 +88,12 @@ description: Conductor is an open-source platform for building production-grade 
       <span>Run conductor locally, register workflows and agents, and execute it end-to-end.</span>
       <span class="home-card-cta">Start here &rarr;</span>
     </a>
+    <a class="integration-action-card" href="https://developer.orkescloud.com/">
+      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-.4-9A7 7 0 1 0 4 14.9"/><path d="M12 12v9"/><path d="m8 17 4-4 4 4"/></svg></span>
+      <span class="integration-action-card__title">Free Orkes Conductor Developer Edition</span>
+      <span>Get started with a free hosted version of Conductor.</span>
+      <span class="home-card-cta">Start for free &rarr;</span>
+    </a>
     <a class="integration-action-card" href="quickstart/connect.html">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2.2-.7-3 .8Z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A12.7 12.7 0 0 1 21.5 2.5c0 2.7-.8 7.5-5.6 10.5a22.4 22.4 0 0 1-3.9 2Z"/><path d="M9 12H4s.5-3 2-4c1.6-1.1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1.1-1.6 0-5 0-5"/></svg></span>
       <span class="integration-action-card__title">Deploy Conductor in minutes</span>
@@ -99,12 +105,6 @@ description: Conductor is an open-source platform for building production-grade 
       <span class="integration-action-card__title">Download Conductor OSS</span>
       <span>Download and install the latest release from the official GitHub repo.</span>
       <span class="home-card-cta">Install Conductor &rarr;</span>
-    </a>
-    <a class="integration-action-card" href="https://developer.orkescloud.com/">
-      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-.4-9A7 7 0 1 0 4 14.9"/><path d="M12 12v9"/><path d="m8 17 4-4 4 4"/></svg></span>
-      <span class="integration-action-card__title">Free Orkes Conductor Developer Edition</span>
-      <span>Get started with a free hosted version of Conductor.</span>
-      <span class="home-card-cta">Start for free &rarr;</span>
     </a>
     <a class="integration-action-card" href="devguide/running/deploy.html">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></span>
