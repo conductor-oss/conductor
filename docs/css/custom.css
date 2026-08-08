@@ -1264,9 +1264,9 @@ body {
   color: var(--home-navy) !important;
   font-weight: 600;
 }
-.home-skills-line {
+.home-wrapper .home-skills-line {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 40px;
   font-size: 0.95rem;
   color: var(--home-slate);
 }
