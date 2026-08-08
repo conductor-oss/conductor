@@ -1233,6 +1233,7 @@ body {
   line-height: 1.6;
 }
 .home-wrapper .hero-subtitle strong { color: var(--home-navy); }
+.home-wrapper .hero-subtitle + .hero-subtitle { margin-top: 22px; }
 .home-wrapper .hero-actions {
   display: flex;
   justify-content: center;
@@ -1265,7 +1266,7 @@ body {
 }
 .home-skills-line {
   text-align: center;
-  margin-top: 32px;
+  margin-top: 16px;
   font-size: 0.95rem;
   color: var(--home-slate);
 }
