@@ -19,7 +19,7 @@ The workflow has a single task of type `SIMPLE`, which means the work is done by
 Two rules follow from this design:
 
 - The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
-- Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Make them idempotent: task delivery is at least once, so a task can be handed to a worker again after a failure or timeout.
+- Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Conductor guarantees at-least-once delivery, meaning the same task can be delivered again after a failure or timeout — so write workers to be idempotent, where running the same task twice produces the same result.
 
 ## Language-specific quickstart
 
