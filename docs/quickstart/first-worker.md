@@ -450,7 +450,7 @@ See the maintained [Rust SDK quickstart](https://github.com/conductor-oss/rust-s
 
 ## Verify and recover
 
-In the Conductor UI, open the `greetings` execution and inspect the completed `greet_ref` task. Its output should include `result: Hello Conductor`.
+Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Search for `greetings`, click the newest execution, then select the `greet_ref` task in the timeline. Its output should include `result: Hello Conductor`.
 
 - If `greet_ref` remains `SCHEDULED`, the worker is not polling the `greet` task type. Confirm the worker is running and that the worker task type is exactly `greet`.
 - If workflow registration says the definition already exists, use a new version or update the local test definition before running it again.
@@ -464,7 +464,7 @@ Durability means the execution outlives your process. The quickstart app exits a
 conductor workflow start -w greetings -i '{"name":"Conductor"}'
 ```
 
-Open the execution in the UI: the workflow is `RUNNING` and `greet_ref` stays `SCHEDULED` — durably queued, not lost. Now run your quickstart app again. The moment the worker polls, the waiting task completes and the execution finishes with `result: Hello Conductor`.
+Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Click the newest `greetings` execution: the workflow is `RUNNING` and `greet_ref` stays `SCHEDULED` — durably queued, not lost. Now run your quickstart app again. The moment the worker polls, the waiting task completes and the execution finishes with `result: Hello Conductor`.
 
 ## Keep learning
 

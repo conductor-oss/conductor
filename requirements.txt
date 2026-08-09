@@ -1,3 +1,0 @@
-mkdocs
-mkdocs-material
-mkdocs-macros-plugin
