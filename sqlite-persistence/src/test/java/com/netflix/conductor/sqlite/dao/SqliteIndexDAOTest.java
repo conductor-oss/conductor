@@ -15,10 +15,9 @@ package com.netflix.conductor.sqlite.dao;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -70,6 +69,11 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class SqliteIndexDAOTest {
+
+    // Canonical UTC text format the index columns are stored in (issue #1497). Byte-identical to
+    // SQLite's strftime('%Y-%m-%d %H:%M:%f', ...), independent of the JVM/host default zone.
+    private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
     @Autowired private SqliteIndexDAO indexDAO;
 
@@ -158,10 +162,11 @@ public class SqliteIndexDAOTest {
                 "Workflow type does not match",
                 wfs.getWorkflowType(),
                 result.get(0).get("workflow_type"));
-        TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(wfs.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(ta));
+        Instant startInstant =
+                Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getStartTime()));
+        String expectedStartTime = SQLITE_UTC_TIMESTAMP.format(startInstant);
         assertEquals(
-                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
+                "Start time does not match", expectedStartTime, result.get(0).get("start_time"));
         assertEquals(
                 "Status does not match", wfs.getStatus().toString(), result.get(0).get("status"));
     }
@@ -186,16 +191,15 @@ public class SqliteIndexDAOTest {
                 "Task def name does not match",
                 ts.getTaskDefName(),
                 result.get(0).get("task_def_name"));
-        TemporalAccessor startTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(startTa));
+        Instant startInstant = Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getStartTime()));
+        String expectedStartTime = SQLITE_UTC_TIMESTAMP.format(startInstant);
         assertEquals(
-                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
-        TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getUpdateTime());
-        Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
+                "Start time does not match", expectedStartTime, result.get(0).get("start_time"));
+        Instant updateInstant =
+                Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getUpdateTime()));
+        String expectedUpdateTime = SQLITE_UTC_TIMESTAMP.format(updateInstant);
         assertEquals(
-                "Update time does not match",
-                updateTime.toString(),
-                result.get(0).get("update_time"));
+                "Update time does not match", expectedUpdateTime, result.get(0).get("update_time"));
         assertEquals(
                 "Status does not match", ts.getStatus().toString(), result.get(0).get("status"));
         assertEquals(
@@ -364,6 +368,50 @@ public class SqliteIndexDAOTest {
                 "Wrong workflow returned",
                 wfs.getWorkflowId(),
                 results.getResults().get(0).getWorkflowId());
+    }
+
+    // Issue #1497 regression: on a negative-UTC-offset host, start_time was written in the JVM's
+    // default zone but the search bound was rendered in UTC. A workflow started "now" was
+    // therefore invisible to a search bound anchored an hour in the past. This test only proves
+    // anything when the JVM zone differs from UTC, hence the TZ env set on the `test` task in
+    // sqlite-persistence/build.gradle.
+    @Test
+    public void searchesFindWorkflowsIndexedInANonUtcZone() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-non-utc-zone");
+        Instant now = Instant.now();
+        wfs.setStartTime(DateTimeFormatter.ISO_INSTANT.format(now));
+        wfs.setUpdateTime(DateTimeFormatter.ISO_INSTANT.format(now));
+
+        indexDAO.indexWorkflow(wfs);
+
+        long oneHourAgoMillis = now.minusSeconds(3600).toEpochMilli();
+        String query = String.format("startTime>%d", oneHourAgoMillis);
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Workflow indexed 'now' should be found by a search bound one hour in the past",
+                1,
+                results.getResults().size());
+    }
+
+    // Issue #1497 regression, task-side. See searchesFindWorkflowsIndexedInANonUtcZone above.
+    @Test
+    public void searchesFindTasksIndexedInANonUtcZone() {
+        TaskSummary ts = getMockTaskSummary("task-id-non-utc-zone");
+        Instant now = Instant.now();
+        ts.setStartTime(DateTimeFormatter.ISO_INSTANT.format(now));
+        ts.setUpdateTime(DateTimeFormatter.ISO_INSTANT.format(now));
+
+        indexDAO.indexTask(ts);
+
+        long oneHourAgoMillis = now.minusSeconds(3600).toEpochMilli();
+        String query = String.format("startTime>%d", oneHourAgoMillis);
+        SearchResult<TaskSummary> results =
+                indexDAO.searchTaskSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Task indexed 'now' should be found by a search bound one hour in the past",
+                1,
+                results.getResults().size());
     }
 
     @Test
