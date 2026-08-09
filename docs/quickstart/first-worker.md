@@ -21,6 +21,51 @@ Two rules follow from this design:
 - The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
 - Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Conductor guarantees at-least-once delivery, meaning the same task can be delivered again after a failure or timeout — so write workers to be idempotent, where running the same task twice produces the same result.
 
+<svg viewBox="0 0 760 290" role="img" aria-label="Diagram: Conductor queues the greet task by task type; your worker polls the queue, runs business logic, and reports the result back; Conductor persists it and advances the workflow" style="max-width:760px;width:100%;height:auto;display:block;margin:18px auto;font-family:inherit;">
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Conductor server box (hand-drawn) -->
+    <path d="M24 42 q110 -5 218 2 q6 1 5 9 l-2 160 q0 8 -8 8 q-104 5 -206 -2 q-8 -1 -8 -9 l-1 -159 q0 -8 2 -9 z"/>
+    <!-- workflow pill -->
+    <path d="M46 84 q80 -3 158 1 q5 0 5 6 l-1 22 q0 6 -6 6 q-76 3 -152 -1 q-6 0 -6 -6 l0 -22 q0 -6 2 -6 z"/>
+    <!-- task pill -->
+    <path d="M46 138 q80 -4 158 1 q5 0 5 6 l-1 22 q0 6 -6 6 q-76 3 -152 -1 q-6 0 -6 -6 l1 -22 q0 -6 1 -6 z"/>
+    <!-- queue: three stacked slots -->
+    <path d="M318 96 q60 -3 118 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-56 2 -112 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
+    <path d="M322 130 q58 -3 112 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-54 2 -106 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
+    <path d="M326 164 q54 -3 104 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-50 2 -98 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
+    <!-- worker box -->
+    <path d="M520 60 q106 -5 212 2 q6 1 5 9 l-2 130 q0 8 -8 8 q-100 5 -200 -2 q-8 -1 -8 -9 l0 -129 q0 -8 1 -9 z"/>
+  </g>
+  <g fill="none" stroke="#1976d2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- server -> queue arrow -->
+    <path d="M252 118 q30 -6 60 -1"/>
+    <path d="M304 112 l9 5 -10 4"/>
+    <!-- worker -> queue arrow (polls) -->
+    <path d="M516 128 q-30 6 -62 2"/>
+    <path d="M463 125 l-10 5 11 4"/>
+    <!-- worker -> server return arrow (result) -->
+    <path d="M560 212 q-180 52 -320 8"/>
+    <path d="M250 226 l-11 -7 13 -3"/>
+  </g>
+  <g fill="currentColor" font-size="15">
+    <text x="44" y="70" font-weight="700">Conductor server</text>
+    <text x="58" y="103">greetings workflow</text>
+    <text x="60" y="157">greet task (SIMPLE)</text>
+    <text x="36" y="196" font-size="12.5" opacity="0.75">persists result,</text>
+    <text x="36" y="211" font-size="12.5" opacity="0.75">advances workflow</text>
+    <text x="344" y="86" font-weight="700">greet queue</text>
+    <text x="540" y="88" font-weight="700">Your worker</text>
+    <text x="540" y="118">greet(name)</text>
+    <text x="540" y="140" font-size="12.5" opacity="0.75">your business logic</text>
+  </g>
+  <g fill="#1976d2" font-size="12.5">
+    <text x="238" y="100">queues by</text>
+    <text x="240" y="114">task type</text>
+    <text x="466" y="112">polls</text>
+    <text x="330" y="252">reports COMPLETED / FAILED</text>
+  </g>
+</svg>
+
 ## Language-specific quickstart
 
 Choose a language to reveal one complete `greet` worker and the matching `greetings` workflow. The examples are adapted from the maintained SDK hello-world worker examples.
