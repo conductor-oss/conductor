@@ -4,9 +4,9 @@ description: "Conductor Skills teach your AI coding agent to create, run, monito
 
 # Build with Your AI Coding Agent
 
-**Time:** about 2 minutes to install; your agent does the rest!
+**Time:** about 2 minutes to install.
 
-[Conductor Skills](https://github.com/conductor-oss/conductor-skills) teaches your AI coding agent to create, run, monitor, and manage Conductor workflows. Instead of writing JSON definitions and CLI commands by hand, describe what you want in natural language and your agent builds it for you — complete workflows, workers, error handling, and monitoring.
+[Conductor Skills](https://github.com/conductor-oss/conductor-skills) teaches your AI coding agent to create, run, monitor, and manage Conductor workflows and agents. Describe what you want in natural language and your agent builds it for you.
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
@@ -61,9 +61,9 @@ export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 
 ## What your agent can do
 
-Once installed, your AI agent can:
+The following are examples you can prompt your coding agent.
 
-| Capability | What you say | What happens |
+| Capability | Prompt | Result |
 |---|---|---|
 | **Create workflows** | *"Create a workflow that calls the GitHub API and sends a Slack notification"* | Agent generates the full workflow definition with HTTP tasks, input expressions, and output parameters |
 | **Run workflows** | *"Run my-workflow with input userId 123"* | Agent starts the execution and returns the execution ID |
@@ -76,9 +76,9 @@ Once installed, your AI agent can:
 | **Visualize** | *"Show me a diagram of the order-processing workflow"* | Agent renders a Mermaid diagram of the workflow |
 
 
-## Walkthrough: build an order processing system
+## Example walkthrough: Build an order processing system
 
-This walkthrough shows how to build a complete application using Conductor as the backend — entirely through natural language prompts to your AI agent.
+This example shows how to build a Conductor application using natural language prompts to your coding agent.
 
 ### Step 1: Create the workflow
 
@@ -184,7 +184,7 @@ Your agent creates the workflow definition:
 }
 ```
 
-The agent registers the workflow automatically.
+The agent should also register the workflow automatically.
 
 ### Step 2: Create the compensation workflow
 
@@ -294,7 +294,7 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 
 ## Next steps
 
-**Next:** [Write your first workflow and worker](../../quickstart/first-worker.md) to see what your agent builds on — or go straight to [your first agent](../../quickstart/first-agent.md).
+**Next:** build one yourself with [Your First Workflow & Worker](../../quickstart/first-worker.md), or jump ahead to [Your First Agent](../../quickstart/first-agent.md).
 
 - **[conductor-skills repository](https://github.com/conductor-oss/conductor-skills)** &mdash; Full documentation, more examples, and source code.
 - **[Agents overview](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
