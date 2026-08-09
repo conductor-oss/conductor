@@ -67,7 +67,7 @@
 
       function findAgentLink(branch) {
         return Array.from(branch.querySelectorAll("a.md-nav__link")).find(function(link) {
-          return textOf(link) === "Run Your First Agent";
+          return textOf(link) === "Your First Agent";
         });
       }
 
@@ -99,8 +99,8 @@
 
       function applyFirstAgentNavigation() {
         var navigationContext = new URLSearchParams(window.location.search).get("nav");
-        var selected = navigationContext === "get-started" ? "Get Started" : "Agents & AI";
-        var contexts = ["Get Started", "Agents & AI"];
+        var selected = navigationContext === "get-started" ? "Getting Started" : "Agents";
+        var contexts = ["Getting Started", "Agents"];
 
         document.querySelectorAll(".md-tabs__item").forEach(function(tab) {
           tab.classList.remove("md-tabs__item--active");
