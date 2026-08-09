@@ -84,6 +84,8 @@ This example shows how to build a Conductor application using natural language p
 
 ### Step 1: Create the workflow
 
+**Prompt:**
+
 ```text
 Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a HUMAN task before payment so a human can review high-value orders.
 ```
@@ -192,6 +194,8 @@ The agent should also register the workflow automatically.
 
 ### Step 2: Create the compensation workflow
 
+**Prompt:**
+
 ```text
 Create the compensation workflow for order_processing. It should release the inventory hold and refund the payment if it was charged.
 ```
@@ -199,6 +203,8 @@ Create the compensation workflow for order_processing. It should release the inv
 Your agent creates `order_processing_compensation` with the reverse operations.
 
 ### Step 3: Write a custom worker
+
+**Prompt:**
 
 ```text
 Write a Python worker that validates orders by checking that all items exist and quantities are positive
@@ -224,9 +230,13 @@ def validate_order(task):
 
 ### Step 4: Run the workflow
 
+**Prompt:**
+
 ```text
 Run order_processing with orderId ORD-001, customerId CUST-42, items [{productId: SKU-100, quantity: 2}], totalAmount 750
 ```
+
+**Output:**
 
 ``` { .text .no-copy }
 Workflow started.
@@ -237,9 +247,13 @@ Workflow started.
 
 ### Step 5: Approve the review
 
+**Prompt:**
+
 ```text
 Approve the review task in execution f8a2b3c4
 ```
+
+**Output:**
 
 ``` { .text .no-copy }
 Task signaled: review → COMPLETED
@@ -248,9 +262,13 @@ Workflow is now executing charge_payment.
 
 ### Step 6: Monitor and debug
 
+**Prompt:**
+
 ```text
 Show me all failed order_processing executions from today
 ```
+
+**Output:**
 
 ``` { .text .no-copy }
 Found 2 failed executions:
@@ -258,15 +276,21 @@ Found 2 failed executions:
 2. exec-def — Failed at check_inventory (HTTP 409: Item SKU-200 out of stock)
 ```
 
+**Prompt:**
+
 ```text
 Retry exec-abc
 ```
+
+**Output:**
 
 ``` { .text .no-copy }
 Execution exec-abc retried. Status: RUNNING.
 ```
 
 ### Step 7: Visualize
+
+**Prompt:**
 
 ```text
 Show me a diagram of order_processing
