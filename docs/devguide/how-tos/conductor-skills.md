@@ -50,7 +50,9 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 
 After installing, tell your agent where your Conductor server is:
 
-> *"Connect to my Conductor server at http://localhost:8080/api"*
+```text
+Connect to my Conductor server at http://localhost:8080/api
+```
 
 Or set the environment variable directly:
 
@@ -82,7 +84,9 @@ This example shows how to build a Conductor application using natural language p
 
 ### Step 1: Create the workflow
 
-> *"Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a HUMAN task before payment so a human can review high-value orders."*
+```text
+Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a HUMAN task before payment so a human can review high-value orders.
+```
 
 Your agent creates the workflow definition:
 
@@ -188,13 +192,17 @@ The agent should also register the workflow automatically.
 
 ### Step 2: Create the compensation workflow
 
-> *"Create the compensation workflow for order_processing. It should release the inventory hold and refund the payment if it was charged."*
+```text
+Create the compensation workflow for order_processing. It should release the inventory hold and refund the payment if it was charged.
+```
 
 Your agent creates `order_processing_compensation` with the reverse operations.
 
 ### Step 3: Write a custom worker
 
-> *"Write a Python worker that validates orders by checking that all items exist and quantities are positive"*
+```text
+Write a Python worker that validates orders by checking that all items exist and quantities are positive
+```
 
 Your agent generates the worker code using the Conductor Python SDK:
 
@@ -216,9 +224,11 @@ def validate_order(task):
 
 ### Step 4: Run the workflow
 
-> *"Run order_processing with orderId ORD-001, customerId CUST-42, items [{productId: SKU-100, quantity: 2}], totalAmount 750"*
-
+```text
+Run order_processing with orderId ORD-001, customerId CUST-42, items [{productId: SKU-100, quantity: 2}], totalAmount 750
 ```
+
+``` { .text .no-copy }
 Workflow started.
 - Execution ID: f8a2b3c4-d5e6-7890-abcd-ef1234567890
 - Status: RUNNING
@@ -227,32 +237,40 @@ Workflow started.
 
 ### Step 5: Approve the review
 
-> *"Approve the review task in execution f8a2b3c4"*
-
+```text
+Approve the review task in execution f8a2b3c4
 ```
+
+``` { .text .no-copy }
 Task signaled: review → COMPLETED
 Workflow is now executing charge_payment.
 ```
 
 ### Step 6: Monitor and debug
 
-> *"Show me all failed order_processing executions from today"*
-
+```text
+Show me all failed order_processing executions from today
 ```
+
+``` { .text .no-copy }
 Found 2 failed executions:
 1. exec-abc — Failed at charge_payment (HTTP 402: Insufficient funds)
 2. exec-def — Failed at check_inventory (HTTP 409: Item SKU-200 out of stock)
 ```
 
-> *"Retry exec-abc"*
-
+```text
+Retry exec-abc
 ```
+
+``` { .text .no-copy }
 Execution exec-abc retried. Status: RUNNING.
 ```
 
 ### Step 7: Visualize
 
-> *"Show me a diagram of order_processing"*
+```text
+Show me a diagram of order_processing
+```
 
 Your agent renders:
 
