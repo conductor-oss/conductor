@@ -55,7 +55,7 @@ Configure model access and credentials for AI workflows and agents.
 You can also run Conductor via the [official Docker container](https://hub.docker.com/r/conductoross/conductor).
 
 ```bash
-docker run --rm -p 8080:8080 conductoross/conductor:3.32.0-rc.23
+docker run --rm -p 8080:8080 conductoross/conductor:latest
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 conductor workflow list
 ```
