@@ -10,7 +10,7 @@ description: Run your first Conductor Agent and verify its durable execution wit
 
 Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#. Choose a language below to see its complete install and first-run steps.
 
-For an existing framework agent, such as LangChain, use [framework agent quickstarts](framework-agents.md). For a declarative LLM and tool workflow, start from [Agents & AI](../devguide/ai/index.md).
+For an existing framework agent, such as LangChain, use [framework agent quickstarts](framework-agents.md). You can also call LLMs and tools directly from workflow tasks — no agent required — using Conductor's [native AI tasks](../devguide/ai/llm-orchestration.md).
 
 ## Prerequisites
 
