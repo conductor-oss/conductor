@@ -10,7 +10,7 @@ description: "Conductor Skills teach your AI coding agent to create, run, monito
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
-For a source-backed technical map that any assistant can consume, start with [Conductor for AI assistants](../ai/conductor-for-ai-assistants.md) and [/llms.txt](../../llms.txt). The full context is generated from canonical docs at [/llms-full.txt](../../llms-full.txt).
+You can also point any AI assistant directly at these docs: [Conductor for AI assistants](../ai/conductor-for-ai-assistants.md) is the canonical guidance page, [/llms.txt](../../llms.txt) is a machine-readable index, and [/llms-full.txt](../../llms-full.txt) is the complete documentation in a single file.
 
 ## Prerequisite: a Conductor server
 
