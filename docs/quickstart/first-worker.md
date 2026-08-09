@@ -4,8 +4,6 @@ description: Write, run, and verify your first Conductor workflow and worker in 
 
 # Your First Workflow & Worker
 
-**Audience:** developers building their first Conductor workflow in code.
-
 **Outcome:** a `greetings` workflow that queues a `greet` task and returns `Hello Conductor` from a worker.
 
 **Time:** about 5 minutes.

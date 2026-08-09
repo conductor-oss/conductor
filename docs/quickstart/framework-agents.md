@@ -4,8 +4,6 @@ description: Run an existing OpenAI Agents, Google ADK, LangChain, or LangGraph 
 
 # Bring Your Framework Agent
 
-**Audience:** teams with an existing framework agent; this guide uses Python framework bridges.
-
 **Outcome:** your framework agent runs through Conductor and produces an inspectable execution.
 
 For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). The bridges below keep the framework object you already author; Conductor provides the durable runtime around it.

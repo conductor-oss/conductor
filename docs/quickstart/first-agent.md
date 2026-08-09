@@ -4,8 +4,6 @@ description: Run your first Conductor Agent and verify its durable execution wit
 
 # Your First Agent
 
-**Audience:** developers authoring a new Conductor Agent with Python, Java, TypeScript/JavaScript, or C#.
-
 **Outcome:** a completed agent run that is compiled to and executed as a Conductor workflow.
 
 **Time:** about 5 minutes.
