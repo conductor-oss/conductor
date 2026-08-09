@@ -99,7 +99,7 @@
 
       function applyFirstAgentNavigation() {
         var navigationContext = new URLSearchParams(window.location.search).get("nav");
-        var selected = navigationContext === "get-started" ? "Getting Started" : "Agents";
+        var selected = navigationContext === "agents-ai" ? "Agents" : "Getting Started";
         var contexts = ["Getting Started", "Agents"];
 
         document.querySelectorAll(".md-tabs__item").forEach(function(tab) {

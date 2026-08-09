@@ -84,7 +84,7 @@ nav:
   - Agents:
     - Overview: devguide/ai/index.md
     - Agent Concepts: devguide/concepts/agents.md
-    - Run Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
+    - Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
     - Conductor Agents: devguide/ai/conductor-agents.md
     - Durable Agents: devguide/ai/durable-agents.md
     - Build Agentic Workflow Graph: devguide/ai/first-ai-agent.md
