@@ -12,9 +12,14 @@ Complete [Connect to Conductor](connect.md) first. This guide uses the SDK conne
 
 ## How a worker runs
 
-When a workflow reaches a `SIMPLE` task, Conductor queues it by the task type—in this example, `greet`. An SDK worker polls that queue, runs your business logic, and reports `COMPLETED` or `FAILED`. Conductor persists the result, then advances the workflow to its next task.
+In this quickstart you build two things: a **workflow** named `greetings` — the durable definition that Conductor executes — and a **worker** — a function in your code that performs one task inside it.
 
-The task type must match in the workflow and worker. Workers can be deployed independently and should be idempotent because a task can be delivered again after a failure or timeout.
+The workflow has a single task of type `SIMPLE`, which means the work is done by your code rather than by one of Conductor's built-in tasks. Every `SIMPLE` task has a task type — here, `greet`. When a running workflow reaches that task, Conductor places it on a queue for that task type. Your worker polls the `greet` queue, runs your business logic, and reports back `COMPLETED` or `FAILED`. Conductor durably persists the result, then advances the workflow to its next task.
+
+Two rules follow from this design:
+
+- The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
+- Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Make them idempotent: task delivery is at least once, so a task can be handed to a worker again after a failure or timeout.
 
 ## Language-specific quickstart
 
