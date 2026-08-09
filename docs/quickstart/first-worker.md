@@ -21,48 +21,43 @@ Two rules follow from this design:
 - The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
 - Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Conductor guarantees at-least-once delivery, meaning the same task can be delivered again after a failure or timeout — so write workers to be idempotent, where running the same task twice produces the same result.
 
-<svg viewBox="0 0 760 290" role="img" aria-label="Diagram: Conductor queues the greet task by task type; your worker polls the queue, runs business logic, and reports the result back; Conductor persists it and advances the workflow" style="max-width:760px;width:100%;height:auto;display:block;margin:18px auto;font-family:inherit;">
-  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Conductor server box (hand-drawn) -->
-    <path d="M24 42 q110 -5 218 2 q6 1 5 9 l-2 160 q0 8 -8 8 q-104 5 -206 -2 q-8 -1 -8 -9 l-1 -159 q0 -8 2 -9 z"/>
-    <!-- workflow pill -->
-    <path d="M46 84 q80 -3 158 1 q5 0 5 6 l-1 22 q0 6 -6 6 q-76 3 -152 -1 q-6 0 -6 -6 l0 -22 q0 -6 2 -6 z"/>
-    <!-- task pill -->
-    <path d="M46 138 q80 -4 158 1 q5 0 5 6 l-1 22 q0 6 -6 6 q-76 3 -152 -1 q-6 0 -6 -6 l1 -22 q0 -6 1 -6 z"/>
-    <!-- queue: three stacked slots -->
-    <path d="M318 96 q60 -3 118 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-56 2 -112 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
-    <path d="M322 130 q58 -3 112 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-54 2 -106 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
-    <path d="M326 164 q54 -3 104 1 q5 1 5 6 l-1 18 q0 5 -6 5 q-50 2 -98 -1 q-5 0 -5 -5 l0 -19 q0 -5 1 -5 z"/>
-    <!-- worker box -->
-    <path d="M520 60 q106 -5 212 2 q6 1 5 9 l-2 130 q0 8 -8 8 q-100 5 -200 -2 q-8 -1 -8 -9 l0 -129 q0 -8 1 -9 z"/>
+<svg viewBox="0 0 760 296" role="img" aria-label="Diagram: Conductor queues the greet task by task type; your worker polls the queue, runs business logic, and reports the result back; Conductor persists it and advances the workflow" style="max-width:720px;width:100%;height:auto;display:block;margin:20px auto;font-family:inherit;">
+  <defs>
+    <marker id="wq-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1976d2"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="22" y="44" width="230" height="190" rx="12"/>
+    <rect x="44" y="92" width="186" height="34" rx="8" opacity="0.55"/>
+    <rect x="44" y="138" width="186" height="34" rx="8" opacity="0.55"/>
+    <rect x="322" y="92" width="116" height="26" rx="6"/>
+    <rect x="322" y="126" width="116" height="26" rx="6" opacity="0.7"/>
+    <rect x="322" y="160" width="116" height="26" rx="6" opacity="0.4"/>
+    <rect x="508" y="44" width="230" height="190" rx="12"/>
+    <rect x="530" y="92" width="186" height="34" rx="8" opacity="0.55"/>
   </g>
-  <g fill="none" stroke="#1976d2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <!-- server -> queue arrow -->
-    <path d="M252 118 q30 -6 60 -1"/>
-    <path d="M304 112 l9 5 -10 4"/>
-    <!-- worker -> queue arrow (polls) -->
-    <path d="M516 128 q-30 6 -62 2"/>
-    <path d="M463 125 l-10 5 11 4"/>
-    <!-- worker -> server return arrow (result) -->
-    <path d="M560 212 q-180 52 -320 8"/>
-    <path d="M250 226 l-11 -7 13 -3"/>
+  <g fill="none" stroke="#1976d2" stroke-width="1.6">
+    <line x1="256" y1="105" x2="316" y2="105" marker-end="url(#wq-arr)"/>
+    <line x1="504" y1="139" x2="444" y2="139" marker-end="url(#wq-arr)"/>
+    <path d="M572 238 C 480 286, 280 286, 190 240" marker-end="url(#wq-arr)"/>
   </g>
-  <g fill="currentColor" font-size="15">
-    <text x="44" y="70" font-weight="700">Conductor server</text>
-    <text x="58" y="103">greetings workflow</text>
-    <text x="60" y="157">greet task (SIMPLE)</text>
-    <text x="36" y="196" font-size="12.5" opacity="0.75">persists result,</text>
-    <text x="36" y="211" font-size="12.5" opacity="0.75">advances workflow</text>
-    <text x="344" y="86" font-weight="700">greet queue</text>
-    <text x="540" y="88" font-weight="700">Your worker</text>
-    <text x="540" y="118">greet(name)</text>
-    <text x="540" y="140" font-size="12.5" opacity="0.75">your business logic</text>
+  <g fill="currentColor">
+    <text x="42" y="74" font-size="15" font-weight="700">Conductor server</text>
+    <text x="58" y="114" font-size="13.5">greetings workflow</text>
+    <text x="58" y="160" font-size="13.5">greet task (SIMPLE)</text>
+    <text x="44" y="198" font-size="12" opacity="0.7">persists result,</text>
+    <text x="44" y="214" font-size="12" opacity="0.7">advances workflow</text>
+    <text x="380" y="76" font-size="14" font-weight="700" text-anchor="middle">greet queue</text>
+    <text x="528" y="74" font-size="15" font-weight="700">Your worker</text>
+    <text x="544" y="114" font-size="13.5">greet(name)</text>
+    <text x="530" y="160" font-size="12" opacity="0.7">runs your business logic</text>
   </g>
-  <g fill="#1976d2" font-size="12.5">
-    <text x="238" y="100">queues by</text>
-    <text x="240" y="114">task type</text>
-    <text x="466" y="112">polls</text>
-    <text x="330" y="252">reports COMPLETED / FAILED</text>
+  <g fill="#1976d2" font-size="12" text-anchor="middle">
+    <text x="286" y="88">queues by</text>
+    <text x="286" y="100">task type</text>
+    <text x="474" y="128">polls</text>
+    <text x="382" y="284">reports COMPLETED / FAILED</text>
   </g>
 </svg>
 
