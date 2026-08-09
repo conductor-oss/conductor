@@ -448,23 +448,23 @@ See the maintained [Rust SDK quickstart](https://github.com/conductor-oss/rust-s
   })();
 </script>
 
-## Verify and recover
+## Verify durable execution
 
-Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Search for `greetings`, click the newest execution, then select the `greet_ref` task in the timeline. Its output should include `result: Hello Conductor`.
+1. Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Click the newest `greetings` execution — the completed `greet_ref` task in the timeline shows `result: Hello Conductor`.
+2. Now watch durability at work. Your quickstart app exited after printing, so no worker is running. Start another execution with the CLI alone:
 
-- If `greet_ref` remains `SCHEDULED`, the worker is not polling the `greet` task type. Confirm the worker is running and that the worker task type is exactly `greet`.
-- If workflow registration says the definition already exists, use a new version or update the local test definition before running it again.
-- If `greet_ref` fails, inspect the task's input, output, and failure reason in the UI; fix the worker, restart it, and start a new execution.
+    ```bash
+    conductor workflow start -w greetings -i '{"name":"Conductor"}'
+    ```
 
-## See durability happen
+3. Refresh the executions list: the new run is `RUNNING` and `greet_ref` is `SCHEDULED` — durably queued, waiting for a worker. Nothing is lost.
+4. Run your quickstart app again. The worker polls, the waiting task completes, and the execution finishes with `result: Hello Conductor`.
 
-Durability means the execution outlives your process. The quickstart app exits after it prints, so no worker is running now. Start a new execution with only the CLI:
+**Troubleshooting**
 
-```bash
-conductor workflow start -w greetings -i '{"name":"Conductor"}'
-```
-
-Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Click the newest `greetings` execution: the workflow is `RUNNING` and `greet_ref` stays `SCHEDULED` — durably queued, not lost. Now run your quickstart app again. The moment the worker polls, the waiting task completes and the execution finishes with `result: Hello Conductor`.
+- `greet_ref` stays `SCHEDULED` even with the app running: the worker is not polling the `greet` task type — confirm the worker is running and its task type is exactly `greet`.
+- Registration says the definition already exists: bump the version or update the local test definition.
+- `greet_ref` is `FAILED`: inspect the task's input, output, and failure reason in the UI, fix the worker, and start a new execution.
 
 ## Keep learning
 
