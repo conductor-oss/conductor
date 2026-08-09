@@ -1,0 +1,29 @@
+{
+  "name": "input_param_demo_workflow",
+  "description": "Demonstrates scheduler-injected workflow input. Uses _scheduledTime and _executedTime to compute a 24-hour reporting window ending at the scheduled time.",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "compute_report_window",
+      "taskReferenceName": "compute_report_window",
+      "type": "INLINE",
+      "inputParameters": {
+        "scheduledTime": "${workflow.input._scheduledTime}",
+        "executionTime": "${workflow.input._executedTime}",
+        "evaluatorType": "javascript",
+        "expression": "function toISO(ms) { return new Date(ms).toISOString(); } ({ reportWindowStart: toISO($.scheduledTime - 86400000), reportWindowEnd: toISO($.scheduledTime), scheduledAt: toISO($.scheduledTime), triggeredAt: toISO($.executionTime) })"
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportWindowStart": "${compute_report_window.output.result.reportWindowStart}",
+    "reportWindowEnd": "${compute_report_window.output.result.reportWindowEnd}",
+    "scheduledAt": "${compute_report_window.output.result.scheduledAt}",
+    "triggeredAt": "${compute_report_window.output.result.triggeredAt}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 30
+}
