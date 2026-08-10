@@ -3,7 +3,7 @@
    Inter × IBM Plex Mono
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=IBM+Plex+Mono:wght@400;500;600&family=Patrick+Hand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 /* ---------- Tokens — Light (default) ---------- */
 :root {
@@ -937,9 +937,12 @@ body {
 /* Material's mermaid themeCSS forces label text to --md-mermaid-font-family.
    Custom properties inherit into the closed shadow root Material renders the
    SVG into, so overriding the variable here is the only way to restyle
-   diagram type. Pairs the handwriting face with look: handDrawn (main.py). */
+   diagram type. Deliberately the system stack, not the Inter webfont: Mermaid
+   measures labels at render time, and a late-loading webfont swaps in with
+   wider metrics and clips the last characters (e.g. "Conductor serve|r").
+   Must match fontFamily in main.py's MERMAID_WORKFLOW_INIT. */
 .md-typeset .workflow-diagram {
-  --md-mermaid-font-family: "Patrick Hand", "Segoe Print", cursive;
+  --md-mermaid-font-family: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 .md-typeset .workflow-diagram .mermaid svg {
   display: block;
