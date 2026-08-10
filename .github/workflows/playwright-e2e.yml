@@ -3,6 +3,9 @@ name: Trigger Playwright E2E Tests
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+    paths:
+      - "ui-next/**"
+      - ".github/workflows/playwright-e2e.yml"
   workflow_dispatch:
     inputs:
       conductor_ui_branch:
