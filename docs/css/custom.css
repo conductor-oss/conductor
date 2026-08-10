@@ -323,6 +323,15 @@ body {
 .concept-hero:has(> .concept-hero__graphic:only-child) {
   padding: 13px;
 }
+/* Diagram-only agent hero: span the grid, center, and tighten. */
+.agent-runtime-hero > .agent-runtime-hero__diagram:only-child {
+  grid-column: 1 / -1;
+  max-width: 620px;
+  margin: 0 auto;
+}
+.agent-runtime-hero:has(> .agent-runtime-hero__diagram:only-child) {
+  padding: 13px;
+}
 .concept-hero__node,
 .concept-hero__outcome-box {
   fill: var(--c-bg);
