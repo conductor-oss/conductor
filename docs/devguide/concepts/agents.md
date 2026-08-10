@@ -44,13 +44,51 @@ An agent uses an LLM to decide what to do next, working in turns until a goal is
 
 ## Agents are workflows underneath
 
-A Conductor Agent starts as a definition, just like a workflow. The definition names the model to use, the instructions, and the tools the agent may call. When you register it, Conductor compiles it into a workflow graph. Nothing about that graph is special: each model call is a task, each tool call is a task, and the loop between them is workflow control flow.
+A Conductor Agent starts as a definition, just like a workflow. The definition names the model to use, the instructions, and the tools the agent may call. Here is that definition in the Python SDK:
+
+```python
+from conductor.ai.agents import Agent, AgentRuntime, tool
+
+@tool
+def get_weather(city: str) -> str:
+    return f"Weather for {city}"
+
+agent = Agent(name="weather", model="openai/gpt-4o-mini",
+              instructions="Answer concisely.", tools=[get_weather])
+with AgentRuntime() as runtime:
+    print(runtime.run(agent, "Weather in Seattle?").output)
+```
+
+When this runs, Conductor compiles the agent into a workflow graph and executes it. Nothing about that graph is special: each model call is a task, each tool call is a task, and the loop between them is workflow control flow. A run that calls the tool once produces this sequence of tasks:
+
+```mermaid
+flowchart LR
+    prompt(["prompt"]) --> turn1["LLM task<br/>decides to call get_weather"]
+    turn1 --> toolcall["get_weather task<br/>runs your function"]
+    toolcall --> turn2["LLM task<br/>writes the final answer"]
+    turn2 --> answer(["answer"])
+```
 
 That design is the point. Because an agent run is a workflow execution, everything you know about workflows applies. Each turn is persisted, so a crash or restart resumes from the last completed step. Retries and timeouts follow the same policies. A person can approve or reject a step through the same human tasks. And every run leaves a complete history you can inspect and replay.
 
 ## How workflows and agents compose
 
-Workflows call agents through the `AGENT` task. To a parent workflow, an agent is one durable step: the workflow reaches the `AGENT` task, the agent runs its turns, and the result comes back as task output. The same `AGENT` task can also point at a remote agent that speaks the Agent2Agent (A2A) protocol. In that case the agent's implementation stays remote, while Conductor durably tracks the handoff and its result.
+Workflows call agents through the `AGENT` task. To a parent workflow, an agent is one durable step: the workflow reaches the `AGENT` task, the agent runs its turns, and the result comes back as task output. In the workflow definition, it looks like any other task:
+
+```json
+{
+  "name": "run_agent",
+  "taskReferenceName": "run_agent_ref",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "name": "planner",
+    "prompt": "${workflow.input.prompt}"
+  }
+}
+```
+
+The same `AGENT` task can also point at a remote agent that speaks the Agent2Agent (A2A) protocol. In that case the agent's implementation stays remote, while Conductor durably tracks the handoff and its result.
 
 Composition works in the other direction too. An agent's tools can be MCP tools or functions you register with the SDK, and each call runs as a task. So one process can mix ordinary tasks, native AI tasks, deployed agents, and remote agents in a single durable graph.
 
