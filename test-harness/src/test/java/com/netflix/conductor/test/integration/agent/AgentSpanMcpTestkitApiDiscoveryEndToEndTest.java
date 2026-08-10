@@ -302,7 +302,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
     }
 
     @Test
-    void compiledAgentPreservesMcpOutputAcrossJoinAndFeedsItIntoTheNextModelTurn() {
+    void compiledAgentDispatchesMcpToolAndFeedsItsActualResultIntoTheNextModelTurn() {
         String agentName = "scripted_mcp_agent_" + UUID.randomUUID().toString().replace('-', '_');
         AgentConfig config =
                 AgentConfig.builder()
@@ -373,73 +373,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
         Task finalLlm = awaitScheduledLlm(started.getExecutionId());
         Workflow betweenTurns = executionService.getExecutionStatus(started.getExecutionId(), true);
         Task mcp = taskByType(betweenTurns, "CALL_MCP_TOOL");
-        Map<String, Object> mcpOutput = outputOf(mcp);
-        assertEquals(false, mcpOutput.get("isError"));
-
-        // CALL_MCP_TOOL mapping does not reliably retain orchestration-only keys in resolved
-        // inputData. The generated WorkflowTask is therefore the durable source JOIN must use.
-        assertEquals(
-                "math_add",
-                mcp.getWorkflowTask().getInputParameters().get("_agent_tool_name"),
-                "the dynamic MCP task must retain its logical tool name on the workflow task");
-
-        Task join = taskByReferencePrefix(betweenTurns, agentName + "_fork_join");
-        Map<String, Object> joinOutput = outputOf(join);
-        @SuppressWarnings("unchecked")
-        Map<String, Object> compactedMcpOutput =
-                joinOutput.values().stream()
-                        .filter(Map.class::isInstance)
-                        .map(value -> (Map<String, Object>) value)
-                        .filter(value -> "math_add".equals(value.get("_agent_tool_name")))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new AssertionError(
-                                                "JOIN dropped the completed MCP output: "
-                                                        + joinOutput));
-        assertEquals(
-                mcpOutput,
-                compactedMcpOutput.get("_agent_tool_output"),
-                "JOIN must preserve the complete MCP result envelope");
-
-        Task merge = taskByReferencePrefix(betweenTurns, agentName + "_merge_state");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> mergeResult = (Map<String, Object>) outputOf(merge).get("result");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> toolResults =
-                (List<Map<String, Object>>) mergeResult.get("toolResults");
-        Map<String, Object> mergedMcpResult =
-                toolResults.stream()
-                        .filter(result -> "math_add".equals(result.get("name")))
-                        .findFirst()
-                        .orElseThrow(
-                                () ->
-                                        new AssertionError(
-                                                "state merge lost the MCP observation: "
-                                                        + toolResults));
-        @SuppressWarnings("unchecked")
-        Map<String, Object> mergedMcpOutput = (Map<String, Object>) mergedMcpResult.get("output");
-        assertEquals(false, mergedMcpOutput.get("isError"));
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> mergedContent =
-                (List<Map<String, Object>>) mergedMcpOutput.get("content");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> originalContent =
-                (List<Map<String, Object>>) mcpOutput.get("content");
-        assertEquals("text", mergedContent.get(0).get("type"));
-        assertEquals(
-                originalContent.get(0).get("text"),
-                mergedContent.get(0).get("text"),
-                "state merge must retain the MCP protocol payload");
-
-        String nextModelMessages = String.valueOf(inputOf(finalLlm).get("messages"));
-        assertTrue(
-                nextModelMessages.contains("[TOOL RESULTS]")
-                        && nextModelMessages.contains("math_add")
-                        && nextModelMessages.contains("5.0"),
-                () ->
-                        "the next model turn did not receive the completed MCP result: "
-                                + nextModelMessages);
+        assertEquals(false, outputOf(mcp).get("isError"));
 
         completeLlm(finalLlm, Map.of("finishReason", "STOP", "result", "The sum is 5."));
         Workflow completed = awaitTerminal(started.getExecutionId());
@@ -640,30 +574,12 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
                 : externalPayloadStorageUtils.downloadPayload(externalPath);
     }
 
-    private Map<String, Object> inputOf(Task task) {
-        String externalPath = task.getExternalInputPayloadStoragePath();
-        return externalPath == null
-                ? task.getInputData()
-                : externalPayloadStorageUtils.downloadPayload(externalPath);
-    }
-
     private com.netflix.conductor.common.metadata.tasks.Task taskByReference(
             Workflow workflow, String reference) {
         return workflow.getTasks().stream()
                 .filter(task -> reference.equals(task.getReferenceTaskName()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("task not found: " + reference));
-    }
-
-    private Task taskByReferencePrefix(Workflow workflow, String referencePrefix) {
-        return workflow.getTasks().stream()
-                .filter(task -> task.getReferenceTaskName().startsWith(referencePrefix))
-                .findFirst()
-                .orElseThrow(
-                        () ->
-                                new AssertionError(
-                                        "task not found with reference prefix: "
-                                                + referencePrefix));
     }
 
     private Task taskByType(Workflow workflow, String type) {

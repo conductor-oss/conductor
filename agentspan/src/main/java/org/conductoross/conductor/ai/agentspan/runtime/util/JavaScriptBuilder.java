@@ -1606,7 +1606,6 @@ public class JavaScriptBuilder {
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
                         + "    }"
-                        + "    t.inputParameters._agent_tool_name = n;"
                         + "    result.push(t);"
                         + "  }"
                         + "  return {dynamicTasks: result};");
