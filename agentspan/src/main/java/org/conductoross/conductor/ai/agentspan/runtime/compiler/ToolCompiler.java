@@ -202,11 +202,7 @@ public class ToolCompiler {
                 Map<String, Object> configParams = new LinkedHashMap<>();
                 configParams.put("mcpServer", tool.getConfig().getOrDefault("server_url", ""));
                 Object headers = tool.getConfig().get("headers");
-                if (headers instanceof Map<?, ?> headerMap) {
-                    // Keep secrets inert while the spec crosses INLINE tasks. Enrichment restores
-                    // workflow-secret references only on the emitted CALL_MCP_TOOL task.
-                    configParams.put("headers", escapeCredentialPlaceholders(headerMap));
-                } else if (headers != null) {
+                if (headers != null) {
                     configParams.put("headers", headers);
                 }
                 spec.put("configParams", configParams);

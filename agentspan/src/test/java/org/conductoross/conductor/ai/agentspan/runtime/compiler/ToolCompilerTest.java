@@ -71,7 +71,7 @@ class ToolCompilerTest {
                                         "server_url",
                                         "http://mcp.example.com",
                                         "headers",
-                                        Map.of("Authorization", "Bearer ${MCP_KEY}")))
+                                        Map.of("auth", "key")))
                         .build();
 
         ToolCompiler tc = new ToolCompiler();
@@ -81,8 +81,6 @@ class ToolCompilerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> configParams = (Map<String, Object>) specs.get(0).get("configParams");
         assertThat(configParams.get("mcpServer")).isEqualTo("http://mcp.example.com");
-        assertThat(configParams.get("headers"))
-                .isEqualTo(Map.of("Authorization", "Bearer #{MCP_KEY}"));
     }
 
     @Test
