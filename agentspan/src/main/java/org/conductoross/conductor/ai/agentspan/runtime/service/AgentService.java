@@ -24,6 +24,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -56,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 @Slf4j
 public class AgentService {
 
@@ -68,6 +70,7 @@ public class AgentService {
     private final MetadataDAO metadataDAO;
 
     private final WorkflowService workflowService;
+    private final AgentExecutionTokenUsageAggregator executionTokenUsageAggregator;
     private final TaskService taskService;
     private final WorkflowExecutor workflowExecutor;
 
@@ -197,8 +200,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -281,8 +284,8 @@ public class AgentService {
         stampAgentDef(metadata, request, config);
         def.setMetadata(metadata);
 
-        // 2. Register workflow definition (upsert)
-        metadataDAO.updateWorkflowDef(def);
+        // 2. Register workflow definition while preserving workflow metadata timestamps.
+        upsertWorkflowDef(def);
 
         // 3. Register task definitions for worker tools
         registerTaskDefinitions(config);
@@ -353,7 +356,8 @@ public class AgentService {
         for (WorkflowDef def : allDefs) {
             Map<String, Object> metadata = def.getMetadata();
             // A def is an agent when its derived classifier resolves to "agent": either the
-            // AgentSpan stamp (agent_sdk/agentDef) is present, or the def carries an explicit
+            // Conductor-Agents stamp (agent_sdk/agentDef) is present, or the def carries an
+            // explicit
             // metadata.classifier=agent tag. An explicit non-agent classifier excludes a def
             // even if it still carries a stamp.
             if (!WorkflowClassifiers.isAgent(metadata)) {
@@ -391,6 +395,18 @@ public class AgentService {
                             .updateTime(def.getUpdateTime())
                             .description(def.getDescription())
                             .checksum(checksum)
+                            .schemaVersion(def.getSchemaVersion())
+                            .restartable(def.isRestartable())
+                            .workflowStatusListenerEnabled(def.isWorkflowStatusListenerEnabled())
+                            .ownerEmail(def.getOwnerEmail())
+                            .inputParameters(def.getInputParameters())
+                            .outputParameters(def.getOutputParameters())
+                            .timeoutPolicy(
+                                    def.getTimeoutPolicy() == null
+                                            ? null
+                                            : def.getTimeoutPolicy().name())
+                            .timeoutSeconds(def.getTimeoutSeconds())
+                            .failureWorkflow(def.getFailureWorkflow())
                             .build());
         }
 
@@ -545,7 +561,11 @@ public class AgentService {
 
     /** Resume a paused agent execution. */
     public void resumeAgent(String executionId) {
-        workflowService.resumeWorkflow(executionId);
+        try {
+            workflowService.resumeWorkflow(executionId);
+        } catch (IllegalStateException e) {
+            throw new ConflictException(e.getMessage());
+        }
     }
 
     /** Cancel a running agent execution. */
@@ -661,6 +681,9 @@ public class AgentService {
         // Set the stop flag — the DoWhile loop condition checks this variable.
         // Get the workflow model, update its variables map, and persist.
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_stop_requested", true);
         executionDAO.updateWorkflow(workflow);
         // Note: the SDK also sends a WMQ unblock message via the Conductor client
@@ -676,6 +699,9 @@ public class AgentService {
      */
     public void signalAgent(String executionId, String message) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_signal_injection", message != null ? message : "");
         executionDAO.updateWorkflow(workflow);
     }
@@ -857,6 +883,27 @@ public class AgentService {
                             .getLatestWorkflowDef(name)
                             .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
             metadataDAO.removeWorkflowDef(name, def.getVersion());
+        }
+    }
+
+    /**
+     * Persist an agent-generated workflow with the metadata lifecycle used by normal workflow
+     * definitions. Direct DAO updates bypass {@link MetadataService} and leave a newly deployed
+     * agent's create time at zero, which prevents the definitions table from rendering it.
+     */
+    private void upsertWorkflowDef(WorkflowDef def) {
+        Optional<WorkflowDef> existing =
+                metadataDAO.getWorkflowDef(def.getName(), def.getVersion());
+        if (existing.isPresent()) {
+            // Older direct-DAO deployments have no create time; repair it on their next deploy.
+            if (existing.get().getCreateTime() == 0) {
+                def.setCreateTime(System.currentTimeMillis());
+            } else {
+                def.setCreateTime(existing.get().getCreateTime());
+            }
+            metadataService.updateWorkflowDef(def);
+        } else {
+            metadataService.registerWorkflowDef(def);
         }
     }
 
@@ -1132,7 +1179,7 @@ public class AgentService {
 
                 // Compile and register the child agent workflow
                 WorkflowDef childDef = agentCompiler.compile(childConfig);
-                metadataDAO.updateWorkflowDef(childDef);
+                upsertWorkflowDef(childDef);
                 log.info(
                         "Registered agent_tool child workflow: {} for tool '{}'",
                         childDef.getName(),
@@ -1176,6 +1223,10 @@ public class AgentService {
             }
             return normalizerRegistry.normalize(request.getFramework(), request.getRawConfig());
         }
+        if (request.getAgentConfig() == null) {
+            throw new IllegalArgumentException(
+                    "agentConfig is required when framework is not specified");
+        }
         return request.getAgentConfig();
     }
 
@@ -1184,6 +1235,7 @@ public class AgentService {
     /** Open an SSE stream for an agent execution. Replays missed events on reconnect. */
     public SseEmitter openStream(String executionId, Long lastEventId) {
         log.info("Opening SSE stream for execution {} (lastEventId={})", executionId, lastEventId);
+        workflowService.getExecutionStatus(executionId, false);
         return streamRegistry.register(executionId, lastEventId);
     }
 
@@ -1401,6 +1453,17 @@ public class AgentService {
 
     public Workflow getFullExecution(String executionId) {
         return workflowService.getExecutionStatus(executionId, true);
+    }
+
+    /**
+     * Returns the normal full execution payload with token usage aggregated across the complete
+     * sub-workflow tree. Descendants are loaded inside the server, avoiding one large HTTP response
+     * per child in the UI.
+     */
+    public Workflow getFullExecutionWithAggregate(String executionId) {
+        Workflow root = getFullExecution(executionId);
+        root.setAggregateTokenUsage(executionTokenUsageAggregator.aggregate(root));
+        return root;
     }
 
     public void restartExecution(String executionId, boolean useLatestDefinitions) {

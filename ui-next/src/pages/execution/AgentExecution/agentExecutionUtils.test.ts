@@ -4,11 +4,17 @@ import {
   computeMetrics,
   isFailedTaskStatus,
   mapTaskStatus,
+  replaceAgentRunNode,
   taskSuccess,
   timelineItemKind,
   transformWorkflowExecutionToAgentRun,
 } from "./agentExecutionUtils";
-import { AgentStatus, AgentTimelineKind } from "./types";
+import {
+  AgentRunData,
+  AgentStatus,
+  AgentStrategy,
+  AgentTimelineKind,
+} from "./types";
 
 function task(overrides: Record<string, unknown>) {
   return {
@@ -116,6 +122,34 @@ describe("isFailedTaskStatus", () => {
 });
 
 describe("transformWorkflowExecutionToAgentRun timeline", () => {
+  it("uses the server-provided aggregate token usage", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "root_llm",
+            taskType: "LLM_CHAT_COMPLETE",
+            inputData: { model: "gpt", messages: [] },
+            outputData: { promptTokens: 10, completionTokens: 2 },
+          }),
+        ],
+        {
+          aggregateTokenUsage: {
+            promptTokens: 60,
+            completionTokens: 12,
+            totalTokens: 72,
+          },
+        },
+      ),
+    );
+
+    expect(run.totalTokens).toEqual({
+      promptTokens: 60,
+      completionTokens: 12,
+      totalTokens: 72,
+    });
+  });
+
   it("preserves structured execution input, output, and runtime type for inspection", () => {
     const run = transformWorkflowExecutionToAgentRun(
       execution([], {
@@ -339,5 +373,230 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     );
 
     expect(computeMetrics(run).totalTurns).toBe(1);
+  });
+
+  // Regression coverage for issue #1454: sub-agent nodes were labelled with the
+  // PARENT's invocation strategy instead of their own defined strategy — a
+  // router-strategy sub-agent rendered as "handoff" (whatever spawned it)
+  // instead of "router" (how it orchestrates its own children).
+  it("gives each sub-agent its own defined strategy, not the parent's", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "researcher__1",
+            taskType: "SUB_WORKFLOW",
+            outputData: { subWorkflowId: "wf-researcher", result: "done" },
+          }),
+        ],
+        {
+          workflowDefinition: {
+            metadata: {
+              agentDef: {
+                name: "agent",
+                strategy: "handoff",
+                agents: [
+                  {
+                    name: "researcher",
+                    strategy: "router",
+                    agents: [{ name: "web_search" }, { name: "arxiv" }],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const researcher = run.turns
+      .flatMap((turn) => turn.subAgents)
+      .find((sub) => sub.agentName === "researcher");
+
+    expect(researcher?.strategy).toBe(AgentStrategy.ROUTER);
+    // Regression coverage for issue #1452: the Execution diagram needs this
+    // count to know a collapsed sub-agent has its own children worth
+    // expanding, even before that sub-agent's own execution has been fetched.
+    expect(researcher?.subAgentCount).toBe(2);
+  });
+
+  it("shows no strategy for a leaf sub-agent (no nested agents of its own)", () => {
+    // Task runs inside a DO_WHILE iteration so it goes through the
+    // handoff/loop sub-agent path, which used to hardcode strategy=SINGLE
+    // for every sub-agent regardless of its own definition.
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "writer__1",
+            taskType: "SUB_WORKFLOW",
+            loopOverTask: true,
+            outputData: { subWorkflowId: "wf-writer", result: "done" },
+          }),
+        ],
+        {
+          workflowDefinition: {
+            metadata: {
+              agentDef: {
+                name: "agent",
+                strategy: "handoff",
+                agents: [{ name: "writer", strategy: "single" }],
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const writer = run.turns
+      .flatMap((turn) => turn.subAgents)
+      .find((sub) => sub.agentName === "writer");
+
+    expect(writer?.strategy).toBeUndefined();
+    expect(writer?.subAgentCount).toBeUndefined();
+  });
+
+  it("derives the root agent's own strategy from its definition, not the runtime shape", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "researcher__1",
+            taskType: "SUB_WORKFLOW",
+            outputData: { subWorkflowId: "wf-researcher", result: "done" },
+          }),
+        ],
+        {
+          workflowName: "agent",
+          workflowDefinition: {
+            metadata: {
+              agentDef: {
+                name: "agent",
+                strategy: "router",
+                agents: [{ name: "researcher" }],
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    expect(run.strategy).toBe(AgentStrategy.ROUTER);
+  });
+});
+
+// Regression coverage for issue #1452: the Execution diagram only ever
+// rendered one level of a sub-agent tree because the underlying AgentRunData
+// for a sub-agent was a shallow stub — its own execution was never fetched
+// unless the user fully navigated away via "drill in". replaceAgentRunNode
+// is the pure tree-update primitive that splices a freshly-fetched
+// sub-agent's real turns/subAgents into the existing tree in place, which is
+// what makes lazy expand-in-place possible.
+describe("replaceAgentRunNode", () => {
+  function leaf(id: string): AgentRunData {
+    return {
+      id,
+      agentName: id,
+      turns: [],
+      status: AgentStatus.COMPLETED,
+      totalTokens: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      totalDurationMs: 0,
+    };
+  }
+
+  function withChild(root: AgentRunData, child: AgentRunData): AgentRunData {
+    return {
+      ...root,
+      turns: [
+        {
+          turnNumber: 1,
+          status: AgentStatus.COMPLETED,
+          durationMs: 0,
+          tokens: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          subAgents: [child],
+          events: [],
+        },
+      ],
+    };
+  }
+
+  it("replaces a top-level sub-agent with the updater's result", () => {
+    const root = withChild(leaf("root"), leaf("child"));
+
+    const updated = replaceAgentRunNode(root, "child", (node) => ({
+      ...node,
+      expanded: true,
+      turns: [
+        {
+          turnNumber: 1,
+          status: AgentStatus.COMPLETED,
+          durationMs: 0,
+          tokens: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          subAgents: [leaf("grandchild")],
+          events: [],
+        },
+      ],
+    }));
+
+    const updatedChild = updated.turns[0].subAgents[0];
+    expect(updatedChild.expanded).toBe(true);
+    expect(updatedChild.turns[0].subAgents[0].id).toBe("grandchild");
+  });
+
+  it("finds and replaces a deeply nested sub-agent, several levels down", () => {
+    const grandchild = leaf("grandchild");
+    const child = withChild(leaf("child"), grandchild);
+    const root = withChild(leaf("root"), child);
+
+    const updated = replaceAgentRunNode(root, "grandchild", (node) => ({
+      ...node,
+      expanded: true,
+    }));
+
+    const updatedGrandchild =
+      updated.turns[0].subAgents[0].turns[0].subAgents[0];
+    expect(updatedGrandchild.expanded).toBe(true);
+  });
+
+  it("replaces the root itself when targetId matches the root's own id", () => {
+    const root = leaf("root");
+    const updated = replaceAgentRunNode(root, "root", (node) => ({
+      ...node,
+      expanded: true,
+    }));
+    expect(updated.expanded).toBe(true);
+  });
+
+  it("returns the same reference untouched when targetId isn't found", () => {
+    const root = withChild(leaf("root"), leaf("child"));
+    const updated = replaceAgentRunNode(root, "nonexistent", (node) => ({
+      ...node,
+      expanded: true,
+    }));
+    expect(updated).toBe(root);
+  });
+
+  it("leaves sibling branches referentially unchanged (no unnecessary re-renders)", () => {
+    const untouchedSibling = leaf("sibling");
+    const root: AgentRunData = {
+      ...leaf("root"),
+      turns: [
+        {
+          turnNumber: 1,
+          status: AgentStatus.COMPLETED,
+          durationMs: 0,
+          tokens: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+          subAgents: [leaf("target"), untouchedSibling],
+          events: [],
+        },
+      ],
+    };
+
+    const updated = replaceAgentRunNode(root, "target", (node) => ({
+      ...node,
+      expanded: true,
+    }));
+
+    expect(updated.turns[0].subAgents[1]).toBe(untouchedSibling);
   });
 });

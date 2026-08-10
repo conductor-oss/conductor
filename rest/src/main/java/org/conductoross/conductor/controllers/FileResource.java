@@ -12,13 +12,20 @@
  */
 package org.conductoross.conductor.controllers;
 
+import java.io.IOException;
+
+import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
 import org.conductoross.conductor.model.file.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.FILES;
@@ -51,6 +58,30 @@ public class FileResource {
     public FileUploadUrlResponse getUploadUrl(
             @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
         return fileStorageService.getUploadUrl(workflowId, fileId);
+    }
+
+    @PutMapping("/content/{workflowId}/{fileId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Stream raw file content to Conductor storage")
+    public void uploadFileContent(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("fileId") String fileId,
+            HttpServletRequest request)
+            throws IOException {
+        fileStorageService.uploadContent(workflowId, fileId, request.getInputStream());
+    }
+
+    @GetMapping("/content/{workflowId}/{fileId}")
+    @Operation(summary = "Stream raw file content from Conductor storage")
+    public ResponseEntity<StreamingResponseBody> downloadFileContent(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        FileContent content = fileStorageService.downloadContent(workflowId, fileId);
+        StreamingResponseBody responseBody = outputStream -> copyAndClose(content, outputStream);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.getContentType()))
+                .contentLength(content.getContentLength())
+                .body(responseBody);
     }
 
     @PostMapping("/{workflowId}/{fileId}/upload-complete")
@@ -110,5 +141,12 @@ public class FileResource {
             @PathVariable("fileId") String fileId,
             @PathVariable("uploadId") String uploadId) {
         fileStorageService.abortMultipartUpload(workflowId, fileId, uploadId);
+    }
+
+    private void copyAndClose(FileContent content, java.io.OutputStream outputStream)
+            throws IOException {
+        try (content) {
+            content.getInputStream().transferTo(outputStream);
+        }
     }
 }

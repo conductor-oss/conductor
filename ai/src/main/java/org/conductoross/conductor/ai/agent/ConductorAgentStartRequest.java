@@ -49,4 +49,6 @@ public class ConductorAgentStartRequest {
 
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
+
+    private String credentialRef;
 }

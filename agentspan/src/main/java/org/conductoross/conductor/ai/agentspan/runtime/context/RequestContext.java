@@ -22,10 +22,10 @@ import lombok.NoArgsConstructor;
 /**
  * Per-request principal context stored in a ThreadLocal for the duration of each request.
  *
- * <p>Carries the resolved {@code userId} used for per-user secret scoping. AgentSpan defines no
- * identity model of its own — the host populates this: the standalone server's {@code AuthFilter}
- * sets an anonymous id, while an embedding application (e.g. orkes-conductor) supplies its own
- * principal id.
+ * <p>Carries the resolved {@code userId} used for per-user secret scoping. Conductor-Agents defines
+ * no identity model of its own — the host populates this: the standalone server's {@code
+ * AuthFilter} sets an anonymous id, while an embedding application (e.g. orkes-conductor) supplies
+ * its own principal id.
  */
 @Data
 @Builder

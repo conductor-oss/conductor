@@ -30,8 +30,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Boots the coexistence configuration with AgentSpan's real primary listener and proves that the
- * composite becomes the injection target while both real listeners still receive callbacks.
+ * Boots the coexistence configuration with Conductor-Agents' real primary listener and proves that
+ * the composite becomes the injection target while both real listeners still receive callbacks.
  */
 class AgentSpanListenerCoexistenceConfigurationIntegrationTest {
 
@@ -39,7 +39,7 @@ class AgentSpanListenerCoexistenceConfigurationIntegrationTest {
     void embeddedContextDemotesAgentListenerAndSelectsCompositesAsPrimary() {
         try (AnnotationConfigApplicationContext context =
                 new AnnotationConfigApplicationContext()) {
-            TestPropertyValues.of("agentspan.embedded=true").applyTo(context);
+            TestPropertyValues.of("conductor.integrations.ai.enabled=true").applyTo(context);
             context.register(AgentSpanListenerCoexistenceConfiguration.class);
             context.registerBean(AgentStreamRegistry.class);
             context.registerBean(MeterRegistry.class, SimpleMeterRegistry::new);
@@ -74,7 +74,7 @@ class AgentSpanListenerCoexistenceConfigurationIntegrationTest {
     void nonEmbeddedContextDoesNotRegisterCoexistenceBeans() {
         try (AnnotationConfigApplicationContext context =
                 new AnnotationConfigApplicationContext()) {
-            TestPropertyValues.of("agentspan.embedded=false").applyTo(context);
+            TestPropertyValues.of("conductor.integrations.ai.enabled=false").applyTo(context);
             context.register(AgentSpanListenerCoexistenceConfiguration.class);
             context.refresh();
 

@@ -355,7 +355,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
             parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
-            executionDAOFacade.updateWorkflow(parentWorkflow);
+            // Deliberately NOT persisted yet (mirrors OrkesWorkflowExecutor): while the sibling
+            // tasks below are being repaired, the stored parent must stay terminal so any
+            // concurrent decide bounces off the terminal guard instead of evaluating a RUNNING
+            // parent whose CANCELED sibling still points at a not-yet-resumed TERMINATED child
+            // (that stale read terminated the freshly retried parent under CI load).
 
             for (TaskModel task : parentWorkflow.getTasks()) {
                 if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
@@ -366,9 +370,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
                     if (child != null) {
                         if (child.getStatus() == WorkflowModel.Status.RUNNING) {
-                            // Child was already set RUNNING by an in-progress rerun; surfacing that
-                            // to the parent task without calling retry() avoids creating a spurious
-                            // new task instance that conflicts with the rerun's own finalizeRerun.
+                            // Child was already set RUNNING by an in-progress rerun; surfacing
+                            // that
+                            // to the parent task without calling retry() avoids creating a
+                            // spurious
+                            // new task instance that conflicts with the rerun's own
+                            // finalizeRerun.
                             task.setStatus(IN_PROGRESS);
                             task.setReasonForIncompletion(null);
                             task.setSubworkflowChanged(true);
@@ -413,6 +420,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
 
+            // Persist the RUNNING parent only after every sibling task above has been
+            // repaired, then decide inline (not via the decider queue) so the first evaluation
+            // of the revived parent happens on the fully repaired state — mirrors
+            // OrkesWorkflowExecutor.
+            executionDAOFacade.updateWorkflow(parentWorkflow);
+
             try {
                 WorkflowStatusListener.WorkflowEventType event =
                         WorkflowStatusListener.WorkflowEventType.valueOf(operation.toUpperCase());
@@ -421,7 +434,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 LOGGER.warn("Unknown workflow operation: {}", operation);
             }
 
-            expediteLazyWorkflowEvaluation(parentWorkflowId);
+            decide(parentWorkflowId);
 
             workflow = parentWorkflow;
         }
@@ -566,6 +579,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @return new instance of a task with "SCHEDULED" status
      */
     private TaskModel taskToBeRescheduled(WorkflowModel workflow, TaskModel task) {
+        // Container and join tasks are retried in place (same task id), mirroring
+        // OrkesWorkflowExecutor#taskToBeRescheduled. JOIN/EXCLUSIVE_JOIN are included here
+        // because conductor-oss's Join is async (Orkes' is sync and takes the sync-system-task
+        // copy branch there): a JOIN must never be SCHEDULED — the mappers create joins
+        // IN_PROGRESS because the async executor evaluates a JOIN only via execute() (called
+        // for IN_PROGRESS tasks), so a fresh SCHEDULED copy is popped, never evaluated, and
+        // postponed forever, leaving the workflow RUNNING after every branch completes.
+        if (task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.FORK_JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.EXCLUSIVE_JOIN.name())) {
+            task.setRetried(false);
+            task.setRetryCount(task.getRetryCount() + 1);
+            task.setStatus(IN_PROGRESS);
+            return task;
+        }
         TaskModel taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(idGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
@@ -2513,6 +2542,25 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 executionDAOFacade.getTaskModel(subWorkflow.getParentWorkflowTaskId());
         if (subWorkflowTask == null) {
             // orphan sub-workflow: parent task was cleared (e.g. parent workflow restarted)
+            return;
+        }
+        // Generation fence: a rerun replaces the parent's fork generation wholesale — the old
+        // SUB_WORKFLOW task rows survive in the task store but are no longer part of the
+        // parent's task list. A late terminal event from the superseded generation's child
+        // must not propagate through that stale task record, or it fails the parent's fresh
+        // generation (observed in CI: parent FAILED citing a task absent from its own task
+        // list). Retry has an analogous fence via isRetried(); rerun needs list membership.
+        WorkflowModel parentWorkflow =
+                executionDAOFacade.getWorkflowModel(subWorkflowTask.getWorkflowInstanceId(), true);
+        if (parentWorkflow != null
+                && parentWorkflow.getTasks().stream()
+                        .noneMatch(t -> t.getTaskId().equals(subWorkflowTask.getTaskId()))) {
+            LOGGER.info(
+                    "Sub-workflow {} finished but its parent task {} is no longer part of parent {}"
+                            + " (superseded by rerun/restart) — dropping stale propagation",
+                    subWorkflow.getWorkflowId(),
+                    subWorkflowTask.getTaskId(),
+                    subWorkflowTask.getWorkflowInstanceId());
             return;
         }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
