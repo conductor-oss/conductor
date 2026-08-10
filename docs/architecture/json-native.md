@@ -9,7 +9,7 @@ Conductor stores workflow definitions as JSON. This is not a UI convenience or a
 
 ## What "JSON + code native" means mechanically
 
-Code and JSON are two ways to author the same artifact. When you define a workflow with an SDK, the SDK builds the same JSON document you could have written by hand and registers it with the server. There is no separate code format: code is the authoring surface, and JSON is what Conductor stores, versions, and executes. Everything below therefore applies equally to workflows written as JSON and workflows written in code.
+You can write a workflow definition in JSON directly, or in code using an SDK. Both produce the same thing: a JSON document. When you define a workflow in code, the SDK converts it to that JSON and registers it with the server. The server only ever stores, versions, and executes the JSON. Everything below applies no matter which way the workflow was written.
 
 1. **Storage.** The workflow definition is a JSON document persisted in the data store. The execution engine reads this document to schedule tasks.
 2. **Versioning.** Each version is a distinct JSON document. Multiple versions can run concurrently. Running executions use a snapshot taken at start time and are immutable against later changes.
