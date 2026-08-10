@@ -6,8 +6,6 @@ description: Conductor stores workflow definitions as JSON — the canonical run
 
 Conductor stores workflow definitions as JSON. This is not a UI convenience or a simplified mode. JSON is the canonical runtime representation. Every workflow, whether created via SDK, API, UI, or file, is stored, versioned, and executed as a JSON document.
 
-For agent orchestration and dynamic workloads, this is a structural advantage.
-
 
 ## What "JSON + code native" means mechanically
 
