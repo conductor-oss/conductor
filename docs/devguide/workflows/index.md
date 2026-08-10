@@ -4,7 +4,7 @@ description: Build, run, trigger, and operate durable Conductor workflows.
 
 # Workflows
 
-Conductor separates what a workflow is from each instance of when it runs. A **workflow definition** is the blueprint: it declares which tasks run, in what order, and how data passes between them. When you start a workflow, Conductor creates a **workflow execution**, which is a single run of that blueprint with its own ID, input, and history. Because the two are separate, editing a definition never rewrites the history of an execution that already ran. In practice, developers evolve definitions through versions, while operators inspect and recover executions.
+Conductor separates what a workflow is from each instance of when it runs. A **workflow definition** declares which tasks run, in what order, and how data passes between them. When you start a workflow, Conductor creates a **workflow execution**, which is a single run of that blueprint with its own ID, input, and history. Because the two are separate, editing a definition never rewrites the history of an execution that already ran. In practice, developers evolve definitions through versions, while operators inspect and recover executions.
 
 Every workflow moves through the same lifecycle:
 
