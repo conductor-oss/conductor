@@ -88,18 +88,6 @@ Servers and workers scale independently. Task domains, rate limits, concurrency 
 | **[RAG applications](../ai/cookbook/rag-agent.md)** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
 | **[Content generation pipelines](../ai/llm-orchestration.md)** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
 
-## The Conductor execution model
-
-- **Native AI tasks** — LLM, MCP, vector, media, and PDF tasks compose with standard workflow control flow.
-- **MCP (Model Context Protocol) native integration** — discover and call tools directly from workflow definitions.
-- **Vector workflows for RAG** — Embed, index, search, and generate in one workflow; see the supported integration reference for configuration.
-- **Content generation tasks** — image, audio, video, and PDF generation as system tasks.
-- **Event and persistence choices** — Deploy with the persistence, queue, and worker topology appropriate for your environment.
-- **Polyglot implementation** — Build workers and clients with the supported SDKs while keeping the execution graph visible.
-- **JSON-native and code-first workflow definitions** — define workflows as JSON or as code using SDKs. Workflow as code for developers who want type safety; JSON for runtime generation and LLM-driven workflows.
-- **Self-hosted and open source** — deploy Conductor on your own infrastructure under the Apache 2.0 license.
-- **Human-in-the-loop as a first-class task type** — pause execution for approvals, reviews, or manual intervention with built-in timeout and escalation.
-
 ## Next steps
 
 - [Quickstart](../../quickstart/first-workflow.md) — run your first workflow in 2 minutes
