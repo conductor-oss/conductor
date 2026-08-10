@@ -162,7 +162,7 @@ public class Join extends WorkflowSystemTask {
     private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
-        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        Object agentToolName = getAgentToolName(forkedTask);
         if (agentToolName != null) {
             compact.put("_agent_tool_name", agentToolName);
             compact.put("_agent_tool_output", output);
@@ -176,6 +176,37 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return compact;
+    }
+
+    /**
+     * Resolve agent dispatch metadata from the most specific runtime representation first, then
+     * fall back to the retained workflow definition. Different task mappers preserve the marker in
+     * different shapes, so JOIN must understand all of them to avoid dropping completed outputs.
+     */
+    private static Object getAgentToolName(TaskModel forkedTask) {
+        Map<String, Object> input = forkedTask.getInputData();
+        if (input != null) {
+            Object agentToolName = input.get("_agent_tool_name");
+            if (agentToolName != null) {
+                return agentToolName;
+            }
+
+            // SUB_WORKFLOW tasks retain their original dispatch input under workflowInput.
+            Object workflowInput = input.get("workflowInput");
+            if (workflowInput instanceof Map<?, ?> nestedInput) {
+                agentToolName = nestedInput.get("_agent_tool_name");
+                if (agentToolName != null) {
+                    return agentToolName;
+                }
+            }
+        }
+
+        // HTTP and MCP task mappers can omit orchestration metadata from resolved inputData while
+        // retaining it on the generated WorkflowTask definition.
+        WorkflowTask workflowTask = forkedTask.getWorkflowTask();
+        Map<String, Object> inputParameters =
+                workflowTask == null ? null : workflowTask.getInputParameters();
+        return inputParameters == null ? null : inputParameters.get("_agent_tool_name");
     }
 
     @Override

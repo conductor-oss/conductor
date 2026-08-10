@@ -71,7 +71,7 @@ class ToolCompilerTest {
                                         "server_url",
                                         "http://mcp.example.com",
                                         "headers",
-                                        Map.of("auth", "key")))
+                                        Map.of("Authorization", "Bearer ${MCP_KEY}")))
                         .build();
 
         ToolCompiler tc = new ToolCompiler();
@@ -81,6 +81,76 @@ class ToolCompilerTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> configParams = (Map<String, Object>) specs.get(0).get("configParams");
         assertThat(configParams.get("mcpServer")).isEqualTo("http://mcp.example.com");
+        assertThat(configParams.get("headers"))
+                .isEqualTo(Map.of("Authorization", "Bearer #{MCP_KEY}"));
+    }
+
+    @Test
+    void preservesGenericMcpAllowlistForFilteredDiscovery() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("support_tools")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of("lookup_ticket")))
+                        .build();
+
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks(
+                                "support", List.of(server), List.of(), "openai/gpt-4o");
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("lookup_ticket");
+    }
+
+    @Test
+    void preservesEmptyMcpAllowlistForDenyAllDiscoveryFilter() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("generic")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "tool_names",
+                                        List.of()))
+                        .build();
+
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks(
+                                "support", List.of(server), List.of(), "openai/gpt-4o");
+
+        assertThat(discovery.getPreTasks().get(1).getInputParameters().get("expression").toString())
+                .contains("\"toolNames\":[]");
+    }
+
+    @Test
+    void marksGenericMcpDiscoveryOptionalWhenConfigured() {
+        ToolConfig server =
+                ToolConfig.builder()
+                        .name("optional_support_tools")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://generic.example/mcp/",
+                                        "optional_discovery",
+                                        true))
+                        .build();
+
+        ToolCompiler.DiscoveryResult discovery =
+                new ToolCompiler()
+                        .buildMcpDiscoveryTasks(
+                                "support", List.of(server), List.of(), "openai/gpt-4o");
+
+        assertThat(discovery.getPreTasks().get(0).getType()).isEqualTo("LIST_MCP_TOOLS");
+        assertThat(discovery.getPreTasks().get(0).isOptional()).isTrue();
     }
 
     @Test

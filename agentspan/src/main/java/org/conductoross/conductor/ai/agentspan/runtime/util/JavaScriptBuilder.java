@@ -1183,6 +1183,8 @@ public class JavaScriptBuilder {
                             + "    var s = servers["
                             + i
                             + "];"
+                            + "    var allowed = s.toolNames;"
+                            + "    if (Array.isArray(allowed) && allowed.indexOf(String(t.name)) < 0) continue;"
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
                             + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
@@ -1276,6 +1278,8 @@ public class JavaScriptBuilder {
                             + "    var s = mcpServers["
                             + i
                             + "];"
+                            + "    var allowed = s.toolNames;"
+                            + "    if (Array.isArray(allowed) && allowed.indexOf(String(t.name)) < 0) continue;"
                             + "    specs.push({name: t.name, type: 'CALL_MCP_TOOL',"
                             + "      description: t.description || '',"
                             + "      inputSchema: _json(t.inputSchema || {type:'object',properties:{}}),"
@@ -1606,6 +1610,7 @@ public class JavaScriptBuilder {
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
                         + "    }"
+                        + "    t.inputParameters._agent_tool_name = n;"
                         + "    result.push(t);"
                         + "  }"
                         + "  return {dynamicTasks: result};");

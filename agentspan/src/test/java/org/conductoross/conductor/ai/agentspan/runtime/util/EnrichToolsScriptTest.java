@@ -489,8 +489,49 @@ class EnrichToolsScriptTest {
         Map<String, Object> t = tasks.get(0);
         assertThat(t.get("type")).isEqualTo("CALL_MCP_TOOL");
         Map<String, Object> ip = (Map<String, Object>) t.get("inputParameters");
+        assertThat(ip).containsEntry("_agent_tool_name", "notion_search");
         assertThat((Map<String, Object>) ip.get("headers"))
                 .containsEntry("Authorization", "Bearer ${workflow.secrets.NOTION_KEY}");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dynamicMcpTaskCarriesAgentToolName() throws Exception {
+        String script =
+                JavaScriptBuilder.enrichToolsScriptDynamic(
+                        "{}", "{}", "{}", "{}", "{}", "{}", "{\"lookup_ticket\":true}");
+        Map<String, Object> result =
+                evaluateWithJavaInputs(
+                        script,
+                        map(
+                                "toolCalls",
+                                List.of(
+                                        map(
+                                                "name",
+                                                "lookup_ticket",
+                                                "taskReferenceName",
+                                                "call_lookup",
+                                                "inputParameters",
+                                                map("ticket_id", "SUP-123"))),
+                                "agentState",
+                                Map.of(),
+                                "userPrompt",
+                                "find prior work",
+                                "mcpConfig",
+                                map(
+                                        "lookup_ticket",
+                                        map(
+                                                "mcpServer",
+                                                "http://localhost:3001/mcp",
+                                                "headers",
+                                                Map.of())),
+                                "apiConfig",
+                                Map.of()));
+
+        Map<String, Object> task = ((List<Map<String, Object>>) result.get("dynamicTasks")).get(0);
+        assertThat(task.get("type")).isEqualTo("CALL_MCP_TOOL");
+        assertThat((Map<String, Object>) task.get("inputParameters"))
+                .containsEntry("_agent_tool_name", "lookup_ticket");
     }
 
     @Test
@@ -558,6 +599,38 @@ class EnrichToolsScriptTest {
         ToolSpec llmTool = llmInput.getTools().get(0);
         assertThat(llmTool.getInputSchema()).isEqualTo(schema);
         assertThat(llmTool.getConfigParams()).containsEntry("selfDescribing", true);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void mcpPrepareHonorsExplicitAndEmptyAllowlists() throws Exception {
+        Map<String, Object> allowed =
+                map("name", "lookup_ticket", "description", "Lookup", "inputSchema", Map.of());
+        Map<String, Object> denied =
+                map("name", "delete_ticket", "description", "Delete", "inputSchema", Map.of());
+
+        Map<String, Object> filtered =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"https://generic.example/mcp\",\"headers\":{},\"toolNames\":[\"lookup_ticket\"]}]",
+                                32),
+                        map("discovered_0", List.of(allowed, denied)));
+        assertThat((List<Map<String, Object>>) filtered.get("tools"))
+                .extracting(tool -> tool.get("name"))
+                .containsExactly("lookup_ticket");
+
+        Map<String, Object> empty =
+                evaluateWithJavaInputs(
+                        JavaScriptBuilder.mcpPrepareScript(
+                                "[]",
+                                1,
+                                "[{\"serverUrl\":\"https://generic.example/mcp\",\"headers\":{},\"toolNames\":[]}]",
+                                32),
+                        map("discovered_0", List.of(allowed, denied)));
+        assertThat((List<Map<String, Object>>) empty.get("tools")).isEmpty();
+        assertThat((Map<String, Object>) empty.get("mcpConfig")).isEmpty();
     }
 
     @Test

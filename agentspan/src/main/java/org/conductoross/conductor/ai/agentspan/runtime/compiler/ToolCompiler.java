@@ -202,7 +202,11 @@ public class ToolCompiler {
                 Map<String, Object> configParams = new LinkedHashMap<>();
                 configParams.put("mcpServer", tool.getConfig().getOrDefault("server_url", ""));
                 Object headers = tool.getConfig().get("headers");
-                if (headers != null) {
+                if (headers instanceof Map<?, ?> headerMap) {
+                    // Keep secrets inert while the spec crosses INLINE tasks. Enrichment restores
+                    // workflow-secret references only on the emitted CALL_MCP_TOOL task.
+                    configParams.put("headers", escapeCredentialPlaceholders(headerMap));
+                } else if (headers != null) {
                     configParams.put("headers", headers);
                 }
                 spec.put("configParams", configParams);
@@ -805,6 +809,9 @@ public class ToolCompiler {
                         mcpDiscH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpDiscH)
                                 : mcpDiscH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 serverMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -825,6 +832,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
@@ -1113,6 +1121,9 @@ public class ToolCompiler {
                         mcpH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpH)
                                 : mcpH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 mcpServerMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1131,6 +1142,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
@@ -1273,6 +1285,17 @@ public class ToolCompiler {
                 maxTools);
 
         return new DiscoveryResult(preTasks, toolsRef, mcpConfigRef, apiConfigRef);
+    }
+
+    private static void copyMcpToolNames(
+            Map<String, Object> source, Map<String, Object> destination) {
+        Object names =
+                source.containsKey("tool_names")
+                        ? source.get("tool_names")
+                        : source.get("toolNames");
+        if (names instanceof List<?>) {
+            destination.put("toolNames", names);
+        }
     }
 
     /** Build a dynamic filter chain for API discovery (uses _api_ prefixed task refs). */
