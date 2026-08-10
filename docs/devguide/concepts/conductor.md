@@ -4,7 +4,7 @@ description: "Why use Conductor? An open-source durable execution platform for w
 
 # Why Conductor
 
-Conductor is an open source workflow engine built for workflow orchestration at scale. It orchestrates distributed workflows across services, languages, and infrastructure — tracking every state transition, retrying failures automatically, and giving you full visibility into what happened and why. Whether you need microservice orchestration, AI agent orchestration, or workflow automation, Conductor provides a self-hosted, code-first platform with no vendor lock-in.
+Conductor is an open source engine that orchestrates workflows across services and languages. It records every state transition, retries failures automatically, and keeps a full history of what happened and why.
 
 ## The problem
 
