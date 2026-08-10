@@ -5,11 +5,6 @@ description: "Learn about tasks in Conductor — the reusable building blocks of
 # Tasks
 
 <section class="concept-hero concept-hero--tasks">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Composable workflow steps</p>
-    <h2>Use built-ins for common work and workers for your own logic.</h2>
-    <p>Each task receives resolved input, performs one focused operation, and records output that later workflow steps can safely consume.</p>
-  </div>
   <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="A workflow routes work to a system task or worker task and receives a recorded output">
     <defs><marker id="task-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="14" y="68" width="105" height="54" rx="10" class="concept-hero__node" />

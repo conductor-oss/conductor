@@ -314,6 +314,12 @@ body {
   min-width: 0;
   color: var(--concept-accent);
 }
+/* Graphic-only hero (no __content column): span the grid and center. */
+.concept-hero__graphic:only-child {
+  grid-column: 1 / -1;
+  max-width: 560px;
+  margin: 0 auto;
+}
 .concept-hero__node,
 .concept-hero__outcome-box {
   fill: var(--c-bg);
