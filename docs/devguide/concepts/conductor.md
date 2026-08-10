@@ -8,11 +8,11 @@ Conductor is an open source engine that orchestrates workflows across services a
 
 ## The problem
 
-Every distributed process has to survive failure. A service can crash mid-request, and a deploy can interrupt work that is half done. If nothing coordinates the process, each service carries its own retry, timeout, and recovery logic. That logic gets duplicated everywhere and owned by no one, and there is no single place to see how far a process got.
+Every distributed process has to survive failure. Without coordination, each service carries its own retry, timeout, and recovery logic. That logic gets duplicated everywhere and owned by no one.
 
-A common answer is **choreography**, where services react to each other's events with no central coordinator. This keeps services decoupled on paper, but the business process itself becomes invisible. The flow exists only as an implied chain of event contracts, so changing one service can break consumers it cannot see. Observing the process is just as hard: finding out how far along one order is means querying every service in the chain, and debugging a failure means correlating logs across all of them.
+One common proposed solution is **choreography**, where services react to each other's events with no central coordinator. This keeps services decoupled on paper, but the logic of the overall business process is not visible. The flow exists only as an implied chain of event contracts, so changing one service can break consumers it cannot see. Observing the process is also hard. For example debugging a failure means correlating logs across all of the services.
 
-**Orchestration** takes the opposite approach. The process is defined in one place, while the work stays distributed. Conductor is the orchestrator: it owns the flow, the state, and the recovery, so your workers stay stateless and independent.
+**Orchestration** is Conductor's approach. The overall business process is defined in one place, while the work itself stays distributed. Conductor is the orchestrator. It owns the flow, the state, and the recovery, so workers stay stateless and independent.
 
 ## What Conductor gives you
 
