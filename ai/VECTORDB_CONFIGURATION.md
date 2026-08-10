@@ -124,7 +124,7 @@ conductor:
           distanceMetric: "cosine"         # Options: cosine, l2, ip
           indexingMethod: "hnsw"           # Options: hnsw, flat
           keyPrefix: "conductor"
-          requestTimeoutMs: 2000
+          requestTimeoutMs: 2000       # Also bounds FT.SEARCH/KNN latency
 ```
 
 **Limitations of this release:**
@@ -134,10 +134,15 @@ conductor:
 - Not compatible with managed services that do not ship the search module. Verify
   module availability with your provider before choosing this backend.
 
-**Score semantics:** `score` on returned documents is the raw cosine distance, so
-**lower is closer** — an exact match scores `0.0` and an orthogonal vector scores `1.0`.
+**Score semantics:** `score` on returned documents is a Valkey Search distance, so
+**lower is closer** for `cosine`, `l2`, and `ip`. For cosine, an exact match scores `0.0`
+and an orthogonal vector scores `1.0`. For inner product, Valkey Search uses `1 - dot(X,Y)`.
 This matches the PostgreSQL backend. MongoDB and Pinecone instead return a similarity
 where higher is closer, so do not compare score values across backends.
+
+**Search timeout:** `requestTimeoutMs` is the timeout for every Valkey command, including
+`FT.SEARCH` KNN queries. Increase it for large indexes or higher `EF_RUNTIME` settings if
+searches exceed the configured deadline.
 
 **Keys and indexes:** documents are stored as hashes under
 `<keyPrefix>:<indexName>:<namespace>:<docId>`, and each `(indexName, namespace)` pair
@@ -234,7 +239,7 @@ When using vector database tasks in your workflows, reference the instance by it
 | `distanceMetric` | String | "cosine" | Distance metric (cosine, l2, ip). Unknown values are rejected at startup |
 | `indexingMethod` | String | "hnsw" | Index algorithm (hnsw or flat). Unknown values are rejected at startup |
 | `keyPrefix` | String | "conductor" | Root segment for keys and index names. Trailing colons are stripped; must match `[a-zA-Z0-9_.-]+` |
-| `requestTimeoutMs` | Integer | 2000 | Per-request timeout in milliseconds. Must be positive |
+| `requestTimeoutMs` | Integer | 2000 | Per-command timeout in milliseconds, including FT.SEARCH/KNN. Must be positive |
 
 ## Migration from Old Configuration
 
@@ -327,6 +332,7 @@ If you see an error like "Vector DB instance not found: xyz", check:
   whether its `hash_indexing_failures` counter is climbing.
 - `dimensions` is fixed when the index is created and there is no ALTER equivalent.
   Changing it requires `FT.DROPINDEX` on the affected index followed by re-indexing.
-- Remember that `score` is a distance, so ascending order is closest-first. Sorting
-  descending will return the least relevant documents.
-
+- When reusing an existing index, its vector dimensions are validated with `FT.INFO` and
+  must match the configured `dimensions` value.
+- Remember that `score` is a distance for all supported metrics, so ascending order is
+  closest-first. Sorting descending will return the least relevant documents.

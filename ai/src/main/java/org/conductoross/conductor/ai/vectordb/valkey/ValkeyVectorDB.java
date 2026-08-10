@@ -42,9 +42,9 @@ import static glide.api.models.GlideString.gs;
 /**
  * Valkey vector database backend using the {@code valkey-search} module (FT.CREATE / FT.SEARCH).
  *
- * <p>Score semantics: the {@code __embedding_score} field returned by valkey-search is a raw
- * distance value (lower is better). For COSINE metric: 0 = identical, 1 = orthogonal. This matches
- * the convention used by {@code PostgresVectorDB} and {@code SqliteVectorDB}.
+ * <p>Score semantics: the {@code __embedding_score} field returned by valkey-search is a distance
+ * value where lower is better for COSINE, L2, and IP. COSINE scores are 0 for identical vectors
+ * and 1 for orthogonal vectors; IP uses Valkey Search's {@code 1 - dot(X,Y)} distance.
  *
  * <p>Key schema: {@code <keyPrefix>:<indexName>:<namespace>:<docId>}. The FT.CREATE PREFIX filter
  * is set to {@code <keyPrefix>:<indexName>:<namespace>:} so that HSET keys are automatically
@@ -360,6 +360,7 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
             // throws, the index remains uninitialized and a later operation can retry it.
             createIndex(indexName, namespace, physicalIndex);
             initializedIndexes.put(physicalIndex, Boolean.TRUE);
+            indexInitializationLocks.remove(physicalIndex, initializationLock);
         }
     }
 
@@ -385,6 +386,7 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
         } catch (RuntimeException e) {
             if (isAlreadyExistsError(e)) {
                 log.debug("Index '{}' already exists, continuing", physicalIndex);
+                validateExistingIndexDimensions(physicalIndex);
             } else if (isUnknownCommandError(e)) {
                 throw new RuntimeException(
                         "The Valkey server does not have the search module loaded. "
@@ -395,6 +397,114 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
                 throw e;
             }
         }
+    }
+
+    private void validateExistingIndexDimensions(String physicalIndex) {
+        Map<String, Object> info = await(FT.info(client, physicalIndex));
+        Integer existingDimensions = findVectorDimension(info);
+        int configuredDimensions = config.getDimensions() != null ? config.getDimensions() : 256;
+        if (existingDimensions == null) {
+            throw new RuntimeException(
+                    "Unable to determine dimensions for existing Valkey index '"
+                            + physicalIndex
+                            + "'");
+        }
+        if (existingDimensions != configuredDimensions) {
+            throw new RuntimeException(
+                    "Valkey index '"
+                            + physicalIndex
+                            + "' has dimensions "
+                            + existingDimensions
+                            + " but configuration requires "
+                            + configuredDimensions);
+        }
+    }
+
+    private static Integer findVectorDimension(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            Object fieldName = mapValue(map, "field_name");
+            Object identifier = mapValue(map, "identifier");
+            Object attribute = mapValue(map, "attribute");
+            if (EMBEDDING_FIELD.equals(String.valueOf(fieldName))
+                    || EMBEDDING_FIELD.equals(String.valueOf(identifier))
+                    || EMBEDDING_FIELD.equals(String.valueOf(attribute))) {
+                Object vectorParams = mapValue(map, "vector_params");
+                if (vectorParams instanceof Map<?, ?> params) {
+                    Object dimension = mapValue(params, "dimension");
+                    Integer parsedDimension = parseDimension(dimension);
+                    if (parsedDimension != null) {
+                        return parsedDimension;
+                    }
+                }
+                Object dimension = mapValue(map, "dimension");
+                Integer parsedDimension = parseDimension(dimension);
+                if (parsedDimension != null) {
+                    return parsedDimension;
+                }
+                parsedDimension = parseDimension(mapValue(map, "dim"));
+                if (parsedDimension != null) {
+                    return parsedDimension;
+                }
+            }
+            for (Object nested : map.values()) {
+                Integer dimension = findVectorDimension(nested);
+                if (dimension != null) {
+                    return dimension;
+                }
+            }
+        } else if (value instanceof Object[] array) {
+            Object identifier = arrayValue(array, "identifier");
+            Object attribute = arrayValue(array, "attribute");
+            if (EMBEDDING_FIELD.equals(String.valueOf(identifier))
+                    || EMBEDDING_FIELD.equals(String.valueOf(attribute))) {
+                Object index = arrayValue(array, "index");
+                Integer dimensions = parseDimension(arrayValue(index, "dimensions"));
+                if (dimensions != null) {
+                    return dimensions;
+                }
+            }
+            for (Object nested : array) {
+                Integer dimension = findVectorDimension(nested);
+                if (dimension != null) {
+                    return dimension;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Object arrayValue(Object value, String name) {
+        if (value instanceof Object[] array) {
+            for (int i = 0; i + 1 < array.length; i += 2) {
+                if (name.equals(String.valueOf(array[i]))) {
+                    return array[i + 1];
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Integer parseDimension(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value != null) {
+            try {
+                return Integer.valueOf(String.valueOf(value));
+            } catch (NumberFormatException ignored) {
+                // Continue searching other metadata fields.
+            }
+        }
+        return null;
+    }
+
+    private static Object mapValue(Map<?, ?> map, String name) {
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (name.equals(String.valueOf(entry.getKey()))) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     private FieldInfo[] buildSchema() {

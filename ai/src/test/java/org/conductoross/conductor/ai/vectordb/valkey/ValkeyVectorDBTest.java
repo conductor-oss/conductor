@@ -714,6 +714,62 @@ class ValkeyVectorDBTest {
     }
 
     @Test
+    void existingIndexWithMismatchedDimensions_failsBeforeWrite() {
+        GlideClient mockClient = mock(GlideClient.class);
+        ValkeyVectorDB db = createMockValkeyDB(defaultConfig(), mockClient);
+
+        Object[] vectorAttribute =
+                new Object[] {
+                    GlideString.gs("identifier"), GlideString.gs("embedding"),
+                    GlideString.gs("attribute"), GlideString.gs("embedding"),
+                    GlideString.gs("user_indexed_memory"), 16L,
+                    GlideString.gs("type"), GlideString.gs("VECTOR"),
+                    GlideString.gs("index"),
+                    new Object[] {
+                        GlideString.gs("capacity"), 10240L,
+                        GlideString.gs("dimensions"), 8L,
+                        GlideString.gs("distance_metric"), GlideString.gs("COSINE"),
+                        GlideString.gs("size"), GlideString.gs("1"),
+                        GlideString.gs("data_type"), GlideString.gs("FLOAT32"),
+                        GlideString.gs("algorithm"), new Object[] {}
+                    }
+                };
+        Map<String, Object> info =
+                Map.of("attributes", new Object[] {vectorAttribute});
+
+        try (MockedStatic<FT> ft = mockStatic(FT.class)) {
+            ft.when(
+                            () ->
+                                    FT.create(
+                                            eq(mockClient),
+                                            eq("conductor:index:ns"),
+                                            any(FTCreateOptions.FieldInfo[].class),
+                                            any(FTCreateOptions.class)))
+                    .thenReturn(
+                            CompletableFuture.failedFuture(
+                                    new RequestException(
+                                            "Index: conductor:index:ns in database 0 already exists.")));
+            ft.when(() -> FT.info(eq(mockClient), eq("conductor:index:ns")))
+                    .thenReturn(CompletableFuture.completedFuture(info));
+
+            RuntimeException thrown =
+                    assertThrows(
+                            RuntimeException.class,
+                            () ->
+                                    db.updateEmbeddings(
+                                            "index",
+                                            "ns",
+                                            "doc",
+                                            null,
+                                            "id",
+                                            List.of(1.0f, 0.0f, 0.0f, 0.0f),
+                                            Map.of()));
+            assertTrue(thrown.getMessage().contains("has dimensions 8"));
+            verifyNoInteractions(mockClient);
+        }
+    }
+
+    @Test
     void parseSearchResults_validShape_roundTripsFields() {
         ValkeyVectorDB db = createMockValkeyDB(defaultConfig());
         Map<GlideString, GlideString> fields =
