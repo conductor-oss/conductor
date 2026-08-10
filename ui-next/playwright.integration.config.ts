@@ -26,6 +26,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 const CONDUCTOR_SERVER_URL =
   process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8000";
+const PLAYWRIGHT_BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:1234";
 
 export default defineConfig({
   testDir: "./e2e/integration",
@@ -48,13 +50,22 @@ export default defineConfig({
   globalTeardown: "./e2e/integration/global-teardown.ts",
 
   use: {
-    baseURL: "http://localhost:1234",
+    baseURL: PLAYWRIGHT_BASE_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     // Integration tests can be slower due to real API calls.
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
   },
+
+  // Visual assertions in integration specs (e.g. agent definition diagram).
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+    },
+  },
+  snapshotPathTemplate:
+    "{testDir}/__snapshots__/{testFilePath}/{arg}-{platform}{ext}",
 
   projects: [
     {
@@ -73,19 +84,27 @@ export default defineConfig({
   // SKIP_WEBSERVER_BUILD=true so the webServer only runs the lightweight
   // preview — vite build + E2E_COVERAGE sourcemaps can OOM on the runner when
   // combined with Docker.
-  webServer: {
-    command:
-      process.env.SKIP_WEBSERVER_BUILD === "true"
-        ? "pnpm preview"
-        : "pnpm build && pnpm preview",
-    url: "http://localhost:1234",
-    reuseExistingServer: !process.env.CI,
-    timeout: 300_000, // allow up to 5 min for a cold build
-    env: {
-      VITE_WF_SERVER: CONDUCTOR_SERVER_URL,
-      // Raise the heap for `vite build` (especially with E2E_COVERAGE sourcemaps).
-      // CI pre-builds with SKIP_WEBSERVER_BUILD so this mainly helps local runs.
-      NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=8192",
-    },
-  },
+  //
+  // Set SKIP_WEBSERVER=true to point Playwright at an already-running preview
+  // (e.g. generating Linux snapshots from a Playwright Docker image on macOS).
+  ...(process.env.SKIP_WEBSERVER === "true"
+    ? {}
+    : {
+        webServer: {
+          command:
+            process.env.SKIP_WEBSERVER_BUILD === "true"
+              ? "pnpm preview"
+              : "pnpm build && pnpm preview",
+          url: PLAYWRIGHT_BASE_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 300_000, // allow up to 5 min for a cold build
+          env: {
+            VITE_WF_SERVER: CONDUCTOR_SERVER_URL,
+            // Raise the heap for `vite build` (especially with E2E_COVERAGE sourcemaps).
+            // CI pre-builds with SKIP_WEBSERVER_BUILD so this mainly helps local runs.
+            NODE_OPTIONS:
+              process.env.NODE_OPTIONS ?? "--max-old-space-size=8192",
+          },
+        },
+      }),
 });
