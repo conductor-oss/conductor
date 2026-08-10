@@ -8,16 +8,11 @@ Conductor is an open source engine that orchestrates workflows across services a
 
 ## The problem
 
-Distributed systems fail. Services crash, networks drop, deployments roll mid-flight. Without a workflow orchestration platform, you end up writing retry logic, state tracking, timeout handling, and compensation flows into every service. That logic is scattered, inconsistent, and invisible.
+Every distributed process has to survive failure. A service can crash mid-request, and a deploy can interrupt work that is half done. If nothing coordinates the process, each service carries its own retry, timeout, and recovery logic. That logic gets duplicated everywhere and owned by no one, and there is no single place to see how far a process got.
 
-**Choreography** (peer-to-peer events) makes this worse at scale:
+A common answer is **choreography**, where services react to each other's events with no central coordinator. This keeps services decoupled on paper, but the business process itself becomes invisible. The flow exists only as an implied chain of event contracts, so changing one service can break consumers it cannot see. Observing the process is just as hard: finding out how far along one order is means querying every service in the chain, and debugging a failure means correlating logs across all of them.
 
-- Business processes are implicit — embedded across dozens of services with no single view of the flow.
-- Tight coupling through assumed message contracts makes changes risky.
-- "How far along is order #12345?" requires querying every service in the chain.
-- Debugging a failure means correlating logs across services, queues, and time.
-
-**Orchestration** centralizes the flow definition while keeping execution distributed. Conductor is the orchestrator — your workers stay stateless and independent.
+**Orchestration** takes the opposite approach. The process is defined in one place, while the work stays distributed. Conductor is the orchestrator: it owns the flow, the state, and the recovery, so your workers stay stateless and independent.
 
 ## What Conductor gives you
 
