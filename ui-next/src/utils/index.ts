@@ -1,5 +1,6 @@
 export * from "./array";
 export * from "./date";
+export * from "./executionSort";
 export * from "./flags";
 export * from "./gtag";
 export * from "./handleValidChars";

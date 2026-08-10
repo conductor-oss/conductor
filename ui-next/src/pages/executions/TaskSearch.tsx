@@ -18,7 +18,7 @@ import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { IObject } from "types/common";
-import { dateToEpoch } from "utils";
+import { buildSortParam, dateToEpoch } from "utils";
 import { pluralizeResults } from "utils/helpers";
 import { ERROR_URL, NEW_TASK_DEF_URL } from "utils/constants/route";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
@@ -241,9 +241,7 @@ export function TaskSearch() {
   };
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const sort = `${sortColumn}:${direction.toUpperCase()}`;
+    const sort = buildSortParam(changedColumn, direction);
     setPage(1);
     setSort(sort);
   };

@@ -725,4 +725,26 @@ public class PostgresIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
     }
+
+    @Test
+    void shouldSortOnWorkflowTypeWhichBacksTheAgentNameColumn() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index", "", "", 0, 15, List.of("workflowType:ASC"), properties);
+        assertEquals(
+                "SELECT json_data::TEXT FROM workflow_index ORDER BY workflow_type ASC LIMIT ? OFFSET ?",
+                builder.getQuery());
+    }
+
+    @Test
+    void shouldDropSortFieldsThatAreNotIndexedColumns() throws SQLException {
+        // A sort field outside VALID_FIELDS produces no ORDER BY at all rather than an
+        // error, so LIMIT/OFFSET pages an unordered result set. Callers must send the
+        // indexed column name -- `workflowType`, not `workflowName`. See issue #1514.
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index", "", "", 0, 15, List.of("workflowName:ASC"), properties);
+        assertEquals(
+                "SELECT json_data::TEXT FROM workflow_index LIMIT ? OFFSET ?", builder.getQuery());
+    }
 }

@@ -25,7 +25,7 @@ import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
 import { IObject } from "types/common";
-import { dateToEpoch, useLocalStorage } from "utils";
+import { buildSortParam, dateToEpoch, useLocalStorage } from "utils";
 import { ERROR_URL } from "utils/constants/route";
 import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInputValidation";
 import { useWorkflowNames, useWorkflowSearch } from "utils/query";
@@ -343,9 +343,7 @@ export default function BasicSearch({
   );
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const newSort = `${sortColumn}:${direction.toUpperCase()}`;
+    const newSort = buildSortParam(changedColumn, direction);
 
     // Only refetch if sort actually changed
     if (sort !== newSort) {
