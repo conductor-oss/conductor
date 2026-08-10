@@ -91,6 +91,10 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
      */
     private final ConcurrentHashMap<String, Boolean> initializedIndexes = new ConcurrentHashMap<>();
 
+    /** Per-index monitors keep network I/O out of ConcurrentHashMap mapping functions. */
+    private final ConcurrentHashMap<String, Object> indexInitializationLocks =
+            new ConcurrentHashMap<>();
+
     private final long requestTimeoutMs;
     private final DistanceMetric distanceMetric;
 
@@ -345,13 +349,18 @@ public class ValkeyVectorDB extends VectorDB implements Closeable {
             return;
         }
 
-        // If index creation throws, computeIfAbsent does not install a cache entry.
-        initializedIndexes.computeIfAbsent(
-                physicalIndex,
-                k -> {
-                    createIndex(indexName, namespace, physicalIndex);
-                    return Boolean.TRUE;
-                });
+        Object initializationLock =
+                indexInitializationLocks.computeIfAbsent(physicalIndex, k -> new Object());
+        synchronized (initializationLock) {
+            if (initializedIndexes.containsKey(physicalIndex)) {
+                return;
+            }
+
+            // Keep the network round trip outside ConcurrentHashMap.computeIfAbsent. If creation
+            // throws, the index remains uninitialized and a later operation can retry it.
+            createIndex(indexName, namespace, physicalIndex);
+            initializedIndexes.put(physicalIndex, Boolean.TRUE);
+        }
     }
 
     private void createIndex(String indexName, String namespace, String physicalIndex) {

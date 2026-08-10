@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.valkey.ValkeyConfig;
@@ -32,7 +34,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,6 +64,8 @@ public class ValkeyVectorDBRoundTripTest {
 
     /** Query vector; distances below are derived from it. */
     private static final List<Float> QUERY = List.of(1f, 0f, 0f, 0f);
+    private static final Duration SEARCH_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration SEARCH_POLL_INTERVAL = Duration.ofMillis(100);
 
     private static GenericContainer<?> valkey;
 
@@ -91,25 +94,46 @@ public class ValkeyVectorDBRoundTripTest {
     }
 
     /**
-     * Indexing in valkey-search is asynchronous, so poll until the expected number of documents is
-     * visible rather than sleeping a fixed amount.
+     * Indexing in valkey-search is asynchronous, so poll until the condition is met or the
+     * caller-supplied timeout expires.
      */
     private List<IndexedDoc> searchUntil(
             ValkeyVectorDB db, String index, String namespace, int maxResults, int expected) {
+        return searchUntil(
+                db,
+                index,
+                namespace,
+                maxResults,
+                results -> results.size() == expected,
+                SEARCH_TIMEOUT,
+                "expected " + expected + " results");
+    }
+
+    private List<IndexedDoc> searchUntil(
+            ValkeyVectorDB db,
+            String index,
+            String namespace,
+            int maxResults,
+            Predicate<List<IndexedDoc>> condition,
+            Duration timeout,
+            String conditionDescription) {
+        long deadline = System.nanoTime() + timeout.toNanos();
         List<IndexedDoc> results = List.of();
-        for (int attempt = 0; attempt < 50; attempt++) {
+        while (System.nanoTime() < deadline) {
             results = db.search(index, namespace, QUERY, maxResults);
-            if (results.size() == expected) {
+            if (condition.test(results)) {
                 return results;
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(SEARCH_POLL_INTERVAL.toMillis());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted while waiting for indexing", e);
             }
         }
-        return results;
+        throw new AssertionError(
+                "Timed out after " + timeout + " waiting for " + conditionDescription
+                        + "; last result count=" + results.size());
     }
 
     @Test
@@ -198,22 +222,18 @@ public class ValkeyVectorDBRoundTripTest {
             // Second write to the same id replaces it with an exact match.
             db.updateEmbeddings("docs", "ns", "revised", null, "same-id", QUERY, Map.of());
 
-            IndexedDoc after = null;
-            for (int attempt = 0; attempt < 50 && after == null; attempt++) {
-                IndexedDoc candidate = searchUntil(db, "docs", "ns", 1, 1).get(0);
-                if ("revised".equals(candidate.getText())) {
-                    after = candidate;
-                    break;
-                }
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Interrupted", e);
-                }
-            }
+            IndexedDoc after =
+                    searchUntil(
+                                    db,
+                                    "docs",
+                                    "ns",
+                                    1,
+                                    results -> results.size() == 1
+                                            && "revised".equals(results.get(0).getText()),
+                                    SEARCH_TIMEOUT,
+                                    "the revised document")
+                            .get(0);
 
-            assertNotNull(after, "upsert did not replace the stored document");
             assertEquals("revised", after.getText());
             assertEquals(0.0, after.getScore(), 1e-9);
 
