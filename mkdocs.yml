@@ -33,7 +33,7 @@ nav:
     - Conductor for AI Assistants: devguide/ai/conductor-for-ai-assistants.md
   - Platform:
     - Core Concepts: devguide/concepts/index.md
-    - What is Conductor: devguide/concepts/conductor.md
+    - Why Conductor: devguide/concepts/conductor.md
     - Architecture: devguide/architecture/index.md
     - Durable Execution: architecture/durable-execution.md
     - JSON + Code Native: architecture/json-native.md
