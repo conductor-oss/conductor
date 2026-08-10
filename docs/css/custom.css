@@ -332,6 +332,14 @@ body {
 .agent-runtime-hero:has(> .agent-runtime-hero__diagram:only-child) {
   padding: 13px;
 }
+.agent-concepts-hero > .agent-concepts-hero__diagram:only-child {
+  grid-column: 1 / -1;
+  max-width: 660px;
+  margin: 0 auto;
+}
+.agent-concepts-hero:has(> .agent-concepts-hero__diagram:only-child) {
+  padding: 12px;
+}
 .concept-hero__node,
 .concept-hero__outcome-box {
   fill: var(--c-bg);
