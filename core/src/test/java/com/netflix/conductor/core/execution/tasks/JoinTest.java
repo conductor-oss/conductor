@@ -203,6 +203,30 @@ public class JoinTest {
     }
 
     @Test
+    public void testMarkedAgentToolKeepsNameAndFullOutputWhenItAlsoUpdatesState() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+
+        Map<String, Object> toolOutput =
+                Map.of("customerName", "Alice", "_state_updates", Map.of("customerName", "Alice"));
+        TaskModel toolTask = forkedTaskWithOutput("lookup_customer", toolOutput);
+        toolTask.setInputData(new HashMap<>(Map.of("_agent_tool_name", "lookup_for_handoff")));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(toolTask));
+
+        TaskModel joinTask = joinTaskOn("lookup_customer");
+
+        assertTrue(join.execute(workflow, joinTask, mock(WorkflowExecutor.class)));
+        assertEquals(
+                Map.of("_agent_tool_name", "lookup_for_handoff", "_agent_tool_output", toolOutput),
+                joinTask.getOutputData().get("lookup_customer"));
+    }
+
+    @Test
     public void testUnmarkedAgentWorkflowDefCompactsOnlyStateKeys() {
         Join join = new Join(mock(ConductorProperties.class));
 

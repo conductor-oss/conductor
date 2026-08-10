@@ -84,13 +84,13 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For Conductor-Agents state branches,
-            // retain only the merge keys to keep the JOIN payload small. Tool branches do not
-            // carry state keys and must pass through unchanged for the ReAct state merge.
+            // Only add to task output if it's not empty. For Conductor-Agents, preserve marked
+            // tool outputs with their identity, compact state-only branches, and pass through
+            // unmarked tool outputs for the ReAct state merge.
             if (!forkedTask.getOutputData().isEmpty()) {
                 Map<String, Object> forkOutput = forkedTask.getOutputData();
-                if (agentExecution && carriesAgentState(forkOutput)) {
-                    forkOutput = compactAgentOutput(forkOutput);
+                if (agentExecution) {
+                    forkOutput = prepareAgentOutput(forkedTask);
                 }
                 task.addOutput(joinOnRef, forkOutput);
             }
@@ -152,6 +152,24 @@ public class Join extends WorkflowSystemTask {
     /** True when the fork branch carries state intended for a multi-agent state merge. */
     private static boolean carriesAgentState(Map<String, Object> output) {
         return output != null && AGENT_PROPAGATED_KEYS.stream().anyMatch(output::containsKey);
+    }
+
+    private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
+        Map<String, Object> output = forkedTask.getOutputData();
+
+        // Tool identity takes precedence because a tool output may also contain state updates.
+        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        if (agentToolName != null) {
+            Map<String, Object> toolOutput = new LinkedHashMap<>();
+            toolOutput.put("_agent_tool_name", agentToolName);
+            toolOutput.put("_agent_tool_output", output);
+            return toolOutput;
+        }
+
+        if (carriesAgentState(output)) {
+            return compactAgentOutput(output);
+        }
+        return output;
     }
 
     private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {

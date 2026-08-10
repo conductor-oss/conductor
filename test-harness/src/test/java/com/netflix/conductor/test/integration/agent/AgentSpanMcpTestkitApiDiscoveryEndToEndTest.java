@@ -376,8 +376,8 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
         Map<String, Object> mcpOutput = outputOf(mcp);
         assertEquals(false, mcpOutput.get("isError"));
         assertTrue(
-                !mcp.getWorkflowTask().getInputParameters().containsKey("_agent_tool_name"),
-                "the MCP task must exercise the unmarked tool-output path");
+                !mcp.getInputData().containsKey("_agent_tool_name"),
+                "the MCP task must exercise the unmarked runtime-output path");
 
         Task join = taskByReferencePrefix(betweenTurns, agentName + "_fork_join");
         Map<String, Object> joinOutput = outputOf(join);
