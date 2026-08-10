@@ -4,7 +4,7 @@ description: Build, run, trigger, and operate durable Conductor workflows.
 
 # Workflows
 
-A Conductor **workflow definition** is a versioned blueprint: it names the tasks, maps inputs and outputs, and declares control flow. A **workflow execution** is one durable run of that blueprint with its own ID, input, task state, output, and history. Editing a definition does not edit the recorded history of an execution; operators inspect and recover executions, while developers evolve definitions through versions.
+A **workflow definition** is the blueprint. It declares the tasks, their order, and how data flows between them. A **workflow execution** is one durable run of that blueprint, with its own ID, input, and history. Editing a definition never rewrites an execution's history. Developers evolve definitions through versions. Operators inspect and recover executions.
 
 ```mermaid
 flowchart LR
@@ -16,7 +16,7 @@ flowchart LR
   evolve --> register
 ```
 
-Conductor persists progress between tasks. That makes workflows useful when work spans services, retries, human decisions, timers, or infrastructure restarts. It also means the task boundary is an operational contract: inputs must be resolvable, failures need a policy, and externally executed tasks need a worker that is actually polling.
+Conductor saves progress after every task. Work can span services, wait on people or timers, and survive restarts. Each task boundary is also a contract. A task needs defined inputs and a failure policy. A worker task needs a worker polling for it, or the workflow stops advancing.
 
 <div class="grid cards" markdown>
 
