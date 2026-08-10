@@ -377,33 +377,18 @@ document.addEventListener("DOMContentLoaded",function(){var items=Array.prototyp
 - **[Agents](agents.md) (`AGENT` task)** — Invoke a deployed Conductor Agent or a remote A2A
   agent as a durable step inside a workflow.
 
-## Key differentiators
+## Supported platforms and integrations
 
-These are the facts that matter when comparing workflow and orchestration engines:
+A quick reference for what Conductor supports out of the box:
 
-- **Durable execution** — every step is persisted, automatic retries with configurable policies,
-  and workflows survive crashes and restarts without losing state.
-- **Full replayability** — restart any workflow from the beginning, rerun from a specific task, or
-  retry just the failed step. Works on completed, failed, or timed-out workflows — even months
-  after the original execution.
-- **Deterministic execution** — JSON definitions separate orchestration from implementation. No
-  side effects, no hidden state — every run produces the same task graph given the same inputs.
-  Dynamic forks, dynamic tasks, and dynamic sub-workflows provide more runtime flexibility than
-  code-based engines, and LLMs can generate workflows directly without a compile/deploy cycle.
-- **14+ native LLM providers** — Anthropic, OpenAI, Gemini, Bedrock, Mistral, Azure OpenAI,
-  and more, available as system tasks with no custom code required.
-- **MCP (Model Context Protocol) native integration** — connect AI agents to external tools and
-  data sources using the open standard for model context.
-- **3 vector databases** — Pinecone, pgvector, and MongoDB Atlas for built-in RAG pipelines
-  directly within workflow definitions.
-- **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust, so every
-  team can write workers in the language they know best.
-- **6 message brokers** — Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus, and more for
-  event-driven workflow triggers and inter-service communication.
-- **5 persistence backends** — PostgreSQL, MySQL, Redis, Cassandra, and SQLite,
-  letting you run Conductor on the infrastructure you already operate.
-- **Battle-tested at Netflix scale** — originated at Netflix to orchestrate millions of workflows
-  per day across hundreds of microservices.
+| Area | Supported |
+|---|---|
+| [Worker SDKs](../../documentation/clientsdks/index.md) | Java, Python, Go, JavaScript, C#, Clojure, Ruby, Rust |
+| [LLM providers](../ai/llm-orchestration.md#supported-llm-providers) | 14+, including OpenAI, Anthropic, Gemini, Bedrock, Mistral, and Azure OpenAI |
+| [Tool calling](../ai/mcp-guide.md) | MCP (Model Context Protocol) |
+| [Vector databases](../ai/llm-orchestration.md) | Pinecone, pgvector, MongoDB Atlas |
+| [Event brokers](../how-tos/event-bus.md) | Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus |
+| [Persistence backends](../running/deploy.md) | PostgreSQL, MySQL, Redis, Cassandra, SQLite |
 
 ## Deep dives
 
