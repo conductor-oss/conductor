@@ -829,6 +829,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
             // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
@@ -1134,6 +1135,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
             // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
