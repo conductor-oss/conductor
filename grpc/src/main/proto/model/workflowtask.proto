@@ -11,6 +11,10 @@ option java_outer_classname = "WorkflowTaskPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message WorkflowTask {
+    enum JoinMode {
+        SYNC = 0;
+        ASYNC = 1;
+    }
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
     }
@@ -46,4 +50,5 @@ message WorkflowTask {
     string join_status = 30;
     CacheConfig cache_config = 31;
     bool permissive = 32;
+    WorkflowTask.JoinMode join_mode = 34;
 }

@@ -1,0 +1,45 @@
+{
+  "template": {
+    "settings": {},
+    "mappings": {
+      "properties": {
+        "action": {
+          "type": "keyword",
+          "index": true
+        },
+        "created": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "event": {
+          "type": "keyword",
+          "index": true
+        },
+        "id": {
+          "type": "keyword",
+          "index": true
+        },
+        "messageId": {
+          "type": "keyword",
+          "index": true
+        },
+        "name": {
+          "type": "keyword",
+          "index": true
+        },
+        "output": {
+          "properties": {
+            "workflowId": {
+              "type": "keyword",
+              "index": true
+            }
+          }
+        },
+        "status": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    }
+  }
+}

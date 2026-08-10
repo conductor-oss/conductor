@@ -18,10 +18,12 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 class LambdaAndTerminateTaskSpec extends AbstractSpecification {
@@ -103,8 +105,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
             tasks[1].seq == 2
             output
             def failedWorkflowId = output['conductor.failure_workflow'] as String
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 input['workflowId'] == workflowInstanceId
                 tasks.size() == 1
                 tasks[0].taskType == 'LAMBDA'
@@ -120,6 +122,13 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         when: "Start the workflow which has the terminate task"
         def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_TERMINATE_TASK, 1,
                 '', workflowInput, null)
+
+        and: "the sub workflow system task is executed"
+        def lambdaSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (lambdaSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, lambdaSubWfTask.taskId)
+        }
 
         then: "verify that the workflow has started and the tasks are as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -151,6 +160,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.getTaskByRefName("test_terminate_subworkflow").subWorkflowId
+        sweep(subWorkflowId)
 
         then: "verify that the sub workflow is RUNNING, and the task within is in SCHEDULED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {

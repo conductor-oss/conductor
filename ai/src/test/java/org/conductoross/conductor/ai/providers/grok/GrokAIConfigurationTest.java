@@ -44,7 +44,8 @@ class GrokAIConfigurationTest {
 
     @Test
     void testAllArgsConstructor() {
-        GrokAIConfiguration config = new GrokAIConfiguration("api-key", "https://custom.x.ai");
+        GrokAIConfiguration config =
+                new GrokAIConfiguration("api-key", "https://custom.x.ai", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.x.ai", config.getBaseURL());

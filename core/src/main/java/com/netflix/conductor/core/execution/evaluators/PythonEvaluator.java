@@ -29,7 +29,7 @@ public class PythonEvaluator implements Evaluator {
 
     @Override
     public Object evaluate(String expression, Object input) {
-        try (Context context = Context.newBuilder("python").allowAllAccess(true).build()) {
+        try (Context context = Context.newBuilder("python").build()) {
             if (input instanceof Map) {
                 Map<String, Object> inputMap = (Map<String, Object>) input;
 

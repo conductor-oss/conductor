@@ -37,7 +37,8 @@ import spock.util.concurrent.PollingConditions
 @TestPropertySource(locations = "classpath:application-integrationtest.properties",properties = [
         "conductor.db.type=redis_standalone",
         "conductor.app.sweeperThreadCount=1",
-        "conductor.app.sweeper.sweepBatchSize=10",
+        "conductor.app.sweeper.sweepBatchSize=1",
+        "conductor.app.sweeper.queuePopTimeout=750",
         "conductor.queue.type=redis_standalone"
 ])
 abstract class AbstractSpecification extends Specification {

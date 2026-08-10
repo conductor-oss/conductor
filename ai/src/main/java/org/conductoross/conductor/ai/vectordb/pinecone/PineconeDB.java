@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.IndexedDoc;
+import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -39,7 +40,6 @@ import io.pinecone.unsigned_indices_model.ScoredVectorWithUnsignedIndices;
 import io.pinecone.unsigned_indices_model.VectorWithUnsignedIndices;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
 
 @Slf4j
 public class PineconeDB extends VectorDB {
@@ -210,7 +210,7 @@ public class PineconeDB extends VectorDB {
         }
         Pinecone pinecone =
                 new Pinecone.Builder(apiKey)
-                        .withOkHttpClient(new OkHttpClient.Builder().build())
+                        .withOkHttpClient(AIHttpClients.defaultClient())
                         .build();
         return pinecone.getIndexConnection(indexName);
     }

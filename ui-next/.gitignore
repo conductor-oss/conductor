@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Local env (may contain secrets)
+.env.local
+.env.*.local
+
+# Build output
+dist
+build
+storybook-static
+
+# Test / Playwright
+/test-results/
+/playwright-report/
+/playwright-integration-report/
+/playwright-snapshots-report/
+/playwright/.cache/
+
+# pnpm store (created inside project when running in Docker)
+.pnpm-store/
+
+# Turbo
+.turbo
+
+# Vite
+.vite
+
+# IDE / OS
+.DS_Store
+

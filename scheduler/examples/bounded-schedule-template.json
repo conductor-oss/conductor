@@ -1,0 +1,13 @@
+{
+  "name": "bounded-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "runCatchupScheduleInstances": false,
+  "scheduleStartTime": "__START_MS__",
+  "scheduleEndTime": "__END_MS__",
+  "startWorkflowRequest": {
+    "name": "bounded_demo_workflow",
+    "version": 1,
+    "input": {}
+  }
+}

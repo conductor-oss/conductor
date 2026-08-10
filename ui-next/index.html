@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/icons/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/icons/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/icons/favicon-16x16.png"
+    />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- HTML Meta Tags -->
+    <meta
+      name="description"
+      content="Conductor is a platform for orchestrating workflows and microservices. Design, execute, and monitor your workflows with ease."
+    />
+    <meta property="og:url" content="/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Conductor" />
+    <meta
+      property="og:description"
+      content="Conductor is a platform for orchestrating workflows and microservices. Design, execute, and monitor your workflows with ease."
+    />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Conductor Logo" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:domain" content="/" />
+    <meta property="twitter:url" content="/" />
+    <meta name="twitter:title" content="Conductor" />
+    <meta
+      name="twitter:description"
+      content="Conductor is a platform for orchestrating workflows and microservices. Design, execute, and monitor your workflows with ease."
+    />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    <meta name="twitter:image:alt" content="Conductor Logo" />
+    <script nonce="tpsHAxwU5x0csoIuLNs2vg==">
+      (function () {
+        // Retrieve the nonce value from an existing CSP-protected script
+        // const nonceElement = document.querySelector("[nonce]");
+        // const nonceValue = nonceElement
+        //   ? nonceElement.getAttribute("nonce")
+        //   : null;
+        var nonceValue = "tpsHAxwU5x0csoIuLNs2vg==";
+        if (nonceValue) {
+          // Save the original createElement function
+          const originalCreateElement = document.createElement;
+
+          // Override document.createElement for <script> tags
+          document.createElement = function (tagName) {
+            const element = originalCreateElement.call(document, tagName);
+
+            // If the created element is a <script>, add the nonce
+            if (tagName.toLowerCase() === "script") {
+              element.setAttribute("nonce", nonceValue);
+            }
+            return element;
+          };
+
+          // Set up a MutationObserver to handle script tags added via DOM mutations
+          const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              mutation.addedNodes.forEach((node) => {
+                // If a <script> tag is added without a nonce, add the nonce
+                if (node.tagName === "SCRIPT" && !node.hasAttribute("nonce")) {
+                  node.setAttribute("nonce", nonceValue);
+                }
+
+                // Handle <script> tags within added nodes (e.g., innerHTML)
+                if (node.nodeType === 1) {
+                  const scripts = node.querySelectorAll("script:not([nonce])");
+                  scripts.forEach((script) => {
+                    script.setAttribute("nonce", nonceValue);
+                  });
+                }
+              });
+            });
+          });
+
+          // Observe changes to the entire DOM tree
+          observer.observe(document.documentElement, {
+            childList: true, // Observe direct children being added
+            subtree: true, // Observe all descendants
+          });
+        }
+      })();
+    </script>
+    <script src="/context.js"></script>
+    <title>Conductor UI</title>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>

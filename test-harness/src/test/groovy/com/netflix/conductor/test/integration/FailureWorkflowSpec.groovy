@@ -17,9 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
+import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
+
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 
 class FailureWorkflowSpec extends AbstractSpecification {
 
@@ -66,8 +69,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
             def failedWorkflowId = output['conductor.failure_workflow'] as String
             def workflowCorrelationId = correlationId
             def workflowFailureTaskId = tasks[1].taskId
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 correlationId == workflowCorrelationId
                 input['workflowId'] == workflowInstanceId
                 input['failureTaskId'] == workflowFailureTaskId
@@ -87,9 +90,18 @@ class FailureWorkflowSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(PARENT_WORKFLOW_WITH_FAILURE_TASK, 1,
                 '', workflowInput, null)
 
+        and: "the sub workflow system task is executed"
+        def failureSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (failureSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, failureSubWfTask.taskId)
+        }
+
         then: "verify that the sub workflow has failed"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.getTaskByRefName("test_task_failed_sub_wf").subWorkflowId
+        sweep(subWorkflowId)
+        sweep(workflowInstanceId)
         with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks.size() == 2
@@ -116,8 +128,8 @@ class FailureWorkflowSpec extends AbstractSpecification {
             def failedWorkflowId = output['conductor.failure_workflow'] as String
             def workflowCorrelationId = correlationId
             def workflowFailureTaskId = tasks[1].taskId
-            with(workflowExecutionService.getExecutionStatus(failedWorkflowId, true)) {
-                status == Workflow.WorkflowStatus.COMPLETED
+            with(workflowExecutionService.getWorkflowModel(failedWorkflowId, true)) {
+                status == WorkflowModel.Status.COMPLETED
                 correlationId == workflowCorrelationId
                 input['workflowId'] == workflowInstanceId
                 input['failureTaskId'] == workflowFailureTaskId

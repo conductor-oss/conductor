@@ -1,5 +1,5 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from "react";
+import PropTypes from "prop-types";
 import {
   ResponsiveContainer,
   LineChart,
@@ -8,20 +8,27 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
-} from 'recharts';
-import { styles, colors } from '../errorsInspectorStyles';
+  Legend,
+} from "recharts";
+import { styles, colors } from "../errorsInspectorStyles";
 
 const TimeSeriesChart = ({
   data,
   selectedTimePeriod,
   onTimePeriodClick,
   onResetFilter,
-  isFilterActive
+  isFilterActive,
 }) => {
   return (
     <div style={styles.card}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "10px",
+        }}
+      >
         <h2 style={styles.subtitle}>Errors by Time Period</h2>
         {isFilterActive && (
           <button
@@ -34,14 +41,15 @@ const TimeSeriesChart = ({
           </button>
         )}
       </div>
-      
+
       {selectedTimePeriod && (
         <div style={styles.filterIndicator}>
-          Selected time range: <strong>{new Date(selectedTimePeriod).toLocaleString()}</strong>
+          Selected time range:{" "}
+          <strong>{new Date(selectedTimePeriod).toLocaleString()}</strong>
           {data.length === 0 && " (expanded ±1 hour)"}
         </div>
       )}
-      
+
       <div style={styles.chartContainer}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -50,14 +58,14 @@ const TimeSeriesChart = ({
             onClick={onTimePeriodClick}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="time" 
+            <XAxis
+              dataKey="time"
               type="number"
-              domain={['auto', 'auto']}
+              domain={["auto", "auto"]}
               tickFormatter={(value) => new Date(value).toLocaleDateString()}
             />
             <YAxis />
-            <Tooltip 
+            <Tooltip
               labelFormatter={(value) => new Date(value).toLocaleString()}
               formatter={(value, name) => {
                 if (name === "count") return [value, "Count"];
@@ -67,8 +75,14 @@ const TimeSeriesChart = ({
                 if (active && payload && payload.length) {
                   return (
                     <div style={styles.tooltipContainer}>
-                      <p style={{ margin: 0 }}><strong>{new Date(payload[0].payload.time).toLocaleString()}</strong></p>
-                      <p style={{ margin: 0 }}>Count: {payload[0].payload.count}</p>
+                      <p style={{ margin: 0 }}>
+                        <strong>
+                          {new Date(payload[0].payload.time).toLocaleString()}
+                        </strong>
+                      </p>
+                      <p style={{ margin: 0 }}>
+                        Count: {payload[0].payload.count}
+                      </p>
                       <p style={styles.tooltipHint}>
                         Click to filter by this time period
                       </p>
@@ -79,23 +93,28 @@ const TimeSeriesChart = ({
               }}
             />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="count" 
-              stroke={colors.blue} 
-              name="Workflow Count" 
-              activeDot={{ 
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke={colors.blue}
+              name="Workflow Count"
+              activeDot={{
                 r: 8,
-                stroke: (entry) => entry.time === selectedTimePeriod ? "#000" : colors.blue,
-                strokeWidth: (entry) => entry.time === selectedTimePeriod ? 2 : 0,
-                fill: (entry) => entry.time === selectedTimePeriod ? "#fff" : colors.blue
+                stroke: (entry) =>
+                  entry.time === selectedTimePeriod ? "#000" : colors.blue,
+                strokeWidth: (entry) =>
+                  entry.time === selectedTimePeriod ? 2 : 0,
+                fill: (entry) =>
+                  entry.time === selectedTimePeriod ? "#fff" : colors.blue,
               }}
-              dot={{ 
+              dot={{
                 r: 4,
-                stroke: (entry) => entry.time === selectedTimePeriod ? "#000" : "none",
-                strokeWidth: (entry) => entry.time === selectedTimePeriod ? 2 : 0
+                stroke: (entry) =>
+                  entry.time === selectedTimePeriod ? "#000" : "none",
+                strokeWidth: (entry) =>
+                  entry.time === selectedTimePeriod ? 2 : 0,
               }}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -106,10 +125,12 @@ const TimeSeriesChart = ({
 
 TimeSeriesChart.propTypes = {
   /** Array of time series data for the chart */
-  data: PropTypes.arrayOf(PropTypes.shape({
-    time: PropTypes.number.isRequired,
-    count: PropTypes.number.isRequired
-  })).isRequired,
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      time: PropTypes.number.isRequired,
+      count: PropTypes.number.isRequired,
+    })
+  ).isRequired,
   /** Currently selected time period */
   selectedTimePeriod: PropTypes.number,
   /** Callback when a time period is clicked */
@@ -117,7 +138,7 @@ TimeSeriesChart.propTypes = {
   /** Callback to reset the time period filter */
   onResetFilter: PropTypes.func.isRequired,
   /** Whether the time period filter is active */
-  isFilterActive: PropTypes.bool.isRequired
+  isFilterActive: PropTypes.bool.isRequired,
 };
 
-export default TimeSeriesChart; 
+export default TimeSeriesChart;

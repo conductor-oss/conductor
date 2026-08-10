@@ -1,5 +1,14 @@
 import os
 import re
+import subprocess
+import sys
+
+def on_pre_build(env):
+    """Fetch SDK README files before the build starts."""
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", "fetch-sdk-docs.py")
+    if os.path.exists(script):
+        print("Fetching SDK documentation from GitHub...")
+        subprocess.run([sys.executable, script], check=False)
 
 def define_env(env):
     "Hook function"

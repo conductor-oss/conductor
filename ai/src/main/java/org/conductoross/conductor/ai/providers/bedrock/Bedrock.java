@@ -16,8 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.AIModel;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.model.ChatModel;
@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -89,13 +90,16 @@ public class Bedrock implements AIModel {
                         .credentialsProvider(config.getAwsCredentialsProvider())
                         .region(Region.of(config.getRegion()));
 
+        ClientOverrideConfiguration.Builder overrideBuilder =
+                ClientOverrideConfiguration.builder().apiCallTimeout(config.getTimeout());
+
         // Add bearer token interceptor if configured
         if (config.isBearerTokenConfigured()) {
-            clientBuilder.overrideConfiguration(
-                    c ->
-                            c.addExecutionInterceptor(
-                                    new BearerTokenInterceptor(config.getBearerToken())));
+            overrideBuilder.addExecutionInterceptor(
+                    new BearerTokenInterceptor(config.getBearerToken()));
         }
+
+        clientBuilder.overrideConfiguration(overrideBuilder.build());
 
         var client = clientBuilder.build();
         return BedrockProxyChatModel.builder()

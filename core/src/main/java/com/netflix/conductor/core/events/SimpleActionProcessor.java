@@ -108,12 +108,17 @@ public class SimpleActionProcessor implements ActionProcessor {
         input.put("workflowId", taskDetails.getWorkflowId());
         input.put("taskId", taskDetails.getTaskId());
         input.put("taskRefName", taskDetails.getTaskRefName());
+        input.put("reasonForIncompletion", taskDetails.getReasonForIncompletion());
         input.putAll(taskDetails.getOutput());
 
         Map<String, Object> replaced = parametersUtils.replace(input, payload);
         String workflowId = (String) replaced.get("workflowId");
         String taskId = (String) replaced.get("taskId");
         String taskRefName = (String) replaced.get("taskRefName");
+        String reasonForIncompletion =
+                Optional.ofNullable(replaced.get("reasonForIncompletion"))
+                        .map(Object::toString)
+                        .orElse(null);
 
         TaskModel taskModel = null;
         if (StringUtils.isNotEmpty(taskId)) {
@@ -159,6 +164,9 @@ public class SimpleActionProcessor implements ActionProcessor {
         taskModel.setStatus(status);
         taskModel.setOutputData(replaced);
         taskModel.setOutputMessage(taskDetails.getOutputMessage());
+        if (!status.isSuccessful()) {
+            taskModel.setReasonForIncompletion(reasonForIncompletion);
+        }
         taskModel.addOutput("conductor.event.messageId", messageId);
         taskModel.addOutput("conductor.event.name", event);
 

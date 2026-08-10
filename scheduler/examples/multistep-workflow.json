@@ -1,0 +1,59 @@
+{
+  "name": "multistep_demo_workflow",
+  "description": "Multi-step workflow triggered by a schedule. Uses FORK_JOIN to fetch the current time in two timezones in parallel, then JOIN to collect results.",
+  "version": 3,
+  "tasks": [
+    {
+      "name": "fork_parallel_calls",
+      "taskReferenceName": "fork_parallel_calls",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "fetch_utc_time",
+            "taskReferenceName": "fetch_utc_time",
+            "type": "HTTP",
+            "inputParameters": {
+              "http_request": {
+                "uri": "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+                "method": "GET",
+                "connectionTimeOut": 5000,
+                "readTimeOut": 5000
+              }
+            }
+          }
+        ],
+        [
+          {
+            "name": "fetch_ny_time",
+            "taskReferenceName": "fetch_ny_time",
+            "type": "HTTP",
+            "inputParameters": {
+              "http_request": {
+                "uri": "https://timeapi.io/api/time/current/zone?timeZone=America/New_York",
+                "method": "GET",
+                "connectionTimeOut": 5000,
+                "readTimeOut": 5000
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join_results",
+      "taskReferenceName": "join_results",
+      "type": "JOIN",
+      "joinOn": ["fetch_utc_time", "fetch_ny_time"]
+    }
+  ],
+  "outputParameters": {
+    "utcTime": "${fetch_utc_time.output.response.body.dateTime}",
+    "newYorkTime": "${fetch_ny_time.output.response.body.dateTime}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "ownerEmail": "demo@example.com",
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 60
+}

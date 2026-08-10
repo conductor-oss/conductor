@@ -1,22 +1,19 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { colors } from '../errorsInspectorStyles';
+import React from "react";
+import PropTypes from "prop-types";
+import { colors } from "../errorsInspectorStyles";
 
-const Notification = ({ 
-  message, 
-  type, 
-  timestamp, 
-  onClose 
-}) => {
+const Notification = ({ message, type, timestamp, onClose }) => {
   return (
-    <div 
-      className={`notification ${type}`}
-      role="alert"
-      aria-live="polite"
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div className={`notification ${type}`} role="alert" aria-live="polite">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <span>{message}</span>
-        <button 
+        <button
           onClick={onClose}
           style={{
             background: "none",
@@ -25,7 +22,7 @@ const Notification = ({
             marginLeft: "10px",
             fontSize: "16px",
             color: type === "success" ? "#2e7d32" : colors.red,
-            padding: "0"
+            padding: "0",
           }}
           aria-label="Close notification"
         >
@@ -41,9 +38,9 @@ const Notification = ({
 
 Notification.propTypes = {
   message: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['success', 'error']).isRequired,
+  type: PropTypes.oneOf(["success", "error"]).isRequired,
   timestamp: PropTypes.instanceOf(Date).isRequired,
-  onClose: PropTypes.func.isRequired
+  onClose: PropTypes.func.isRequired,
 };
 
-export default Notification; 
+export default Notification;

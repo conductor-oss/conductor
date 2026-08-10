@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "conductor.file-storage.local.directory",
+      "type": "java.lang.String",
+      "description": "Local filesystem directory where uploaded files are stored. Defaults to <java.io.tmpdir>/conductor/files-uploaded."
+    }
+  ]
+}

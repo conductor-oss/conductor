@@ -1,3 +1,6 @@
+---
+description: "Event Handlers — configure Conductor to produce and consume events from Kafka, SQS, and other message systems."
+---
 # Event Handlers
 Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.
 
@@ -103,6 +106,7 @@ Examples of actions that can be configured in the `actions` array:
     "fail_task": {
       "workflowId": "${workflowId}",
       "taskRefName": "task_1",
+      "reasonForIncompletion": "${error}",
       "output": {
         "response": "${result}"
       }
@@ -110,6 +114,8 @@ Examples of actions that can be configured in the `actions` array:
     "expandInlineJSON": true
 }
 ```
+`reasonForIncompletion` is optional, but when provided on `fail_task` it is stored on the failed task and can propagate to the workflow failure reason when that task causes the workflow to fail.
+
 Input for starting a workflow and output when completing / failing task follows the same [expressions](workflowdef/index.md#using-expressions) used for wiring task inputs.
 
 !!!info "Expanding stringified JSON elements in payload"

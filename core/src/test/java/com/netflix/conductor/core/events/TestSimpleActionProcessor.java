@@ -327,4 +327,43 @@ public class TestSimpleActionProcessor {
         assertEquals("workflow_1", argumentCaptor.getValue().getOutputData().get("workflowId"));
         assertEquals("task_1", argumentCaptor.getValue().getOutputData().get("taskId"));
     }
+
+    @Test
+    public void testFailTaskSetsReasonForIncompletion() throws Exception {
+        TaskDetails taskDetails = new TaskDetails();
+        taskDetails.setTaskId("${taskId}");
+        taskDetails.setReasonForIncompletion("${error}");
+        taskDetails.getOutput().put("actuatorError", "${error}");
+
+        Action action = new Action();
+        action.setAction(Type.fail_task);
+        action.setFail_task(taskDetails);
+
+        Object payload =
+                objectMapper.readValue(
+                        "{\"taskId\":\"task_1\", \"error\":\"Actuator rejected request\"}",
+                        Object.class);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("task_1");
+        task.setReferenceTaskName("testTask");
+
+        when(workflowExecutor.getTask(eq("task_1"))).thenReturn(task);
+
+        actionProcessor.execute(action, payload, "testEvent", "testMessage");
+
+        ArgumentCaptor<TaskResult> argumentCaptor = ArgumentCaptor.forClass(TaskResult.class);
+        verify(workflowExecutor).updateTask(argumentCaptor.capture());
+        assertEquals(Status.FAILED, argumentCaptor.getValue().getStatus());
+        assertEquals(
+                "Actuator rejected request", argumentCaptor.getValue().getReasonForIncompletion());
+        assertEquals(
+                "Actuator rejected request",
+                argumentCaptor.getValue().getOutputData().get("actuatorError"));
+        assertEquals(
+                "testMessage",
+                argumentCaptor.getValue().getOutputData().get("conductor.event.messageId"));
+        assertEquals(
+                "testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
+    }
 }

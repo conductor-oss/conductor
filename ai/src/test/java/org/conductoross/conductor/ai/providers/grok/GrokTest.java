@@ -14,13 +14,15 @@ package org.conductoross.conductor.ai.providers.grok;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +39,7 @@ class GrokTest {
         void setUp() {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey("test-api-key");
-            grok = new Grok(config);
+            grok = new Grok(config, new OkHttpClient());
         }
 
         @Test
@@ -84,7 +86,7 @@ class GrokTest {
         void setUp() {
             GrokAIConfiguration config = new GrokAIConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            grok = new Grok(config);
+            grok = new Grok(config, new OkHttpClient());
         }
 
         @Test

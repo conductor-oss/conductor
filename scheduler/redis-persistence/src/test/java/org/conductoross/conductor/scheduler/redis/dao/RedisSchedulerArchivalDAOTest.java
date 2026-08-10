@@ -1,0 +1,323 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.scheduler.redis.dao;
+
+import java.util.*;
+
+import org.junit.*;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.jedis.JedisProxy;
+import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
+import redis.clients.jedis.JedisPooled;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class RedisSchedulerArchivalDAOTest {
+
+    @ClassRule
+    public static final GenericContainer<?> redis =
+            new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
+
+    private static JedisPooled jedisPooled;
+    private static JedisProxy jedisProxy;
+    private static ObjectMapper objectMapper;
+    private static ConductorProperties conductorProperties;
+    private static RedisProperties redisProperties;
+    private RedisSchedulerArchivalDAO dao;
+
+    @BeforeClass
+    public static void setUpOnce() {
+        jedisPooled = new JedisPooled(redis.getHost(), redis.getMappedPort(6379));
+        jedisProxy = new JedisProxy(new UnifiedJedisCommands(jedisPooled));
+        objectMapper = new ObjectMapperProvider().getObjectMapper();
+
+        conductorProperties = mock(ConductorProperties.class);
+        when(conductorProperties.getStack()).thenReturn("");
+
+        redisProperties = mock(RedisProperties.class);
+        when(redisProperties.getWorkflowNamespacePrefix()).thenReturn("test");
+        when(redisProperties.getKeyspaceDomain()).thenReturn("");
+    }
+
+    @Before
+    public void setUp() {
+        jedisPooled.flushAll();
+        dao =
+                new RedisSchedulerArchivalDAO(
+                        jedisProxy, objectMapper, conductorProperties, redisProperties);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        if (jedisPooled != null) {
+            jedisPooled.close();
+        }
+    }
+
+    // =========================================================================
+    // Save and retrieve
+    // =========================================================================
+
+    @Test
+    public void testSaveAndGetById() {
+        WorkflowScheduleExecutionModel model = buildExecution("sched-1", "exec-1");
+        dao.saveExecutionRecord(model);
+
+        WorkflowScheduleExecutionModel found = dao.getExecutionById("exec-1");
+        assertNotNull(found);
+        assertEquals("exec-1", found.getExecutionId());
+        assertEquals("sched-1", found.getScheduleName());
+        assertEquals("test-wf", found.getWorkflowName());
+        assertEquals(WorkflowScheduleExecutionModel.State.EXECUTED, found.getState());
+    }
+
+    @Test
+    public void testGetById_notFound_returnsNull() {
+        assertNull(dao.getExecutionById("no-such-id"));
+    }
+
+    @Test
+    public void testSaveAndGetByIds() {
+        dao.saveExecutionRecord(buildExecution("sched-1", "exec-a"));
+        dao.saveExecutionRecord(buildExecution("sched-1", "exec-b"));
+        dao.saveExecutionRecord(buildExecution("sched-2", "exec-c"));
+
+        Map<String, WorkflowScheduleExecutionModel> result =
+                dao.getExecutionsByIds(Set.of("exec-a", "exec-c", "no-such"));
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey("exec-a"));
+        assertTrue(result.containsKey("exec-c"));
+    }
+
+    @Test
+    public void testGetByIds_emptySet_returnsEmpty() {
+        assertTrue(dao.getExecutionsByIds(Set.of()).isEmpty());
+    }
+
+    @Test
+    public void testGetByIds_nullSet_returnsEmpty() {
+        assertTrue(dao.getExecutionsByIds(null).isEmpty());
+    }
+
+    // =========================================================================
+    // Round-trip fidelity
+    // =========================================================================
+
+    @Test
+    public void testRoundTrip_allFields() {
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName("my-wf");
+        req.setVersion(3);
+
+        WorkflowScheduleExecutionModel model = new WorkflowScheduleExecutionModel();
+        model.setExecutionId("rt-exec");
+        model.setScheduleName("rt-sched");
+        model.setWorkflowName("my-wf");
+        model.setWorkflowId("wf-instance-789");
+        model.setReason("Timeout exceeded");
+        model.setStackTrace("java.lang.RuntimeException: Timeout\n\tat Foo.bar(Foo.java:42)");
+        model.setState(WorkflowScheduleExecutionModel.State.FAILED);
+        model.setScheduledTime(1000000L);
+        model.setExecutionTime(1000500L);
+        model.setStartWorkflowRequest(req);
+
+        dao.saveExecutionRecord(model);
+
+        WorkflowScheduleExecutionModel found = dao.getExecutionById("rt-exec");
+        assertNotNull(found);
+        assertEquals("rt-sched", found.getScheduleName());
+        assertEquals("my-wf", found.getWorkflowName());
+        assertEquals("wf-instance-789", found.getWorkflowId());
+        assertEquals("Timeout exceeded", found.getReason());
+        assertTrue(found.getStackTrace().contains("RuntimeException"));
+        assertEquals(WorkflowScheduleExecutionModel.State.FAILED, found.getState());
+        assertEquals(Long.valueOf(1000000L), found.getScheduledTime());
+        assertEquals(Long.valueOf(1000500L), found.getExecutionTime());
+        assertNotNull(found.getStartWorkflowRequest());
+        assertEquals("my-wf", found.getStartWorkflowRequest().getName());
+        assertEquals(Integer.valueOf(3), found.getStartWorkflowRequest().getVersion());
+    }
+
+    // =========================================================================
+    // Search
+    // =========================================================================
+
+    @Test
+    public void testSearch_byScheduleName() {
+        dao.saveExecutionRecord(buildExecution("sched-a", "e1"));
+        dao.saveExecutionRecord(buildExecution("sched-a", "e2"));
+        dao.saveExecutionRecord(buildExecution("sched-b", "e3"));
+
+        SearchResult<String> result = dao.searchScheduledExecutions("sched-a", null, 0, 10, null);
+        assertEquals(2, result.getTotalHits());
+        assertTrue(result.getResults().contains("e1"));
+        assertTrue(result.getResults().contains("e2"));
+    }
+
+    @Test
+    public void testSearch_byWorkflowName() {
+        WorkflowScheduleExecutionModel e1 = buildExecution("wn-sched", "e-wn1");
+        e1.setWorkflowName("payment-processor");
+        dao.saveExecutionRecord(e1);
+
+        WorkflowScheduleExecutionModel e2 = buildExecution("wn-sched", "e-wn2");
+        e2.setWorkflowName("order-fulfillment");
+        dao.saveExecutionRecord(e2);
+
+        SearchResult<String> result =
+                dao.searchScheduledExecutions("workflowName=payment", null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("e-wn1", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_byExecutionId() {
+        dao.saveExecutionRecord(buildExecution("eid-sched", "exact-id-123"));
+        dao.saveExecutionRecord(buildExecution("eid-sched", "exact-id-456"));
+
+        SearchResult<String> result =
+                dao.searchScheduledExecutions("executionId=exact-id-123", null, 0, 10, null);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("exact-id-123", result.getResults().get(0));
+    }
+
+    @Test
+    public void testSearch_wildcard_returnsAll() {
+        dao.saveExecutionRecord(buildExecution("sched-1", "e1"));
+        dao.saveExecutionRecord(buildExecution("sched-2", "e2"));
+
+        SearchResult<String> result = dao.searchScheduledExecutions(null, "*", 0, 10, null);
+        assertEquals(2, result.getTotalHits());
+    }
+
+    @Test
+    public void testSearch_pagination() {
+        for (int i = 0; i < 5; i++) {
+            WorkflowScheduleExecutionModel exec = buildExecution("page-sched", "page-" + i);
+            exec.setScheduledTime(System.currentTimeMillis() + i * 1000L);
+            dao.saveExecutionRecord(exec);
+        }
+
+        SearchResult<String> page1 = dao.searchScheduledExecutions("page-sched", null, 0, 2, null);
+        assertEquals(5, page1.getTotalHits());
+        assertEquals(2, page1.getResults().size());
+
+        SearchResult<String> page2 = dao.searchScheduledExecutions("page-sched", null, 2, 2, null);
+        assertEquals(5, page2.getTotalHits());
+        assertEquals(2, page2.getResults().size());
+    }
+
+    // =========================================================================
+    // Cleanup
+    // =========================================================================
+
+    @Test
+    public void testCleanupOldRecords() {
+        for (int i = 0; i < 10; i++) {
+            WorkflowScheduleExecutionModel exec = buildExecution("cleanup-sched", "cleanup-" + i);
+            exec.setScheduledTime(1000000L + i * 1000L);
+            dao.saveExecutionRecord(exec);
+        }
+
+        // Keep only 3 records, threshold at 5 (count=10 > threshold=5, so cleanup triggers)
+        dao.cleanupOldRecords(3, 5);
+
+        SearchResult<String> result =
+                dao.searchScheduledExecutions("cleanup-sched", null, 0, 20, null);
+        assertEquals(3, result.getTotalHits());
+    }
+
+    // =========================================================================
+    // TTL
+    // =========================================================================
+
+    @Test
+    public void testTtl_recordsExpireAfterTtl() throws Exception {
+        // Create a DAO with 2-second TTL
+        RedisSchedulerArchivalDAO shortTtlDao =
+                new RedisSchedulerArchivalDAO(
+                        jedisProxy, objectMapper, conductorProperties, redisProperties, 2);
+
+        shortTtlDao.saveExecutionRecord(buildExecution("ttl-sched", "ttl-exec"));
+        assertNotNull(shortTtlDao.getExecutionById("ttl-exec"));
+
+        // Wait for expiry
+        Thread.sleep(3000);
+
+        assertNull(
+                "Record should have expired after TTL", shortTtlDao.getExecutionById("ttl-exec"));
+
+        // Search should also reflect expiry
+        SearchResult<String> result =
+                shortTtlDao.searchScheduledExecutions("ttl-sched", null, 0, 10, null);
+        assertEquals(0, result.getTotalHits());
+    }
+
+    @Test
+    public void testTtl_defaultIs7Days() {
+        dao.saveExecutionRecord(buildExecution("ttl-check", "ttl-check-exec"));
+
+        // Verify the key has a TTL set (should be close to 7 days = 604800 seconds)
+        Long ttl = jedisProxy.ttl("test.SCHEDULER.ARCHIVAL.ttl-check-exec");
+        assertTrue("TTL should be set and > 604700", ttl > 604700);
+    }
+
+    @Test
+    public void testCleanupOldRecords_belowThreshold_noOp() {
+        for (int i = 0; i < 3; i++) {
+            WorkflowScheduleExecutionModel exec = buildExecution("noclean-sched", "noclean-" + i);
+            exec.setScheduledTime(1000000L + i * 1000L);
+            dao.saveExecutionRecord(exec);
+        }
+
+        // Threshold is 5, count is 3 — should not clean up
+        dao.cleanupOldRecords(2, 5);
+
+        SearchResult<String> result =
+                dao.searchScheduledExecutions("noclean-sched", null, 0, 20, null);
+        assertEquals(3, result.getTotalHits());
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+
+    private WorkflowScheduleExecutionModel buildExecution(String scheduleName, String executionId) {
+        StartWorkflowRequest req = new StartWorkflowRequest();
+        req.setName("test-wf");
+        req.setVersion(1);
+
+        WorkflowScheduleExecutionModel model = new WorkflowScheduleExecutionModel();
+        model.setExecutionId(executionId);
+        model.setScheduleName(scheduleName);
+        model.setWorkflowName("test-wf");
+        model.setWorkflowId("wf-" + executionId);
+        model.setState(WorkflowScheduleExecutionModel.State.EXECUTED);
+        model.setScheduledTime(System.currentTimeMillis());
+        model.setExecutionTime(System.currentTimeMillis());
+        model.setStartWorkflowRequest(req);
+        return model;
+    }
+}

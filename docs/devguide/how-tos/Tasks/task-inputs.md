@@ -1,3 +1,7 @@
+---
+description: "Wire task inputs in Conductor workflows — reference workflow inputs, task outputs, and variables using dynamic expressions in this open source workflow orchestration engine."
+---
+
 # Wiring Task Inputs
 
 In Conductor, task inputs can be provided in the workflow definition in multiple ways:
@@ -297,7 +301,7 @@ To pass parameters from a sub-workflow back to its parent workflow, you must pas
 }
 ```
 
-In the parent workflow, these sub-workflow outputs can be referenced using the expression format `${&lt;sub_workflow_ref>.output.&lt;someKey>}`.
+In the parent workflow, these sub-workflow outputs can be referenced using the expression format `${<sub_workflow_ref>.output.<someKey>}`.
 
 </details>
 

@@ -104,6 +104,10 @@ public interface MetadataService {
     void registerWorkflowDef(
             @NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef workflowDef);
 
+    Optional<WorkflowDef> findWorkflowDef(
+            @NotEmpty(message = "Workflow name cannot be null or empty") String name,
+            @NotNull(message = "Version cannot be null") Integer version);
+
     /**
      * Validates a {@link WorkflowDef}.
      *
@@ -156,4 +160,18 @@ public interface MetadataService {
             boolean activeOnly);
 
     List<WorkflowDef> getWorkflowDefsLatestVersions();
+
+    /**
+     * @return Returns distinct workflow definition names (no versions, no definition bodies)
+     */
+    List<String> getWorkflowNames();
+
+    /**
+     * Returns lightweight version summaries for a single workflow.
+     *
+     * @param name workflow name
+     * @return list of version summaries sorted by version ascending
+     */
+    List<WorkflowDefSummary> getWorkflowVersions(
+            @NotEmpty(message = "Workflow name cannot be null or empty") String name);
 }

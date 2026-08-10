@@ -232,8 +232,8 @@ export default class WorkflowDAG {
 
     // If no tasks found, attempt to aggregate from DO_WHILE iterations
     if (!forkedTasksCount) {
-      const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
-        key.startsWith(dfTask.taskReferenceName + "__")
+      const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(
+        (key) => key.startsWith(dfTask.taskReferenceName + "__")
       );
       let aggregatedForkedTasks = [];
       for (const key of matchingKeys) {
@@ -292,8 +292,8 @@ export default class WorkflowDAG {
 
         // If nothing found, try to aggregate results from DO_WHILE iterations
         if (!forkedTasksCount) {
-          const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(key =>
-            key.startsWith(task.taskReferenceName + "__")
+          const matchingKeys = Array.from(this.taskResultsByRef.keys()).filter(
+            (key) => key.startsWith(task.taskReferenceName + "__")
           );
           let aggregatedForkedTasks = [];
           for (const key of matchingKeys) {
@@ -310,7 +310,8 @@ export default class WorkflowDAG {
           }
 
           // If still nothing, return a placeholder node
-          const placeholderRef = task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
+          const placeholderRef =
+            task.taskReferenceName + "_DF_EMPTY_PLACEHOLDER";
           const placeholderTask = {
             name: placeholderRef, // will be overwritten if results available
             taskReferenceName: placeholderRef, // will be overwritten if results available
@@ -327,7 +328,9 @@ export default class WorkflowDAG {
         const retval = [];
         if (!_.isEmpty(task.defaultCase)) {
           // NOTE: fixed SWITCH default case in DO_WHILE loop
-          retval.push(..._.flatten(task.defaultCase.map((t) => this.getRefTask(t))));
+          retval.push(
+            ..._.flatten(task.defaultCase.map((t) => this.getRefTask(t)))
+          );
         }
         retval.push(
           ..._.flatten(

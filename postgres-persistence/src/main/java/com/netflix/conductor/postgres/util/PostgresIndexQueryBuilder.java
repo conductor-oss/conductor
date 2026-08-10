@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 public class PostgresIndexQueryBuilder {
@@ -50,6 +51,8 @@ public class PostgresIndexQueryBuilder {
         "task_def_name",
         "update_time",
         "json_data",
+        "parent_workflow_id",
+        "classifier",
         "jsonb_to_tsvector('english', json_data, '[\"all\"]')"
     };
 
@@ -67,7 +70,7 @@ public class PostgresIndexQueryBuilder {
             Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
             Matcher conditionMatcher = conditionRegex.matcher(query);
             if (conditionMatcher.find()) {
-                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"()]", "").split(",");
+                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));
                 this.attribute = camelToSnake(conditionMatcher.group(1));
                 this.values = values;
@@ -82,6 +85,9 @@ public class PostgresIndexQueryBuilder {
 
         public String getQueryFragment() {
             if (operator.equals("IN")) {
+                if (classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ANY(?) OR " + attribute + " IS NULL)";
+                }
                 return attribute + " = ANY(?)";
             } else if (operator.equals("@@")) {
                 return attribute + " @@ to_tsquery(?)";
@@ -90,10 +96,28 @@ public class PostgresIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " ?::TIMESTAMPTZ";
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
+                    return attribute + " LIKE ?";
+                } else if (operator.equals("=") && classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ? OR " + attribute + " IS NULL)";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
             }
+        }
+
+        /**
+         * Rows indexed before the classifier column existed have a NULL classifier but are
+         * semantically untagged, i.e. plain workflows. When a filter asks for the untagged token
+         * ({@link WorkflowClassifier#WORKFLOW}), widen the predicate to also match those legacy
+         * NULL rows.
+         */
+        private boolean classifierMatchesUntagged() {
+            return "classifier".equals(attribute)
+                    && values != null
+                    && values.stream().anyMatch(WorkflowClassifier.WORKFLOW::equalsIgnoreCase);
         }
 
         private String getOperator(String op) {
@@ -107,7 +131,11 @@ public class PostgresIndexQueryBuilder {
             if (values.size() > 1) {
                 q.addParameter(values);
             } else {
-                q.addParameter(values.get(0));
+                String val = values.get(0);
+                if (val.contains("*")) {
+                    val = val.replace("*", "%");
+                }
+                q.addParameter(val);
             }
         }
 

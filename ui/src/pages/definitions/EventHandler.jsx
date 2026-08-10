@@ -17,9 +17,9 @@ const columns = [
     ),
   },
   {
-    name: "event"
+    name: "event",
   },
-  { name: "active", renderer: (val) => val ? "Yes" : "No"  },
+  { name: "active", renderer: (val) => (val ? "Yes" : "No") },
   { name: "condition" },
   {
     name: "actions",
@@ -41,7 +41,11 @@ export default function EventHandlers() {
 
       <div className={classes.tabContent}>
         <div className={classes.buttonRow}>
-          <Button component={NavLink} path="/eventHandlerDef" startIcon={<AddIcon />}>
+          <Button
+            component={NavLink}
+            path="/eventHandlerDef"
+            startIcon={<AddIcon />}
+          >
             New Event Handler Definition
           </Button>
         </div>
@@ -50,7 +54,13 @@ export default function EventHandlers() {
           <DataTable
             title={`${eventHandlers.length} results`}
             localStorageKey="eventHandlersTable"
-            defaultShowColumns={["event", "active", "name", "condition", "actions"]}
+            defaultShowColumns={[
+              "event",
+              "active",
+              "name",
+              "condition",
+              "actions",
+            ]}
             keyField="name"
             data={eventHandlers}
             columns={columns}

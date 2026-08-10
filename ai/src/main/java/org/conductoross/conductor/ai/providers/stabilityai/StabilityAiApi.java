@@ -13,7 +13,6 @@
 package org.conductoross.conductor.ai.providers.stabilityai;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -53,20 +52,10 @@ public class StabilityAiApi {
     private final String baseUrl;
     private final OkHttpClient httpClient;
 
-    public StabilityAiApi(String apiKey) {
-        this(apiKey, DEFAULT_BASE_URL);
-    }
-
-    public StabilityAiApi(String apiKey, String baseUrl) {
+    public StabilityAiApi(OkHttpClient httpClient, String apiKey, String baseUrl) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl != null ? baseUrl : DEFAULT_BASE_URL;
-        this.httpClient =
-                new OkHttpClient.Builder()
-                        .connectTimeout(30, TimeUnit.SECONDS)
-                        .readTimeout(120, TimeUnit.SECONDS)
-                        .writeTimeout(30, TimeUnit.SECONDS)
-                        .followRedirects(true)
-                        .build();
+        this.httpClient = httpClient;
     }
 
     /**

@@ -1,0 +1,17 @@
+{
+  "taskId": "9dea4567-0240-4eab-bde8-99f4535ea3fc",
+  "taskDefName": "templated_task",
+  "taskType": "templated_task",
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "workflowType": "template_workflow",
+  "correlationId": "testTaskDefTemplate",
+  "scheduledTime": "2021-08-22T05:18:25.121Z",
+  "startTime": "0",
+  "endTime": "0",
+  "updateTime": "2021-08-23T00:18:25.121Z",
+  "status": "SCHEDULED",
+  "workflowPriority": 1,
+  "queueWaitTime": 0,
+  "executionTime": 0,
+  "input": "{http_request={method=GET, vipStack=test_stack, body={requestDetails={key1=value1, key2=42}, outputPath=s3://bucket/outputPath, inputPaths=[file://path1, file://path2]}, uri=/get/something}}"
+}

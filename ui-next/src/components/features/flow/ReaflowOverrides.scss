@@ -1,0 +1,5 @@
+/* Disable pointer events for all edges */
+g[class^="Edge-module_edge"],
+g[class*=" Edge-module_edge"] {
+  pointer-events: none;
+}

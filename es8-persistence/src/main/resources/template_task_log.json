@@ -1,0 +1,22 @@
+{
+  "template": {
+    "settings": {},
+    "mappings": {
+      "properties": {
+        "createdTime": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "log": {
+          "type": "keyword",
+          "index": false,
+          "doc_values": false
+        },
+        "taskId": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    }
+  }
+}

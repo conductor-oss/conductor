@@ -1,0 +1,70 @@
+{
+  "name": "web_research_agent",
+  "description": "An autonomous research agent that uses web search to gather information and synthesize a report",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic"],
+  "tasks": [
+    {
+      "name": "gather_information",
+      "taskReferenceName": "research",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a research analyst. Use web search to find comprehensive, current information about the topic. Search for multiple perspectives and recent developments."
+          },
+          {
+            "role": "user",
+            "message": "Research this topic thoroughly: ${workflow.input.topic}"
+          }
+        ],
+        "webSearch": true,
+        "temperature": 0.3,
+        "maxTokens": 3000
+      }
+    },
+    {
+      "name": "synthesize_report",
+      "taskReferenceName": "report",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a technical writer. Synthesize the research into a well-structured markdown report with sections, key findings, and citations."
+          },
+          {
+            "role": "user",
+            "message": "Topic: ${workflow.input.topic}\n\nResearch findings:\n${research.output.result}\n\nWrite a comprehensive report in markdown format."
+          }
+        ],
+        "thinkingTokenLimit": 5000,
+        "maxTokens": 8000
+      }
+    },
+    {
+      "name": "convert_to_pdf",
+      "taskReferenceName": "pdf",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "${report.output.result}",
+        "pageSize": "A4",
+        "theme": "default",
+        "pdfMetadata": {
+          "title": "${workflow.input.topic}",
+          "author": "Conductor Research Agent"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "report": "${report.output.result}",
+    "pdf": "${pdf.output.result.location}"
+  }
+}

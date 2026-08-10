@@ -1,0 +1,10 @@
+build
+storybook-static
+/test-results/
+/playwright-report/
+/playwright/.cache/
+tests-examples
+playwright
+public/context.js
+/dist/
+pnpm-lock.yaml

@@ -32,6 +32,7 @@ message EventHandler {
         map<string, google.protobuf.Value> output = 3;
         google.protobuf.Any output_message = 4;
         string task_id = 5;
+        string reason_for_incompletion = 6;
     }
     message Action {
         enum Type {

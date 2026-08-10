@@ -13,6 +13,8 @@
 package com.netflix.conductor.contribs.listener.statuschange;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -25,18 +27,21 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.contribs.listener.RestClientManager;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
 @Singleton
 public class StatusChangePublisher implements WorkflowStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusChangePublisher.class);
+    private static final String NOTIFICATION_TYPE = "WORKFLOW";
     private static final Integer QDEPTH =
             Integer.parseInt(
                     System.getenv().getOrDefault("ENV_WORKFLOW_NOTIFICATION_QUEUE_SIZE", "50"));
     private BlockingQueue<WorkflowModel> blockingQueue = new LinkedBlockingDeque<>(QDEPTH);
     private RestClientManager rcm;
     private ExecutionDAOFacade executionDAOFacade;
+    private List<String> subscribedWorkflowStatusList;
 
     class ExceptionHandler implements Thread.UncaughtExceptionHandler {
         public void uncaughtException(Thread t, Throwable e) {
@@ -81,6 +86,10 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                     LOGGER.debug(
                             "Workflow {} publish is successful.",
                             statusChangeNotification.getWorkflowId());
+                    Monitors.recordWebhookPublishSuccess(
+                            NOTIFICATION_TYPE,
+                            workflow.getWorkflowName(),
+                            workflow.getStatus().name());
                     Thread.sleep(5);
                 } catch (Exception e) {
                     if (statusChangeNotification != null) {
@@ -94,48 +103,103 @@ public class StatusChangePublisher implements WorkflowStatusListener {
                         LOGGER.error("Failed to publish workflow: Workflow is NULL");
                     }
                     LOGGER.error("Error on publishing workflow", e);
+                    if (workflow != null) {
+                        Monitors.recordWebhookPublishFailure(
+                                NOTIFICATION_TYPE,
+                                workflow.getWorkflowName(),
+                                e.getClass().getSimpleName());
+                    }
                 }
             }
         }
     }
 
     @Inject
-    public StatusChangePublisher(RestClientManager rcm, ExecutionDAOFacade executionDAOFacade) {
+    public StatusChangePublisher(
+            RestClientManager rcm,
+            ExecutionDAOFacade executionDAOFacade,
+            List<String> subscribedWorkflowStatuses) {
         this.rcm = rcm;
         this.executionDAOFacade = executionDAOFacade;
+        // Preserve backward compatibility - default to COMPLETED and TERMINATED
+        this.subscribedWorkflowStatusList =
+                (subscribedWorkflowStatuses != null && !subscribedWorkflowStatuses.isEmpty())
+                        ? subscribedWorkflowStatuses
+                        : Arrays.asList("COMPLETED", "TERMINATED");
+        Monitors.registerWebhookQueueDepthGauge(blockingQueue, NOTIFICATION_TYPE);
         ConsumerThread consumerThread = new ConsumerThread();
         consumerThread.start();
     }
 
     @Override
+    public void onWorkflowStarted(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("RUNNING")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
     public void onWorkflowCompleted(WorkflowModel workflow) {
-        LOGGER.debug(
-                "workflows completion {} {}", workflow.getWorkflowId(), workflow.getWorkflowName());
-        try {
-            blockingQueue.put(workflow);
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to enqueue workflow: Id {} Name {}",
-                    workflow.getWorkflowId(),
-                    workflow.getWorkflowName());
-            LOGGER.error(e.toString());
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("COMPLETED")) {
+            enqueueWorkflow(workflow);
         }
     }
 
     @Override
     public void onWorkflowTerminated(WorkflowModel workflow) {
-        LOGGER.debug(
-                "workflows termination {} {}",
-                workflow.getWorkflowId(),
-                workflow.getWorkflowName());
-        try {
-            blockingQueue.put(workflow);
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to enqueue workflow: Id {} Name {}",
-                    workflow.getWorkflowId(),
-                    workflow.getWorkflowName());
-            LOGGER.error(e.getMessage());
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("TERMINATED")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowPaused(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("PAUSED")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowResumed(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("RESUMED")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowRestarted(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("RESTARTED")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowRetried(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("RETRIED")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowRerun(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("RERAN")) {
+            enqueueWorkflow(workflow);
+        }
+    }
+
+    @Override
+    public void onWorkflowFinalized(WorkflowModel workflow) {
+        if (subscribedWorkflowStatusList != null
+                && subscribedWorkflowStatusList.contains("FINALIZED")) {
+            enqueueWorkflow(workflow);
         }
     }
 
@@ -147,6 +211,22 @@ public class StatusChangePublisher implements WorkflowStatusListener {
     @Override
     public void onWorkflowTerminatedIfEnabled(WorkflowModel workflow) {
         onWorkflowTerminated(workflow);
+    }
+
+    private void enqueueWorkflow(WorkflowModel workflow) {
+        LOGGER.debug(
+                "Enqueuing workflow status change: {} {} {}",
+                workflow.getWorkflowId(),
+                workflow.getWorkflowName(),
+                workflow.getStatus());
+        if (blockingQueue.offer(workflow)) {
+            return;
+        }
+        LOGGER.warn(
+                "Webhook notification queue full, dropping WORKFLOW notification for {} ({})",
+                workflow.getWorkflowId(),
+                workflow.getWorkflowName());
+        Monitors.recordWebhookEnqueueFailure(NOTIFICATION_TYPE, workflow.getWorkflowName());
     }
 
     private void publishStatusChangeNotification(StatusChangeNotification statusChangeNotification)

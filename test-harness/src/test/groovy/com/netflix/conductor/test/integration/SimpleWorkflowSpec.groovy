@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.test.integration
 
+import java.util.concurrent.TimeUnit
+
 import org.apache.commons.lang3.StringUtils
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -30,6 +32,8 @@ import com.netflix.conductor.test.base.AbstractSpecification
 import spock.lang.Shared
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
+
+import static org.awaitility.Awaitility.await
 
 class SimpleWorkflowSpec extends AbstractSpecification {
 
@@ -264,11 +268,18 @@ class SimpleWorkflowSpec extends AbstractSpecification {
         !noTaskAvailable
 
         when: "The processing of the polled task takes more time than the response time out"
-        Thread.sleep(10000)
-        workflowExecutor.decide(workflowInstanceId)
+        // Sleep just past responseTimeoutSeconds (10s) so decide() reliably observes the timeout.
+        // The +1s margin avoids a race where Thread.sleep returns at exactly the boundary.
+        Thread.sleep(11000)
 
         then: "Expect a new task to be added to the queue in place of the timed out task"
-        queueDAO.getSize('task_rt') == 1
+        // Drive decide() inside the await so we keep re-evaluating until the workflow state and
+        // the queue agree. A single decide() before the await can lose the timeout window if a
+        // background sweeper has just touched the workflow, leaving the queue out of sync.
+        await().atMost(30, TimeUnit.SECONDS).until {
+            workflowExecutor.decide(workflowInstanceId)
+            queueDAO.getSize('task_rt') == 1
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2

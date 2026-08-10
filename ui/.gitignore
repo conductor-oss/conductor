@@ -7,8 +7,10 @@
 
 # testing
 /coverage
-/cypress/screenshots
-/cypress/videos
+/playwright-report
+/blob-report
+/test-results
+/__snapshots__
 
 # production
 /build

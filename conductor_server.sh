@@ -57,18 +57,18 @@ fi
 JAR_NAME="conductor-server-${CONDUCTOR_VERSION}.jar"
 JAR_URL="${REPO_URL}/${JAR_NAME}"
 
-# Use CONDUCTOR_HOME if set, otherwise use current directory
+# Use CONDUCTOR_HOME if set, otherwise use ~/.conductor-cli (avoids polluting the project directory)
 if [ -z "$CONDUCTOR_HOME" ]; then
-  CONDUCTOR_HOME="."
+  CONDUCTOR_HOME="${HOME}/.conductor-cli"
 fi
 
 JAR_PATH="$CONDUCTOR_HOME/$JAR_NAME"
 
 # Download JAR if not present
 if [ ! -f "$JAR_PATH" ]; then
-  echo "Downloading Conductor Server ${CONDUCTOR_VERSION}..."
+  echo "First run: downloading Conductor Server JAR to $CONDUCTOR_HOME (large file, may take a few minutes)"
   mkdir -p "$CONDUCTOR_HOME"
-  curl -L -o "$JAR_PATH" "$JAR_URL"
+  curl -L --progress-bar -o "$JAR_PATH" "$JAR_URL"
   if [ $? -ne 0 ]; then
     echo "Failed to download Conductor Server JAR from $JAR_URL"
     exit 1

@@ -1,3 +1,6 @@
+---
+description: "Server Metrics — monitor Conductor server health and performance using Micrometer-based metrics and alerting."
+---
 # Server Metrics
 
 !!! Info "Feature Update"

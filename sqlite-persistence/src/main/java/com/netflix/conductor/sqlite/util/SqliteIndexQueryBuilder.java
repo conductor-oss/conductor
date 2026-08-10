@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 public class SqliteIndexQueryBuilder {
@@ -48,7 +49,9 @@ public class SqliteIndexQueryBuilder {
         "task_type",
         "task_def_name",
         "update_time",
-        "json_data"
+        "json_data",
+        "parent_workflow_id",
+        "classifier"
     };
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
@@ -65,7 +68,7 @@ public class SqliteIndexQueryBuilder {
             Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
             Matcher conditionMatcher = conditionRegex.matcher(query);
             if (conditionMatcher.find()) {
-                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"()]", "").split(",");
+                String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));
                 this.attribute = camelToSnake(conditionMatcher.group(1));
                 this.values = values;
@@ -81,10 +84,15 @@ public class SqliteIndexQueryBuilder {
         public String getQueryFragment() {
             if (operator.equals("IN")) {
                 // Create proper IN clause for SQLite
-                return attribute
-                        + " IN ("
-                        + String.join(",", Collections.nCopies(values.size(), "?"))
-                        + ")";
+                String inClause =
+                        attribute
+                                + " IN ("
+                                + String.join(",", Collections.nCopies(values.size(), "?"))
+                                + ")";
+                if (classifierMatchesUntagged()) {
+                    return "(" + inClause + " OR " + attribute + " IS NULL)";
+                }
+                return inClause;
             } else if (operator.equals("MATCH")) {
                 // SQLite FTS5 full-text search
                 return "json_data MATCH ?";
@@ -96,10 +104,28 @@ public class SqliteIndexQueryBuilder {
             } else {
                 if (attribute.endsWith("_time")) {
                     return attribute + " " + operator + " datetime(?)";
+                } else if (operator.equals("=")
+                        && values.size() == 1
+                        && values.get(0).contains("*")) {
+                    return "lower(" + attribute + ") LIKE lower(?)";
+                } else if (operator.equals("=") && classifierMatchesUntagged()) {
+                    return "(" + attribute + " = ? OR " + attribute + " IS NULL)";
                 } else {
                     return attribute + " " + operator + " ?";
                 }
             }
+        }
+
+        /**
+         * Rows indexed before the classifier column existed have a NULL classifier but are
+         * semantically untagged, i.e. plain workflows. When a filter asks for the untagged token
+         * ({@link WorkflowClassifier#WORKFLOW}), widen the predicate to also match those legacy
+         * NULL rows.
+         */
+        private boolean classifierMatchesUntagged() {
+            return "classifier".equals(attribute)
+                    && values != null
+                    && values.stream().anyMatch(WorkflowClassifier.WORKFLOW::equalsIgnoreCase);
         }
 
         private String getOperator(String op) {
@@ -116,7 +142,11 @@ public class SqliteIndexQueryBuilder {
                     q.addParameter(value);
                 }
             } else {
-                q.addParameter(values.get(0));
+                String val = values.get(0);
+                if (val.contains("*")) {
+                    val = val.replace("*", "%");
+                }
+                q.addParameter(val);
             }
         }
 
@@ -156,7 +186,7 @@ public class SqliteIndexQueryBuilder {
         this.freeText = freeText;
         this.start = start;
         this.count = count;
-        this.sort = sort;
+        this.sort = sort != null ? sort : Collections.emptyList();
         this.allowFullTextQueries = true;
         this.allowJsonQueries = true;
         this.parseQuery(query);
@@ -164,6 +194,10 @@ public class SqliteIndexQueryBuilder {
     }
 
     public String getQuery() {
+        return getQuery("json_data");
+    }
+
+    public String getQuery(String selectColumn) {
         String queryString = "";
         List<Condition> validConditions =
                 conditions.stream().filter(c -> c.isValid()).collect(Collectors.toList());
@@ -176,7 +210,13 @@ public class SqliteIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT json_data FROM " + table + queryString + getSort() + " LIMIT ? OFFSET ?";
+        return "SELECT "
+                + selectColumn
+                + " FROM "
+                + table
+                + queryString
+                + getSort()
+                + " LIMIT ? OFFSET ?";
     }
 
     public String getCountQuery() {

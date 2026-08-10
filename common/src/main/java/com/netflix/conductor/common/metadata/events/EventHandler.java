@@ -292,6 +292,9 @@ public class EventHandler {
         @ProtoField(id = 5)
         private String taskId;
 
+        @ProtoField(id = 6)
+        private String reasonForIncompletion;
+
         /**
          * @return the workflowId
          */
@@ -354,6 +357,20 @@ public class EventHandler {
          */
         public void setTaskId(String taskId) {
             this.taskId = taskId;
+        }
+
+        /**
+         * @return the reasonForIncompletion
+         */
+        public String getReasonForIncompletion() {
+            return reasonForIncompletion;
+        }
+
+        /**
+         * @param reasonForIncompletion the reasonForIncompletion to set
+         */
+        public void setReasonForIncompletion(String reasonForIncompletion) {
+            this.reasonForIncompletion = reasonForIncompletion;
         }
     }
 

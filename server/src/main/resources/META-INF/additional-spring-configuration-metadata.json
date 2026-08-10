@@ -13,7 +13,7 @@
     {
       "name": "conductor.indexing.type",
       "type": "java.lang.String",
-      "description": "The type of indexing backend to use. Supported values: elasticsearch, opensearch, postgres, sqlite."
+      "description": "The type of indexing backend to use. Supported values include elasticsearch, elasticsearch8, opensearch, postgres, sqlite."
     },
     {
       "name": "conductor.grpc-server.enabled",
@@ -130,6 +130,10 @@
         {
           "value": "elasticsearch",
           "description": "Use Elasticsearch as the indexing backend."
+        },
+        {
+          "value": "elasticsearch8",
+          "description": "Use Elasticsearch 8.x as the indexing backend."
         },
         {
           "value": "opensearch",

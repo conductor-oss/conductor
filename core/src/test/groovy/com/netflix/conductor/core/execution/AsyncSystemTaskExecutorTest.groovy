@@ -20,6 +20,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.core.utils.IDGenerator
+import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.core.utils.QueueUtils
 import com.netflix.conductor.dao.MetadataDAO
 import com.netflix.conductor.dao.QueueDAO
@@ -38,6 +39,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
+    ParametersUtils parametersUtils
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -50,6 +52,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
+        parametersUtils = Mock(ParametersUtils.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class) {
             isTaskRetrievalRequired() >> true
@@ -58,23 +61,26 @@ class AsyncSystemTaskExecutorTest extends Specification {
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
 
-        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor)
+        parametersUtils.substituteSecrets(_) >> { args -> args[0] }
+
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, parametersUtils)
     }
 
     // this is not strictly a unit test, but its essential to test AsyncSystemTaskExecutor with SubWorkflow
     def "Execute SubWorkflow task"() {
         given:
         String workflowId = "workflowId"
-        String subWorkflowId = "subWorkflowId"
-        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper())
+        IDGenerator idGenerator = new IDGenerator()
+        String parentTaskId = idGenerator.generate()
+        String subWorkflowId = idGenerator.generateSubWorkflowId(workflowId, parentTaskId, 0)
+        SubWorkflow subWorkflowTask = new SubWorkflow(new ObjectMapper(), idGenerator)
 
-        String task1Id = new IDGenerator().generate()
         TaskModel task1 = new TaskModel()
         task1.setTaskType(SUB_WORKFLOW.name())
         task1.setReferenceTaskName("waitTask")
         task1.setWorkflowInstanceId(workflowId)
         task1.setScheduledTime(System.currentTimeMillis())
-        task1.setTaskId(task1Id)
+        task1.setTaskId(parentTaskId)
         task1.getInputData().put("asyncComplete", true)
         task1.getInputData().put("subWorkflowName", "junit1")
         task1.getInputData().put("subWorkflowVersion", 1)
@@ -85,16 +91,15 @@ class AsyncSystemTaskExecutorTest extends Specification {
         WorkflowModel subWorkflow = new WorkflowModel(workflowId: subWorkflowId, status: WorkflowModel.Status.RUNNING)
 
         when:
-        executor.execute(subWorkflowTask, task1Id)
+        executor.execute(subWorkflowTask, parentTaskId)
 
         then:
-        1 * executionDAOFacade.getTaskModel(task1Id) >> task1
+        1 * executionDAOFacade.getTaskModel(parentTaskId) >> task1
         1 * executionDAOFacade.getWorkflowModel(workflowId, subWorkflowTask.isTaskRetrievalRequired()) >> workflow
-        1 * workflowExecutor.startWorkflow(*_) >> subWorkflowId
-        1 * workflowExecutor.getWorkflow(subWorkflowId, false) >> subWorkflow
+        1 * workflowExecutor.startWorkflowIdempotent(*_) >> subWorkflow
 
         // SUB_WORKFLOW is asyncComplete so its removed from the queue
-        1 * queueDAO.remove(queueName, task1Id)
+        1 * queueDAO.remove(queueName, parentTaskId)
 
         task1.status == TaskModel.Status.IN_PROGRESS
         task1.subWorkflowId == subWorkflowId
@@ -391,6 +396,44 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.IN_PROGRESS
         task.endTime == 0 // verify that endTime is not set
         task.pollCount == 1 // verify that poll count is NOT incremented
+    }
+
+    def "secrets are substituted for execution then input restored"() {
+        given:
+        String workflowId = "wfid"
+        String taskId = "taskid"
+        WorkflowSystemTask systemTask = Mock(WorkflowSystemTask.class) {
+            getTaskType() >> "HTTP"
+            isAsyncComplete(_) >> false
+        }
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("HTTP")
+        task.setStatus(TaskModel.Status.SCHEDULED)
+        task.setWorkflowInstanceId(workflowId)
+        def literal = [pwd: '${workflow.secrets.DB_PASSWORD}'] as Map
+        task.setInputData(literal)
+
+        WorkflowModel workflow = new WorkflowModel()
+        workflow.setStatus(WorkflowModel.Status.RUNNING)
+
+        def resolved = [pwd: 's3cr3t'] as Map
+        Map seenDuringStart = null
+
+        when:
+        executor.execute(systemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, _) >> workflow
+        1 * parametersUtils.substituteSecrets(literal) >> resolved
+        1 * systemTask.start(workflow, task, _) >> { args ->
+            seenDuringStart = (args[1] as TaskModel).getInputData()
+        }
+        // during start the task saw resolved input...
+        seenDuringStart == resolved
+        // ...and afterwards the literal is restored for persistence
+        task.getInputData() == literal
     }
 
 }

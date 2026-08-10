@@ -1,0 +1,11 @@
+{
+  "name": "dowhile-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "runCatchupScheduleInstances": false,
+  "startWorkflowRequest": {
+    "name": "dowhile_demo_workflow",
+    "version": 2,
+    "input": {}
+  }
+}

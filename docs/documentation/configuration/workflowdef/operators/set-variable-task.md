@@ -1,3 +1,6 @@
+---
+description: "Set Variable Task — store and update workflow-level variables in Conductor for use across subsequent tasks."
+---
 # Set Variable
 
 ```json

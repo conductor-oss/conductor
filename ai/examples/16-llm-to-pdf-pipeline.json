@@ -1,0 +1,51 @@
+{
+  "name": "llm_to_pdf_pipeline",
+  "description": "End-to-end pipeline: LLM generates a markdown report from user input, then converts it to a PDF document",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["topic", "audience"],
+  "tasks": [
+    {
+      "name": "generate_report_markdown",
+      "taskReferenceName": "llm_report",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a professional report writer. Generate well-structured markdown reports with headings, tables, bullet points, and bold/italic emphasis. Always include an executive summary, key findings, and recommendations sections."
+          },
+          {
+            "role": "user",
+            "message": "Write a detailed report about: ${workflow.input.topic}\n\nTarget audience: ${workflow.input.audience}\n\nUse markdown formatting with:\n- A clear title (# heading)\n- Executive summary section\n- Key findings with a data table\n- Bullet-point recommendations\n- A blockquote conclusion"
+          }
+        ],
+        "temperature": 0.7,
+        "maxTokens": 2000
+      }
+    },
+    {
+      "name": "convert_to_pdf",
+      "taskReferenceName": "pdf_output",
+      "type": "GENERATE_PDF",
+      "inputParameters": {
+        "markdown": "${llm_report.output.result}",
+        "pageSize": "A4",
+        "theme": "default",
+        "baseFontSize": 11,
+        "pdfMetadata": {
+          "title": "${workflow.input.topic}",
+          "author": "Conductor AI Pipeline",
+          "subject": "Auto-generated report"
+        }
+      }
+    }
+  ],
+  "outputParameters": {
+    "reportMarkdown": "${llm_report.output.result}",
+    "pdfLocation": "${pdf_output.output.result.location}",
+    "pdfSizeBytes": "${pdf_output.output.result.sizeBytes}"
+  }
+}

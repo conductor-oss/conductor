@@ -25,6 +25,8 @@ import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
+
 class ForkJoinSpec extends AbstractSpecification {
 
     @Autowired
@@ -844,6 +846,11 @@ class ForkJoinSpec extends AbstractSpecification {
                 null)
 
         then: "The workflow is in the running state"
+        def nestedSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (nestedSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, nestedSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 8
@@ -951,6 +958,7 @@ class ForkJoinSpec extends AbstractSpecification {
         }
 
         and: "verify that the simple Sub Workflow is in running state and the first task related to it is scheduled"
+        sweep(subWorkflowInstanceId)
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -1071,6 +1079,9 @@ class ForkJoinSpec extends AbstractSpecification {
                 null)
 
         then: "verify that the workflow is in a running state"
+        def scheduledSubWfTasks = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.findAll { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        scheduledSubWfTasks.each { asyncSystemTaskExecutor.execute(subWorkflowTask, it.taskId) }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -1087,6 +1098,10 @@ class ForkJoinSpec extends AbstractSpecification {
         when: "both the sub workflows are started by issuing a system task call"
         def workflowWithScheduledSubWorkflows = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def joinTaskId = workflowWithScheduledSubWorkflows.getTaskByRefName("fanouttask_join").taskId
+        def st1SubWfId = workflowWithScheduledSubWorkflows.getTaskByRefName('st1').subWorkflowId
+        def st2SubWfId = workflowWithScheduledSubWorkflows.getTaskByRefName('st2').subWorkflowId
+        sweep(st1SubWfId)
+        sweep(st2SubWfId)
 
         then: "verify that the sub workflow tasks are in a IN PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -1200,6 +1215,11 @@ class ForkJoinSpec extends AbstractSpecification {
         def workflowInstanceId = startWorkflow(FORK_JOIN_SUB_WORKFLOW, 1, '', workflowInput, null)
 
         then: "verify that the workflow is in a RUNNING state"
+        def forkSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (forkSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, forkSubWfTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -1237,6 +1257,7 @@ class ForkJoinSpec extends AbstractSpecification {
         when: "sub workflow is retrieved"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowInstanceId = workflow.getTaskByRefName('st1').subWorkflowId
+        sweep(subWorkflowInstanceId)
 
         then: "verify that the sub workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
@@ -1263,6 +1284,13 @@ class ForkJoinSpec extends AbstractSpecification {
 
         and: "verify that the workflow is in a RUNNING state and sub workflow task is retried"
         sweep(workflowInstanceId)
+        // The background sweeper may have already consumed the retry task from the queue.
+        // Look up the retry task directly from workflow state and start it only if still SCHEDULED.
+        def retriedTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.retryCount == 1 }
+        if (retriedTask?.status == Task.Status.SCHEDULED) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, retriedTask.taskId)
+        }
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 5
@@ -1303,6 +1331,7 @@ class ForkJoinSpec extends AbstractSpecification {
         when: "sub workflow is retrieved"
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         subWorkflowInstanceId = workflow.getTaskByRefName('st1').subWorkflowId
+        sweep(subWorkflowInstanceId)
 
         then: "verify that the sub workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {

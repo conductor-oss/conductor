@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.conductoross.conductor.ai.models.LLMWorkerInput;
+import org.conductoross.conductor.ai.model.LLMWorkerInput;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +50,9 @@ public class AIModelProvider {
                         payloadStoreLocation,
                         result);
                 providerToLLM.put(llm.getModelProvider(), llm);
+                for (String alias : llm.getProviderAliases()) {
+                    providerToLLM.put(alias, llm);
+                }
             } catch (Throwable t) {
                 log.error("cannot init {} model, reason: {}", modelConfiguration, t.getMessage());
             }

@@ -23,8 +23,11 @@ export ANTHROPIC_API_KEY="your-anthropic-api-key"
 # export ANTHROPIC_BASE_URL="https://api.anthropic.com"
 
 # ============================================================================
-# Google Cloud / Gemini (Vertex AI)
+# Google Cloud / Gemini
 # ============================================================================
+# Option 1: API key (Google AI Studio) - simplest setup
+export GEMINI_API_KEY="your-gemini-api-key"
+# Option 2: Vertex AI (GCP project + credentials)
 export GOOGLE_PROJECT_ID="your-gcp-project-id"
 export GOOGLE_LOCATION="us-central1"
 # Set path to your service account JSON key file
@@ -89,6 +92,7 @@ echo "AI integration test environment variables loaded."
 echo "Providers configured:"
 [ -n "$OPENAI_API_KEY" ] && [ "$OPENAI_API_KEY" != "your-openai-api-key" ] && echo "  ✓ OpenAI"
 [ -n "$ANTHROPIC_API_KEY" ] && [ "$ANTHROPIC_API_KEY" != "your-anthropic-api-key" ] && echo "  ✓ Anthropic"
+[ -n "$GEMINI_API_KEY" ] && [ "$GEMINI_API_KEY" != "your-gemini-api-key" ] && echo "  ✓ Gemini (API key)"
 [ -n "$GOOGLE_PROJECT_ID" ] && [ "$GOOGLE_PROJECT_ID" != "your-gcp-project-id" ] && echo "  ✓ Gemini/Vertex AI"
 [ -n "$MISTRAL_API_KEY" ] && [ "$MISTRAL_API_KEY" != "your-mistral-api-key" ] && echo "  ✓ Mistral"
 [ -n "$OLLAMA_BASE_URL" ] && echo "  ✓ Ollama (at $OLLAMA_BASE_URL)"

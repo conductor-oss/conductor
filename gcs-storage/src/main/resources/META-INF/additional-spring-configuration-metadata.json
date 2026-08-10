@@ -1,0 +1,19 @@
+{
+  "properties": [
+    {
+      "name": "conductor.file-storage.gcs.bucket-name",
+      "type": "java.lang.String",
+      "description": "GCS bucket name where files are stored."
+    },
+    {
+      "name": "conductor.file-storage.gcs.project-id",
+      "type": "java.lang.String",
+      "description": "Google Cloud project ID that owns the bucket."
+    },
+    {
+      "name": "conductor.file-storage.gcs.credentials-file",
+      "type": "java.lang.String",
+      "description": "Path to a service account JSON key file. If omitted, falls back to GOOGLE_APPLICATION_CREDENTIALS or the Application Default Credentials chain."
+    }
+  ]
+}

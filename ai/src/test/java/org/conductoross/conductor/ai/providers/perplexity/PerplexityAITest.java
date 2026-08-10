@@ -14,13 +14,15 @@ package org.conductoross.conductor.ai.providers.perplexity;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +39,7 @@ class PerplexityAITest {
         void setUp() {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey("test-api-key");
-            perplexityAI = new PerplexityAI(config);
+            perplexityAI = new PerplexityAI(config, new OkHttpClient());
         }
 
         @Test
@@ -86,7 +88,7 @@ class PerplexityAITest {
         void setUp() {
             PerplexityAIConfiguration config = new PerplexityAIConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            perplexityAI = new PerplexityAI(config);
+            perplexityAI = new PerplexityAI(config, new OkHttpClient());
         }
 
         @Test

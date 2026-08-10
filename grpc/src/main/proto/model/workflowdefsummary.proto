@@ -10,4 +10,5 @@ message WorkflowDefSummary {
     string name = 1;
     int32 version = 2;
     int64 create_time = 3;
+    int64 update_time = 4;
 }

@@ -1,0 +1,13 @@
+{
+  "name": "every-minute-demo-schedule",
+  "cronExpression": "0 * * * * *",
+  "zoneId": "UTC",
+  "startWorkflowRequest": {
+    "name": "daily_report_workflow",
+    "version": 1,
+    "input": {},
+    "correlationId": "demo-${scheduledTime}"
+  },
+  "runCatchupScheduleInstances": false,
+  "paused": false
+}

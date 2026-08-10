@@ -14,6 +14,8 @@ package org.conductoross.conductor.ai.providers.openai;
 
 import org.junit.jupiter.api.Test;
 
+import okhttp3.OkHttpClient;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class OpenAIConfigurationTest {
@@ -43,7 +45,7 @@ class OpenAIConfigurationTest {
         OpenAIConfiguration config = new OpenAIConfiguration();
         config.setApiKey("test-key");
 
-        OpenAI result = config.get();
+        OpenAI result = new OpenAI(config, new OkHttpClient());
 
         assertNotNull(result);
         assertEquals("openai", result.getModelProvider());
@@ -52,7 +54,7 @@ class OpenAIConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         OpenAIConfiguration config =
-                new OpenAIConfiguration("api-key", "https://custom.url", "org-id");
+                new OpenAIConfiguration("api-key", "https://custom.url", "org-id", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

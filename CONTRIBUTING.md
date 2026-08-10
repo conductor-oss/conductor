@@ -10,7 +10,7 @@ Please review our [Code of Conduct](CODE_OF_CONDUCT.md)
 I have a question!
 -----
 
-We have a dedicated [Slack](https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email) channel for asking "how to" questions and to discuss ideas. The channel is a great place to start if you're considering creating a feature request or work on a Pull Request.
+We have a dedicated [Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA#/shared-invite/email) channel for asking "how to" questions and to discuss ideas. The channel is a great place to start if you're considering creating a feature request or work on a Pull Request.
 *Please do not create issues to ask questions.*
 
 I want to contribute!
@@ -23,7 +23,7 @@ The stable branch is [main](https://github.com/conductor-oss/conductor/tree/main
 
 Please create pull requests for your contributions against [main](https://github.com/conductor-oss/conductor/tree/main) only.
 
-It's a great idea to discuss the new feature you're considering in the [Slack channel](https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email) before writing any code. There are often different ways you can implement a feature. Getting some discussion about different options helps shape the best solution. When starting directly with a Pull Request, there is the risk of having to make considerable changes. Sometimes that is the best approach, though! Showing an idea with code can be very helpful; be aware that it might be throw-away work. Some of our best Pull Requests came out of multiple competing implementations, which helped shape it to perfection.
+It's a great idea to discuss the new feature you're considering in the [Slack channel](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA#/shared-invite/email) before writing any code. There are often different ways you can implement a feature. Getting some discussion about different options helps shape the best solution. When starting directly with a Pull Request, there is the risk of having to make considerable changes. Sometimes that is the best approach, though! Showing an idea with code can be very helpful; be aware that it might be throw-away work. Some of our best Pull Requests came out of multiple competing implementations, which helped shape it to perfection.
 
 Also, consider that not every feature is a good fit for Conductor. A few things to consider are:
 
@@ -47,7 +47,7 @@ I have a great idea for a new feature
 ----
 Many features in Conductor have come from ideas from the community. If you think something is missing or certain use cases could be supported better, let us know! 
 
-You can do so by starting a discussion in the [Slack channel](https://orkes-conductor.slack.com/join/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA#/shared-invite/email). Provide as much relevant context to why and when the feature would be helpful. Providing context is especially important for "Support XYZ" issues since we might not be familiar with what "XYZ" is and why it's useful. If you have an idea of how to implement the feature, include that as well.
+You can do so by starting a discussion in the [Slack channel](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA#/shared-invite/email). Provide as much relevant context to why and when the feature would be helpful. Providing context is especially important for "Support XYZ" issues since we might not be familiar with what "XYZ" is and why it's useful. If you have an idea of how to implement the feature, include that as well.
 
 Once we have decided on a direction, it's time to summarize the idea by creating a new issue.
 

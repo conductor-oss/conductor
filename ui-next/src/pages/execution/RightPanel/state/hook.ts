@@ -1,0 +1,142 @@
+import { useSelector } from "@xstate/react";
+import { useMemo } from "react";
+import { useQueryState } from "react-router-use-location-state";
+import { DoWhileSelection, ExecutionTask } from "types/Execution";
+import { ActorRef, State } from "xstate";
+import {
+  RightPanelContext,
+  RightPanelContextEventTypes,
+  RightPanelEvents,
+  SetSelectedTaskEvent,
+} from "./types";
+import { fillIterationPlaceholders } from "../iterationHelpers";
+
+export const useRightPanelActor = (
+  rightPanelActor: ActorRef<RightPanelEvents>,
+) => {
+  const send = rightPanelActor.send;
+  const selectedTask = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => {
+      const selectedTask = state.context.selectedTask;
+      return selectedTask;
+    },
+  );
+
+  const [_taskId, handleTaskId] = useQueryState<string>("taskId", "");
+  const executionStatusMap = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => state.context.executionStatusMap,
+  );
+
+  const selectedTaskInStatusMap = useMemo(() => {
+    if (selectedTask != null && executionStatusMap != null) {
+      const maybeTask =
+        executionStatusMap[selectedTask.workflowTask.taskReferenceName];
+      return maybeTask;
+    }
+  }, [executionStatusMap, selectedTask]);
+
+  const parentDoWhileRef = useMemo(() => {
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    return parentLoop?.referenceTaskName as string | undefined;
+  }, [selectedTaskInStatusMap]);
+
+  const retryIterationOptions = useMemo(() => {
+    const loopOver = selectedTaskInStatusMap?.loopOver;
+    if (!loopOver?.length) return loopOver;
+
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    const totalIterations = parentLoop?.iteration as number | undefined;
+    if (!totalIterations) {
+      return [...loopOver].reverse();
+    }
+
+    return fillIterationPlaceholders(
+      loopOver,
+      totalIterations,
+      parentDoWhileRef,
+      selectedTaskInStatusMap?.workflowTask,
+    );
+  }, [selectedTaskInStatusMap, parentDoWhileRef]);
+  const maybeSiblings = selectedTaskInStatusMap?.related?.siblings || [];
+
+  const executionId = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => state.context.executionId,
+  );
+  const authHeaders = useSelector(
+    rightPanelActor,
+    (state: State<RightPanelContext>) => state.context.authHeaders,
+  );
+
+  return [
+    {
+      selectedTask,
+      retryIterationOptions,
+      parentDoWhileRef,
+      maybeSiblings,
+      executionId,
+      authHeaders,
+      isIteration: useSelector(
+        rightPanelActor,
+        (state: State<RightPanelContext>) =>
+          state.context.selectedTask?.loopOverTask,
+      ),
+      errorMessage: useSelector(
+        rightPanelActor,
+        (state: State<RightPanelContext>) => state.context.error,
+      ),
+      taskLogs: useSelector(
+        rightPanelActor,
+        (state: State<RightPanelContext>) => state?.context?.taskLogs,
+      ),
+      currentTab: useSelector(
+        rightPanelActor,
+        (state: State<RightPanelContext>) => state?.context?.currentTab,
+      ),
+    },
+    {
+      handleClosePanel: () => {
+        send({
+          type: RightPanelContextEventTypes.CLOSE_RIGHT_PANEL,
+        });
+      },
+      handleChangeTaskStatus: (status: string, body: string) => {
+        send({
+          type: RightPanelContextEventTypes.UPDATE_SELECTED_TASK_STATUS,
+          payload: {
+            status,
+            body,
+          },
+        });
+      },
+      handleReRunRequest: () => {
+        send({
+          type: RightPanelContextEventTypes.RE_RUN_WORKFLOW_FROM_TASK,
+        });
+      },
+      clearErrorMessage: () => {
+        send({
+          type: RightPanelContextEventTypes.CLEAR_ERROR_MESSAGE,
+        });
+      },
+      handleSelectTask: (selectedTask: ExecutionTask) => {
+        const selectedTaskEvent: SetSelectedTaskEvent = {
+          type: RightPanelContextEventTypes.SET_SELECTED_TASK,
+          selectedTask: selectedTask,
+        };
+        if (selectedTask?.taskId) {
+          handleTaskId(selectedTask?.taskId);
+        }
+        send(selectedTaskEvent);
+      },
+      handleSelectDoWhileIteration: (data: DoWhileSelection) => {
+        send({
+          type: RightPanelContextEventTypes.SET_DO_WHILE_ITERATION,
+          data: data,
+        });
+      },
+    },
+  ] as const;
+};

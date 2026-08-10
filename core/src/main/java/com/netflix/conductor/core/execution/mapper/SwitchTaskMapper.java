@@ -115,9 +115,9 @@ public class SwitchTaskMapper implements TaskMapper {
 
         // get the list of tasks based on the evaluated expression
         List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);
-        // if the tasks returned are empty based on evaluated result, then get the default case if
-        // there is one
-        if (selectedTasks == null || selectedTasks.isEmpty()) {
+        // fall back to defaultCase only when no case key matched (null); an explicitly empty case
+        // list means the branch intentionally has no tasks and should not execute the default
+        if (selectedTasks == null) {
             selectedTasks = workflowTask.getDefaultCase();
         }
         // once there are selected tasks that need to proceeded as part of the switch, get the next

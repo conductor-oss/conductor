@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.ai.tasks.mapper;
 
-import org.conductoross.conductor.ai.models.MCPToolCallRequest;
+import org.conductoross.conductor.ai.model.MCPToolCallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;

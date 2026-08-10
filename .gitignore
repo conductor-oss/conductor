@@ -1,3 +1,6 @@
+# Worktrees
+.worktrees/
+
 # Java Build
 .gradle
 .classpath
@@ -43,11 +46,13 @@ build/
 .qodo
 conductorosstest.db
 conductorosstest.db
-/server-lite/src/main/resources/static
 yarn.lock
 .java-version
-server-lite/conductorosstest.db-shm
-server-lite/conductorosstest.db-wal
 /server/src/main/resources/static
 *.factorypath
 server/*.db*
+/site
+*.db
+*.db-shm
+*.db-wal
+docs/superpowers

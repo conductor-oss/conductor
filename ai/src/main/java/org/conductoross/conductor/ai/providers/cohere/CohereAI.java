@@ -15,14 +15,17 @@ package org.conductoross.conductor.ai.providers.cohere;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
+import org.springframework.web.client.RestClient;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 /**
  * Cohere AI provider using native SDK (not OpenAI-compatible). Uses CohereApi, CohereChatModel, and
@@ -39,8 +42,12 @@ public class CohereAI implements AIModel {
     private final CohereChatModel chatModel;
 
     public CohereAI(CohereAIConfiguration config) {
+        this(config, AIHttpClients.defaultClient());
+    }
+
+    public CohereAI(CohereAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        this.cohereApi = createCohereApi();
+        this.cohereApi = createCohereApi(httpClient);
         this.chatModel = createChatModel();
     }
 
@@ -100,8 +107,17 @@ public class CohereAI implements AIModel {
 
     // Initialization helpers
 
-    private CohereApi createCohereApi() {
-        CohereApi.Builder builder = CohereApi.builder().apiKey(config.getApiKey());
+    private CohereApi createCohereApi(OkHttpClient httpClient) {
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        CohereApi.Builder builder =
+                CohereApi.builder()
+                        .apiKey(config.getApiKey())
+                        .restClientBuilder(RestClient.builder().requestFactory(factory));
 
         if (config.getBaseURL() != null && !config.getBaseURL().isEmpty()) {
             builder.baseUrl(config.getBaseURL());

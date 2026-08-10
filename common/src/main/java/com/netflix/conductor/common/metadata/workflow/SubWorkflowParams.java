@@ -181,6 +181,21 @@ public class SubWorkflowParams {
         return Objects.equals(getName(), that.getName())
                 && Objects.equals(getVersion(), that.getVersion())
                 && Objects.equals(getTaskToDomain(), that.getTaskToDomain())
-                && Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition());
+                && Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition())
+                && Objects.equals(idempotencyKey, that.idempotencyKey)
+                && Objects.equals(idempotencyStrategy, that.idempotencyStrategy)
+                && Objects.equals(priority, that.priority);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                getName(),
+                getVersion(),
+                getTaskToDomain(),
+                getWorkflowDefinition(),
+                idempotencyKey,
+                idempotencyStrategy,
+                priority);
     }
 }

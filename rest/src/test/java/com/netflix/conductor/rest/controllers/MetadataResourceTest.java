@@ -13,20 +13,29 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.service.MetadataService;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,8 +55,33 @@ public class MetadataResourceTest {
     @Test
     public void testCreateWorkflow() {
         WorkflowDef workflowDef = new WorkflowDef();
-        metadataResource.create(workflowDef);
+        when(mockMetadataService.findWorkflowDef(any(), any())).thenReturn(Optional.empty());
+        metadataResource.create(workflowDef, false);
         verify(mockMetadataService, times(1)).registerWorkflowDef(any(WorkflowDef.class));
+    }
+
+    @Test
+    public void testCreateWorkflowOverwriteUpdatesExisting() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+        when(mockMetadataService.findWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(workflowDef));
+        metadataResource.create(workflowDef, true);
+        verify(mockMetadataService, times(1)).updateWorkflowDef(any(WorkflowDef.class));
+        verify(mockMetadataService, never()).registerWorkflowDef(any());
+    }
+
+    @Test
+    public void testCreateWorkflowConflictThrowsWhenNoOverwrite() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test");
+        workflowDef.setVersion(1);
+        when(mockMetadataService.findWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(workflowDef));
+        assertThrows(ConflictException.class, () -> metadataResource.create(workflowDef, false));
+        verify(mockMetadataService, never()).registerWorkflowDef(any());
+        verify(mockMetadataService, never()).updateWorkflowDef(any(WorkflowDef.class));
     }
 
     @Test
@@ -88,7 +122,30 @@ public class MetadataResourceTest {
         listOfWorkflowDef.add(workflowDef);
 
         when(mockMetadataService.getWorkflowDefs()).thenReturn(listOfWorkflowDef);
-        assertEquals(listOfWorkflowDef, metadataResource.getAll());
+        assertEquals(listOfWorkflowDef, metadataResource.getAll(null));
+    }
+
+    @Test
+    public void testGetAllWorkflowDefFilteredByClassifier() {
+        WorkflowDef plainDef = new WorkflowDef();
+        plainDef.setName("plain");
+        plainDef.setVersion(1);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setName("agentic");
+        agentDef.setVersion(1);
+        Map<String, Object> agentMetadata = new HashMap<>();
+        agentMetadata.put("agent_sdk", "python");
+        agentDef.setMetadata(agentMetadata);
+
+        List<WorkflowDef> listOfWorkflowDef = new ArrayList<>();
+        listOfWorkflowDef.add(plainDef);
+        listOfWorkflowDef.add(agentDef);
+
+        when(mockMetadataService.getWorkflowDefs()).thenReturn(listOfWorkflowDef);
+        assertEquals(List.of(agentDef), metadataResource.getAll("agent"));
+        assertEquals(List.of(plainDef), metadataResource.getAll("workflow"));
+        assertEquals(listOfWorkflowDef, metadataResource.getAll(" "));
     }
 
     @Test
@@ -158,5 +215,36 @@ public class MetadataResourceTest {
     public void testUnregisterTaskDef() {
         metadataResource.unregisterTaskDef("test");
         verify(mockMetadataService, times(1)).unregisterTaskDef(anyString());
+    }
+
+    @Test
+    public void testGetWorkflowNames() {
+        List<String> names = Arrays.asList("workflow_a", "workflow_b");
+        when(mockMetadataService.getWorkflowNames()).thenReturn(names);
+        assertEquals(names, metadataResource.getWorkflowNames());
+        verify(mockMetadataService, times(1)).getWorkflowNames();
+    }
+
+    @Test
+    public void testGetWorkflowVersions() {
+        WorkflowDefSummary v1 = new WorkflowDefSummary();
+        v1.setName("my_workflow");
+        v1.setVersion(1);
+        v1.setCreateTime(1000L);
+
+        WorkflowDefSummary v2 = new WorkflowDefSummary();
+        v2.setName("my_workflow");
+        v2.setVersion(2);
+        v2.setCreateTime(2000L);
+
+        List<WorkflowDefSummary> versions = Arrays.asList(v1, v2);
+        when(mockMetadataService.getWorkflowVersions("my_workflow")).thenReturn(versions);
+
+        List<WorkflowDefSummary> result = metadataResource.getWorkflowVersions("my_workflow");
+        assertEquals(versions, result);
+        assertEquals(2, result.size());
+        assertEquals(1, result.get(0).getVersion());
+        assertEquals(2, result.get(1).getVersion());
+        verify(mockMetadataService, times(1)).getWorkflowVersions("my_workflow");
     }
 }

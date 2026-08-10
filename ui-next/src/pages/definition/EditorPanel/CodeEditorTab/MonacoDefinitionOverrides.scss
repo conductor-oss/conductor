@@ -1,0 +1,23 @@
+.TaskNameInlineDecoration {
+  background: yellow;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.TaskNameLineDecoration {
+  background: lightblue;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.ErrorRefStringInLineDecoration {
+  background: #fbb4c6;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.ErrorRefStringLineDecoration {
+  background: lightblue;
+  width: 5px !important;
+  margin-left: 3px;
+}

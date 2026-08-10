@@ -1,3 +1,6 @@
+---
+description: "Guided Tutorial — learn Conductor step by step with hands-on labs covering task workers, definitions, and workflows."
+---
 # Guided Tutorial
 
 ## High Level Steps
@@ -8,7 +11,7 @@ Generally, these are the steps necessary in order to put Conductor to work for y
 3. Create the workflow definition
 
 ## Before We Begin
-Ensure you have a Conductor instance up and running. This includes both the Server and the UI. We recommend following the [Docker Instructions](../running/docker.md).
+Ensure you have a Conductor instance up and running. This includes both the Server and the UI. We recommend following the [Docker Instructions](../running/deploy.md).
 
 ## Tools
 For the purpose of testing and issuing API calls, the following tools are useful

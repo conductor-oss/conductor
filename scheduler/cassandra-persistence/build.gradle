@@ -1,0 +1,23 @@
+dependencies {
+    implementation project(':conductor-scheduler-core')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-cassandra-persistence')
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
+    testImplementation "org.testcontainers:cassandra:${revTestContainer}"
+    testImplementation testFixtures(project(':conductor-scheduler-core'))
+}
+
+test {
+    maxParallelForks = 1
+    environment 'DOCKER_API_VERSION', '1.44'
+}

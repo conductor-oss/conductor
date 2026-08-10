@@ -24,6 +24,8 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
 
@@ -217,6 +219,15 @@ public class Task {
 
     @ProtoField(id = 47)
     private long lastPublishTime;
+
+    /**
+     * Resolved secret/environment name to value map, injected at poll time from the task
+     * definition's declared {@code runtimeMetadata} names. Wire-only (REST/JSON): never persisted
+     * on {@code TaskModel}, not given a {@code @ProtoField} id, and intentionally excluded from
+     * {@link #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private Map<String, String> runtimeMetadata = new HashMap<>();
 
     public Task() {}
 
@@ -780,6 +791,23 @@ public class Task {
         this.parentTaskId = parentTaskId;
     }
 
+    /**
+     * @return the resolved secret/environment name to value map, injected at poll time
+     */
+    public Map<String, String> getRuntimeMetadata() {
+        return runtimeMetadata;
+    }
+
+    /**
+     * @param runtimeMetadata the resolved secret/environment name to value map to set
+     */
+    public void setRuntimeMetadata(Map<String, String> runtimeMetadata) {
+        if (runtimeMetadata == null) {
+            runtimeMetadata = new HashMap<>();
+        }
+        this.runtimeMetadata = runtimeMetadata;
+    }
+
     public long getFirstStartTime() {
         return firstStartTime;
     }
@@ -806,6 +834,7 @@ public class Task {
     /**
      * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
      */
+    @JsonIgnore
     public ExecutionMetadata getOrCreateExecutionMetadata() {
         if (executionMetadata == null) {
             executionMetadata = new ExecutionMetadata();
@@ -817,6 +846,7 @@ public class Task {
      * @return the execution metadata only if it has data, null otherwise (for protobuf
      *     serialization)
      */
+    @JsonIgnore
     public ExecutionMetadata getExecutionMetadataIfHasData() {
         if (executionMetadata != null && executionMetadata.hasData()) {
             return executionMetadata;

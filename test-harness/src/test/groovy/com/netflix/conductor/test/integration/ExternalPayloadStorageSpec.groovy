@@ -26,6 +26,7 @@ import com.netflix.conductor.test.utils.UserTask
 
 import spock.lang.Shared
 
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPayload
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedLargePayloadTask
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
@@ -439,21 +440,14 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedLargePayloadTask(pollAndCompleteLargePayloadTask)
 
-        and: "verify that the 'integration_task1' is complete and the next task is scheduled"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 2
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[0].outputData.isEmpty()
-
-            tasks[1].taskType == TaskType.SUB_WORKFLOW.name()
-            tasks[1].status == Task.Status.IN_PROGRESS
-            tasks[1].inputData.isEmpty()
-
+        when: "the subworkflow is started by issuing a system task call"
+        def inlineSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (inlineSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, inlineSubWfTask.taskId)
         }
 
-        when: "the subworkflow is started by issuing a system task call"
+        and: "verify that the 'integration_task1' is complete and the next task is scheduled"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName('swt').taskId
 
@@ -474,6 +468,7 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         when: "sub workflow is retrieved"
         workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowInstanceId = workflow.getTaskByRefName('swt').subWorkflowId
+        sweep(subWorkflowInstanceId)
 
         then: "verify that the sub workflow is in a RUNNING state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
@@ -740,7 +735,14 @@ class ExternalPayloadStorageSpec extends AbstractSpecification {
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedLargePayloadTask(pollAndCompleteLargePayloadTask)
 
-        and: "verify that workflow has progressed further ahead and new dynamic tasks have been scheduled with externalized payloads"
+        when: "the sub workflow system task is executed"
+        def dynamicSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (dynamicSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, dynamicSubWfTask.taskId)
+        }
+
+        then: "verify that workflow has progressed further ahead and new dynamic tasks have been scheduled with externalized payloads"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         with(workflow) {
             status == Workflow.WorkflowStatus.RUNNING

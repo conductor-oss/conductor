@@ -34,7 +34,8 @@ class AzureOpenAIConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         AzureOpenAIConfiguration config =
-                new AzureOpenAIConfiguration("api-key", "https://custom.url", "user-1", "gpt-4");
+                new AzureOpenAIConfiguration(
+                        "api-key", "https://custom.url", "user-1", "gpt-4", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

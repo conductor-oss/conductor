@@ -44,7 +44,8 @@ class MistralAIConfigurationTest {
 
     @Test
     void testAllArgsConstructor() {
-        MistralAIConfiguration config = new MistralAIConfiguration("api-key", "https://custom.url");
+        MistralAIConfiguration config =
+                new MistralAIConfiguration("api-key", "https://custom.url", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

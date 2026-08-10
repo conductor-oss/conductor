@@ -1,0 +1,1 @@
+export const MESSAGE_BROKER = "MESSAGE_BROKER";

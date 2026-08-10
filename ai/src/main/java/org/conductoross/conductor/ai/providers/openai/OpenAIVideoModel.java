@@ -20,6 +20,7 @@ import org.conductoross.conductor.ai.providers.openai.api.OpenAIVideoApi;
 import org.conductoross.conductor.ai.video.*;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 /**
  * OpenAI Sora video model implementation.
@@ -39,9 +40,11 @@ import lombok.extern.slf4j.Slf4j;
 public class OpenAIVideoModel implements AsyncVideoModel {
 
     private final OpenAIVideoApi api;
+    private final OkHttpClient httpClient;
 
-    public OpenAIVideoModel(OpenAIVideoApi api) {
+    public OpenAIVideoModel(OpenAIVideoApi api, OkHttpClient httpClient) {
         this.api = api;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -197,9 +200,8 @@ public class OpenAIVideoModel implements AsyncVideoModel {
     }
 
     private byte[] downloadFromUrl(String url) {
-        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
         okhttp3.Request request = new okhttp3.Request.Builder().url(url).get().build();
-        try (okhttp3.Response response = client.newCall(request).execute()) {
+        try (okhttp3.Response response = httpClient.newCall(request).execute()) {
             if (response.body() == null) {
                 throw new RuntimeException("Empty response downloading image from " + url);
             }

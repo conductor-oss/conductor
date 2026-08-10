@@ -44,7 +44,8 @@ class OllamaConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         OllamaConfiguration config =
-                new OllamaConfiguration("http://custom:11434", "Authorization", "Bearer token");
+                new OllamaConfiguration(
+                        "http://custom:11434", "Authorization", "Bearer token", null);
 
         assertEquals("http://custom:11434", config.getBaseURL());
         assertEquals("Authorization", config.getAuthHeaderName());

@@ -1,0 +1,78 @@
+import { ExecutionTask, WorkflowExecution } from "types/Execution";
+import _nth from "lodash/nth";
+import { StatusMap } from "./state/StatusMapTypes";
+type SeqResult = {
+  seqNumber: number;
+  idx: number;
+};
+
+/**
+ * Whether a workflow execution is an AgentSpan-compiled agent run (carries
+ * the `agentDef`/`agent_sdk` metadata stamp on its workflow definition), as
+ * opposed to a plain Conductor workflow. Drives: which tab the execution page
+ * defaults to, which sidebar nav item stays highlighted, and which route
+ * (/execution/:id vs /agentExecutions/:id) an execution's detail view lives at.
+ */
+export function isAgentWorkflowExecution(
+  execution: Pick<WorkflowExecution, "workflowDefinition"> | undefined | null,
+): boolean {
+  const metadata = execution?.workflowDefinition?.metadata as
+    | Record<string, unknown>
+    | undefined;
+  return (
+    !!metadata && (metadata.agentDef != null || metadata.agent_sdk != null)
+  );
+}
+
+export const taskWithLatestIteration = (
+  tasksList: ExecutionTask[] = [],
+  taskReferenceName = "",
+  taskId?: string,
+) => {
+  const filteredTasks = tasksList.filter(
+    (task) =>
+      task.workflowTask.taskReferenceName === taskReferenceName ||
+      task.taskId === taskId ||
+      task.referenceTaskName === taskReferenceName,
+  );
+
+  if (filteredTasks && filteredTasks.length === 1) {
+    // task without any retry/iteration
+    return _nth(filteredTasks, 0);
+  } else if (filteredTasks && filteredTasks.length > 1) {
+    const result = filteredTasks.reduce(
+      (acc: SeqResult, task, idx) => {
+        if (task.seq && acc.seqNumber < Number(task.seq)) {
+          return { seqNumber: Number(task.seq), idx };
+        }
+        return acc;
+      },
+      { seqNumber: 0, idx: -1 },
+    );
+
+    if (result.idx > -1) {
+      return _nth(filteredTasks, result.idx);
+    }
+  }
+  return undefined;
+};
+
+export function findTaskFromExecutionStatusMapById(
+  mapObject: StatusMap,
+  id: string | null,
+) {
+  const keys = Object.keys(mapObject);
+
+  for (const key of keys) {
+    const item = mapObject[key];
+    if (item?.taskId === id) {
+      return item;
+    }
+    const found = item?.loopOver?.find((loopItem) => loopItem?.taskId === id);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null; // return null if not found
+}

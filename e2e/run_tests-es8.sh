@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-es8.yaml"
+STORAGE_DIR="/tmp/conductor-file-storage-e2e"
+export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
+
+cleanup() {
+    docker compose -f "$COMPOSE_FILE" down -v || true
+}
+
+# Register cleanup before compose operations so partial startup, health failures,
+# interrupted runs, and test failures all remove containers and volumes.
+trap cleanup EXIT
+
+echo "Preparing shared storage dir at $STORAGE_DIR ..."
+rm -rf "$STORAGE_DIR"
+mkdir -p "$STORAGE_DIR"
+
+echo "Starting Conductor (Redis + Elasticsearch 8)..."
+docker compose -f "$COMPOSE_FILE" build conductor-server
+docker compose -f "$COMPOSE_FILE" up -d
+
+echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."
+for i in $(seq 1 60); do
+    if curl -sf "$SERVER_ROOT_URI/health" > /dev/null 2>&1; then
+        echo "Conductor is up after ${i} attempt(s)!"
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "ERROR: Conductor did not start in time"
+        docker compose -f "$COMPOSE_FILE" logs conductor-server 2>/dev/null || docker compose -f "$COMPOSE_FILE" logs
+        exit 1
+    fi
+    echo "  Attempt $i/60 — waiting 5s..."
+    sleep 5
+done
+
+cd "$SCRIPT_DIR/.."
+set +e
+./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
+EXIT_CODE=$?
+exit $EXIT_CODE

@@ -22,23 +22,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.ChatMessage;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ImageGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.ToolCall;
-import org.conductoross.conductor.ai.models.ToolSpec;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatMessage;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ImageGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.ToolCall;
+import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
-import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -57,8 +58,6 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
 import org.springframework.util.MimeType;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -71,7 +70,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.ValidationMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -84,10 +82,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIM
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getExtension;
 import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFromUrl;
 
-@Component
 @Slf4j
-@RequiredArgsConstructor
-@Conditional(AIIntegrationEnabledCondition.class)
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
@@ -97,6 +92,21 @@ public class LLMHelper {
 
     private final JsonSchemaValidator jsonSchemaValidator;
     private final List<DocumentLoader> documentLoaders;
+    private final OkHttpClient httpClient;
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
+        this(jsonSchemaValidator, documentLoaders, AIHttpClients.defaultClient());
+    }
+
+    public LLMHelper(
+            JsonSchemaValidator jsonSchemaValidator,
+            List<DocumentLoader> documentLoaders,
+            OkHttpClient httpClient) {
+        this.jsonSchemaValidator = jsonSchemaValidator;
+        this.documentLoaders = documentLoaders;
+        this.httpClient = httpClient;
+    }
 
     public LLMResponse chatComplete(
             Task task,
@@ -349,7 +359,10 @@ public class LLMHelper {
                     .addFirst(new ChatMessage(ChatMessage.Role.system, input.getInstructions()));
         }
 
-        List<Message> messages = input.getMessages().stream().map(this::constructMessage).toList();
+        List<Message> messages =
+                new ArrayList<>(input.getMessages().stream().map(this::constructMessage).toList());
+
+        ensureLastMessageIsFromUser(messages);
 
         Prompt prompt = new Prompt(messages, chatOptions);
         ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
@@ -369,7 +382,7 @@ public class LLMHelper {
         List<ToolCall> tools = null;
         String finishReason = null;
         List<String> responses = new ArrayList<>();
-        List<org.conductoross.conductor.ai.models.Media> media = new ArrayList<>();
+        List<org.conductoross.conductor.ai.model.Media> media = new ArrayList<>();
         for (Generation result : chatResponse.getResults()) {
             if (result.getOutput().hasToolCalls()) {
                 List<AssistantMessage.ToolCall> toolCalls = result.getOutput().getToolCalls();
@@ -377,8 +390,11 @@ public class LLMHelper {
                 for (AssistantMessage.ToolCall toolCall : toolCalls) {
                     String name = toolCall.name();
                     String id = toolCall.id();
+                    if (id == null || id.isBlank()) {
+                        id = UUID.randomUUID().toString();
+                    }
                     String argsAsString = toolCall.arguments();
-                    Map<String, Object> args = Map.of();
+                    Map<String, Object> args = new HashMap<>();
                     try {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> parsedArgs =
@@ -395,12 +411,6 @@ public class LLMHelper {
                                     .filter(toolSpec -> toolSpec.getName().equals(name))
                                     .findFirst();
 
-                    String integrationName =
-                            (String)
-                                    matched.map(ToolSpec::getConfigParams)
-                                            .orElse(Collections.emptyMap())
-                                            .get("integrationName");
-                    args.put("integrationName", integrationName);
                     String type = matched.map(ToolSpec::getType).orElse(TASK_TYPE_SIMPLE);
                     tools.add(
                             ToolCall.builder()
@@ -419,7 +429,7 @@ public class LLMHelper {
                         .forEach(
                                 m ->
                                         media.add(
-                                                org.conductoross.conductor.ai.models.Media.builder()
+                                                org.conductoross.conductor.ai.model.Media.builder()
                                                         .data(m.getDataAsByteArray())
                                                         .mimeType(m.getMimeType().toString())
                                                         .build()));
@@ -434,11 +444,40 @@ public class LLMHelper {
             result = responses.getFirst();
         }
         finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
+
+        // Extract response_id if present (set by OpenAI Responses API for chaining)
+        String responseId = null;
+        Object respIdObj = chatResponse.getMetadata().get("response_id");
+        if (respIdObj instanceof String rid) {
+            responseId = rid;
+        }
+
+        // Reasoning summary + reasoning token count. Surfaced by the OpenAI
+        // Responses API, Anthropic extended thinking, and Gemini thought
+        // summaries — the chat-model adapters normalize all three onto these
+        // two metadata keys before we read them here.
+        String reasoning = null;
+        Object reasoningObj = chatResponse.getMetadata().get("reasoning");
+        if (reasoningObj instanceof String r && !r.isBlank()) {
+            reasoning = r;
+        }
+        Integer reasoningTokens = null;
+        Object rtObj = chatResponse.getMetadata().get("reasoning_tokens");
+        // ``Number`` rather than ``Integer`` so a Long survives the Jackson
+        // round-trip ChatResponseMetadata may go through. Token counts won't
+        // overflow int — convert and move on.
+        if (rtObj instanceof Number rt) {
+            reasoningTokens = rt.intValue();
+        }
+
         return LLMResponse.builder()
                 .result(result)
                 .media(media)
                 .toolCalls(tools)
                 .finishReason(finishReason)
+                .responseId(responseId)
+                .reasoning(reasoning)
+                .reasoningTokens(reasoningTokens)
                 .completionTokens(chatResponse.getMetadata().getUsage().getCompletionTokens())
                 .promptTokens(chatResponse.getMetadata().getUsage().getPromptTokens())
                 .tokenUsed(chatResponse.getMetadata().getUsage().getTotalTokens())
@@ -451,7 +490,7 @@ public class LLMHelper {
         ImagePrompt prompt = new ImagePrompt(List.of(imageMessage), options);
         ImageResponse response = imageModel.call(prompt);
         LLMResponse mediaGenResponse = new LLMResponse();
-        List<org.conductoross.conductor.ai.models.Media> mediaList = new ArrayList<>();
+        List<org.conductoross.conductor.ai.model.Media> mediaList = new ArrayList<>();
         for (ImageGeneration result : response.getResults()) {
             var image = result.getOutput();
             String url = image.getUrl();
@@ -467,7 +506,7 @@ public class LLMHelper {
             if (base64 != null) {
                 // Base64 data provided - decode and store
                 mediaList.add(
-                        org.conductoross.conductor.ai.models.Media.builder()
+                        org.conductoross.conductor.ai.model.Media.builder()
                                 .data(Base64.getDecoder().decode(base64))
                                 .mimeType(mimeType)
                                 .build());
@@ -479,7 +518,7 @@ public class LLMHelper {
                     // Detect mime type from URL extension if possible
                     String detectedMimeType = getMimeTypeFromUrl(url, mimeType);
                     mediaList.add(
-                            org.conductoross.conductor.ai.models.Media.builder()
+                            org.conductoross.conductor.ai.model.Media.builder()
                                     .data(imageBytes)
                                     .mimeType(detectedMimeType)
                                     .build());
@@ -488,7 +527,7 @@ public class LLMHelper {
                     // nothing)
                     log.warn("Failed to download image from URL, keeping external URL: {}", url);
                     mediaList.add(
-                            org.conductoross.conductor.ai.models.Media.builder()
+                            org.conductoross.conductor.ai.model.Media.builder()
                                     .location(url)
                                     .mimeType(mimeType)
                                     .build());
@@ -510,15 +549,9 @@ public class LLMHelper {
      */
     private byte[] downloadImageFromUrl(String url) {
         try {
-            OkHttpClient client =
-                    new OkHttpClient.Builder()
-                            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-                            .build();
-
             Request request = new Request.Builder().url(url).get().build();
 
-            try (Response response = client.newCall(request).execute()) {
+            try (Response response = httpClient.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     log.error(
                             "Failed to download image from URL {}: HTTP {}", url, response.code());
@@ -639,11 +672,13 @@ public class LLMHelper {
     }
 
     private Message getMessage(ChatMessage msg) {
+        List<String> rawMedia = msg.getMedia();
         List<Media> media =
-                msg.getMedia().stream()
-                        .map(m -> getMedia(msg.getMimeType(), m))
-                        .filter(Objects::nonNull)
-                        .toList();
+                (rawMedia == null ? List.<String>of() : rawMedia)
+                        .stream()
+                                .map(m -> getMedia(msg.getMimeType(), m))
+                                .filter(Objects::nonNull)
+                                .toList();
         return UserMessage.builder().text(msg.getMessage()).media(media).build();
     }
 
@@ -671,33 +706,33 @@ public class LLMHelper {
     }
 
     private void storeMedia(
-            String location, List<org.conductoross.conductor.ai.models.Media> media) {
-        Optional<DocumentLoader> docLoader =
+            String location, List<org.conductoross.conductor.ai.model.Media> media) {
+
+        DocumentLoader documentLoader =
                 documentLoaders.stream()
-                        .filter(documentLoader -> documentLoader.supports(location))
-                        .findFirst();
-        docLoader.ifPresent(
-                loader -> {
-                    media.stream()
-                            .filter(m1 -> m1.getData() != null)
-                            .forEach(
-                                    m -> {
-                                        // Each media item gets a unique path with file extension
-                                        // to prevent overwriting when multiple items exist
-                                        // (e.g., video + thumbnail)
-                                        String ext = getExtension(m.getMimeType());
-                                        String uniqueLocation =
-                                                location + "_" + java.util.UUID.randomUUID() + ext;
-                                        String uploadLocation =
-                                                loader.upload(
-                                                        Map.of(),
-                                                        m.getMimeType(),
-                                                        m.getData(),
-                                                        uniqueLocation);
-                                        m.setLocation(uploadLocation);
-                                        m.setData(null);
-                                    });
-                });
+                        .filter(loader -> loader.supports(location))
+                        .findFirst()
+                        .orElse(null);
+        if (documentLoader == null) {
+            log.debug("no document loaders found, media will not be stored");
+            return;
+        }
+        media.stream()
+                .filter(m1 -> m1.getData() != null)
+                .forEach(
+                        m -> {
+                            // Each media item gets a unique path with file extension
+                            // to prevent overwriting when multiple items exist
+                            // (e.g., video + thumbnail)
+                            String ext = getExtension(m.getMimeType());
+                            String uniqueLocation =
+                                    location + "_" + java.util.UUID.randomUUID() + ext;
+                            String uploadLocation =
+                                    documentLoader.upload(
+                                            Map.of(), m.getMimeType(), m.getData(), uniqueLocation);
+                            m.setLocation(uploadLocation);
+                            m.setData(null);
+                        });
     }
 
     /**
@@ -825,6 +860,41 @@ public class LLMHelper {
         }
 
         return result;
+    }
+
+    /**
+     * Ensures the conversation ends with a user message. Some providers (e.g. Anthropic/Claude)
+     * reject requests where the last message has an assistant or tool_call role ("assistant message
+     * prefill"). This typically happens when the prior iteration ended with finishReason=MAX_TOKENS
+     * and the DO_WHILE loop continues with the partial assistant response as the last message in
+     * the history. Appending a user continuation prompt is safe for all providers — OpenAI and
+     * others simply treat it as the next user turn.
+     *
+     * @param messages The mutable list of messages to check and potentially modify
+     */
+    @VisibleForTesting
+    void ensureLastMessageIsFromUser(List<Message> messages) {
+        if (messages.isEmpty()) return;
+        Message last = messages.getLast();
+        if (last instanceof UserMessage) return;
+
+        if (last instanceof AssistantMessage assistantMsg) {
+            // Replace trailing assistant message with a user message that includes
+            // the partial text as context + continuation instruction.
+            // This avoids the "assistant message prefill" error from Claude.
+            String partialText = assistantMsg.getText();
+            messages.removeLast();
+            String continuation =
+                    partialText != null && !partialText.isBlank()
+                            ? "You were saying:\n\n"
+                                    + partialText
+                                    + "\n\nPlease continue where you left off."
+                            : "Please continue where you left off.";
+            messages.add(new UserMessage(continuation));
+        } else {
+            // For any other non-user message type (tool_call, system, etc.)
+            messages.add(new UserMessage("Please continue where you left off."));
+        }
     }
 
     /** Checks if a string looks like JSON */

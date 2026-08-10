@@ -1,0 +1,29 @@
+[
+  {
+    "name": "daily_cleanup_schedule",
+    "cronExpression": "0 0 * * *",
+    "paused": false,
+    "scheduleStartTime": 1700000000000,
+    "scheduleEndTime": 1800000000000,
+    "createTime": 1700000000000,
+    "updatedTime": 1700000000000,
+    "startWorkflowRequest": {
+      "name": "cleanup_workflow",
+      "version": 1,
+      "input": {}
+    }
+  },
+  {
+    "name": "hourly_data_sync",
+    "cronExpression": "0 * * * *",
+    "paused": true,
+    "scheduleStartTime": 1700000000000,
+    "createTime": 1700000000000,
+    "updatedTime": 1700000000000,
+    "startWorkflowRequest": {
+      "name": "data_sync_workflow",
+      "version": 2,
+      "input": {}
+    }
+  }
+]

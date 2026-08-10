@@ -1,0 +1,7 @@
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation 'com.google.cloud:google-cloud-storage:2.36.1'
+}

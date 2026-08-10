@@ -36,6 +36,8 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.listener.TaskStatusListener;
+import com.netflix.conductor.core.secrets.RuntimeMetadataResolver;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.dao.QueueDAO;
@@ -52,9 +54,12 @@ public class ExecutionService {
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionDAOFacade executionDAOFacade;
     private final QueueDAO queueDAO;
+    private final ConductorProperties properties;
     private final ExternalPayloadStorage externalPayloadStorage;
     private final SystemTaskRegistry systemTaskRegistry;
     private final TaskStatusListener taskStatusListener;
+    private final ParametersUtils parametersUtils;
+    private final RuntimeMetadataResolver runtimeMetadataResolver;
 
     private final long queueTaskMessagePostponeSecs;
 
@@ -69,16 +74,21 @@ public class ExecutionService {
             ConductorProperties properties,
             ExternalPayloadStorage externalPayloadStorage,
             SystemTaskRegistry systemTaskRegistry,
-            TaskStatusListener taskStatusListener) {
+            TaskStatusListener taskStatusListener,
+            ParametersUtils parametersUtils,
+            RuntimeMetadataResolver runtimeMetadataResolver) {
         this.workflowExecutor = workflowExecutor;
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
+        this.properties = properties;
         this.externalPayloadStorage = externalPayloadStorage;
 
         this.queueTaskMessagePostponeSecs =
                 properties.getTaskExecutionPostponeDuration().getSeconds();
         this.systemTaskRegistry = systemTaskRegistry;
         this.taskStatusListener = taskStatusListener;
+        this.parametersUtils = parametersUtils;
+        this.runtimeMetadataResolver = runtimeMetadataResolver;
     }
 
     public Task poll(String taskType, String workerId) {
@@ -177,7 +187,32 @@ public class ExecutionService {
                 taskModel.setWorkerId(workerId);
                 taskModel.incrementPollCount();
                 executionDAOFacade.updateTask(taskModel);
-                tasks.add(taskModel.toTask());
+                adjustDeciderQueuePostpone(taskModel, taskDef);
+                Task task = taskModel.toTask();
+                // Secrets substitution only sees taskModel.getInputData(); when input has been
+                // offloaded to external payload storage, getInputData()/setInputData() operate on
+                // a different field and this substitution silently becomes a no-op.
+                if (taskModel.getExternalInputPayloadStoragePath() != null) {
+                    LOGGER.warn(
+                            "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+                            taskModel.getTaskId());
+                }
+                // Stopgap: keep a resolution error off the outer catch (which re-enqueues and, with
+                // the IN_PROGRESS write above, loops until responseTimeoutSeconds). Proper handling
+                // (FAILED vs. deliver-unresolved) is a follow-up.
+                try {
+                    task.setInputData(parametersUtils.substituteSecrets(task.getInputData()));
+                    if (taskDef != null) {
+                        task.setRuntimeMetadata(
+                                runtimeMetadataResolver.resolve(taskDef.getRuntimeMetadata()));
+                    }
+                } catch (Exception e) {
+                    LOGGER.error(
+                            "Failed to resolve secrets/runtimeMetadata for task {}; delivering task without resolved values",
+                            task.getTaskId(),
+                            e);
+                }
+                tasks.add(task);
             } catch (Exception e) {
                 // db operation failed for dequeued message, re-enqueue with a delay
                 LOGGER.warn(
@@ -206,6 +241,37 @@ public class ExecutionService {
         Monitors.recordTaskPoll(queueName);
         tasks.forEach(this::ackTaskReceived);
         return tasks;
+    }
+
+    /**
+     * When a task transitions SCHEDULED → IN_PROGRESS the relevant deadline changes from
+     * pollTimeoutSeconds to responseTimeoutSeconds. Advance the decider queue entry to fire at the
+     * response timeout so the sweeper doesn't wait for the now-stale poll-based postpone.
+     *
+     * <p>Uses {@link QueueDAO#setUnackTimeoutIfShorter} so we never push the evaluation further out
+     * than whatever the sweeper already scheduled (e.g. for another in-flight task with a shorter
+     * remaining timeout).
+     */
+    private void adjustDeciderQueuePostpone(TaskModel taskModel, TaskDef taskDef) {
+        long responseTimeoutSeconds =
+                (taskDef != null && taskDef.getResponseTimeoutSeconds() != 0)
+                        ? taskDef.getResponseTimeoutSeconds()
+                        : taskModel.getResponseTimeoutSeconds();
+        if (responseTimeoutSeconds == 0) {
+            return; // no response timeout — nothing to adjust
+        }
+        try {
+            queueDAO.setUnackTimeoutIfShorter(
+                    Utils.DECIDER_QUEUE,
+                    taskModel.getWorkflowInstanceId(),
+                    responseTimeoutSeconds * 1000);
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Failed to adjust decider queue postpone for workflow: {} after polling task: {}",
+                    taskModel.getWorkflowInstanceId(),
+                    taskModel.getTaskId(),
+                    e);
+        }
     }
 
     public Task getLastPollTask(String taskType, String workerId, String domain) {

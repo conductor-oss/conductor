@@ -18,8 +18,9 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.conductoross.conductor.ai.AIModel;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -34,6 +35,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.web.client.RestClient;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class MistralAI implements AIModel {
@@ -47,8 +49,12 @@ public class MistralAI implements AIModel {
     private final MistralAiEmbeddingModel embeddingModel;
 
     public MistralAI(MistralAIConfiguration config) {
+        this(config, AIHttpClients.defaultClient());
+    }
+
+    public MistralAI(MistralAIConfiguration config, OkHttpClient httpClient) {
         this.config = config;
-        this.mistralAiApi = createMistralAiApi();
+        this.mistralAiApi = createMistralAiApi(httpClient);
         this.chatModel = createChatModel();
         this.embeddingModel =
                 MistralAiEmbeddingModel.builder().mistralAiApi(this.mistralAiApi).build();
@@ -110,16 +116,22 @@ public class MistralAI implements AIModel {
 
     // Initialization helpers
 
-    private MistralAiApi createMistralAiApi() {
-        String apiKey = config.getApiKey();
-        String baseURL = config.getBaseURL();
+    private MistralAiApi createMistralAiApi(OkHttpClient httpClient) {
+        OkHttpClient effective =
+                (config.getTimeout() != null)
+                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
+                        : httpClient;
+        var factory =
+                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()
-                .baseUrl(baseURL)
-                .apiKey(apiKey)
+                .baseUrl(config.getBaseURL())
+                .apiKey(config.getApiKey())
                 .restClientBuilder(
-                        RestClient.builder().defaultHeader("Accept-Encoding", "gzip, deflate"))
+                        RestClient.builder()
+                                .requestFactory(factory)
+                                .defaultHeader("Accept-Encoding", "gzip, deflate"))
                 .build();
     }
 
