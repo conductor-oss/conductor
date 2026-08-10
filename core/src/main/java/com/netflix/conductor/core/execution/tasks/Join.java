@@ -178,20 +178,17 @@ public class Join extends WorkflowSystemTask {
         return compact;
     }
 
-    /**
-     * Resolve agent dispatch metadata from the most specific runtime representation first, then
-     * fall back to the retained workflow definition. Different task mappers preserve the marker in
-     * different shapes, so JOIN must understand all of them to avoid dropping completed outputs.
-     */
+    /** Resolve agent dispatch metadata across the task input shapes retained by task mappers. */
     private static Object getAgentToolName(TaskModel forkedTask) {
         Map<String, Object> input = forkedTask.getInputData();
         if (input != null) {
+            // Direct runtime value wins.
             Object agentToolName = input.get("_agent_tool_name");
             if (agentToolName != null) {
                 return agentToolName;
             }
 
-            // SUB_WORKFLOW tasks retain their original dispatch input under workflowInput.
+            // Nested resolved runtime value is next.
             Object workflowInput = input.get("workflowInput");
             if (workflowInput instanceof Map<?, ?> nestedInput) {
                 agentToolName = nestedInput.get("_agent_tool_name");
@@ -201,8 +198,7 @@ public class Join extends WorkflowSystemTask {
             }
         }
 
-        // HTTP and MCP task mappers can omit orchestration metadata from resolved inputData while
-        // retaining it on the generated WorkflowTask definition.
+        // Original workflow definition is the fallback.
         WorkflowTask workflowTask = forkedTask.getWorkflowTask();
         Map<String, Object> inputParameters =
                 workflowTask == null ? null : workflowTask.getInputParameters();
