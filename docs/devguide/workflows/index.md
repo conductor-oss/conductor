@@ -20,7 +20,7 @@ flowchart LR
 
 An execution is durable because Conductor saves progress after every task. That is why work can span services, wait on people or timers, and pick up where it left off after a restart. Since Conductor hands work from one task to the next, each task must spell out its own contract: where its inputs come from and what happens when it fails. Worker tasks add one more requirement. If no worker is polling for the task, the workflow simply waits and does not advance.
 
-Day-to-day work with workflows falls into four activities. Start with the guide that matches where you are:
+Day-to-day work with workflows typically falls into one of the following four activities.
 
 <div class="grid cards" markdown>
 
