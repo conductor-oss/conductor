@@ -47,34 +47,32 @@ See [Architecture](../architecture/index.md) for details.
 ## What Conductor gives you
 
 ### Durable execution
-Conductor is a durable execution engine — every workflow execution is persisted. If a task fails, Conductor retries it with configurable backoff including exponential backoff. If a worker crashes, the task is rescheduled. If the server restarts, execution resumes exactly where it left off. Your code doesn't need to handle retry logic — Conductor provides it out of the box. This same durable execution guarantee powers durable agents that survive infrastructure failures.
+Every workflow execution is persisted, so progress survives failure. A failed task is retried under a configurable backoff policy, a crashed worker's task is rescheduled to another worker, and a server restart resumes executions from their last recorded state. Your code carries no retry logic, because Conductor applies it for you. The same guarantee extends to agents.
 
 ### Language-agnostic workers
-Write workers in Python, Java, Go, JavaScript, C#, or Clojure. Each task in a workflow can use a different language — pick the best tool for each job. Workers communicate with Conductor via REST or gRPC and can run anywhere: containers, VMs, serverless, or your laptop.
+Workers can be written in Python, Java, Go, JavaScript, C#, or Clojure, and each task in a workflow can use a different language. Workers talk to Conductor over REST or gRPC, so they can run in containers, VMs, serverless functions, or on a laptop.
 
 ### Built-in system tasks
-HTTP calls, inline JavaScript execution, JSON transforms, event publishing, wait timers, and human approval gates — all available without writing a single worker. See [System Tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
+Common steps ship with the server: HTTP calls, inline scripts, JSON transforms, event publishing, wait timers, and human approval gates. None of them require a worker. See [System Tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
 
 ### Flow control operators
-Fork/join for parallelism, switch for conditional branching, do-while for loops, sub-workflows for composition, and dynamic tasks resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
+Operators express control flow in the definition itself: fork and join for parallelism, switch for branching, do-while for loops, and sub-workflows for composition. Dynamic tasks let the graph be resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
 
-### AI agent orchestration and LLM orchestration
-Conductor provides LLM orchestration and AI agent orchestration as native system tasks. Configure a supported provider and model on the task, or bring a framework-authored agent into a durable Conductor graph. The [LLM orchestration guide](../ai/llm-orchestration.md) is the maintained provider and capability reference.
+### AI tasks and agents
+LLM calls run as native system tasks. Configure a provider and model on the task, or bring a framework-authored agent into a durable Conductor graph. The [LLM orchestration guide](../ai/llm-orchestration.md) is the provider and capability reference.
 
-MCP (Model Context Protocol) integration is built in: use `LIST_MCP_TOOLS` to discover available tools and `CALL_MCP_TOOL` to invoke them — enabling function calling and tool use within workflows with full retry and state tracking.
+MCP support is built in. `LIST_MCP_TOOLS` discovers a server's tools and `CALL_MCP_TOOL` invokes one, with the same retries and state tracking as any other task.
 
-For RAG pipelines, Conductor supports three vector databases natively — Pinecone, pgvector, and MongoDB Atlas — so you can index embeddings, run similarity search, and feed results to an LLM in a single workflow definition.
-
-Content generation tasks cover image, audio, video, and PDF creation using AI models. Every AI task runs with the same durability guarantees as any other Conductor task: automatic retries, timeout handling, and a complete audit trail.
+Vector search tasks support Pinecone, pgvector, and MongoDB Atlas, so a single workflow can index embeddings, run similarity search, and pass the results to an LLM. Content generation tasks produce images, audio, video, and PDFs. All AI tasks share the standard durability guarantees: automatic retries, timeouts, and a complete execution record.
 
 ### Event-driven workflows
-Publish to and consume from Kafka, NATS, AMQP (RabbitMQ), and SQS. Trigger workflows from external events or emit events from within workflows. See [Event orchestration](../how-tos/event-bus.md).
+Workflows can be triggered by external events and can publish events of their own. Kafka, NATS, AMQP, and SQS are supported. See [Event orchestration](../how-tos/event-bus.md).
 
 ### Full operational control
-Pause, resume, restart, retry, and terminate any workflow execution. Search and filter executions by status, time, correlation ID, or custom tags. Every task has a complete audit trail — inputs, outputs, timestamps, retry history, and worker identity.
+Any execution can be paused, resumed, restarted, retried, or terminated. Executions are searchable by status, time, correlation ID, or custom tags, and every task records its inputs, outputs, timestamps, retry history, and worker identity.
 
 ### Horizontal scaling
-Conductor servers and workers scale independently. Use task domains, rate limits, concurrency limits, persistence configuration, and metrics to match throughput and isolation to your environment.
+Servers and workers scale independently. Task domains, rate limits, concurrency limits, and persistence configuration control throughput and isolation, and metrics expose how each queue is behaving.
 
 ## When to use Conductor
 
