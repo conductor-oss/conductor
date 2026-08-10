@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.common.metadata.agent.AgentConstants;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
@@ -164,8 +165,8 @@ public class Join extends WorkflowSystemTask {
         Map<String, Object> compact = new LinkedHashMap<>();
         Object agentToolName = getAgentToolName(forkedTask);
         if (agentToolName != null) {
-            compact.put("_agent_tool_name", agentToolName);
-            compact.put("_agent_tool_output", output);
+            compact.put(AgentConstants.AGENT_TOOL_NAME, agentToolName);
+            compact.put(AgentConstants.AGENT_TOOL_OUTPUT, output);
             return compact;
         }
         if (output != null) {
@@ -183,15 +184,15 @@ public class Join extends WorkflowSystemTask {
         Map<String, Object> input = forkedTask.getInputData();
         if (input != null) {
             // Direct runtime value wins.
-            Object agentToolName = input.get("_agent_tool_name");
+            Object agentToolName = input.get(AgentConstants.AGENT_TOOL_NAME);
             if (agentToolName != null) {
                 return agentToolName;
             }
 
             // Nested resolved runtime value is next.
-            Object workflowInput = input.get("workflowInput");
+            Object workflowInput = input.get(AgentConstants.WORKFLOW_INPUT);
             if (workflowInput instanceof Map<?, ?> nestedInput) {
-                agentToolName = nestedInput.get("_agent_tool_name");
+                agentToolName = nestedInput.get(AgentConstants.AGENT_TOOL_NAME);
                 if (agentToolName != null) {
                     return agentToolName;
                 }
@@ -202,7 +203,7 @@ public class Join extends WorkflowSystemTask {
         WorkflowTask workflowTask = forkedTask.getWorkflowTask();
         Map<String, Object> inputParameters =
                 workflowTask == null ? null : workflowTask.getInputParameters();
-        return inputParameters == null ? null : inputParameters.get("_agent_tool_name");
+        return inputParameters == null ? null : inputParameters.get(AgentConstants.AGENT_TOOL_NAME);
     }
 
     @Override
