@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.conductoross.conductor.common.metadata.agent.AgentConstants;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
@@ -85,19 +84,15 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For Conductor-Agents agent executions,
-            // copy
-            // only the agent merge keys (compact) to keep the JOIN payload small; otherwise copy
-            // the full fork output (default Conductor behavior).
+            // Only add to task output if it's not empty. For Conductor-Agents state branches,
+            // retain only the merge keys to keep the JOIN payload small. Tool branches do not
+            // carry state keys and must pass through unchanged for the ReAct state merge.
             if (!forkedTask.getOutputData().isEmpty()) {
-                if (agentExecution) {
-                    Map<String, Object> compact = compactAgentOutput(forkedTask);
-                    if (!compact.isEmpty()) {
-                        task.addOutput(joinOnRef, compact);
-                    }
-                } else {
-                    task.addOutput(joinOnRef, forkedTask.getOutputData());
+                Map<String, Object> forkOutput = forkedTask.getOutputData();
+                if (agentExecution && carriesAgentState(forkOutput)) {
+                    forkOutput = compactAgentOutput(forkOutput);
                 }
+                task.addOutput(joinOnRef, forkOutput);
             }
 
             // Determine if the join task fails immediately due to a non-optional, non-permissive
@@ -154,21 +149,13 @@ public class Join extends WorkflowSystemTask {
         return def != null && def.isAgent();
     }
 
-    /**
-     * Returns the compact state output for an agent fork, or a namespaced observation for a
-     * dynamically generated Conductor-Agents tool. The latter is the only durable way a
-     * Conductor-Agents ReAct loop can make a dynamic HTTP/MCP/HUMAN result available to its next
-     * model turn: dynamic task reference names are not known when the workflow is compiled.
-     */
-    private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
-        Map<String, Object> output = forkedTask.getOutputData();
+    /** True when the fork branch carries state intended for a multi-agent state merge. */
+    private static boolean carriesAgentState(Map<String, Object> output) {
+        return output != null && AGENT_PROPAGATED_KEYS.stream().anyMatch(output::containsKey);
+    }
+
+    private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {
         Map<String, Object> compact = new LinkedHashMap<>();
-        Object agentToolName = getAgentToolName(forkedTask);
-        if (agentToolName != null) {
-            compact.put(AgentConstants.AGENT_TOOL_NAME, agentToolName);
-            compact.put(AgentConstants.AGENT_TOOL_OUTPUT, output);
-            return compact;
-        }
         if (output != null) {
             for (String key : AGENT_PROPAGATED_KEYS) {
                 if (output.containsKey(key)) {
@@ -177,33 +164,6 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return compact;
-    }
-
-    /** Resolve agent dispatch metadata across the task input shapes retained by task mappers. */
-    private static Object getAgentToolName(TaskModel forkedTask) {
-        Map<String, Object> input = forkedTask.getInputData();
-        if (input != null) {
-            // Direct runtime value wins.
-            Object agentToolName = input.get(AgentConstants.AGENT_TOOL_NAME);
-            if (agentToolName != null) {
-                return agentToolName;
-            }
-
-            // Nested resolved runtime value is next.
-            Object workflowInput = input.get(AgentConstants.WORKFLOW_INPUT);
-            if (workflowInput instanceof Map<?, ?> nestedInput) {
-                agentToolName = nestedInput.get(AgentConstants.AGENT_TOOL_NAME);
-                if (agentToolName != null) {
-                    return agentToolName;
-                }
-            }
-        }
-
-        // Original workflow definition is the fallback.
-        WorkflowTask workflowTask = forkedTask.getWorkflowTask();
-        Map<String, Object> inputParameters =
-                workflowTask == null ? null : workflowTask.getInputParameters();
-        return inputParameters == null ? null : inputParameters.get(AgentConstants.AGENT_TOOL_NAME);
     }
 
     @Override

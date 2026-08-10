@@ -302,7 +302,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
     }
 
     @Test
-    void compiledAgentDispatchesMcpToolAndFeedsItsActualResultIntoTheNextModelTurn() {
+    void compiledAgentPreservesUnmarkedMcpOutputAcrossJoinAndStateMerge() {
         String agentName = "scripted_mcp_agent_" + UUID.randomUUID().toString().replace('-', '_');
         AgentConfig config =
                 AgentConfig.builder()
@@ -373,7 +373,36 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
         Task finalLlm = awaitScheduledLlm(started.getExecutionId());
         Workflow betweenTurns = executionService.getExecutionStatus(started.getExecutionId(), true);
         Task mcp = taskByType(betweenTurns, "CALL_MCP_TOOL");
-        assertEquals(false, outputOf(mcp).get("isError"));
+        Map<String, Object> mcpOutput = outputOf(mcp);
+        assertEquals(false, mcpOutput.get("isError"));
+        assertTrue(
+                !mcp.getWorkflowTask().getInputParameters().containsKey("_agent_tool_name"),
+                "the MCP task must exercise the unmarked tool-output path");
+
+        Task join = taskByReferencePrefix(betweenTurns, agentName + "_fork_join");
+        Map<String, Object> joinOutput = outputOf(join);
+        assertTrue(
+                joinOutput.values().stream().anyMatch(mcpOutput::equals),
+                () -> "JOIN dropped the completed MCP output: " + joinOutput);
+
+        Task merge = taskByReferencePrefix(betweenTurns, agentName + "_merge_state");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mergeResult = (Map<String, Object>) outputOf(merge).get("result");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> toolResults =
+                (List<Map<String, Object>>) mergeResult.get("toolResults");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mergedMcpOutput =
+                (Map<String, Object>) toolResults.get(0).get("output");
+        assertEquals(mcpOutput.get("isError"), mergedMcpOutput.get("isError"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> originalContent =
+                (List<Map<String, Object>>) mcpOutput.get("content");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> mergedContent =
+                (List<Map<String, Object>>) mergedMcpOutput.get("content");
+        assertEquals(originalContent.get(0).get("type"), mergedContent.get(0).get("type"));
+        assertEquals(originalContent.get(0).get("text"), mergedContent.get(0).get("text"));
 
         completeLlm(finalLlm, Map.of("finishReason", "STOP", "result", "The sum is 5."));
         Workflow completed = awaitTerminal(started.getExecutionId());
@@ -580,6 +609,17 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
                 .filter(task -> reference.equals(task.getReferenceTaskName()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("task not found: " + reference));
+    }
+
+    private Task taskByReferencePrefix(Workflow workflow, String referencePrefix) {
+        return workflow.getTasks().stream()
+                .filter(task -> task.getReferenceTaskName().startsWith(referencePrefix))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new AssertionError(
+                                        "task not found with reference prefix: "
+                                                + referencePrefix));
     }
 
     private Task taskByType(Workflow workflow, String type) {
