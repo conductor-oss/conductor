@@ -809,9 +809,6 @@ public class ToolCompiler {
                         mcpDiscH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpDiscH)
                                 : mcpDiscH);
-                serverInfo.put(
-                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
-                copyMcpToolNames(cfg, serverInfo);
                 serverMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -832,8 +829,6 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
-            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
-
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
             // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
@@ -1121,9 +1116,6 @@ public class ToolCompiler {
                         mcpH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpH)
                                 : mcpH);
-                serverInfo.put(
-                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
-                copyMcpToolNames(cfg, serverInfo);
                 mcpServerMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1142,8 +1134,6 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
-            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
-
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
             // Direct task input — convert #{NAME} markers to wire-only-resolved secret refs.
@@ -1285,17 +1275,6 @@ public class ToolCompiler {
                 maxTools);
 
         return new DiscoveryResult(preTasks, toolsRef, mcpConfigRef, apiConfigRef);
-    }
-
-    private static void copyMcpToolNames(
-            Map<String, Object> source, Map<String, Object> destination) {
-        Object names =
-                source.containsKey("tool_names")
-                        ? source.get("tool_names")
-                        : source.get("toolNames");
-        if (names instanceof List<?>) {
-            destination.put("toolNames", names);
-        }
     }
 
     /** Build a dynamic filter chain for API discovery (uses _api_ prefixed task refs). */
