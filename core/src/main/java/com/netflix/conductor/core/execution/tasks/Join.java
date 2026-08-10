@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.common.metadata.agent.AgentConstants;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
@@ -162,10 +163,10 @@ public class Join extends WorkflowSystemTask {
     private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
-        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        Object agentToolName = getAgentToolName(forkedTask);
         if (agentToolName != null) {
-            compact.put("_agent_tool_name", agentToolName);
-            compact.put("_agent_tool_output", output);
+            compact.put(AgentConstants.AGENT_TOOL_NAME, agentToolName);
+            compact.put(AgentConstants.AGENT_TOOL_OUTPUT, output);
             return compact;
         }
         if (output != null) {
@@ -176,6 +177,33 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return compact;
+    }
+
+    /** Resolve agent dispatch metadata across the task input shapes retained by task mappers. */
+    private static Object getAgentToolName(TaskModel forkedTask) {
+        Map<String, Object> input = forkedTask.getInputData();
+        if (input != null) {
+            // Direct runtime value wins.
+            Object agentToolName = input.get(AgentConstants.AGENT_TOOL_NAME);
+            if (agentToolName != null) {
+                return agentToolName;
+            }
+
+            // Nested resolved runtime value is next.
+            Object workflowInput = input.get(AgentConstants.WORKFLOW_INPUT);
+            if (workflowInput instanceof Map<?, ?> nestedInput) {
+                agentToolName = nestedInput.get(AgentConstants.AGENT_TOOL_NAME);
+                if (agentToolName != null) {
+                    return agentToolName;
+                }
+            }
+        }
+
+        // Original workflow definition is the fallback.
+        WorkflowTask workflowTask = forkedTask.getWorkflowTask();
+        Map<String, Object> inputParameters =
+                workflowTask == null ? null : workflowTask.getInputParameters();
+        return inputParameters == null ? null : inputParameters.get(AgentConstants.AGENT_TOOL_NAME);
     }
 
     @Override
