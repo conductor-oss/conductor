@@ -5,7 +5,7 @@ description: "Learn about workers in Conductor — the code that executes tasks 
 # Workers
 
 <section class="concept-hero concept-hero--workers">
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
+  <svg class="concept-hero__graphic" viewBox="0 28 440 145" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
     <defs><marker id="worker-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="14" y="68" width="102" height="54" rx="10" class="concept-hero__node concept-hero__node--accent" />
     <text x="65" y="91" text-anchor="middle" class="concept-hero__label">Conductor</text>

@@ -5,7 +5,7 @@ description: "Understand workflows in Conductor — JSON workflow definition, dy
 # Workflows
 
 <section class="concept-hero concept-hero--workflows">
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
+  <svg class="concept-hero__graphic" viewBox="0 36 440 122" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
     <defs><marker id="workflow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="18" y="65" width="112" height="54" rx="10" class="concept-hero__node" />
     <text x="74" y="89" text-anchor="middle" class="concept-hero__label">Definition</text>
