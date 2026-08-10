@@ -6,17 +6,19 @@
  * reach COMPLETED state immediately without needing a worker process.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import {
   createWorkflowDef,
   deleteWorkflowDef,
   startWorkflow,
   terminateWorkflow,
+  waitForWorkflow,
   type WorkflowDef,
 } from "./api-client";
 
 const RUN_ID = Date.now();
 const WF_NAME = `e2e_exec_${RUN_ID}`;
+const SEARCH_INDEX_TIMEOUT_MS = 45_000;
 
 const WORKFLOW_DEF: WorkflowDef = {
   name: WF_NAME,
@@ -49,18 +51,48 @@ test.afterAll(async () => {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Navigates to /executions with the workflow type pre-filled and waits for
- *  the results table to finish loading. */
+/** Status chips render title case ("Completed"), while task lists may also say COMPLETED. */
+async function expectExecutionStatusChip(
+  page: import("@playwright/test").Page,
+  status: string,
+) {
+  const label = status.charAt(0) + status.slice(1).toLowerCase();
+  await expect(
+    page
+      .locator(".MuiChip-label")
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .first(),
+  ).toBeVisible();
+}
+
+/** Navigates to /executions filtered by workflow type. */
 async function openExecutionsSearch(
   page: import("@playwright/test").Page,
   workflowType: string,
 ) {
-  // The WorkflowSearch page reads its initial state from URL query params.
-  // workflowType is the most reliable filter to narrow results to our test data.
   await page.goto(
     `/executions?workflowType=${encodeURIComponent(workflowType)}`,
   );
   await page.waitForLoadState("networkidle");
+}
+
+/**
+ * Starts a SET_VARIABLE workflow, waits until it completes, then waits until
+ * the executions search index surfaces its NavLink (Postgres FTS can lag).
+ */
+async function startAndFindExecution(page: import("@playwright/test").Page) {
+  const workflowId = (await startWorkflow(WF_NAME, { value: "test" })).trim();
+  startedWorkflowIds.push(workflowId);
+
+  const wf = await waitForWorkflow(workflowId, { timeoutMs: 30_000 });
+  expect(wf.status).toBe("COMPLETED");
+
+  await openExecutionsSearch(page, WF_NAME);
+
+  // ResultsTable renders a NavLink with the full workflow ID — wait for index lag.
+  const link = page.getByRole("link", { name: workflowId });
+  await expect(link).toBeVisible({ timeout: SEARCH_INDEX_TIMEOUT_MS });
+  return { workflowId, link };
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -68,51 +100,34 @@ async function openExecutionsSearch(
 test("started workflow execution appears in the executions search", async ({
   page,
 }) => {
-  const workflowId = await startWorkflow(WF_NAME, { value: "test" });
-  startedWorkflowIds.push(workflowId);
+  const { workflowId } = await startAndFindExecution(page);
 
-  await openExecutionsSearch(page, WF_NAME);
-
-  // The workflow type column should show our workflow name.
   await expect(page.getByText(WF_NAME).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: workflowId })).toBeVisible();
 });
 
 test("execution row shows the workflow ID", async ({ page }) => {
-  const workflowId = await startWorkflow(WF_NAME, { value: "test" });
-  startedWorkflowIds.push(workflowId);
+  const { workflowId } = await startAndFindExecution(page);
 
-  await openExecutionsSearch(page, WF_NAME);
-
-  // The full ID or a truncated prefix should appear somewhere in the table.
-  const idPrefix = workflowId.substring(0, 8);
-  await expect(page.getByText(new RegExp(idPrefix))).toBeVisible();
+  await expect(page.getByRole("link", { name: workflowId })).toBeVisible();
 });
 
 test("clicking an execution row opens the execution detail page", async ({
   page,
 }) => {
-  const workflowId = await startWorkflow(WF_NAME, { value: "test" });
-  startedWorkflowIds.push(workflowId);
+  const { workflowId, link } = await startAndFindExecution(page);
 
-  await openExecutionsSearch(page, WF_NAME);
+  await link.click();
 
-  // The workflow ID is unique to the results table — click its prefix so we
-  // don't accidentally click the workflow type text in the search filter.
-  const idPrefix = workflowId.substring(0, 8);
-  await page.getByText(new RegExp(idPrefix)).first().click();
-
-  await expect(page).toHaveURL(new RegExp(`/execution/${workflowId}`));
+  await expect(page).toHaveURL(new RegExp(`/execution/${workflowId}`), {
+    timeout: 15_000,
+  });
   await page.waitForLoadState("networkidle");
 
-  // Detail page content
   await expect(page.locator("#main-content")).toBeVisible();
-  await expect(page.getByText(WF_NAME)).toBeVisible();
-  await expect(page.getByText(/COMPLETED/i)).toBeVisible();
-
-  // The full workflow ID should appear somewhere on the detail page.
-  await expect(page.getByText(new RegExp(workflowId))).toBeVisible();
-
-  // The SET_VARIABLE task should be listed in the task list.
+  await expect(page.getByText(WF_NAME).first()).toBeVisible();
+  await expectExecutionStatusChip(page, "COMPLETED");
+  await expect(page.getByText(workflowId).first()).toBeVisible();
   await expect(page.getByText("set_var_ref")).toBeVisible();
 });
 
@@ -120,9 +135,6 @@ test("executions page renders the search form", async ({ page }) => {
   await page.goto("/executions");
   await page.waitForLoadState("networkidle");
 
-  // The page always renders a search form regardless of results.
   await expect(page.locator("#main-content")).toBeVisible();
-
-  // There should be at least one text input for filtering.
   await expect(page.locator("#main-content input").first()).toBeVisible();
 });

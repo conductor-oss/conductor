@@ -436,6 +436,23 @@ function parseAgentStrategy(raw: unknown): AgentStrategy | undefined {
     : undefined;
 }
 
+/** Recursively visits every agent definition node (root + agentDef.agents[], depth-first). */
+function walkAgentDefTree(
+  agentDef: Record<string, unknown> | undefined,
+  visit: (
+    def: Record<string, unknown>,
+    children: Array<Record<string, unknown>>,
+  ) => void,
+): void {
+  if (!agentDef) return;
+  const children =
+    (agentDef.agents as Array<Record<string, unknown>> | undefined) ?? [];
+  visit(agentDef, children);
+  for (const child of children) {
+    walkAgentDefTree(child, visit);
+  }
+}
+
 /**
  * Recursively index each agent definition's OWN strategy by name, mirroring how
  * the Definition tab walks agentDef.agents[]. Only agents that actually have
@@ -444,19 +461,14 @@ function parseAgentStrategy(raw: unknown): AgentStrategy | undefined {
  */
 function indexAgentDefStrategies(
   agentDef: Record<string, unknown> | undefined,
-  index: Map<string, AgentStrategy> = new Map(),
 ): Map<string, AgentStrategy> {
-  if (!agentDef) return index;
-  const children =
-    (agentDef.agents as Array<Record<string, unknown>> | undefined) ?? [];
-  if (children.length > 0) {
-    const name = agentDef.name as string | undefined;
-    const strategy = parseAgentStrategy(agentDef.strategy);
+  const index = new Map<string, AgentStrategy>();
+  walkAgentDefTree(agentDef, (def, children) => {
+    if (children.length === 0) return;
+    const name = def.name as string | undefined;
+    const strategy = parseAgentStrategy(def.strategy);
     if (name && strategy) index.set(name.toLowerCase(), strategy);
-  }
-  for (const child of children) {
-    indexAgentDefStrategies(child, index);
-  }
+  });
   return index;
 }
 
@@ -465,6 +477,66 @@ function lookupOwnStrategy(
   name: string | undefined,
 ): AgentStrategy | undefined {
   return name ? index.get(name.toLowerCase()) : undefined;
+}
+
+/**
+ * Recursively index each agent definition's own direct sub-agent COUNT by name.
+ * Unlike the strategy index, this only needs one level of children to know
+ * whether an agent orchestrates anything — used to show an "Expand" control
+ * on a collapsed sub-agent node before its own execution has been fetched
+ * (issue #1452: nested sub-agents beyond one level were never drawn).
+ */
+function indexAgentDefChildCounts(
+  agentDef: Record<string, unknown> | undefined,
+): Map<string, number> {
+  const index = new Map<string, number>();
+  walkAgentDefTree(agentDef, (def, children) => {
+    const name = def.name as string | undefined;
+    if (name && children.length > 0)
+      index.set(name.toLowerCase(), children.length);
+  });
+  return index;
+}
+
+function lookupChildCount(
+  index: Map<string, number>,
+  name: string | undefined,
+): number | undefined {
+  return name ? index.get(name.toLowerCase()) : undefined;
+}
+
+/**
+ * Recursively locate the sub-agent run with the given id anywhere in the tree
+ * and return a new tree with that node replaced by `updater(node)`. Used to
+ * splice a freshly-fetched sub-agent's real turns/subAgents into the existing
+ * tree in place when the user expands a collapsed node (issue #1452), without
+ * navigating away like "drill in" does.
+ *
+ * Returns the original reference untouched when `targetId` isn't found so
+ * callers can no-op cheaply (e.g. React state updates that don't need to
+ * re-render when nothing changed).
+ */
+export function replaceAgentRunNode(
+  root: AgentRunData,
+  targetId: string,
+  updater: (node: AgentRunData) => AgentRunData,
+): AgentRunData {
+  if (root.id === targetId) return updater(root);
+
+  let rootChanged = false;
+  const turns = root.turns.map((turn) => {
+    let turnChanged = false;
+    const subAgents = turn.subAgents.map((sub) => {
+      const updated = replaceAgentRunNode(sub, targetId, updater);
+      if (updated !== sub) turnChanged = true;
+      return updated;
+    });
+    if (!turnChanged) return turn;
+    rootChanged = true;
+    return { ...turn, subAgents };
+  });
+
+  return rootChanged ? { ...root, turns } : root;
 }
 
 /**
@@ -508,11 +580,11 @@ function transformChainWorkflowToAgentRun(
   // Grab the per-step agent configs from the definition metadata for gate label info
   const agentsDef = ((execution.workflowDefinition?.metadata?.agentDef as any)
     ?.agents ?? []) as Array<Record<string, unknown>>;
-  const strategyIndex = indexAgentDefStrategies(
-    execution.workflowDefinition?.metadata?.agentDef as
-      | Record<string, unknown>
-      | undefined,
-  );
+  const chainAgentDef = execution.workflowDefinition?.metadata?.agentDef as
+    | Record<string, unknown>
+    | undefined;
+  const strategyIndex = indexAgentDefStrategies(chainAgentDef);
+  const childCountIndex = indexAgentDefChildCounts(chainAgentDef);
 
   const turns: AgentTurn[] = sortedSteps.map(
     ([stepN, task], idx): AgentTurn => {
@@ -558,6 +630,7 @@ function transformChainWorkflowToAgentRun(
         totalTokens: ZERO_TOKENS,
         totalDurationMs: durationMs,
         strategy: lookupOwnStrategy(strategyIndex, agentName),
+        subAgentCount: lookupChildCount(childCountIndex, agentName),
         agentType: task.inputData?.agentType as string | undefined,
         invocationStrategy: AgentStrategy.SEQUENTIAL,
         input: task.inputData?.workflowInput ?? task.inputData,
@@ -717,6 +790,7 @@ export function transformWorkflowExecutionToAgentRun(
     | Record<string, unknown>
     | undefined;
   const strategyIndex = indexAgentDefStrategies(agentDefMeta);
+  const childCountIndex = indexAgentDefChildCounts(agentDefMeta);
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -917,6 +991,7 @@ export function transformWorkflowExecutionToAgentRun(
             totalTokens: ZERO_TOKENS,
             totalDurationMs: durationMs,
             strategy: lookupOwnStrategy(strategyIndex, agentName),
+            subAgentCount: lookupChildCount(childCountIndex, agentName),
             agentType: task.inputData?.agentType as string | undefined,
             invocationStrategy: AgentStrategy.HANDOFF,
             input: agentInput,
@@ -952,11 +1027,17 @@ export function transformWorkflowExecutionToAgentRun(
             : 0;
         const isStop = finishReason === "stop";
 
-        // Show instructions (system prompt) + last user message only
+        // Show instructions (system prompt) + last user message only.
+        // instructions live on inputData (prepended in-memory by the worker),
+        // not as a stored system role in messages.
         const sysMsg = messages.find((m) => m.role === "system");
         const lastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        const instructionsText =
+          (typeof llmTask.inputData?.instructions === "string" &&
+            llmTask.inputData.instructions) ||
+          sysMsg?.message;
 
         // ONE block: LLM call — instructions + last message + output
         events.push({
@@ -968,7 +1049,7 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(sysMsg ? { instructions: sysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
             output: llmTask.outputData,
@@ -1348,6 +1429,7 @@ export function transformWorkflowExecutionToAgentRun(
       totalDurationMs: dur,
       agentType: task.inputData?.agentType as string | undefined,
       strategy: lookupOwnStrategy(strategyIndex, agentName),
+      subAgentCount: lookupChildCount(childCountIndex, agentName),
       invocationStrategy:
         rootSubWorkflows.length > 1
           ? AgentStrategy.PARALLEL
@@ -1407,6 +1489,14 @@ export function transformWorkflowExecutionToAgentRun(
         const rootLastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        // Task input stores system text in inputData.instructions; the worker
+        // prepends it as a system message only in-memory, so it never appears
+        // in stored messages. Surface instructions here so the UI matches what
+        // the model actually received.
+        const instructionsText =
+          (typeof task.inputData?.instructions === "string" &&
+            task.inputData.instructions) ||
+          rootSysMsg?.message;
 
         rootEvents.push({
           id: `${task.taskId}-llm`,
@@ -1417,7 +1507,7 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(rootSysMsg ? { instructions: rootSysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
             output: task.outputData,
@@ -1789,7 +1879,7 @@ export function transformWorkflowExecutionToAgentRun(
     turns,
     status: mapWorkflowStatus(execution.status),
     agentDef,
-    totalTokens: {
+    totalTokens: execution.aggregateTokenUsage ?? {
       promptTokens: totalPromptTokens,
       completionTokens: totalCompletionTokens,
       totalTokens: totalPromptTokens + totalCompletionTokens,
