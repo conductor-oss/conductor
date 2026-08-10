@@ -78,15 +78,15 @@ Servers and workers scale independently. Task domains, rate limits, concurrency 
 
 | Use case | Example |
 | :--- | :--- |
-| **Microservice orchestration** | Order processing: payment → inventory → shipping → notification |
-| **Workflow automation** | Automate business processes with durable execution, retries, and full observability |
-| **Durable agents** | Multi-step LLM chains with function calling, tool use, RAG, and human-in-the-loop — durable agents that survive crashes |
-| **Long-running workflows** | Insurance claims, loan approvals, onboarding flows spanning days or weeks — async workflows that survive deploys |
-| **Event-driven automation** | React to Kafka events, trigger workflows, publish results back |
-| **Batch processing** | Fan-out work across thousands of parallel workers with dynamic fork |
-| **Saga pattern** | Distributed transactions with compensation on failure |
-| **RAG applications** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
-| **Content generation pipelines** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
+| **[Microservice orchestration](../cookbook/microservice-orchestration.md)** | Order processing: payment → inventory → shipping → notification |
+| **[Workflow automation](../workflows/index.md)** | Automate business processes with durable execution, retries, and full observability |
+| **[Durable agents](../ai/durable-agents.md)** | Multi-step LLM chains with function calling, tool use, RAG, and human-in-the-loop — durable agents that survive crashes |
+| **[Long-running workflows](../cookbook/wait-and-timers.md)** | Insurance claims, loan approvals, onboarding flows spanning days or weeks — async workflows that survive deploys |
+| **[Event-driven automation](../cookbook/event-driven.md)** | React to Kafka events, trigger workflows, publish results back |
+| **[Batch processing](../cookbook/dynamic-parallelism.md)** | Fan-out work across thousands of parallel workers with dynamic fork |
+| **[Saga pattern](../cookbook/saga-compensation.md)** | Distributed transactions with compensation on failure |
+| **[RAG applications](../ai/cookbook/rag-agent.md)** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
+| **[Content generation pipelines](../ai/llm-orchestration.md)** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
 
 ## The Conductor execution model
 
