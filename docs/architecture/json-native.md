@@ -4,7 +4,7 @@ description: Conductor stores workflow definitions as JSON — the canonical run
 
 # JSON + Code Native Workflow Orchestration
 
-Conductor stores workflow definitions as JSON. This is not a UI convenience or a simplified mode&mdash;JSON is the canonical runtime representation. Every workflow, whether created via SDK, API, UI, or file, is stored, versioned, and executed as a JSON document.
+Conductor stores workflow definitions as JSON. This is not a UI convenience or a simplified mode. JSON is the canonical runtime representation. Every workflow, whether created via SDK, API, UI, or file, is stored, versioned, and executed as a JSON document.
 
 For agent orchestration and dynamic workloads, this is a structural advantage.
 
@@ -19,7 +19,7 @@ For agent orchestration and dynamic workloads, this is a structural advantage.
 
 ## Why this matters for agents
 
-### Agents produce structured output&mdash;JSON is native
+### Agents produce structured output, and JSON is native
 
 LLMs already communicate in structured formats: function calls, tool-use schemas, JSON mode responses. Conductor's JSON workflow definitions are in the same format that agents already produce. An LLM can generate a workflow definition directly, and Conductor can execute it after the application validates the plan and applies its policy boundaries.
 
@@ -30,7 +30,7 @@ Traditional workflow engines require you to define workflows in code, compile, a
 - A planner agent can generate a new workflow definition as JSON.
 - Your code sends that JSON to `POST /api/workflow` with the definition inline.
 - Conductor validates, persists, and executes it immediately.
-- The workflow is fully durable, observable, and retryable&mdash;identical to any pre-registered workflow.
+- The workflow is fully durable, observable, and retryable, identical to any pre-registered workflow.
 
 This enables patterns like:
 
@@ -57,7 +57,7 @@ Because definitions are JSON, you can:
 - Roll back by re-registering a previous version.
 - Run canary deployments by routing traffic between versions.
 
-Running executions are never affected by definition changes&mdash;they use the snapshot taken at start time.
+Running executions are never affected by definition changes. They use the snapshot taken at start time.
 
 
 ## Dynamic workflows in detail
