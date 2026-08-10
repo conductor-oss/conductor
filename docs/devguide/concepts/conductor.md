@@ -14,6 +14,36 @@ One common proposed solution is **choreography**, where services react to each o
 
 **Orchestration** is Conductor's approach. The overall business process is defined in one place, while the work itself stays distributed. Conductor is the orchestrator. It owns the flow, the state, and the recovery, so workers stay stateless and independent.
 
+## How it works
+
+Conductor runs as a server that your workers connect to. The server schedules tasks, persists every state change, and applies retries and timeouts. Workers poll the server for tasks, run your business logic in any supported language, and report results back. State lives in the persistence store you choose.
+
+```mermaid
+graph TD
+    subgraph Workers
+        A["Worker A<br/>(Python)"]
+        B["Worker B<br/>(Java)"]
+        C["Worker C<br/>(Go)"]
+        D["Worker D<br/>(C#)"]
+    end
+
+    subgraph Server["Conductor Server"]
+        S["Scheduling · State · Retries<br/>Persistence · Queuing"]
+    end
+
+    subgraph Storage["Persistence"]
+        DB["Redis / PostgreSQL / MySQL / Cassandra"]
+    end
+
+    A -- "poll / complete" --> S
+    B -- "poll / complete" --> S
+    C -- "poll / complete" --> S
+    D -- "poll / complete" --> S
+    S --> DB
+```
+
+See [Architecture](../architecture/index.md) for details.
+
 ## What Conductor gives you
 
 ### Durable execution
@@ -71,34 +101,6 @@ Conductor servers and workers scale independently. Use task domains, rate limits
 - **JSON-native and code-first workflow definitions** — define workflows as JSON or as code using SDKs. Workflow as code for developers who want type safety; JSON for runtime generation and LLM-driven workflows.
 - **Self-hosted and open source** — deploy Conductor on your own infrastructure under the Apache 2.0 license.
 - **Human-in-the-loop as a first-class task type** — pause execution for approvals, reviews, or manual intervention with built-in timeout and escalation.
-
-## How it works
-
-```mermaid
-graph TD
-    subgraph Workers
-        A["Worker A<br/>(Python)"]
-        B["Worker B<br/>(Java)"]
-        C["Worker C<br/>(Go)"]
-        D["Worker D<br/>(C#)"]
-    end
-
-    subgraph Server["Conductor Server"]
-        S["Scheduling · State · Retries<br/>Persistence · Queuing"]
-    end
-
-    subgraph Storage["Persistence"]
-        DB["Redis / PostgreSQL / MySQL / Cassandra"]
-    end
-
-    A -- "poll / complete" --> S
-    B -- "poll / complete" --> S
-    C -- "poll / complete" --> S
-    D -- "poll / complete" --> S
-    S --> DB
-```
-
-Workers poll for tasks, execute business logic, and report results. Conductor handles everything else — scheduling, retries, timeouts, state persistence, and flow control. See [Architecture](../architecture/index.md) for details.
 
 ## Next steps
 
