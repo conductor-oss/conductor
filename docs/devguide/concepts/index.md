@@ -1,27 +1,24 @@
 ---
-description: "What Conductor is and how it works — workflows, tasks, workers, and durable execution in the open source orchestration engine for microservices and AI agents."
+description: "What Conductor is and how it works: an open source engine that orchestrates workflows, workers, and AI agents durably."
 ---
 
 # Core Concepts
 
 ## What is Conductor?
 
-**Conductor is an open source orchestration engine that runs workflows durably.** You define a workflow
-as a series of tasks — with branching, loops, parallelism, and failure handling — and Conductor executes it:
-it decides which task runs next, records every state transition, and retries or resumes automatically when
-something fails. Processes survive crashes, restarts, and network partitions without losing progress.
+**Conductor is an open source orchestration engine that runs workflows durably.** A workflow is a series
+of tasks that can branch, loop, and run in parallel. Conductor decides which task runs next, records the
+result of every step, and retries or resumes when a step fails. A crash or restart never loses progress.
 
-The fundamental division of labor:
+The division of labor:
 
-- **The server orchestrates.** It reads the workflow definition, schedules each task in order, enforces
-  retries and timeouts, and persists state at every step — orchestration logic stays out of your
-  application code.
-- **Your workers execute.** Business logic lives in workers: plain functions in your own services, written
-  in any language with an SDK (Java, Python, Go, JavaScript, C#, Clojure, Ruby, Rust). Workers poll the
-  server for work, run your code, and report results back — no inbound ports required, so they can run
-  anywhere.
-- **System tasks run on the server.** Common operations — HTTP calls, event publishing, inline transforms,
-  sub-workflows, LLM calls — are built in, so many workflow steps need no custom code at all.
+- **The server orchestrates.** It schedules tasks, enforces retries and timeouts, and persists state
+  after every step. Orchestration logic stays out of your application code.
+- **Your workers execute.** Business logic is a plain function in your own service, written in any
+  language with a Conductor SDK. Workers poll the server for tasks and report results, so they need no
+  inbound ports and can run anywhere.
+- **System tasks are built in.** Common steps such as HTTP calls, events, and LLM calls run on the
+  server, with no worker code.
 
 ```mermaid
 flowchart LR
@@ -34,12 +31,11 @@ flowchart LR
     workers -- "report results" --> engine
 ```
 
-Workflow definitions are JSON-native — version them in source control, diff changes across releases,
-generate them programmatically, or let LLMs create and modify them at runtime.
+Workflow definitions are JSON. Version them in source control, generate them from code, or let an LLM
+create and modify them at runtime.
 
-AI capabilities are part of the same task library: native support for 14+ LLM providers, MCP tool calling,
-function calling, vector databases, and durable agents — AI steps get the same retries, persistence, and
-observability as every other task.
+AI work runs the same way. LLM calls, tool use, and agents are workflow tasks, with the same retries,
+persistence, and observability as every other step.
 
 ## What can Conductor do?
 
