@@ -10,15 +10,16 @@ description: "What Conductor is and how it works: an open source engine that orc
 of tasks that can branch, loop, and run in parallel. Conductor decides which task runs next, records the
 result of every step, and retries or resumes when a step fails. A crash or restart never loses progress.
 
-The division of labor:
+Responsibilities are split between the Conductor server and your own code:
 
-- **The server orchestrates.** It schedules tasks, enforces retries and timeouts, and persists state
-  after every step. Orchestration logic stays out of your application code.
-- **Your workers execute.** Business logic is a plain function in your own service, written in any
-  language with a Conductor SDK. Workers poll the server for tasks and report results, so they need no
-  inbound ports and can run anywhere.
-- **System tasks are built in.** Common steps such as HTTP calls, events, and LLM calls run on the
-  server, with no worker code.
+- **The server orchestrates.** It runs as its own service, self-hosted or managed in the cloud. It
+  schedules tasks, enforces retries and timeouts, and persists state after every step. Orchestration
+  logic stays out of your application code.
+- **Your workers execute.** They run in your own infrastructure, inside the services, containers, or
+  functions you already deploy. Business logic is a plain function written in any language with a
+  Conductor SDK. Workers poll the server for tasks and report results, so they need no inbound ports.
+- **System tasks are built in.** They run inside the server itself. Common steps such as HTTP calls,
+  events, and LLM calls need no worker code.
 
 ```mermaid
 flowchart LR
