@@ -140,11 +140,10 @@ test("agent execution completes and results are visible", async ({ page }) => {
       .first(),
   ).toBeVisible({ timeout: 15_000 });
 
-  // Open workflow Output tab and confirm the model reply is shown.
-  const rightPanel = page.locator("#execution-page-right-panel");
-  await expect(rightPanel).toBeVisible({ timeout: 15_000 });
-  await rightPanel.getByRole("tab", { name: "Output" }).click();
-  await expect(rightPanel.getByText(/ok/i).first()).toBeVisible({
+  // Agent executions default to the Agent Execution tab (no workflow right
+  // panel). Input/Output exposes the submitted prompt and final agent result.
+  await page.getByRole("tab", { name: "Input/Output" }).click();
+  await expect(page.getByText(/ok/i).first()).toBeVisible({
     timeout: 15_000,
   });
 });
