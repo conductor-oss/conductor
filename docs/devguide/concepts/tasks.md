@@ -18,11 +18,10 @@ description: "Learn about tasks in Conductor — the reusable building blocks of
     <rect x="199" y="110" width="122" height="52" rx="10" class="concept-hero__node" />
     <text x="260" y="133" text-anchor="middle" class="concept-hero__label">Worker task</text>
     <text x="260" y="150" text-anchor="middle" class="concept-hero__detail">your code</text>
-    <path d="M321 54 H350 V95 H378" class="concept-hero__line" marker-end="url(#task-arrow)" />
+    <path d="M321 54 H350 V95 H360" class="concept-hero__line" marker-end="url(#task-arrow)" />
     <path d="M321 136 H350 V95" class="concept-hero__line" />
-    <rect x="384" y="68" width="44" height="54" rx="10" class="concept-hero__outcome-box" />
-    <text x="406" y="91" text-anchor="middle" class="concept-hero__label">Out</text>
-    <text x="406" y="108" text-anchor="middle" class="concept-hero__detail">put</text>
+    <rect x="366" y="68" width="66" height="54" rx="10" class="concept-hero__outcome-box" />
+    <text x="399" y="100" text-anchor="middle" class="concept-hero__label">Output</text>
   </svg>
 </section>
 
