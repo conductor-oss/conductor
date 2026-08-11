@@ -22,7 +22,7 @@ description: "Understand workflows in Conductor — JSON workflow definition, dy
   </svg>
 </section>
 
-A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
+A **workflow** is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
 
 - Classifying documents
 - Ordering from a self-checkout service
