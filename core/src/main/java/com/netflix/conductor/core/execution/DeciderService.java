@@ -974,8 +974,7 @@ public class DeciderService {
         Map<String, Object> input =
                 parametersUtils.getTaskInput(
                         taskToSchedule.getInputParameters(), workflow, null, null);
-
-        String type = taskToSchedule.getType();
+        String taskId = idGenerator.generate();
 
         // get tasks already scheduled (in progress/terminal) for this workflow instance
         List<String> tasksInWorkflow =
@@ -987,7 +986,28 @@ public class DeciderService {
                         .map(TaskModel::getReferenceTaskName)
                         .collect(Collectors.toList());
 
-        String taskId = idGenerator.generate();
+        // For static forks, each branch of the fork creates a join task upon completion; for
+        // dynamic forks, a join task is created with the fork and also with each branch of the
+        // fork. A new task must only be scheduled if a task with the same reference name is not
+        // already in this workflow instance.
+        return mapTask(workflow, taskToSchedule, retryCount, retriedTaskId, taskId, input).stream()
+                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Builds the {@link TaskMapperContext} and runs the task's {@link TaskMapper}, returning the
+     * mapped tasks without the "already in this workflow" dedup filter that {@link
+     * #getTasksToBeScheduled} applies. Shared by first-time scheduling and by retry re-mapping
+     * ({@link #remapRetriedTaskInput}) so a retried task is mapped by the same code path.
+     */
+    List<TaskModel> mapTask(
+            WorkflowModel workflow,
+            WorkflowTask taskToSchedule,
+            int retryCount,
+            String retriedTaskId,
+            String taskId,
+            Map<String, Object> input) {
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
                         .withWorkflowModel(workflow)
@@ -999,21 +1019,9 @@ public class DeciderService {
                         .withTaskId(taskId)
                         .withDeciderService(this)
                         .build();
-
-        // For static forks, each branch of the fork creates a join task upon completion
-        // for
-        // dynamic forks, a join task is created with the fork and also with each branch
-        // of the
-        // fork.
-        // A new task must only be scheduled if a task, with the same reference name is
-        // not already
-        // in this workflow instance
         return taskMappers
-                .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))
-                .getMappedTasks(taskMapperContext)
-                .stream()
-                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
-                .collect(Collectors.toList());
+                .getOrDefault(taskToSchedule.getType(), taskMappers.get(USER_DEFINED.name()))
+                .getMappedTasks(taskMapperContext);
     }
 
     /**
@@ -1034,19 +1042,14 @@ public class DeciderService {
                         workflow,
                         workflowTask.getTaskDefinition(),
                         task.getTaskId());
-        TaskMapperContext context =
-                TaskMapperContext.newBuilder()
-                        .withWorkflowModel(workflow)
-                        .withTaskDefinition(workflowTask.getTaskDefinition())
-                        .withWorkflowTask(workflowTask)
-                        .withTaskInput(input)
-                        .withRetryCount(task.getRetryCount())
-                        .withRetryTaskId(task.getRetriedTaskId())
-                        .withTaskId(task.getTaskId())
-                        .withDeciderService(this)
-                        .build();
-        return taskMappers.getOrDefault(workflowTask.getType(), taskMappers.get(USER_DEFINED.name()))
-                .getMappedTasks(context).stream()
+        return mapTask(
+                        workflow,
+                        workflowTask,
+                        task.getRetryCount(),
+                        task.getRetriedTaskId(),
+                        task.getTaskId(),
+                        input)
+                .stream()
                 .filter(t -> Objects.equals(t.getReferenceTaskName(), task.getReferenceTaskName()))
                 .findFirst()
                 .map(TaskModel::getInputData);
