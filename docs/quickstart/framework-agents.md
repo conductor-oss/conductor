@@ -9,9 +9,7 @@ description: Run an existing OpenAI Agents, Google ADK, LangChain, or LangGraph 
 For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). The bridges below keep the framework object you already author; Conductor provides the durable runtime around it.
 
 <section class="framework-hero" aria-labelledby="framework-quickstarts-title">
-  <p class="framework-hero__eyebrow">Framework bridges</p>
   <h2 id="framework-quickstarts-title">Bring your existing agent.</h2>
-  <p>Choose the framework you already use. Conductor runs its agent through a durable, inspectable execution.</p>
   <div class="framework-logo-grid framework-logo-grid--quickstart">
     <a class="framework-logo-card" href="#openai-agents-sdk" aria-label="OpenAI Agents SDK quickstart">
       <img class="framework-logo framework-logo--wide" src="../assets/images/frameworks/openai.svg" alt="" />
@@ -34,7 +32,7 @@ For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md).
 
 ## Prerequisites
 
-Complete [Connect to Conductor](connect.md), including the hosted model integration or local provider API-key setup required by the selected model. Install the package extra that matches your framework. The examples use an OpenAI model; supply the credentials your framework/model needs.
+First, complete [Connect to Conductor](connect.md) so the runtime can reach your server. Then make sure the server can call your model provider. On Developer Edition, add the provider as an AI/LLM integration; on a local server, export the provider API key before starting it. Each framework section below begins with the install command for its bridge. Most examples use an OpenAI model, and the Google ADK example uses Gemini, so supply the matching credentials.
 
 ## OpenAI Agents SDK
 
