@@ -14,7 +14,7 @@ description: "Learning paths, examples, videos, and community resources for Cond
 
 Paths for going deeper once you have run your first workflow or agent.
 
-## Start here
+## Fundamentals
 
 - [Get started with Conductor](../quickstart/index.md) — pick the path that matches how you work, from AI-agent-assisted to SDK-first.
 - [Write your first workflow and worker](../quickstart/first-worker.md), or [run a workflow from JSON](../quickstart/first-workflow.md) with no code.
