@@ -1685,6 +1685,37 @@ public class MultiAgentCompiler {
                         "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || %s) ) { true; } else { false; }",
                         loopRef, maxTurns, llmRef, llmRef, continueAfterToolCalls);
 
+        // Context injection: without this, a resumed turn only ever sees the original prompt with
+        // no record of what happened on prior turns, so the LLM has no way to know it already
+        // made a tool call and just repeats it until max_turns instead of reading the result and
+        // answering. Mirrors the ctx_inject wiring in AgentCompiler's own loop-building.
+        String ctxInjectRef = agent.getName() + "_ctx_inject";
+        WorkflowTask ctxInject = new WorkflowTask();
+        ctxInject.setType("INLINE");
+        ctxInject.setTaskReferenceName(ctxInjectRef);
+        ctxInject.setInputParameters(
+                Map.of(
+                        "evaluatorType", "graaljs",
+                        "state", "${workflow.variables._agent_state}",
+                        "signals", "${workflow.variables._signal_injection}",
+                        "toolResults", "${workflow.variables._last_tool_results}",
+                        "maxSize", 32768,
+                        "maxValueSize", 4096,
+                        "expression", JavaScriptBuilder.contextInjectionScript()));
+        @SuppressWarnings("unchecked")
+        List<Object> llmMessages = (List<Object>) llmTask.getInputParameters().get("messages");
+        for (int mi = 0; mi < llmMessages.size(); mi++) {
+            if (llmMessages.get(mi) instanceof Map<?, ?> msg && "user".equals(msg.get("role"))) {
+                Map<String, Object> injectedMsg = new LinkedHashMap<>();
+                injectedMsg.put("role", "user");
+                injectedMsg.put(
+                        "message", "${" + ctxInjectRef + ".output.result}${workflow.input.prompt}");
+                injectedMsg.put("media", "${workflow.input.media}");
+                llmMessages.set(mi, injectedMsg);
+                break;
+            }
+        }
+
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
         loopInputs.put(llmRef, "${" + llmRef + "}");
@@ -1693,7 +1724,7 @@ public class MultiAgentCompiler {
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(llmTask, checkTransferTask, toolRouter),
+                        List.of(ctxInject, llmTask, checkTransferTask, toolRouter),
                         loopInputs);
 
         // Initialize _agent_state for ToolContext.state from the caller-provided context
@@ -2163,7 +2194,19 @@ public class MultiAgentCompiler {
         List<WorkflowTask> caseTasks = new ArrayList<>();
         String subRef = parent.getName() + "_agent_" + idx + "_" + sub.getName();
 
-        // Compile as SUB_WORKFLOW with inline transfer-aware workflow
+        // Compile as SUB_WORKFLOW with inline transfer-aware workflow. Only suppress this
+        // agent's post-tool-call turn when one of the parent's on_tool_result handoffs actually
+        // watches a tool THIS agent owns — otherwise every sub-agent in the swarm loses its
+        // follow-up turn just because some other agent's tool happens to be a handoff trigger,
+        // leaving that other agent's tool result never summarized in words (it calls the tool,
+        // then the loop ends before the LLM ever sees the tool's output).
+        Set<String> subToolNames =
+                sub.getTools() == null
+                        ? Set.of()
+                        : sub.getTools().stream()
+                                .map(ToolConfig::getName)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
         boolean returnAfterToolResults =
                 parent.getHandoffs() != null
                         && parent.getHandoffs().stream()
@@ -2171,7 +2214,9 @@ public class MultiAgentCompiler {
                                         handoff ->
                                                 handoff != null
                                                         && "on_tool_result"
-                                                                .equals(handoff.getType()));
+                                                                .equals(handoff.getType())
+                                                        && subToolNames.contains(
+                                                                handoff.getToolName()));
         WorkflowDef agentWf = compileSwarmAgentWorkflow(sub, transferTools, returnAfterToolResults);
         WorkflowTask task = new WorkflowTask();
         task.setType("SUB_WORKFLOW");
