@@ -2,12 +2,10 @@
 description: "Choose the supported Conductor bridge for an existing framework agent, then deploy it as a durable, reusable Conductor Agent."
 ---
 
-# Framework Agent Recipes
+# Framework Agent Bridges
 
-<section class="framework-hero" aria-labelledby="framework-hero-title">
-  <p class="framework-hero__eyebrow">Conductor Agents bridges</p>
-  <h2 id="framework-hero-title">Keep your framework. Run it as a durable agent.</h2>
-  <p>Choose the bridge for the agent you already author. Conductor compiles it into an inspectable graph that a larger workflow can retry, pause, resume, and reuse.</p>
+<section class="framework-hero" aria-label="Framework bridges">
+  <p>A <strong>bridge</strong> is the SDK adapter that lets Conductor run an agent authored in another framework, such as OpenAI Agents, LangChain, LangGraph, or Google ADK. You keep the agent object your framework defines, and the bridge compiles and runs it as a durable Conductor execution. This page is the reference for the bridges: which frameworks and languages are supported, how a bridged agent becomes a deployable Conductor Agent, and where the maintained examples live for each pairing.</p>
   <div class="framework-logo-grid">
     <a class="framework-logo-card" href="../../quickstart/framework-agents.html#openai-agents-sdk" aria-label="OpenAI Agents quickstart">
       <img class="framework-logo framework-logo--wide" src="../../assets/images/frameworks/openai.svg" alt="" />
@@ -25,7 +23,7 @@ description: "Choose the supported Conductor bridge for an existing framework ag
       <img class="framework-logo" src="../../assets/images/frameworks/langgraph.svg" alt="" />
       <span>LangGraph</span>
     </a>
-    <a class="framework-logo-card" href="../../quickstart/framework-agents.html#sdk-examples" aria-label="Vercel AI SDK examples">
+    <a class="framework-logo-card" href="https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/vercel-ai" aria-label="Vercel AI SDK examples on GitHub">
       <img class="framework-logo" src="../../assets/images/frameworks/vercel.svg" alt="" />
       <span>Vercel AI SDK</span>
     </a>

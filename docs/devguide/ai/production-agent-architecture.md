@@ -104,7 +104,7 @@ The parent workflow can use one or more of these execution paths. Choose the pat
 - Run one recovery drill: interrupt a safe execution, locate it by correlation ID, retry, resume, or terminate as appropriate, and verify the audit trail.
 - Keep releases KISS: test the changed path against sandbox tools, deploy it, and retain a known-good definition for rollback.
 
-For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Recipes](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
+For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Bridges](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
 
 ## Native-task implementation: architecture diagram
 
@@ -600,7 +600,7 @@ The parent waits for the child workflow to complete. If it fails, the parent's f
 ## Next steps
 
 - **[Conductor Agents](conductor-agents.md)** — Use this architecture around a deployed SDK-authored agent graph.
-- **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
+- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
 - **[A2A Integration](a2a-integration.md)** — Hand off to independently deployed A2A agents while retaining a durable parent-workflow boundary.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.

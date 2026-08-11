@@ -38,7 +38,7 @@ Every Conductor Agent moves through the same five operations, and the names belo
 
 In short: use `run` while you iterate, then `deploy` and `serve` so workflows and other callers can start the stable deployed version.
 
-For framework-specific code, package versions, and runnable examples, see [Framework Agent Recipes](agent-framework-recipes.md). For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md).
+For framework-specific code, package versions, and runnable examples, see [Framework Agent Bridges](agent-framework-recipes.md). For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md).
 
 ## Use a deployed agent in a workflow
 
@@ -115,4 +115,4 @@ These repository examples deliberately contain only the stable workflow contract
 | [`33-conductor-agent-multi-agent.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/33-conductor-agent-multi-agent.json) | Parallel specialist agents inside a `FORK_JOIN` / `JOIN` graph. |
 | [`34-conductor-agent-cancel.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/34-conductor-agent-cancel.json) | Cancellation propagation from the parent graph. |
 
-Next: choose a framework route in [Framework Agent Recipes](agent-framework-recipes.md), compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md), then use the [Production Agent Architecture](production-agent-architecture.md) for governance, evaluation, deployment, recovery, and operations.
+Next: choose a framework route in [Framework Agent Bridges](agent-framework-recipes.md), compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md), then use the [Production Agent Architecture](production-agent-architecture.md) for governance, evaluation, deployment, recovery, and operations.
