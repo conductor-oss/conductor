@@ -4,9 +4,9 @@ description: "A compact, framework-neutral blueprint for adopting production AI 
 
 # Production agent architecture
 
-For the focused, runnable implementation of this pattern, start with **[Durable Adaptive Graphs](dynamic-workflows.md)**. Its source-backed `governed_github_pr_reviewer` v1 makes the controls concrete: four durable PR-review passes, a bounded allowlisted deep dive, a compact evidence ledger, and approval before one GitHub comment.
+This page is a reference architecture for running agents in production. The core idea: a parent workflow owns the business process, and an agent runs behind an explicit execution boundary inside it. Nothing irreversible happens on the agent's say-so alone, because the parent validates results and applies approval before any write. The pattern is framework neutral: the agent behind the boundary can be built from native tasks, deployed as a Conductor Agent, or reached remotely over A2A.
 
-This is a compact, framework-neutral parent-workflow blueprint for an agent that plans, acts, waits, recovers, and runs in production. Keep detailed framework setup, A2A protocol behavior, and incident procedures in their specialist guides.
+For a runnable implementation of the pattern, see [Durable Adaptive Graphs](dynamic-workflows.md), which builds a governed PR-review agent with bounded fan-out and human approval before its single side effect.
 
 ## The parent workflow reference path
 
