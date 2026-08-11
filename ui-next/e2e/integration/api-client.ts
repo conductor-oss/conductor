@@ -296,6 +296,25 @@ export async function deleteAgent(
   await request<void>("DELETE", `/agent/${encodeURIComponent(agentName)}${qs}`);
 }
 
+export interface AgentStartResponse {
+  executionId: string;
+  agentName?: string;
+}
+
+/** Starts a deployed agent via POST /api/agent/start. */
+export async function startAgent(
+  agentName: string,
+  prompt: string,
+  options: { version?: number } = {},
+): Promise<AgentStartResponse> {
+  const body: Record<string, unknown> = {
+    name: agentName,
+    prompt,
+  };
+  if (options.version !== undefined) body.version = options.version;
+  return request<AgentStartResponse>("POST", "/agent/start", body);
+}
+
 export interface AgentStatus {
   executionId: string;
   status: string;

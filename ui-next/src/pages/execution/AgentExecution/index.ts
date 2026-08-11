@@ -4,3 +4,4 @@ export {
   AgentDefinitionDiagram,
 } from "./AgentDefinitionView";
 export { buildDefDiagram } from "./buildDefDiagram";
+export { buildAgentExecutionDiagram } from "./buildAgentExecutionDiagram";
