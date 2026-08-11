@@ -31,32 +31,6 @@ nav:
     - Bring Your Framework Agent: quickstart/framework-agents.md
     - Run a Workflow from JSON: quickstart/first-workflow.md
     - Conductor for AI Assistants: devguide/ai/conductor-for-ai-assistants.md
-  - Platform:
-    - Core Concepts: devguide/concepts/index.md
-    - Why Conductor: devguide/concepts/conductor.md
-    - Architecture: devguide/architecture/index.md
-    - Durable Execution: architecture/durable-execution.md
-    - JSON + Code Native: architecture/json-native.md
-    - Task Lifecycle: devguide/architecture/tasklifecycle.md
-    - Deploy:
-      - Production Deployment: devguide/running/deploy.md
-      - From Source: devguide/running/source.md
-      - Hosted: devguide/running/hosted.md
-      - CI/CD Integration: devguide/how-tos/cicd-integration.md
-      - Best Practices: devguide/bestpractices.md
-    - Configuration: documentation/configuration/appconf.md
-    - Observability:
-      - Server Metrics: documentation/metrics/server.md
-      - Client Metrics: documentation/metrics/client.md
-    - Advanced:
-      - documentation/advanced/extend.md
-      - documentation/advanced/isolationgroups.md
-      - documentation/advanced/archival-of-workflows.md
-      - documentation/advanced/externalpayloadstorage.md
-      - documentation/advanced/file-storage.md
-      - documentation/advanced/redis.md
-      - documentation/advanced/postgresql.md
-      - documentation/advanced/opensearch.md
   - Workflows:
     - Overview: devguide/workflows/index.md
     - Workflows: devguide/concepts/workflows.md
@@ -104,20 +78,9 @@ nav:
       - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
       - Failure Semantics: devguide/ai/failure-semantics.md
     - Production Agent Architecture: devguide/ai/production-agent-architecture.md
-  - Design Patterns:
-    - Overview: devguide/cookbook/index.md
-    - Workflow Patterns:
-      - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
-      - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
-      - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
-      - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
-      - Saga & Compensation: devguide/cookbook/saga-compensation.md
-      - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
-      - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
-      - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
-      - Event-Driven Patterns: devguide/cookbook/event-driven.md
+  - AI Cookbook:
+    - Overview: devguide/ai/cookbook/index.md
     - Agentic Patterns:
-      - Overview: devguide/ai/cookbook/index.md
       - RAG Agent: devguide/ai/cookbook/rag-agent.md
       - MCP Tool Calling: devguide/ai/cookbook/mcp-tool-calling.md
       - A2A Agent Orchestration: devguide/ai/cookbook/a2a-orchestration.md
@@ -140,6 +103,18 @@ nav:
       - Specialist Review: devguide/ai/cookbook/parallel-specialist-review.md
       - Agent Approval: devguide/ai/cookbook/human-approved-action.md
       - Agent Cancellation: devguide/ai/cookbook/conductor-agent-cancellation.md
+  - Design Patterns:
+    - Overview: devguide/cookbook/index.md
+    - Workflow Patterns:
+      - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
+      - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
+      - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
+      - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
+      - Saga & Compensation: devguide/cookbook/saga-compensation.md
+      - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
+      - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
+      - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
+      - Event-Driven Patterns: devguide/cookbook/event-driven.md
   - SDK:
     - documentation/clientsdks/index.md
     - Java: documentation/clientsdks/java-sdk.md
@@ -215,6 +190,32 @@ nav:
       - documentation/configuration/workflowdef/systemtasks/ai-tasks.md
     - Event Handlers: documentation/configuration/eventhandlers.md
 
+  - Platform:
+    - Core Concepts: devguide/concepts/index.md
+    - Why Conductor: devguide/concepts/conductor.md
+    - Architecture: devguide/architecture/index.md
+    - Durable Execution: architecture/durable-execution.md
+    - JSON + Code Native: architecture/json-native.md
+    - Task Lifecycle: devguide/architecture/tasklifecycle.md
+    - Deploy:
+      - Production Deployment: devguide/running/deploy.md
+      - From Source: devguide/running/source.md
+      - Hosted: devguide/running/hosted.md
+      - CI/CD Integration: devguide/how-tos/cicd-integration.md
+      - Best Practices: devguide/bestpractices.md
+    - Configuration: documentation/configuration/appconf.md
+    - Observability:
+      - Server Metrics: documentation/metrics/server.md
+      - Client Metrics: documentation/metrics/client.md
+    - Advanced:
+      - documentation/advanced/extend.md
+      - documentation/advanced/isolationgroups.md
+      - documentation/advanced/archival-of-workflows.md
+      - documentation/advanced/externalpayloadstorage.md
+      - documentation/advanced/file-storage.md
+      - documentation/advanced/redis.md
+      - documentation/advanced/postgresql.md
+      - documentation/advanced/opensearch.md
 theme:
   name: material
   logo: img/logo.svg

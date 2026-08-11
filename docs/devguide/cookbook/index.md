@@ -6,7 +6,7 @@ description: "Complete, runnable Conductor workflow definitions for common orche
 
 <section class="concept-hero concept-hero--cookbook">
   <div class="concept-hero__content">
-    <p>Design patterns are complete, runnable workflow definitions for common orchestration problems. Each page takes one problem, such as parallel fan-out, sagas, timers, or human approval, and gives you a working definition to register, run, and adapt to your own tasks. The section is grouped into workflow patterns, agentic patterns, and agent recipes.</p>
+    <p>Design patterns are complete, runnable workflow definitions for common orchestration problems. Each page takes one problem, such as parallel fan-out, sagas, timers, or human approval, and gives you a working definition to register, run, and adapt to your own tasks. This section covers workflow patterns. Agentic patterns and agent recipes live in <a href="../ai/cookbook/index.html">AI Cookbook</a>.</p>
   </div>
   <svg class="concept-hero__graphic cookbook-hero__graphic" viewBox="0 0 440 205" role="img" aria-label="Cookbook recipes for services, parallel work, timers, events, AI, and code flow into a durable Conductor workflow">
     <defs><marker id="cookbook-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
