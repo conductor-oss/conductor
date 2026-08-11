@@ -49,14 +49,14 @@ Each route keeps the framework-specific code, dependencies, and executable examp
 
 ## From framework object to workflow step
 
-Every bridge follows the same production path:
+Every bridge follows the same path from your code to a reusable workflow step:
 
-1. **Author and run** the framework agent through its matching Conductor SDK bridge while iterating.
-2. **Plan and deploy** the generated graph when the agent is ready to become a reusable production capability.
-3. **Serve** any bridge workers required by that SDK route.
-4. **Invoke** the deployed agent by name from a parent workflow with `AGENT` and `agentType: "conductor"`.
+1. **Run it while you iterate.** Pass your framework's agent object to the SDK bridge and run it. The bridge compiles the agent and executes it on Conductor, so the durable execution is visible in the UI from the first run.
+2. **Deploy it when it stabilizes.** Deploying registers the compiled agent on the server as a named, versioned Conductor Agent. Callers can then invoke it without importing your framework or its dependencies.
+3. **Serve its workers.** Where the bridge runs your tools as local functions, a worker process must be running to execute them. Keep it running for as long as the deployed agent is in use.
+4. **Invoke it from a workflow.** A parent workflow calls the deployed agent with an `AGENT` task and `agentType: "conductor"`, the same way it calls any other durable step.
 
-Use `run` for an interactive session. Use deploy plus serve when a durable business workflow must call a stable agent version. [Conductor Agents](conductor-agents.md) defines the deployed-agent contract, including invocation, waiting, resume, cancellation, and outputs.
+In short: `run` is for interactive development, and `deploy` plus `serve` is for production, where workflows need a stable agent version. The [Conductor Agents](conductor-agents.md) page covers the deployed agent's runtime behavior: invocation, waiting, resume, cancellation, and outputs.
 
 ## Why run a framework agent on Conductor
 
