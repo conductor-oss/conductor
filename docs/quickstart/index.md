@@ -4,7 +4,7 @@ description: Get started with Conductor — your first durable workflow or agent
 
 # Get started with Conductor
 
-Choose from one of the paths below. Each takes about 5 minutes and gives you a durable execution you can inspect in the Conductor UI.
+Each path takes about 5 minutes and gives you a durable execution you can inspect in the Conductor UI.
 
 <section class="integration-hero integration-hero--durable" aria-label="Getting started paths">
   <div class="integration-action-grid integration-action-grid--three">
