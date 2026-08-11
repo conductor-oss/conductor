@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
@@ -77,7 +77,10 @@ import static org.mockito.Mockito.when;
 @TestPropertySource(
         properties = {
             "conductor.a2a.server.enabled=true",
-            "conductor.a2a.server.exposed-workflows=order_pizza"
+            "conductor.a2a.server.exposed-workflows=order_pizza",
+            // This test boots its own app, so it does not inherit the server module's
+            // application.properties. Conductor's model is Jackson 2; see that file for why.
+            "spring.http.converters.preferred-json-mapper=jackson2"
         })
 class A2ALoopbackTest {
 

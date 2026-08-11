@@ -1,4 +1,5 @@
 dependencies {
+    testImplementation 'org.springframework.boot:spring-boot-flyway'
 
     implementation project(':conductor-common-persistence')
     implementation project(':conductor-common')

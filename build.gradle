@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.14'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:4.1.0'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -21,7 +21,7 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.5.14'
+    id 'org.springframework.boot' version '4.1.0'
 }
 
 // Establish version and status
@@ -62,18 +62,17 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
-                // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
-                if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
-                    details.useVersion "2.18.8"
-                }
-                // Compat: Spring Boot 3.5 requires HttpClient 5.4+ for TlsSocketStrategy.
-                if (details.requested.group == 'org.apache.httpcomponents.client5'
-                        && details.requested.name == 'httpclient5') {
-                    details.useVersion "5.5.2"
-                }
-                // Compat: Flyway database modules must match Flyway core's internal API.
-                if (details.requested.group == 'org.flywaydb') {
-                    details.useVersion "11.7.2"
+                // Compat: align all com.fasterxml.jackson.* to one version — mixed versions cause
+                // ClassNotFoundException. Spring Boot 4 manages Jackson 2 via jackson-2-bom
+                // (2.21.4 in 4.1.0) alongside Jackson 3, and the two are coupled: Jackson 3's
+                // JsonMapper$Builder static init needs @JsonSerializeAs from jackson-annotations
+                // >= 2.21. Pinning below that fails web-server startup with NoClassDefFoundError,
+                // so defer to the BOM rather than hard-coding a version here. jackson-annotations
+                // versions independently of the other artifacts (no 2.21.x patch line), which is
+                // why a single literal cannot be used for the whole group.
+                if (details.requested.group.startsWith('com.fasterxml.jackson.')
+                        && details.requested.name != 'jackson-annotations') {
+                    details.useVersion "${revFasterXml}"
                 }
                 // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
@@ -104,8 +103,14 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.5.14/reference/htmlsingle/#appendix.dependency-versions
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/4.1.0/reference/htmlsingle/#appendix.dependency-versions
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
+        }
+        dependencies {
+            // Spring Boot 4's BOM no longer manages spring-retry. 23 unversioned
+            // 'org.springframework.retry:spring-retry' declarations across 17 modules
+            // would otherwise fail with "Could not find ...:spring-retry:".
+            dependency "org.springframework.retry:spring-retry:${revSpringRetry}"
         }
     }
 
@@ -124,9 +129,13 @@ allprojects {
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
-        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
+        // Spring Boot 4's BOM moves JUnit to 6.x. Gradle 8.14 injects its own (1.x)
+        // junit-platform-launcher, which is unaligned with the 6.x engine and fails
+        // discovery with "OutputDirectoryCreator not available". Declare the launcher
+        // so the BOM aligns it with the engine.
+        testRuntimeOnly "org.junit.platform:junit-platform-launcher"
         testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
 
         // PINNED (#964): jettison must stay at exactly 1.5.4 — `strictly` prevents both

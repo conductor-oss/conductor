@@ -15,6 +15,7 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-restclient'
 
     implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
     implementation("org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}")

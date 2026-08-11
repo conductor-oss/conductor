@@ -16,6 +16,7 @@ import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.http.OkHttpClientHttpRequestFactory;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.cohere.api.CohereApi;
@@ -112,8 +113,7 @@ public class CohereAI implements AIModel {
                 (config.getTimeout() != null)
                         ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
                         : httpClient;
-        var factory =
-                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        var factory = new OkHttpClientHttpRequestFactory(effective);
         CohereApi.Builder builder =
                 CohereApi.builder()
                         .apiKey(config.getApiKey())

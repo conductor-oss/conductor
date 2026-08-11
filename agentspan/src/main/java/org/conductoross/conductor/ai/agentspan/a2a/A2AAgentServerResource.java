@@ -104,7 +104,7 @@ public class A2AAgentServerResource {
         if (properties.getPublicUrl() != null && !properties.getPublicUrl().isBlank()) {
             return properties.getPublicUrl();
         }
-        return UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
+        return UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
                 .replacePath(null)
                 .replaceQuery(null)
                 .build()

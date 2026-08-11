@@ -51,7 +51,14 @@ public @interface ValidNameConstraint {
         public static final String INVALID_NAME_MESSAGE =
                 "Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #";
 
-        @Value("${conductor.app.workflow.name-validation.enabled}")
+        // Defaulted deliberately. This validator ships in conductor-common, so it is instantiated
+        // inside every consumer's context, not just conductor-server's. Without a default, any
+        // application that does not define this property fails bean creation with a
+        // PlaceholderResolutionException on the first request that triggers bean validation —
+        // surfacing as a 500 on workflow/task registration rather than as a startup error. The
+        // default matches conductor-server's own application.properties, so behaviour is unchanged
+        // for anyone who does set it.
+        @Value("${conductor.app.workflow.name-validation.enabled:false}")
         private boolean nameValidationEnabled;
 
         @Override

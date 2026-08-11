@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.http.OkHttpClientHttpRequestFactory;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
@@ -121,8 +122,7 @@ public class MistralAI implements AIModel {
                 (config.getTimeout() != null)
                         ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
                         : httpClient;
-        var factory =
-                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        var factory = new OkHttpClientHttpRequestFactory(effective);
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()

@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -46,6 +47,8 @@ public class EventClientTest {
 
     @Before
     public void init() {
+        // Spring Boot 4 / Mockito 5: the Spring runner no longer initializes @Mock fields.
+        MockitoAnnotations.openMocks(this);
         eventClient = new EventClient("test", 0);
         ReflectionTestUtils.setField(eventClient, "stub", mockedStub);
         ReflectionTestUtils.setField(eventClient, "protoMapper", mockedProtoMapper);

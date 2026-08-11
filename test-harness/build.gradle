@@ -1,6 +1,7 @@
 apply plugin: 'groovy'
 
 dependencies {
+    testImplementation 'org.springframework.boot:spring-boot-jdbc'
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-common')
     testImplementation project(':conductor-rest')

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
+import org.conductoross.conductor.ai.http.OkHttpClientHttpRequestFactory;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.springframework.ai.chat.model.ChatModel;
@@ -116,8 +117,7 @@ public class Ollama implements AIModel {
                 (config.getTimeout() != null)
                         ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
                         : httpClient;
-        var factory =
-                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        var factory = new OkHttpClientHttpRequestFactory(effective);
         RestClient.Builder builder = RestClient.builder().requestFactory(factory);
         if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
             builder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());

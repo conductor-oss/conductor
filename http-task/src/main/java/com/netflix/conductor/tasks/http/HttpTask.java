@@ -180,10 +180,10 @@ public class HttpTask extends WorkflowSystemTask {
                 response.body = extractBody(responseEntity.getBody());
             }
 
-            response.statusCode = responseEntity.getStatusCodeValue();
+            response.statusCode = responseEntity.getStatusCode().value();
             response.reasonPhrase =
                     HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
-            response.headers = responseEntity.getHeaders();
+            response.headers = responseEntity.getHeaders().asMultiValueMap();
             return response;
         } catch (RestClientException ex) {
             LOGGER.error(

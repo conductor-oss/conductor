@@ -1,4 +1,5 @@
 dependencies {
+    testImplementation 'org.springframework.boot:spring-boot-jdbc'
     implementation project(':conductor-scheduler-core')
     implementation project(':conductor-common')
     implementation project(':conductor-core')

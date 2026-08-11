@@ -14,7 +14,8 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
     // https://mvnrepository.com/artifact/org.flywaydb/flyway-core
-    implementation 'org.flywaydb:flyway-core:11.3.1'
+    testImplementation 'org.springframework.boot:spring-boot-flyway'
+    implementation "org.flywaydb:flyway-core:${revFlyway}"
 
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
     implementation 'org.xerial:sqlite-jdbc:3.49.0.0'

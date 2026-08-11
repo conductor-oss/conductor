@@ -9,7 +9,7 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     // PINNED (#964): revJedis (6.0.0) does not work with Spring Data Redis in this module.
-    implementation "redis.clients:jedis:3.6.0"
+    implementation "redis.clients:jedis:${revJedis}"
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
@@ -18,5 +18,5 @@ dependencies {
     testImplementation "org.testcontainers:spock:${revTestContainer}"
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
-    testImplementation 'org.springframework.data:spring-data-redis:2.7.16'
+    testImplementation 'org.springframework.data:spring-data-redis'
 }

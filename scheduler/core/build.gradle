@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    testFixturesImplementation 'org.springframework.boot:spring-boot-jdbc'
+    testImplementation 'org.springframework.boot:spring-boot-jdbc'
     implementation project(':conductor-common')
     implementation project(':conductor-core')
 

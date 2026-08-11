@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -229,7 +230,13 @@ class A2AServerResourceTest {
         when(agent.sendMessage(eq("order_pizza"), any(A2AMessage.class)))
                 .thenReturn(task("wf-1", TaskState.WORKING));
 
-        MockMvc mvc = MockMvcBuilders.standaloneSetup(resource).build();
+        MockMvc mvc =
+                MockMvcBuilders.standaloneSetup(resource)
+                        // The controller takes a Jackson 2 JsonNode body. standaloneSetup has no
+                        // Spring context, so spring.http.converters.preferred-json-mapper does
+                        // not apply and Spring Boot 4 would pick the Jackson 3 converter.
+                        .setMessageConverters(new MappingJackson2HttpMessageConverter())
+                        .build();
         mvc.perform(
                         post("/api/a2a/workflow/order_pizza/rpc")
                                 .contentType(MediaType.APPLICATION_JSON)

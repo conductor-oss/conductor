@@ -2,6 +2,7 @@ plugins {
     id 'groovy'
 }
 dependencies {
+    testImplementation 'org.springframework.boot:spring-boot-jdbc'
 
 
     implementation project(':conductor-common')

@@ -8,6 +8,7 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+    api 'org.springframework.boot:spring-boot-jackson2'
 
     compileOnly "org.springdoc:springdoc-openapi-starter-webmvc-ui:${revSpringDoc}"
 

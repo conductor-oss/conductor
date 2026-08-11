@@ -17,12 +17,13 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -55,23 +56,37 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
         Duration timeout =
                 Duration.ofMillis(
                         Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout));
-        threadLocalRestTemplateBuilder.get().setReadTimeout(timeout);
         RestTemplate restTemplate =
-                threadLocalRestTemplateBuilder.get().setReadTimeout(timeout).build();
+                threadLocalRestTemplateBuilder.get().readTimeout(timeout).build();
         RequestConfig requestConfig =
                 RequestConfig.custom()
                         .setResponseTimeout(Timeout.ofMilliseconds(timeout.toMillis()))
                         .build();
-        HttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
+        // Spring Framework 7 removed HttpComponentsClientHttpRequestFactory#setConnectTimeout;
+        // the connect timeout is now configured on the Apache connection manager instead.
+        ConnectionConfig connectionConfig =
+                ConnectionConfig.custom()
+                        .setConnectTimeout(
+                                Timeout.of(
+                                        Optional.ofNullable(input.getConnectionTimeOut())
+                                                .orElse(defaultConnectTimeout),
+                                        TimeUnit.MILLISECONDS))
+                        .setSocketTimeout(
+                                Timeout.of(
+                                        Optional.ofNullable(input.getReadTimeOut())
+                                                .orElse(defaultReadTimeout),
+                                        TimeUnit.MILLISECONDS))
+                        .build();
+        HttpClient httpClient =
+                HttpClients.custom()
+                        .setDefaultRequestConfig(requestConfig)
+                        .setConnectionManager(
+                                PoolingHttpClientConnectionManagerBuilder.create()
+                                        .setDefaultConnectionConfig(connectionConfig)
+                                        .build())
+                        .build();
         HttpComponentsClientHttpRequestFactory requestFactory =
                 new HttpComponentsClientHttpRequestFactory(httpClient);
-        SocketConfig.Builder builder = SocketConfig.custom();
-        builder.setSoTimeout(
-                Timeout.of(
-                        Optional.ofNullable(input.getReadTimeOut()).orElse(defaultReadTimeout),
-                        TimeUnit.MILLISECONDS));
-        requestFactory.setConnectTimeout(
-                Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
         restTemplate.setRequestFactory(requestFactory);
         return restTemplate;
     }

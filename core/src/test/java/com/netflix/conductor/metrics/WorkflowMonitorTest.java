@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -39,6 +40,8 @@ public class WorkflowMonitorTest {
 
     @Before
     public void beforeEach() {
+        // Spring Boot 4 / Mockito 5: the Spring runner no longer initializes @Mock fields.
+        MockitoAnnotations.openMocks(this);
         workflowMonitor =
                 new WorkflowMonitor(metadataService, queueDAO, executionDAOFacade, 1000, Set.of());
     }

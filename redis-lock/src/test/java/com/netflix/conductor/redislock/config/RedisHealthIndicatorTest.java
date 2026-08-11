@@ -14,15 +14,17 @@ package com.netflix.conductor.redislock.config;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.redisson.api.RedissonClient;
 import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSingleNode;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE.*;
@@ -36,6 +38,12 @@ import static org.mockito.Mockito.when;
 public class RedisHealthIndicatorTest {
 
     @Mock private RedissonClient redissonClient;
+
+    @Before
+    public void setUp() {
+        // Spring Boot 4 / Mockito 5: the Spring runner no longer initializes @Mock fields.
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     public void shouldReturnAsHealthWhenServerTypeIsSingle() {

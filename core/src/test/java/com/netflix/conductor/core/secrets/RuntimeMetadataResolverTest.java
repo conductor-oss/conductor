@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.netflix.conductor.dao.EnvironmentDAO;
@@ -37,6 +38,8 @@ public class RuntimeMetadataResolverTest {
 
     @Before
     public void setup() {
+        // Spring Boot 4 / Mockito 5: the Spring runner no longer initializes @Mock fields.
+        MockitoAnnotations.openMocks(this);
         resolver = new RuntimeMetadataResolver(secretsDAO, environmentDAO);
     }
 
