@@ -5,12 +5,7 @@ description: "Learn about workers in Conductor — the code that executes tasks 
 # Workers
 
 <section class="concept-hero concept-hero--workers">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Your code, durable orchestration</p>
-    <h2>Poll, execute, and report without owning workflow state.</h2>
-    <p>Workers implement business logic in your preferred language while Conductor handles dispatch, retries, timeouts, and the durable task record.</p>
-  </div>
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
+  <svg class="concept-hero__graphic" viewBox="0 28 440 145" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
     <defs><marker id="worker-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="14" y="68" width="102" height="54" rx="10" class="concept-hero__node concept-hero__node--accent" />
     <text x="65" y="91" text-anchor="middle" class="concept-hero__label">Conductor</text>
@@ -29,7 +24,7 @@ description: "Learn about workers in Conductor — the code that executes tasks 
   </svg>
 </section>
 
-A worker is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
+A **worker** is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
 
 System task workers are managed by Conductor within its JVM, while `SIMPLE` task workers are to be implemented by yourself. These workers can be implemented in any programming language of your choice (Python, Java, JavaScript, C#, Go, and Clojure) and hosted anywhere outside the Conductor environment.
 

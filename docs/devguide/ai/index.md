@@ -1,90 +1,49 @@
 ---
-description: Build and operate durable AI workflows, framework-authored Conductor Agents, and remote A2A agents with governed execution, observable turns, and human control.
+description: "What an agent is in Conductor and how agent turns run as durable workflow tasks with tools, approvals, and a full execution history."
 ---
 
 # Agents & AI
 
-<section class="agent-runtime-hero" aria-labelledby="agent-runtime-hero-title">
-  <div class="agent-runtime-hero__content">
-    <p class="agent-runtime-hero__eyebrow">Reasoning meets durable execution</p>
-    <h2 id="agent-runtime-hero-title">Models propose. Conductor governs and executes.</h2>
-    <p>Models and agent frameworks provide reasoning, planning, and tool selection. Conductor provides the production execution layer around them: durable state, bounded task execution, policy checks, approvals, retries, cancellation, and a complete record of every turn.</p>
-    <p>The result is an agent system that can adapt at runtime without hiding control flow or entrusting side effects to an opaque model process.</p>
-    <nav class="agent-runtime-hero__paths" aria-label="Agent authoring paths">
-      <a href="llm-orchestration.html">Declarative workflows</a>
-      <a href="conductor-agents.html">Conductor Agents</a>
-      <a href="a2a-integration.html">A2A agents</a>
-    </nav>
-    <div class="agent-runtime-hero__legend" aria-label="Architecture legend">
-      <span><i class="agent-runtime-hero__swatch agent-runtime-hero__swatch--authoring" aria-hidden="true"></i>Authoring</span>
-      <span><i class="agent-runtime-hero__swatch agent-runtime-hero__swatch--brain" aria-hidden="true"></i>Brain</span>
-      <span><i class="agent-runtime-hero__swatch agent-runtime-hero__swatch--runtime" aria-hidden="true"></i>Conductor</span>
-      <span><i class="agent-runtime-hero__swatch agent-runtime-hero__swatch--hands" aria-hidden="true"></i>Hands</span>
-    </div>
-  </div>
-  <svg class="agent-runtime-hero__diagram" viewBox="0 0 520 470" role="img" aria-labelledby="agent-runtime-diagram-title agent-runtime-diagram-description">
-    <title id="agent-runtime-diagram-title">Conductor agent architecture</title>
-    <desc id="agent-runtime-diagram-description">Native workflow definitions or SDK and framework agents provide the authoring layer. An LLM proposes plans, actions, and tool arguments. Conductor applies schemas, guardrails, policy, approvals, durable state, retries, waits, cancellation, and turn-level observability. Workers, MCP tools, APIs, data systems, remote A2A agents, and people execute approved actions. Results return through Conductor into durable state and the next model turn.</desc>
+## What is an agent?
+
+An agent is a program that uses an LLM to decide what to do next. Instead of following a fixed sequence of steps, it works in turns: the model reads the goal and the context so far, then proposes the next action. That action might be a tool call, a question for a person, or a final answer. The result of each action becomes context for the next turn, and the loop continues until the goal is met.
+
+<section class="agent-runtime-hero" aria-label="The Conductor agent turn loop">
+  <svg class="agent-runtime-hero__diagram" viewBox="0 0 520 312" role="img" aria-labelledby="agent-runtime-diagram-title agent-runtime-diagram-description">
+    <title id="agent-runtime-diagram-title">The Conductor agent turn loop</title>
+    <desc id="agent-runtime-diagram-description">An LLM proposes the next action. Conductor validates the proposal, persists state, and schedules the work. Workers, MCP tools, remote agents, and people execute it. Results are saved and start the next turn.</desc>
     <defs>
-      <marker id="agent-runtime-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" class="agent-runtime-hero__arrowhead" />
-      </marker>
       <marker id="agent-runtime-arrow-runtime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M 0 0 L 10 5 L 0 10 z" class="agent-runtime-hero__arrowhead agent-runtime-hero__arrowhead--runtime" />
       </marker>
     </defs>
-
-    <text x="20" y="18" class="agent-runtime-hero__lane-label">AUTHORING</text>
-    <rect x="20" y="28" width="480" height="72" rx="12" class="agent-runtime-hero__authoring-box" />
-    <rect x="38" y="44" width="205" height="40" rx="8" class="agent-runtime-hero__authoring-card" />
-    <text x="140" y="68" text-anchor="middle" class="agent-runtime-hero__label">Native workflow definitions</text>
-    <rect x="277" y="44" width="205" height="40" rx="8" class="agent-runtime-hero__authoring-card" />
-    <text x="379" y="61" text-anchor="middle" class="agent-runtime-hero__label">SDK / framework agents</text>
-    <text x="379" y="75" text-anchor="middle" class="agent-runtime-hero__detail">compiled into workflow graphs</text>
-
-    <path d="M 260 100 V 124" class="agent-runtime-hero__arrow" marker-end="url(#agent-runtime-arrow)" />
-    <rect x="75" y="126" width="370" height="62" rx="12" class="agent-runtime-hero__brain-box" />
-    <text x="260" y="149" text-anchor="middle" class="agent-runtime-hero__runtime-title agent-runtime-hero__runtime-title--brain">Brain · LLM reasoning</text>
-    <text x="260" y="169" text-anchor="middle" class="agent-runtime-hero__detail">proposes plans · actions · tool arguments</text>
-
-    <path d="M 260 188 V 210" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
-    <rect x="55" y="212" width="410" height="98" rx="14" class="agent-runtime-hero__runtime-box" />
-    <text x="260" y="238" text-anchor="middle" class="agent-runtime-hero__runtime-title">Conductor platform</text>
-    <text x="260" y="258" text-anchor="middle" class="agent-runtime-hero__runtime-detail">schemas · guardrails · policy · approvals</text>
-    <text x="260" y="276" text-anchor="middle" class="agent-runtime-hero__runtime-detail">durable state · retries · waits · cancellation</text>
-    <path d="M 127 286 H 393" class="agent-runtime-hero__runtime-rule" />
-    <text x="260" y="301" text-anchor="middle" class="agent-runtime-hero__detail">turn record: proposals · outcomes · inputs · outputs · timing</text>
-
-    <path d="M 260 310 V 342" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
-    <text x="20" y="340" class="agent-runtime-hero__lane-label">HANDS · APPROVED EXECUTION</text>
-    <rect x="14" y="350" width="90" height="58" rx="9" class="agent-runtime-hero__hands-card" />
-    <text x="59" y="376" text-anchor="middle" class="agent-runtime-hero__label">Workers</text>
-    <text x="59" y="393" text-anchor="middle" class="agent-runtime-hero__detail">services + jobs</text>
-    <rect x="114" y="350" width="90" height="58" rx="9" class="agent-runtime-hero__hands-card" />
-    <text x="159" y="376" text-anchor="middle" class="agent-runtime-hero__label">MCP tools</text>
-    <text x="159" y="393" text-anchor="middle" class="agent-runtime-hero__detail">tools + retrieval</text>
-    <rect x="214" y="350" width="90" height="58" rx="9" class="agent-runtime-hero__hands-card" />
-    <text x="259" y="376" text-anchor="middle" class="agent-runtime-hero__label">APIs + data</text>
-    <text x="259" y="393" text-anchor="middle" class="agent-runtime-hero__detail">side effects</text>
-    <rect x="314" y="350" width="90" height="58" rx="9" class="agent-runtime-hero__hands-card" />
-    <text x="359" y="374" text-anchor="middle" class="agent-runtime-hero__label">Remote A2A</text>
-    <text x="359" y="392" text-anchor="middle" class="agent-runtime-hero__detail">agents</text>
-    <rect x="414" y="350" width="90" height="58" rx="9" class="agent-runtime-hero__hands-card" />
-    <text x="459" y="376" text-anchor="middle" class="agent-runtime-hero__label">People</text>
-    <text x="459" y="393" text-anchor="middle" class="agent-runtime-hero__detail">review + input</text>
-
-    <path d="M 459 408 V 430 H 20 V 261 H 55" class="agent-runtime-hero__turn-loop" marker-end="url(#agent-runtime-arrow-runtime)" />
-    <text x="260" y="449" text-anchor="middle" class="agent-runtime-hero__compile">results return through durable state</text>
-    <path d="M 465 261 H 498 V 157 H 445" class="agent-runtime-hero__turn-loop" marker-end="url(#agent-runtime-arrow-runtime)" />
-    <text x="506" y="212" text-anchor="middle" transform="rotate(-90 506 212)" class="agent-runtime-hero__compile">next model turn</text>
+    <rect x="110" y="16" width="300" height="56" rx="12" class="agent-runtime-hero__brain-box" />
+    <text x="260" y="39" text-anchor="middle" class="agent-runtime-hero__runtime-title agent-runtime-hero__runtime-title--brain">LLM decides the next step</text>
+    <text x="260" y="59" text-anchor="middle" class="agent-runtime-hero__detail">proposes a tool call, a question, or an answer</text>
+    <path d="M 260 72 V 92" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <rect x="80" y="94" width="360" height="72" rx="14" class="agent-runtime-hero__runtime-box" />
+    <text x="260" y="119" text-anchor="middle" class="agent-runtime-hero__runtime-title">Conductor</text>
+    <text x="260" y="138" text-anchor="middle" class="agent-runtime-hero__runtime-detail">validates the proposal · applies approvals</text>
+    <text x="260" y="155" text-anchor="middle" class="agent-runtime-hero__runtime-detail">persists state · schedules the work</text>
+    <path d="M 260 166 V 188" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <rect x="31" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="86" y="217" text-anchor="middle" class="agent-runtime-hero__label">Workers</text>
+    <text x="86" y="234" text-anchor="middle" class="agent-runtime-hero__detail">your code</text>
+    <rect x="147" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="202" y="217" text-anchor="middle" class="agent-runtime-hero__label">MCP tools</text>
+    <text x="202" y="234" text-anchor="middle" class="agent-runtime-hero__detail">tools + data</text>
+    <rect x="263" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="318" y="217" text-anchor="middle" class="agent-runtime-hero__label">Remote agents</text>
+    <text x="318" y="234" text-anchor="middle" class="agent-runtime-hero__detail">A2A protocol</text>
+    <rect x="379" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="434" y="217" text-anchor="middle" class="agent-runtime-hero__label">People</text>
+    <text x="434" y="234" text-anchor="middle" class="agent-runtime-hero__detail">review + input</text>
+    <path d="M 260 254 V 276 H 24 V 44 H 102" class="agent-runtime-hero__turn-loop" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <text x="272" y="296" text-anchor="middle" class="agent-runtime-hero__compile">results are saved and start the next turn</text>
   </svg>
 </section>
 
-## How the architecture works
-
-Authoring starts either with a native workflow definition or with SDK and framework code that compiles into a workflow graph. During a turn, the model—the brain—proposes a plan, an action, or tool arguments. That output becomes data entering Conductor, not an instruction that bypasses the runtime.
-
-Conductor validates the proposal, applies policy and approvals, records durable state, and schedules only the accepted work. The hands—workers, MCP tools, APIs, data systems, remote A2A agents, and people—perform that work at explicit task boundaries. Their results return through Conductor, where they are persisted and become context for the next turn. A crash or long wait therefore interrupts infrastructure, not the logical execution history.
+In Conductor, that loop runs as a durable workflow. The model's proposal is data, not a command. Conductor validates it, applies any required approvals, and only then schedules the work. The work itself runs as ordinary tasks, using the same building blocks a workflow already has: your workers, MCP tools, remote agents, and people. Because every result is persisted before the next turn starts, a crash, deploy, or long wait never loses the agent's progress.
 
 ## Three ways to build
 

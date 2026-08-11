@@ -4,12 +4,9 @@ description: Configure incoming webhooks to verify HTTP callbacks, start workflo
 
 # Incoming webhooks
 
-<section class="concept-hero concept-hero--event-bus" aria-labelledby="webhook-title">
+<section class="concept-hero concept-hero--event-bus" aria-label="Incoming webhooks">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Verified HTTP ingress</p>
-    <h2 id="webhook-title">Verify a callback before durable processing</h2>
-    <p>An incoming webhook verifies the provider callback, records it durably, then can start a workflow, resume a matching <code>WAIT_FOR_WEBHOOK</code>, or use both compatible delivery modes.</p>
-    <p><a href="consume-route-events.html">Consume broker events instead</a> · <a href="../cookbook/sending-signals.html">Signal a known WAIT</a></p>
+    <p>A <strong>webhook</strong> is an HTTP endpoint that an external service calls when something happens on its side. Conductor verifies the caller's signature first, records the delivery durably, and then either starts a new workflow or resumes one waiting on <code>WAIT_FOR_WEBHOOK</code>. This page covers configuring the endpoint, verification, and both delivery modes.</p>
   </div>
   <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 190" role="img" aria-labelledby="webhook-svg-title webhook-svg-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="webhook-svg-title">Incoming webhook processing flow</title>

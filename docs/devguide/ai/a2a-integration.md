@@ -4,17 +4,8 @@ description: "A2A (Agent2Agent) integration with Conductor — call remote agent
 
 # A2A Integration
 
-[A2A (Agent2Agent)](https://a2a-protocol.org/) is the open protocol for agents to communicate over HTTP/JSON-RPC. Conductor makes each remote handoff durable, observable, and resumable.
-
-<section class="integration-hero integration-hero--a2a" aria-labelledby="a2a-hero-title">
-  <div class="integration-hero__identity" aria-hidden="true">
-    <img class="integration-hero__logo" src="../../assets/images/protocols/a2a.svg" alt="" />
-    <span class="integration-hero__connector">↔</span>
-    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
-  </div>
-  <p class="integration-hero__eyebrow">Remote-agent interoperability</p>
-  <h2 id="a2a-hero-title">Interoperate with agents anywhere. Keep every handoff durable.</h2>
-  <p>Call a remote A2A agent from a workflow, or expose a Conductor workflow for any A2A client to discover and invoke.</p>
+<section class="integration-hero integration-hero--a2a" aria-label="A2A integration">
+  <p><strong><a href="https://a2a-protocol.org/">A2A (Agent2Agent)</a></strong> is the open protocol agents use to talk to each other over HTTP. With Conductor it works in both directions: a workflow can call a remote A2A agent as a durable step, and a Conductor workflow can be exposed for any A2A client to discover and invoke. Either way, Conductor records the handoff and its result.</p>
   <div class="integration-action-grid">
     <a class="integration-action-card" href="#call-a-remote-agent-from-a-workflow-client">
       <span class="integration-action-card__title">Call remote agents</span>

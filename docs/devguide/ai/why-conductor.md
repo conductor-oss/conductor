@@ -4,12 +4,14 @@ description: "Why Conductor for AI agents — native LLM and MCP tasks, durable 
 
 # Why Conductor for agents
 
-Conductor turns an agent's runtime choices into durable workflow execution. Use native LLM, MCP, vector, approval, and control-flow tasks directly, or compose an existing framework-authored agent with the same execution controls. The result is a graph that developers can build quickly and operators can inspect, govern, and recover.
+Agents fail in production for ordinary reasons. A process crashes mid-loop, a tool call fails once and the whole run is lost, and afterwards nobody can see which decision led to which action. Conductor addresses this by running every step of an agent, each model call and each tool call, as a durable workflow task. A failed step is retried, an interrupted run resumes from its last completed step, and the full history of the run is recorded.
+
+This page shows what that looks like in practice using the native tasks. The same properties apply when you bring a framework-authored agent instead; see [Conductor Agents](conductor-agents.md).
 
 
 ## Call an LLM as a workflow task
 
-An LLM call is a system task with the provider, model, messages, and output contract in its input:
+An LLM call is a system task. The provider, model, and messages are ordinary task input:
 
 ```json
 {
@@ -307,7 +309,7 @@ Every agentic pattern maps to a specific Conductor primitive:
 ## Next steps
 
 - **[Conductor Agents](conductor-agents.md)** — Author Conductor Agents or bring existing framework agents into durable Conductor graphs.
-- **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agents.
+- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agents.
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern, fully wired.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract under every scenario.
 - **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.

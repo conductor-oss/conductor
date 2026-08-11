@@ -4,12 +4,9 @@ description: Signal the first blocked WAIT in a workflow or running sub-workflow
 
 # Sending signals to workflows
 
-<section class="concept-hero concept-hero--event-bus" aria-labelledby="signals-title">
+<section class="concept-hero concept-hero--event-bus" aria-label="Send signals">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Advance existing work</p>
-    <h2 id="signals-title">Signal the workflow that is already waiting</h2>
-    <p>Signals resolve the first non-terminal <code>WAIT</code> in a workflow or running sub-workflow. They do not start a new execution, target arbitrary task references, or resolve <code>HUMAN</code> tasks.</p>
-    <p><a href="../../documentation/api/task.html">Task API reference</a> · <a href="../how-tos/consume-route-events.html">Route a broker event</a></p>
+    <p>A <strong>signal</strong> advances a workflow that is already running and waiting. It resolves the first non-terminal <code>WAIT</code> task in the target execution, so the caller only needs the workflow ID. A signal never starts a new execution, cannot target an arbitrary task reference, and does not resolve <code>HUMAN</code> tasks.</p>
   </div>
   <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 190" role="img" aria-labelledby="signal-svg-title signal-svg-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="signal-svg-title">Workflow signal flow</title>

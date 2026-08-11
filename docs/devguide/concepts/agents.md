@@ -1,98 +1,104 @@
 ---
-description: "Choose between declarative AI workflows, SDK-authored Conductor Agents, and remote A2A agents, then run each durably with Conductor."
+description: "How Conductor represents agents: agent definitions compile to workflow graphs, tool calls run as tasks, and workflows invoke agents through the durable AGENT task."
 ---
 
 # Agent Concepts
 
-<section class="agent-concepts-hero" aria-labelledby="agent-concepts-hero-title">
-  <div class="agent-concepts-hero__content">
-    <p class="agent-concepts-hero__eyebrow">A practical decision guide</p>
-    <h2 id="agent-concepts-hero-title">Author in the place that fits. Run it durably in Conductor.</h2>
-    <p>Choose a native workflow when the graph is the application, compile SDK or framework code when the agent already lives in code, or call an A2A service when the agent is independently deployed.</p>
-  </div>
-  <svg class="agent-concepts-hero__diagram" viewBox="0 0 760 330" role="img" aria-labelledby="agent-concepts-diagram-title agent-concepts-diagram-desc">
-    <title id="agent-concepts-diagram-title">Three agent paths through Conductor</title>
-    <desc id="agent-concepts-diagram-desc">Declarative workflow definitions, SDK or framework-authored agents, and remote A2A agents each feed through Conductor. The first uses native tasks, the second compiles to a deployed graph, and the third uses a durable AGENT task handoff.</desc>
+An agent uses an LLM to decide what to do next, working in turns until a goal is met. The [Agents & AI overview](../ai/index.md) explains that loop. This page explains the concepts underneath: how Conductor represents an agent, how workflows and agents call each other, and the three ways to author one.
+
+<section class="agent-concepts-hero" aria-label="How a workflow invokes an agent">
+  <svg class="agent-concepts-hero__diagram" viewBox="0 0 570 315" role="img" aria-labelledby="agent-concepts-diagram-title agent-concepts-diagram-desc">
+    <title id="agent-concepts-diagram-title">A workflow invokes an agent through the AGENT task</title>
+    <desc id="agent-concepts-diagram-desc">A workflow reaches an AGENT task, which invokes a Conductor Agent compiled to a workflow graph of LLM turns and tool calls, or a remote A2A agent. The result returns to the workflow.</desc>
     <defs>
       <marker id="agent-concepts-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path class="agent-concepts-hero__arrowhead" d="M 0 0 L 8 4 L 0 8 z" /></marker>
     </defs>
-    <text class="agent-concepts-hero__lane" x="18" y="34">AUTHOR</text>
-    <text class="agent-concepts-hero__lane" x="471" y="34">DURABLE EXECUTION</text>
-
-    <rect class="agent-concepts-hero__source agent-concepts-hero__source--workflow" x="18" y="54" width="248" height="62" rx="10" />
-    <text class="agent-concepts-hero__title" x="34" y="80">Declarative workflow definition</text>
-    <text class="agent-concepts-hero__detail" x="34" y="101">LLM, MCP, and control-flow tasks</text>
-    <path class="agent-concepts-hero__arrow" d="M 266 85 H 402" marker-end="url(#agent-concepts-arrow)" />
-
-    <rect class="agent-concepts-hero__source agent-concepts-hero__source--sdk" x="18" y="135" width="248" height="62" rx="10" />
-    <text class="agent-concepts-hero__title" x="34" y="161">SDK or framework-authored agent</text>
-    <text class="agent-concepts-hero__detail" x="34" y="182">Compile and deploy a Conductor Agent graph</text>
-    <path class="agent-concepts-hero__arrow" d="M 266 166 H 402" marker-end="url(#agent-concepts-arrow)" />
-
-    <rect class="agent-concepts-hero__source agent-concepts-hero__source--a2a" x="18" y="216" width="248" height="62" rx="10" />
-    <text class="agent-concepts-hero__title" x="34" y="242">Remote A2A agent</text>
-    <text class="agent-concepts-hero__detail" x="34" y="263">External service behind Agent2Agent</text>
-    <path class="agent-concepts-hero__arrow" d="M 266 247 H 402" marker-end="url(#agent-concepts-arrow)" />
-
-    <rect class="agent-concepts-hero__conductor" x="405" y="54" width="210" height="224" rx="14" />
-    <text class="agent-concepts-hero__conductor-title" x="510" y="96" text-anchor="middle">Conductor</text>
-    <text class="agent-concepts-hero__conductor-detail" x="510" y="124" text-anchor="middle">Native workflow tasks</text>
-    <text class="agent-concepts-hero__conductor-detail" x="510" y="153" text-anchor="middle">Compiled agent graph</text>
-    <text class="agent-concepts-hero__conductor-detail" x="510" y="182" text-anchor="middle">Durable AGENT handoff</text>
-    <path class="agent-concepts-hero__rule" d="M 433 200 H 587" />
-    <text class="agent-concepts-hero__conductor-detail" x="510" y="226" text-anchor="middle">state · retries · waits</text>
-    <text class="agent-concepts-hero__conductor-detail" x="510" y="248" text-anchor="middle">cancellation · records</text>
-
-    <rect class="agent-concepts-hero__outcome" x="620" y="120" width="122" height="92" rx="10" />
-    <path class="agent-concepts-hero__arrow agent-concepts-hero__arrow--out" d="M 615 166 H 638" marker-end="url(#agent-concepts-arrow)" />
-    <text class="agent-concepts-hero__title" x="681" y="153" text-anchor="middle">Business</text>
-    <text class="agent-concepts-hero__title" x="681" y="171" text-anchor="middle">process</text>
-    <text class="agent-concepts-hero__detail" x="681" y="193" text-anchor="middle">ordinary tasks + agents</text>
+    <rect class="agent-concepts-hero__conductor" x="18" y="24" width="220" height="160" rx="14" />
+    <text class="agent-concepts-hero__conductor-detail" x="128" y="44" text-anchor="middle">Your workflow</text>
+    <rect class="agent-concepts-hero__source agent-concepts-hero__source--workflow" x="42" y="52" width="172" height="40" rx="8" />
+    <text class="agent-concepts-hero__title" x="128" y="77" text-anchor="middle">Task</text>
+    <path class="agent-concepts-hero__arrow" d="M 128 92 V 106" marker-end="url(#agent-concepts-arrow)" />
+    <rect class="agent-concepts-hero__source agent-concepts-hero__source--sdk" x="42" y="108" width="172" height="44" rx="8" />
+    <text class="agent-concepts-hero__title" x="128" y="135" text-anchor="middle">AGENT task</text>
+    <path class="agent-concepts-hero__arrow" d="M 214 122 H 296" marker-end="url(#agent-concepts-arrow)" />
+    <text class="agent-concepts-hero__detail" x="255" y="114" text-anchor="middle">invoke</text>
+    <path class="agent-concepts-hero__arrow" d="M 300 142 H 222" marker-end="url(#agent-concepts-arrow)" />
+    <text class="agent-concepts-hero__detail" x="258" y="158" text-anchor="middle">result</text>
+    <rect class="agent-concepts-hero__conductor" x="300" y="47" width="250" height="170" rx="14" />
+    <text class="agent-concepts-hero__conductor-title" x="425" y="75" text-anchor="middle">Conductor Agent</text>
+    <text class="agent-concepts-hero__conductor-detail" x="425" y="95" text-anchor="middle">compiled to a workflow graph</text>
+    <rect class="agent-concepts-hero__source agent-concepts-hero__source--workflow" x="324" y="108" width="202" height="36" rx="8" />
+    <text class="agent-concepts-hero__title" x="425" y="131" text-anchor="middle">LLM turn</text>
+    <path class="agent-concepts-hero__arrow" d="M 425 144 V 156" marker-end="url(#agent-concepts-arrow)" />
+    <rect class="agent-concepts-hero__source agent-concepts-hero__source--workflow" x="324" y="158" width="202" height="36" rx="8" />
+    <text class="agent-concepts-hero__title" x="425" y="181" text-anchor="middle">Tool call</text>
+    <path class="agent-concepts-hero__arrow" d="M 526 176 C 550 176 550 126 526 126" marker-end="url(#agent-concepts-arrow)" />
+    <text class="agent-concepts-hero__detail" x="425" y="207" text-anchor="middle">loops until done</text>
+    <path class="agent-concepts-hero__arrow" d="M 128 152 V 274 H 288" marker-end="url(#agent-concepts-arrow)" stroke-dasharray="5 4" />
+    <text class="agent-concepts-hero__detail" x="140" y="236" text-anchor="start">or invoke remotely</text>
+    <rect class="agent-concepts-hero__source agent-concepts-hero__source--a2a" x="300" y="245" width="250" height="58" rx="10" />
+    <text class="agent-concepts-hero__title" x="316" y="270">Remote A2A agent</text>
+    <text class="agent-concepts-hero__detail" x="316" y="290">independently deployed service</text>
   </svg>
 </section>
 
-## Choose your path
+## Agents are workflows underneath
 
-<div class="agent-concepts-paths">
-  <article class="agent-concepts-path">
-    <p class="agent-concepts-path__eyebrow">Build directly</p>
-    <h3>Declarative AI workflow</h3>
-    <dl>
-      <dt>Author behavior</dt><dd>In a Conductor workflow definition.</dd>
-      <dt>Conductor runs</dt><dd>The process itself: native LLM, MCP, `SWITCH`, `DO_WHILE`, `WAIT`, `HUMAN`, and other workflow tasks.</dd>
-      <dt>Choose it when</dt><dd>Orchestration is the product and you want the complete control flow visible, versioned, and changed as a workflow.</dd>
-    </dl>
-    <a href="../ai/llm-orchestration.html">Explore LLM orchestration →</a>
-  </article>
-  <article class="agent-concepts-path">
-    <p class="agent-concepts-path__eyebrow">Bring code</p>
-    <h3>Conductor Agent</h3>
-    <dl>
-      <dt>Author behavior</dt><dd>In a Conductor SDK or supported framework, such as OpenAI Agents, Google ADK, LangChain, or LangGraph.</dd>
-      <dt>Conductor runs</dt><dd>A compiled, deployed Conductor Agent graph that a parent workflow invokes through `AGENT`.</dd>
-      <dt>Choose it when</dt><dd>Your team has agent logic in code or a framework and wants to keep that authoring surface while making its execution durable and inspectable.</dd>
-    </dl>
-    <a href="../ai/conductor-agents.html">Learn about Conductor Agents →</a>
-  </article>
-  <article class="agent-concepts-path">
-    <p class="agent-concepts-path__eyebrow">Integrate remotely</p>
-    <h3>Remote A2A agent</h3>
-    <dl>
-      <dt>Author behavior</dt><dd>In an independently deployed service that speaks the Agent2Agent protocol.</dd>
-      <dt>Conductor runs</dt><dd>A durable `AGENT` task that hands work to the remote service and tracks its lifecycle.</dd>
-      <dt>Choose it when</dt><dd>The agent is owned, deployed, or scaled separately and interoperability is more important than compiling it into a local graph.</dd>
-    </dl>
-    <a href="../ai/a2a-integration.html">Integrate an A2A agent →</a>
-  </article>
-</div>
+A Conductor Agent starts as a definition, just like a workflow. The definition names the model to use, the instructions, and the tools the agent may call. Here is that definition in the Python SDK:
 
-## Share one operating model
+```python
+from conductor.ai.agents import Agent, AgentRuntime, tool
 
-A single parent workflow can combine ordinary tasks, native AI tasks, deployed Conductor Agents, and remote A2A calls in sequence or in parallel. Conductor owns the durable orchestration around every step: persisted workflow progress, retries, waits, cancellation, approvals and policy boundaries, and the execution record.
+@tool
+def get_weather(city: str) -> str:
+    return f"Weather for {city}"
 
-Visibility remains path-specific. Native tasks and compiled Conductor Agent graphs run within Conductor. For A2A, Conductor records and manages the durable handoff and lifecycle, while the remote agent's implementation remains remote.
+agent = Agent(name="weather", model="openai/gpt-4o-mini",
+              instructions="Answer concisely.", tools=[get_weather])
+with AgentRuntime() as runtime:
+    print(runtime.run(agent, "Weather in Seattle?").output)
+```
 
-For example, one workflow can validate a request, ask a deployed Conductor Agent to plan the work, send a specialized task to a remote A2A agent, wait for human approval, and then complete the workflow.
+When this runs, Conductor compiles the agent into a workflow graph and executes it. Nothing about that graph is special: each model call is a task, each tool call is a task, and the loop between them is workflow control flow. A run that calls the tool once produces this sequence of tasks:
+
+```mermaid
+flowchart LR
+    prompt(["prompt"]) --> turn1["LLM task<br/>decides to call get_weather"]
+    turn1 --> toolcall["get_weather task<br/>runs your function"]
+    toolcall --> turn2["LLM task<br/>writes the final answer"]
+    turn2 --> answer(["answer"])
+```
+
+That design is the point. Because an agent run is a workflow execution, everything you know about workflows applies. Each turn is persisted, so a crash or restart resumes from the last completed step. Retries and timeouts follow the same policies. A person can approve or reject a step through the same human tasks. And every run leaves a complete history you can inspect and replay.
+
+## How workflows and agents compose
+
+Workflows call agents through the `AGENT` task. To a parent workflow, an agent is one durable step: the workflow reaches the `AGENT` task, the agent runs its turns, and the result comes back as task output. In the workflow definition, it looks like any other task:
+
+```json
+{
+  "name": "run_agent",
+  "taskReferenceName": "run_agent_ref",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "name": "planner",
+    "prompt": "${workflow.input.prompt}"
+  }
+}
+```
+
+The same `AGENT` task can also point at a remote agent that speaks the Agent2Agent (A2A) protocol. In that case the agent's implementation stays remote, while Conductor durably tracks the handoff and its result.
+
+Composition works in the other direction too. An agent's tools can be MCP tools or functions you register with the SDK, and each call runs as a task. So one process can mix ordinary tasks, native AI tasks, deployed agents, and remote agents in a single durable graph.
+
+## Three ways to author an agent
+
+Which path you choose depends on where the behavior should live.
+
+- **A declarative AI workflow** puts the whole loop in the workflow definition itself, using native LLM, MCP, and control-flow tasks. Choose this when you want the complete orchestration visible and versioned as a workflow. Start with [LLM orchestration](../ai/llm-orchestration.md).
+- **A Conductor Agent** is authored in code, with a Conductor SDK or a supported framework such as OpenAI Agents, LangChain, LangGraph, or Google ADK. Conductor compiles it to a workflow graph you deploy and reuse through the `AGENT` task. Choose this when the agent logic already lives in code. Start with [Conductor Agents](../ai/conductor-agents.md).
+- **A remote A2A agent** is a separate service you call through a durable `AGENT` task. Choose this when the agent is owned, deployed, and scaled outside Conductor. Start with [A2A integration](../ai/a2a-integration.md).
 
 ## Take the next step
 

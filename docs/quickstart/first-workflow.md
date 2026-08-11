@@ -1,14 +1,14 @@
 ---
-description: Run your first Conductor workflow locally, verify the result, and take the production path.
+description: Register and run a Conductor workflow from JSON with the CLI — no SDK or worker required.
 ---
 
-# Run your first workflow
-
-**Audience:** developers orchestrating APIs, services, or workers.
+# Run a Workflow from JSON
 
 **Outcome:** a completed, inspectable, two-step workflow—without writing a worker.
 
-Choose [an agent path](choose-path.md) instead if your first result should be an LLM-powered agent.
+**Time:** about 3 minutes.
+
+Prefer to author in code? Start with [your first workflow and worker](first-worker.md) instead.
 
 ## Prerequisites
 
@@ -83,4 +83,4 @@ Expected output values vary because the test endpoint is random, but the shape i
 
 ## Next production step
 
-You now have a verified system-task workflow. To run your own business logic, continue with [Write Your First Worker](first-worker.md). Otherwise, use the [best practices](../devguide/bestpractices.md) to add contracts, workers, retries, tests, deployment, and operations.
+You now have a verified system-task workflow. To run your own business logic, continue with [your first workflow and worker](first-worker.md). Explore [Design Patterns](../devguide/cookbook/index.md) for complete runnable examples, or use the [best practices](../devguide/bestpractices.md) to add contracts, workers, retries, tests, deployment, and operations.

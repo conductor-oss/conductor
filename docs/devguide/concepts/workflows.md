@@ -5,12 +5,7 @@ description: "Understand workflows in Conductor — JSON workflow definition, dy
 # Workflows
 
 <section class="concept-hero concept-hero--workflows">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Durable process graph</p>
-    <h2>Coordinate work across services without losing state.</h2>
-    <p>A workflow defines the path. Conductor records each completed step, so retries, waits, and recovery continue from the last durable checkpoint.</p>
-  </div>
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
+  <svg class="concept-hero__graphic" viewBox="0 36 440 122" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
     <defs><marker id="workflow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="18" y="65" width="112" height="54" rx="10" class="concept-hero__node" />
     <text x="74" y="89" text-anchor="middle" class="concept-hero__label">Definition</text>
@@ -27,7 +22,7 @@ description: "Understand workflows in Conductor — JSON workflow definition, dy
   </svg>
 </section>
 
-A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
+A **workflow** is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
 
 - Classifying documents
 - Ordering from a self-checkout service

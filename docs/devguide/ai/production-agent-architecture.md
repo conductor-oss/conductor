@@ -4,9 +4,9 @@ description: "A compact, framework-neutral blueprint for adopting production AI 
 
 # Production agent architecture
 
-For the focused, runnable implementation of this pattern, start with **[Durable Adaptive Graphs](dynamic-workflows.md)**. Its source-backed `governed_github_pr_reviewer` v1 makes the controls concrete: four durable PR-review passes, a bounded allowlisted deep dive, a compact evidence ledger, and approval before one GitHub comment.
+This page is a reference architecture for running agents in production. The core idea: a parent workflow owns the business process, and an agent runs behind an explicit execution boundary inside it. Nothing irreversible happens on the agent's say-so alone, because the parent validates results and applies approval before any write. The pattern is framework neutral: the agent behind the boundary can be built from native tasks, deployed as a Conductor Agent, or reached remotely over A2A.
 
-This is a compact, framework-neutral parent-workflow blueprint for an agent that plans, acts, waits, recovers, and runs in production. Keep detailed framework setup, A2A protocol behavior, and incident procedures in their specialist guides.
+For a runnable implementation of the pattern, see [Durable Adaptive Graphs](dynamic-workflows.md), which builds a governed PR-review agent with bounded fan-out and human approval before its single side effect.
 
 ## The parent workflow reference path
 
@@ -104,7 +104,7 @@ The parent workflow can use one or more of these execution paths. Choose the pat
 - Run one recovery drill: interrupt a safe execution, locate it by correlation ID, retry, resume, or terminate as appropriate, and verify the audit trail.
 - Keep releases KISS: test the changed path against sandbox tools, deploy it, and retain a known-good definition for rollback.
 
-For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Recipes](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
+For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Bridges](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
 
 ## Native-task implementation: architecture diagram
 
@@ -600,7 +600,7 @@ The parent waits for the child workflow to complete. If it fails, the parent's f
 ## Next steps
 
 - **[Conductor Agents](conductor-agents.md)** — Use this architecture around a deployed SDK-authored agent graph.
-- **[Framework Agent Recipes](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
+- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
 - **[A2A Integration](a2a-integration.md)** — Hand off to independently deployed A2A agents while retaining a durable parent-workflow boundary.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.

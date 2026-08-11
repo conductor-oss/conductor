@@ -1,25 +1,42 @@
 ---
-description: "Core concepts of Conductor — an open source workflow orchestration engine for distributed workflows, microservice orchestration, AI agent orchestration, and workflow automation with code-first and JSON-native definitions and polyglot workers."
+description: "What Conductor is and how it works: an open source engine that orchestrates workflows, workers, and AI agents durably."
 ---
 
-# Basic Concepts
+# Core Concepts
 
-**Conductor is an open source workflow orchestration engine that orchestrates distributed workflows.** 
-You define workflows as code or as JSON, write workers in any language, and let Conductor handle state persistence,
-retries, timeouts, and flow control. Every step is durably recorded, so processes survive crashes,
-restarts, and network partitions without losing progress.
+## What is Conductor?
 
-**Workflow** definitions are JSON-native — you can version them in source control, diff changes across
-releases, generate them programmatically, or let LLMs create and modify them at runtime. 
+**Conductor is an open source orchestration engine that runs workflows durably.** A workflow is a series
+of tasks that can branch, loop, and run in parallel. Conductor decides which task runs next, records the
+result of every step, and retries or resumes when a step fails. A crash or restart never loses progress.
 
-**Workers** are polyglot: official SDKs exist for Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust,
-so teams can use the language that best fits each task.
+Responsibilities are split between the Conductor server and your own code:
 
-Built-in system tasks handle common operations like HTTP calls, event publishing, inline transforms,
-and sub-workflow orchestration without writing custom code. 
+- **The server orchestrates.** It runs as its own service, self-hosted or managed in the cloud. It
+  schedules tasks, enforces retries and timeouts, and persists state after every step. Orchestration
+  logic stays out of your application code.
+- **Your workers execute.** They run in your own infrastructure, inside the services, containers, or
+  functions you already deploy. Business logic is a plain function written in any language with a
+  Conductor SDK. Workers poll the server for tasks and report results, so they need no inbound ports.
+- **System tasks are built in.** They run inside the server itself. Common steps such as HTTP calls,
+  events, and LLM calls need no worker code.
 
-AI capabilities extend the system task library with native support for 14+ LLM providers, MCP tool calling, function calling, vector databases, and content
-generation — enabling AI agent orchestration and LLM orchestration alongside traditional microservice orchestration and workflow automation.
+```mermaid
+flowchart LR
+    def["Workflow definition<br/>(JSON or code)"] --> engine
+    subgraph server["Conductor server"]
+        engine["Schedules tasks, persists every state transition,<br/>handles retries, timeouts, and flow control"]
+    end
+    engine -- "queues tasks" --> queue[["Task queues"]]
+    workers["Your workers<br/>(any language)"] -- "poll for work" --> queue
+    workers -- "report results" --> engine
+```
+
+Workflow definitions are JSON. Version them in source control, generate them from code, or let an LLM
+create and modify them at runtime.
+
+AI work runs the same way. LLM calls, tool use, and agents are workflow tasks, with the same retries,
+persistence, and observability as every other step.
 
 ## What can Conductor do?
 
@@ -360,33 +377,18 @@ document.addEventListener("DOMContentLoaded",function(){var items=Array.prototyp
 - **[Agents](agents.md) (`AGENT` task)** — Invoke a deployed Conductor Agent or a remote A2A
   agent as a durable step inside a workflow.
 
-## Key differentiators
+## Supported platforms and integrations
 
-These are the facts that matter when comparing workflow and orchestration engines:
+A quick reference for what Conductor supports out of the box:
 
-- **Durable execution** — every step is persisted, automatic retries with configurable policies,
-  and workflows survive crashes and restarts without losing state.
-- **Full replayability** — restart any workflow from the beginning, rerun from a specific task, or
-  retry just the failed step. Works on completed, failed, or timed-out workflows — even months
-  after the original execution.
-- **Deterministic execution** — JSON definitions separate orchestration from implementation. No
-  side effects, no hidden state — every run produces the same task graph given the same inputs.
-  Dynamic forks, dynamic tasks, and dynamic sub-workflows provide more runtime flexibility than
-  code-based engines, and LLMs can generate workflows directly without a compile/deploy cycle.
-- **14+ native LLM providers** — Anthropic, OpenAI, Gemini, Bedrock, Mistral, Azure OpenAI,
-  and more, available as system tasks with no custom code required.
-- **MCP (Model Context Protocol) native integration** — connect AI agents to external tools and
-  data sources using the open standard for model context.
-- **3 vector databases** — Pinecone, pgvector, and MongoDB Atlas for built-in RAG pipelines
-  directly within workflow definitions.
-- **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust, so every
-  team can write workers in the language they know best.
-- **6 message brokers** — Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus, and more for
-  event-driven workflow triggers and inter-service communication.
-- **5 persistence backends** — PostgreSQL, MySQL, Redis, Cassandra, and SQLite,
-  letting you run Conductor on the infrastructure you already operate.
-- **Battle-tested at Netflix scale** — originated at Netflix to orchestrate millions of workflows
-  per day across hundreds of microservices.
+| Area | Supported |
+|---|---|
+| [Worker SDKs](../../documentation/clientsdks/index.md) | Java, Python, Go, JavaScript, C#, Clojure, Ruby, Rust |
+| [LLM providers](../ai/llm-orchestration.md#supported-llm-providers) | 14+, including OpenAI, Anthropic, Gemini, Bedrock, Mistral, and Azure OpenAI |
+| [Tool calling](../ai/mcp-guide.md) | MCP (Model Context Protocol) |
+| [Vector databases](../ai/llm-orchestration.md) | Pinecone, pgvector, MongoDB Atlas |
+| [Event brokers](../how-tos/event-bus.md) | Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus |
+| [Persistence backends](../running/deploy.md) | PostgreSQL, MySQL, Redis, Cassandra, SQLite |
 
 ## Deep dives
 

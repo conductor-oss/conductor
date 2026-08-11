@@ -1,20 +1,39 @@
 ---
-description: Write, run, and verify your first Conductor worker in Python, Java, TypeScript/JavaScript, C#, or Rust.
+description: Write, run, and verify your first Conductor workflow and worker in Python, Java, TypeScript/JavaScript, C#, or Rust.
 ---
 
-# Write your first worker
-
-**Audience:** developers who need a workflow to run their own business logic.
+# Your First Workflow & Worker
 
 **Outcome:** a `greetings` workflow that queues a `greet` task and returns `Hello Conductor` from a worker.
+
+**Time:** about 5 minutes.
 
 Complete [Connect to Conductor](connect.md) first. This guide uses the SDK connection variables configured there: `CONDUCTOR_SERVER_URL`, plus `CONDUCTOR_AUTH_KEY` and `CONDUCTOR_AUTH_SECRET` when your server requires them.
 
 ## How a worker runs
 
-When a workflow reaches a `SIMPLE` task, Conductor queues it by the task type—in this example, `greet`. An SDK worker polls that queue, runs your business logic, and reports `COMPLETED` or `FAILED`. Conductor persists the result, then advances the workflow to its next task.
+In this quickstart you build two things: a **workflow** named `greetings` — the durable definition that Conductor executes — and a **worker** — a function in your code that performs one task inside it.
 
-The task type must match in the workflow and worker. Workers can be deployed independently and should be idempotent because a task can be delivered again after a failure or timeout.
+The workflow has a single task of type `SIMPLE`, which means the work is done by your code rather than by one of Conductor's built-in tasks. Every `SIMPLE` task has a task type — here, `greet`. When a running workflow reaches that task, Conductor places it on a queue for that task type. Your worker polls the `greet` queue, runs your business logic, and reports back `COMPLETED` or `FAILED`. Conductor durably persists the result, then advances the workflow to its next task.
+
+Two rules follow from this design:
+
+- The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
+- Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Conductor guarantees at-least-once delivery, meaning the same task can be delivered again after a failure or timeout — so write workers to be idempotent, where running the same task twice produces the same result.
+
+```mermaid
+flowchart LR
+    subgraph server["Conductor server"]
+        wf["greetings workflow"] --> task["greet task (SIMPLE)"]
+    end
+    queue[["greet queue"]]
+    subgraph worker["Your worker"]
+        fn["greet(name)<br/>your business logic"]
+    end
+    task -- "queues by task type" --> queue
+    fn -- "polls" --> queue
+    fn -- "reports COMPLETED / FAILED<br/>Conductor persists result, advances workflow" --> task
+```
 
 ## Language-specific quickstart
 
@@ -429,14 +448,26 @@ See the maintained [Rust SDK quickstart](https://github.com/conductor-oss/rust-s
   })();
 </script>
 
-## Verify and recover
+## Verify durable execution
 
-In the Conductor UI, open the `greetings` execution and inspect the completed `greet_ref` task. Its output should include `result: Hello Conductor`.
+1. Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Click the newest `greetings` execution — the completed `greet_ref` task in the timeline shows `result: Hello Conductor`.
+2. Now watch durability at work. Your quickstart app exited after printing, so no worker is running. Start another execution with the CLI alone:
 
-- If `greet_ref` remains `SCHEDULED`, the worker is not polling the `greet` task type. Confirm the worker is running and that the worker task type is exactly `greet`.
-- If workflow registration says the definition already exists, use a new version or update the local test definition before running it again.
-- If `greet_ref` fails, inspect the task's input, output, and failure reason in the UI; fix the worker, restart it, and start a new execution.
+    ```bash
+    conductor workflow start -w greetings -i '{"name":"Conductor"}'
+    ```
+
+3. Refresh the executions list: the new run is `RUNNING` and `greet_ref` is `SCHEDULED` — durably queued, waiting for a worker. Nothing is lost.
+4. Run your quickstart app again. The worker polls, the waiting task completes, and the execution finishes with `result: Hello Conductor`.
+
+**Troubleshooting**
+
+- `greet_ref` stays `SCHEDULED` even with the app running: the worker is not polling the `greet` task type — confirm the worker is running and its task type is exactly `greet`.
+- Registration says the definition already exists: bump the version or update the local test definition.
+- `greet_ref` is `FAILED`: inspect the task's input, output, and failure reason in the UI, fix the worker, and start a new execution.
 
 ## Keep learning
 
-The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.
+**Next:** [Run your first agent](first-agent.md) — the same durable execution model, applied to an LLM-powered agent.
+
+Prefer no code? [Run a workflow from JSON](first-workflow.md) registers a two-step workflow with the CLI alone. The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.

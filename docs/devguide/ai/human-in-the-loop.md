@@ -4,15 +4,8 @@ description: Human-in-the-loop patterns for AI agents — pre-execution approval
 
 # Human-in-the-loop
 
-<section class="integration-hero integration-hero--hitl" aria-labelledby="hitl-hero-title">
-  <div class="integration-hero__identity" aria-hidden="true">
-    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
-    <span class="integration-hero__connector">→</span>
-    <img class="integration-hero__logo" src="../../assets/images/concepts/human-review.svg" alt="" />
-  </div>
-  <p class="integration-hero__eyebrow">Durable human oversight</p>
-  <h2 id="hitl-hero-title">Put a person exactly where the decision matters.</h2>
-  <p>Pause an agent for approval, preserve its complete state, and resume the same execution when the reviewer responds—whether that takes seconds or days.</p>
+<section class="integration-hero integration-hero--hitl" aria-label="Human-in-the-loop">
+  <p><strong>Human-in-the-loop</strong> means a person makes a decision inside an otherwise automated run: approving a risky action, reviewing a draft, or supplying missing input. In Conductor, the pause is a workflow task. The execution stops at that task with its complete state preserved, waits for the reviewer to respond, and then resumes the same run, whether the answer arrives in seconds or days.</p>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#pre-execution-review">
       <span class="integration-action-card__title">Approve before action</span>

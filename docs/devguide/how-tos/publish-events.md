@@ -4,12 +4,9 @@ description: Publish resolved workflow data to an enabled event sink with EVENT,
 
 # Publish events
 
-<section class="concept-hero concept-hero--event-bus" aria-labelledby="publish-events-title">
+<section class="concept-hero concept-hero--event-bus" aria-label="Publish events">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Outbound workflow events</p>
-    <h2 id="publish-events-title">Publish resolved data to a configured sink</h2>
-    <p><code>EVENT</code> enriches resolved workflow input with durable metadata and publishes it through an enabled provider. Use <code>KAFKA_PUBLISH</code> only when the contract needs Kafka-specific producer controls.</p>
-    <p><a href="../../documentation/configuration/workflowdef/systemtasks/event-task.html">EVENT task reference</a> · <a href="consume-route-events.html">Consume and route events</a></p>
+    <p>A workflow can send a message to the outside world with the <strong><code>EVENT</code> task</strong>. The task takes resolved workflow data, adds durable metadata, and publishes the message to a configured provider such as Kafka or SQS. The publish is a normal step in the execution, so it is recorded and retried like any other task. Use <code>KAFKA_PUBLISH</code> only when you need Kafka-specific producer controls.</p>
   </div>
   <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 190" role="img" aria-labelledby="publish-svg-title publish-svg-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="publish-svg-title">Workflow event publication flow</title>

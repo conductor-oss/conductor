@@ -4,7 +4,9 @@ description: Build, run, trigger, and operate durable Conductor workflows.
 
 # Workflows
 
-A Conductor **workflow definition** is a versioned blueprint: it names the tasks, maps inputs and outputs, and declares control flow. A **workflow execution** is one durable run of that blueprint with its own ID, input, task state, output, and history. Editing a definition does not edit the recorded history of an execution; operators inspect and recover executions, while developers evolve definitions through versions.
+Conductor separates what a workflow is from each instance of when it runs. A **workflow definition** declares which tasks run, in what order, and how data passes between them. When you start a workflow, Conductor creates a **workflow execution**, which is a single run of that blueprint with its own ID, input, and history. Because the two are separate, editing a definition never rewrites the history of an execution that already ran. In practice, developers evolve definitions through versions, while operators inspect and recover executions.
+
+Every workflow moves through the same lifecycle:
 
 ```mermaid
 flowchart LR
@@ -16,7 +18,9 @@ flowchart LR
   evolve --> register
 ```
 
-Conductor persists progress between tasks. That makes workflows useful when work spans services, retries, human decisions, timers, or infrastructure restarts. It also means the task boundary is an operational contract: inputs must be resolvable, failures need a policy, and externally executed tasks need a worker that is actually polling.
+An execution is durable because Conductor saves progress after every task. That is why work can span services, wait on people or timers, and pick up where it left off after a restart. Since Conductor hands work from one task to the next, each task must spell out its own contract: where its inputs come from and what happens when it fails. Worker tasks add one more requirement. If no worker is polling for the task, the workflow simply waits and does not advance.
+
+Day-to-day work with workflows typically falls into one of the following four activities.
 
 <div class="grid cards" markdown>
 

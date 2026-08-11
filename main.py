@@ -11,7 +11,11 @@ import re
 # `look: handDrawn` needs Mermaid >= 11 (bundled by mkdocs-material >= 9.6).
 # `clusterBkg`/`clusterBorder` override Mermaid's hardcoded #ffffde subgraph
 # yellow, which no other theme variable reaches.
-MERMAID_WORKFLOW_INIT = """%%{init: {'look': 'handDrawn', 'theme': 'base', 'themeVariables': {'primaryColor': '#eef2ff', 'primaryBorderColor': '#1e40af', 'primaryTextColor': '#1e293b', 'lineColor': '#1e3a8a', 'edgeLabelBackground': '#ffffff', 'clusterBkg': '#fbfcff', 'clusterBorder': '#2563eb', 'fontFamily': 'Patrick Hand, Segoe Print, cursive', 'fontSize': '16px'}, 'flowchart': {'nodeSpacing': 50, 'rankSpacing': 58, 'padding': 14, 'htmlLabels': true, 'curve': 'basis'}}}%%
+# fontFamily is deliberately the system stack, NOT a webfont: Mermaid measures
+# label widths at render time, and a webfont that finishes loading afterwards
+# swaps in with different metrics and clips the last characters of labels.
+# Must match --md-mermaid-font-family in custom.css.
+MERMAID_WORKFLOW_INIT = """%%{init: {'look': 'handDrawn', 'theme': 'base', 'themeVariables': {'primaryColor': '#eef2ff', 'primaryBorderColor': '#1e40af', 'primaryTextColor': '#1e293b', 'lineColor': '#1e3a8a', 'edgeLabelBackground': '#ffffff', 'clusterBkg': '#fbfcff', 'clusterBorder': '#2563eb', 'fontFamily': '-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif', 'fontSize': '15px'}, 'flowchart': {'nodeSpacing': 50, 'rankSpacing': 58, 'padding': 14, 'htmlLabels': true, 'curve': 'basis'}}}%%
 """
 
 

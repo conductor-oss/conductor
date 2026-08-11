@@ -2,7 +2,7 @@
 description: Canonical, source-backed guidance for AI coding assistants that build or operate Conductor workflows and agents.
 ---
 
-# Conductor for AI assistants
+# Conductor for AI Assistants
 
 Use this page as the canonical starting point when an AI coding assistant needs to help build, review, run, or operate Conductor workflows.
 
@@ -33,7 +33,7 @@ Use the [Agents & AI overview](index.md) for the product map and [framework agen
 |---|---|
 | Create a durable service workflow | [First workflow](../../quickstart/first-workflow.md) |
 | Build a governed plan/act/evaluate loop | [Durable Adaptive Graphs](dynamic-workflows.md) |
-| Bring an existing framework agent (LangChain, ADK, and more) | [Framework Agent Recipes](agent-framework-recipes.md) |
+| Bring an existing framework agent (LangChain, ADK, and more) | [Framework Agent Bridges](agent-framework-recipes.md) |
 | Add policy and approval | [Agent Guardrails](agent-guardrails.md) |
 | Test routes, tools, and output quality | [Agent Evals](agent-evals.md) |
 | Design a production agent system | [Production Agent Architecture](production-agent-architecture.md) |

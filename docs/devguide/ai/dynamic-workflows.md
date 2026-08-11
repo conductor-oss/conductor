@@ -1,5 +1,5 @@
 ---
-description: Build a four-pass, approval-gated GitHub pull-request reviewer with durable state, adaptive fan-out, and auditable execution.
+description: "A durable adaptive graph is a workflow where an agent chooses its next steps at runtime, while every choice is validated, persisted, and gated by approval. This page builds a complete example: a GitHub pull-request reviewer that gathers evidence in four durable passes, then asks a human before posting a single comment."
 ---
 
 # Durable Adaptive Graphs

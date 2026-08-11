@@ -4,15 +4,8 @@ description: "Build your first agentic workflow graph — compose an SDK-authore
 
 # Build Your First Agentic Workflow Graph
 
-<section class="integration-hero integration-hero--first-agent" aria-labelledby="first-agent-hero-title">
-  <div class="integration-hero__identity" aria-hidden="true">
-    <img class="integration-hero__logo" src="../../assets/images/concepts/ai-agent.svg" alt="" />
-    <span class="integration-hero__connector">→</span>
-    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
-  </div>
-  <p class="integration-hero__eyebrow">Your first agentic workflow graph</p>
-  <h2 id="first-agent-hero-title">Keep the agent in an SDK. Put it in a durable graph.</h2>
-  <p>Author an agent with the SDK or framework you prefer, then compose it with ordinary Conductor tasks. This first graph fetches context over HTTP and sends it to a reusable <code>AGENT</code> task.</p>
+<section class="integration-hero integration-hero--first-agent" aria-label="Build your first agentic workflow graph">
+  <p>An <strong>agentic workflow graph</strong> is a workflow that includes an agent as one of its steps. The agent handles the reasoning, and the workflow handles everything around it: gathering context, branching, retries, and approvals. On this page you build the smallest useful version: an HTTP task fetches context, and a reusable <code>AGENT</code> task passes it to an agent you deploy with the SDK.</p>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#step-1-build-and-deploy-an-agent-with-the-sdk">
       <span class="integration-action-card__title">Author the agent</span>
@@ -49,7 +42,7 @@ Start with one of these maintained, runnable SDK paths:
 
 - [Run Your First Conductor Agent](../../quickstart/first-agent.md) — Python example; Conductor Agents also support Java, TypeScript/JavaScript, and C#.
 - [Framework Agent Quickstarts](../../quickstart/framework-agents.md) — OpenAI Agents, Google ADK, LangChain/LangChain4j, LangGraph/LangGraph4j, and Vercel AI SDK.
-- [Framework Agent Recipes](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every bridge.
+- [Framework Agent Bridges](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every bridge.
 
 For this tutorial, deploy an agent named `greeter`. The agent takes a prompt and returns a concise answer. The framework code belongs in the maintained SDK example; the workflow below needs only the stable deployed-agent contract.
 
@@ -183,6 +176,6 @@ From here, add ordinary Conductor capabilities around the same agent: a `HUMAN` 
 ## Next steps
 
 - [Conductor Agents](conductor-agents.md) — complete `AGENT` input, output, wait/resume, timeout, and cancellation contract.
-- [Framework Agent Recipes](agent-framework-recipes.md) — choose the supported SDK bridge for your framework.
+- [Framework Agent Bridges](agent-framework-recipes.md) — choose the supported SDK bridge for your framework.
 - [Human-in-the-Loop](human-in-the-loop.md) — pause a graph for review and resume an agent safely.
 - [A2A Integration](a2a-integration.md) — use a remote A2A agent instead of an SDK-authored Conductor Agent.

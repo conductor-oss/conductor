@@ -2,18 +2,14 @@
 description: Run an existing OpenAI Agents, Google ADK, LangChain, or LangGraph agent through Conductor's durable runtime.
 ---
 
-# Framework agent quickstarts
-
-**Audience:** teams with an existing framework agent; this guide uses Python framework bridges.
+# Bring Your Framework Agent
 
 **Outcome:** your framework agent runs through Conductor and produces an inspectable execution.
 
-For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). The bridges below keep the framework object you already author; Conductor provides the durable runtime around it.
+This page is for agents you have already built in another framework, such as OpenAI Agents, LangChain, LangGraph, or Google ADK. A **bridge** is the SDK adapter that lets Conductor run such an agent: you keep the agent object your framework already defines, and the bridge runs it as a durable, inspectable Conductor execution. If you are starting from scratch instead, build a native agent with [Your First Agent](first-agent.md).
 
 <section class="framework-hero" aria-labelledby="framework-quickstarts-title">
-  <p class="framework-hero__eyebrow">Framework bridges</p>
   <h2 id="framework-quickstarts-title">Bring your existing agent.</h2>
-  <p>Choose the framework you already use. Conductor runs its agent through a durable, inspectable execution.</p>
   <div class="framework-logo-grid framework-logo-grid--quickstart">
     <a class="framework-logo-card" href="#openai-agents-sdk" aria-label="OpenAI Agents SDK quickstart">
       <img class="framework-logo framework-logo--wide" src="../assets/images/frameworks/openai.svg" alt="" />
@@ -23,11 +19,11 @@ For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md).
       <img class="framework-logo" src="../assets/images/frameworks/langchain.svg" alt="" />
       <span>LangChain</span>
     </a>
-    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#google-adk" aria-label="Google ADK recipe">
+    <a class="framework-logo-card" href="#google-adk" aria-label="Google ADK quickstart">
       <img class="framework-logo" src="../assets/images/frameworks/google-adk.svg" alt="" />
       <span>Google ADK</span>
     </a>
-    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#vercel-ai-sdk" aria-label="Vercel AI SDK recipe">
+    <a class="framework-logo-card" href="https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/vercel-ai" aria-label="Vercel AI SDK examples on GitHub">
       <img class="framework-logo" src="../assets/images/frameworks/vercel.svg" alt="" />
       <span>Vercel AI SDK</span>
     </a>
@@ -36,7 +32,7 @@ For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md).
 
 ## Prerequisites
 
-Complete [Connect to Conductor](connect.md), including the hosted model integration or local provider API-key setup required by the selected model. Install the package extra that matches your framework. The examples use an OpenAI model; supply the credentials your framework/model needs.
+First, complete [Connect to Conductor](connect.md) so the runtime can reach your server. Then make sure the server can call your model provider. On Developer Edition, add the provider as an [AI/LLM integration](https://orkes.io/content/category/integrations/ai-llm); on a local server, [export the provider API key](../devguide/ai/llm-orchestration.md#supported-llm-providers) before starting it. Each framework section below begins with the install command for its bridge. Most examples use an OpenAI model, and the Google ADK example uses Gemini, so supply the matching credentials.
 
 ## OpenAI Agents SDK
 
@@ -154,6 +150,8 @@ Save the file as `adk_agent.py` and run `python adk_agent.py`.
 For every bridge, verify the printed result and find the corresponding execution in the Conductor UI. If it fails, first check the runtime server URL, framework package, and provider credentials; then inspect the failed task before retrying. Do not retry an agent action that may have performed an external side effect until its idempotency and recovery policy are clear.
 
 ## Next production step
+
+**Next:** every entry in [Design Patterns → Agent Recipes](../devguide/ai/cookbook/index.md) is a complete, runnable example — handoffs, memory, guardrails, parallel agents, and more.
 
 Use the [production agent architecture](../devguide/ai/production-agent-architecture.md) to add governance, evaluations, deployment, composition, and operations. The [Python SDK framework-agent guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md) remains the source for the current bridge API and support matrix.
 

@@ -5,12 +5,7 @@ description: "Learn about tasks in Conductor — the reusable building blocks of
 # Tasks
 
 <section class="concept-hero concept-hero--tasks">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Composable workflow steps</p>
-    <h2>Use built-ins for common work and workers for your own logic.</h2>
-    <p>Each task receives resolved input, performs one focused operation, and records output that later workflow steps can safely consume.</p>
-  </div>
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="A workflow routes work to a system task or worker task and receives a recorded output">
+  <svg class="concept-hero__graphic" viewBox="0 20 440 150" role="img" aria-label="A workflow routes work to a system task or worker task and receives a recorded output">
     <defs><marker id="task-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="14" y="68" width="105" height="54" rx="10" class="concept-hero__node" />
     <text x="66" y="91" text-anchor="middle" class="concept-hero__label">Workflow</text>
@@ -23,15 +18,14 @@ description: "Learn about tasks in Conductor — the reusable building blocks of
     <rect x="199" y="110" width="122" height="52" rx="10" class="concept-hero__node" />
     <text x="260" y="133" text-anchor="middle" class="concept-hero__label">Worker task</text>
     <text x="260" y="150" text-anchor="middle" class="concept-hero__detail">your code</text>
-    <path d="M321 54 H350 V95 H378" class="concept-hero__line" marker-end="url(#task-arrow)" />
+    <path d="M321 54 H350 V95 H360" class="concept-hero__line" marker-end="url(#task-arrow)" />
     <path d="M321 136 H350 V95" class="concept-hero__line" />
-    <rect x="384" y="68" width="44" height="54" rx="10" class="concept-hero__outcome-box" />
-    <text x="406" y="91" text-anchor="middle" class="concept-hero__label">Out</text>
-    <text x="406" y="108" text-anchor="middle" class="concept-hero__detail">put</text>
+    <rect x="366" y="68" width="66" height="54" rx="10" class="concept-hero__outcome-box" />
+    <text x="399" y="100" text-anchor="middle" class="concept-hero__label">Output</text>
   </svg>
 </section>
 
-A task is the basic building block of a Conductor workflow. They are reusable and modular, representing steps in your application like processing data files, calling an AI model, or executing some logic.
+A **task** is the basic building block of a Conductor workflow. They are reusable and modular, representing steps in your application like processing data files, calling an AI model, or executing some logic.
 
 In Conductor, tasks can be defined, configured, and then executed. Learn more about the distinct but related concepts, **task definition**, **task configuration**, and **task execution** below.
 

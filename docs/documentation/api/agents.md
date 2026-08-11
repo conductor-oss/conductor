@@ -96,5 +96,5 @@ The skill endpoints are present only when skill packages are enabled on the serv
 ## Related guides
 
 - [Conductor Agents](../../devguide/ai/conductor-agents.md) — SDK creation, deploy/serve lifecycle, and use as an `AGENT` task.
-- [Framework Agent Recipes](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agent paths.
+- [Framework Agent Bridges](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agent paths.
 - [A2A Integration](../../devguide/ai/a2a-integration.md) — Remote A2A agents; this is a separate `AGENT` mode.
