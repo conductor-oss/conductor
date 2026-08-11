@@ -5,19 +5,7 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
 # Conductor Agents
 
 <section class="integration-hero integration-hero--agents" aria-labelledby="conductor-agents-hero-title">
-  <div class="integration-hero__identity integration-hero__identity--conductor" aria-hidden="true">
-    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
-  </div>
-  <p class="integration-hero__eyebrow">SDK-authored durable agents</p>
-  <h2 id="conductor-agents-hero-title">Keep your framework. Get a durable graph.</h2>
-  <p>Author agents with the SDK or framework your team already uses. Conductor compiles the result into an inspectable, retryable graph that larger workflows can invoke.</p>
-  <div class="agent-framework-strip" aria-label="Supported Conductor Agent authoring paths">
-    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/openai.svg" alt="" />OpenAI Agents</span>
-    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/google-adk.svg" alt="" />Google ADK</span>
-    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/langchain.svg" alt="" />LangChain</span>
-    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/langgraph.svg" alt="" />LangGraph</span>
-    <span class="agent-framework-strip__item"><img src="../../assets/images/frameworks/vercel.svg" alt="" />Vercel AI SDK</span>
-  </div>
+  <h2 id="conductor-agents-hero-title">Get started with Conductor Agents</h2>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="../../quickstart/first-agent.html">
       <span class="integration-action-card__title">Author a Conductor Agent</span>
