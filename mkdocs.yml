@@ -83,24 +83,26 @@ nav:
   - Agents:
     - Overview: devguide/ai/index.md
     - Agent Concepts: devguide/concepts/agents.md
-    - Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
-    - Conductor Agents: devguide/ai/conductor-agents.md
     - Durable Agents: devguide/ai/durable-agents.md
-    - Build Agentic Workflow Graph: devguide/ai/first-ai-agent.md
-    - Durable Adaptive Graphs: devguide/ai/dynamic-workflows.md
-    - Multi-Agent Architecture: devguide/ai/multi-agent-architecture.md
-    - Agent Configuration: devguide/ai/agent-configuration.md
-    - Deploying Agents: devguide/ai/deploying-agents.md
-    - Scheduling Agents: devguide/ai/scheduling-agents.md
-    - Framework Agent Bridges: devguide/ai/agent-framework-recipes.md
-    - LLM Orchestration: devguide/ai/llm-orchestration.md
-    - Token Efficiency: devguide/ai/token-efficiency.md
+    - Why Conductor for Agents: devguide/ai/why-conductor.md
+    - Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
+    - Build:
+      - Conductor Agents: devguide/ai/conductor-agents.md
+      - Framework Agent Bridges: devguide/ai/agent-framework-recipes.md
+      - Build Agentic Workflow Graph: devguide/ai/first-ai-agent.md
+      - LLM Orchestration: devguide/ai/llm-orchestration.md
+      - Durable Adaptive Graphs: devguide/ai/dynamic-workflows.md
+      - Multi-Agent Architecture: devguide/ai/multi-agent-architecture.md
+    - Operate:
+      - Agent Configuration: devguide/ai/agent-configuration.md
+      - Deploying Agents: devguide/ai/deploying-agents.md
+      - Scheduling Agents: devguide/ai/scheduling-agents.md
+      - Token Efficiency: devguide/ai/token-efficiency.md
     - Govern:
       - Agent Guardrails: devguide/ai/agent-guardrails.md
       - Agent Evals: devguide/ai/agent-evals.md
       - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
       - Failure Semantics: devguide/ai/failure-semantics.md
-    - Why Conductor for Agents: devguide/ai/why-conductor.md
     - Production Agent Architecture: devguide/ai/production-agent-architecture.md
   - Design Patterns:
     - Overview: devguide/cookbook/index.md
