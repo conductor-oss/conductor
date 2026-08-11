@@ -114,9 +114,9 @@ description: Conductor is an open-source platform for building production-grade 
     </a>
     <a class="integration-action-card" href="devguide/cookbook/index.html">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
-      <span class="integration-action-card__title">Cookbook</span>
+      <span class="integration-action-card__title">Design Patterns</span>
       <span>Reference patterns for microservices, timers, event-driven workflows, and AI orchestration.</span>
-      <span class="home-card-cta">Browse recipes &rarr;</span>
+      <span class="home-card-cta">Browse patterns &rarr;</span>
     </a>
   </div>
 </div>

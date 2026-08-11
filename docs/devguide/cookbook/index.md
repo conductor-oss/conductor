@@ -1,14 +1,12 @@
 ---
-description: "Conductor cookbook — copy-paste workflow orchestration recipes for microservice orchestration, dynamic parallelism, event-driven patterns, AI agent orchestration, LLM orchestration, workflow automation, and RAG pipelines."
+description: "Complete, runnable Conductor workflow definitions for common orchestration problems: parallelism, sagas, timers, events, and AI agent patterns."
 ---
 
-# Cookbook
+# Design Patterns
 
 <section class="concept-hero concept-hero--cookbook">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Production patterns</p>
-    <h2>Start with a proven workflow shape.</h2>
-    <p>Choose a recipe for the orchestration problem at hand, adapt the complete definition, and run it with durable state, retries, and visibility built in.</p>
+    <p>Design patterns are complete, runnable workflow definitions for common orchestration problems. Each page takes one problem, such as parallel fan-out, sagas, timers, or human approval, and gives you a working definition to register, run, and adapt to your own tasks. The section is grouped into workflow patterns, agentic patterns, and agent recipes.</p>
   </div>
   <svg class="concept-hero__graphic cookbook-hero__graphic" viewBox="0 0 440 205" role="img" aria-label="Cookbook recipes for services, parallel work, timers, events, AI, and code flow into a durable Conductor workflow">
     <defs><marker id="cookbook-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
