@@ -8,7 +8,7 @@ description: "Learning paths, examples, videos, and community resources for Cond
 
 ## Recommended: Orkes Academy
 
-[Orkes Academy](https://orkes.io/academy) is the guided way to learn Conductor. It offers free, hands-on courses that take you from your first workflow through production patterns, with shareable certificates when you complete them. If you prefer structured lessons over piecing the docs together yourself, start there.
+[Orkes Academy](https://orkes.io/academy) offers free, hands-on courses that take you from your first workflow through production patterns, with shareable certificates when you complete them. If you prefer structured lessons over piecing the docs together yourself, start there.
 
 </section>
 
