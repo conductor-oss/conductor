@@ -19,11 +19,11 @@ This page is for agents you have already built in another framework, such as Ope
       <img class="framework-logo" src="../assets/images/frameworks/langchain.svg" alt="" />
       <span>LangChain</span>
     </a>
-    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#google-adk" aria-label="Google ADK recipe">
+    <a class="framework-logo-card" href="#google-adk" aria-label="Google ADK quickstart">
       <img class="framework-logo" src="../assets/images/frameworks/google-adk.svg" alt="" />
       <span>Google ADK</span>
     </a>
-    <a class="framework-logo-card" href="../devguide/ai/agent-framework-recipes.html#vercel-ai-sdk" aria-label="Vercel AI SDK recipe">
+    <a class="framework-logo-card" href="#sdk-examples" aria-label="Vercel AI SDK examples">
       <img class="framework-logo" src="../assets/images/frameworks/vercel.svg" alt="" />
       <span>Vercel AI SDK</span>
     </a>
