@@ -17,25 +17,6 @@ You can write a [workflow definition](../documentation/configuration/workflowdef
 4. **Dynamic creation.** You can [construct a workflow definition as a JSON object at runtime](../devguide/cookbook/dynamic-workflows.md) and pass it directly to the [`StartWorkflowRequest` API](../documentation/api/startworkflow.md). Conductor executes it immediately without pre-registration.
 
 
-## Why this matters for agents
-
-### Agents produce structured output, and JSON is native
-
-LLMs already produce structured output in the form of function calls and JSON responses. A Conductor workflow definition is the same kind of object. An LLM can therefore generate a workflow definition directly. Your application validates the plan and applies its [policy boundaries](../devguide/ai/agent-guardrails.md), and Conductor executes it.
-
-### Runtime generation without compile/deploy
-
-Most engines require code changes, a compile, and a deploy before a new workflow can run. Conductor does not. A planner agent generates a definition as JSON, your code sends it to [`POST /api/workflow`](../documentation/api/startworkflow.md) with the definition inline, and Conductor validates, persists, and executes it immediately. The result is as durable, observable, and retryable as any pre-registered workflow.
-
-### Inspectability and auditability
-
-Every execution records the definition snapshot it used, every task's input, output, status, and retry history, and the workflow's own input, output, and state transitions. You can query, diff, export, and [replay](durable-execution.md#replay-and-recovery) any execution. For agent workflows, that record shows what the agent planned, which tools it called, what the model returned, and [what a person approved](../devguide/ai/human-in-the-loop.md).
-
-### Diffable versioning
-
-Because definitions are JSON, they belong in source control. You can review changes in pull requests, diff two versions to see exactly what changed, and [roll back by re-registering an earlier version](../devguide/how-tos/Workflows/versioning-workflows.md). Multiple versions can run side by side, which makes canary rollouts straightforward. Running executions are never affected by any of this, because each keeps the snapshot taken at start.
-
-
 ## Dynamic workflows in detail
 
 Conductor supports three levels of runtime flexibility.
@@ -125,6 +106,25 @@ A JSON definition describes what runs and in what order. It contains no executab
 Because the definition is inert, execution is deterministic. Given the same inputs, Conductor schedules the same tasks in the same order every time. There is no ambient state and no hidden mutation. That is why [replay](durable-execution.md#replay-and-recovery) works unconditionally: restart a workflow from months ago and it re-executes the same graph. Engines that embed orchestration in application code can only promise this by restricting what your code is allowed to do.
 
 The same split keeps orchestration and implementation separate. Sequencing, branching, retries, and timeouts live in the definition. Implementation logic lives in workers, in any language. You can change a worker without touching the workflow, and change the workflow without redeploying workers.
+
+
+## Why this matters for agents
+
+### Agents produce structured output, and JSON is native
+
+LLMs already produce structured output in the form of function calls and JSON responses. A Conductor workflow definition is the same kind of object. An LLM can therefore generate a workflow definition directly. Your application validates the plan and applies its [policy boundaries](../devguide/ai/agent-guardrails.md), and Conductor executes it.
+
+### Runtime generation without compile/deploy
+
+Most engines require code changes, a compile, and a deploy before a new workflow can run. Conductor does not. A planner agent generates a definition as JSON, your code sends it to [`POST /api/workflow`](../documentation/api/startworkflow.md) with the definition inline, and Conductor validates, persists, and executes it immediately. The result is as durable, observable, and retryable as any pre-registered workflow.
+
+### Inspectability and auditability
+
+Every execution records the definition snapshot it used, every task's input, output, status, and retry history, and the workflow's own input, output, and state transitions. You can query, diff, export, and [replay](durable-execution.md#replay-and-recovery) any execution. For agent workflows, that record shows what the agent planned, which tools it called, what the model returned, and [what a person approved](../devguide/ai/human-in-the-loop.md).
+
+### Diffable versioning
+
+Because definitions are JSON, they belong in source control. You can review changes in pull requests, diff two versions to see exactly what changed, and [roll back by re-registering an earlier version](../devguide/how-tos/Workflows/versioning-workflows.md). Multiple versions can run side by side, which makes canary rollouts straightforward. Running executions are never affected by any of this, because each keeps the snapshot taken at start.
 
 
 ## Exposing workflows as APIs and MCP tools
