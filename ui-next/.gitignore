@@ -10,12 +10,17 @@ dist
 build
 storybook-static
 
+# Marker written by build:lib:watch (detected by enterprise conductor-ui)
+.lib-watch
+
 # Test / Playwright
 /test-results/
 /playwright-report/
 /playwright-integration-report/
 /playwright-snapshots-report/
+/playwright-coverage-report/
 /playwright/.cache/
+/.playwright-coverage/
 
 # pnpm store (created inside project when running in Docker)
 .pnpm-store/

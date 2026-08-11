@@ -25,6 +25,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,6 +43,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -69,6 +71,7 @@ public class AgentService {
     private final MetadataDAO metadataDAO;
 
     private final WorkflowService workflowService;
+    private final AgentExecutionTokenUsageAggregator executionTokenUsageAggregator;
     private final TaskService taskService;
     private final WorkflowExecutor workflowExecutor;
 
@@ -559,7 +562,11 @@ public class AgentService {
 
     /** Resume a paused agent execution. */
     public void resumeAgent(String executionId) {
-        workflowService.resumeWorkflow(executionId);
+        try {
+            workflowService.resumeWorkflow(executionId);
+        } catch (IllegalStateException e) {
+            throw new ConflictException(e.getMessage());
+        }
     }
 
     /** Cancel a running agent execution. */
@@ -675,6 +682,9 @@ public class AgentService {
         // Set the stop flag — the DoWhile loop condition checks this variable.
         // Get the workflow model, update its variables map, and persist.
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_stop_requested", true);
         executionDAO.updateWorkflow(workflow);
         // Note: the SDK also sends a WMQ unblock message via the Conductor client
@@ -690,6 +700,9 @@ public class AgentService {
      */
     public void signalAgent(String executionId, String message) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_signal_injection", message != null ? message : "");
         executionDAO.updateWorkflow(workflow);
     }
@@ -1211,6 +1224,10 @@ public class AgentService {
             }
             return normalizerRegistry.normalize(request.getFramework(), request.getRawConfig());
         }
+        if (request.getAgentConfig() == null) {
+            throw new IllegalArgumentException(
+                    "agentConfig is required when framework is not specified");
+        }
         return request.getAgentConfig();
     }
 
@@ -1219,6 +1236,7 @@ public class AgentService {
     /** Open an SSE stream for an agent execution. Replays missed events on reconnect. */
     public SseEmitter openStream(String executionId, Long lastEventId) {
         log.info("Opening SSE stream for execution {} (lastEventId={})", executionId, lastEventId);
+        workflowService.getExecutionStatus(executionId, false);
         return streamRegistry.register(executionId, lastEventId);
     }
 
@@ -1443,105 +1461,10 @@ public class AgentService {
      * sub-workflow tree. Descendants are loaded inside the server, avoiding one large HTTP response
      * per child in the UI.
      */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> getFullExecutionWithAggregate(String executionId) {
+    public Workflow getFullExecutionWithAggregate(String executionId) {
         Workflow root = getFullExecution(executionId);
-        Map<String, Object> response = MAPPER.convertValue(root, Map.class);
-        response.put(
-                "aggregateTokenUsage",
-                aggregateTokenUsage(
-                        root,
-                        childId -> {
-                            try {
-                                return workflowService.getExecutionStatus(childId, true);
-                            } catch (RuntimeException e) {
-                                // A pruned or temporarily unavailable child must not make the
-                                // parent execution page unavailable.
-                                log.warn(
-                                        "Unable to include sub-workflow {} in token aggregation for {}",
-                                        childId,
-                                        executionId,
-                                        e);
-                                return null;
-                            }
-                        }));
-        return response;
-    }
-
-    /**
-     * Walks each execution once and sums actual LLM usage. Child IDs on SUB_WORKFLOW tasks are the
-     * strongly consistent hierarchy source; the indexed parentWorkflowId field can lag active
-     * executions and does not contain task-level token values.
-     */
-    @VisibleForTesting
-    static Map<String, Long> aggregateTokenUsage(
-            Workflow root, Function<String, Workflow> childLoader) {
-        long promptTokens = 0;
-        long completionTokens = 0;
-        long totalTokens = 0;
-        Set<String> visited = new HashSet<>();
-        Set<String> scheduled = new HashSet<>();
-        Deque<Workflow> pending = new ArrayDeque<>();
-        pending.add(root);
-        if (StringUtils.isNotBlank(root.getWorkflowId())) {
-            scheduled.add(root.getWorkflowId());
-        }
-
-        while (!pending.isEmpty()) {
-            Workflow workflow = pending.removeFirst();
-            String workflowId = workflow.getWorkflowId();
-            if (workflowId != null && !visited.add(workflowId)) {
-                continue;
-            }
-
-            List<Task> workflowTasks = workflow.getTasks();
-            if (workflowTasks == null) {
-                continue;
-            }
-            for (Task task : workflowTasks) {
-                if ("LLM_CHAT_COMPLETE".equalsIgnoreCase(task.getTaskType())) {
-                    Map<String, Object> output = task.getOutputData();
-                    if (output != null) {
-                        long taskPromptTokens = toLong(output.get("promptTokens"));
-                        long taskCompletionTokens = toLong(output.get("completionTokens"));
-                        long taskTotalTokens = toLong(output.get("tokenUsed"));
-                        promptTokens += taskPromptTokens;
-                        completionTokens += taskCompletionTokens;
-                        totalTokens +=
-                                taskTotalTokens > 0
-                                        ? taskTotalTokens
-                                        : taskPromptTokens + taskCompletionTokens;
-                    }
-                }
-
-                String childId = task.getSubWorkflowId();
-                // Mark a child before loading it so duplicate SUB_WORKFLOW references do not issue
-                // repeated database reads while the first copy is still waiting in the queue.
-                if (StringUtils.isNotBlank(childId) && scheduled.add(childId)) {
-                    Workflow child = childLoader.apply(childId);
-                    if (child != null) {
-                        pending.addLast(child);
-                    }
-                }
-            }
-        }
-
-        Map<String, Long> aggregate = new LinkedHashMap<>();
-        aggregate.put("promptTokens", promptTokens);
-        aggregate.put("completionTokens", completionTokens);
-        aggregate.put("totalTokens", totalTokens);
-        return aggregate;
-    }
-
-    private static long toLong(Object value) {
-        if (value instanceof Number) return ((Number) value).longValue();
-        if (value instanceof String) {
-            try {
-                return Long.parseLong((String) value);
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return 0;
+        root.setAggregateTokenUsage(executionTokenUsageAggregator.aggregate(root));
+        return root;
     }
 
     public void restartExecution(String executionId, boolean useLatestDefinitions) {

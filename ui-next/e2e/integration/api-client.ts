@@ -52,10 +52,31 @@ export interface WorkflowSummary {
   endTime?: string;
 }
 
+export interface WorkflowTaskExecution {
+  taskType: string;
+  referenceTaskName: string;
+  status: string;
+  outputData?: Record<string, unknown>;
+}
+
+export interface WorkflowExecution {
+  workflowId: string;
+  status: string;
+  workflowType: string;
+  tasks?: WorkflowTaskExecution[];
+}
+
 export interface SearchResult<T> {
   totalHits: number;
   results: T[];
 }
+
+const TERMINAL_WORKFLOW_STATUSES = new Set([
+  "COMPLETED",
+  "FAILED",
+  "TIMED_OUT",
+  "TERMINATED",
+]);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -124,13 +145,36 @@ export async function startWorkflow(
     const text = await res.text().catch(() => "");
     throw new Error(`POST /api/workflow → ${res.status}: ${text}`);
   }
-  return res.text();
+  return (await res.text()).trim();
 }
 
 export async function getWorkflowExecution(
   workflowId: string,
-): Promise<{ workflowId: string; status: string; workflowType: string }> {
+): Promise<WorkflowExecution> {
   return request("GET", `/workflow/${workflowId}`);
+}
+
+/** Polls until the workflow reaches a terminal status or the timeout elapses. */
+export async function waitForWorkflow(
+  workflowId: string,
+  {
+    timeoutMs = 60_000,
+    pollMs = 1_000,
+  }: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<WorkflowExecution> {
+  const deadline = Date.now() + timeoutMs;
+  let last: WorkflowExecution | undefined;
+  while (Date.now() < deadline) {
+    last = await getWorkflowExecution(workflowId);
+    if (TERMINAL_WORKFLOW_STATUSES.has(last.status)) {
+      return last;
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  throw new Error(
+    `Workflow ${workflowId} did not reach a terminal status within ${timeoutMs}ms` +
+      (last ? ` (last status: ${last.status})` : ""),
+  );
 }
 
 export async function searchWorkflows(params: {
@@ -170,4 +214,114 @@ export async function getTaskDef(taskType: string): Promise<TaskDef> {
 
 export async function deleteTaskDef(taskType: string): Promise<void> {
   await request<void>("DELETE", `/metadata/taskdefs/${taskType}`);
+}
+
+// ── Agents (AgentSpan — requires conductor.integrations.ai.enabled=true) ───────
+
+export interface AgentSummary {
+  name: string;
+  version?: number;
+}
+
+export interface AgentDeployResponse {
+  agentName: string;
+}
+
+/** Returns true when GET /api/agent/list is available (AI integrations enabled). */
+export async function isAgentApiAvailable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${BASE}/agent/list`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function listAgents(): Promise<AgentSummary[]> {
+  return request<AgentSummary[]>("GET", "/agent/list");
+}
+
+/**
+ * Compiles and registers an agent definition via POST /api/agent/deploy.
+ * Does not start an execution.
+ */
+export async function deployAgent(
+  agentName: string,
+  options: {
+    model?: string;
+    instructions?: string;
+    maxTurns?: number;
+  } = {},
+): Promise<AgentDeployResponse> {
+  return request<AgentDeployResponse>("POST", "/agent/deploy", {
+    agentConfig: {
+      name: agentName,
+      model: options.model ?? "openai/gpt-4o-mini",
+      instructions:
+        options.instructions ??
+        "You are a concise test agent. Answer in one sentence.",
+      maxTurns: options.maxTurns ?? 1,
+    },
+  });
+}
+
+export async function deleteAgent(
+  agentName: string,
+  version?: number,
+): Promise<void> {
+  const qs = version !== undefined ? `?version=${version}` : "";
+  await request<void>("DELETE", `/agent/${encodeURIComponent(agentName)}${qs}`);
+}
+
+export interface AgentStatus {
+  executionId: string;
+  status: string;
+  isComplete: boolean;
+  isRunning: boolean;
+  isWaiting?: boolean;
+  output?: Record<string, unknown> | null;
+  reasonForIncompletion?: string;
+}
+
+const TERMINAL_AGENT_STATUSES = new Set([
+  "COMPLETED",
+  "FAILED",
+  "TIMED_OUT",
+  "TERMINATED",
+]);
+
+export async function getAgentStatus(
+  executionId: string,
+): Promise<AgentStatus> {
+  return request<AgentStatus>(
+    "GET",
+    `/agent/${encodeURIComponent(executionId)}/status`,
+  );
+}
+
+/** Polls GET /api/agent/{id}/status until terminal or timeout. */
+export async function waitForAgentExecution(
+  executionId: string,
+  {
+    timeoutMs = 180_000,
+    pollMs = 2_000,
+  }: { timeoutMs?: number; pollMs?: number } = {},
+): Promise<AgentStatus> {
+  const deadline = Date.now() + timeoutMs;
+  let last: AgentStatus | undefined;
+  while (Date.now() < deadline) {
+    last = await getAgentStatus(executionId);
+    if (last.isComplete || TERMINAL_AGENT_STATUSES.has(last.status)) {
+      return last;
+    }
+    await new Promise((r) => setTimeout(r, pollMs));
+  }
+  throw new Error(
+    `Agent execution ${executionId} did not reach a terminal status within ${timeoutMs}ms` +
+      (last
+        ? ` (last status: ${last.status}, reason: ${last.reasonForIncompletion ?? "n/a"})`
+        : ""),
+  );
 }

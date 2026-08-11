@@ -34,6 +34,7 @@ import {
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import {
+  AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   WORKFLOW_EXECUTION_URL,
 } from "utils/constants/route";
@@ -88,6 +89,8 @@ const SecondaryActions = ({
   const isDynamic = (
     execution?.input?._systemMetadata as Record<string, unknown>
   )?.dynamic;
+  const isAgentExecution = isAgentWorkflowExecution(execution);
+  const definitionName = execution.workflowType || execution.workflowName || "";
   return (
     execution && (
       <Box
@@ -127,9 +130,13 @@ const SecondaryActions = ({
                 startIcon={<OpenIcon />}
                 sx={{ minWidth: "fit-content" }}
                 component={NavLink as React.ElementType}
-                path={`/workflowDef/${encodeURIComponent(
-                  execution.workflowType || execution.workflowName || "",
-                )}/${execution.workflowVersion}`}
+                path={
+                  isAgentExecution
+                    ? `${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(
+                        definitionName,
+                      )}/${execution.workflowVersion}`
+                    : `/workflowDef/${encodeURIComponent(definitionName)}/${execution.workflowVersion}`
+                }
               >
                 View definition
               </Button>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { Box, MenuItem, Select, SelectChangeEvent, Alert } from "@mui/material";
@@ -6,6 +6,7 @@ import { AgentExecutionHeader } from "./AgentExecutionHeader";
 import { AgentRunView } from "./AgentRunView";
 import {
   computeMetrics,
+  replaceAgentRunNode,
   transformWorkflowExecutionToAgentRun,
 } from "./agentExecutionUtils";
 import {
@@ -49,7 +50,7 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
     DEFAULT_MOCK_SCENARIO,
   );
 
-  const { rootRun, transformError } = useMemo(() => {
+  const { rootRun: baseRun, transformError } = useMemo(() => {
     if (execution?.workflowId) {
       try {
         return {
@@ -82,6 +83,57 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
     }
     return { rootRun: MOCK_SCENARIOS[scenario], transformError: null };
   }, [execution?.workflowId, execution?.tasks, scenario]);
+
+  // Sub-agent nodes start as shallow stubs (their own execution hasn't been
+  // fetched yet). `rootRun` holds the tree as progressively expanded in
+  // place — see handleExpandSubAgent — and resets whenever a genuinely new
+  // execution/scenario loads.
+  const [rootRun, setRootRun] = useState<AgentRunData>(baseRun);
+  useEffect(() => {
+    setRootRun(baseRun);
+  }, [baseRun]);
+
+  // Fetch a collapsed sub-agent's own execution and splice its real
+  // turns/subAgents into the tree in place, instead of navigating away like
+  // "drill in" does. Fixes #1452: nested sub-agents beyond one level were
+  // never drawn because that data was never fetched at all.
+  const handleExpandSubAgent = useCallback(async (sub: AgentRunData) => {
+    if (!sub.subWorkflowId || sub.expanded || sub.expanding) return;
+    setRootRun((prev) =>
+      replaceAgentRunNode(prev, sub.id, (node) => ({
+        ...node,
+        expanding: true,
+        expandError: false,
+      })),
+    );
+    try {
+      const res = await fetch(
+        `/api/agent/executions/${sub.subWorkflowId}/full`,
+      );
+      if (!res.ok) throw new Error(`request failed with ${res.status}`);
+      const subExecution: WorkflowExecution = await res.json();
+      const expanded = transformWorkflowExecutionToAgentRun(subExecution);
+      setRootRun((prev) =>
+        replaceAgentRunNode(prev, sub.id, (node) => ({
+          ...node,
+          turns: expanded.turns,
+          agentDef: node.agentDef ?? expanded.agentDef,
+          model: node.model ?? expanded.model,
+          expanded: true,
+          expanding: false,
+        })),
+      );
+    } catch (err) {
+      console.error("[AgentExecution] Failed to expand sub-agent:", err);
+      setRootRun((prev) =>
+        replaceAgentRunNode(prev, sub.id, (node) => ({
+          ...node,
+          expanding: false,
+          expandError: true,
+        })),
+      );
+    }
+  }, []);
 
   const navigate = usePushHistory();
 
@@ -209,6 +261,7 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
         <AgentRunView
           agentRun={rootRun}
           onDrillIn={onDrillIn}
+          onExpand={handleExpandSubAgent}
           onBack={onBack}
           isRoot
         />

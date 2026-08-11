@@ -424,15 +424,17 @@ public class LLMHelper {
                 finishReason = result.getMetadata().getFinishReason();
             } else {
                 responses.add(result.getOutput().getText());
-                result.getOutput()
-                        .getMedia()
-                        .forEach(
-                                m ->
-                                        media.add(
-                                                org.conductoross.conductor.ai.model.Media.builder()
-                                                        .data(m.getDataAsByteArray())
-                                                        .mimeType(m.getMimeType().toString())
-                                                        .build()));
+                List<org.springframework.ai.content.Media> outputMedia =
+                        result.getOutput().getMedia();
+                if (outputMedia != null) {
+                    outputMedia.forEach(
+                            m ->
+                                    media.add(
+                                            org.conductoross.conductor.ai.model.Media.builder()
+                                                    .data(m.getDataAsByteArray())
+                                                    .mimeType(m.getMimeType().toString())
+                                                    .build()));
+                }
                 // storeMedia(outputLocation, result.getOutput().getMedia());
                 if (finishReason == null) {
                     finishReason = result.getMetadata().getFinishReason();
@@ -707,6 +709,10 @@ public class LLMHelper {
 
     private void storeMedia(
             String location, List<org.conductoross.conductor.ai.model.Media> media) {
+
+        if (media == null || media.isEmpty()) {
+            return;
+        }
 
         DocumentLoader documentLoader =
                 documentLoaders.stream()

@@ -39,10 +39,14 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-function subAgent(status: AgentStatus, output?: string): AgentRunData {
+function subAgent(
+  status: AgentStatus,
+  output?: string,
+  executionId = "claim-verifier-execution",
+): AgentRunData {
   return {
     id: "claim-verifier-run",
-    subWorkflowId: "claim-verifier-execution",
+    subWorkflowId: executionId,
     agentName: "claim_verifier",
     turns: [],
     status,
@@ -78,48 +82,62 @@ afterEach(() => {
 });
 
 describe("AgentRunView", () => {
-  it("refreshes a selected sub-agent and its uncached child output on completion", async () => {
-    const runningChild = subAgent(AgentStatus.RUNNING);
-    const completedChild = subAgent(
-      AgentStatus.COMPLETED,
-      "verified claim output",
-    );
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: "RUNNING", __run: runningChild }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ status: "COMPLETED", __run: completedChild }),
-      });
-    vi.stubGlobal("fetch", fetchMock);
+  it.each(["RUNNING", "PAUSED"])(
+    "refreshes a selected sub-agent after %s execution detail completes",
+    async (initialExecutionStatus) => {
+      const executionId = `claim-verifier-${initialExecutionStatus}`;
+      const runningChild = subAgent(
+        AgentStatus.RUNNING,
+        undefined,
+        executionId,
+      );
+      const completedChild = subAgent(
+        AgentStatus.COMPLETED,
+        "verified claim output",
+        executionId,
+      );
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            status: initialExecutionStatus,
+            __run: runningChild,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ status: "COMPLETED", __run: completedChild }),
+        });
+      vi.stubGlobal("fetch", fetchMock);
 
-    const { rerender } = render(
-      <AgentRunView
-        agentRun={rootRun(runningChild)}
-        onDrillIn={vi.fn()}
-        isRoot
-      />,
-    );
+      const { rerender } = render(
+        <AgentRunView
+          agentRun={rootRun(runningChild)}
+          onDrillIn={vi.fn()}
+          isRoot
+        />,
+      );
 
-    fireEvent.click(screen.getByText("Select claim verifier"));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("tab", { name: "Output" }));
-    expect(
-      screen.getByText(/No output captured for this execution/),
-    ).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Select claim verifier"));
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      fireEvent.click(screen.getByRole("tab", { name: "Output" }));
+      expect(
+        screen.getByText(/No output captured for this execution/),
+      ).toBeInTheDocument();
 
-    rerender(
-      <AgentRunView
-        agentRun={rootRun(completedChild)}
-        onDrillIn={vi.fn()}
-        isRoot
-      />,
-    );
+      rerender(
+        <AgentRunView
+          agentRun={rootRun(completedChild)}
+          onDrillIn={vi.fn()}
+          isRoot
+        />,
+      );
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("verified claim output")).toBeInTheDocument();
-  });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      expect(
+        await screen.findByText("verified claim output"),
+      ).toBeInTheDocument();
+    },
+  );
 });
