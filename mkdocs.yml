@@ -150,6 +150,7 @@ nav:
     - Ruby: documentation/clientsdks/ruby-sdk.md
     - Rust: documentation/clientsdks/rust-sdk.md
   - Integrations:
+    - Overview: devguide/integrations/index.md
     - Event-Driven Orchestration:
       - Overview: devguide/how-tos/event-bus.md
       - Publish Events: devguide/how-tos/publish-events.md

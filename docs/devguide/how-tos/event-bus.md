@@ -6,10 +6,7 @@ description: Receive broker events and webhooks, publish workflow events, or sig
 
 <section class="concept-hero concept-hero--event-bus" aria-labelledby="event-overview-title">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Broker, HTTP, and workflow state</p>
-    <h2 id="event-overview-title">Receive events or publish them from a workflow</h2>
-    <p>Route a broker message into durable work, publish a workflow event to a configured sink, accept a verified HTTP callback, or directly advance a workflow already blocked on <code>WAIT</code>.</p>
-    <p><a href="publish-events.html">Publish events</a> · <a href="consume-route-events.html">Consume and route events</a> · <a href="incoming-webhooks.html">Incoming webhooks</a> · <a href="../cookbook/sending-signals.html">Send signals</a></p>
+    <p>Event-driven orchestration connects workflows to the messages around them. A workflow can publish to a broker, an incoming message or webhook can start or advance workflows, and a signal can resume one specific execution that is waiting. Each page in this section covers one of those directions, and the table below routes you to the right one.</p>
   </div>
   <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 220" role="img" aria-labelledby="event-overview-svg-title event-overview-svg-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="event-overview-svg-title">Event-driven orchestration paths</title>
@@ -37,6 +34,7 @@ description: Receive broker events and webhooks, publish workflow events, or sig
 | Consume a broker message and start or update workflow work | [Consume and route events](consume-route-events.md) | OSS and Orkes |
 | Receive an HTTP callback from an external service | [Incoming webhooks](incoming-webhooks.md) | Orkes only |
 | Continue a workflow blocked on `WAIT` | [Send signals to workflows](../cookbook/sending-signals.md) | OSS and Orkes |
+| Notify external systems when executions change state | [Workflow status events](workflow-status-events.md) | OSS and Orkes |
 
 `EVENT` publishes messages; an event handler consumes and routes them. A webhook is HTTP ingress, not a general-purpose event handler. A signal changes an existing workflow and does not create a new execution.
 
