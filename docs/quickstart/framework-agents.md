@@ -6,7 +6,7 @@ description: Run an existing OpenAI Agents, Google ADK, LangChain, or LangGraph 
 
 **Outcome:** your framework agent runs through Conductor and produces an inspectable execution.
 
-For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). The bridges below keep the framework object you already author; Conductor provides the durable runtime around it.
+For a new Conductor Agent, use [Run your first Conductor Agent](first-agent.md). A **bridge** is the SDK adapter that lets Conductor run an agent authored in another framework. You keep the agent object your framework already defines, and the bridge runs it as a durable, inspectable Conductor execution.
 
 <section class="framework-hero" aria-labelledby="framework-quickstarts-title">
   <h2 id="framework-quickstarts-title">Bring your existing agent.</h2>
