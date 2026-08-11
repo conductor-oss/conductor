@@ -87,7 +87,7 @@ Use [Validate and test workflows](testing-workflows.md) to mock branches through
 
 <a id="updating-workflows"></a>
 
-Use a new version when inputs, outputs, task order, or failure semantics change in a way callers can observe. Register the new version, update callers deliberately, and leave the previous version available while existing callers or executions need it. See [Version and roll out](versioning-workflows.md).
+Use a new version when inputs, outputs, task order, or failure semantics change in a way callers can observe. Register the new version, update callers deliberately, and leave the previous version available while existing callers or executions need it. See [Managing Workflow Versions](versioning-workflows.md).
 
 ## Create in the UI
 
