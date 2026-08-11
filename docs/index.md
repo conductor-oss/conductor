@@ -180,7 +180,7 @@ description: Conductor is an open-source platform for building production-grade 
   <div class="faq-grid">
     <details class="faq-item">
       <summary>How do I run Conductor with Docker?</summary>
-      <p>Run <code>docker run -p 8080:8080 conductoross/conductor:latest</code> to start Conductor with all dependencies included. The server will be available at <code>http://localhost:8080</code>. For production deployments with external persistence, see the <a href="devguide/running/deploy.html">Docker deployment guide</a>.</p>
+      <p>Run <code>docker run -p 8080:8080 conductoross/conductor:latest</code> to start Conductor with all dependencies included. The server will be available at <code>http://localhost:8080</code>. For production deployments with external persistence, see the <a href="devguide/running/deploy.html">production deployment guide</a>.</p>
     </details>
     <details class="faq-item">
       <summary>Is Conductor open source?</summary>

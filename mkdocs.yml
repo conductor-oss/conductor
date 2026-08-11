@@ -39,7 +39,7 @@ nav:
     - JSON + Code Native: architecture/json-native.md
     - Task Lifecycle: devguide/architecture/tasklifecycle.md
     - Deploy:
-      - Docker: devguide/running/deploy.md
+      - Production Deployment: devguide/running/deploy.md
       - From Source: devguide/running/source.md
       - Hosted: devguide/running/hosted.md
       - CI/CD Integration: devguide/how-tos/cicd-integration.md
