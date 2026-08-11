@@ -602,25 +602,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         taskToBeRetried.setSeq(0);
         clearRetriedTaskRuntimeState(taskToBeRetried);
 
-        // Re-map the retried task so the mapper rebuilds its input from current workflow state
-        // (e.g. an LLM chat task's conversation history), instead of copying the previous attempt's
-        // input and re-resolving only the definition over it. Falls back to definition
-        // re-resolution when the re-map produces no input for this task.
-        if (taskToBeRetried.getWorkflowTask() != null) {
-            Optional<Map<String, Object>> remappedInput =
-                    deciderService.remapRetriedTaskInput(workflow, taskToBeRetried);
-            if (remappedInput.isPresent()) {
-                taskToBeRetried.setInputData(remappedInput.get());
-            } else {
-                Map<String, Object> taskInput =
-                        parametersUtils.getTaskInput(
-                                taskToBeRetried.getWorkflowTask().getInputParameters(),
-                                workflow,
-                                taskToBeRetried.getWorkflowTask().getTaskDefinition(),
-                                taskToBeRetried.getTaskId());
-                taskToBeRetried.getInputData().putAll(taskInput);
-            }
-        }
+        // Re-map so the mapper rebuilds the input (e.g. a chat task's conversation) from current
+        // workflow state, instead of re-resolving only the definition over the copied input.
+        deciderService.remapRetriedTaskInput(workflow, taskToBeRetried)
+                .ifPresent(taskToBeRetried::setInputData);
         clearLegacySubWorkflowId(taskToBeRetried);
 
         task.setRetried(true);

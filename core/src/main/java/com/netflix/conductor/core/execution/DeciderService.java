@@ -699,23 +699,9 @@ public class DeciderService {
             rescheduled.addInput(task.getInputData());
         }
         if (workflowTask != null && workflow.getWorkflowDefinition().getSchemaVersion() > 1) {
-            // Re-map the retried task so the mapper rebuilds its input from current workflow state
-            // (e.g. an LLM chat task's conversation history), instead of re-resolving only the
-            // definition over the copied input. Falls back to definition re-resolution when the
-            // re-map produces no input for this task.
-            Optional<Map<String, Object>> remappedInput =
-                    remapRetriedTaskInput(workflow, rescheduled);
-            if (remappedInput.isPresent()) {
-                rescheduled.setInputData(remappedInput.get());
-            } else {
-                Map<String, Object> taskInput =
-                        parametersUtils.getTaskInputV2(
-                                workflowTask.getInputParameters(),
-                                workflow,
-                                rescheduled.getTaskId(),
-                                taskDefinition);
-                rescheduled.addInput(taskInput);
-            }
+            // Re-map so the mapper rebuilds the input (e.g. a chat task's conversation) from current
+            // workflow state, instead of re-resolving only the definition over the copied input.
+            remapRetriedTaskInput(workflow, rescheduled).ifPresent(rescheduled::setInputData);
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
@@ -985,7 +971,11 @@ public class DeciderService {
             WorkflowTask taskToSchedule,
             int retryCount,
             String retriedTaskId) {
-        String taskId = idGenerator.generate();
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        taskToSchedule.getInputParameters(), workflow, null, null);
+
+        String type = taskToSchedule.getType();
 
         // get tasks already scheduled (in progress/terminal) for this workflow instance
         List<String> tasksInWorkflow =
@@ -997,38 +987,7 @@ public class DeciderService {
                         .map(TaskModel::getReferenceTaskName)
                         .collect(Collectors.toList());
 
-        // For static forks, each branch of the fork creates a join task upon completion
-        // for
-        // dynamic forks, a join task is created with the fork and also with each branch
-        // of the
-        // fork.
-        // A new task must only be scheduled if a task, with the same reference name is
-        // not already
-        // in this workflow instance
-        return mapTask(workflow, taskToSchedule, retryCount, retriedTaskId, taskId).stream()
-                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Runs the {@link TaskMapper} for a single {@link WorkflowTask} and returns the mapped tasks,
-     * without the "already in this workflow" dedup filter that {@link #getTasksToBeScheduled}
-     * applies. Shared by scheduling and by the retry paths so a retried task can be re-mapped —
-     * i.e. its input is rebuilt from current workflow state by the mapper — rather than copied and
-     * re-resolved from the definition alone.
-     */
-    List<TaskModel> mapTask(
-            WorkflowModel workflow,
-            WorkflowTask taskToSchedule,
-            int retryCount,
-            String retriedTaskId,
-            String taskId) {
-        Map<String, Object> input =
-                parametersUtils.getTaskInput(
-                        taskToSchedule.getInputParameters(),
-                        workflow,
-                        taskToSchedule.getTaskDefinition(),
-                        taskId);
+        String taskId = idGenerator.generate();
         TaskMapperContext taskMapperContext =
                 TaskMapperContext.newBuilder()
                         .withWorkflowModel(workflow)
@@ -1040,35 +999,55 @@ public class DeciderService {
                         .withTaskId(taskId)
                         .withDeciderService(this)
                         .build();
+
+        // For static forks, each branch of the fork creates a join task upon completion
+        // for
+        // dynamic forks, a join task is created with the fork and also with each branch
+        // of the
+        // fork.
+        // A new task must only be scheduled if a task, with the same reference name is
+        // not already
+        // in this workflow instance
         return taskMappers
-                .getOrDefault(taskToSchedule.getType(), taskMappers.get(USER_DEFINED.name()))
-                .getMappedTasks(taskMapperContext);
+                .getOrDefault(type, taskMappers.get(USER_DEFINED.name()))
+                .getMappedTasks(taskMapperContext)
+                .stream()
+                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
+                .collect(Collectors.toList());
     }
 
     /**
-     * Re-maps a retried task so the mapper rebuilds its input from current workflow state (this is
-     * how conversation history for an LLM chat task, and any other mapper-assembled input, is
-     * regenerated). Returns the mapped input for the task carrying the same reference name, if the
-     * mapper produced one. Generic: no task type or input key is special-cased.
+     * Re-maps a retried task through its {@link TaskMapper} so the input is rebuilt from current
+     * workflow state (this regenerates an LLM chat task's assembled conversation, and any other
+     * mapper-produced input, the same way first scheduling does) while still re-resolving {@code
+     * ${...}} references. Returns the mapped input for the task with the same reference name.
+     * Generic: no task type or input key is special-cased.
      */
-    Optional<Map<String, Object>> remapRetriedTaskInput(
-            WorkflowModel workflow, TaskModel retriedTask) {
-        WorkflowTask workflowTask = retriedTask.getWorkflowTask();
+    Optional<Map<String, Object>> remapRetriedTaskInput(WorkflowModel workflow, TaskModel task) {
+        WorkflowTask workflowTask = task.getWorkflowTask();
         if (workflowTask == null) {
             return Optional.empty();
         }
-        return mapTask(
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        workflowTask.getInputParameters(),
                         workflow,
-                        workflowTask,
-                        retriedTask.getRetryCount(),
-                        retriedTask.getRetriedTaskId(),
-                        retriedTask.getTaskId())
-                .stream()
-                .filter(
-                        t ->
-                                Objects.equals(
-                                        t.getReferenceTaskName(),
-                                        retriedTask.getReferenceTaskName()))
+                        workflowTask.getTaskDefinition(),
+                        task.getTaskId());
+        TaskMapperContext context =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflow)
+                        .withTaskDefinition(workflowTask.getTaskDefinition())
+                        .withWorkflowTask(workflowTask)
+                        .withTaskInput(input)
+                        .withRetryCount(task.getRetryCount())
+                        .withRetryTaskId(task.getRetriedTaskId())
+                        .withTaskId(task.getTaskId())
+                        .withDeciderService(this)
+                        .build();
+        return taskMappers.getOrDefault(workflowTask.getType(), taskMappers.get(USER_DEFINED.name()))
+                .getMappedTasks(context).stream()
+                .filter(t -> Objects.equals(t.getReferenceTaskName(), task.getReferenceTaskName()))
                 .findFirst()
                 .map(TaskModel::getInputData);
     }
