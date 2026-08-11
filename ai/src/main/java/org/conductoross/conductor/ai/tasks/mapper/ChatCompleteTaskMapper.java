@@ -94,6 +94,9 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             // calls, and sub-workflow context are still preserved in both cases.
             getHistory(workflowModel, taskModel, chatCompletion);
             updateTaskModel(chatCompletion, taskModel);
+            // Detach the assembled conversation from the task's definition copy so a retry can't
+            // overwrite it by re-resolving the template (see AIModelTaskMapper).
+            detachAssembledInputFromDefinition(taskModel, "messages", "tools");
 
         } catch (Exception e) {
             if (e instanceof TerminateWorkflowException) {

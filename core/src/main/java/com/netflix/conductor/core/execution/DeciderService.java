@@ -699,22 +699,13 @@ public class DeciderService {
             rescheduled.addInput(task.getInputData());
         }
         if (workflowTask != null && workflow.getWorkflowDefinition().getSchemaVersion() > 1) {
-            if (TaskType.LLM_CHAT_COMPLETE.name().equals(workflowTask.getType())) {
-                // Chat assembles its conversation (messages/tools) imperatively in its mapper, so
-                // re-map to rebuild it from current workflow state instead of losing it to the bare
-                // template. Other task types keep the plain definition re-resolution below (re-map
-                // would re-run their mapper, which can validate/have side effects — e.g. SUB_WORKFLOW).
-                remapRetriedTaskInput(workflow, rescheduled, workflowTask)
-                        .ifPresent(rescheduled::setInputData);
-            } else {
-                Map<String, Object> taskInput =
-                        parametersUtils.getTaskInputV2(
-                                workflowTask.getInputParameters(),
-                                workflow,
-                                rescheduled.getTaskId(),
-                                taskDefinition);
-                rescheduled.addInput(taskInput);
-            }
+            Map<String, Object> taskInput =
+                    parametersUtils.getTaskInputV2(
+                            workflowTask.getInputParameters(),
+                            workflow,
+                            rescheduled.getTaskId(),
+                            taskDefinition);
+            rescheduled.addInput(taskInput);
         }
         // for the schema version 1, we do not have to recompute the inputs
         return Optional.of(rescheduled);
@@ -1027,46 +1018,6 @@ public class DeciderService {
                 .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Re-maps a retried task through its {@link TaskMapper} so the input is rebuilt from current
-     * workflow state (this regenerates an LLM chat task's assembled conversation, and any other
-     * mapper-produced input, the same way first scheduling does) while still re-resolving {@code
-     * ${...}} references. Returns the mapped input for the task with the same reference name.
-     * Generic: no task type or input key is special-cased.
-     */
-    Optional<Map<String, Object>> remapRetriedTaskInput(
-            WorkflowModel workflow, TaskModel task, WorkflowTask workflowTask) {
-        if (workflowTask == null) {
-            return Optional.empty();
-        }
-        Map<String, Object> input =
-                parametersUtils.getTaskInput(
-                        workflowTask.getInputParameters(),
-                        workflow,
-                        workflowTask.getTaskDefinition(),
-                        task.getTaskId());
-        TaskMapperContext context =
-                TaskMapperContext.newBuilder()
-                        .withWorkflowModel(workflow)
-                        .withTaskDefinition(workflowTask.getTaskDefinition())
-                        .withWorkflowTask(workflowTask)
-                        .withTaskInput(input)
-                        .withRetryCount(task.getRetryCount())
-                        .withRetryTaskId(task.getRetriedTaskId())
-                        .withTaskId(task.getTaskId())
-                        .withDeciderService(this)
-                        .build();
-        return taskMappers.getOrDefault(workflowTask.getType(), taskMappers.get(USER_DEFINED.name()))
-                .getMappedTasks(context).stream()
-                .filter(
-                        t ->
-                                Objects.equals(
-                                        t.getReferenceTaskName(),
-                                        workflowTask.getTaskReferenceName()))
-                .findFirst()
-                .map(TaskModel::getInputData);
     }
 
     private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {

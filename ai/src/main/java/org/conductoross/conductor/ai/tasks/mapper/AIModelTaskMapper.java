@@ -102,6 +102,35 @@ public abstract class AIModelTaskMapper<T extends LLMWorkerInput> implements Tas
     }
 
     /**
+     * Removes input keys this mapper assembled imperatively (e.g. an LLM chat task's {@code
+     * messages}/{@code tools}, rebuilt from the workflow's completed tasks) from the task's own
+     * copy of its {@link WorkflowTask} definition. Those values are not derivable from the
+     * definition's {@code inputParameters}, so detaching them means a retry that re-resolves the
+     * definition cannot overwrite the assembled values carried forward by {@code task.copy()} —
+     * the conversation survives the retry without any change to the retry engine.
+     *
+     * <p>The definition is copied first because it may be shared with the cached workflow
+     * definition or other tasks. Best-effort: if the copy fails, the shared definition is left
+     * intact and a retry falls back to the static template.
+     */
+    protected void detachAssembledInputFromDefinition(TaskModel task, String... assembledKeys) {
+        WorkflowTask sharedDefinition = task.getWorkflowTask();
+        if (sharedDefinition == null || sharedDefinition.getInputParameters() == null) {
+            return;
+        }
+        WorkflowTask taskOwnedDefinition;
+        try {
+            taskOwnedDefinition = objectMapper.convertValue(sharedDefinition, WorkflowTask.class);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        for (String key : assembledKeys) {
+            taskOwnedDefinition.getInputParameters().remove(key);
+        }
+        task.setWorkflowTask(taskOwnedDefinition);
+    }
+
+    /**
      * Auto-thread the OpenAI Responses API {@code previous_response_id} across iterations of the
      * same task within a workflow (typically a DoWhile loop).
      *
