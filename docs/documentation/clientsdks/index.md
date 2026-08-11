@@ -1,5 +1,7 @@
 # SDKs
 
+Each SDK gets one reference page for its language: how to install the client, write workers, define and run workflows from code, and where the maintained examples live. Use the quickstarts in Getting Started for your first workflow; come here when you are working in a specific language and want everything for it in one place.
+
 <div class="sdk-grid">
 <a href="java-sdk.html" class="sdk-card"><div class="sdk-icon sdk-java" aria-hidden="true"></div><div class="sdk-info"><h3>Java</h3><p>Spring Boot integration, annotation-based workers, thread management, and testing framework.</p></div><span class="sdk-arrow">→</span></a>
 <a href="python-sdk.html" class="sdk-card"><div class="sdk-icon sdk-python" aria-hidden="true"></div><div class="sdk-info"><h3>Python</h3><p>Decorator-based task definitions, async support, and workflow management.</p></div><span class="sdk-arrow">→</span></a>
