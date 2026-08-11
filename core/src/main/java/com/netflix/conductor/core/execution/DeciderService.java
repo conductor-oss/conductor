@@ -60,6 +60,12 @@ public class DeciderService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeciderService.class);
 
+    // See WorkflowExecutorOps#RETRY_PRESERVED_INPUT_KEYS: the LLM chat task's "messages" and
+    // "tools" are assembled imperatively by its TaskMapper and are not derivable from the task
+    // definition, so they must be preserved on the automatic-retry path rather than overwritten by
+    // the re-resolved template. No-op for tasks that do not carry these keys.
+    private static final Set<String> RETRY_PRESERVED_INPUT_KEYS = Set.of("messages", "tools");
+
     private final IDGenerator idGenerator;
     private final ParametersUtils parametersUtils;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
@@ -705,6 +711,9 @@ public class DeciderService {
                             workflow,
                             rescheduled.getTaskId(),
                             taskDefinition);
+            // Preserve mapper-assembled conversation input across retry (see field comment): drop
+            // these keys from the re-resolved template so task.copy()'s values are not overwritten.
+            RETRY_PRESERVED_INPUT_KEYS.forEach(taskInput::remove);
             rescheduled.addInput(taskInput);
         }
         // for the schema version 1, we do not have to recompute the inputs

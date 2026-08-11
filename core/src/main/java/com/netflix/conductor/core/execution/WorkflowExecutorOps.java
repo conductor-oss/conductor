@@ -75,6 +75,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowExecutorOps.class);
     private static final int EXPEDITED_PRIORITY = 10;
+
+    // The LLM chat task's "messages" (conversation) and "tools" are assembled imperatively by its
+    // TaskMapper from the workflow's completed tasks — they are NOT derivable from the task
+    // definition's inputParameters. Re-resolving the definition on retry would overwrite them with
+    // the bare template and drop the accumulated conversation, so they are dropped from the
+    // re-resolved input on retry and the values carried by task.copy() are kept instead. Non-chat
+    // tasks do not carry these keys, so this is a no-op for them.
+    private static final Set<String> RETRY_PRESERVED_INPUT_KEYS = Set.of("messages", "tools");
     private static final String CLASS_NAME = WorkflowExecutor.class.getSimpleName();
     private static final Predicate<TaskModel> UNSUCCESSFUL_TERMINAL_TASK =
             task -> !task.getStatus().isSuccessful() && task.getStatus().isTerminal();
@@ -610,6 +618,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             workflow,
                             taskToBeRetried.getWorkflowTask().getTaskDefinition(),
                             taskToBeRetried.getTaskId());
+            // Preserve mapper-assembled conversation input across retry (see field comment): drop
+            // these keys from the re-resolved template so task.copy()'s values are not overwritten.
+            RETRY_PRESERVED_INPUT_KEYS.forEach(taskInput::remove);
             taskToBeRetried.getInputData().putAll(taskInput);
         }
         clearLegacySubWorkflowId(taskToBeRetried);
