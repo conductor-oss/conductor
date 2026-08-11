@@ -22,25 +22,23 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
   </div>
 </section>
 
-Conductor Agents are distinct from building a declarative AI workflow directly with `LLM_CHAT_COMPLETE`, MCP, `HUMAN`, and control-flow tasks. Both paths are first-class: use direct tasks when the graph is the application, and Conductor Agents when you bring framework-authored logic into a broader durable process.
+A **Conductor Agent** is an agent you author in code and register on the server. You write it with a Conductor SDK, or bring it from a supported framework through a bridge, and Conductor compiles it into an ordinary workflow definition. Because the compiled agent is a workflow, every LLM call, tool invocation, wait, retry, and branch is visible in the UI and API, and the agent composes with everything else a workflow can contain: other tasks, branching, schedules, human approval, and cancellation. Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#.
 
-Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#. Choose the SDK and framework bridge that match your application; all compile into the same durable Conductor execution model.
-
-The SDK-created agent is compiled into ordinary Conductor workflow definitions. That makes every LLM call, tool invocation, wait, retry, and branch visible in the UI and API, and lets the same graph compose with ordinary tasks, `SWITCH`, `FORK_JOIN`, `HUMAN`, schedules, and workflow cancellation.
+Conductor Agents are one of two ways to build AI behavior. The other is a [declarative AI workflow](llm-orchestration.md), where you place LLM, MCP, and control-flow tasks directly in the workflow definition. Choose the declarative path when the orchestration itself is what you are building. Choose a Conductor Agent when the agent logic lives in code and you want to run it inside a durable process.
 
 ## Lifecycle
 
-Use the SDK that owns the framework bridge for framework code, package versions, and runnable examples. The stable lifecycle is:
+Every Conductor Agent moves through the same five operations, and the names below are the SDK verbs you will see in code:
 
-1. **Create** an agent from a supported framework object in the SDK.
-2. **Plan** or inspect the generated graph during development and CI.
-3. **Deploy** the agent to register a reusable, versioned Conductor Agent.
-4. **Serve** its workers where the SDK bridge requires a long-running worker process.
-5. **Run** directly for interactive use, or invoke the deployed agent by name from an `AGENT` task in a larger workflow.
+1. **Create**: define the agent in code, from the SDK's own `Agent` class or from a supported framework object.
+2. **Plan**: inspect the workflow graph the agent will compile to. Useful during development and in CI, before anything is deployed.
+3. **Deploy**: register the compiled agent on the server as a reusable, versioned Conductor Agent.
+4. **Serve**: start the worker process that executes the agent's tools, where the bridge requires one.
+5. **Run**: execute the agent. During development, `run` compiles and runs it in one step. In production, workflows invoke the deployed agent by name through an `AGENT` task.
 
-For interactive development, use `run`. For production, deploy the agent and serve its workers so that workflow callers can start the stable deployed version. See [Framework Agent Recipes](agent-framework-recipes.md) for maintained SDK documentation and executable examples.
+In short: use `run` while you iterate, then `deploy` and `serve` so workflows and other callers can start the stable deployed version.
 
-For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md). The maintained SDK setup guides are the source of truth for deployment-specific agent runtime configuration.
+For framework-specific code, package versions, and runnable examples, see [Framework Agent Recipes](agent-framework-recipes.md). For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md).
 
 ## Use a deployed agent in a workflow
 
