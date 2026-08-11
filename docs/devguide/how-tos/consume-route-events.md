@@ -4,12 +4,9 @@ description: Route broker messages through active event handlers to start workfl
 
 # Consume and route events
 
-<section class="concept-hero concept-hero--event-bus" aria-labelledby="consume-events-title">
+<section class="concept-hero concept-hero--event-bus" aria-label="Consume and route events">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Inbound broker events</p>
-    <h2 id="consume-events-title">Evaluate a message, then take a durable action</h2>
-    <p>In OSS, register an active handler with the Event Handlers API. It evaluates the delivered payload and can start a workflow or exactly complete or fail a task. Orkes can separately use configured broker integrations.</p>
-    <p><a href="../../documentation/configuration/eventhandlers.html">Event handler reference</a> · <a href="publish-events.html">Publish events</a></p>
+    <p>An <strong>event handler</strong> is a registered rule that consumes messages from a broker and turns them into workflow actions. When a message arrives on the queue the handler watches, the handler evaluates its condition against the payload and can start a new workflow, or complete or fail one specific task. Handlers are how outside systems drive workflows without calling the Conductor API themselves.</p>
   </div>
   <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 190" role="img" aria-labelledby="consume-svg-title consume-svg-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="consume-svg-title">Event handler routing flow</title>

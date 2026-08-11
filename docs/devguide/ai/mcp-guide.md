@@ -4,15 +4,8 @@ description: "MCP (Model Context Protocol) integration with Conductor — connec
 
 # MCP Integration
 
-<section class="integration-hero integration-hero--mcp" aria-labelledby="mcp-hero-title">
-  <div class="integration-hero__identity" aria-hidden="true">
-    <img class="integration-hero__logo" src="../../assets/images/protocols/mcp.svg" alt="" />
-    <span class="integration-hero__connector">→</span>
-    <img class="integration-hero__logo integration-hero__logo--conductor" src="../../img/logo.svg" alt="" />
-  </div>
-  <p class="integration-hero__eyebrow">Durable tool orchestration</p>
-  <h2 id="mcp-hero-title">Give every agent a durable tool layer.</h2>
-  <p>Use MCP for standardized tool discovery and invocation; Conductor adds durable execution, observability, and workflow composition around those calls.</p>
+<section class="integration-hero integration-hero--mcp" aria-label="MCP integration">
+  <p>The <strong>Model Context Protocol (MCP)</strong> is the open standard agents use to discover and call tools. In Conductor, MCP calls run as workflow tasks: <code>LIST_MCP_TOOLS</code> asks a server what it offers, and <code>CALL_MCP_TOOL</code> invokes one tool. Because each call is a task, it gets the same retries, observability, and history as every other step.</p>
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#list_mcp_tools-discover-available-tools">
       <span class="integration-action-card__title">Discover tools</span>
