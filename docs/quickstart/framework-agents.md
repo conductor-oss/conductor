@@ -32,7 +32,7 @@ This page is for agents you have already built in another framework, such as Ope
 
 ## Prerequisites
 
-First, complete [Connect to Conductor](connect.md) so the runtime can reach your server. Then make sure the server can call your model provider. On Developer Edition, add the provider as an AI/LLM integration; on a local server, export the provider API key before starting it. Each framework section below begins with the install command for its bridge. Most examples use an OpenAI model, and the Google ADK example uses Gemini, so supply the matching credentials.
+First, complete [Connect to Conductor](connect.md) so the runtime can reach your server. Then make sure the server can call your model provider. On Developer Edition, add the provider as an [AI/LLM integration](https://orkes.io/content/category/integrations/ai-llm); on a local server, [export the provider API key](../devguide/ai/llm-orchestration.md#supported-llm-providers) before starting it. Each framework section below begins with the install command for its bridge. Most examples use an OpenAI model, and the Google ADK example uses Gemini, so supply the matching credentials.
 
 ## OpenAI Agents SDK
 
