@@ -58,25 +58,7 @@ Every bridge follows the same path from your code to a reusable workflow step:
 
 In short: `run` is for interactive development, and `deploy` plus `serve` is for production, where workflows need a stable agent version. The [Conductor Agents](conductor-agents.md) page covers the deployed agent's runtime behavior: invocation, waiting, resume, cancellation, and outputs.
 
-## Why run a framework agent on Conductor
-
-The framework keeps deciding *what* the agent does. Conductor changes *how it runs* — and you get this without rewriting the agent or adding infrastructure code to it.
-
-**Durability with no code change.** The agent compiles into an ordinary Conductor workflow. Every LLM call, tool invocation, and handoff becomes a task with its own state. A process crash, deploy, or restart mid-run resumes from the last completed task instead of starting the conversation again. You write no checkpointing, no retry loop, no state store.
-
-**Credentials stay out of the agent.** Declare `credentials=[...]` on a tool and the server injects the secret for the duration of that call. Nothing lands in the prompt, the agent definition, or your source tree — and the tool process is the only thing that ever sees it.
-
-**Observability you did not instrument.** Because each step is a task, the UI shows the tool arguments, the returned payload, the guardrail verdict, the retry count, and the exact point of failure. No tracing library, no span plumbing.
-
-**Bounded execution.** Timeouts, retry policy, rate limits, and concurrency limits are task-level settings that apply to a framework agent the same way they apply to any other workload.
-
-**Composition with the rest of your system.** A framework agent is an `AGENT` task, so it sits beside HTTP calls, workers, `SWITCH` branches, human approvals, schedules, and compensation logic in one graph.
-
-**Reuse by name.** Deploy once and any workflow, schedule, or service can invoke it — without importing your framework or its dependencies.
-
 ## Maintained SDK examples
-
-Complete, runnable projects for each bridge. A dash marks a pairing with no maintained example.
 
 | Framework | Python | Java | TypeScript / JavaScript | C# |
 |---|---|---|---|---|
