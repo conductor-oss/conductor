@@ -51,12 +51,58 @@ Each route keeps the framework-specific code, dependencies, and executable examp
 
 Every bridge follows the same path from your code to a reusable workflow step:
 
+```mermaid
+flowchart LR
+    obj["Your framework<br/>agent object"] --> bridge["SDK bridge<br/>compiles it to a workflow graph"]
+    bridge -- "run (develop)" --> devrun["One durable execution<br/>visible in the UI"]
+    bridge -- "deploy (release)" --> deployed["Deployed Conductor Agent<br/>named and versioned"]
+    workers["serve: worker process<br/>executes the tools"] -.- deployed
+    parent["Parent workflow<br/>AGENT task"] -- "invoke" --> deployed
+```
+
 1. **Run it while you iterate.** Pass your framework's agent object to the SDK bridge and run it. The bridge compiles the agent and executes it on Conductor, so the durable execution is visible in the UI from the first run.
 2. **Deploy it when it stabilizes.** Deploying registers the compiled agent on the server as a named, versioned Conductor Agent. Callers can then invoke it without importing your framework or its dependencies.
 3. **Serve its workers.** Where the bridge runs your tools as local functions, a worker process must be running to execute them. Keep it running for as long as the deployed agent is in use.
-4. **Invoke it from a workflow.** A parent workflow calls the deployed agent with an `AGENT` task and `agentType: "conductor"`, the same way it calls any other durable step.
+4. **Invoke it from a workflow.** A parent workflow calls the deployed agent with an `AGENT` task, the same way it calls any other durable step.
 
-In short: `run` is for interactive development, and `deploy` plus `serve` is for production, where workflows need a stable agent version. The [Conductor Agents](conductor-agents.md) page covers the deployed agent's runtime behavior: invocation, waiting, resume, cancellation, and outputs.
+In the Python SDK, those steps are four calls on the same runtime. Here they are with the LangChain bridge:
+
+```python
+from conductor.ai.agents import AgentRuntime
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+
+@tool
+def check_token() -> str:
+    """Check a token."""
+    return "available"
+
+agent = create_agent("openai:gpt-4o-mini", tools=[check_token],
+                     system_prompt="You are a helpful assistant.")
+
+with AgentRuntime() as runtime:
+    runtime.run(agent, "Is the token set?")  # develop: compile and execute once
+    runtime.plan(agent)                      # CI: inspect the compiled graph
+    runtime.deploy(agent)                    # release: register without executing
+    runtime.serve(agent)                     # operate: run tool workers and block
+```
+
+`serve()` blocks, so in production it belongs in its own long-lived worker process while `deploy()` runs in CI/CD. Once deployed, a parent workflow invokes the agent by name:
+
+```json
+{
+  "name": "run_agent",
+  "taskReferenceName": "run_agent_ref",
+  "type": "AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "name": "<deployed-agent-name>",
+    "prompt": "${workflow.input.prompt}"
+  }
+}
+```
+
+The [Conductor Agents](conductor-agents.md) page covers the deployed agent's runtime behavior: invocation, waiting, resume, cancellation, and outputs.
 
 ## Maintained SDK examples
 
