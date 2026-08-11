@@ -1,9 +1,7 @@
 # Agent Evals
 
-<section class="integration-hero integration-hero--evals" aria-labelledby="evals-hero-title">
-  <p class="integration-hero__eyebrow">Agent release confidence</p>
-  <h2 id="evals-hero-title">Test the path your agent takes—not only its final text.</h2>
-  <p>Evals turn representative requests into durable release evidence: tool choices, arguments, handoffs, guardrail events, turns, terminal state, and optionally judged output quality.</p>
+<section class="integration-hero integration-hero--evals" aria-label="Agent evals">
+  <p>An <strong>eval</strong> is a repeatable test for an agent. It replays a representative request against the agent and asserts on what the agent actually did, not only on the text it produced: which tools it called and with what arguments, how it routed between agents, which guardrails fired, and how the run ended. Run evals before promoting a new agent version, the same way you run tests before shipping code.</p>
   <img class="integration-hero__diagram" src="../../assets/images/ai/agent-evals.png" alt="A curated fixture runs an agent against sandbox tools, producing a durable trace that deterministic assertions and an optional semantic judge use for a release decision." loading="lazy" />
   <div class="integration-action-grid integration-action-grid--three">
     <a class="integration-action-card" href="#start-with-deterministic-behavior">
