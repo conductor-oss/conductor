@@ -4,6 +4,14 @@ description: "Learning paths, examples, videos, and community resources for Cond
 
 # Learn Conductor
 
+<section class="integration-hero integration-hero--workflow" aria-label="Recommended: Orkes Academy" markdown="1">
+
+## Recommended: Orkes Academy
+
+[Orkes Academy](https://orkes.io/academy) is the guided way to learn Conductor. It offers free, hands-on courses that take you from your first workflow through production patterns, with shareable certificates when you complete them. If you prefer structured lessons over piecing the docs together yourself, start there.
+
+</section>
+
 Paths for going deeper once you have run your first workflow or agent.
 
 ## Start here
