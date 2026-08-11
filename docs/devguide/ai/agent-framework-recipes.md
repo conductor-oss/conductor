@@ -38,12 +38,12 @@ description: "Choose the supported Conductor bridge for an existing framework ag
 
 | Framework | Start here |
 |---|---|
-| OpenAI Agents | [Framework quickstart](../../quickstart/framework-agents.md#openai-agents-sdk) |
+| OpenAI Agents | [OpenAI Agents quickstart](../../quickstart/framework-agents.md#openai-agents-sdk) |
 | Google ADK | [Google ADK quickstart](../../quickstart/framework-agents.md#google-adk) |
 | LangChain / LangChain4j | [LangChain quickstart](../../quickstart/framework-agents.md#langchain) |
 | LangGraph / LangGraph4j | [LangGraph quickstart](../../quickstart/framework-agents.md#langgraph) |
-| Vercel AI SDK | [Maintained SDK examples](../../quickstart/framework-agents.md#sdk-examples) |
-| Conductor Agents | [Run your first Conductor Agent](../../quickstart/first-agent.md) |
+| Vercel AI SDK | [Vercel AI SDK examples on GitHub](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/vercel-ai) |
+| Conductor Agents | [Your First Agent](../../quickstart/first-agent.md) |
 
 Each route keeps the framework-specific code, dependencies, and executable examples in the owning Conductor SDK. The bridge is the boundary: your framework remains the authoring surface, while Conductor provides durable execution around it.
 
