@@ -3,7 +3,8 @@
  *
  * Layout:
  *   - Root agent node at top (name, model, strategy, maxTurns)
- *   - Sub-agents fan out in parallel from root (each as individual node)
+ *   - Nested agents[] trees rendered recursively as a containment tree
+ *     (parent → each child; strategy badges, not sibling chains)
  *   - Tools/guardrails also branch from root
  *
  * Architecture mirrors AgentExecutionDiagram (viewport → transform → Canvas).
@@ -17,25 +18,16 @@ import MinusIcon from "components/features/flow/components/graphs/PanAndZoomWrap
 import PlusIcon from "components/features/flow/components/graphs/PanAndZoomWrapper/icons/Plus";
 import FitToFrame from "shared/icons/FitToFrame";
 import { colors } from "theme/tokens/variables";
-import {
-  Canvas,
-  CanvasPosition,
-  Edge,
-  Node,
-  NodeData,
-  EdgeData,
-} from "reaflow";
+import { Canvas, CanvasPosition, Edge, EdgeData, Node } from "reaflow";
 import { getModelIconPath } from "./agentExecutionUtils";
+import { buildDefDiagram } from "./buildDefDiagram";
+import type { DefNodeData } from "./buildDefDiagram";
 import { WorkflowExecution } from "types/Execution";
 import "components/features/flow/ReaflowOverrides.scss";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const W = 264;
-const H = 90; // slightly taller to fit strategy row
-const H_GATE = 80; // gate/decision nodes
 const MIN_ZOOM = 0.1,
   MAX_ZOOM = 2.5;
-const MAX_INDIVIDUAL = 8; // show individual nodes up to this count, group beyond
 
 // ─── Strategy colours ─────────────────────────────────────────────────────────
 const STRATEGY_STYLE: Record<string, { bg: string; color: string }> = {
@@ -53,89 +45,6 @@ function strategyStyle(s?: string) {
       color: "#374151",
     }
   );
-}
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface DefNodeData {
-  kind: "agent" | "subagent" | "tool" | "guardrail" | "group" | "gate";
-  label: string;
-  sublabel?: string; // model or instructions snippet
-  badge: string; // type label: AGENT / TOOL / GUARDRAIL / HTTP / MCP / RAG / AGENTS / TOOLS
-  badgeColor: string;
-  badgeBg: string;
-  borderColor: string;
-  modelName?: string;
-  strategy?: string; // routing strategy (raw lowercase)
-  maxTurns?: number;
-  subAgentCount?: number; // number of nested sub-agents this agent orchestrates
-  count?: number; // for group nodes
-  items?: string[];
-  // Gate-specific
-  gateType?: string; // e.g. "text_contains"
-  gateText?: string; // the condition value
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function getItemName(t: unknown, fallback = "[item]"): string {
-  if (typeof t === "string") return t;
-  if (t && typeof t === "object") {
-    const o = t as Record<string, unknown>;
-    const n = o.name ?? o._worker_ref ?? (o.function as any)?.name;
-    if (typeof n === "string" && n) return n;
-  }
-  return fallback;
-}
-
-function getItemDescription(t: unknown): string | undefined {
-  if (!t || typeof t !== "object") return undefined;
-  const o = t as Record<string, unknown>;
-  const d = o.description ?? (o.function as any)?.description;
-  if (typeof d === "string" && d) return d;
-  return undefined;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function truncateText(text: string, maxLength: number): string {
-  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
-}
-
-/**
- * Produces a safe diagram label for either inline instructions or a prompt-template reference.
- * Agent definitions accept both shapes, so only strings are sliced directly.
- */
-function instructionSnippet(
-  instructions: unknown,
-  maxLength = 55,
-): string | undefined {
-  if (typeof instructions === "string") {
-    return instructions ? truncateText(instructions, maxLength) : undefined;
-  }
-
-  if (!isRecord(instructions)) return undefined;
-
-  const templateName = instructions.name;
-  if (typeof templateName !== "string" || !templateName) return undefined;
-
-  const version = instructions.version;
-  const templateLabel = `Prompt template: ${templateName}${
-    typeof version === "number" ? ` (v${version})` : ""
-  }`;
-  return truncateText(templateLabel, maxLength);
-}
-
-function toolCat(
-  t: Record<string, unknown>,
-): "agent" | "tool" | "guardrail" | "http" | "mcp" | "rag" {
-  const tt = (t.toolType as string | undefined)?.toLowerCase() ?? "";
-  if (tt === "agent_tool" || tt === "agent") return "agent";
-  if (tt === "guardrail") return "guardrail";
-  if (tt === "http") return "http";
-  if (tt === "mcp") return "mcp";
-  if (tt === "rag") return "rag";
-  return "tool";
 }
 
 // ─── Gate (decision / conditional) card ──────────────────────────────────────
@@ -490,234 +399,6 @@ const DiagramNode = (nodeProps: any) => {
   );
 };
 
-// ─── Build diagram from agentDef ─────────────────────────────────────────────
-function buildDefDiagram(agentDef: Record<string, unknown>) {
-  const nodes: NodeData<DefNodeData>[] = [];
-  const edges: EdgeData[] = [];
-
-  const defModel = agentDef.model as string | undefined;
-  const agentName = (agentDef.name as string | undefined) ?? "Agent";
-  const strategy = agentDef.strategy as string | undefined;
-  const maxTurns = agentDef.maxTurns as number | undefined;
-  const instructions = agentDef.instructions ?? agentDef.description;
-
-  // Sub-agents from the agents[] field (orchestrator pattern)
-  const agentsList =
-    (agentDef.agents as Array<Record<string, unknown>> | undefined) ?? [];
-
-  // Tools/guardrails from the tools[] field
-  const allTools =
-    (agentDef.tools as Array<Record<string, unknown>> | undefined) ?? [];
-  const agentToolList = allTools.filter((t) => toolCat(t) === "agent");
-  const regularTools = allTools.filter((t) => toolCat(t) === "tool");
-  const httpTools = allTools.filter((t) => toolCat(t) === "http");
-  const mcpTools = allTools.filter((t) => toolCat(t) === "mcp");
-  const ragTools = allTools.filter((t) => toolCat(t) === "rag");
-  const guardrailTools = allTools.filter((t) => toolCat(t) === "guardrail");
-  const guardrailsDef =
-    (agentDef.guardrails as Array<unknown> | undefined) ?? [];
-  const allGuardrails = [
-    ...guardrailTools.map((g) => getItemName(g)),
-    ...(guardrailsDef as unknown[]).map((g) => getItemName(g)),
-  ];
-
-  // Merge all sub-agents into a unified list
-  const allSubAgents = [
-    ...agentsList.map((a) => ({
-      name: getItemName(a),
-      model: a.model as string | undefined,
-      instructions: a.instructions,
-      strategy: a.strategy as string | undefined,
-      maxTurns: a.maxTurns as number | undefined,
-      subAgentCount: ((a.agents as unknown[]) ?? []).length,
-      gate: a.gate as Record<string, unknown> | undefined,
-    })),
-    ...agentToolList.map((t) => ({
-      name: getItemName(t),
-      model: ((t.config as any)?.agentConfig?.model ?? t.model) as
-        | string
-        | undefined,
-      instructions:
-        isRecord(t.config) && isRecord(t.config.agentConfig)
-          ? t.config.agentConfig.instructions
-          : undefined,
-      strategy: t.strategy as string | undefined,
-      maxTurns: undefined as number | undefined,
-      subAgentCount: 0,
-      gate: undefined as Record<string, unknown> | undefined,
-    })),
-  ];
-
-  const instSnippet = instructionSnippet(instructions);
-
-  // ── Root agent node ──────────────────────────────────────────────────────────
-  nodes.push({
-    id: "agent",
-    width: W,
-    height: H,
-    data: {
-      kind: "agent",
-      label: agentName,
-      sublabel: defModel ?? instSnippet,
-      badge: "AGENT",
-      badgeColor: "#3d5fc0",
-      badgeBg: "#e8eeff",
-      borderColor: "#93c5fd",
-      modelName: defModel,
-      // Only show strategy/maxTurns when the root actually coordinates sub-agents;
-      // a lone agent carries SDK defaults (e.g. HANDOFF/25) that are meaningless here.
-      strategy: allSubAgents.length > 0 ? strategy : undefined,
-      maxTurns: allSubAgents.length > 0 ? maxTurns : undefined,
-    },
-  });
-
-  // Helper: add a node branching directly from root
-  const addFromRoot = (id: string, data: DefNodeData) => {
-    nodes.push({ id, width: W, height: H, data });
-    edges.push({ id: `agent→${id}`, from: "agent", to: id });
-  };
-
-  const isSequential = strategy?.toLowerCase() === "sequential";
-
-  // ── Sub-agents: chain for sequential, fan-out otherwise ──────────────────
-  if (allSubAgents.length > 0 && allSubAgents.length <= MAX_INDIVIDUAL) {
-    let prevId = "agent";
-    for (let i = 0; i < allSubAgents.length; i++) {
-      const sa = allSubAgents[i];
-      const id = `subagent-${i}`;
-      const instSub = instructionSnippet(sa.instructions);
-      nodes.push({
-        id,
-        width: W,
-        height: H,
-        data: {
-          kind: "subagent",
-          label: sa.name,
-          sublabel: instSub ?? sa.model,
-          badge: "AGENT",
-          badgeColor: "#3d5fc0",
-          badgeBg: "#e8eeff",
-          borderColor: "#93c5fd",
-          modelName: sa.model,
-          // Suppress strategy/maxTurns for leaf sub-agents — the server may echo
-          // SDK defaults (HANDOFF/25) even when the agent has no sub-agents.
-          strategy: sa.subAgentCount > 0 ? sa.strategy : undefined,
-          maxTurns: sa.subAgentCount > 0 ? sa.maxTurns : undefined,
-          subAgentCount: sa.subAgentCount || undefined,
-        },
-      });
-      if (isSequential) {
-        edges.push({ id: `${prevId}→${id}`, from: prevId, to: id });
-        prevId = id;
-
-        // If this sub-agent has a gate, insert a gate/decision node after it
-        if (sa.gate) {
-          const gateId = `gate-${i}`;
-          nodes.push({
-            id: gateId,
-            width: W,
-            height: H_GATE,
-            data: {
-              kind: "gate",
-              label: "Gate",
-              badge: "GATE",
-              badgeColor: "#b45309",
-              badgeBg: "#fef3c7",
-              borderColor: "#f59e0b",
-              gateType: sa.gate.type as string | undefined,
-              gateText: sa.gate.text as string | undefined,
-            },
-          });
-          edges.push({ id: `${id}→${gateId}`, from: id, to: gateId });
-          prevId = gateId;
-        }
-      } else {
-        // Fan-out: all connect directly from root
-        edges.push({ id: `agent→${id}`, from: "agent", to: id });
-      }
-    }
-  } else if (allSubAgents.length > MAX_INDIVIDUAL) {
-    addFromRoot("subagents", {
-      kind: "group",
-      label:
-        allSubAgents
-          .slice(0, 2)
-          .map((a) => a.name)
-          .join(", ") + ", …",
-      count: allSubAgents.length,
-      badge: "AGENTS",
-      badgeColor: "#3d5fc0",
-      badgeBg: "#e8eeff",
-      borderColor: "#93c5fd",
-      items: allSubAgents.map((a) => a.name),
-    });
-  }
-
-  // Helper: add tool nodes from root, passing descriptions when available
-  const addToolCategory = (
-    tools: Array<Record<string, unknown> | string>,
-    id: string,
-    badge: string,
-    badgeColor: string,
-    badgeBg: string,
-    borderColor: string,
-  ) => {
-    if (tools.length === 0) return;
-    if (tools.length <= MAX_INDIVIDUAL) {
-      tools.forEach((t, i) => {
-        const desc = getItemDescription(t);
-        const descSnippet = desc
-          ? desc.slice(0, 60) + (desc.length > 60 ? "…" : "")
-          : undefined;
-        addFromRoot(`${id}-${i}`, {
-          kind: "tool",
-          label: getItemName(t),
-          sublabel: descSnippet,
-          badge,
-          badgeColor,
-          badgeBg,
-          borderColor,
-        });
-      });
-    } else {
-      const names = tools.map((t) => getItemName(t));
-      addFromRoot(id, {
-        kind: "group",
-        label: names.slice(0, 2).join(", ") + (names.length > 2 ? ", …" : ""),
-        count: tools.length,
-        badge,
-        badgeColor,
-        badgeBg,
-        borderColor,
-        items: names,
-      });
-    }
-  };
-
-  // ── Tools / HTTP / MCP / RAG ─────────────────────────────────────────────
-  addToolCategory(
-    regularTools,
-    "tools",
-    "@TOOL",
-    "#0369a1",
-    "#e0f2fe",
-    "#7dd3fc",
-  );
-  addToolCategory(httpTools, "http", "HTTP", "#6b7280", "#f3f4f6", "#d1d5db");
-  addToolCategory(mcpTools, "mcp", "MCP", "#7c3aed", "#ede9fe", "#c4b5fd");
-  addToolCategory(ragTools, "rag", "RAG", "#0f766e", "#ccfbf1", "#99f6e4");
-  addToolCategory(
-    allGuardrails,
-    "guardrails",
-    "GUARDRAILS",
-    "#b45309",
-    "#fef3c7",
-    "#fde68a",
-  );
-
-  return { nodes, edges };
-}
-
 // ─── Zoom controls (mirrors AgentExecutionDiagram's DiagramControls) ──────────
 function ZoomControls({
   zoom,
@@ -770,6 +451,7 @@ function ZoomControls({
       <ZoomControlsButton
         onClick={onFit}
         tooltip="Fit to screen"
+        aria-label="Fit to screen"
         style={{
           borderLeft: border,
           borderTopRightRadius: 5,
@@ -887,6 +569,7 @@ export function AgentDefinitionDiagram({
   return (
     <div
       ref={viewportRef}
+      data-testid="agent-definition-diagram"
       style={{
         width: "100%",
         height: "100%",

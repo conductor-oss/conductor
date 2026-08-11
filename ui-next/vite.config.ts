@@ -146,6 +146,9 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       port: 1234,
+      // Allow Playwright-in-Docker (host.docker.internal) when generating
+      // platform-specific screenshot baselines against a host-side preview.
+      allowedHosts: true,
       // Mirror the dev-server proxy so `vite preview` (used by integration
       // tests) forwards API calls to the Conductor backend.
       // VITE_WF_SERVER can be set in the process environment at preview time

@@ -243,6 +243,17 @@ export async function listAgents(): Promise<AgentSummary[]> {
   return request<AgentSummary[]>("GET", "/agent/list");
 }
 
+/** Nested agentConfig payload accepted by POST /api/agent/deploy. */
+export interface AgentConfigPayload {
+  name: string;
+  model?: string;
+  instructions?: string;
+  maxTurns?: number;
+  strategy?: string;
+  synthesize?: boolean;
+  agents?: AgentConfigPayload[];
+}
+
 /**
  * Compiles and registers an agent definition via POST /api/agent/deploy.
  * Does not start an execution.
@@ -253,17 +264,27 @@ export async function deployAgent(
     model?: string;
     instructions?: string;
     maxTurns?: number;
+    strategy?: string;
+    synthesize?: boolean;
+    agents?: AgentConfigPayload[];
   } = {},
 ): Promise<AgentDeployResponse> {
+  const agentConfig: AgentConfigPayload = {
+    name: agentName,
+    model: options.model ?? "openai/gpt-4o-mini",
+    instructions:
+      options.instructions ??
+      "You are a concise test agent. Answer in one sentence.",
+    maxTurns: options.maxTurns ?? 1,
+  };
+  if (options.strategy) agentConfig.strategy = options.strategy;
+  if (options.synthesize !== undefined) {
+    agentConfig.synthesize = options.synthesize;
+  }
+  if (options.agents) agentConfig.agents = options.agents;
+
   return request<AgentDeployResponse>("POST", "/agent/deploy", {
-    agentConfig: {
-      name: agentName,
-      model: options.model ?? "openai/gpt-4o-mini",
-      instructions:
-        options.instructions ??
-        "You are a concise test agent. Answer in one sentence.",
-      maxTurns: options.maxTurns ?? 1,
-    },
+    agentConfig,
   });
 }
 
@@ -273,6 +294,25 @@ export async function deleteAgent(
 ): Promise<void> {
   const qs = version !== undefined ? `?version=${version}` : "";
   await request<void>("DELETE", `/agent/${encodeURIComponent(agentName)}${qs}`);
+}
+
+export interface AgentStartResponse {
+  executionId: string;
+  agentName?: string;
+}
+
+/** Starts a deployed agent via POST /api/agent/start. */
+export async function startAgent(
+  agentName: string,
+  prompt: string,
+  options: { version?: number } = {},
+): Promise<AgentStartResponse> {
+  const body: Record<string, unknown> = {
+    name: agentName,
+    prompt,
+  };
+  if (options.version !== undefined) body.version = options.version;
+  return request<AgentStartResponse>("POST", "/agent/start", body);
 }
 
 export interface AgentStatus {

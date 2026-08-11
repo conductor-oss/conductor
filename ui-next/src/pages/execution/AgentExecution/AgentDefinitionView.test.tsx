@@ -4,6 +4,7 @@ import {
   AgentDefinitionDiagram,
   AgentDefinitionView,
 } from "./AgentDefinitionView";
+import { buildDefDiagram } from "./buildDefDiagram";
 import { WorkflowExecution } from "types/Execution";
 
 vi.mock("reaflow", () => ({
@@ -12,12 +13,18 @@ vi.mock("reaflow", () => ({
   }: {
     nodes: Array<{
       id: string;
-      data: { sublabel?: string; strategy?: string; maxTurns?: number };
+      data: {
+        label?: string;
+        sublabel?: string;
+        strategy?: string;
+        maxTurns?: number;
+      };
     }>;
   }) => (
     <div>
       {nodes.map((node) => (
-        <div key={node.id}>
+        <div key={node.id} data-testid={`node-${node.id}`}>
+          {node.data.label && <span>{node.data.label}</span>}
           {node.data.sublabel && <span>{node.data.sublabel}</span>}
           {node.data.strategy && (
             <span data-testid={`strategy-${node.id}`}>
@@ -154,5 +161,130 @@ describe("AgentDefinitionDiagram — strategy / maxTurns visibility", () => {
     // Leaf sub-agent: strategy and turns suppressed
     expect(screen.queryByTestId("strategy-subagent-0")).not.toBeInTheDocument();
     expect(screen.queryByTestId("turns-subagent-0")).not.toBeInTheDocument();
+  });
+
+  it("renders strategy on a nested coordinator that itself has sub-agents", () => {
+    render(
+      <AgentDefinitionDiagram
+        agentDef={{
+          name: "Root",
+          strategy: "sequential",
+          agents: [
+            {
+              name: "Router",
+              strategy: "router",
+              maxTurns: 3,
+              agents: [{ name: "LeafA" }, { name: "LeafB" }],
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("strategy-subagent-0")).toHaveTextContent(
+      "router",
+    );
+    expect(screen.getByTestId("turns-subagent-0")).toHaveTextContent("3 turns");
+    expect(
+      screen.queryByTestId("strategy-subagent-0-0"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("buildDefDiagram — nested strategies", () => {
+  /** Mirrors the ztest_15_three_level repro: sequential → router → parallel. */
+  const threeLevelAgentDef = {
+    name: "ztest_15_three_level",
+    strategy: "sequential",
+    agents: [
+      { name: "ztest_15a", instructions: "classify" },
+      {
+        name: "ztest_15rou",
+        strategy: "router",
+        agents: [
+          { name: "ztest_15r", instructions: "the router/classifier" },
+          {
+            name: "ztest_15par",
+            strategy: "parallel",
+            agents: [
+              { name: "ztest_15b", instructions: "infra cause" },
+              { name: "ztest_15c", instructions: "code cause" },
+            ],
+          },
+          { name: "ztest_15d", instructions: "known-issue lookup" },
+        ],
+      },
+      { name: "ztest_15e", instructions: "postmortem" },
+    ],
+  };
+
+  it("draws every nested agent, not only the root's direct children", () => {
+    const { nodes } = buildDefDiagram(threeLevelAgentDef);
+    const labels = nodes
+      .filter((n) => n.data?.kind === "agent" || n.data?.kind === "subagent")
+      .map((n) => n.data!.label);
+
+    expect(labels).toEqual([
+      "ztest_15_three_level",
+      "ztest_15a",
+      "ztest_15rou",
+      "ztest_15r",
+      "ztest_15par",
+      "ztest_15b",
+      "ztest_15c",
+      "ztest_15d",
+      "ztest_15e",
+    ]);
+  });
+
+  it("wires a containment tree so nested coordinators do not absorb later siblings", () => {
+    const { edges } = buildDefDiagram(threeLevelAgentDef);
+    const pairs = edges.map((e) => `${e.from}→${e.to}`);
+
+    // Root fans out to each direct child (including postmortem) — not a→rou→e.
+    expect(pairs).toContain("agent→subagent-0"); // a
+    expect(pairs).toContain("agent→subagent-1"); // rou
+    expect(pairs).toContain("agent→subagent-2"); // e
+    expect(pairs).not.toContain("subagent-1→subagent-2");
+
+    // Router children hang under rou only
+    expect(pairs).toContain("subagent-1→subagent-1-0"); // r
+    expect(pairs).toContain("subagent-1→subagent-1-1"); // par
+    expect(pairs).toContain("subagent-1→subagent-1-2"); // d
+
+    // Parallel children hang under par only
+    expect(pairs).toContain("subagent-1-1→subagent-1-1-0"); // b
+    expect(pairs).toContain("subagent-1-1→subagent-1-1-1"); // c
+  });
+
+  it("hangs sequential gates off their step without reparenting the next sibling", () => {
+    const { nodes, edges } = buildDefDiagram({
+      name: "Root",
+      strategy: "sequential",
+      agents: [
+        {
+          name: "Outer",
+          strategy: "sequential",
+          agents: [
+            {
+              name: "StepWithGate",
+              gate: { type: "text_contains", text: "ok" },
+            },
+            { name: "AfterGate" },
+          ],
+        },
+      ],
+    });
+
+    expect(nodes.some((n) => n.id === "subagent-0-gate-0")).toBe(true);
+    const pairs = edges.map((e) => `${e.from}→${e.to}`);
+    expect(pairs).toEqual(
+      expect.arrayContaining([
+        "subagent-0→subagent-0-0",
+        "subagent-0→subagent-0-1",
+        "subagent-0-0→subagent-0-gate-0",
+      ]),
+    );
+    expect(pairs).not.toContain("subagent-0-gate-0→subagent-0-1");
   });
 });
