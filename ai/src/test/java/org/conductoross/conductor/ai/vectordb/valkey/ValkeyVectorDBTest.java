@@ -720,22 +720,31 @@ class ValkeyVectorDBTest {
 
         Object[] vectorAttribute =
                 new Object[] {
-                    GlideString.gs("identifier"), GlideString.gs("embedding"),
-                    GlideString.gs("attribute"), GlideString.gs("embedding"),
-                    GlideString.gs("user_indexed_memory"), 16L,
-                    GlideString.gs("type"), GlideString.gs("VECTOR"),
+                    GlideString.gs("identifier"),
+                    GlideString.gs("embedding"),
+                    GlideString.gs("attribute"),
+                    GlideString.gs("embedding"),
+                    GlideString.gs("user_indexed_memory"),
+                    16L,
+                    GlideString.gs("type"),
+                    GlideString.gs("VECTOR"),
                     GlideString.gs("index"),
                     new Object[] {
-                        GlideString.gs("capacity"), 10240L,
-                        GlideString.gs("dimensions"), 8L,
-                        GlideString.gs("distance_metric"), GlideString.gs("COSINE"),
-                        GlideString.gs("size"), GlideString.gs("1"),
-                        GlideString.gs("data_type"), GlideString.gs("FLOAT32"),
-                        GlideString.gs("algorithm"), new Object[] {}
+                        GlideString.gs("capacity"),
+                        10240L,
+                        GlideString.gs("dimensions"),
+                        8L,
+                        GlideString.gs("distance_metric"),
+                        GlideString.gs("COSINE"),
+                        GlideString.gs("size"),
+                        GlideString.gs("1"),
+                        GlideString.gs("data_type"),
+                        GlideString.gs("FLOAT32"),
+                        GlideString.gs("algorithm"),
+                        new Object[] {}
                     }
                 };
-        Map<String, Object> info =
-                Map.of("attributes", new Object[] {vectorAttribute});
+        Map<String, Object> info = Map.of("attributes", new Object[] {vectorAttribute});
 
         try (MockedStatic<FT> ft = mockStatic(FT.class)) {
             ft.when(

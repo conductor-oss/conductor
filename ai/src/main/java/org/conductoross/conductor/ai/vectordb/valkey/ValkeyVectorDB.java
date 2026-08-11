@@ -43,8 +43,8 @@ import static glide.api.models.GlideString.gs;
  * Valkey vector database backend using the {@code valkey-search} module (FT.CREATE / FT.SEARCH).
  *
  * <p>Score semantics: the {@code __embedding_score} field returned by valkey-search is a distance
- * value where lower is better for COSINE, L2, and IP. COSINE scores are 0 for identical vectors
- * and 1 for orthogonal vectors; IP uses Valkey Search's {@code 1 - dot(X,Y)} distance.
+ * value where lower is better for COSINE, L2, and IP. COSINE scores are 0 for identical vectors and
+ * 1 for orthogonal vectors; IP uses Valkey Search's {@code 1 - dot(X,Y)} distance.
  *
  * <p>Key schema: {@code <keyPrefix>:<indexName>:<namespace>:<docId>}. The FT.CREATE PREFIX filter
  * is set to {@code <keyPrefix>:<indexName>:<namespace>:} so that HSET keys are automatically

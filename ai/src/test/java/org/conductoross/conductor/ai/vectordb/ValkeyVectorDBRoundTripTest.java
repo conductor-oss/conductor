@@ -64,6 +64,7 @@ public class ValkeyVectorDBRoundTripTest {
 
     /** Query vector; distances below are derived from it. */
     private static final List<Float> QUERY = List.of(1f, 0f, 0f, 0f);
+
     private static final Duration SEARCH_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration SEARCH_POLL_INTERVAL = Duration.ofMillis(100);
 
@@ -132,8 +133,12 @@ public class ValkeyVectorDBRoundTripTest {
             }
         }
         throw new AssertionError(
-                "Timed out after " + timeout + " waiting for " + conditionDescription
-                        + "; last result count=" + results.size());
+                "Timed out after "
+                        + timeout
+                        + " waiting for "
+                        + conditionDescription
+                        + "; last result count="
+                        + results.size());
     }
 
     @Test
@@ -228,8 +233,9 @@ public class ValkeyVectorDBRoundTripTest {
                                     "docs",
                                     "ns",
                                     1,
-                                    results -> results.size() == 1
-                                            && "revised".equals(results.get(0).getText()),
+                                    results ->
+                                            results.size() == 1
+                                                    && "revised".equals(results.get(0).getText()),
                                     SEARCH_TIMEOUT,
                                     "the revised document")
                             .get(0);
