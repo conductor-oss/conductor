@@ -1,6 +1,6 @@
 # SDKs
 
-Conductor provides official SDKs for seven languages. An SDK lets you write workers, define workflows in code, and call the Conductor API from your application. Every SDK below has its own reference page covering installation, worker setup, and runnable examples. If you are new to Conductor, start with the quickstarts in [Getting Started](../../quickstart/index.md), then return here for the details of your language.
+Conductor provides official SDKs for seven languages. Each lets you write workers, define workflows in code, and call the Conductor API from your application. Every SDK below has its own reference page covering installation, worker setup, and runnable examples. If you are new to Conductor, start with the quickstarts in [Getting Started](../../quickstart/index.md), then return here for the details of your language.
 
 <div class="sdk-grid">
 <a href="java-sdk.html" class="sdk-card"><div class="sdk-icon sdk-java" aria-hidden="true"></div><div class="sdk-info"><h3>Java</h3><p>Spring Boot integration, annotation-based workers, thread management, and testing framework.</p></div><span class="sdk-arrow">→</span></a>
