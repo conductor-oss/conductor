@@ -13,14 +13,19 @@
 
 // Contains overrides for Spring Boot Dependency Management plugin
 // Spring Boot documents supported dependency version override properties at
-// https://docs.spring.io/spring-boot/3.3/appendix/dependency-versions/properties.html.
+// https://docs.spring.io/spring-boot/4.1/appendix/dependency-versions/properties.html.
 
-// Keep server runtime dependencies on patched versions until the Spring Boot BOM includes them.
-ext['spring-framework.version'] = '6.2.19'
-ext['spring-security.version'] = '6.5.11'
-ext['log4j2.version'] = '2.25.4'
-ext['netty.version'] = '4.1.135.Final'
-ext['kafka.version'] = '3.9.1'
+// The spring-framework, spring-security, log4j2 and netty overrides that pinned patched versions
+// under Spring Boot 3.3 are gone: the Spring Boot 4.1.0 BOM already manages versions at or above
+// each of those floors (spring-framework 7.0.8, spring-security 7.1.0, netty 4.2.15.Final,
+// log4j2 2.25.4). Keeping them would have *downgraded* those libraries — and pinning
+// spring-framework to 6.2.19 under a Framework 7 baseline does not merely lose fixes, it fails to
+// compile, since classes such as AbstractStreamingClientHttpRequest are only public in 7.x.
+// Re-pin here only for a CVE the BOM has not yet picked up, and re-check on each Boot upgrade.
+
+// Kafka 4.x drops the broker APIs the event-queue module's client still targets, so this pin is a
+// deliberate compatibility constraint rather than a security floor, and it stays.
+ext['kafka.version'] = revKafka
 
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch7
