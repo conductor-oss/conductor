@@ -38,7 +38,6 @@ nav:
     - Durable Execution: architecture/durable-execution.md
     - JSON + Code Native: architecture/json-native.md
     - Task Lifecycle: devguide/architecture/tasklifecycle.md
-    - Operations: devguide/operate/index.md
     - Deploy:
       - Docker: devguide/running/deploy.md
       - From Source: devguide/running/source.md
