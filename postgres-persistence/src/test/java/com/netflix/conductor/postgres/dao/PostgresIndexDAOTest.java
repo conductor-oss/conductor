@@ -168,6 +168,51 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testIndexWorkflowStoresEndTimeOnceItIsSet() throws SQLException {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-end-time");
+
+        // Still running: no end time on the summary, so the column holds the epoch sentinel
+        // rather than NULL, which is what keeps endTime ordering the same on Postgres and SQLite.
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "Unfinished workflow should store the epoch",
+                Timestamp.from(Instant.EPOCH),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+
+        // Terminal: the end time must reach the column through the ON CONFLICT update path too,
+        // since the row already exists by the time the workflow finishes.
+        wfs.setEndTime("2023-02-07T08:44:45Z");
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "End time does not match",
+                Timestamp.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getEndTime()))),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+    }
+
+    @Test
+    public void testIndexTaskStoresEndTime() throws SQLException {
+        TaskSummary ts = getMockTaskSummary("task-id-end-time");
+        ts.setEndTime("2023-02-07T09:43:45Z");
+
+        indexDAO.indexTask(ts);
+
+        assertEquals(
+                "End time does not match",
+                Timestamp.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getEndTime()))),
+                queryEndTime("task_index", "task_id", "task-id-end-time"));
+    }
+
+    private Object queryEndTime(String table, String idColumn, String id) throws SQLException {
+        List<Map<String, Object>> result =
+                queryDb(
+                        String.format(
+                                "SELECT end_time FROM %s WHERE %s = '%s'", table, idColumn, id));
+        assertEquals("Wrong number of rows returned", 1, result.size());
+        return result.get(0).get("end_time");
+    }
+
+    @Test
     public void testIndexNewWorkflow() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-new");
 
