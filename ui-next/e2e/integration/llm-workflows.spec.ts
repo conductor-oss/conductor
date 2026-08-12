@@ -97,6 +97,38 @@ async function expectTaskOutputVisible(
   });
 }
 
+/** Summarize why a workflow/task failed (quota, rate limit, token limit, etc.). */
+function formatLlmFailureDetails(
+  wf: Awaited<ReturnType<typeof waitForWorkflow>>,
+): string {
+  const lines: string[] = [];
+  if (wf.reasonForIncompletion) {
+    lines.push(`workflow reason: ${wf.reasonForIncompletion}`);
+  }
+
+  const failedTasks = (wf.tasks ?? []).filter(
+    (t) => t.status === "FAILED" || t.status === "FAILED_WITH_TERMINAL_ERROR",
+  );
+  for (const task of failedTasks) {
+    const bits = [
+      `${task.referenceTaskName} (${task.taskType}) status=${task.status}`,
+    ];
+    if (task.reasonForIncompletion) {
+      bits.push(`reason=${task.reasonForIncompletion}`);
+    }
+    if (task.outputData && Object.keys(task.outputData).length > 0) {
+      // Keep output compact — OpenAI errors often land here as message/code.
+      bits.push(`output=${JSON.stringify(task.outputData)}`);
+    }
+    lines.push(`task: ${bits.join("; ")}`);
+  }
+
+  if (lines.length === 0) {
+    return "no reasonForIncompletion or failed task details on execution";
+  }
+  return lines.join("\n");
+}
+
 /**
  * Start an LLM workflow and wait until COMPLETED. Retries once on FAILED so
  * transient OpenAI errors don't flake the suite.
@@ -120,7 +152,8 @@ async function runLlmWorkflowToCompletion(
 
     lastError = new Error(
       `LLM workflow ${workflowName} attempt ${attempt}/${LLM_EXECUTION_ATTEMPTS} ` +
-        `ended as ${wf.status} (id=${workflowId})`,
+        `ended as ${wf.status} (id=${workflowId})\n` +
+        formatLlmFailureDetails(wf),
     );
   }
   throw lastError ?? new Error(`LLM workflow ${workflowName} did not complete`);

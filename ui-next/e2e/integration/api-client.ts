@@ -86,6 +86,7 @@ export interface WorkflowTaskExecution {
   referenceTaskName: string;
   status: string;
   taskId?: string;
+  reasonForIncompletion?: string;
   outputData?: Record<string, unknown>;
 }
 
@@ -95,6 +96,7 @@ export interface WorkflowExecution {
   /** Present on search hits; GET /workflow/{id} uses workflowName instead. */
   workflowType?: string;
   workflowName?: string;
+  reasonForIncompletion?: string;
   tasks?: WorkflowTaskExecution[];
   input?: Record<string, unknown>;
   output?: Record<string, unknown>;
