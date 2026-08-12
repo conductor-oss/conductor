@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,9 +85,7 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For Conductor-Agents, preserve marked
-            // tool outputs with their identity, compact state-only branches, and pass through
-            // unmarked tool outputs for the ReAct state merge.
+            // Only add to task output if it's not empty.
             if (!forkedTask.getOutputData().isEmpty()) {
                 Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
@@ -154,16 +153,32 @@ public class Join extends WorkflowSystemTask {
         return output != null && AGENT_PROPAGATED_KEYS.stream().anyMatch(output::containsKey);
     }
 
+    /**
+     * Shapes a fork branch's output for a Conductor-Agents JOIN:
+     *
+     * <ul>
+     *   <li>Branches marked with {@code _agent_tool_name} keep their tool identity: the full output
+     *       is wrapped under {@code _agent_tool_output}. Identity takes precedence because a tool
+     *       output may also contain state updates.
+     *   <li>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
+     *       merge keys to keep the JOIN payload small.
+     *   <li>Unmarked outputs (e.g. MCP or HTTP tool results) pass through untouched for the ReAct
+     *       state merge.
+     * </ul>
+     *
+     * <p>Constructed maps are unmodifiable; the pass-through branch intentionally returns the
+     * task's live output map to preserve default JOIN behavior.
+     */
     private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();
 
-        // Tool identity takes precedence because a tool output may also contain state updates.
         Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
         if (agentToolName != null) {
+            // LinkedHashMap (not Map.of): tool outputs may legitimately contain null values.
             Map<String, Object> toolOutput = new LinkedHashMap<>();
             toolOutput.put("_agent_tool_name", agentToolName);
             toolOutput.put("_agent_tool_output", output);
-            return toolOutput;
+            return Collections.unmodifiableMap(toolOutput);
         }
 
         if (carriesAgentState(output)) {
@@ -181,7 +196,7 @@ public class Join extends WorkflowSystemTask {
                 }
             }
         }
-        return compact;
+        return Collections.unmodifiableMap(compact);
     }
 
     @Override
