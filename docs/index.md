@@ -2,82 +2,22 @@
 hide:
   - navigation
   - toc
-description: Conductor is an open-source platform for building production-grade AI agents and workflows. Open sourced by Netflix Engineering — cloud agnostic, language agnostic, and deployment agnostic.
+description: Conductor is an open-source platform for building production-grade AI agents and workflows. Originally created by Netflix Engineering — cloud agnostic, language agnostic, and deployment agnostic.
 ---
 
 <div class="home-wrapper">
 
 <div class="hero">
-  <div class="hero-badge">Apache 2.0 Licensed &middot; Originally created at Netflix</div>
   <h1 class="hero-title">Build production-grade<br/>AI agents and workflows</h1>
-  <p class="hero-subtitle">Open sourced by Netflix Engineering, and built for performance and scale. Cloud, language, and deployment agnostic.</p>
+  <p class="hero-subtitle">Originally created by Netflix Engineering, and built for performance and scale. Cloud, language, and deployment agnostic.</p>
   <p class="hero-subtitle">Build native workflows and agents, or bring your own agents from any framework.</p>
   <div class="hero-actions">
     <a href="quickstart/index.html" class="btn-primary">Get Started<span class="btn-arrow">&rarr;</span></a>
-    <a href="https://github.com/conductor-oss/conductor" class="repo-link" id="hero-repo-link">
-      <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      <span>View on Github</span>
-      <span class="repo-stats" id="repo-stats"></span>
-    </a>
-    <script>
-      fetch("https://api.github.com/repos/conductor-oss/conductor")
-        .then(function(r){return r.json()})
-        .then(function(d){
-          var el=document.getElementById("repo-stats");
-          if(el&&d.stargazers_count){
-            var s=d.stargazers_count>=1000?(d.stargazers_count/1000).toFixed(1)+"k":d.stargazers_count;
-            el.innerHTML='<span class="repo-stat">&#9733; '+s+'</span>';
-          }
-        }).catch(function(){});
-    </script>
+    <p class="home-skills-line">Using an AI coding agent? Install <a href="devguide/how-tos/conductor-skills.html">Conductor Skills</a>.</p>
   </div>
-  <p class="home-skills-line">Using an AI coding agent? Install <a href="devguide/how-tos/conductor-skills.html">Conductor Skills</a>.</p>
 </div>
 
 <div class="home-section home-section--alt">
-  <div class="section-header-inline">
-    <h2>Code in any language</h2>
-  </div>
-  <div class="home-sdk-grid">
-    <a class="home-sdk-card" href="documentation/clientsdks/python-sdk.html">
-      <img src="https://orkes.io/content/img/Python_logo.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>Python</strong><span>conductor-oss/python-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/java-sdk.html">
-      <img src="https://orkes.io/content/img/java.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>Java</strong><span>conductor-oss/java-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/js-sdk.html">
-      <img src="https://orkes.io/content/img/JavaScript_logo_2.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>TypeScript</strong><span>conductor-oss/javascript-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/csharp-sdk.html">
-      <img src="https://orkes.io/content/img/csharp.png" alt="" />
-      <span class="home-sdk-card__meta"><strong>.NET</strong><span>conductor-oss/csharp-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/go-sdk.html">
-      <img src="https://orkes.io/content/img/Go_Logo_Blue.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>Go</strong><span>conductor-oss/go-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/ruby-sdk.html">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>Ruby</strong><span>conductor-oss/ruby-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-    <a class="home-sdk-card" href="documentation/clientsdks/rust-sdk.html">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Rust_programming_language_black_logo.svg" alt="" />
-      <span class="home-sdk-card__meta"><strong>Rust</strong><span>conductor-oss/rust-sdk</span></span>
-      <span class="home-sdk-card__arrow">&rarr;</span>
-    </a>
-  </div>
-</div>
-
-<div class="home-section">
   <div class="section-header-inline">
     <h2>Get started</h2>
   </div>
@@ -117,6 +57,49 @@ description: Conductor is an open-source platform for building production-grade 
       <span class="integration-action-card__title">Design Patterns</span>
       <span>Reference patterns for microservices, timers, event-driven workflows, and AI orchestration.</span>
       <span class="home-card-cta">Browse patterns &rarr;</span>
+    </a>
+  </div>
+</div>
+
+<div class="home-section">
+  <div class="section-header-inline">
+    <h2>Code in any language</h2>
+  </div>
+  <div class="home-sdk-grid">
+    <a class="home-sdk-card" href="documentation/clientsdks/python-sdk.html">
+      <img src="https://orkes.io/content/img/Python_logo.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>Python</strong><span>conductor-oss/python-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/java-sdk.html">
+      <img src="https://orkes.io/content/img/java.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>Java</strong><span>conductor-oss/java-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/js-sdk.html">
+      <img src="https://orkes.io/content/img/JavaScript_logo_2.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>TypeScript</strong><span>conductor-oss/javascript-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/csharp-sdk.html">
+      <img src="https://orkes.io/content/img/csharp.png" alt="" />
+      <span class="home-sdk-card__meta"><strong>.NET</strong><span>conductor-oss/csharp-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/go-sdk.html">
+      <img src="https://orkes.io/content/img/Go_Logo_Blue.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>Go</strong><span>conductor-oss/go-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/ruby-sdk.html">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>Ruby</strong><span>conductor-oss/ruby-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
+    </a>
+    <a class="home-sdk-card" href="documentation/clientsdks/rust-sdk.html">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/d/d5/Rust_programming_language_black_logo.svg" alt="" />
+      <span class="home-sdk-card__meta"><strong>Rust</strong><span>conductor-oss/rust-sdk</span></span>
+      <span class="home-sdk-card__arrow">&rarr;</span>
     </a>
   </div>
 </div>
