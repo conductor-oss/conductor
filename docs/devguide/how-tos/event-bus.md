@@ -61,9 +61,8 @@ Monitor broker queue depth (`event_queue_depth`), message processing (`event_que
 
 ## Next steps
 
-<div class="event-next-steps">
-  <a href="publish-events.html">Publish events →</a>
-  <a href="consume-route-events.html">Consume and route events →</a>
-  <a href="incoming-webhooks.html">Receive webhooks →</a>
-  <a href="../cookbook/sending-signals.html">Send workflow signals →</a>
-</div>
+- **[Publish events](publish-events.md)** — send workflow data to a broker.
+- **[Consume and route events](consume-route-events.md)** — start or advance workflows from incoming messages.
+- **[Incoming webhooks](incoming-webhooks.md)** — accept verified HTTP callbacks.
+- **[Send signals](../cookbook/sending-signals.md)** — advance an execution that is waiting.
+- **[Workflow status events](workflow-status-events.md)** — notify external systems as executions change state.
