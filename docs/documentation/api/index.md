@@ -116,7 +116,7 @@ curl "http://localhost:8080/api/workflow/$WORKFLOW_ID"
 | **[Files](files.md)** | `/api/files` | Create workflow-scoped file handles and exchange signed upload/download URLs; requires file storage |
 | **[Task Domains](taskdomains.md)** | — | Route tasks to specific worker pools at runtime |
 | **[Scheduler](scheduler.md)** | `/api/scheduler` | Create, search, pause, resume, and bulk-manage schedules; requires `conductor.scheduler.enabled=true` |
-| **[Conductor Agents](agents.md)** | `/api/agent` | Compile, deploy, start, observe, and control SDK-authored durable agents; requires `agentspan.embedded=true` |
+| **[Conductor Agents](agents.md)** | `/api/agent` | Compile, deploy, start, observe, and control SDK-authored durable agents; requires `conductor.integrations.ai.enabled=true` |
 
 ## Swagger UI
 

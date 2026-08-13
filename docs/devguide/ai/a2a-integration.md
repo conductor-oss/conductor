@@ -360,7 +360,7 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 }
 ```
 
-**Routing: one agent per workflow.** Each exposed workflow is its own focused agent under `/api/a2a/workflow`; native Conductor agents (agentspan) are under `/api/a2a/agent`:
+**Routing: one agent per workflow.** Each exposed workflow is its own focused agent under `/api/a2a/workflow`; native Conductor agents are under `/api/a2a/agent`:
 
 | Method & path | Purpose |
 |---|---|
@@ -368,7 +368,7 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 | `POST /api/a2a/workflow/{name}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
 | `GET /api/a2a/workflow` | Convenience listing of exposed workflow agents (non-spec). |
 | `GET /api/a2a/agent/{name}/.well-known/agent-card.json` | Agent Card for a native Conductor agent (also `/agent.json`). |
-| `POST /api/a2a/agent/{name}` | JSON-RPC: same methods, backed by the agentspan runtime. |
+| `POST /api/a2a/agent/{name}` | JSON-RPC: same methods, backed by the Conductor Agents runtime. |
 | `GET /api/a2a/agent` | Convenience listing of exposed native agents (non-spec). |
 
 Exposed agents advertise `capabilities.streaming=true`.
@@ -567,7 +567,7 @@ A2A code paths emit metrics through the shared Conductor metrics registry and se
 | `conductor.a2a.client.allow-private-network` | `false` | Allow agent URLs on private/loopback networks (metadata still blocked). |
 | `conductor.a2a.server.enabled` | `false` | Enables the A2A server endpoints. |
 | `conductor.a2a.server.basePath` | `/api/a2a/workflow` | Base path for workflow-backed agents. |
-| `conductor.a2a.server.agentBasePath` | `/api/a2a/agent` | Base path for native Conductor agents (agentspan). |
+| `conductor.a2a.server.agentBasePath` | `/api/a2a/agent` | Base path for native Conductor agents. |
 | `conductor.a2a.server.exposed-workflows` | — | Comma-separated workflow names to expose. |
 | `conductor.a2a.server.expose-all` | `false` | Expose all registered workflows automatically (dev/single-tenant). |
 | `conductor.a2a.server.public-url` | request-derived | Base URL advertised in the agent card. |
