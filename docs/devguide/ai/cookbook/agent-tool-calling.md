@@ -30,8 +30,8 @@ Each SDK reads its own environment variables. Use the row for your language:
 |---|---|---|
 | Python | `CONDUCTOR_AGENT_LLM_MODEL` | `CONDUCTOR_SERVER_URL` |
 | Java | `CONDUCTOR_AGENT_LLM_MODEL` | `CONDUCTOR_SERVER_URL` |
-| TypeScript | `AGENTSPAN_LLM_MODEL` | `AGENTSPAN_SERVER_URL` |
-| C# | `AGENTSPAN_LLM_MODEL` | `CONDUCTOR_SERVER_URL`, then `AGENTSPAN_SERVER_URL` |
+| TypeScript | `CONDUCTOR_AGENT_LLM_MODEL` | `CONDUCTOR_SERVER_URL` |
+| C# | `CONDUCTOR_AGENT_LLM_MODEL` | `CONDUCTOR_SERVER_URL` |
 
 The examples below pass `model` explicitly so they do not depend on which variable your SDK reads.
 
