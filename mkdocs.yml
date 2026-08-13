@@ -8,12 +8,10 @@ use_directory_urls: false
 exclude_docs: |
   index.html
 not_in_nav: |
-  design/**
   devguide/architecture/directed-acyclic-graph.md
   devguide/cookbook/files-api-usecase.md
   devguide/labs/**
   documentation/advanced/annotation-processor.md
-  launch/**
   quickstart/choose-path.md
   resources/license.md
   wmq/**
