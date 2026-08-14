@@ -4,17 +4,9 @@ description: Production-ready Conductor AI workflow starters for knowledge, tool
 
 # AI Cookbook
 
-<section class="ai-cookbook-hero" aria-labelledby="ai-cookbook-hero-title">
+<section class="ai-cookbook-hero" aria-label="AI Cookbook overview">
   <div class="ai-cookbook-hero__content">
-    <p class="ai-cookbook-hero__eyebrow">Production workflow starters</p>
-    <h2 id="ai-cookbook-hero-title">From useful AI pattern to governed production workflow.</h2>
     <p>Choose a focused recipe, start from its runnable asset, and adapt the integrations around it. Every starter makes the operating contract visible: bounded execution, durable evidence, policy controls, and a deliberate handoff before a consequential action.</p>
-    <div class="ai-cookbook-hero__legend" aria-label="Production controls included in recipes">
-      <span><i class="ai-cookbook-hero__swatch ai-cookbook-hero__swatch--input" aria-hidden="true"></i>Business input</span>
-      <span><i class="ai-cookbook-hero__swatch ai-cookbook-hero__swatch--ai" aria-hidden="true"></i>AI capability</span>
-      <span><i class="ai-cookbook-hero__swatch ai-cookbook-hero__swatch--control" aria-hidden="true"></i>Policy control</span>
-      <span><i class="ai-cookbook-hero__swatch ai-cookbook-hero__swatch--outcome" aria-hidden="true"></i>Inspectable output</span>
-    </div>
   </div>
   <svg class="ai-cookbook-hero__diagram" viewBox="0 0 540 410" role="img" aria-labelledby="ai-cookbook-diagram-title ai-cookbook-diagram-description">
     <title id="ai-cookbook-diagram-title">AI Cookbook production starter model</title>
