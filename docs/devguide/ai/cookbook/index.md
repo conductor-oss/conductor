@@ -6,7 +6,7 @@ description: Production-ready Conductor AI workflow starters for knowledge, tool
 
 <section class="ai-cookbook-hero" aria-label="AI Cookbook overview">
   <div class="ai-cookbook-hero__content">
-    <p>Choose a focused recipe, start from its runnable asset, and adapt the integrations around it. Every starter makes the operating contract visible: bounded execution, durable evidence, policy controls, and a deliberate handoff before a consequential action.</p>
+    <p>Each recipe on this page is a complete, runnable AI workflow. Register the definition, run it, then swap in your own models, tools, and data. The recipes are built the way you would run them in production: loops have limits, tool access is allowlisted, risky steps wait for human approval, and every run records what happened.</p>
   </div>
   <svg class="ai-cookbook-hero__diagram" viewBox="0 0 540 410" role="img" aria-labelledby="ai-cookbook-diagram-title ai-cookbook-diagram-description">
     <title id="ai-cookbook-diagram-title">AI Cookbook production starter model</title>
@@ -19,7 +19,6 @@ description: Production-ready Conductor AI workflow starters for knowledge, tool
         <path d="M 0 0 L 10 5 L 0 10 z" class="ai-cookbook-hero__arrowhead ai-cookbook-hero__arrowhead--control" />
       </marker>
     </defs>
-    <text x="20" y="20" class="ai-cookbook-hero__lane">RECIPE CATEGORIES</text>
     <rect x="20" y="82" width="220" height="72" rx="10" class="ai-cookbook-hero__family ai-cookbook-hero__family--workflows" />
     <text x="40" y="108" class="ai-cookbook-hero__label">Agentic Workflows</text>
     <text x="40" y="126" class="ai-cookbook-hero__detail">the graph decides what runs</text>
@@ -41,7 +40,6 @@ description: Production-ready Conductor AI workflow starters for knowledge, tool
     <path d="M326 318 l10 10 22 -25" class="ai-cookbook-hero__check" />
     <text x="432" y="313" text-anchor="middle" class="ai-cookbook-hero__label">Inspectable outcome</text>
     <text x="432" y="332" text-anchor="middle" class="ai-cookbook-hero__detail">evidence · state · media reference</text>
-    <text x="404" y="389" text-anchor="middle" class="ai-cookbook-hero__caption">adapt integrations, retain the operating contract</text>
   </svg>
 </section>
 
