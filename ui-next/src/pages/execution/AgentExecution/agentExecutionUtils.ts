@@ -832,6 +832,20 @@ export function transformWorkflowExecutionToAgentRun(
   const rootAgentName: string =
     execution.workflowName ?? execution.workflowType ?? "";
 
+  // A real sub-agent turn renders its subAgent box AFTER its own events (a
+  // fixed convention in AgentExecutionDiagram, not something worth changing
+  // here) — so a "this agent is handing off" event attached to the SAME
+  // iteration as the sub-agent box would render ABOVE that box instead of
+  // below it, reading backwards ("here's the handoff" before "here's what
+  // the agent actually did"). Deferring it to the front of the NEXT
+  // iteration's events sidesteps that: it then renders right after the
+  // "TURN N+1" marker, immediately before that turn's own content — "here's
+  // who's taking over" followed by their work, which is the correct order
+  // either way. Self-call turns don't have this conflict (there's no
+  // sub-agent box competing for the same iteration), so their handoffs stay
+  // attached to the turn that produced them.
+  let pendingIncomingHandoff: AgentEvent | null = null;
+
   const turns: AgentTurn[] = sortedIters
     .map(([, iterTasks], idx) => {
       const agentTasks = iterTasks.filter(isAgentSubWorkflow);
@@ -870,6 +884,36 @@ export function transformWorkflowExecutionToAgentRun(
       );
 
       const events: AgentEvent[] = [];
+      if (pendingIncomingHandoff) {
+        events.push(pendingIncomingHandoff);
+        pendingIncomingHandoff = null;
+      }
+
+      // The swarm's own handoff_check task (a sibling INLINE task in this
+      // same iteration) records whether a *condition-based* handoff
+      // (on_tool_result/on_condition) fired this turn, independently of
+      // whether the acting agent issued an explicit transfer tool call.
+      // Resolved once per iteration — both the self-call branch below and
+      // the real-sub-agent branch further down need it, and it's the same
+      // fact either way.
+      const handoffCheckTask = iterTasks.find(
+        (t) =>
+          t.taskType === "INLINE" &&
+          t.referenceTaskName.includes("_handoff_check__"),
+      );
+      const checkedHandoff = handoffCheckTask?.outputData?.result as
+        | { active_agent?: string; handoff?: boolean }
+        | undefined;
+      const resolveHandoffTarget = (activeAgent: string): string => {
+        const agents = agentDefMeta?.agents as
+          | Array<Record<string, unknown>>
+          | undefined;
+        const targetIdx = parseInt(activeAgent, 10);
+        return targetIdx === 0
+          ? rootAgentName
+          : ((agents?.[targetIdx - 1]?.name as string | undefined) ??
+            activeAgent);
+      };
 
       // Self-calls → HANDOFF events (the agent deciding where to route)
       for (const task of selfCalls) {
@@ -888,35 +932,87 @@ export function transformWorkflowExecutionToAgentRun(
             detail: { transfer_to: transferTo, agent: rootAgentName },
             durationMs,
           });
+        } else if (checkedHandoff?.handoff && checkedHandoff.active_agent) {
+          // Self-call with no explicit transfer call, but a condition-based
+          // handoff fired anyway. Render the clean handoff arrow — "the
+          // swarm agents taking over" is the useful signal here, not the
+          // raw tool-call payload that drove the decision (drill into the
+          // agent's own execution for that).
+          const targetName = resolveHandoffTarget(checkedHandoff.active_agent);
+          events.push({
+            id: `${task.taskId}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: task.endTime ?? 0,
+            summary: `→ ${targetName}`,
+            targetAgent: targetName,
+            detail: { transfer_to: targetName, agent: rootAgentName },
+            durationMs,
+          });
         } else {
-          // Self-call with no transfer → agent responded directly (final response)
+          const result = task.outputData?.result;
+          const resultStr =
+            typeof result === "string" && result.length > 0
+              ? result
+              : undefined;
           events.push({
             id: `${task.taskId}-msg`,
             type: EventType.MESSAGE,
             timestamp: task.endTime ?? 0,
             summary: "Agent responded",
+            ...(resultStr ? { detail: resultStr } : {}),
             durationMs,
           });
         }
       }
 
-      // Also handle HANDOFF-strategy router tasks (team_t1 style)
+      // Real sub-agent turn (no self-call): what happens *after* that
+      // agent's own turn — an explicit transfer it issued itself, a
+      // condition-based handoff caught by the swarm's handoff_check, or a
+      // HANDOFF-strategy router decision (team_t1 style) — isn't visible
+      // anywhere else, since the subAgents built below only render that
+      // agent's own turn content. Without this, e.g. account_specialist's
+      // handoff to billing_specialist rendered nothing at all in between.
       if (selfCalls.length === 0) {
+        const explicitTransfer = subAgentTasks.find(
+          (t) => t.outputData?.is_transfer && t.outputData?.transfer_to,
+        );
         const routerTask = iterTasks.find((t) =>
           t.referenceTaskName.includes("_router_"),
         );
         const routingDecision = routerTask?.outputData?.result as
           | string
           | undefined;
-        if (routingDecision && subAgentTasks.length > 0) {
-          events.push({
+
+        if (explicitTransfer) {
+          const transferTo = explicitTransfer.outputData
+            ?.transfer_to as string;
+          pendingIncomingHandoff = {
+            id: `${explicitTransfer.taskId}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: explicitTransfer.endTime ?? 0,
+            summary: `→ ${transferTo}`,
+            targetAgent: transferTo,
+            detail: { transfer_to: transferTo },
+          };
+        } else if (checkedHandoff?.handoff && checkedHandoff.active_agent) {
+          const targetName = resolveHandoffTarget(checkedHandoff.active_agent);
+          pendingIncomingHandoff = {
+            id: `iter-${idx}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: handoffCheckTask?.endTime ?? 0,
+            summary: `→ ${targetName}`,
+            targetAgent: targetName,
+            detail: { transfer_to: targetName },
+          };
+        } else if (routingDecision && subAgentTasks.length > 0) {
+          pendingIncomingHandoff = {
             id: `iter-${idx}-route`,
             type: EventType.HANDOFF,
             timestamp: routerTask?.endTime ?? 0,
             summary: `→ ${routingDecision}`,
             targetAgent: routingDecision,
             detail: { routing_decision: routingDecision },
-          });
+          };
         }
       }
 
