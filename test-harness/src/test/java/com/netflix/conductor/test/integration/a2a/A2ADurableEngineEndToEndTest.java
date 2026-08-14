@@ -214,7 +214,7 @@ class A2ADurableEngineEndToEndTest {
      */
     private void drainQueue(String taskType) {
         WorkflowSystemTask task = systemTask(taskType);
-        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+        for (String taskId : queueDAO.pop(taskType, 5, 0)) {
             asyncSystemTaskExecutor.execute(task, taskId);
         }
     }

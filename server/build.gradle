@@ -20,7 +20,7 @@ dependencies {
     implementation project(':conductor-rest')
     implementation project(':conductor-grpc-server')
     implementation project(':conductor-ai')
-    // Embedded AgentSpan runtime (REST controllers, agent services); activated only when
+    // Embedded Conductor-Agents runtime (REST controllers, agent services); activated only when
     // conductor.integrations.ai.enabled=true.
     implementation project(':conductor-agentspan')
 
@@ -35,7 +35,7 @@ dependencies {
     implementation project(':conductor-azureblob-storage')
     implementation project(':conductor-postgres-external-storage')
     implementation project(':conductor-awss3-storage')
-    implementation project(':conductor-local-file-storage')
+    implementation project(':conductor-file-storage')
     implementation project(':conductor-gcs-storage')
 
 
@@ -82,6 +82,11 @@ dependencies {
     implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
     implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
+    // Restores OTLP metrics export removed when the conductor-metrics module was
+    // retired (commit 396a09a4f, #1059). Spring Boot's OtlpMetricsAutoConfiguration
+    // wires OtlpMeterRegistry when management.otlp.metrics.export.enabled=true,
+    // mirroring how the prometheus registry is auto-configured.
+    implementation "io.micrometer:micrometer-registry-otlp:${revMicrometer}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')
@@ -107,6 +112,13 @@ dependencies {
 
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+
+    // reactor-netty brings netty-transport-classes-epoll along with the linux-x86_64 native library
+    // only. The cassandra driver probes for the epoll transport with Class.forName (NettyUtil), and
+    // on linux-aarch_64 the missing native library surfaces as an UnsatisfiedLinkError, which the
+    // driver does not catch - the server then fails to start on arm64. Ship both architectures.
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-x86_64'
+    runtimeOnly group: 'io.netty', name: 'netty-transport-native-epoll', classifier: 'linux-aarch_64'
 
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')

@@ -193,6 +193,11 @@ class ConductorAgentDelegateTest {
 
     private static final class FakeConductorAgentClient implements ConductorAgentClient {
 
+        @Override
+        public String agentType() {
+            return "conductor";
+        }
+
         private ConductorAgentStartRequest startedRequest;
         private ConductorAgentStatusResponse status =
                 ConductorAgentStatusResponse.builder()

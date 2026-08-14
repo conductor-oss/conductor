@@ -2409,6 +2409,42 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testUpdateParentWorkflowTaskDropsSupersededGeneration() {
+        String parentWorkflowTaskId = "superseded_task_id";
+        String childId = "child_workflow_id";
+        String parentId = "parent_workflow_id";
+
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setWorkflowId(childId);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        subWorkflow.setStatus(WorkflowModel.Status.FAILED);
+
+        TaskModel staleTask = new TaskModel();
+        staleTask.setTaskId(parentWorkflowTaskId);
+        staleTask.setSubWorkflowId(childId);
+        staleTask.setWorkflowInstanceId(parentId);
+        staleTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        // The parent's current task list does NOT contain the stale task (a rerun replaced the
+        // fork generation) — the late child failure must be dropped, not propagated.
+        TaskModel freshTask = new TaskModel();
+        freshTask.setTaskId("fresh_task_id");
+        freshTask.setWorkflowInstanceId(parentId);
+        freshTask.setStatus(TaskModel.Status.SCHEDULED);
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId(parentId);
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow.getTasks().add(freshTask);
+
+        when(executionDAOFacade.getTaskModel(parentWorkflowTaskId)).thenReturn(staleTask);
+        when(executionDAOFacade.getWorkflowModel(parentId, true)).thenReturn(parentWorkflow);
+
+        workflowExecutor.updateParentWorkflowTask(subWorkflow);
+
+        verify(executionDAOFacade, never()).updateTask(any(TaskModel.class));
+    }
+
+    @Test
     public void testScheduleNextIteration() {
         WorkflowModel workflow = generateSampleWorkflow();
         workflow.setTaskToDomain(

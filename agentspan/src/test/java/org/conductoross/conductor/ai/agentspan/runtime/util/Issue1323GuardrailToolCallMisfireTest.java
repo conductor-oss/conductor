@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * REPRODUCES ISSUE #1323 - AgentSpan output guardrails misfire on tool-call turns.
+ * REPRODUCES ISSUE #1323 - Conductor-Agents output guardrails misfire on tool-call turns.
  *
  * <p>This test executes the ACTUAL guardrail script produced by {@link
  * JavaScriptBuilder#regexGuardrailScript} through the same GraalJS engine that the compiled INLINE

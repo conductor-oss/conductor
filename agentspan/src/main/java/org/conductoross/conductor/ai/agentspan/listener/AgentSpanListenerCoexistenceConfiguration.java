@@ -37,17 +37,13 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
  * conductor.integrations.ai.enabled} defaults to {@code true}, so this would affect default
  * servers.
  *
- * <p>Active only in embedded mode ({@code agentspan.embedded=true}, which {@code
- * application.properties} derives from {@code conductor.integrations.ai.enabled}), this
- * configuration:
+ * <p>Active only when {@code conductor.integrations.ai.enabled=true}, this configuration:
  *
  * <ol>
  *   <li>demotes agentspan's {@code AgentEventListener} from {@code @Primary} (via a {@link
  *       BeanFactoryPostProcessor} that edits the bean definition before instantiation), and
- *   <li>registers composite {@code @Primary} listeners ({@link
- *       AgentSpanCompositeWorkflowStatusListener}, {@link AgentSpanCompositeTaskStatusListener})
- *       that fan every callback out to <i>all</i> registered listeners — agentspan's listener and
- *       the configured publisher alike.
+ *   <li>registers composite {@code @Primary} listeners that fan every callback out to <i>all</i>
+ *       registered listeners — agentspan's listener and the configured publisher alike.
  * </ol>
  *
  * <p>The composite becomes the sole {@code @Primary} candidate, so the single-bean injection points
@@ -55,7 +51,7 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
  * receives every event.
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AgentSpanListenerCoexistenceConfiguration {
 
     private static final Logger LOGGER =

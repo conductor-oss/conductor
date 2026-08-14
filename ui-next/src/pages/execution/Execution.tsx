@@ -34,6 +34,7 @@ import {
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import {
+  AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   WORKFLOW_EXECUTION_URL,
 } from "utils/constants/route";
@@ -47,6 +48,7 @@ import ExecutionJson from "./ExecutionJson";
 import ExecutionSummary from "./ExecutionSummary";
 import { isAgentWorkflowExecution } from "./helpers";
 import LeftPanelTabs from "./LeftPanelTabs";
+import { ReasonForIncompletion } from "./ReasonForIncompletion";
 import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
@@ -86,6 +88,8 @@ const SecondaryActions = ({
   const isDynamic = (
     execution?.input?._systemMetadata as Record<string, unknown>
   )?.dynamic;
+  const isAgentExecution = isAgentWorkflowExecution(execution);
+  const definitionName = execution.workflowType || execution.workflowName || "";
   return (
     execution && (
       <Box
@@ -125,9 +129,13 @@ const SecondaryActions = ({
                 startIcon={<OpenIcon />}
                 sx={{ minWidth: "fit-content" }}
                 component={NavLink as React.ElementType}
-                path={`/workflowDef/${encodeURIComponent(
-                  execution.workflowType || execution.workflowName || "",
-                )}/${execution.workflowVersion}`}
+                path={
+                  isAgentExecution
+                    ? `${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(
+                        definitionName,
+                      )}/${execution.workflowVersion}`
+                    : `/workflowDef/${encodeURIComponent(definitionName)}/${execution.workflowVersion}`
+                }
               >
                 View definition
               </Button>
@@ -209,42 +217,6 @@ const FailureAlert = ({ failedWFLink, alertText }: FailureAlertProps) => {
   );
 };
 
-interface ReasonForIncompletionProps {
-  reason: string;
-  navigate: (path: string) => void;
-  location: { pathname: string };
-}
-
-const ReasonForIncompletion = ({
-  reason,
-  navigate,
-  location,
-}: ReasonForIncompletionProps) => {
-  if (!reason) return null;
-
-  if (reason.length >= 300) {
-    return (
-      <Box>
-        {reason.substr(0, 60)}... [
-        <MuiTypography
-          component="span"
-          color="#1976d2"
-          fontWeight="bold"
-          cursor="pointer"
-          onClick={() => {
-            navigate(`${location.pathname}?tab=summary`);
-          }}
-        >
-          View full message
-        </MuiTypography>
-        ]
-      </Box>
-    );
-  }
-
-  return <>{reason}</>;
-};
-
 interface ExecutionAlertProps {
   execution: WorkflowExecution;
   openedTab: ExecutionTabs;
@@ -258,9 +230,6 @@ const ExecutionAlert = ({
   failedTaskWithReason,
   handleJumpToTask,
 }: ExecutionAlertProps) => {
-  const navigate = usePushHistory();
-  const location = useLocation();
-
   if (
     execution?.rateLimited ||
     (execution?.reasonForIncompletion &&
@@ -283,11 +252,7 @@ const ExecutionAlert = ({
           {execution?.rateLimited ? (
             "This execution is rate limited and will be executed once previous executions are completed."
           ) : (
-            <ReasonForIncompletion
-              reason={execution?.reasonForIncompletion}
-              navigate={navigate}
-              location={location}
-            />
+            <ReasonForIncompletion reason={execution?.reasonForIncompletion} />
           )}
         </Box>
 
@@ -473,7 +438,7 @@ export default function Execution() {
               (isAgentWorkflowExecution(execution) ? (
                 // Relabeled "Agent Definition" in LeftPanelTabs for agent
                 // executions — a graph of the agent's static structure
-                // (model/sub-agents/tools/guardrails), matching AgentSpan's
+                // (model/sub-agents/tools/guardrails), matching Conductor-Agents'
                 // own UI, instead of the plain Conductor execution summary.
                 <AgentDefinitionView execution={execution} />
               ) : (

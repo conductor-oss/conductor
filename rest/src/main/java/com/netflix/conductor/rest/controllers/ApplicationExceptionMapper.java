@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -57,6 +58,8 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
         EXCEPTION_STATUS_MAP.put(FileStorageException.class, HttpStatus.PAYLOAD_TOO_LARGE);
         EXCEPTION_STATUS_MAP.put(AccessForbiddenException.class, HttpStatus.FORBIDDEN);
+        EXCEPTION_STATUS_MAP.put(
+                HttpRequestMethodNotSupportedException.class, HttpStatus.METHOD_NOT_ALLOWED);
     }
 
     @ExceptionHandler(Throwable.class)

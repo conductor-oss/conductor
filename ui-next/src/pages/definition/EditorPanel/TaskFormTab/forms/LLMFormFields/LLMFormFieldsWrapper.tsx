@@ -102,6 +102,14 @@ const LLMFormFieldsWrapper = ({
             );
           }
 
+          // A known registered template is selected — Orkes' prompt-association
+          // check (checkPromptAccess) will find it, so raw-prompt bypass isn't needed.
+          taskWithSelectedPromptName = updateField(
+            `inputParameters.allowRawPrompts`,
+            false,
+            taskWithSelectedPromptName,
+          );
+
           onChange(taskWithSelectedPromptName);
         } else {
           const updatedTask = updateField(
@@ -110,7 +118,16 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          onChange(updatedTask);
+          // Free text (or OSS, which has no prompt registry at all) — without this,
+          // Orkes' checkPromptAccess terminates the workflow at runtime because the
+          // value isn't an associated prompt name.
+          const updatedTaskWithRawFlag = updateField(
+            `inputParameters.allowRawPrompts`,
+            true,
+            updatedTask,
+          );
+
+          onChange(updatedTaskWithRawFlag);
         }
       },
       selectInstructions: (
@@ -179,6 +196,14 @@ const LLMFormFieldsWrapper = ({
             );
           }
 
+          // A known registered template is selected — Orkes' prompt-association
+          // check (checkPromptAccess) will find it, so raw-prompt bypass isn't needed.
+          taskWithSelectedPromptName = updateField(
+            `inputParameters.allowRawPrompts`,
+            false,
+            taskWithSelectedPromptName,
+          );
+
           onChange(taskWithSelectedPromptName);
         } else {
           const updatedTask = updateField(
@@ -187,7 +212,17 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          onChange(updatedTask);
+          // Free text (or OSS, which has no prompt registry at all) — without this,
+          // Orkes' checkPromptAccess terminates the workflow at runtime because the
+          // value isn't an associated prompt name (ChatCompletion.getPrompt() reads
+          // instructions server-side).
+          const updatedTaskWithRawFlag = updateField(
+            `inputParameters.allowRawPrompts`,
+            true,
+            updatedTask,
+          );
+
+          onChange(updatedTaskWithRawFlag);
         }
       },
     },
