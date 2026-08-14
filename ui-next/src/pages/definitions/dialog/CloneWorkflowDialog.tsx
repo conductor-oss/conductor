@@ -27,7 +27,7 @@ import {
   useAuthHeaders,
   useSharedQueryContext,
 } from "utils/query";
-import { getSequentiallySuffix } from "utils/strings";
+import { asciiSafeJson, getSequentiallySuffix } from "utils/strings";
 import { getUniqueWorkflowsWithVersions } from "utils/workflow";
 import * as yup from "yup";
 
@@ -136,11 +136,13 @@ const CloneWorkflowDialog = ({
           createWorkflowAction.mutate({
             method: HTTPMethods.POST,
             path: WORKFLOW_METADATA_BASE_URL,
-            body: JSON.stringify({
-              ...clonedWorkflow,
-              version: 1,
-              name: newName,
-            }),
+            body: asciiSafeJson(
+              JSON.stringify({
+                ...clonedWorkflow,
+                version: 1,
+                name: newName,
+              }),
+            ),
             workflowName: newName,
           });
         }

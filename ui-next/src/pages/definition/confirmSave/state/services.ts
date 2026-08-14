@@ -2,19 +2,11 @@ import { removeCopyFromStorage } from "pages/definition/ConfirmLocalCopyDialog/s
 import { fetchWithContext } from "plugins/fetch";
 import { WorkflowDef } from "types/WorkflowDef";
 import { resolveAgentSnapshotsInWorkflow } from "utils/agentMetadata";
+import { asciiSafeJson } from "utils/strings";
 import { SaveWorkflowMachineContext } from "./types";
 
 export { removeCopyFromStorage };
 
-// Escape non-ASCII chars so the body is ASCII-safe before transit.
-// Some WAF/proxy deployments misinterpret multibyte UTF-8 byte sequences
-// (e.g. em-dash E2 80 94, whose third byte 0x94 = Windows-1252 right-quote)
-// and silently corrupt the body, causing a Jackson "JSON parse error" on the server.
-function asciiSafeJson(json: string): string {
-  return json.replace(/[-￿]/g, (ch) =>
-    `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`,
-  );
-}
 
 export const resolveAgentSnapshots = async ({
   editorChanges,
