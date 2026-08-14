@@ -6,7 +6,7 @@ description: "Conductor Agents REST API — compile, deploy, start, observe, con
 
 The Conductor Agents control plane compiles SDK-authored Conductor Agents or framework agents—including OpenAI Agents, Google ADK, LangChain, and LangGraph—into durable Conductor graphs, then deploys and operates those graphs. Use the SDK for framework setup and interactive development; use these REST endpoints when you need CI/CD, an operations console, or a custom integration.
 
-These endpoints are available only when the embedded Conductor Agents runtime is enabled with `agentspan.embedded=true`.
+These endpoints are available only when the embedded Conductor Agents runtime is enabled with `conductor.integrations.ai.enabled=true`.
 
 ## Base path
 

@@ -141,7 +141,7 @@ See [Java SDK file handling](../clientsdks/java-sdk.md#file-handling) for every 
 - Signed URL requests use a separate raw HTTP client with redirects disabled. Conductor authentication, cookies, and API interceptors are not forwarded.
 - Retries refresh signed URLs and stop when the thread is interrupted. Signed URLs are redacted from errors.
 
-The detailed component and lifecycle rationale is in [File Storage Design](../../design/file-storage.md).
+The detailed component and lifecycle rationale is in the [file storage design document](https://github.com/conductor-oss/conductor/blob/main/design/file-storage.md) in the repository.
 
 ## Migration from smart file objects
 

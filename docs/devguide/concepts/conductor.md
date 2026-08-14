@@ -4,7 +4,7 @@ description: "Why use Conductor? An open-source durable execution platform for w
 
 # Why Conductor
 
-Conductor is an open source engine that orchestrates workflows across services and languages. It records every state transition, retries failures automatically, and keeps a full history of what happened and why.
+Conductor is an engine that orchestrates workflows across services and languages. It records every state transition, retries failures automatically, and keeps a full history of what happened and why.
 
 ## The problem
 

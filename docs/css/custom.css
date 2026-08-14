@@ -877,7 +877,7 @@ body {
   align-items: center;
   gap: 28px;
   margin: 24px 0 34px;
-  padding: 26px;
+  padding: 13px 26px;
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   background:
@@ -1295,7 +1295,7 @@ body {
 }
 .home-wrapper .home-skills-line {
   text-align: center;
-  margin-top: 40px;
+  margin: 0;
   font-size: 0.95rem;
   color: var(--home-slate);
 }

@@ -8,12 +8,10 @@ use_directory_urls: false
 exclude_docs: |
   index.html
 not_in_nav: |
-  design/**
   devguide/architecture/directed-acyclic-graph.md
   devguide/cookbook/files-api-usecase.md
   devguide/labs/**
   documentation/advanced/annotation-processor.md
-  launch/**
   quickstart/choose-path.md
   resources/license.md
   wmq/**
@@ -48,6 +46,7 @@ nav:
       - Starting Workflows: devguide/how-tos/Workflows/starting-workflows.md
       - Choosing a Trigger: devguide/how-tos/Workflows/choosing-a-trigger.md
       - Scheduling Workflows: devguide/how-tos/Workflows/scheduling-workflows.md
+      - Send Signals: devguide/cookbook/sending-signals.md
       - Handling Errors: devguide/how-tos/Workflows/handling-errors.md
     - Operate:
       - Viewing Executions: devguide/how-tos/Workflows/viewing-workflow-executions.md
@@ -131,7 +130,6 @@ nav:
       - Publish Events: devguide/how-tos/publish-events.md
       - Consume and Route Events: devguide/how-tos/consume-route-events.md
       - Incoming Webhooks: devguide/how-tos/incoming-webhooks.md
-      - Send Signals: devguide/cookbook/sending-signals.md
       - Workflow Status Events: devguide/how-tos/workflow-status-events.md
     - MCP Integration: devguide/ai/mcp-guide.md
     - A2A Integration: devguide/ai/a2a-integration.md
