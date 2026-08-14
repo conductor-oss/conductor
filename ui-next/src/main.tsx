@@ -1,5 +1,6 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { inspect } from "@xstate/inspect";
+import { loader } from "@monaco-editor/react";
 import { MessageProvider } from "components/providers/messageContext";
 import "highlight.js/styles/agate.css";
 import { StrictMode } from "react";
@@ -17,6 +18,7 @@ import {
 // OSS build - no enterprise plugins are registered
 // Enterprise builds import and register plugins in their own main.tsx
 
+import packageJson from "../package.json";
 import { router } from "./routes/router";
 import "./index.css";
 import { queryClient } from "./queryClient";
@@ -29,6 +31,22 @@ if (import.meta.env.VITE_XSTATE_INSPECT === "true") {
     iframe: false, // open in new window
   });
 }
+
+// @monaco-editor/loader defaults to a hardcoded CDN version (independent of
+// our package.json) unless explicitly configured. Point it at the version we
+// actually depend on, read straight from package.json, so bumping the
+// `monaco-editor` dependency there is enough to change what loads at runtime.
+// (We can't read monaco-editor's own package.json directly - its `exports`
+// map blocks any subpath other than the ones it explicitly lists.)
+const monacoEditorVersionRange =
+  packageJson.devDependencies["monaco-editor"] ??
+  packageJson.peerDependencies["monaco-editor"];
+const monacoEditorCdnVersion = monacoEditorVersionRange.replace(/^[^\d]*/, "");
+loader.config({
+  paths: {
+    vs: `https://cdn.jsdelivr.net/npm/monaco-editor@${monacoEditorCdnVersion}/min/vs`,
+  },
+});
 
 logger.log("Monitoring disabled");
 
