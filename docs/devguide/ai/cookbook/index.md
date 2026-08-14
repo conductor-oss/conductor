@@ -8,7 +8,7 @@ description: Production-ready Conductor AI workflow starters for knowledge, tool
   <div class="ai-cookbook-hero__content">
     <p>Each recipe on this page is a complete, runnable AI workflow. Register the definition, run it, then swap in your own models, tools, and data. The recipes are built the way you would run them in production: loops have limits, tool access is allowlisted, risky steps wait for human approval, and every run records what happened.</p>
   </div>
-  <svg class="ai-cookbook-hero__diagram" viewBox="0 0 540 410" role="img" aria-labelledby="ai-cookbook-diagram-title ai-cookbook-diagram-description">
+  <svg class="ai-cookbook-hero__diagram" viewBox="0 70 540 300" role="img" aria-labelledby="ai-cookbook-diagram-title ai-cookbook-diagram-description">
     <title id="ai-cookbook-diagram-title">AI Cookbook production starter model</title>
     <desc id="ai-cookbook-diagram-description">Two recipe categories feed a durable production starter. The starter connects model and tools through a policy control and produces an inspectable outcome.</desc>
     <defs>
