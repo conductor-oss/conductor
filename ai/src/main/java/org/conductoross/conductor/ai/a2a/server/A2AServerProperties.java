@@ -58,6 +58,13 @@ public class A2AServerProperties {
     private boolean exposeAll = false;
 
     /**
+     * When true, agent-level RBAC is enforced on A2A endpoints (agentCard and jsonRpc require READ
+     * and EXECUTE permissions respectively). Defaults to {@code false} so existing deployments that
+     * enable A2A are not broken; set to {@code true} once RBAC is configured.
+     */
+    private boolean rbacEnabled = false;
+
+    /**
      * Externally-reachable base URL (scheme://host[:port]) advertised in the Agent Card's {@code
      * url}. If blank, it is derived from the incoming request.
      */
