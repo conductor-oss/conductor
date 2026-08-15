@@ -23,6 +23,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,6 +58,7 @@ public class A2AAgentServerResource {
     @GetMapping(
             value = "${conductor.a2a.server.agentBasePath:/api/a2a/agent}",
             produces = "application/json")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> listAgents(HttpServletRequest httpRequest) {
         String base = requestBaseUrl(httpRequest);
         List<?> agents =
@@ -78,6 +80,7 @@ public class A2AAgentServerResource {
                 "${conductor.a2a.server.agentBasePath:/api/a2a/agent}/{agent}/.well-known/agent.json"
             },
             produces = "application/json")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> agentCard(
             @PathVariable("agent") String agentName, HttpServletRequest httpRequest) {
         try {
@@ -94,6 +97,7 @@ public class A2AAgentServerResource {
                 "${conductor.a2a.server.agentBasePath:/api/a2a/agent}/{agent}/rpc"
             },
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.TEXT_EVENT_STREAM_VALUE})
+    @PreAuthorize("isAuthenticated()")
     public Object jsonRpc(
             @PathVariable("agent") String agentName,
             @RequestBody(required = false) JsonNode request) {
