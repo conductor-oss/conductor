@@ -51,6 +51,13 @@ public class ConductorProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration maxPostponeDurationSeconds = Duration.ofSeconds(3600);
 
+    /**
+     * If set to true, a workflow blocked on an IN_PROGRESS HUMAN task is removed from the decider
+     * queue instead of being repeatedly re-swept. It is re-queued automatically when the HUMAN task
+     * is updated to a terminal status (see WorkflowExecutorOps#updateTask).
+     */
+    private boolean humanTaskPreventsDeciderQueue = true;
+
     /** The number of threads to use to do background sweep on active workflows. */
     private int sweeperThreadCount = Runtime.getRuntime().availableProcessors() * 2;
 
@@ -126,6 +133,44 @@ public class ConductorProperties {
      * isolation group.
      */
     private int isolatedSystemTaskWorkerThreadCount = 1;
+
+    /**
+     * Per-task-type worker overrides, keyed by task type name (e.g. "HTTP", "LLM_TEXT_COMPLETE"). A
+     * positive {@code threadCount} gives the task type its own dedicated pool of that many threads,
+     * which doubles as its in-flight cap: at most {@code threadCount} tasks of the type run
+     * concurrently, and the poller never pops more messages than it has free capacity for. Types
+     * without an entry share the common pool.
+     *
+     * <p>Example (YAML):
+     *
+     * <pre>
+     * conductor:
+     *   app:
+     *     taskWorkerConfigs:
+     *       HTTP:
+     *         threadCount: 20
+     *       LLM_TEXT_COMPLETE:
+     *         threadCount: 4
+     * </pre>
+     */
+    private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
+
+    public static class TaskWorkerConfig {
+
+        /**
+         * Number of dedicated threads for this task type — also its maximum in-flight task count. 0
+         * = share the common pool.
+         */
+        private int threadCount = 0;
+
+        public int getThreadCount() {
+            return threadCount;
+        }
+
+        public void setThreadCount(int threadCount) {
+            this.threadCount = threadCount;
+        }
+    }
 
     /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow
@@ -286,6 +331,14 @@ public class ConductorProperties {
         this.maxPostponeDurationSeconds = maxPostponeDurationSeconds;
     }
 
+    public boolean isHumanTaskPreventsDeciderQueue() {
+        return humanTaskPreventsDeciderQueue;
+    }
+
+    public void setHumanTaskPreventsDeciderQueue(boolean humanTaskPreventsDeciderQueue) {
+        this.humanTaskPreventsDeciderQueue = humanTaskPreventsDeciderQueue;
+    }
+
     public int getSweeperThreadCount() {
         return sweeperThreadCount;
     }
@@ -436,6 +489,14 @@ public class ConductorProperties {
 
     public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
         this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
+    }
+
+    public Map<String, TaskWorkerConfig> getTaskWorkerConfigs() {
+        return taskWorkerConfigs;
+    }
+
+    public void setTaskWorkerConfigs(Map<String, TaskWorkerConfig> taskWorkerConfigs) {
+        this.taskWorkerConfigs = taskWorkerConfigs;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {

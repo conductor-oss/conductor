@@ -244,6 +244,46 @@ public class SwitchTaskMapperTest {
     }
 
     @Test
+    public void getMappedTasksWithEmptyMatchedCase() {
+        // A case key matches but has no tasks — should NOT fall through to defaultCase.
+        WorkflowTask switchTask = new WorkflowTask();
+        switchTask.setType(TaskType.SWITCH.name());
+        switchTask.setName("Switch");
+        switchTask.setTaskReferenceName("switchTask");
+        switchTask.setDefaultCase(Collections.singletonList(task1));
+        switchTask.setEvaluatorType(JavascriptEvaluator.NAME);
+        switchTask.setExpression("'true'");
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("true", Collections.emptyList());
+        switchTask.setDecisionCases(decisionCases);
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        switchTask.getInputParameters(), workflowModel, null, null);
+
+        TaskMapperContext taskMapperContext =
+                TaskMapperContext.newBuilder()
+                        .withWorkflowModel(workflowModel)
+                        .withWorkflowTask(switchTask)
+                        .withTaskInput(input)
+                        .withRetryCount(0)
+                        .withTaskId(idGenerator.generate())
+                        .withDeciderService(deciderService)
+                        .build();
+
+        List<TaskModel> mappedTasks = switchTaskMapper.getMappedTasks(taskMapperContext);
+
+        // Only the SWITCH task itself; defaultCase task must not be scheduled.
+        assertEquals(1, mappedTasks.size());
+        assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
+    }
+
+    @Test
     public void getMappedTasksWhenEvaluatorThrowsException() {
 
         // Given

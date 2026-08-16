@@ -1,4 +1,3 @@
-import _merge from "lodash/merge";
 declare global {
   interface Window {
     conductor: any;
@@ -86,11 +85,15 @@ export const FEATURES = Object.freeze({
   GOOGLE_CLIENT_ID: "GOOGLE_CLIENT_ID",
   NOTIFY_HUMAN_TASK: "NOTIFY_HUMAN_TASK",
   WORKFLOW_INTROSPECTION: "WORKFLOW_INTROSPECTION",
+  WORKFLOW_SUMMARIZE: "WORKFLOW_SUMMARIZE",
   ENABLE_CONFETTI: "ENABLE_CONFETTI",
   OIDC_REMOVE_OFFLINE_ACCESS: "OIDC_REMOVE_OFFLINE_ACCESS",
   SHOW_ROLES_MENU_ITEM: "SHOW_ROLES_MENU_ITEM",
   SHOW_AGENT: "SHOW_AGENT",
   ENABLE_AGENT_AUDIO_INPUT: "ENABLE_AGENT_AUDIO_INPUT",
+  // Driven by the server's conductor.integrations.ai.enabled (injected via /context.js).
+  // Gates the embedded Conductor-Agents pages (Agents, Executions, Skills, Secrets).
+  CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
   AI_CODER_WORKER: "AI_CODER_WORKER",
   AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
   TAG_VISIBILITY: "TAG_VISIBILITY",
@@ -109,26 +112,26 @@ const mapOfEnvValues = Object.fromEntries(
     process.env[`REACT_APP_FEATURE_${v}`],
   ]),
 );
-const mapOfContextJs = Object.fromEntries(
-  Object.entries(FEATURES).map(([k, v]) => [
-    k,
-    window.conductor && window.conductor[v],
-  ]),
-);
 
-const result = _merge(
-  {},
-  mapOfContextJs,
-  mapOfEnvValues,
-  mapOfLocalStorageValues,
-);
+// window.conductor is read lazily (at call time, not module load) so that
+// bootstrap code (e.g. enterprise main.tsx) can set defaults on window.conductor
+// before any component renders, without requiring per-customer backend config.
+// Priority: localStorage > env vars > window.conductor
+const getResolvedValue = (feature: string) => {
+  if (mapOfLocalStorageValues[feature] != null)
+    return mapOfLocalStorageValues[feature];
+  if (mapOfEnvValues[feature] != null) return mapOfEnvValues[feature];
+  return window.conductor?.[feature];
+};
 
 export const featureFlags = {
-  isEnabled: (feature: string) => {
-    return result[feature] === "true" || result[feature] === true;
+  isEnabled: (feature: string, defaultValue = false) => {
+    const val = getResolvedValue(feature);
+    if (val === undefined || val === null) return defaultValue;
+    return val === "true" || val === true;
   },
   getValue: (feature: string, defaultValue?: string) => {
-    return result[feature] || defaultValue;
+    return getResolvedValue(feature) || defaultValue;
   },
   getContextValue: (feature: string) => {
     return window.conductor && window.conductor[feature];

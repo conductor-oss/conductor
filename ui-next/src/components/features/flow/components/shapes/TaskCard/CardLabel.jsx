@@ -14,6 +14,7 @@ const shortenedTypeTag = {
 
 const CardLabel = ({
   type,
+  label,
   displayDescription = false,
   integrationIconName,
 }) => (
@@ -37,9 +38,10 @@ const CardLabel = ({
         transition: displayDescription ? "all 0.3s ease-in-out" : "none",
       }}
     >
-      {type !== TaskType.INTEGRATION
-        ? shortenedTypeTag[type] || type
-        : integrationIconName?.toUpperCase() || "INTEGRATION"}
+      {label ||
+        (type !== TaskType.INTEGRATION
+          ? shortenedTypeTag[type] || type
+          : integrationIconName?.toUpperCase() || "INTEGRATION")}
     </div>
   </div>
 );

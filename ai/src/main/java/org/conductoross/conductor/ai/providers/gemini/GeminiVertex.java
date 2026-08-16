@@ -17,12 +17,12 @@ import java.util.Base64;
 import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.Media;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.Media;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
 import org.conductoross.conductor.ai.providers.gemini.api.GeminiApi;
 import org.conductoross.conductor.ai.video.Video;
 import org.conductoross.conductor.ai.video.VideoGeneration;

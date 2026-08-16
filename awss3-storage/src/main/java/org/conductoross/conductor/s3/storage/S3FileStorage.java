@@ -132,4 +132,14 @@ public class S3FileStorage implements FileStorage {
                         .multipartUpload(CompletedMultipartUpload.builder().parts(parts).build())
                         .build());
     }
+
+    @Override
+    public void abortMultipartUpload(String storagePath, String uploadId) {
+        s3Client.abortMultipartUpload(
+                AbortMultipartUploadRequest.builder()
+                        .bucket(bucketName)
+                        .key(storagePath)
+                        .uploadId(uploadId)
+                        .build());
+    }
 }

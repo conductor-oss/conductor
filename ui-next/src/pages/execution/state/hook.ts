@@ -7,7 +7,7 @@ import { selectNodes } from "components/features/flow/state/selectors";
 import { MessageContext } from "components/providers/messageContext";
 import _isEmpty from "lodash/isEmpty";
 import { useContext, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { NodeData } from "reaflow";
 import { ExecutionTask, TaskStatus } from "types";
@@ -35,6 +35,7 @@ export const useExecutionMachine = () => {
   const authHeaders = useAuthHeaders();
   const { setMessage } = useContext(MessageContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: currentUserInfo } = useCurrentUserInfo();
 
   const [tabIndex, setTabIndex] = useQueryState("tab", "");
@@ -112,9 +113,10 @@ export const useExecutionMachine = () => {
       send({
         type: ExecutionActionTypes.UPDATE_EXECUTION,
         executionId,
+        agentExecution: location.pathname.startsWith("/agentExecutions/"),
       });
     }
-  }, [executionId, send]);
+  }, [executionId, location.pathname, send]);
 
   const changeExecutionTab = (tab: ExecutionTabs) => {
     setTabIndex(tab);
@@ -125,6 +127,8 @@ export const useExecutionMachine = () => {
   const isReady = useSelector(service, (state) => state.matches("init"));
 
   const isNoAccess = useSelector(service, (state) => state.matches("noAccess"));
+
+  const isNotFound = useSelector(service, (state) => state.matches("notFound"));
 
   useEffect(() => {
     if (!_isEmpty(tabIndex) && openedTab !== tabIndex && isReady) {
@@ -313,6 +317,7 @@ export const useExecutionMachine = () => {
     taskListActor,
     rightPanelActor,
     isNoAccess,
+    isNotFound,
     doWhileSelection,
     nodes,
     isAssistantPanelOpen,

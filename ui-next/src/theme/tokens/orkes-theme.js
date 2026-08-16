@@ -3,11 +3,6 @@ import Color from "color";
 const orkesThemeBase = {
   background: "#AAAAAA",
   primary: "#1976d2",
-  // TODO: Define these
-  // text: "#333333?",
-  // danger: "#??????",
-  // success: "#??????",
-  // warning: "#??????",
 };
 
 const generateColorShades = (name, color) => {

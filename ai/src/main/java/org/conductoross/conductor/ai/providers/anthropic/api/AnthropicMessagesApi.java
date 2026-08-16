@@ -293,6 +293,24 @@ public class AnthropicMessagesApi {
                     "tool_result", null, null, null, null, toolUseId, content, null, null);
         }
 
+        /**
+         * Image content block from base64-encoded data. {@code mediaType} is the image MIME type
+         * (e.g. {@code image/png}); {@code base64Data} is the raw base64 payload without any {@code
+         * data:} URI prefix.
+         */
+        public static ContentBlock image(String mediaType, String base64Data) {
+            return new ContentBlock(
+                    "image",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    new Source("base64", mediaType, base64Data));
+        }
+
         @JsonInclude(JsonInclude.Include.NON_NULL)
         public record Source(
                 String type, // "base64"

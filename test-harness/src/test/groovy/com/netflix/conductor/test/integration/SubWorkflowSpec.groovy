@@ -20,7 +20,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
@@ -29,9 +28,6 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 class SubWorkflowSpec extends AbstractSpecification {
-
-    @Autowired
-    QueueDAO queueDAO
 
     @Autowired
     SubWorkflow subWorkflowTask
@@ -97,8 +93,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         when: "the subworkflow task is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def rootSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (rootSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, rootSubWfTask.taskId)
+        }
 
         then: "verify that the 'integration_task1' is complete and the next task (subworkflow) is in IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -256,8 +255,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
 
         when: "the subworkflow task is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def midSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (midSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, midSubWfTask.taskId)
+        }
 
         then: "verify that the 'integration_task1' is complete and the next task (subworkflow) is IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -359,8 +361,11 @@ class SubWorkflowSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         when: "the subworkflow task is started by issuing a system task call"
-        List<String> polledTaskIds = queueDAO.pop('SUB_WORKFLOW', 1, 200)
-        asyncSystemTaskExecutor.execute(subWorkflowTask, polledTaskIds[0])
+        def resumeSubWfTask = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
+        if (resumeSubWfTask) {
+            asyncSystemTaskExecutor.execute(subWorkflowTask, resumeSubWfTask.taskId)
+        }
 
         then: "verify that the 'integration_task_1' is complete and the next task (subworkflow) is IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

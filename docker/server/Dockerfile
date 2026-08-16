@@ -1,9 +1,10 @@
 #
 # conductor:server - Conductor Server + UI
 #
-# Two modes:
+# Build args:
+#   PREBUILT=true:  Skips both JAR and UI builds, uses pre-built artifacts (CI multi-arch)
+#   SKIP_UI=true:   Skips only the UI build (E2E CI — tests serve UI from the host)
 #   Default:        Builds JAR and UI from source (docker-compose, local dev)
-#   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
 #
 
 # ===========================================================================================================
@@ -37,19 +38,19 @@ RUN if [ "$PREBUILT" = "true" ]; then \
 FROM node:lts AS ui-builder
 
 ARG PREBUILT=false
-ARG YARN_OPTS
+ARG SKIP_UI=false
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-COPY ui /conductor/ui
-WORKDIR /conductor/ui
+COPY ui-next /conductor/ui-next
+WORKDIR /conductor/ui-next
 
-RUN if [ "$PREBUILT" = "false" ]; then \
-      corepack enable && corepack prepare yarn@stable --activate && \
-      export REACT_APP_MONACO_EDITOR_USING_CDN=false && \
-      export REACT_APP_ENABLE_ERRORS_INSPECTOR=true && \
-      yarn config set network-timeout 600000 -g && \
-      yarn ${YARN_OPTS} install && cp -r node_modules/monaco-editor public/ && yarn ${YARN_OPTS} build; \
+RUN if [ "$SKIP_UI" = "true" ]; then \
+      mkdir -p dist && echo "UI build skipped (SKIP_UI=true)"; \
+    elif [ "$PREBUILT" = "false" ]; then \
+      corepack enable && \
+      pnpm install && \
+      NODE_OPTIONS=--max-old-space-size=4096 pnpm build; \
     else \
       echo "Using pre-built UI assets"; \
     fi
@@ -77,7 +78,7 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 # Copy compiled UI assets to nginx www directory
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
-COPY --from=ui-builder /conductor/ui/build .
+COPY --from=ui-builder /conductor/ui-next/dist .
 COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
 
 # Copy the files for the server into the app folders

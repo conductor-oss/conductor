@@ -31,6 +31,26 @@ import {
   UnknownTaskForm,
   WaitTaskForm,
   YieldTaskForm,
+  // AI / LLM
+  LLMChatCompleteTaskForm,
+  LLMTextCompleteTaskForm,
+  LLMGenerateEmbeddingsTaskForm,
+  LLMGetEmbeddingsTaskForm,
+  LLMStoreEmbeddingsTaskForm,
+  LLMSearchIndexTaskForm,
+  LLMSearchEmbeddingsTaskForm,
+  LLMIndexTextTaskForm,
+  LLMIndexDocumentTaskForm,
+  GetDocumentTaskForm,
+  AgentTaskForm,
+  GetAgentCardTaskForm,
+  CancelAgentTaskForm,
+  ListMcpToolsTaskForm,
+  CallMcpToolTaskForm,
+  GenerateImageTaskForm,
+  GenerateAudioTaskForm,
+  GenerateVideoTaskForm,
+  GeneratePdfTaskForm,
 } from "pages/definition/EditorPanel/TaskFormTab/forms";
 import TaskFormHeader from "pages/definition/EditorPanel/TaskFormTab/forms/TaskFormHeader/TaskFormHeader";
 import { FormMachineActionTypes } from "pages/definition/EditorPanel/TaskFormTab/state";
@@ -139,6 +159,52 @@ const getTaskForm = (type: string) => {
       return SimpleTaskForm;
     case TaskType.JDBC:
       return JDBCTaskForm;
+
+    // AI / LLM
+    case TaskType.LLM_CHAT_COMPLETE:
+      return LLMChatCompleteTaskForm;
+    case TaskType.LLM_TEXT_COMPLETE:
+      return LLMTextCompleteTaskForm;
+    case TaskType.LLM_GENERATE_EMBEDDINGS:
+      return LLMGenerateEmbeddingsTaskForm;
+    case TaskType.LLM_GET_EMBEDDINGS:
+      return LLMGetEmbeddingsTaskForm;
+    case TaskType.LLM_STORE_EMBEDDINGS:
+      return LLMStoreEmbeddingsTaskForm;
+    case TaskType.LLM_SEARCH_INDEX:
+      return LLMSearchIndexTaskForm;
+    case TaskType.LLM_SEARCH_EMBEDDINGS:
+      return LLMSearchEmbeddingsTaskForm;
+    case TaskType.LLM_INDEX_TEXT:
+      return LLMIndexTextTaskForm;
+    case TaskType.LLM_INDEX_DOCUMENT:
+      return LLMIndexDocumentTaskForm;
+    case TaskType.GET_DOCUMENT:
+      return GetDocumentTaskForm;
+
+    // Agent / A2A
+    case TaskType.AGENT:
+      return AgentTaskForm;
+    case TaskType.GET_AGENT_CARD:
+      return GetAgentCardTaskForm;
+    case TaskType.CANCEL_AGENT:
+      return CancelAgentTaskForm;
+
+    // MCP
+    case TaskType.LIST_MCP_TOOLS:
+      return ListMcpToolsTaskForm;
+    case TaskType.CALL_MCP_TOOL:
+      return CallMcpToolTaskForm;
+
+    // Media / document generation
+    case TaskType.GENERATE_IMAGE:
+      return GenerateImageTaskForm;
+    case TaskType.GENERATE_AUDIO:
+      return GenerateAudioTaskForm;
+    case TaskType.GENERATE_VIDEO:
+      return GenerateVideoTaskForm;
+    case TaskType.GENERATE_PDF:
+      return GeneratePdfTaskForm;
 
     // Unknown task type - show generic JSON form
     default:
@@ -352,7 +418,7 @@ const TaskFormContent: FunctionComponent = () => {
       : taskType;
   const taskTypeLabel =
     taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
-  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType) ?? "";
+  const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType);
 
   return (
     <Box
@@ -431,63 +497,64 @@ const TaskFormContent: FunctionComponent = () => {
                 pointerEvents: "auto",
               }}
             >
-              {taskDescription ? (
-                <ConductorTooltip
-                  title={`${taskType} Task`}
-                  content={taskDescription}
-                  placement="left"
-                  children={
-                    <Link
-                      href={taskDocUrl}
-                      tabIndex={-1}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "9pt",
-                        fontWeight: 500,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <DocsIcon color={colors.blueLightMode} />
-                      <div
+              {taskDocUrl &&
+                (taskDescription ? (
+                  <ConductorTooltip
+                    title={`${taskType} Task`}
+                    content={taskDescription}
+                    placement="left"
+                    children={
+                      <Link
+                        href={taskDocUrl}
+                        tabIndex={-1}
+                        target="_blank"
+                        rel="noreferrer"
                         style={{
-                          marginLeft: "4px",
-                          color: colors.blueLightMode,
+                          display: "flex",
+                          alignItems: "center",
+                          fontSize: "9pt",
+                          fontWeight: 500,
+                          textDecoration: "none",
                         }}
                       >
-                        {truncate(taskType)} Docs
-                      </div>
-                    </Link>
-                  }
-                />
-              ) : (
-                <Link
-                  href={taskDocUrl}
-                  tabIndex={-1}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: "9pt",
-                    fontWeight: 500,
-                    textDecoration: "none",
-                  }}
-                >
-                  <DocsIcon color={colors.blueLightMode} />
-                  <div
+                        <DocsIcon color={colors.blueLightMode} />
+                        <div
+                          style={{
+                            marginLeft: "4px",
+                            color: colors.blueLightMode,
+                          }}
+                        >
+                          {truncate(taskType)} Docs
+                        </div>
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <Link
+                    href={taskDocUrl}
+                    tabIndex={-1}
+                    target="_blank"
+                    rel="noreferrer"
                     style={{
-                      marginLeft: "4px",
-                      color: colors.blueLightMode,
+                      display: "flex",
+                      alignItems: "center",
+                      fontSize: "9pt",
+                      fontWeight: 500,
+                      textDecoration: "none",
                     }}
                   >
-                    {taskTypeLabelForDoc}
-                    {" Docs"}
-                  </div>
-                </Link>
-              )}
+                    <DocsIcon color={colors.blueLightMode} />
+                    <div
+                      style={{
+                        marginLeft: "4px",
+                        color: colors.blueLightMode,
+                      }}
+                    >
+                      {taskTypeLabelForDoc}
+                      {" Docs"}
+                    </div>
+                  </Link>
+                ))}
               {taskType !== TaskType.JOIN && (
                 <Box pl={3}>
                   <OpenTestTaskButton

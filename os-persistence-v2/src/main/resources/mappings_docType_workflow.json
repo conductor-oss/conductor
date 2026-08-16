@@ -67,6 +67,11 @@
     "event": {
       "type": "keyword",
       "index": true
+    },
+    "classifier": {
+      "type": "keyword",
+      "index": true,
+      "doc_values": true
     }
   }
 }

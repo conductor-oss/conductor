@@ -8,6 +8,7 @@ import { STALE_TIME_SEARCH, useAuthHeaders } from "utils/query";
 const SCHEDULER_PATH = "/scheduler/schedules";
 const SCHEDULER_SEARCH_PATH = "/scheduler/schedules/search?";
 
+/** Full schedule list (used by Scheduler Executions name dropdown / similar lookups). */
 export const useGetSchedulerDefinitions = () => {
   const fetchContext = useFetchContext();
   const fetchParams = { headers: useAuthHeaders() };
@@ -17,7 +18,6 @@ export const useGetSchedulerDefinitions = () => {
     () => {
       const path = SCHEDULER_PATH;
       return fetchWithContext(path, fetchContext, fetchParams);
-      // staletime to ensure stable view when paginating back and forth (even if underlying results change)
     },
     {
       enabled: fetchContext.ready,
@@ -58,7 +58,12 @@ export const useGetSchedulerDefinitionsWithPagination = (
         ...(searchParams.workflowName && {
           workflowName: searchParams.workflowName,
         }),
-        ...(searchParams.name && { freeText: searchParams.name }),
+        // Send both param names: OSS backend uses "scheduleName", enterprise uses "name".
+        // Each backend picks the one it understands and ignores the other.
+        ...(searchParams.name && {
+          scheduleName: searchParams.name,
+          name: searchParams.name,
+        }),
         ...(searchParams.paused !== undefined && {
           paused: searchParams.paused,
         }),

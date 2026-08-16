@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.ChatMessage;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.ToolCall;
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatMessage;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.ToolCall;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -588,6 +588,33 @@ public class LLMHelperChatCompleteTest {
         assertTrue(
                 thrown.getMessage().contains("No response generated"),
                 "expected the 'No response generated' guard; got: " + thrown.getMessage());
+    }
+
+    // =================================================================
+    // chatComplete — null media from Spring AI (issue-1416)
+    // =================================================================
+
+    /**
+     * Spring AI 1.1.x AssistantMessage.getMedia() can return null when no media was set. The helper
+     * must not NPE on the media-collection loop.
+     */
+    @Test
+    void chatComplete_nullMediaFromSpringAI_doesNotNPE() {
+        // Build an AssistantMessage whose getMedia() returns null (no-arg constructor default).
+        AssistantMessage assistant = new AssistantMessage("hello from self-hosted model");
+
+        StagedChatModel model = new StagedChatModel();
+        model.stage(responseOf(assistant, "stop", metaWithUsage(5, 10, 15)));
+
+        ChatCompletion in = new ChatCompletion();
+        in.setLlmProvider("fake");
+        in.setModel("self-hosted/llama3");
+        in.getMessages().add(new ChatMessage(ChatMessage.Role.user, "Which host are you?"));
+
+        LLMResponse out =
+                helper.chatComplete(task("t17"), new FakeAIModel(model), in, null, x -> {});
+        assertEquals("hello from self-hosted model", out.getResult());
+        assertEquals("STOP", out.getFinishReason());
     }
 
     // =================================================================

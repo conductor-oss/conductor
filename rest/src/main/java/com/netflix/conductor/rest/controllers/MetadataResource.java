@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,9 +27,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,8 +50,24 @@ public class MetadataResource {
 
     @PostMapping("/workflow")
     @Operation(summary = "Create a new workflow definition")
-    public void create(@RequestBody WorkflowDef workflowDef) {
-        metadataService.registerWorkflowDef(workflowDef);
+    public void create(
+            @RequestBody WorkflowDef workflowDef,
+            @RequestParam(value = "overwrite", required = false, defaultValue = "false")
+                    boolean overwrite) {
+        String name = workflowDef.getName();
+        if (name == null || name.isBlank()) {
+            metadataService.registerWorkflowDef(workflowDef);
+            return;
+        }
+        Optional<WorkflowDef> existing =
+                metadataService.findWorkflowDef(name, workflowDef.getVersion());
+        if (existing.isEmpty()) {
+            metadataService.registerWorkflowDef(workflowDef);
+        } else if (overwrite) {
+            metadataService.updateWorkflowDef(workflowDef);
+        } else {
+            throw new ConflictException("Workflow with %s already exists!", workflowDef.key());
+        }
     }
 
     @PostMapping("/workflow/validate")
@@ -73,8 +92,19 @@ public class MetadataResource {
 
     @Operation(summary = "Retrieves all workflow definition along with blueprint")
     @GetMapping("/workflow")
-    public List<WorkflowDef> getAll() {
-        return metadataService.getWorkflowDefs();
+    public List<WorkflowDef> getAll(
+            @RequestParam(value = "classifier", required = false) String classifier) {
+        List<WorkflowDef> allWorkflows = metadataService.getWorkflowDefs();
+        // Optional classifier filter powering e.g. agent def vs workflow def views. The
+        // classifier is derived from each def's metadata map: "workflow" matches untagged
+        // (plain) defs; any other value matches the derived tag literally.
+        if (classifier == null || classifier.isBlank()) {
+            return allWorkflows;
+        }
+        String wanted = classifier.trim();
+        return allWorkflows.stream()
+                .filter(wd -> wanted.equalsIgnoreCase(WorkflowClassifier.classifierOf(wd)))
+                .toList();
     }
 
     @Operation(summary = "Returns workflow names and versions only (no definition bodies)")

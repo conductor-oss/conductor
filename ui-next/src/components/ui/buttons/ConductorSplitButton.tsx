@@ -1,6 +1,7 @@
 import {
   Fragment,
   ReactNode,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -60,6 +61,7 @@ export default function SplitButton({
 }: ConductorSplitButtonProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
   const handleClick = () => {
     primaryOnClick();
   };
@@ -123,9 +125,9 @@ export default function SplitButton({
           </MuiButton>
         </Container>
         <MuiButton
-          aria-controls={open ? "split-button-menu" : undefined}
+          aria-controls={open ? menuId : undefined}
           aria-expanded={open ? "true" : undefined}
-          aria-label="select merge strategy"
+          aria-label="More actions"
           aria-haspopup="menu"
           onClick={handleToggle}
           className="conductor-split-button-dropdown-btn"
@@ -135,12 +137,17 @@ export default function SplitButton({
         </MuiButton>
       </MuiButtonGroup>
       <Popper
+        placement="bottom-end"
         sx={{
           boxShadow: "4px 4px 10px 0px rgba(89, 89, 89, 0.41)",
           border: `1px solid ${blueLight}`,
           borderRadius: "6px",
-          width: "inherit",
-          minWidth: anchorRef.current?.offsetWidth ?? "100px",
+          maxWidth: "calc(100vw - 24px)",
+          zIndex: 1300,
+        }}
+        style={{
+          width: "max-content",
+          minWidth: anchorRef.current?.offsetWidth ?? 100,
         }}
         open={open}
         anchorEl={anchorRef.current}
@@ -158,13 +165,14 @@ export default function SplitButton({
           >
             <Paper>
               <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
+                <MenuList id={menuId} autoFocusItem dense>
                   {options.map((option, index) => (
                     <MenuItem
                       sx={{
                         color: colors.black,
                         fontWeight: 500,
                         fontSize: "14px",
+                        whiteSpace: "nowrap",
                       }}
                       key={
                         typeof option.label === "string"

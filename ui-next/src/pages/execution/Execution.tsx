@@ -14,6 +14,7 @@ import OpenIcon from "components/icons/OpenIcon";
 import ButtonLinks from "components/layout/header/ButtonLinks";
 import { ConductorSectionHeader } from "components/layout/section/ConductorSectionHeader";
 import { SidebarContext } from "components/providers/sidebar/context/SidebarContext";
+import Error from "components/ui/Error";
 import MuiAlert from "components/ui/MuiAlert";
 import MuiTypography from "components/ui/MuiTypography";
 import NavLink from "components/ui/NavLink";
@@ -22,9 +23,9 @@ import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import { CopyClipboardButton } from "components/ui/inputs/CopyClipboardButton";
 import { useAtom } from "jotai";
 import { WorkflowIntrospection } from "pages/execution/WorkflowIntrospection";
-import React, { useCallback, useContext, useMemo } from "react";
+import React, { useCallback, useContext, useEffect, useMemo } from "react";
 import { Helmet } from "react-helmet";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { colors } from "theme/tokens/variables";
 import {
   ExecutionTask,
@@ -32,14 +33,22 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
+import {
+  AGENT_DEFINITION_URL,
+  AGENT_EXECUTIONS_URL,
+  WORKFLOW_EXECUTION_URL,
+} from "utils/constants/route";
 import { openInNewTab } from "utils/helpers";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { ActorRef } from "xstate";
 import ActionModule from "./ActionModule";
+import { AgentDefinitionView, AgentExecutionTab } from "./AgentExecution";
 import InputOutput from "./ExecutionInputOutput";
 import ExecutionJson from "./ExecutionJson";
 import ExecutionSummary from "./ExecutionSummary";
+import { isAgentWorkflowExecution } from "./helpers";
 import LeftPanelTabs from "./LeftPanelTabs";
+import { ReasonForIncompletion } from "./ReasonForIncompletion";
 import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
@@ -79,6 +88,8 @@ const SecondaryActions = ({
   const isDynamic = (
     execution?.input?._systemMetadata as Record<string, unknown>
   )?.dynamic;
+  const isAgentExecution = isAgentWorkflowExecution(execution);
+  const definitionName = execution.workflowType || execution.workflowName || "";
   return (
     execution && (
       <Box
@@ -118,9 +129,13 @@ const SecondaryActions = ({
                 startIcon={<OpenIcon />}
                 sx={{ minWidth: "fit-content" }}
                 component={NavLink as React.ElementType}
-                path={`/workflowDef/${encodeURIComponent(
-                  execution.workflowType || execution.workflowName || "",
-                )}/${execution.workflowVersion}`}
+                path={
+                  isAgentExecution
+                    ? `${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(
+                        definitionName,
+                      )}/${execution.workflowVersion}`
+                    : `/workflowDef/${encodeURIComponent(definitionName)}/${execution.workflowVersion}`
+                }
               >
                 View definition
               </Button>
@@ -202,42 +217,6 @@ const FailureAlert = ({ failedWFLink, alertText }: FailureAlertProps) => {
   );
 };
 
-interface ReasonForIncompletionProps {
-  reason: string;
-  navigate: (path: string) => void;
-  location: { pathname: string };
-}
-
-const ReasonForIncompletion = ({
-  reason,
-  navigate,
-  location,
-}: ReasonForIncompletionProps) => {
-  if (!reason) return null;
-
-  if (reason.length >= 300) {
-    return (
-      <Box>
-        {reason.substr(0, 60)}... [
-        <MuiTypography
-          component="span"
-          color="#1976d2"
-          fontWeight="bold"
-          cursor="pointer"
-          onClick={() => {
-            navigate(`${location.pathname}?tab=summary`);
-          }}
-        >
-          View full message
-        </MuiTypography>
-        ]
-      </Box>
-    );
-  }
-
-  return <>{reason}</>;
-};
-
 interface ExecutionAlertProps {
   execution: WorkflowExecution;
   openedTab: ExecutionTabs;
@@ -251,9 +230,6 @@ const ExecutionAlert = ({
   failedTaskWithReason,
   handleJumpToTask,
 }: ExecutionAlertProps) => {
-  const navigate = usePushHistory();
-  const location = useLocation();
-
   if (
     execution?.rateLimited ||
     (execution?.reasonForIncompletion &&
@@ -276,11 +252,7 @@ const ExecutionAlert = ({
           {execution?.rateLimited ? (
             "This execution is rate limited and will be executed once previous executions are completed."
           ) : (
-            <ReasonForIncompletion
-              reason={execution?.reasonForIncompletion}
-              navigate={navigate}
-              location={location}
-            />
+            <ReasonForIncompletion reason={execution?.reasonForIncompletion} />
           )}
         </Box>
 
@@ -337,11 +309,35 @@ export default function Execution() {
       taskListActor,
       rightPanelActor,
       isNoAccess,
+      isNotFound,
       doWhileSelection,
       nodes,
     },
   ] = useExecutionMachine();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Agent executions can be reached via a bookmarked/shared "/execution/:id"
+  // link (or any other pre-existing entry point) rather than the Agents
+  // section. Once we know the execution is agent-classified, swap the URL to
+  // "/agentExecutions/:id" so the sidebar highlights "Executions" under
+  // Agents instead of the plain Workflow item — without adding a back-button
+  // stop. Only ever runs on the plain "/execution" route; already being on
+  // "/agentExecutions/:id" is a no-op here.
+  useEffect(() => {
+    if (
+      isAgentWorkflowExecution(execution) &&
+      location.pathname.startsWith(`${WORKFLOW_EXECUTION_URL.BASE}/`)
+    ) {
+      navigate(
+        location.pathname.replace(
+          WORKFLOW_EXECUTION_URL.BASE,
+          AGENT_EXECUTIONS_URL.BASE,
+        ) + location.search,
+        { replace: true },
+      );
+    }
+  }, [execution, location.pathname, location.search, navigate]);
 
   executionAssistantBridge.closeRightPanel = closeRightPanel;
   executionAssistantBridge.isTaskPanelOpen = !!rightPanelActor;
@@ -400,6 +396,9 @@ export default function Execution() {
           }}
         >
           <>
+            {openedTab === ExecutionTabs.AGENT_EXECUTION_TAB && execution && (
+              <AgentExecutionTab execution={execution} />
+            )}
             {openedTab === ExecutionTabs.DIAGRAM_TAB &&
               execution &&
               flowActor && (
@@ -435,9 +434,16 @@ export default function Execution() {
                 selectTask={selectTask}
               />
             )}
-            {openedTab === ExecutionTabs.SUMMARY_TAB && (
-              <ExecutionSummary execution={execution} />
-            )}
+            {openedTab === ExecutionTabs.SUMMARY_TAB &&
+              (isAgentWorkflowExecution(execution) ? (
+                // Relabeled "Agent Definition" in LeftPanelTabs for agent
+                // executions — a graph of the agent's static structure
+                // (model/sub-agents/tools/guardrails), matching Conductor-Agents'
+                // own UI, instead of the plain Conductor execution summary.
+                <AgentDefinitionView execution={execution} />
+              ) : (
+                <ExecutionSummary execution={execution} />
+              ))}
             {openedTab === ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB && (
               <InputOutput
                 execution={execution as unknown as Record<string, unknown>}
@@ -577,6 +583,40 @@ export default function Execution() {
       selectNode(maybeSelectedNode);
     }
   };
+
+  if (isNotFound) {
+    const isAgentExecutionRoute = location.pathname.startsWith(
+      `${AGENT_EXECUTIONS_URL.BASE}/`,
+    );
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          p: 5,
+        }}
+      >
+        <Helmet>
+          <title>Execution Not Found - {executionId}</title>
+        </Helmet>
+        <MuiTypography fontSize={20} fontWeight={700} mb={8}>
+          ERROR
+        </MuiTypography>
+        <Error
+          title="404"
+          description="We're sorry but we couldn't locate that execution."
+          buttonText="BACK TO EXECUTIONS"
+          onClick={() =>
+            navigate(
+              isAgentExecutionRoute ? AGENT_EXECUTIONS_URL.BASE : "/executions",
+            )
+          }
+        />
+      </Box>
+    );
+  }
 
   return (
     <Box

@@ -10,6 +10,8 @@ import {
 import { ExecutionTask } from "types";
 import { ExecutionActionTypes } from "../../state/types";
 import { taskWithLatestIteration } from "pages/execution/helpers";
+import { TaskType } from "types/common";
+import { AGENT_CARD_TAB, SUMMARY_TAB } from "pages/execution/state/constants";
 
 export const persistTaskDetails = assign<
   RightPanelContext,
@@ -23,6 +25,13 @@ export const persistSelectedTask = assign<
   SetSelectedTaskEvent
 >({
   selectedTask: (_, { selectedTask }) => selectedTask,
+  // Agent Card is task-type-specific. Return to Summary when navigation moves
+  // from an agent to any other task while that tab is selected.
+  currentTab: ({ currentTab }, { selectedTask }) =>
+    currentTab === AGENT_CARD_TAB &&
+    selectedTask.workflowTask.type !== TaskType.AGENT
+      ? SUMMARY_TAB
+      : currentTab,
 });
 
 export const notifyTaskUpdateToParent = sendParent(

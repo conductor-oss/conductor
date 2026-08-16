@@ -10,10 +10,18 @@ const customStyles = {
   fontSize: "12px",
 };
 
+const sharedStyles = {
+  fontWeight: customStyles.fontWeight,
+  borderRadius: customStyles.borderRadius,
+  fontSize: customStyles.fontSize,
+};
+
 const TagChip = forwardRef<HTMLDivElement, ChipProps>(
-  ({ style = {}, ...props }, ref) => {
-    const combinedStyles = { ...customStyles, ...style };
-    return <Chip ref={ref} style={combinedStyles} {...props} />;
+  ({ style = {}, color, ...props }, ref) => {
+    const combinedStyles = color
+      ? { ...sharedStyles, ...style }
+      : { ...customStyles, ...style };
+    return <Chip ref={ref} style={combinedStyles} color={color} {...props} />;
   },
 );
 

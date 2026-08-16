@@ -5,7 +5,7 @@
  * correctly in the list and in the per-task editor.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import { createTaskDef, deleteTaskDef, type TaskDef } from "./api-client";
 
 const RUN_ID = Date.now();

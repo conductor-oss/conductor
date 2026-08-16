@@ -68,17 +68,30 @@ export const SidebarItem = ({
         const paramsMatch = [...linkParams.entries()].every(
           ([key, val]) => locationParams.get(key) === val,
         );
-        return location.pathname === linkPath && paramsMatch;
+        if (location.pathname === linkPath && paramsMatch) return true;
+      } else if (location.pathname === linkPath) {
+        return true;
       }
-      if (location.pathname === linkPath) return true;
     }
     if (item.activeRoutes) {
-      return item.activeRoutes.some((route) =>
-        matchPath({ path: route, end: true }, location.pathname),
-      );
+      const locationParams = new URLSearchParams(location.search);
+      return item.activeRoutes.some((route) => {
+        if (!matchPath({ path: route, end: true }, location.pathname))
+          return false;
+        if (!item.activeSearchParams) return true;
+        return Object.entries(item.activeSearchParams).every(
+          ([key, val]) => locationParams.get(key) === val,
+        );
+      });
     }
     return false;
-  }, [item.linkTo, item.activeRoutes, location.pathname, location.search]);
+  }, [
+    item.linkTo,
+    item.activeRoutes,
+    item.activeSearchParams,
+    location.pathname,
+    location.search,
+  ]);
 
   const visibleChildren = useMemo(
     () => item.items?.filter((child) => !child.hidden) || [],
@@ -87,23 +100,29 @@ export const SidebarItem = ({
 
   // Auto-expand if any child is active
   const hasActiveChild = useMemo(() => {
+    const locationParams = new URLSearchParams(location.search);
     return visibleChildren.some((child) => {
       if (child.linkTo) {
         const [linkPath, linkSearch] = child.linkTo.split("?");
         if (linkSearch) {
           const linkParams = new URLSearchParams(linkSearch);
-          const locationParams = new URLSearchParams(location.search);
           const paramsMatch = [...linkParams.entries()].every(
             ([key, val]) => locationParams.get(key) === val,
           );
-          return location.pathname === linkPath && paramsMatch;
+          if (location.pathname === linkPath && paramsMatch) return true;
+        } else if (location.pathname === linkPath) {
+          return true;
         }
-        if (location.pathname === linkPath) return true;
       }
       if (child.activeRoutes) {
-        return child.activeRoutes.some((route) =>
-          matchPath({ path: route, end: true }, location.pathname),
-        );
+        return child.activeRoutes.some((route) => {
+          if (!matchPath({ path: route, end: true }, location.pathname))
+            return false;
+          if (!child.activeSearchParams) return true;
+          return Object.entries(child.activeSearchParams).every(
+            ([key, val]) => locationParams.get(key) === val,
+          );
+        });
       }
       return false;
     });

@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.conductoross.conductor.ai.mcp.MCPService;
-import org.conductoross.conductor.ai.models.MCPListToolsRequest;
-import org.conductoross.conductor.ai.models.MCPToolCallRequest;
+import org.conductoross.conductor.ai.model.MCPListToolsRequest;
+import org.conductoross.conductor.ai.model.MCPToolCallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.springframework.context.annotation.Conditional;

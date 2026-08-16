@@ -13,6 +13,7 @@ import {
   workflowSchemaAjv,
 } from "types";
 import { logger } from "utils";
+import { pluginRegistry } from "plugins/registry";
 import {
   ErrorIds,
   ErrorSeverity,
@@ -175,9 +176,11 @@ export const findTaskError = (task: TaskDef): ValidationError[] => {
   }
   const validate = ajv.getSchema(taskSchema.$id)!;
   const valid = validate(task);
-  return valid
+  const schemaErrors = valid
     ? []
     : validate.errors?.map((eo) => taskErrorToValidationError(eo, task)) || [];
+
+  return [...schemaErrors, ...pluginRegistry.getTaskValidationErrors(task)];
 };
 
 export const createMainValidator = (workflow: Partial<WorkflowDef>): any => {

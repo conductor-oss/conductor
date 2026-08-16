@@ -13,8 +13,11 @@
 package com.netflix.conductor.core.events;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +29,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
+import com.netflix.conductor.common.metadata.events.EventHandler.StartAgent;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -326,6 +330,56 @@ public class TestSimpleActionProcessor {
                 "testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
         assertEquals("workflow_1", argumentCaptor.getValue().getOutputData().get("workflowId"));
         assertEquals("task_1", argumentCaptor.getValue().getOutputData().get("taskId"));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testStartAgent() throws Exception {
+        StartAgent startAgent = new StartAgent();
+        startAgent.setName("testAgent");
+        startAgent.setVersion(2);
+        startAgent.setPrompt("${userPrompt}");
+        startAgent.setSessionId("${sessionId}");
+        startAgent.setIdempotencyKey("${eventId}");
+        startAgent.setMedia(List.of("${mediaUrl}"));
+        Map<String, Object> context = new HashMap<>();
+        context.put("locale", "${locale}");
+        startAgent.setContext(context);
+
+        Action action = new Action();
+        action.setAction(Type.start_agent);
+        action.setStart_agent(startAgent);
+
+        Object payload =
+                objectMapper.readValue(
+                        "{\"userPrompt\":\"Summarize this\",\"sessionId\":\"session-1\","
+                                + "\"eventId\":\"evt-1\",\"mediaUrl\":\"https://example.com/a.png\","
+                                + "\"locale\":\"en-US\"}",
+                        Object.class);
+
+        AgentStartResponse response =
+                AgentStartResponse.builder().executionId("exec_1").agentName("testAgent").build();
+        when(workflowExecutor.startAgentExecution(any())).thenReturn(response);
+
+        Map<String, Object> output =
+                actionProcessor.execute(action, payload, "testEvent", "testMessage");
+
+        assertNotNull(output);
+        assertEquals("exec_1", output.get("executionId"));
+        assertEquals("testAgent", output.get("agentName"));
+
+        ArgumentCaptor<AgentStartRequest> requestCaptor =
+                ArgumentCaptor.forClass(AgentStartRequest.class);
+        verify(workflowExecutor).startAgentExecution(requestCaptor.capture());
+        AgentStartRequest capturedValue = requestCaptor.getValue();
+
+        assertEquals("testAgent", capturedValue.getName());
+        assertEquals(Integer.valueOf(2), capturedValue.getVersion());
+        assertEquals("Summarize this", capturedValue.getPrompt());
+        assertEquals("session-1", capturedValue.getSessionId());
+        assertEquals("evt-1", capturedValue.getIdempotencyKey());
+        assertEquals(List.of("https://example.com/a.png"), capturedValue.getMedia());
+        assertEquals("en-US", capturedValue.getContext().get("locale"));
     }
 
     @Test

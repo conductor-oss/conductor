@@ -183,6 +183,10 @@ public class MetadataServiceImpl implements MetadataService {
         metadataChangeListener.onWorkflowDefRegistered(workflowDef);
     }
 
+    public Optional<WorkflowDef> findWorkflowDef(String name, Integer version) {
+        return metadataDAO.getWorkflowDef(name, version);
+    }
+
     /**
      * @param name Name of the workflow definition to be removed
      * @param version Version of the workflow definition to be removed

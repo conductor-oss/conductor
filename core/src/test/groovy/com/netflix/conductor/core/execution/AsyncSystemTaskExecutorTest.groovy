@@ -20,6 +20,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.core.utils.IDGenerator
+import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.core.utils.QueueUtils
 import com.netflix.conductor.dao.MetadataDAO
 import com.netflix.conductor.dao.QueueDAO
@@ -38,6 +39,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
     QueueDAO queueDAO
     MetadataDAO metadataDAO
     WorkflowExecutor workflowExecutor
+    ParametersUtils parametersUtils
 
     @Subject
     AsyncSystemTaskExecutor executor
@@ -50,6 +52,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         queueDAO = Mock(QueueDAO.class)
         metadataDAO = Mock(MetadataDAO.class)
         workflowExecutor = Mock(WorkflowExecutor.class)
+        parametersUtils = Mock(ParametersUtils.class)
 
         workflowSystemTask = Mock(WorkflowSystemTask.class) {
             isTaskRetrievalRequired() >> true
@@ -58,7 +61,9 @@ class AsyncSystemTaskExecutorTest extends Specification {
         properties.taskExecutionPostponeDuration = Duration.ofSeconds(1)
         properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(1)
 
-        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor)
+        parametersUtils.substituteSecrets(_) >> { args -> args[0] }
+
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, parametersUtils)
     }
 
     // this is not strictly a unit test, but its essential to test AsyncSystemTaskExecutor with SubWorkflow
@@ -244,7 +249,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
         1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, properties.systemTaskWorkerCallbackDuration.seconds)
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
 
@@ -255,6 +260,186 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.endTime == 0 // verify that endTime is not set
         task.pollCount == 1 // verify that poll count is incremented
         task.callbackAfterSeconds == properties.systemTaskWorkerCallbackDuration.seconds
+    }
+
+    def "Reserves the in-flight message with responseTimeout before invoking the task"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 120)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // the message is reserved for responseTimeout (120s) so a running task keeps its queue
+        // message and is not redelivered/re-queued mid-execution (issue #1321)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+    }
+
+    def "Reserves the in-flight message with the default responseTimeout when unset"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 0)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // no responseTimeout set -> falls back to the default (TaskDef.ONE_HOUR = 3600s)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 3_600_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+    }
+
+    def "Does not start the task when reserving the in-flight message fails"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 120)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // the reserve fails (e.g. transient queue error); the message is still leased at the queue's
+        // default unack timeout, so starting the task would risk a parallel re-run on redelivery (#1321)
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 120_000L) >> { throw new RuntimeException("queue unavailable") }
+        // so the task is NOT started and the message is left to redeliver and retry cleanly
+        0 * workflowSystemTask.start(*_)
+        0 * workflowSystemTask.execute(*_)
+        0 * queueDAO.postpone(*_)
+        0 * queueDAO.remove(*_)
+
+        task.status == TaskModel.Status.SCHEDULED
+        task.startTime == 0
+    }
+
+    def "Times out a redelivered SCHEDULED task whose blocking start() outlived responseTimeout instead of re-executing it"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // A blocking start() never moves the task off SCHEDULED; here it started but has not been
+        // updated within responseTimeout (updateTime is 20s old, timeout 10s) — the run overran.
+        long stale = System.currentTimeMillis() - 20_000
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // the overrunning task is timed out, NOT invoked again (issue #1321)
+        0 * workflowSystemTask.start(*_)
+        0 * workflowSystemTask.execute(*_)
+        0 * queueDAO.setUnackTimeout(*_)
+        1 * queueDAO.remove(queueName, taskId)
+        1 * workflowExecutor.decide(workflowId)
+
+        task.status == TaskModel.Status.TIMED_OUT
+    }
+
+    def "Does not time out an IN_PROGRESS task waiting for its callback even when the callback interval exceeds responseTimeout"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // IN_PROGRESS task re-polled after its callback; the updateTime gap (40s) exceeds
+        // responseTimeout (10s). The executor must NOT time it out — IN_PROGRESS response-timeouts
+        // are owned by DeciderService.isResponseTimedOut, which budgets responseTimeout +
+        // callbackAfterSeconds. Timing out here would fire earlier than DeciderService whenever
+        // callbackAfterSeconds >= responseTimeout.
+        long stale = System.currentTimeMillis() - 40_000
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // reserved and executed (normal callback loop), NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, _)
+        1 * workflowSystemTask.execute(workflow, task, _)
+        0 * workflowSystemTask.start(*_)
+        task.status != TaskModel.Status.TIMED_OUT
+    }
+
+    def "Does not time out a just-scheduled task whose mapper set startTime but has no updateTime (e.g. JOIN)"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // JOIN's mapper sets startTime at scheduling; updateTime is still 0 (createTasks doesn't set it)
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 0, startTime: System.currentTimeMillis(), updateTime: 0)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // it is reserved and started, NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, _)
+        1 * workflowSystemTask.start(workflow, task, _)
+        task.status != TaskModel.Status.TIMED_OUT
+    }
+
+    def "Execute preserves a callback interval set by the system task"() {
+        given:
+        properties.systemTaskWorkerCallbackDuration = Duration.ofSeconds(30)
+        executor = new AsyncSystemTaskExecutor(executionDAOFacade, queueDAO, metadataDAO, properties, workflowExecutor, parametersUtils)
+
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> {
+            task.status = TaskModel.Status.IN_PROGRESS
+            task.callbackAfterSeconds = 5
+        }
+        1 * workflowSystemTask.getEvaluationOffset(task, 30) >> {
+            assert task.callbackAfterSeconds == 5
+            Optional.of(task.callbackAfterSeconds)
+        }
+        1 * queueDAO.postpone(queueName, taskId, task.workflowPriority, 5)
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
+
+        task.status == TaskModel.Status.IN_PROGRESS
+        task.callbackAfterSeconds == 5
     }
 
     def "Execute with a task id that is in SCHEDULED state and WorkflowSystemTask.start sets the task in a terminal state"() {
@@ -272,7 +457,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
         1 * queueDAO.remove(queueName, taskId)
@@ -298,7 +483,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task)
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         // simulating a "start" failure that happens after the Task object is modified
         // the modification will be persisted
@@ -330,7 +515,7 @@ class AsyncSystemTaskExecutorTest extends Specification {
         then:
         1 * executionDAOFacade.getTaskModel(taskId) >> task
         1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
-        1 * executionDAOFacade.updateTask(task) // 1st call for pollCount, 2nd call for status update
+        2 * executionDAOFacade.updateTask(task) // startTime persist before start() + finally
 
         1 * workflowSystemTask.isAsyncComplete(task) >> true
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.IN_PROGRESS }
@@ -391,6 +576,44 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.IN_PROGRESS
         task.endTime == 0 // verify that endTime is not set
         task.pollCount == 1 // verify that poll count is NOT incremented
+    }
+
+    def "secrets are substituted for execution then input restored"() {
+        given:
+        String workflowId = "wfid"
+        String taskId = "taskid"
+        WorkflowSystemTask systemTask = Mock(WorkflowSystemTask.class) {
+            getTaskType() >> "HTTP"
+            isAsyncComplete(_) >> false
+        }
+        TaskModel task = new TaskModel()
+        task.setTaskId(taskId)
+        task.setTaskType("HTTP")
+        task.setStatus(TaskModel.Status.SCHEDULED)
+        task.setWorkflowInstanceId(workflowId)
+        def literal = [pwd: '${workflow.secrets.DB_PASSWORD}'] as Map
+        task.setInputData(literal)
+
+        WorkflowModel workflow = new WorkflowModel()
+        workflow.setStatus(WorkflowModel.Status.RUNNING)
+
+        def resolved = [pwd: 's3cr3t'] as Map
+        Map seenDuringStart = null
+
+        when:
+        executor.execute(systemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, _) >> workflow
+        1 * parametersUtils.substituteSecrets(literal) >> resolved
+        1 * systemTask.start(workflow, task, _) >> { args ->
+            seenDuringStart = (args[1] as TaskModel).getInputData()
+        }
+        // during start the task saw resolved input...
+        seenDuringStart == resolved
+        // ...and afterwards the literal is restored for persistence
+        task.getInputData() == literal
     }
 
 }

@@ -25,14 +25,18 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.datastax.driver.core.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA_BY_TASK;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA_BY_WORKFLOW;
+
 public class CassandraFileMetadataDAO extends CassandraBaseDAO implements FileMetadataDAO {
 
-    private static final String TABLE_FILE_METADATA = "file_metadata";
-
     private final PreparedStatement insertStmt;
+    private final PreparedStatement insertByWorkflowStmt;
+    private final PreparedStatement insertByTaskStmt;
     private final PreparedStatement selectByIdStmt;
-    private final PreparedStatement selectByWorkflowStmt;
-    private final PreparedStatement selectByTaskStmt;
+    private final PreparedStatement selectIdsByWorkflowStmt;
+    private final PreparedStatement selectIdsByTaskStmt;
 
     private final Session session;
     private final ConsistencyLevel readConsistency;
@@ -49,7 +53,22 @@ public class CassandraFileMetadataDAO extends CassandraBaseDAO implements FileMe
                 session.prepare(
                                 "INSERT INTO "
                                         + TABLE_FILE_METADATA
-                                        + " (file_id, json_data) VALUES (?, ?)")
+                                        + " (file_id, workflow_id, task_id, json_data)"
+                                        + " VALUES (?, ?, ?, ?)")
+                        .setConsistencyLevel(writeConsistency);
+
+        insertByWorkflowStmt =
+                session.prepare(
+                                "INSERT INTO "
+                                        + TABLE_FILE_METADATA_BY_WORKFLOW
+                                        + " (workflow_id, file_id) VALUES (?, ?)")
+                        .setConsistencyLevel(writeConsistency);
+
+        insertByTaskStmt =
+                session.prepare(
+                                "INSERT INTO "
+                                        + TABLE_FILE_METADATA_BY_TASK
+                                        + " (task_id, file_id) VALUES (?, ?)")
                         .setConsistencyLevel(writeConsistency);
 
         selectByIdStmt =
@@ -59,24 +78,36 @@ public class CassandraFileMetadataDAO extends CassandraBaseDAO implements FileMe
                                         + " WHERE file_id = ?")
                         .setConsistencyLevel(readConsistency);
 
-        selectByWorkflowStmt =
+        selectIdsByWorkflowStmt =
                 session.prepare(
-                                "SELECT json_data FROM "
-                                        + TABLE_FILE_METADATA
+                                "SELECT file_id FROM "
+                                        + TABLE_FILE_METADATA_BY_WORKFLOW
                                         + " WHERE workflow_id = ?")
                         .setConsistencyLevel(readConsistency);
 
-        selectByTaskStmt =
+        selectIdsByTaskStmt =
                 session.prepare(
-                                "SELECT json_data FROM "
-                                        + TABLE_FILE_METADATA
+                                "SELECT file_id FROM "
+                                        + TABLE_FILE_METADATA_BY_TASK
                                         + " WHERE task_id = ?")
                         .setConsistencyLevel(readConsistency);
     }
 
     @Override
     public void createFileMetadata(FileModel fileModel) {
-        session.execute(insertStmt.bind(fileModel.getFileId(), toJson(fileModel)));
+        session.execute(
+                insertStmt.bind(
+                        fileModel.getFileId(),
+                        fileModel.getWorkflowId(),
+                        fileModel.getTaskId(),
+                        toJson(fileModel)));
+        if (fileModel.getWorkflowId() != null) {
+            session.execute(
+                    insertByWorkflowStmt.bind(fileModel.getWorkflowId(), fileModel.getFileId()));
+        }
+        if (fileModel.getTaskId() != null) {
+            session.execute(insertByTaskStmt.bind(fileModel.getTaskId(), fileModel.getFileId()));
+        }
     }
 
     @Override
@@ -95,7 +126,8 @@ public class CassandraFileMetadataDAO extends CassandraBaseDAO implements FileMe
         }
         model.setUploadStatus(status);
         model.setUpdatedAt(Instant.now());
-        session.execute(insertStmt.bind(fileId, toJson(model)));
+        session.execute(
+                insertStmt.bind(fileId, model.getWorkflowId(), model.getTaskId(), toJson(model)));
     }
 
     @Override
@@ -109,25 +141,32 @@ public class CassandraFileMetadataDAO extends CassandraBaseDAO implements FileMe
         model.setStorageContentHash(contentHash);
         model.setStorageContentSize(contentSize);
         model.setUpdatedAt(Instant.now());
-        session.execute(insertStmt.bind(fileId, toJson(model)));
+        session.execute(
+                insertStmt.bind(fileId, model.getWorkflowId(), model.getTaskId(), toJson(model)));
     }
 
     @Override
     public List<FileModel> getFilesByWorkflowId(String workflowId) {
-        ResultSet rs = session.execute(selectByWorkflowStmt.bind(workflowId));
-        return toFileModelList(rs);
+        return getFileModels(session.execute(selectIdsByWorkflowStmt.bind(workflowId)));
     }
 
     @Override
     public List<FileModel> getFilesByTaskId(String taskId) {
-        ResultSet rs = session.execute(selectByTaskStmt.bind(taskId));
-        return toFileModelList(rs);
+        return getFileModels(session.execute(selectIdsByTaskStmt.bind(taskId)));
     }
 
-    private List<FileModel> toFileModelList(ResultSet rs) {
+    /**
+     * The index tables hold only {@code file_id}, so each id is resolved against the main table. A
+     * row present in an index but missing from the main table is skipped rather than failing the
+     * whole lookup.
+     */
+    private List<FileModel> getFileModels(ResultSet rs) {
         List<FileModel> list = new ArrayList<>();
         for (Row row : rs) {
-            list.add(readValue(row.getString("json_data"), FileModel.class));
+            FileModel model = getFileMetadata(row.getString("file_id"));
+            if (model != null) {
+                list.add(model);
+            }
         }
         return list;
     }

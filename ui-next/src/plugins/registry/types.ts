@@ -16,6 +16,8 @@
 import { ComponentType, ReactNode } from "react";
 import { RouteObject } from "react-router-dom";
 import { CSSObject } from "@mui/material/styles";
+import type { TaskDef } from "types";
+import type { ValidationError } from "pages/definition/errorInspector/state/types";
 import { AuthHeaders } from "types/common";
 import { BaseIntegration, IntegrationDef } from "types/Integrations";
 
@@ -121,6 +123,8 @@ export interface SidebarItemRegistration {
   linkTo: string;
   /** Additional routes that should mark this item as active */
   activeRoutes?: string[];
+  /** When set, an activeRoutes match also requires these search params to be present. */
+  activeSearchParams?: Record<string, string>;
   /** Keyboard shortcuts */
   shortcuts?: string[];
   /** Hotkey string */
@@ -365,6 +369,48 @@ export interface DependencySectionRegistration {
 }
 
 // ============================================================================
+// Task Execution Panel Types
+// ============================================================================
+
+/**
+ * Props passed to a task execution panel component (rendered as an extra tab in
+ * the execution view's right panel for a selected task).
+ */
+export interface TaskExecutionPanelProps {
+  /** The selected task execution. */
+  taskResult: any;
+}
+
+/**
+ * Registration for an extra tab in the execution view's task detail (right) panel.
+ * Plugins use this to surface task-type-specific views (e.g. guardrail executions)
+ * without modifying the core execution page.
+ */
+export interface TaskExecutionPanelRegistration {
+  /** Unique identifier for this panel. */
+  id: string;
+  /** Tab label. */
+  label: string;
+  /** Task types this panel applies to (e.g. ["LLM_CHAT_COMPLETE"]). */
+  taskTypes: string[];
+  /** Component rendered in the tab; receives the selected task. */
+  component: ComponentType<TaskExecutionPanelProps>;
+  /**
+   * Optional predicate to show the tab only for certain task executions (e.g.
+   * only when the task was configured with the relevant feature). When omitted,
+   * the tab shows for every matching task type.
+   */
+  shouldShow?: (taskResult: TaskExecutionPanelProps["taskResult"]) => boolean;
+}
+
+// ============================================================================
+// Task Form Validator Types
+// ============================================================================
+
+/** Optional per-task validation contributed by enterprise plugins. */
+export type TaskValidatorFn = (task: TaskDef) => ValidationError[];
+
+// ============================================================================
 // Main Plugin Interface
 // ============================================================================
 
@@ -466,6 +512,23 @@ export interface ConductorPlugin {
    * Enterprise plugins register sections for integrations, prompts, secrets, etc.
    */
   dependencySections?: DependencySectionRegistration[];
+
+  /**
+   * Extra tabs in the execution view's task detail panel, shown for matching task
+   * types. Enterprise plugins use this to add task-specific views (e.g. guardrails).
+   */
+  taskExecutionPanels?: TaskExecutionPanelRegistration[];
+
+  /**
+   * Optional validators run by the workflow error inspector for each task.
+   */
+  taskValidators?: TaskValidatorFn[];
+
+  /**
+   * Called immediately before the user initiates a workflow save, so forms can
+   * surface field-level validation (e.g. touch required inputs).
+   */
+  onPreSaveValidation?: () => void;
 
   /**
    * Schema edit dialog component for inline schema editing in task forms.
@@ -608,6 +671,15 @@ export interface PluginRegistry {
    * Returns sections sorted by order.
    */
   getDependencySections(): DependencySectionRegistration[];
+
+  /** Get task execution panels registered for the given task type. */
+  getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[];
+
+  /** Aggregate task validation errors from all registered plugins. */
+  getTaskValidationErrors(task: TaskDef): ValidationError[];
+
+  /** Notify plugins to run pre-save form validation. */
+  runPreSaveValidation(): void;
 
   /**
    * Get the schema edit dialog component.

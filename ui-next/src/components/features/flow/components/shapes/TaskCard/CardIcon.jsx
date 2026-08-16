@@ -20,6 +20,10 @@ import {
   RowsIcon,
   FilesIcon,
   FileMagnifyingGlass,
+  ImageIcon,
+  SpeakerHighIcon,
+  VideoCameraIcon,
+  FilePdfIcon,
 } from "@phosphor-icons/react";
 
 import { TaskType } from "types";
@@ -42,6 +46,7 @@ import OpsGenie from "./icons/OpsGenie";
 import UpdateTaskIcon from "./icons/UpdateTaskIcon";
 import UpdateSecretIcon from "./icons/UpdateSecret";
 import LlmChatComplete from "./icons/LlmChatComplete";
+import MCPIcon from "./icons/MCPIcon";
 import { IntegrationIcon } from "components/IntegrationIcon";
 import { useMemo } from "react";
 
@@ -104,6 +109,16 @@ const CardIcon = ({ type, integrationType }) => {
     [TaskType.CHUNK_TEXT]: RowsIcon,
     [TaskType.LIST_FILES]: FilesIcon,
     [TaskType.PARSE_DOCUMENT]: FileMagnifyingGlass,
+    [TaskType.LLM_SEARCH_EMBEDDINGS]: LlmSearchIndex,
+    [TaskType.AGENT]: MCPIcon,
+    [TaskType.GET_AGENT_CARD]: MCPIcon,
+    [TaskType.CANCEL_AGENT]: X,
+    [TaskType.LIST_MCP_TOOLS]: MCPIcon,
+    [TaskType.CALL_MCP_TOOL]: MCPIcon,
+    [TaskType.GENERATE_IMAGE]: ImageIcon,
+    [TaskType.GENERATE_AUDIO]: SpeakerHighIcon,
+    [TaskType.GENERATE_VIDEO]: VideoCameraIcon,
+    [TaskType.GENERATE_PDF]: FilePdfIcon,
   };
 
   const IconComponent = iconMap[type];
