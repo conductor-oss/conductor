@@ -7,6 +7,7 @@
 import { MessageContext } from "components/providers/messageContext";
 import { useContext } from "react";
 import { IObject } from "types/common";
+import { asciiSafeJson } from "utils/strings";
 import { getErrorMessage, tryToJson } from "utils/utils";
 import { useEnv as hardcodeEnv } from "./env";
 
@@ -39,6 +40,10 @@ export async function fetchWithContext(
   throwOnError = true,
 ): Promise<any> {
   const newParams = { ...fetchParams };
+
+  if (typeof newParams.body === "string") {
+    newParams.body = asciiSafeJson(newParams.body);
+  }
 
   // Need for build version (can't use proxy)
   const newPath = `${
