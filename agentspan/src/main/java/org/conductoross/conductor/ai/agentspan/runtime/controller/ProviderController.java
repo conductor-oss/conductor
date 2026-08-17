@@ -86,15 +86,24 @@ public class ProviderController {
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("name", name);
             entry.put("configured", modelProvider.isProviderConfigured(name));
-            if ("ollama".equals(name)) {
-                String baseUrl = modelProvider.resolveConfiguredBaseUrl("ollama");
-                if (baseUrl == null) {
-                    baseUrl =
-                            environment.getProperty(
-                                    "conductor.ai.ollama.base-url", "http://localhost:11434");
-                }
+            String baseUrl = modelProvider.resolveConfiguredBaseUrl(name);
+            if ("ollama".equals(name) && baseUrl == null) {
+                baseUrl =
+                        environment.getProperty(
+                                "conductor.ai.ollama.base-url", "http://localhost:11434");
+            }
+            if (baseUrl != null) {
                 entry.put("baseUrl", baseUrl);
-                entry.put("reachable", probe(baseUrl));
+            }
+            if ("ollama".equals(name)) {
+                entry.put(
+                        "reachable",
+                        probe(
+                                baseUrl != null
+                                        ? baseUrl
+                                        : environment.getProperty(
+                                                "conductor.ai.ollama.base-url",
+                                                "http://localhost:11434")));
             }
             providers.add(entry);
         }
