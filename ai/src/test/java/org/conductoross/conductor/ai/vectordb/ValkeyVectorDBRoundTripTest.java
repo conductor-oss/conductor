@@ -30,6 +30,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -177,6 +178,52 @@ public class ValkeyVectorDBRoundTripTest {
                     "scores must increase with distance, proving they are not inverted");
             // Orthogonal vectors are at cosine distance 1.
             assertEquals(1.0, results.get(2).getScore(), 1e-6);
+        }
+    }
+
+    @Test
+    void providerConfiguredValkeyPerformsKnnSearchAgainstRealServer() {
+        ValkeyConfig valkeyConfig = configFor("provider-evidence");
+        VectorDBInstanceConfig.VectorDBInstance instance =
+                new VectorDBInstanceConfig.VectorDBInstance();
+        instance.setName("provider-evidence");
+        instance.setType("valkey");
+        instance.setValkey(valkeyConfig);
+
+        VectorDBInstanceConfig instanceConfig = new VectorDBInstanceConfig();
+        instanceConfig.setInstances(List.of(instance));
+        StaticListableBeanFactory beanFactory = new StaticListableBeanFactory();
+        VectorDBProvider provider =
+                new VectorDBProvider(instanceConfig, beanFactory.getBeanProvider(VectorDB.class));
+
+        try {
+            VectorDB configuredDb = provider.get("provider-evidence", null);
+            assertTrue(configuredDb instanceof ValkeyVectorDB);
+            ValkeyVectorDB db = (ValkeyVectorDB) configuredDb;
+
+            db.updateEmbeddings("docs", "ns", "doc-a", null, "doc-a", QUERY, Map.of());
+            db.updateEmbeddings(
+                    "docs", "ns", "doc-b", null, "doc-b", List.of(.9f, .1f, 0f, 0f), Map.of());
+            db.updateEmbeddings(
+                    "docs", "ns", "doc-c", null, "doc-c", List.of(0f, 1f, 0f, 0f), Map.of());
+
+            List<IndexedDoc> results = searchUntil(db, "docs", "ns", 3, 3);
+
+            assertEquals(
+                    List.of("doc-a", "doc-b", "doc-c"),
+                    results.stream().map(IndexedDoc::getDocId).toList());
+            assertEquals(0.0, results.get(0).getScore(), 1e-9);
+            assertTrue(results.get(0).getScore() < results.get(1).getScore());
+            assertTrue(results.get(1).getScore() < results.get(2).getScore());
+
+            System.out.printf(
+                    "VALKEY KNN EVIDENCE | query=%s | results=%s%n",
+                    QUERY,
+                    results.stream()
+                            .map(result -> result.getDocId() + ":" + result.getScore())
+                            .toList());
+        } finally {
+            provider.dispose();
         }
     }
 
