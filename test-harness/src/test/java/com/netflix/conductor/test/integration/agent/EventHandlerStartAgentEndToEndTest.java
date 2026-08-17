@@ -32,12 +32,20 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.events.DefaultEventProcessor;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * End-to-end test, through the <b>real engine</b>, of the {@code start_agent} {@link
@@ -94,6 +102,7 @@ class EventHandlerStartAgentEndToEndTest {
     @Autowired private MetadataService metadataService;
     @Autowired private ExecutionService executionService;
     @Autowired private DefaultEventProcessor eventProcessor;
+    @Autowired private ObjectMapper objectMapper;
 
     @Test
     void contextLoads() {
@@ -125,6 +134,37 @@ class EventHandlerStartAgentEndToEndTest {
                 metadataService.getEventHandlersForEvent(eventName, true).stream()
                         .anyMatch(h -> h.getName().equals(registered.getName())),
                 "registered handler must be retrievable for its event");
+    }
+
+    @Test
+    void firingAnEventWithNoMatchingHandlerAcksTheMessage() throws Exception {
+        ObservableQueue queue = fireEvent("test", "no_handler_" + UUID.randomUUID(), Map.of());
+
+        verify(queue).ack(anyList());
+    }
+
+    // ── trigger ─────────────────────────────────────────────────────────────
+
+    /**
+     * Fires a real event through the actual dispatch path: a genuine {@link Message} carrying
+     * {@code payload} as JSON, delivered via a stubbed {@link ObservableQueue} (a pure transport
+     * abstraction — {@code getType()}/{@code getName()} only) into {@code
+     * DefaultEventProcessor.handle()}. Everything downstream — {@code MetadataService} EventHandler
+     * lookup, {@code SimpleActionProcessor}, {@code WorkflowExecutor}, Redis-backed persistence — is
+     * real. Mirrors how even the mock-based {@code TestDefaultEventProcessor} unit test drives {@code
+     * handle()}: the queue is mocked because it's swappable transport, not because it's what's under
+     * test.
+     */
+    private ObservableQueue fireEvent(String queueType, String queueName, Map<String, Object> payload)
+            throws Exception {
+        ObservableQueue queue = mock(ObservableQueue.class);
+        when(queue.getType()).thenReturn(queueType);
+        when(queue.getName()).thenReturn(queueName);
+
+        Message message =
+                new Message(UUID.randomUUID().toString(), objectMapper.writeValueAsString(payload), null);
+        eventProcessor.handle(queue, message);
+        return queue;
     }
 
     // ── registration ────────────────────────────────────────────────────────
