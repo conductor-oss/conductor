@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,7 +183,8 @@ public class ValkeyVectorDBRoundTripTest {
     }
 
     @Test
-    void providerConfiguredValkeyPerformsKnnSearchAgainstRealServer() {
+    void providerConfiguredValkeyPerformsKnnSearchAgainstRealServer()
+            throws IOException, InterruptedException {
         ValkeyConfig valkeyConfig = configFor("provider-evidence");
         VectorDBInstanceConfig.VectorDBInstance instance =
                 new VectorDBInstanceConfig.VectorDBInstance();
@@ -215,6 +217,11 @@ public class ValkeyVectorDBRoundTripTest {
             assertEquals(0.0, results.get(0).getScore(), 1e-9);
             assertTrue(results.get(0).getScore() < results.get(1).getScore());
             assertTrue(results.get(1).getScore() < results.get(2).getScore());
+
+            GenericContainer.ExecResult indexInfo =
+                    valkey.execInContainer("valkey-cli", "FT.INFO", "provider-evidence:docs:ns");
+            assertEquals(0, indexInfo.getExitCode(), indexInfo::getStderr);
+            System.out.printf("VALKEY FT.INFO EVIDENCE%n%s%n", indexInfo.getStdout());
 
             System.out.printf(
                     "VALKEY KNN EVIDENCE | query=%s | results=%s%n",
