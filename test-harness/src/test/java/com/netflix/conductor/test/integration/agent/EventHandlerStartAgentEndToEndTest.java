@@ -23,6 +23,7 @@ import org.awaitility.Awaitility;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -33,6 +34,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -52,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -110,7 +113,7 @@ class EventHandlerStartAgentEndToEndTest {
     }
 
     @Autowired private MetadataService metadataService;
-    @Autowired private ExecutionService executionService;
+    @MockitoSpyBean private ExecutionService executionService;
     @Autowired private DefaultEventProcessor eventProcessor;
     @Autowired private ObjectMapper objectMapper;
     @MockitoSpyBean private WorkflowExecutor workflowExecutor;
@@ -199,6 +202,37 @@ class EventHandlerStartAgentEndToEndTest {
                         .contains("Hello, world! You said: are you there?"),
                 "resolved prompt should reach the agent's output: " + agentExecution.getOutput());
 
+        verify(queue).ack(anyList());
+    }
+
+    @Test
+    void startAgentActionSurfacesNotFoundForUnregisteredAgent() throws Exception {
+        String agentName = "does_not_exist_" + UUID.randomUUID();
+        String eventSuffix = "event_" + UUID.randomUUID();
+        registerStartAgentEventHandler("test:" + eventSuffix, agentName);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("prompt", "are you there?");
+
+        // DefaultEventProcessor.execute() catches the action's RuntimeException internally and
+        // records it on the EventExecution rather than rethrowing — so the message still gets
+        // ack()'d either way, and there is no ES-free read API to fetch the persisted
+        // EventExecution back. Spy on the write path instead.
+        ObservableQueue queue = fireEvent("test", eventSuffix, payload);
+
+        ArgumentCaptor<EventExecution> captor = ArgumentCaptor.forClass(EventExecution.class);
+        verify(executionService, atLeastOnce()).updateEventExecution(captor.capture());
+        EventExecution failed =
+                captor.getAllValues().stream()
+                        .filter(e -> e.getStatus() == EventExecution.Status.FAILED)
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("expected a FAILED EventExecution"));
+        assertTrue(
+                String.valueOf(failed.getOutput().get("exception")).contains("Agent not found"),
+                "failure reason: " + failed.getOutput());
+
+        // handle() must not have thrown (fireEvent would have propagated it), and the processor
+        // must still ack — a failed action must not get stuck retrying forever.
         verify(queue).ack(anyList());
     }
 
