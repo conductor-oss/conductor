@@ -65,15 +65,15 @@ import static org.mockito.Mockito.when;
  * com.netflix.conductor.common.metadata.events.EventHandler.Action.Type} — an {@link
  * com.netflix.conductor.common.metadata.events.EventHandler} configured with a {@code start_agent}
  * action, triggered by a real {@link DefaultEventProcessor#handle} call, starting a registered
- * "hello world" agent (a Conductor-native {@link com.netflix.conductor.common.metadata.workflow.WorkflowDef}
- * flagged {@code isAgent}) via {@code SimpleActionProcessor.startAgent()} →
- * {@code WorkflowExecutor.startAgentExecution()}.
+ * "hello world" agent (a Conductor-native {@link
+ * com.netflix.conductor.common.metadata.workflow.WorkflowDef} flagged {@code isAgent}) via {@code
+ * SimpleActionProcessor.startAgent()} → {@code WorkflowExecutor.startAgentExecution()}.
  *
  * <p>Reuses the deterministic, LLM-free agent-registration pattern from {@code
  * ConductorAgentEndToEndTest}, but triggers {@code startAgentExecution} through the EventHandler
  * action path instead of the {@code AGENT} task type — so unlike that class, this one does not need
- * {@code conductor.integrations.ai.enabled}: {@code WorkflowExecutorOps.startAgentExecution} is pure
- * {@code core} logic with no dependency on the {@code ai}/agentspan module.
+ * {@code conductor.integrations.ai.enabled}: {@code WorkflowExecutorOps.startAgentExecution} is
+ * pure {@code core} logic with no dependency on the {@code ai}/agentspan module.
  */
 @SpringBootTest(classes = ConductorTestApp.class)
 @TestPropertySource(
@@ -184,11 +184,14 @@ class EventHandlerStartAgentEndToEndTest {
         ObservableQueue queue = fireEvent("test", eventSuffix, payload);
 
         AgentStartRequest request = capturedRequest.get();
-        assertNotNull(request, "SimpleActionProcessor.startAgent() must call startAgentExecution()");
+        assertNotNull(
+                request, "SimpleActionProcessor.startAgent() must call startAgentExecution()");
         assertEquals("are you there?", request.getPrompt(), "prompt placeholder must resolve");
         assertEquals("session-1", request.getSessionId(), "sessionId placeholder must resolve");
         assertEquals(
-                idempotencyKey, request.getIdempotencyKey(), "idempotencyKey placeholder must resolve");
+                idempotencyKey,
+                request.getIdempotencyKey(),
+                "idempotencyKey placeholder must resolve");
 
         String executionId = capturedResponse.get().getExecutionId();
         assertNotNull(executionId);
@@ -261,7 +264,9 @@ class EventHandlerStartAgentEndToEndTest {
                             workflowExecutor.decide(workflowId);
                             Workflow wf = executionService.getExecutionStatus(workflowId, true);
                             latest.set(wf);
-                            return wf != null && wf.getStatus() != null && wf.getStatus().isTerminal();
+                            return wf != null
+                                    && wf.getStatus() != null
+                                    && wf.getStatus().isTerminal();
                         });
         return latest.get();
     }
@@ -273,19 +278,22 @@ class EventHandlerStartAgentEndToEndTest {
      * {@code payload} as JSON, delivered via a stubbed {@link ObservableQueue} (a pure transport
      * abstraction — {@code getType()}/{@code getName()} only) into {@code
      * DefaultEventProcessor.handle()}. Everything downstream — {@code MetadataService} EventHandler
-     * lookup, {@code SimpleActionProcessor}, {@code WorkflowExecutor}, Redis-backed persistence — is
-     * real. Mirrors how even the mock-based {@code TestDefaultEventProcessor} unit test drives {@code
-     * handle()}: the queue is mocked because it's swappable transport, not because it's what's under
-     * test.
+     * lookup, {@code SimpleActionProcessor}, {@code WorkflowExecutor}, Redis-backed persistence —
+     * is real. Mirrors how even the mock-based {@code TestDefaultEventProcessor} unit test drives
+     * {@code handle()}: the queue is mocked because it's swappable transport, not because it's
+     * what's under test.
      */
-    private ObservableQueue fireEvent(String queueType, String queueName, Map<String, Object> payload)
-            throws Exception {
+    private ObservableQueue fireEvent(
+            String queueType, String queueName, Map<String, Object> payload) throws Exception {
         ObservableQueue queue = mock(ObservableQueue.class);
         when(queue.getType()).thenReturn(queueType);
         when(queue.getName()).thenReturn(queueName);
 
         Message message =
-                new Message(UUID.randomUUID().toString(), objectMapper.writeValueAsString(payload), null);
+                new Message(
+                        UUID.randomUUID().toString(),
+                        objectMapper.writeValueAsString(payload),
+                        null);
         eventProcessor.handle(queue, message);
         return queue;
     }
