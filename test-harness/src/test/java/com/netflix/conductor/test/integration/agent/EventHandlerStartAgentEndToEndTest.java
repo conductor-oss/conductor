@@ -12,6 +12,11 @@
  */
 package com.netflix.conductor.test.integration.agent;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,11 +27,15 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.events.DefaultEventProcessor;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * End-to-end test, through the <b>real engine</b>, of the {@code start_agent} {@link
@@ -89,5 +98,59 @@ class EventHandlerStartAgentEndToEndTest {
         assertNotNull(metadataService);
         assertNotNull(executionService);
         assertNotNull(eventProcessor);
+    }
+
+    @Test
+    void helloWorldAgentRegistersAsAnAgentWorkflowDef() {
+        String agentName = "hello_world_agent_" + UUID.randomUUID();
+        registerHelloWorldAgent(agentName);
+
+        WorkflowDef registered = metadataService.getWorkflowDef(agentName, 1);
+        assertNotNull(registered);
+        assertTrue(registered.isAgent(), "registered agent WorkflowDef must be flagged isAgent()");
+    }
+
+    // ── registration ────────────────────────────────────────────────────────
+
+    /**
+     * Registers a minimal "hello world" agent: a workflow definition flagged as an agent (via
+     * {@code metadata.agentDef}, mirroring what the agentspan compiler would produce) whose only
+     * task is a synchronous {@code INLINE} script that echoes the caller's prompt back as {@code
+     * text}. No LLM or tool dependency, so {@code WorkflowExecutor.startAgentExecution} runs it to
+     * completion synchronously when started. Ported from {@code ConductorAgentEndToEndTest}.
+     */
+    private void registerHelloWorldAgent(String agentName) {
+        ensureTaskDef("INLINE");
+
+        WorkflowTask hello = new WorkflowTask();
+        hello.setName("INLINE");
+        hello.setTaskReferenceName("hello");
+        hello.setType("INLINE");
+        Map<String, Object> helloInput = new HashMap<>();
+        helloInput.put("input", "${workflow.input}");
+        helloInput.put("evaluatorType", "javascript");
+        helloInput.put("expression", "({text: 'Hello, world! You said: ' + $.input.prompt})");
+        hello.setInputParameters(helloInput);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(agentName);
+        def.setVersion(1);
+        def.setOwnerEmail("event-handler-start-agent-e2e@conductor.test");
+        def.setTasks(List.of(hello));
+        def.setOutputParameters(Map.of("text", "${hello.output.result.text}"));
+        def.setMetadata(Map.of("agentDef", Map.of("name", agentName)));
+        metadataService.updateWorkflowDef(List.of(def));
+    }
+
+    private void ensureTaskDef(String taskType) {
+        TaskDef td = new TaskDef();
+        td.setName(taskType);
+        td.setRetryCount(0);
+        td.setTimeoutSeconds(120);
+        try {
+            metadataService.registerTaskDef(List.of(td));
+        } catch (Exception ignored) {
+            // already registered by a prior test
+        }
     }
 }
