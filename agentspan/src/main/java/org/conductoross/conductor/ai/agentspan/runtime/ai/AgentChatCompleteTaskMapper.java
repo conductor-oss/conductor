@@ -364,9 +364,18 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
         }
 
         String previousResponseId = chatCompletion.getPreviousResponseId();
+        // Suppress prior same-refName loop iterations only when previousResponseId
+        // is in play (the provider's server-side store already owns those turns).
+        //
+        // Unlike the base ChatCompleteTaskMapper, providerSupportsAssistantPrefill
+        // is deliberately NOT consulted here. Prefill only concerns a *trailing*
+        // assistant message, and this mapper's ensureEndsWithUserMessage guarantees
+        // the conversation never ends assistant-side. Suppressing loop history for
+        // no-prefill providers (all Anthropic models) left agent loops amnesiac:
+        // the model never saw its own prior tool calls/results and repeated its
+        // first action every turn until maxTurns.
         boolean suppressLoopAssistantHistory =
-                (previousResponseId != null && !previousResponseId.isBlank())
-                        || !providerSupportsAssistantPrefill(chatCompletion);
+                previousResponseId != null && !previousResponseId.isBlank();
 
         List<ChatMessage> history = new ArrayList<>();
 

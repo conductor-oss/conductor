@@ -160,6 +160,56 @@ class AgentChatCompleteTaskMapperTest {
         assertThat(result.getMessage()).isEqualTo("Alice");
     }
 
+    @Test
+    void loopHistoryIsIncludedForProvidersWithoutPrefillSupport() throws Exception {
+        // Regression: agent loops on Anthropic models ran amnesiac. getHistory
+        // suppressed all prior same-refName loop iterations whenever the provider
+        // declared supportsAssistantPrefill() == false (all Anthropic models).
+        // Prefill only concerns a TRAILING assistant message — which
+        // ensureEndsWithUserMessage already prevents — so mid-conversation loop
+        // history must be included regardless of prefill support.
+        String llmRef = "agent_llm";
+
+        TaskModel priorLlm = new TaskModel();
+        WorkflowTask priorLlmTask = workflowTask(llmRef);
+        priorLlmTask.setType("LLM_CHAT_COMPLETE");
+        priorLlm.setWorkflowTask(priorLlmTask);
+        priorLlm.setTaskType("LLM_CHAT_COMPLETE");
+        priorLlm.setStatus(TaskModel.Status.COMPLETED);
+        priorLlm.setIteration(1);
+        priorLlm.setOutputData(Map.of("result", "I created the scratch directory."));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setTasks(List.of(priorLlm));
+        TaskModel currentLlm = new TaskModel();
+        currentLlm.setWorkflowTask(workflowTask(llmRef));
+
+        // Provider stack that rejects assistant prefill, as Anthropic does.
+        org.conductoross.conductor.ai.AIModel noPrefillModel =
+                org.mockito.Mockito.mock(org.conductoross.conductor.ai.AIModel.class);
+        org.mockito.Mockito.when(noPrefillModel.supportsAssistantPrefill()).thenReturn(false);
+        org.conductoross.conductor.ai.AIModelProvider provider =
+                org.mockito.Mockito.mock(org.conductoross.conductor.ai.AIModelProvider.class);
+        org.mockito.Mockito.when(provider.getModel(org.mockito.Mockito.any(ChatCompletion.class)))
+                .thenReturn(noPrefillModel);
+        java.lang.reflect.Field field =
+                AgentChatCompleteTaskMapper.class.getDeclaredField("aiModelProvider");
+        field.setAccessible(true);
+        field.set(mapper, provider);
+
+        ChatCompletion completion = new ChatCompletion();
+        completion.setLlmProvider("anthropic");
+        invokeGetHistory(workflow, currentLlm, completion);
+
+        assertThat(completion.getMessages())
+                .anySatisfy(
+                        m -> {
+                            assertThat(m.getRole()).isEqualTo(ChatMessage.Role.assistant);
+                            assertThat(m.getMessage())
+                                    .isEqualTo("I created the scratch directory.");
+                        });
+    }
+
     // ── Context condensation tests ─────────────────────────────────
 
     @Test
