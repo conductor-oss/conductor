@@ -27,6 +27,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import com.netflix.conductor.ConductorTestApp;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -34,6 +35,7 @@ import com.netflix.conductor.core.events.DefaultEventProcessor;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -110,7 +112,51 @@ class EventHandlerStartAgentEndToEndTest {
         assertTrue(registered.isAgent(), "registered agent WorkflowDef must be flagged isAgent()");
     }
 
+    @Test
+    void registeredEventHandlerCarriesStartAgentAction() {
+        String eventName = "test:event_" + UUID.randomUUID();
+        String agentName = "hello_world_agent_" + UUID.randomUUID();
+        EventHandler registered = registerStartAgentEventHandler(eventName, agentName);
+
+        EventHandler.Action action = registered.getActions().get(0);
+        assertEquals(EventHandler.Action.Type.start_agent, action.getAction());
+        assertEquals(agentName, action.getStart_agent().getName());
+        assertTrue(
+                metadataService.getEventHandlersForEvent(eventName, true).stream()
+                        .anyMatch(h -> h.getName().equals(registered.getName())),
+                "registered handler must be retrievable for its event");
+    }
+
     // ── registration ────────────────────────────────────────────────────────
+
+    /**
+     * Registers an {@link EventHandler} with a single {@code start_agent} action targeting {@code
+     * agentName}. {@code prompt}/{@code sessionId}/{@code idempotencyKey} are {@code ${...}}
+     * placeholders resolved from the triggering message's payload by {@code
+     * SimpleActionProcessor.startAgent()} — matching the fields {@code
+     * TestSimpleActionProcessor.testStartAgent()} already exercises with a mocked {@code
+     * WorkflowExecutor}.
+     */
+    private EventHandler registerStartAgentEventHandler(String eventName, String agentName) {
+        EventHandler.StartAgent startAgent = new EventHandler.StartAgent();
+        startAgent.setName(agentName);
+        startAgent.setPrompt("${prompt}");
+        startAgent.setSessionId("${sessionId}");
+        startAgent.setIdempotencyKey("${idempotencyKey}");
+
+        EventHandler.Action action = new EventHandler.Action();
+        action.setAction(EventHandler.Action.Type.start_agent);
+        action.setStart_agent(startAgent);
+
+        EventHandler eventHandler = new EventHandler();
+        eventHandler.setName("start_agent_handler_" + UUID.randomUUID());
+        eventHandler.setEvent(eventName);
+        eventHandler.setActive(true);
+        eventHandler.setActions(List.of(action));
+
+        metadataService.addEventHandler(eventHandler);
+        return eventHandler;
+    }
 
     /**
      * Registers a minimal "hello world" agent: a workflow definition flagged as an agent (via
