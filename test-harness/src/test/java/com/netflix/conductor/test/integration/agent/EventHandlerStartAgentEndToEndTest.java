@@ -16,13 +16,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -31,9 +37,11 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.DefaultEventProcessor;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
@@ -42,7 +50,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -103,6 +113,7 @@ class EventHandlerStartAgentEndToEndTest {
     @Autowired private ExecutionService executionService;
     @Autowired private DefaultEventProcessor eventProcessor;
     @Autowired private ObjectMapper objectMapper;
+    @MockitoSpyBean private WorkflowExecutor workflowExecutor;
 
     @Test
     void contextLoads() {
@@ -137,10 +148,88 @@ class EventHandlerStartAgentEndToEndTest {
     }
 
     @Test
+    void startAgentActionStartsRegisteredAgentToCompletion() throws Exception {
+        String agentName = "hello_world_agent_" + UUID.randomUUID();
+        registerHelloWorldAgent(agentName);
+
+        String eventSuffix = "event_" + UUID.randomUUID();
+        registerStartAgentEventHandler("test:" + eventSuffix, agentName);
+
+        // Redis-backed persistence has no correlationId/search index without Elasticsearch
+        // (RedisExecutionDAO.canSearchAcrossWorkflows() is false, so ExecutionDAOFacade falls back
+        // to IndexDAO — a no-op here). Capture the real startAgentExecution() call/response
+        // directly instead of searching for it afterward.
+        AtomicReference<AgentStartRequest> capturedRequest = new AtomicReference<>();
+        AtomicReference<AgentStartResponse> capturedResponse = new AtomicReference<>();
+        doAnswer(
+                        invocation -> {
+                            capturedRequest.set(invocation.getArgument(0));
+                            AgentStartResponse response =
+                                    (AgentStartResponse) invocation.callRealMethod();
+                            capturedResponse.set(response);
+                            return response;
+                        })
+                .when(workflowExecutor)
+                .startAgentExecution(any(AgentStartRequest.class));
+
+        String idempotencyKey = "idem_" + UUID.randomUUID();
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("prompt", "are you there?");
+        payload.put("sessionId", "session-1");
+        payload.put("idempotencyKey", idempotencyKey);
+
+        ObservableQueue queue = fireEvent("test", eventSuffix, payload);
+
+        AgentStartRequest request = capturedRequest.get();
+        assertNotNull(request, "SimpleActionProcessor.startAgent() must call startAgentExecution()");
+        assertEquals("are you there?", request.getPrompt(), "prompt placeholder must resolve");
+        assertEquals("session-1", request.getSessionId(), "sessionId placeholder must resolve");
+        assertEquals(
+                idempotencyKey, request.getIdempotencyKey(), "idempotencyKey placeholder must resolve");
+
+        String executionId = capturedResponse.get().getExecutionId();
+        assertNotNull(executionId);
+
+        Workflow agentExecution = awaitTerminal(executionId);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, agentExecution.getStatus());
+        assertEquals("are you there?", agentExecution.getInput().get("prompt"));
+        assertEquals("session-1", agentExecution.getInput().get("session_id"));
+        assertTrue(
+                String.valueOf(agentExecution.getOutput().get("text"))
+                        .contains("Hello, world! You said: are you there?"),
+                "resolved prompt should reach the agent's output: " + agentExecution.getOutput());
+
+        verify(queue).ack(anyList());
+    }
+
+    @Test
     void firingAnEventWithNoMatchingHandlerAcksTheMessage() throws Exception {
         ObservableQueue queue = fireEvent("test", "no_handler_" + UUID.randomUUID(), Map.of());
 
         verify(queue).ack(anyList());
+    }
+
+    // ── engine helper ───────────────────────────────────────────────────────
+
+    /**
+     * A single {@code decide()} inside {@code startWorkflow()} is not enough to carry even an
+     * INLINE-only workflow to {@code COMPLETED} — the sweeper drives that in production, so tests
+     * must re-decide until terminal, exactly as {@code ConductorAgentEndToEndTest.awaitTerminal}
+     * does (queue-draining omitted here: the hello-world agent has no async system task).
+     */
+    private Workflow awaitTerminal(String workflowId) {
+        AtomicReference<Workflow> latest = new AtomicReference<>();
+        Awaitility.await()
+                .atMost(30, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            workflowExecutor.decide(workflowId);
+                            Workflow wf = executionService.getExecutionStatus(workflowId, true);
+                            latest.set(wf);
+                            return wf != null && wf.getStatus() != null && wf.getStatus().isTerminal();
+                        });
+        return latest.get();
     }
 
     // ── trigger ─────────────────────────────────────────────────────────────
