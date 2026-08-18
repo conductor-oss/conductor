@@ -13,13 +13,18 @@
 package io.conductor.e2e.task;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
+import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import io.conductor.e2e.util.ApiUtil;
 import io.orkes.conductor.client.AgentClient;
@@ -45,8 +50,69 @@ class EventHandlerStartAgentTests {
     private static final MetadataClient metadataClient = ApiUtil.METADATA_CLIENT;
     private static final WorkflowClient workflowClient = ApiUtil.WORKFLOW_CLIENT;
     private static final AgentClient agentClient = ApiUtil.AGENT_CLIENT;
+    private static final EventClient eventClient = ApiUtil.EVENT_CLIENT;
     private static final String MODEL =
             System.getenv().getOrDefault("AGENT_E2E_MODEL", "OpenAI/gpt-4o-mini");
+
+    private static final String TRIGGER_WORKFLOW_NAME = "event_handler_start_agent_trigger_e2e";
+    private static final String TRIGGER_TASK_REF = "fire";
+    private static final String TRIGGER_EVENT_NAME =
+            "conductor:" + TRIGGER_WORKFLOW_NAME + ":" + TRIGGER_TASK_REF;
+    private static final String SHARED_HANDLER_NAME = "start_agent_trigger_handler_e2e";
+
+    @BeforeAll
+    static void registerSharedTriggerAndHandler() {
+        registerTriggerWorkflow();
+        registerSharedEventHandler();
+    }
+
+    // ── shared trigger workflow + shared EventHandler ─────────────────────────
+
+    private static void registerTriggerWorkflow() {
+        WorkflowTask fire = new WorkflowTask();
+        fire.setName("event");
+        fire.setTaskReferenceName(TRIGGER_TASK_REF);
+        fire.setType("EVENT");
+        fire.setSink("conductor");
+        fire.setInputParameters(
+                Map.of(
+                        "agentName", "${workflow.input.agentName}",
+                        "prompt", "${workflow.input.prompt}",
+                        "sessionId", "${workflow.input.sessionId}",
+                        "idempotencyKey", "${workflow.input.idempotencyKey}"));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(TRIGGER_WORKFLOW_NAME);
+        def.setVersion(1);
+        def.setOwnerEmail("agent-e2e@conductor.test");
+        def.setTasks(List.of(fire));
+        metadataClient.updateWorkflowDefs(List.of(def));
+    }
+
+    private static void registerSharedEventHandler() {
+        EventHandler.StartAgent startAgent = new EventHandler.StartAgent();
+        startAgent.setName("${agentName}");
+        startAgent.setPrompt("${prompt}");
+        startAgent.setSessionId("${sessionId}");
+        startAgent.setIdempotencyKey("${idempotencyKey}");
+
+        EventHandler.Action action = new EventHandler.Action();
+        action.setAction(EventHandler.Action.Type.start_agent);
+        action.setStart_agent(startAgent);
+
+        EventHandler eventHandler = new EventHandler();
+        eventHandler.setName(SHARED_HANDLER_NAME);
+        eventHandler.setEvent(TRIGGER_EVENT_NAME);
+        eventHandler.setActive(true);
+        eventHandler.setActions(List.of(action));
+
+        try {
+            eventClient.registerEventHandler(eventHandler);
+        } catch (Exception ignored) {
+            // already registered by a prior run against this server
+            eventClient.updateEventHandler(eventHandler);
+        }
+    }
 
     // ── agent registration (ported from AgentTaskTests) ──────────────────────
 
