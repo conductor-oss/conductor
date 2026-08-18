@@ -109,6 +109,15 @@ body {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--c-border);
 }
+/* Material hides the tab bar below 76.25em and falls back to the drawer, but
+   the home page hides drawer navigation (hide: navigation), leaving that page
+   with no navigation at all on narrow screens. The tab list is natively a
+   scrollable nowrap flex row, so keep the bar visible as a swipeable strip. */
+@media screen and (max-width: 76.234375em) {
+  .md-tabs {
+    display: block;
+  }
+}
 .md-tabs__link {
   font-family: var(--font-body) !important;
   font-size: 14px;
