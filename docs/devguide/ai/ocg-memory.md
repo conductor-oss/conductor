@@ -58,8 +58,8 @@ Supply these stable inputs when starting a run:
 - `prompt`: the original user input.
 - `user`, `repo`, `branch`, and `cwd`: optional capture metadata.
 
-The Conductor workflow execution id is the stable `turn_id`. Retrying export for the same execution
-therefore sends the same `session_id` and `turn_id`.
+The Conductor workflow execution id is the stable `execution_id`. Retrying export for the same
+execution therefore sends the same `session_id` and `execution_id`.
 
 ## Recall, capture, and feedback
 
@@ -86,8 +86,8 @@ output are truncated; the original prompt and final result are preserved.
 
 Completed-execution feedback is exposed through Conductor at
 `GET/POST /api/agent/executions/{executionId}/feedback`; the browser never receives the OCG key.
-The current OCG `feature/memory-rework` API supports memory-key feedback through a signed-in JWT or
-signed capability link, but does not yet provide the API-key-authenticated turn-identity read/upsert
-contract required by these operations. Until OCG adds that contract, eligible executions return
-`enabled=false` with reason `OCG_FEEDBACK_CONTRACT_UNAVAILABLE`, and the execution UI hides the
-controls. Conductor does not translate a turn into a guessed memory key or invent an upstream route.
+For an eligible completed root execution, Conductor uses its server-resolved OCG credential to read
+and upsert the canonical rating at `{ocgUrl}/api/v1/memories/agent-run/feedback`. OCG derives the
+memory partition from that API key's owner; neither the browser nor workflow input selects a user
+partition. The feedback dialog reads the OCG-generated execution memory from
+`{ocgUrl}/api/v1/agent-runs/{executionId}/memory` and never receives the OCG key.
