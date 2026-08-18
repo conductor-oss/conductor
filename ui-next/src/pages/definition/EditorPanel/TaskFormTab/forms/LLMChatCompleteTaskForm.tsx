@@ -81,6 +81,11 @@ export const LLMChatCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
                   fullWidth
                   placeholder="You are a helpful assistant. Be concise..."
                   helperText="System prompt for the model. Conductor prepends this as a system message before the Structured Messages below — it is not a substitute for user/assistant turns."
+                  tooltip={{
+                    title: "Instructions",
+                    content:
+                      "The prompt sent to the LLM. Enter the instruction text directly, or reference a saved AI Prompt by name. For Chat Complete tasks this becomes the system-level instruction that shapes the model's behavior for the conversation.",
+                  }}
                 />
               </Grid>
             </Grid>
