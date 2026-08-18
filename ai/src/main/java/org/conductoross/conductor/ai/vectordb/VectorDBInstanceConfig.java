@@ -12,13 +12,18 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.pinecone.PineconeConfig;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresConfig;
+import org.conductoross.conductor.ai.vectordb.valkey.ValkeyConfig;
+import org.conductoross.conductor.ai.vectordb.valkey.ValkeyConnectionException;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -77,6 +82,8 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             return vectorDBMap;
         }
 
+        List<String> failedNames = new ArrayList<>();
+        List<Exception> failures = new ArrayList<>();
         for (VectorDBInstance instance : instances) {
             try {
                 VectorDB vectorDB = createVectorDB(instance);
@@ -87,7 +94,19 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
                             instance.getName(),
                             instance.getType());
                 }
-            } catch (Exception e) {
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                // The configuration itself is invalid (bad enum value, blank name, etc.) and needs
+                // an operator fix, not a retry, so fail startup loudly.
+                failedNames.add(instance.getName() + " (type: " + instance.getType() + ")");
+                failures.add(e);
+            } catch (ValkeyConnectionException e) {
+                // A connectivity failure (e.g. Valkey unreachable at boot), not a configuration
+                // error. Unlike the other vector DB backends, ValkeyVectorDB connects eagerly at
+                // construction, so without this distinction a transient network blip would abort
+                // the entire server instead of just this instance. Log and skip, matching how the
+                // other backends already tolerate this. Deliberately narrower than catching
+                // RuntimeException: a genuine bug (NPE, ClassCastException, etc.) from any backend
+                // must still propagate and fail loudly rather than being silently dropped here.
                 log.error(
                         "Failed to initialize vector DB instance: {} (type: {}), reason: {}",
                         instance.getName(),
@@ -96,7 +115,38 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             }
         }
 
+        if (!failures.isEmpty()) {
+            closeAlreadyCreated(vectorDBMap);
+            IllegalStateException aggregate =
+                    new IllegalStateException(
+                            "Failed to initialize vector DB instance(s): "
+                                    + String.join(", ", failedNames));
+            failures.forEach(aggregate::addSuppressed);
+            throw aggregate;
+        }
+
         return vectorDBMap;
+    }
+
+    /**
+     * Closes any instances that were successfully created before a later instance failed. Without
+     * this, a successfully-connected instance (e.g. an open GLIDE client) would be discarded along
+     * with the map when the aggregate exception below is thrown, since {@link VectorDBProvider} is
+     * never constructed to close it later.
+     */
+    private void closeAlreadyCreated(Map<String, VectorDB> vectorDBMap) {
+        for (Map.Entry<String, VectorDB> entry : vectorDBMap.entrySet()) {
+            if (entry.getValue() instanceof Closeable) {
+                try {
+                    ((Closeable) entry.getValue()).close();
+                } catch (Exception e) {
+                    log.warn(
+                            "Failed to close vector DB instance '{}' during startup failure cleanup",
+                            entry.getKey(),
+                            e);
+                }
+            }
+        }
     }
 
     /** Creates a VectorDB instance based on the configuration type. */
@@ -107,7 +157,7 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             return null;
         }
 
-        switch (type.toLowerCase()) {
+        switch (type.toLowerCase(Locale.ROOT)) {
             case "postgres":
             case "pgvectordb":
                 return createPostgresVectorDB(instance);
@@ -117,6 +167,9 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
             case "pinecone":
             case "pineconedb":
                 return createPineconeVectorDB(instance);
+            case "valkey":
+            case "valkeyvectordb":
+                return createValkeyVectorDB(instance);
             default:
                 log.error("Unknown vector DB type: {} for instance: {}", type, instance.getName());
                 return null;
@@ -150,6 +203,15 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         return config.get(instance.getName());
     }
 
+    private VectorDB createValkeyVectorDB(VectorDBInstance instance) {
+        ValkeyConfig config = instance.getValkey();
+        if (config == null) {
+            log.error("Valkey configuration missing for instance: {}", instance.getName());
+            return null;
+        }
+        return config.get(instance.getName());
+    }
+
     /** Represents a single vector DB instance configuration. */
     public static class VectorDBInstance {
         private String name;
@@ -157,6 +219,7 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
         private PostgresConfig postgres;
         private MongoDBConfig mongodb;
         private PineconeConfig pinecone;
+        private ValkeyConfig valkey;
 
         public String getName() {
             return name;
@@ -196,6 +259,14 @@ public class VectorDBInstanceConfig implements VectorDBConfig<VectorDB> {
 
         public void setPinecone(PineconeConfig pinecone) {
             this.pinecone = pinecone;
+        }
+
+        public ValkeyConfig getValkey() {
+            return valkey;
+        }
+
+        public void setValkey(ValkeyConfig valkey) {
+            this.valkey = valkey;
         }
     }
 }

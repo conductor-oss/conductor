@@ -38,7 +38,7 @@ Conductor provides LLM orchestration and AI agent orchestration as native system
 
 MCP (Model Context Protocol) integration is built in: use `LIST_MCP_TOOLS` to discover available tools and `CALL_MCP_TOOL` to invoke them — enabling function calling and tool use within workflows with full retry and state tracking.
 
-For RAG pipelines, Conductor supports three vector databases natively — Pinecone, pgvector, and MongoDB Atlas — so you can index embeddings, run similarity search, and feed results to an LLM in a single workflow definition.
+For RAG pipelines, Conductor supports four vector databases natively — Pinecone, pgvector, MongoDB Atlas, and Valkey — so you can index embeddings, run similarity search, and feed results to an LLM in a single workflow definition.
 
 Content generation tasks cover image, audio, video, and PDF creation using AI models. Every AI task runs with the same durability guarantees as any other Conductor task: automatic retries, timeout handling, and a complete audit trail.
 
@@ -71,7 +71,7 @@ No other open source workflow engine matches this combination:
 
 - **14+ native LLM providers as system tasks** — Anthropic, OpenAI, Azure OpenAI, Gemini, Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. No wrappers, no plugins — first-class support.
 - **MCP (Model Context Protocol) native integration** — discover and call tools directly from workflow definitions.
-- **3 vector databases for built-in RAG** — Pinecone, pgvector, MongoDB Atlas. Embed, index, search, and generate in one workflow.
+- **4 vector databases for built-in RAG** — Pinecone, pgvector, MongoDB Atlas, Valkey. Embed, index, search, and generate in one workflow.
 - **Content generation tasks** — image, audio, video, and PDF generation as system tasks.
 - **6 message brokers** — Kafka, NATS, NATS Streaming, SQS, AMQP (RabbitMQ), and internal queuing.
 - **5 persistence backends** — Redis, PostgreSQL, MySQL, Cassandra, and SQLite.

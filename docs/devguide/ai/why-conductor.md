@@ -194,7 +194,7 @@ Retrieval-augmented generation as two system tasks, no external framework:
 ]
 ```
 
-Pinecone, pgvector, and MongoDB Atlas are supported natively. No LangChain, no custom retrieval workers, no framework dependencies.
+Pinecone, pgvector, MongoDB Atlas, and Valkey are supported natively. No LangChain, no custom retrieval workers, no framework dependencies.
 
 
 ## Multi-agent delegation — sub-workflows with lifecycle

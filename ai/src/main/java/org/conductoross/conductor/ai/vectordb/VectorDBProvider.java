@@ -12,14 +12,17 @@
  */
 package org.conductoross.conductor.ai.vectordb;
 
+import java.io.Closeable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -34,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 public class VectorDBProvider {
 
     private final Map<String, VectorDB> vectorDBs = new ConcurrentHashMap<>();
+    private final AtomicBoolean disposed = new AtomicBoolean(false);
 
     /**
      * Initializes the provider with configured vector database instances, then merges in any
@@ -44,35 +48,27 @@ public class VectorDBProvider {
      */
     public VectorDBProvider(
             VectorDBInstanceConfig instanceConfig, ObjectProvider<VectorDB> defaultInstances) {
-        try {
-            Map<String, VectorDB> instances = instanceConfig.getVectorDBInstances();
-            vectorDBs.putAll(instances);
-            defaultInstances.forEach(
-                    db -> {
-                        if (vectorDBs.putIfAbsent(db.getName(), db) == null) {
-                            log.info(
-                                    "Registered default vector DB instance: {} (type: {})",
-                                    db.getName(),
-                                    db.getType());
-                        } else {
-                            log.warn(
-                                    "Vector DB instance '{}' already registered explicitly; "
-                                            + "auto-registered default not applied",
-                                    db.getName());
-                        }
-                    });
-            log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
-            vectorDBs
-                    .keySet()
-                    .forEach(
-                            name ->
-                                    log.info(
-                                            "  - {} (type: {})",
-                                            name,
-                                            vectorDBs.get(name).getType()));
-        } catch (Exception e) {
-            log.error("Failed to initialize VectorDBProvider: {}", e.getMessage(), e);
-        }
+        Map<String, VectorDB> instances = instanceConfig.getVectorDBInstances();
+        vectorDBs.putAll(instances);
+        defaultInstances.forEach(
+                db -> {
+                    if (vectorDBs.putIfAbsent(db.getName(), db) == null) {
+                        log.info(
+                                "Registered default vector DB instance: {} (type: {})",
+                                db.getName(),
+                                db.getType());
+                    } else {
+                        log.warn(
+                                "Vector DB instance '{}' already registered explicitly; "
+                                        + "auto-registered default not applied",
+                                db.getName());
+                    }
+                });
+        log.info("Initialized VectorDBProvider with {} instances", vectorDBs.size());
+        vectorDBs
+                .keySet()
+                .forEach(
+                        name -> log.info("  - {} (type: {})", name, vectorDBs.get(name).getType()));
     }
 
     /**
@@ -83,6 +79,10 @@ public class VectorDBProvider {
      * @return The VectorDB instance, or null if not found
      */
     public VectorDB get(String name, TaskContext taskContext) {
+        if (disposed.get()) {
+            log.warn("VectorDBProvider is shut down; returning null for '{}'", name);
+            return null;
+        }
         VectorDB db = vectorDBs.get(name);
         if (db == null) {
             log.warn(
@@ -91,5 +91,29 @@ public class VectorDBProvider {
                     vectorDBs.keySet());
         }
         return db;
+    }
+
+    /**
+     * Marks the provider disposed (so concurrent {@link #get} calls immediately start returning
+     * null instead of racing the close loop below), then closes all registered VectorDB instances
+     * that implement {@link Closeable} and clears the map. Each instance is closed independently so
+     * that one failure does not prevent others from releasing resources.
+     */
+    @PreDestroy
+    void dispose() {
+        disposed.set(true);
+        for (Map.Entry<String, VectorDB> entry : vectorDBs.entrySet()) {
+            VectorDB db = entry.getValue();
+            if (db instanceof Closeable) {
+                try {
+                    ((Closeable) db).close();
+                    log.info(
+                            "Closed vector DB instance: {} (type: {})", db.getName(), db.getType());
+                } catch (Exception e) {
+                    log.warn("Failed to close vector DB instance '{}'", entry.getKey(), e);
+                }
+            }
+        }
+        vectorDBs.clear();
     }
 }

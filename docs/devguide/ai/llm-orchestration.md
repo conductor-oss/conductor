@@ -105,6 +105,7 @@ Built-in vector database integration enables RAG (retrieval-augmented generation
 | Pinecone | ✓ | ✓ | ✓ |
 | pgvector (PostgreSQL) | ✓ | ✓ | ✓ |
 | MongoDB Atlas Vector Search | ✓ | ✓ | ✓ |
+| Valkey (valkey-search module) | ✓ | ✓ | ✓ |
 
 
 ### Example: RAG pipeline

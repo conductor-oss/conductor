@@ -113,7 +113,7 @@ curl -X POST 'http://localhost:8080/api/workflow/rag_workflow' \
 ```
 
 !!! note "Prerequisites"
-    Requires a vector database (pgvector, Pinecone, or MongoDB Atlas) configured as a Conductor integration, plus at least one LLM provider. See [AI provider configuration](#ai-provider-configuration) below.
+    Requires a vector database (pgvector, Pinecone, MongoDB Atlas, or Valkey with the valkey-search module) configured as a Conductor integration, plus at least one LLM provider. See [AI provider configuration](#ai-provider-configuration) below.
 
 ---
 

@@ -117,7 +117,7 @@ description: Conductor is an open source workflow engine and durable execution p
     <div class="feature-card">
       <div class="feature-tag">AI</div>
       <h3>AI agent orchestration &amp; LLM orchestration</h3>
-      <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas) for RAG pipelines.</p>
+      <p>Orchestrate AI agents with 14+ native LLM providers (Anthropic, OpenAI, Gemini, Bedrock, Mistral, and more), MCP tool calling, function calling, human-in-the-loop approval, and structured output. Built-in vector database support (Pinecone, pgvector, MongoDB Atlas, Valkey) for RAG pipelines.</p>
       <a href="devguide/ai/index.html" class="feature-link">AI Cookbook &rarr;</a>
     </div>
     <div class="feature-card">
@@ -234,7 +234,7 @@ description: Conductor is an open source workflow engine and durable execution p
     </details>
     <details class="faq-item">
       <summary>Can Conductor orchestrate AI agents and LLMs?</summary>
-      <p>Yes. Conductor provides AI agent orchestration and LLM orchestration as native capabilities. 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling and function calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), vector database integration (Pinecone, pgvector, MongoDB Atlas) for RAG, and content generation (image, audio, video, PDF). All with the same durability guarantees as any other workflow task.</p>
+      <p>Yes. Conductor provides AI agent orchestration and LLM orchestration as native capabilities. 14+ LLM providers (Anthropic, OpenAI, Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, and more), MCP tool calling and function calling (LIST_MCP_TOOLS, CALL_MCP_TOOL), vector database integration (Pinecone, pgvector, MongoDB Atlas, Valkey) for RAG, and content generation (image, audio, video, PDF). All with the same durability guarantees as any other workflow task.</p>
     </details>
     <details class="faq-item">
       <summary>How does Conductor compare to other workflow engines?</summary>
