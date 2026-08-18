@@ -8,17 +8,15 @@
 
 ```mermaid
 flowchart LR
-    A[Start root agent run] --> B[Compiler adds bounded recall]
-    B --> C[cg_search_memories via OCG MCP]
-    C --> D[Normalize text blocks]
-    D --> E[Inject reviewed evidence before model work]
-    E --> F[Agent and subagents run]
-    F --> G[Root run completes or is terminated]
-    G --> H[Start ocg_memory_capture workflow]
-    H --> I[POST raw redacted run to OCG]
-    I --> J[OCG folds, summarizes, indexes, and ranks]
-    J --> K[UI displays summary and collects human feedback]
-    K --> L[Conductor proxies feedback to OCG]
+    A[Start an agent run] --> B[Find relevant past memory in OCG]
+    B --> C[Add that memory to the agent context]
+    C --> D[Agent does its work]
+    D --> E[Run completes or is stopped]
+    E --> F[Send the full agent run to OCG - up to 10 MiB]
+    F --> G[OCG summarizes the run and updates its memory]
+    E --> H[Show the completed run in Conductor]
+    H --> I[User can rate the result]
+    I --> J[Save the rating in OCG]
 ```
 
 Conductor orchestrates the lifecycle. OCG owns memory folding, summaries, retention, ranking, and
@@ -54,7 +52,7 @@ flowchart TB
 | Value | Source | Rule |
 |---|---|---|
 | `agent` | `longTermMemory.agent` | Required; stable logical-agent key. |
-| `user` | configured user, else workflow input user | Normalized to `user:<id>`; falls back to `agent:<agent>`. |
+| `user` | configured user, else workflow input user | Used for MCP recall and normalized to `user:<id>`; falls back to `agent:<agent>`. OCG derives the capture, memory-preview, and feedback partition from the server credential's API-key owner. |
 | `session_id` | workflow input | Falls back to the execution ID. Keep it stable across conversation turns. |
 | `execution_id` | root workflow ID | One completed agent turn; used consistently by capture, memory preview, and feedback. |
 | `credential` | agent definition | Credential *name* only. The server resolves its value; neither workflows nor browsers receive it. |
@@ -144,9 +142,13 @@ flowchart LR
 | `GET /api/agent/executions/{id}/feedback/memory` | OCG-generated execution summary and capture-workflow status. |
 
 The service derives all OCG routing fields from the persisted execution and agent definition. It
-rejects child, running, failed, timed-out, non-agent, and non-OCG executions. The UI hides controls
-when the server reports ineligibility or an older server lacks the endpoints. Upstream failures
-become stable API errors; the user can retry without changing workflow state.
+uses the server-resolved credential for OCG's `GET`/`PUT
+/api/v1/memories/agent-run/feedback` contract and reads the dialog summary from `GET
+/api/v1/agent-runs/{execution_id}/memory`. OCG derives the user partition from that credential's
+API-key owner, rather than accepting a browser or workflow-supplied user. Conductor rejects child,
+running, failed, timed-out, non-agent, and non-OCG executions. The UI hides controls when the server
+reports ineligibility or an older server lacks the endpoints. Upstream failures become stable API
+errors; the user can retry without changing workflow state.
 
 ## Safety boundaries
 
