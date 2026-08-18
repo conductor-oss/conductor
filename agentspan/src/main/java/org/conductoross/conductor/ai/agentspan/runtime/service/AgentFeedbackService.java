@@ -45,11 +45,7 @@ public class AgentFeedbackService {
     static final String FEEDBACK_REASON_TOO_LONG = "FEEDBACK_REASON_TOO_LONG";
     private static final int MAX_REASON_LENGTH = 2_000;
     private static final Set<WorkflowModel.Status> CAPTURED_TERMINAL_STATES =
-            Set.of(
-                    WorkflowModel.Status.COMPLETED,
-                    WorkflowModel.Status.FAILED,
-                    WorkflowModel.Status.TIMED_OUT,
-                    WorkflowModel.Status.TERMINATED);
+            Set.of(WorkflowModel.Status.COMPLETED, WorkflowModel.Status.TERMINATED);
 
     private final ExecutionDAO executionDAO;
     private final ObjectMapper mapper;

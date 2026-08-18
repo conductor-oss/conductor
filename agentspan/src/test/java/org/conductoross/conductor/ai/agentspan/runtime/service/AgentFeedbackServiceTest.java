@@ -144,6 +144,15 @@ class AgentFeedbackServiceTest {
         running.setStatus(WorkflowModel.Status.RUNNING);
         assertThat(service.state(running).reason()).isEqualTo("EXECUTION_NOT_TERMINAL");
 
+        // Failed and timed-out runs are not captured, so they cannot receive memory feedback.
+        WorkflowModel failed = workflow("user");
+        failed.setStatus(WorkflowModel.Status.FAILED);
+        assertThat(service.state(failed).reason()).isEqualTo("EXECUTION_NOT_TERMINAL");
+
+        WorkflowModel timedOut = workflow("user");
+        timedOut.setStatus(WorkflowModel.Status.TIMED_OUT);
+        assertThat(service.state(timedOut).reason()).isEqualTo("EXECUTION_NOT_TERMINAL");
+
         WorkflowModel ordinary = workflow("user");
         ordinary.getWorkflowDefinition().setMetadata(Map.of());
         assertThat(service.state(ordinary).reason()).isEqualTo("NOT_AGENT_EXECUTION");

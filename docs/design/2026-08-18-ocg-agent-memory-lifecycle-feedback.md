@@ -13,7 +13,7 @@ flowchart LR
     C --> D[Normalize text blocks]
     D --> E[Inject reviewed evidence before model work]
     E --> F[Agent and subagents run]
-    F --> G[Root run reaches terminal state]
+    F --> G[Root run completes or is terminated]
     G --> H[Start ocg_memory_capture workflow]
     H --> I[POST raw redacted run to OCG]
     I --> J[OCG folds, summarizes, indexes, and ranks]
@@ -32,8 +32,8 @@ canonical feedback. Conductor never compiles an LLM summarizer or a memory-write
 | Recall | Compiler prepends optional INLINE → `cg_search_memories` → INLINE tasks. The call uses the original `prompt`, configured agent, resolved user scope, `include_shared=true`, and `limit=5`. |
 | Prompt safety | Only MCP text blocks are joined; the result is capped to the agent context limit and injected as *human-reviewed evidence*, never instructions. |
 | Agent boundaries | Every agent definition with its own OCG config gets its own recall prelude. Parent recall is not forwarded to children. Child runs are never captured or feedback-eligible. |
-| Capture | A terminal root run starts an observable `ocg_memory_capture` workflow. Its `OCG_MEMORY_CAPTURE` task posts the redacted source run to OCG. |
-| Feedback | Root terminal agent runs can be rated `positive` or `negative`, with a required reason (1–2,000 characters). OCG is the source of truth. |
+| Capture | A completed or terminated root run starts an observable `ocg_memory_capture` workflow. Its `OCG_MEMORY_CAPTURE` task posts the redacted source run to OCG. Failed and timed-out runs are not captured. |
+| Feedback | Completed or terminated root agent runs can be rated `positive` or `negative`, with a required reason (1–2,000 characters). OCG is the source of truth. |
 | UI | `ui-next` shows **Helpful** / **Not helpful**, displays the OCG summary in a feedback dialog, and links to the capture workflow. |
 
 ## Configuration and identity
@@ -59,6 +59,9 @@ flowchart TB
 | `execution_id` | root workflow ID | One completed agent turn; used consistently by capture, memory preview, and feedback. |
 | `credential` | agent definition | Credential *name* only. The server resolves its value; neither workflows nor browsers receive it. |
 | `visibility` | agent definition | `public` by default; set `private` to limit a capture to its owner. |
+
+Memories are scoped by agent and user. By default, a memory is available to every user of the same
+agent; set `visibility` to `private` when it must be limited to its owning user.
 
 Minimal definition:
 
@@ -117,9 +120,10 @@ sequenceDiagram
 
 The capture payload contains the stable identity, original prompt, final result, ordered tool and
 subagent events, outcome, timestamps, and optional `repo`, `branch`, and `cwd`. Masked fields and
-credential-like keys are replaced with `[REDACTED]`. At the 10 MiB OCG request boundary, only event
-detail/output is truncated; prompt and result are retained. A failed capture workflow is visible for
-diagnosis but does not alter the already terminal root execution.
+credential-like keys are replaced with `[REDACTED]`. To fit OCG's 10 MiB request limit, Conductor
+first truncates event detail/output while retaining the prompt and final result. If the request is
+still too large, Conductor skips capture and records a redacted warning. A failed capture workflow
+is visible for diagnosis but does not alter the already terminal root execution.
 
 ## Feedback and memory preview
 
@@ -140,9 +144,9 @@ flowchart LR
 | `GET /api/agent/executions/{id}/feedback/memory` | OCG-generated execution summary and capture-workflow status. |
 
 The service derives all OCG routing fields from the persisted execution and agent definition. It
-rejects child, running, non-agent, and non-OCG executions. The UI hides controls when the server
-reports ineligibility or an older server lacks the endpoints. Upstream failures become stable API
-errors; the user can retry without changing workflow state.
+rejects child, running, failed, timed-out, non-agent, and non-OCG executions. The UI hides controls
+when the server reports ineligibility or an older server lacks the endpoints. Upstream failures
+become stable API errors; the user can retry without changing workflow state.
 
 ## Safety boundaries
 
@@ -161,25 +165,4 @@ flowchart TB
 - The browser supplies only a rating and reason; it cannot select an agent, user, session, OCG URL,
   credential, or execution identity.
 - Recalled content is evidence, not executable instruction.
-- Capture is restricted to root executions; feedback is restricted to terminal root agent executions.
-
-## Evidence and remaining work
-
-The branch includes compiler, transport, service, controller, and UI tests for recall ordering and
-size limits; identity derivation; redaction; capture retry/size behavior; feedback read/upsert/error
-handling; and UI eligibility, summary display, required rationale, and retry behavior.
-
-Before production rollout, run an integration test against the target OCG deployment to confirm:
-
-1. API-key authentication and the exact capture, feedback, and memory-summary responses.
-2. A captured run is folded and then returned by recall for the same agent/user/session scope.
-3. Feedback submitted before folding is associated with the correct execution.
-4. Visibility and user-scope behavior match the target OCG tenancy policy.
-
-## Deliberate exclusions
-
-- No local memory summary, ranking store, or retention policy.
-- No `HUMAN` task that keeps an agent execution open for feedback.
-- No OCG key or direct OCG write access in the browser.
-- No implicit memory mutation, deletion, sharing, or administration tools for the model.
-
+- Capture and feedback are restricted to completed or terminated root agent executions.
