@@ -111,6 +111,32 @@ class EventHandlerStartAgentTests {
         assertEquals(Workflow.WorkflowStatus.FAILED, completed.getStatus());
     }
 
+    @Test
+    void startAgentActionOnRealPipelineAgentCanBeTerminated() {
+        String agentName = "blocking_agent_e2e_" + UUID.randomUUID();
+        String idempotencyKey = "idempotency_" + UUID.randomUUID();
+        deployAgent(blockingAgentConfig(agentName));
+
+        fireStartAgent(agentName, "trigger the blocking path", "session_e2e", idempotencyKey);
+        Workflow execution = awaitAgentExecution(agentName, idempotencyKey, 60);
+        String executionId = execution.getWorkflowId();
+
+        awaitRunning(executionId, 30);
+
+        workflowClient.terminateWorkflow(executionId, "test: cancel via EventHandler-started agent");
+
+        Workflow terminated = awaitTerminal(executionId, 30);
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, terminated.getStatus());
+    }
+
+    private static void awaitRunning(String workflowId, int timeoutSeconds) {
+        Awaitility.await()
+                .atMost(timeoutSeconds, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> workflowClient.getWorkflow(workflowId, false).getStatus()
+                        == Workflow.WorkflowStatus.RUNNING);
+    }
+
     private static Workflow awaitTerminal(String workflowId, int timeoutSeconds) {
         Workflow[] latest = new Workflow[1];
         Awaitility.await()
@@ -245,6 +271,19 @@ class EventHandlerStartAgentTests {
         Map<String, Object> config =
                 basicAgentConfig(name, "This agent intentionally targets an unknown provider.");
         config.put("model", "unknown_e2e_provider/unknown_model");
+        return config;
+    }
+
+    private static Map<String, Object> blockingAgentConfig(String agentName) {
+        String taskType = "agent_pending_work_e2e_" + UUID.randomUUID();
+        Map<String, Object> config =
+                basicAgentConfig(
+                        agentName,
+                        "Use the prefilled work result as context, then answer in one sentence.");
+        config.put("tools", List.of(workerTool(taskType, false)));
+        config.put(
+                "prefillTools",
+                List.of(Map.of("toolName", taskType, "arguments", Map.of("prompt", "durable work"))));
         return config;
     }
 
