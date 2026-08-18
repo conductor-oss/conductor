@@ -91,10 +91,11 @@ test("DataTable Columns button opens ColumnSelector with MuiCheckbox items", asy
   // "Task name" column should appear as an entry.
   await expect(menu.getByText(/task name/i).first()).toBeVisible();
 
-  // Dismiss via outside click. Page-level Escape is flaky here: the Columns
-  // button is wrapped in a MUI Tooltip that can consume the first Escape,
-  // leaving the Menu open in CI.
-  await page.mouse.click(1, 1);
+  // Dismiss by sending Escape to the Menu itself so the keydown bubbles to the
+  // MUI Modal root that owns onClose. A corner mouse click is unreliable in CI
+  // (the invisible backdrop may not take the hit at 1,1) and a page-level
+  // Escape depends on where focus happens to be.
+  await menu.press("Escape");
   await expect(menu).not.toBeVisible();
 });
 
