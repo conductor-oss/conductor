@@ -12,10 +12,14 @@
  */
 package io.conductor.e2e.task;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -23,8 +27,10 @@ import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
 
 import io.conductor.e2e.util.ApiUtil;
 import io.orkes.conductor.client.AgentClient;
@@ -64,6 +70,63 @@ class EventHandlerStartAgentTests {
     static void registerSharedTriggerAndHandler() {
         registerTriggerWorkflow();
         registerSharedEventHandler();
+        warmUpSharedEventHandler();
+    }
+
+    /**
+     * {@code DefaultEventQueueManager} only picks up a newly-registered {@code EventHandler}'s
+     * queue every 60s. Repeatedly firing the trigger workflow at a throwaway agent — instead of a
+     * blind sleep — turns that fixed wait into a bounded, self-verifying one: once the throwaway
+     * execution shows up, the shared handler is confirmed live for every real test in this class.
+     */
+    private static void warmUpSharedEventHandler() {
+        String warmupAgentName = "warmup_agent_e2e_" + UUID.randomUUID();
+        String warmupIdempotencyKey = "warmup_" + UUID.randomUUID();
+        deployAgent(bogusModelAgentConfig(warmupAgentName));
+
+        Awaitility.await()
+                .atMost(90, TimeUnit.SECONDS)
+                .pollInterval(5, TimeUnit.SECONDS)
+                .until(
+                        () -> {
+                            fireStartAgent(
+                                    warmupAgentName, "warm up", "warmup-session", warmupIdempotencyKey);
+                            return !workflowClient
+                                    .getWorkflows(warmupAgentName, warmupIdempotencyKey, true, false)
+                                    .isEmpty();
+                        });
+    }
+
+    // ── trigger + read-back ────────────────────────────────────────────────────
+
+    private static void fireStartAgent(
+            String agentName, String prompt, String sessionId, String idempotencyKey) {
+        StartWorkflowRequest request = new StartWorkflowRequest();
+        request.setName(TRIGGER_WORKFLOW_NAME);
+        request.setVersion(1);
+        request.setInput(
+                Map.of(
+                        "agentName", agentName,
+                        "prompt", prompt,
+                        "sessionId", sessionId,
+                        "idempotencyKey", idempotencyKey));
+        workflowClient.startWorkflow(request);
+    }
+
+    private static Workflow awaitAgentExecution(
+            String agentName, String idempotencyKey, int timeoutSeconds) {
+        List<Workflow> found = new ArrayList<>();
+        Awaitility.await()
+                .atMost(timeoutSeconds, TimeUnit.SECONDS)
+                .pollInterval(2, TimeUnit.SECONDS)
+                .until(
+                        () -> {
+                            found.clear();
+                            found.addAll(
+                                    workflowClient.getWorkflows(agentName, idempotencyKey, true, true));
+                            return !found.isEmpty();
+                        });
+        return found.get(0);
     }
 
     // ── shared trigger workflow + shared EventHandler ─────────────────────────
@@ -147,6 +210,13 @@ class EventHandlerStartAgentTests {
         config.put("maxTurns", 3);
         config.put("timeoutSeconds", 120);
         config.put("temperature", 0.0);
+        return config;
+    }
+
+    private static Map<String, Object> bogusModelAgentConfig(String name) {
+        Map<String, Object> config =
+                basicAgentConfig(name, "This agent intentionally targets an unknown provider.");
+        config.put("model", "unknown_e2e_provider/unknown_model");
         return config;
     }
 
