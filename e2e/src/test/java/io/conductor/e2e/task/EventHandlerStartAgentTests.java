@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import com.netflix.conductor.client.http.EventClient;
@@ -95,6 +96,33 @@ class EventHandlerStartAgentTests {
                                     .getWorkflows(warmupAgentName, warmupIdempotencyKey, true, false)
                                     .isEmpty();
                         });
+    }
+
+    @Test
+    void startAgentActionOnRealPipelineAgentSurfacesFailure() {
+        String agentName = "failing_agent_e2e_" + UUID.randomUUID();
+        String idempotencyKey = "idempotency_" + UUID.randomUUID();
+        deployAgent(bogusModelAgentConfig(agentName));
+
+        fireStartAgent(agentName, "trigger the failure path", "session_e2e", idempotencyKey);
+        Workflow execution = awaitAgentExecution(agentName, idempotencyKey, 60);
+
+        Workflow completed = awaitTerminal(execution.getWorkflowId(), 60);
+        assertEquals(Workflow.WorkflowStatus.FAILED, completed.getStatus());
+    }
+
+    private static Workflow awaitTerminal(String workflowId, int timeoutSeconds) {
+        Workflow[] latest = new Workflow[1];
+        Awaitility.await()
+                .atMost(timeoutSeconds, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, false);
+                            latest[0] = wf;
+                            return wf != null && wf.getStatus() != null && wf.getStatus().isTerminal();
+                        });
+        return latest[0];
     }
 
     // ── trigger + read-back ────────────────────────────────────────────────────
