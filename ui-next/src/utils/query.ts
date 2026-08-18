@@ -536,7 +536,6 @@ export const usePrefetchWorkflows = (): void => {
 
 // Version numbers do not necessarily start, or run contiguously from 1. Could arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
-// @Deprecated use useWorkflowNamesAndVersionsQuery instead
 export function useWorkflowNamesAndVersions(): Map<string, number[]> {
   const { url } = useSharedQueryContext();
   const { data } = useFetch<WorkflowDef[]>(url, {
