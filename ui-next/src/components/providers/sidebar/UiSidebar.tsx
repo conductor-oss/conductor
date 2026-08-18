@@ -28,7 +28,8 @@ import { mergePluginSidebarItems } from "./sidebarMenuUtils";
 const customLogo = featureFlags.getValue(FEATURES.CUSTOM_LOGO_URL);
 
 type UISidebarProps = {
-  apiVersion?: string;
+  /** undefined = loading (skeleton), null = error/unavailable, string = loaded */
+  apiVersion?: string | null;
   releaseVersion?: string;
 };
 
