@@ -46,8 +46,9 @@ import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
 import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
 import { pluginRegistry } from "plugins/registry";
-import { RouteObject } from "react-router-dom";
+import { Navigate, RouteObject } from "react-router-dom";
 import { featureFlags, FEATURES } from "utils";
+import { resolveDefaultHomePath } from "utils/resolveDefaultHomePath";
 import {
   API_REFERENCE_URL,
   EVENT_HANDLERS_URL,
@@ -234,12 +235,13 @@ const getCoreAuthenticatedRoutes = () => [
  */
 const getIndexRoute = (isPlayground: boolean) => {
   if (isPlayground) {
-    // In playground mode, we need the hub pages - these come from plugins
-    return null; // Will be provided by playground plugin
+    // In playground mode, Launch Pad / Hub is the public index from plugins
+    return null;
   }
+  // Redirect `/` to the first visible in-app sidebar destination (usually /executions).
   return {
     index: true,
-    element: <WorkflowSearch />,
+    element: <Navigate to={resolveDefaultHomePath()} replace />,
   };
 };
 
