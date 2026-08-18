@@ -912,7 +912,7 @@ export function transformWorkflowExecutionToAgentRun(
         return targetIdx === 0
           ? rootAgentName
           : ((agents?.[targetIdx - 1]?.name as string | undefined) ??
-            activeAgent);
+              activeAgent);
       };
 
       // Self-calls → HANDOFF events (the agent deciding where to route)
@@ -984,8 +984,7 @@ export function transformWorkflowExecutionToAgentRun(
           | undefined;
 
         if (explicitTransfer) {
-          const transferTo = explicitTransfer.outputData
-            ?.transfer_to as string;
+          const transferTo = explicitTransfer.outputData?.transfer_to as string;
           pendingIncomingHandoff = {
             id: `${explicitTransfer.taskId}-handoff`,
             type: EventType.HANDOFF,

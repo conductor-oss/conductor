@@ -9,6 +9,7 @@ import { path as _path } from "lodash/fp";
 import _isEmpty from "lodash/isEmpty";
 import _isNil from "lodash/isNil";
 import _last from "lodash/last";
+import _omit from "lodash/omit";
 import { getWorkflowDefinitionByNameAndVersion } from "pages/definition/commonService";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
 import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
@@ -224,6 +225,20 @@ export const SubWorkflowOperatorForm = ({
                     valueLabel="Workflow definition"
                     value={task?.subWorkflowParam?.workflowDefinition ?? ""}
                     onChangeValue={(val) => {
+                      // An empty value (cleared string or an empty {} object from
+                      // switching the type dropdown) fails schema validation, since
+                      // workflowDefinition must be a non-empty string or a full
+                      // inline workflow. Omit the field entirely when empty.
+                      if (_isEmpty(val)) {
+                        onChange({
+                          ...task,
+                          subWorkflowParam: _omit(
+                            task.subWorkflowParam,
+                            "workflowDefinition",
+                          ),
+                        });
+                        return;
+                      }
                       onChange(
                         updateField(
                           "subWorkflowParam.workflowDefinition",
