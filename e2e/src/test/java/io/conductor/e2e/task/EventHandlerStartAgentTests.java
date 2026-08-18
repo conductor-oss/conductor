@@ -92,9 +92,13 @@ class EventHandlerStartAgentTests {
                 .until(
                         () -> {
                             fireStartAgent(
-                                    warmupAgentName, "warm up", "warmup-session", warmupIdempotencyKey);
+                                    warmupAgentName,
+                                    "warm up",
+                                    "warmup-session",
+                                    warmupIdempotencyKey);
                             return !workflowClient
-                                    .getWorkflows(warmupAgentName, warmupIdempotencyKey, true, false)
+                                    .getWorkflows(
+                                            warmupAgentName, warmupIdempotencyKey, true, false)
                                     .isEmpty();
                         });
     }
@@ -124,7 +128,8 @@ class EventHandlerStartAgentTests {
 
         awaitRunning(executionId, 30);
 
-        workflowClient.terminateWorkflow(executionId, "test: cancel via EventHandler-started agent");
+        workflowClient.terminateWorkflow(
+                executionId, "test: cancel via EventHandler-started agent");
 
         Workflow terminated = awaitTerminal(executionId, 30);
         assertEquals(Workflow.WorkflowStatus.TERMINATED, terminated.getStatus());
@@ -140,7 +145,8 @@ class EventHandlerStartAgentTests {
                         agentName,
                         "You are a concise test agent. Answer the user's prompt in one sentence."));
 
-        fireStartAgent(agentName, "Say hello in exactly one sentence.", "session_e2e", idempotencyKey);
+        fireStartAgent(
+                agentName, "Say hello in exactly one sentence.", "session_e2e", idempotencyKey);
         Workflow execution = awaitAgentExecution(agentName, idempotencyKey, 60);
 
         Workflow completed = awaitTerminal(execution.getWorkflowId(), 60);
@@ -154,8 +160,10 @@ class EventHandlerStartAgentTests {
         Awaitility.await()
                 .atMost(timeoutSeconds, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
-                .until(() -> workflowClient.getWorkflow(workflowId, false).getStatus()
-                        == Workflow.WorkflowStatus.RUNNING);
+                .until(
+                        () ->
+                                workflowClient.getWorkflow(workflowId, false).getStatus()
+                                        == Workflow.WorkflowStatus.RUNNING);
     }
 
     private static Workflow awaitTerminal(String workflowId, int timeoutSeconds) {
@@ -167,7 +175,9 @@ class EventHandlerStartAgentTests {
                         () -> {
                             Workflow wf = workflowClient.getWorkflow(workflowId, false);
                             latest[0] = wf;
-                            return wf != null && wf.getStatus() != null && wf.getStatus().isTerminal();
+                            return wf != null
+                                    && wf.getStatus() != null
+                                    && wf.getStatus().isTerminal();
                         });
         return latest[0];
     }
@@ -198,7 +208,8 @@ class EventHandlerStartAgentTests {
                         () -> {
                             found.clear();
                             found.addAll(
-                                    workflowClient.getWorkflows(agentName, idempotencyKey, true, true));
+                                    workflowClient.getWorkflows(
+                                            agentName, idempotencyKey, true, true));
                             return !found.isEmpty();
                         });
         return found.get(0);
@@ -304,7 +315,12 @@ class EventHandlerStartAgentTests {
         config.put("tools", List.of(workerTool(taskType, false)));
         config.put(
                 "prefillTools",
-                List.of(Map.of("toolName", taskType, "arguments", Map.of("prompt", "durable work"))));
+                List.of(
+                        Map.of(
+                                "toolName",
+                                taskType,
+                                "arguments",
+                                Map.of("prompt", "durable work"))));
         return config;
     }
 
