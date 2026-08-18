@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.util.Map;
 import java.util.Set;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.springframework.beans.factory.ObjectProvider;
@@ -43,6 +44,12 @@ public class AgentFeedbackService {
     static final String INVALID_RESPONSE = "OCG_FEEDBACK_INVALID_RESPONSE";
     static final String FEEDBACK_REASON_REQUIRED = "FEEDBACK_REASON_REQUIRED";
     static final String FEEDBACK_REASON_TOO_LONG = "FEEDBACK_REASON_TOO_LONG";
+    static final String EXECUTION_NOT_FOUND = "EXECUTION_NOT_FOUND";
+    static final String CHILD_EXECUTION = "CHILD_EXECUTION";
+    static final String EXECUTION_NOT_TERMINAL = "EXECUTION_NOT_TERMINAL";
+    static final String NOT_AGENT_EXECUTION = "NOT_AGENT_EXECUTION";
+    static final String OCG_MEMORY_NOT_CONFIGURED = "OCG_MEMORY_NOT_CONFIGURED";
+    static final String INVALID_FEEDBACK_RATING = "INVALID_FEEDBACK_RATING";
     private static final int MAX_REASON_LENGTH = 2_000;
     private static final Set<WorkflowModel.Status> CAPTURED_TERMINAL_STATES =
             Set.of(WorkflowModel.Status.COMPLETED, WorkflowModel.Status.TERMINATED);
@@ -72,7 +79,7 @@ public class AgentFeedbackService {
     public AgentFeedbackState get(String executionId) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
         if (workflow == null) {
-            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, "EXECUTION_NOT_FOUND");
+            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, EXECUTION_NOT_FOUND);
         }
         return get(workflow);
     }
@@ -82,7 +89,7 @@ public class AgentFeedbackService {
         String trimmedReason = validateReason(reason);
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
         if (workflow == null) {
-            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, "EXECUTION_NOT_FOUND");
+            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, EXECUTION_NOT_FOUND);
         }
         return set(workflow, rating, trimmedReason);
     }
@@ -90,7 +97,7 @@ public class AgentFeedbackService {
     public AgentExecutionMemoryState getMemory(String executionId) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
         if (workflow == null) {
-            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, "EXECUTION_NOT_FOUND");
+            throw new AgentFeedbackException(HttpStatus.NOT_FOUND, EXECUTION_NOT_FOUND);
         }
         return getMemory(workflow);
     }
@@ -156,22 +163,22 @@ public class AgentFeedbackService {
     }
 
     AgentFeedbackState state(WorkflowModel workflow) {
-        if (workflow.hasParent()) return AgentFeedbackState.disabled("CHILD_EXECUTION");
+        if (workflow.hasParent()) return AgentFeedbackState.disabled(CHILD_EXECUTION);
         if (!CAPTURED_TERMINAL_STATES.contains(workflow.getStatus())) {
-            return AgentFeedbackState.disabled("EXECUTION_NOT_TERMINAL");
+            return AgentFeedbackState.disabled(EXECUTION_NOT_TERMINAL);
         }
         WorkflowDef definition = workflow.getWorkflowDefinition();
         if (definition == null || !WorkflowClassifiers.isAgent(definition.getMetadata())) {
-            return AgentFeedbackState.disabled("NOT_AGENT_EXECUTION");
+            return AgentFeedbackState.disabled(NOT_AGENT_EXECUTION);
         }
         Map<String, Object> metadata = definition.getMetadata();
-        Object agentDefinition = metadata.get("agentDef");
+        Object agentDefinition = metadata.get(OcgConstants.AGENT_DEFINITION_METADATA);
         if (!(agentDefinition instanceof Map<?, ?> agentMap)
-                || !(agentMap.get("longTermMemory") instanceof Map<?, ?> memory)
+                || !(agentMap.get(OcgConstants.LONG_TERM_MEMORY) instanceof Map<?, ?> memory)
                 || isBlank(memory.get("ocgUrl"))
                 || isBlank(memory.get("credential"))
                 || isBlank(memory.get("agent"))) {
-            return AgentFeedbackState.disabled("OCG_MEMORY_NOT_CONFIGURED");
+            return AgentFeedbackState.disabled(OCG_MEMORY_NOT_CONFIGURED);
         }
         return new AgentFeedbackState(true, null, null, null);
     }
@@ -180,10 +187,13 @@ public class AgentFeedbackService {
     private FeedbackContext feedbackContext(WorkflowModel workflow) {
         Map<String, Object> agentDefinition =
                 (Map<String, Object>)
-                        workflow.getWorkflowDefinition().getMetadata().get("agentDef");
+                        workflow.getWorkflowDefinition()
+                                .getMetadata()
+                                .get(OcgConstants.AGENT_DEFINITION_METADATA);
         LongTermMemoryConfig config =
                 mapper.convertValue(
-                        agentDefinition.get("longTermMemory"), LongTermMemoryConfig.class);
+                        agentDefinition.get(OcgConstants.LONG_TERM_MEMORY),
+                        LongTermMemoryConfig.class);
         return new FeedbackContext(config, OcgExecutionIdentity.from(workflow, config));
     }
 
@@ -229,7 +239,7 @@ public class AgentFeedbackService {
 
     private static OcgFeedbackRating validateRating(String rating) {
         if (rating == null || !Set.of("positive", "negative").contains(rating)) {
-            throw new AgentFeedbackException(HttpStatus.BAD_REQUEST, "INVALID_FEEDBACK_RATING");
+            throw new AgentFeedbackException(HttpStatus.BAD_REQUEST, INVALID_FEEDBACK_RATING);
         }
         return OcgFeedbackRating.fromValue(rating);
     }

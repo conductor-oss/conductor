@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.TaskModel;
@@ -51,20 +54,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class OcgAgentRunExporter implements WorkflowStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OcgAgentRunExporter.class);
-    private static final Set<String> TOOL_TYPES = Set.of("SIMPLE", "HTTP", "CALL_MCP_TOOL");
+    private static final Set<String> TOOL_TYPES =
+            Set.of(
+                    TaskType.TASK_TYPE_SIMPLE,
+                    TaskType.TASK_TYPE_HTTP,
+                    CallMCPToolTaskMapper.TASK_TYPE);
     private static final Set<String> INTERNAL_TYPES =
             Set.of(
-                    "LLM_CHAT_COMPLETE",
-                    "LIST_MCP_TOOLS",
+                    TaskType.LLM_CHAT_COMPLETE.name(),
+                    TaskType.LIST_MCP_TOOLS.name(),
                     "LIST_API_TOOLS",
-                    "SWITCH",
-                    "DO_WHILE",
-                    "INLINE",
-                    "SET_VARIABLE",
-                    "FORK_JOIN_DYNAMIC",
-                    "JOIN",
-                    "HUMAN",
-                    "TERMINATE");
+                    TaskType.TASK_TYPE_SWITCH,
+                    TaskType.TASK_TYPE_DO_WHILE,
+                    TaskType.TASK_TYPE_INLINE,
+                    TaskType.TASK_TYPE_SET_VARIABLE,
+                    TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC,
+                    TaskType.TASK_TYPE_JOIN,
+                    TaskType.TASK_TYPE_HUMAN,
+                    TaskType.TASK_TYPE_TERMINATE);
 
     private final ObjectMapper mapper;
     private final OcgClient ocgClient;
@@ -135,7 +142,7 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
                     1,
                     workflow.getWorkflowId(),
                     0,
-                    Map.of("sourceExecutionId", workflow.getWorkflowId()),
+                    Map.of(OcgConstants.SOURCE_EXECUTION_ID, workflow.getWorkflowId()),
                     null,
                     Map.of(),
                     OcgMemoryCaptureWorkflow.definition());
@@ -151,9 +158,9 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
     private LongTermMemoryConfig memoryConfig(WorkflowModel workflow) {
         WorkflowDef definition = workflow.getWorkflowDefinition();
         if (definition == null || definition.getMetadata() == null) return null;
-        Object agentDef = definition.getMetadata().get("agentDef");
+        Object agentDef = definition.getMetadata().get(OcgConstants.AGENT_DEFINITION_METADATA);
         if (!(agentDef instanceof Map<?, ?> map)) return null;
-        Object memory = map.get("longTermMemory");
+        Object memory = map.get(OcgConstants.LONG_TERM_MEMORY);
         if (!(memory instanceof Map<?, ?>)) return null;
         return mapper.convertValue(memory, LongTermMemoryConfig.class);
     }
@@ -167,25 +174,27 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         OcgExecutionIdentity identity = OcgExecutionIdentity.from(workflow, config);
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("agent", identity.agent());
-        if (!isBlank(identity.user())) payload.put("user", identity.user());
-        payload.put("session_id", identity.sessionId());
+        payload.put(OcgConstants.AGENT, identity.agent());
+        if (!isBlank(identity.user())) payload.put(OcgConstants.USER, identity.user());
+        payload.put(OcgConstants.SESSION_ID, identity.sessionId());
         // OCG stores at most one folded memory per completed root execution.
-        payload.put("execution_id", identity.executionId());
+        payload.put(OcgConstants.EXECUTION_ID, identity.executionId());
         payload.put(
-                "visibility",
-                "private".equalsIgnoreCase(config.getVisibility()) ? "private" : "public");
-        copyString(safeInput, payload, "repo");
-        copyString(safeInput, payload, "branch");
-        copyString(safeInput, payload, "cwd");
-        payload.put("input", stringValue(safeInput.get("prompt"), ""));
-        payload.put("events", events(workflow, maskedFields));
-        payload.put("result", jsonString(safeOutput.get("result")));
-        payload.put("outcome", outcome(workflow));
+                OcgConstants.VISIBILITY,
+                OcgConstants.VISIBILITY_PRIVATE.equalsIgnoreCase(config.getVisibility())
+                        ? OcgConstants.VISIBILITY_PRIVATE
+                        : OcgConstants.VISIBILITY_PUBLIC);
+        copyString(safeInput, payload, OcgConstants.REPOSITORY);
+        copyString(safeInput, payload, OcgConstants.BRANCH);
+        copyString(safeInput, payload, OcgConstants.CURRENT_WORKING_DIRECTORY);
+        payload.put(OcgConstants.INPUT, stringValue(safeInput.get(OcgConstants.PROMPT), ""));
+        payload.put(OcgConstants.EVENTS, events(workflow, maskedFields));
+        payload.put(OcgConstants.RESULT, jsonString(safeOutput.get(OcgConstants.RESULT)));
+        payload.put(OcgConstants.OUTCOME, outcome(workflow));
         long startedAt = startTime(workflow);
         long endedAt = workflow.getEndTime() > 0 ? workflow.getEndTime() : startedAt;
-        payload.put("started_at", Instant.ofEpochMilli(startedAt).toString());
-        payload.put("ended_at", Instant.ofEpochMilli(endedAt).toString());
+        payload.put(OcgConstants.STARTED_AT, Instant.ofEpochMilli(startedAt).toString());
+        payload.put(OcgConstants.ENDED_AT, Instant.ofEpochMilli(endedAt).toString());
         return payload;
     }
 
@@ -196,20 +205,21 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
         List<Map<String, Object>> events = new ArrayList<>();
         for (TaskModel task : tasks) {
             String taskType = task.getTaskType();
-            boolean subagent = "SUB_WORKFLOW".equals(taskType);
+            boolean subagent = TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskType);
             if (!subagent && !isToolTask(task)) continue;
 
             Map<String, Object> event = new LinkedHashMap<>();
             event.put("type", subagent ? "subagent" : "tool_call");
             event.put("name", eventName(task, subagent));
-            event.put("detail", jsonString(redact(task.getInputData(), maskedFields, "")));
+            event.put(
+                    OcgConstants.DETAIL, jsonString(redact(task.getInputData(), maskedFields, "")));
             boolean error = task.getStatus() != null && !task.getStatus().isSuccessful();
             Object eventOutput = task.getOutputData();
             if ((eventOutput == null || (eventOutput instanceof Map<?, ?> map && map.isEmpty()))
                     && error) {
                 eventOutput = task.getReasonForIncompletion();
             }
-            event.put("output", jsonString(redact(eventOutput, maskedFields, "")));
+            event.put(OcgConstants.OUTPUT, jsonString(redact(eventOutput, maskedFields, "")));
             event.put("is_error", error);
             events.add(event);
         }
@@ -253,7 +263,7 @@ public class OcgAgentRunExporter implements WorkflowStatusListener {
                                 || lower.equals("x-api-key")
                                 || lower.equals("apikey")
                                 || lower.equals("api_key")) {
-                            clean.put(name, "[REDACTED]");
+                            clean.put(name, OcgConstants.REDACTED_VALUE);
                         } else {
                             clean.put(name, redact(item, maskedFields, path));
                         }

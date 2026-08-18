@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 import org.slf4j.Logger;
@@ -84,8 +85,8 @@ public class HttpOcgClient implements OcgClient {
     @Override
     public CompletionStage<Void> exportAgentRun(
             LongTermMemoryConfig config, Map<String, Object> payload) {
-        String workflowId = stringValue(payload.get("execution_id"));
-        String sessionId = stringValue(payload.get("session_id"));
+        String workflowId = stringValue(payload.get(OcgConstants.EXECUTION_ID));
+        String sessionId = stringValue(payload.get(OcgConstants.SESSION_ID));
         try {
             String credential = credentialResolver.apply(config.getCredential());
             if (isBlank(credential)) {
@@ -105,12 +106,12 @@ public class HttpOcgClient implements OcgClient {
             URI endpoint =
                     URI.create(
                             config.getOcgUrl().replaceAll("/+$", "")
-                                    + "/api/v1/memories/agent-run");
+                                    + OcgConstants.AGENT_RUN_ENDPOINT);
             HttpRequest request =
                     HttpRequest.newBuilder(endpoint)
                             .timeout(timeout)
-                            .header("X-API-Key", credential)
-                            .header("Content-Type", "application/json")
+                            .header(OcgConstants.API_KEY_HEADER, credential)
+                            .header(OcgConstants.CONTENT_TYPE_HEADER, OcgConstants.JSON_MEDIA_TYPE)
                             .POST(HttpRequest.BodyPublishers.ofByteArray(body))
                             .build();
             return send(request, workflowId, sessionId, 1);
@@ -125,7 +126,7 @@ public class HttpOcgClient implements OcgClient {
 
     @Override
     public void captureAgentRun(LongTermMemoryConfig config, Map<String, Object> payload) {
-        String executionId = stringValue(payload.get("execution_id"));
+        String executionId = stringValue(payload.get(OcgConstants.EXECUTION_ID));
         try {
             String credential = credentialResolver.apply(config.getCredential());
             if (isBlank(credential)) {
@@ -140,13 +141,15 @@ public class HttpOcgClient implements OcgClient {
             URI endpoint =
                     URI.create(
                             config.getOcgUrl().replaceAll("/+$", "")
-                                    + "/api/v1/memories/agent-run");
+                                    + OcgConstants.AGENT_RUN_ENDPOINT);
             HttpResponse<byte[]> response =
                     client.send(
                             HttpRequest.newBuilder(endpoint)
                                     .timeout(timeout)
-                                    .header("X-API-Key", credential)
-                                    .header("Content-Type", "application/json")
+                                    .header(OcgConstants.API_KEY_HEADER, credential)
+                                    .header(
+                                            OcgConstants.CONTENT_TYPE_HEADER,
+                                            OcgConstants.JSON_MEDIA_TYPE)
                                     .POST(HttpRequest.BodyPublishers.ofByteArray(body))
                                     .build(),
                             HttpResponse.BodyHandlers.ofByteArray());
@@ -173,10 +176,10 @@ public class HttpOcgClient implements OcgClient {
     @Override
     public OcgFeedback getFeedback(LongTermMemoryConfig config, OcgExecutionIdentity identity) {
         StringBuilder endpoint = new StringBuilder(feedbackEndpoint(config)).append('?');
-        appendQuery(endpoint, "agent", identity.agent());
-        if (!isBlank(identity.user())) appendQuery(endpoint, "user", identity.user());
-        appendQuery(endpoint, "session_id", identity.sessionId());
-        appendQuery(endpoint, "execution_id", identity.executionId());
+        appendQuery(endpoint, OcgConstants.AGENT, identity.agent());
+        if (!isBlank(identity.user())) appendQuery(endpoint, OcgConstants.USER, identity.user());
+        appendQuery(endpoint, OcgConstants.SESSION_ID, identity.sessionId());
+        appendQuery(endpoint, OcgConstants.EXECUTION_ID, identity.executionId());
 
         HttpRequest request =
                 feedbackRequest(config, URI.create(endpoint.toString())).GET().build();
@@ -191,7 +194,8 @@ public class HttpOcgClient implements OcgClient {
         // trusted fallback so the execution memory remains visible to Conductor.
         return memory.summary() != null || !isBlank(identity.user())
                 ? memory
-                : getExecutionMemory(config, identity, "agent:" + identity.agent());
+                : getExecutionMemory(
+                        config, identity, OcgConstants.AGENT_PREFIX + identity.agent());
     }
 
     private OcgExecutionMemory getExecutionMemory(
@@ -200,10 +204,10 @@ public class HttpOcgClient implements OcgClient {
                 new StringBuilder(memoryEndpoint(config))
                         .append('/')
                         .append(encode(identity.executionId()))
-                        .append("/memory")
+                        .append(OcgConstants.MEMORY_ENDPOINT_SUFFIX)
                         .append('?');
-        appendQuery(endpoint, "agent", identity.agent());
-        if (!isBlank(user)) appendQuery(endpoint, "user", user);
+        appendQuery(endpoint, OcgConstants.AGENT, identity.agent());
+        if (!isBlank(user)) appendQuery(endpoint, OcgConstants.USER, user);
         HttpRequest request =
                 feedbackRequest(config, URI.create(endpoint.toString())).GET().build();
         return executeMemory(request, identity.executionId());
@@ -216,16 +220,16 @@ public class HttpOcgClient implements OcgClient {
             OcgFeedbackRating rating,
             String reason) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("agent", identity.agent());
-        if (!isBlank(identity.user())) payload.put("user", identity.user());
-        payload.put("session_id", identity.sessionId());
-        payload.put("execution_id", identity.executionId());
-        payload.put("rating", rating.value());
-        payload.put("reason", reason);
+        payload.put(OcgConstants.AGENT, identity.agent());
+        if (!isBlank(identity.user())) payload.put(OcgConstants.USER, identity.user());
+        payload.put(OcgConstants.SESSION_ID, identity.sessionId());
+        payload.put(OcgConstants.EXECUTION_ID, identity.executionId());
+        payload.put(OcgConstants.RATING, rating.value());
+        payload.put(OcgConstants.REASON, reason);
         try {
             HttpRequest request =
                     feedbackRequest(config, URI.create(feedbackEndpoint(config)))
-                            .header("Content-Type", "application/json")
+                            .header(OcgConstants.CONTENT_TYPE_HEADER, OcgConstants.JSON_MEDIA_TYPE)
                             .PUT(
                                     HttpRequest.BodyPublishers.ofByteArray(
                                             mapper.writeValueAsBytes(payload)))
@@ -248,7 +252,9 @@ public class HttpOcgClient implements OcgClient {
             throw feedbackFailure(
                     OcgFeedbackClientException.Failure.CREDENTIAL_UNAVAILABLE, null, null);
         }
-        return HttpRequest.newBuilder(endpoint).timeout(timeout).header("X-API-Key", credential);
+        return HttpRequest.newBuilder(endpoint)
+                .timeout(timeout)
+                .header(OcgConstants.API_KEY_HEADER, credential);
     }
 
     private OcgFeedback executeFeedback(HttpRequest request, String executionId) {
@@ -292,7 +298,7 @@ public class HttpOcgClient implements OcgClient {
                         null);
             }
             JsonNode responseBody = mapper.readTree(response.body());
-            JsonNode description = responseBody.get("description");
+            JsonNode description = responseBody.get(OcgConstants.DESCRIPTION);
             if (description == null || description.isNull()) return new OcgExecutionMemory(null);
             if (!description.isTextual()) {
                 throw feedbackFailure(
@@ -312,7 +318,7 @@ public class HttpOcgClient implements OcgClient {
     private OcgFeedback parseFeedback(byte[] body) {
         try {
             JsonNode response = mapper.readTree(body);
-            JsonNode ratingNode = response.get("rating");
+            JsonNode ratingNode = response.get(OcgConstants.RATING);
             if (ratingNode == null || (!ratingNode.isNull() && !ratingNode.isTextual())) {
                 throw feedbackFailure(
                         OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
@@ -321,7 +327,7 @@ public class HttpOcgClient implements OcgClient {
                     ratingNode.isNull()
                             ? null
                             : OcgFeedbackRating.fromValue(ratingNode.textValue());
-            JsonNode reasonNode = response.get("reason");
+            JsonNode reasonNode = response.get(OcgConstants.REASON);
             if (reasonNode != null && !reasonNode.isNull() && !reasonNode.isTextual()) {
                 throw feedbackFailure(
                         OcgFeedbackClientException.Failure.INVALID_RESPONSE, null, null);
@@ -332,7 +338,7 @@ public class HttpOcgClient implements OcgClient {
             }
             String reason =
                     reasonNode == null || reasonNode.isNull() ? null : reasonNode.textValue();
-            JsonNode submittedNode = response.get("submitted_at");
+            JsonNode submittedNode = response.get(OcgConstants.SUBMITTED_AT);
             Instant submittedAt =
                     submittedNode == null || submittedNode.isNull()
                             ? null
@@ -347,11 +353,11 @@ public class HttpOcgClient implements OcgClient {
     }
 
     private static String feedbackEndpoint(LongTermMemoryConfig config) {
-        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/memories/agent-run/feedback";
+        return config.getOcgUrl().replaceAll("/+$", "") + OcgConstants.FEEDBACK_ENDPOINT;
     }
 
     private static String memoryEndpoint(LongTermMemoryConfig config) {
-        return config.getOcgUrl().replaceAll("/+$", "") + "/api/v1/agent-runs";
+        return config.getOcgUrl().replaceAll("/+$", "") + OcgConstants.AGENT_RUNS_ENDPOINT;
     }
 
     private static void appendQuery(StringBuilder endpoint, String name, String value) {
@@ -420,21 +426,29 @@ public class HttpOcgClient implements OcgClient {
     byte[] encodeWithinLimit(Map<String, Object> payload) throws JsonProcessingException {
         byte[] encoded = mapper.writeValueAsBytes(payload);
         if (encoded.length <= TARGET_REQUEST_BYTES) return encoded;
-        Object eventValue = payload.get("events");
+        Object eventValue = payload.get(OcgConstants.EVENTS);
         if (!(eventValue instanceof List<?> rawEvents) || rawEvents.isEmpty()) return encoded;
         List<Map<String, Object>> events = (List<Map<String, Object>>) rawEvents;
 
         int perFieldChars = Math.max(256, TARGET_REQUEST_BYTES / (events.size() * 4));
         for (Map<String, Object> event : events) {
-            event.put("detail", truncate(String.valueOf(event.get("detail")), perFieldChars));
-            event.put("output", truncate(String.valueOf(event.get("output")), perFieldChars));
+            event.put(
+                    OcgConstants.DETAIL,
+                    truncate(String.valueOf(event.get(OcgConstants.DETAIL)), perFieldChars));
+            event.put(
+                    OcgConstants.OUTPUT,
+                    truncate(String.valueOf(event.get(OcgConstants.OUTPUT)), perFieldChars));
         }
         encoded = mapper.writeValueAsBytes(payload);
         while (encoded.length > TARGET_REQUEST_BYTES && perFieldChars > 256) {
             perFieldChars /= 2;
             for (Map<String, Object> event : events) {
-                event.put("detail", truncate(String.valueOf(event.get("detail")), perFieldChars));
-                event.put("output", truncate(String.valueOf(event.get("output")), perFieldChars));
+                event.put(
+                        OcgConstants.DETAIL,
+                        truncate(String.valueOf(event.get(OcgConstants.DETAIL)), perFieldChars));
+                event.put(
+                        OcgConstants.OUTPUT,
+                        truncate(String.valueOf(event.get(OcgConstants.OUTPUT)), perFieldChars));
             }
             encoded = mapper.writeValueAsBytes(payload);
         }

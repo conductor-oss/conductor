@@ -15,6 +15,8 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
+
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -30,13 +32,15 @@ final class OcgMemoryCaptureWorkflow {
         capture.setType(OcgMemoryCaptureTask.TASK_TYPE);
         capture.setTaskReferenceName("submit_execution_memory");
         capture.setInputParameters(
-                Map.of("sourceExecutionId", "${workflow.input.sourceExecutionId}"));
+                Map.of(
+                        OcgConstants.SOURCE_EXECUTION_ID,
+                        "${workflow.input." + OcgConstants.SOURCE_EXECUTION_ID + "}"));
 
         WorkflowDef definition = new WorkflowDef();
         definition.setName(NAME);
         definition.setVersion(1);
         definition.setSchemaVersion(2);
-        definition.setInputParameters(List.of("sourceExecutionId"));
+        definition.setInputParameters(List.of(OcgConstants.SOURCE_EXECUTION_ID));
         definition.setTasks(List.of(capture));
         return definition;
     }

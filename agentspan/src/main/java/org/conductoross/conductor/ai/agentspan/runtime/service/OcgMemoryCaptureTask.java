@@ -14,6 +14,8 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
+
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -38,7 +40,8 @@ public class OcgMemoryCaptureTask extends WorkflowSystemTask {
 
     @Override
     public void start(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        String sourceExecutionId = String.valueOf(task.getInputData().get("sourceExecutionId"));
+        String sourceExecutionId =
+                String.valueOf(task.getInputData().get(OcgConstants.SOURCE_EXECUTION_ID));
         WorkflowModel source = executionDAO.getWorkflow(sourceExecutionId, true);
         if (source == null) {
             task.setReasonForIncompletion("Source execution was not found");
@@ -50,7 +53,7 @@ public class OcgMemoryCaptureTask extends WorkflowSystemTask {
             if (capture == null)
                 throw new IllegalStateException("Source execution has no OCG memory configuration");
             ocgClient.captureAgentRun(capture.config(), capture.payload());
-            task.setOutputData(Map.of("sourceExecutionId", sourceExecutionId));
+            task.setOutputData(Map.of(OcgConstants.SOURCE_EXECUTION_ID, sourceExecutionId));
             task.setStatus(TaskModel.Status.COMPLETED);
         } catch (Exception e) {
             task.setReasonForIncompletion("Unable to submit execution memory");

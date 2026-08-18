@@ -17,15 +17,40 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 /** Adds OCG recall and capture behavior to an OCG-enabled compiled workflow. */
 final class OcgAgentSubCompiler {
 
+    private static final String TASK_REF_ARGUMENTS_SUFFIX = "_ocg_recall_arguments";
+    private static final String TASK_REF_SEARCH_SUFFIX = "_ocg_recall_search";
+    private static final String TASK_REF_NORMALIZE_SUFFIX = "_ocg_recall_normalize";
+    private static final String INPUT_EVALUATOR_TYPE = "evaluatorType";
+    private static final String EVALUATOR_GRAAL_JS = "graaljs";
+    private static final String INPUT_QUERY = "query";
+    private static final String INPUT_CONFIGURED_USER = "configuredUser";
+    private static final String INPUT_RUNTIME_USER = "runtimeUser";
+    private static final String INPUT_EXPRESSION = "expression";
+    private static final String INPUT_MCP_SERVER = "mcpServer";
+    private static final String INPUT_METHOD = "method";
+    private static final String INPUT_ARGUMENTS = "arguments";
+    private static final String INPUT_HEADERS = "headers";
+    private static final String INPUT_CONTENT = "content";
+    private static final String INPUT_MAX_BYTES = "maxBytes";
+    private static final String INPUT_MESSAGES = "messages";
+    private static final String MESSAGE_ROLE = "role";
+    private static final String MESSAGE_CONTENT = "message";
+    private static final String ROLE_SYSTEM = "system";
+    private static final String ROLE_USER = "user";
+    private static final String WORKFLOW_PROMPT_REF = "${workflow.input.prompt}";
+    private static final String WORKFLOW_USER_REF = "${workflow.input.user}";
     private static final String RECALL_CONTEXT_PREFIX =
             "# Relevant prior memory\n\n"
                     + "The following content is human-reviewed prior execution evidence. It may be incomplete "
@@ -70,9 +95,9 @@ final class OcgAgentSubCompiler {
     private static void addRecallPrelude(
             WorkflowDef workflow, LongTermMemoryConfig memory, int maxContextValueBytes) {
         String base = AgentCompiler.toRef(workflow.getName());
-        String argumentsRef = base + "_ocg_recall_arguments";
-        String searchRef = base + "_ocg_recall_search";
-        String normalizeRef = base + "_ocg_recall_normalize";
+        String argumentsRef = base + TASK_REF_ARGUMENTS_SUFFIX;
+        String searchRef = base + TASK_REF_SEARCH_SUFFIX;
+        String normalizeRef = base + TASK_REF_NORMALIZE_SUFFIX;
 
         WorkflowTask arguments = recallArgumentsTask(argumentsRef, memory);
         WorkflowTask search = recallSearchTask(argumentsRef, searchRef, memory);
@@ -92,41 +117,43 @@ final class OcgAgentSubCompiler {
 
     private static WorkflowTask recallArgumentsTask(
             String argumentsRef, LongTermMemoryConfig memory) {
-        WorkflowTask task = optionalTask("INLINE", argumentsRef);
+        WorkflowTask task = optionalTask(TaskType.TASK_TYPE_INLINE, argumentsRef);
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("evaluatorType", "graaljs");
-        inputs.put("query", "${workflow.input.prompt}");
-        inputs.put("agent", memory.getAgent());
-        inputs.put("configuredUser", memory.getUser() == null ? "" : memory.getUser());
-        inputs.put("runtimeUser", "${workflow.input.user}");
-        inputs.put("expression", recallArgumentsScript());
+        inputs.put(INPUT_EVALUATOR_TYPE, EVALUATOR_GRAAL_JS);
+        inputs.put(INPUT_QUERY, WORKFLOW_PROMPT_REF);
+        inputs.put(OcgConstants.AGENT, memory.getAgent());
+        inputs.put(INPUT_CONFIGURED_USER, memory.getUser() == null ? "" : memory.getUser());
+        inputs.put(INPUT_RUNTIME_USER, WORKFLOW_USER_REF);
+        inputs.put(INPUT_EXPRESSION, recallArgumentsScript());
         task.setInputParameters(inputs);
         return task;
     }
 
     private static WorkflowTask recallSearchTask(
             String argumentsRef, String searchRef, LongTermMemoryConfig memory) {
-        WorkflowTask task = optionalTask("CALL_MCP_TOOL", searchRef);
+        WorkflowTask task = optionalTask(CallMCPToolTaskMapper.TASK_TYPE, searchRef);
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("mcpServer", memory.getOcgUrl().replaceAll("/+$", "") + "/mcp/");
-        inputs.put("method", "cg_search_memories");
-        inputs.put("arguments", "${" + argumentsRef + ".output.result}");
         inputs.put(
-                "headers",
+                INPUT_MCP_SERVER,
+                memory.getOcgUrl().replaceAll("/+$", "") + OcgConstants.MCP_ENDPOINT);
+        inputs.put(INPUT_METHOD, OcgConstants.SEARCH_MEMORIES_METHOD);
+        inputs.put(INPUT_ARGUMENTS, "${" + argumentsRef + ".output.result}");
+        inputs.put(
+                INPUT_HEADERS,
                 ToolCompiler.escapeCredentialHeaders(
-                        Map.of("X-API-Key", "${" + memory.getCredential() + "}")));
+                        Map.of(OcgConstants.API_KEY_HEADER, "${" + memory.getCredential() + "}")));
         task.setInputParameters(inputs);
         return task;
     }
 
     private static WorkflowTask recallNormalizerTask(
             String searchRef, String normalizeRef, int maxContextValueBytes) {
-        WorkflowTask task = optionalTask("INLINE", normalizeRef);
+        WorkflowTask task = optionalTask(TaskType.TASK_TYPE_INLINE, normalizeRef);
         Map<String, Object> inputs = new LinkedHashMap<>();
-        inputs.put("evaluatorType", "graaljs");
-        inputs.put("content", "${" + searchRef + ".output.content}");
-        inputs.put("maxBytes", Math.max(0, maxContextValueBytes));
-        inputs.put("expression", recallNormalizerScript());
+        inputs.put(INPUT_EVALUATOR_TYPE, EVALUATOR_GRAAL_JS);
+        inputs.put(INPUT_CONTENT, "${" + searchRef + ".output.content}");
+        inputs.put(INPUT_MAX_BYTES, Math.max(0, maxContextValueBytes));
+        inputs.put(INPUT_EXPRESSION, recallNormalizerScript());
         task.setInputParameters(inputs);
         return task;
     }
@@ -168,23 +195,27 @@ final class OcgAgentSubCompiler {
 
     @SuppressWarnings("unchecked")
     private static void injectRecallIntoTask(WorkflowTask task, String recallRef) {
-        if ("LLM_CHAT_COMPLETE".equals(task.getType())) {
+        if (TaskType.LLM_CHAT_COMPLETE.name().equals(task.getType())) {
             Map<String, Object> inputs = mutableInputs(task);
-            Object messagesValue = inputs.get("messages");
+            Object messagesValue = inputs.get(INPUT_MESSAGES);
             if (messagesValue instanceof List<?> existing) {
                 List<Object> messages = new ArrayList<>((List<Object>) existing);
                 int userIndex = messages.size();
                 for (int i = 0; i < messages.size(); i++) {
                     if (messages.get(i) instanceof Map<?, ?> message
-                            && "user".equals(message.get("role"))) {
+                            && ROLE_USER.equals(message.get(MESSAGE_ROLE))) {
                         userIndex = i;
                         break;
                     }
                 }
                 messages.add(
                         userIndex,
-                        Map.of("role", "system", "message", RECALL_CONTEXT_PREFIX + recallRef));
-                inputs.put("messages", messages);
+                        Map.of(
+                                MESSAGE_ROLE,
+                                ROLE_SYSTEM,
+                                MESSAGE_CONTENT,
+                                RECALL_CONTEXT_PREFIX + recallRef));
+                inputs.put(INPUT_MESSAGES, messages);
             }
         }
 

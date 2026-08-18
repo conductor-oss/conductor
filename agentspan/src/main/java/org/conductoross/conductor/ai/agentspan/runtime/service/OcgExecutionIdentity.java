@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
 import org.conductoross.conductor.common.metadata.agent.LongTermMemoryConfig;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -26,17 +27,23 @@ public record OcgExecutionIdentity(
     static OcgExecutionIdentity from(WorkflowModel workflow, LongTermMemoryConfig config) {
         Map<String, Object> input = workflow.getInput() == null ? Map.of() : workflow.getInput();
         String executionId = workflow.getWorkflowId();
-        String agent = stringValue(config.getAgent(), "agentspan");
+        String agent = stringValue(config.getAgent(), OcgConstants.DEFAULT_AGENT);
         String sessionId =
-                masked(workflow, "session_id")
-                        ? "[REDACTED]"
-                        : stringValue(input.get("session_id"), executionId);
+                masked(workflow, OcgConstants.SESSION_ID)
+                        ? OcgConstants.REDACTED_VALUE
+                        : stringValue(input.get(OcgConstants.SESSION_ID), executionId);
         String runtimeUser =
-                masked(workflow, "user") ? "[REDACTED]" : stringValue(input.get("user"), null);
+                masked(workflow, OcgConstants.USER)
+                        ? OcgConstants.REDACTED_VALUE
+                        : stringValue(input.get(OcgConstants.USER), null);
         String user = stringValue(config.getUser(), runtimeUser);
-        if ("[REDACTED]".equals(user) || isBlank(user)) user = "agent:" + agent;
-        if (!isBlank(user) && !user.startsWith("user:") && !user.startsWith("agent:")) {
-            user = "user:" + user;
+        if (OcgConstants.REDACTED_VALUE.equals(user) || isBlank(user)) {
+            user = OcgConstants.AGENT_PREFIX + agent;
+        }
+        if (!isBlank(user)
+                && !user.startsWith(OcgConstants.USER_PREFIX)
+                && !user.startsWith(OcgConstants.AGENT_PREFIX)) {
+            user = OcgConstants.USER_PREFIX + user;
         }
         return new OcgExecutionIdentity(agent, user, sessionId, executionId);
     }

@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ToolConfig;
@@ -43,6 +45,13 @@ import lombok.Data;
 public class ToolCompiler {
 
     private static final Logger logger = LoggerFactory.getLogger(ToolCompiler.class);
+    private static final String TOOL_TYPE_MCP = "mcp";
+    private static final String TOOL_TYPE_OCG = "ocg";
+    private static final String CONFIG_TOOL_NAMES = "tool_names";
+    private static final String CONFIG_TOOL_NAMES_CAMEL_CASE = "toolNames";
+    private static final String CONFIG_OCG_URL = "ocg_url";
+    private static final String CONFIG_CREDENTIAL = "credential";
+    private static final String CONFIG_SERVER_URL = "server_url";
 
     /** Result of building tool call routing, including any tool-level guardrail metadata. */
     @Data
@@ -155,7 +164,7 @@ public class ToolCompiler {
                     Map.entry("worker", "SIMPLE"),
                     Map.entry("http", "HTTP"),
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
-                    Map.entry("mcp", "CALL_MCP_TOOL"),
+                    Map.entry("mcp", CallMCPToolTaskMapper.TASK_TYPE),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),
@@ -179,19 +188,19 @@ public class ToolCompiler {
 
         List<ToolConfig> expanded = new ArrayList<>();
         for (ToolConfig tool : tools) {
-            if ("ocg".equals(tool.getToolType())) {
+            if (TOOL_TYPE_OCG.equals(tool.getToolType())) {
                 expanded.addAll(expandOcgCapability(tool));
                 continue;
             }
-            if (!"mcp".equals(tool.getToolType()) || tool.getConfig() == null) {
+            if (!TOOL_TYPE_MCP.equals(tool.getToolType()) || tool.getConfig() == null) {
                 expanded.add(tool);
                 continue;
             }
 
             Object configuredNames =
-                    tool.getConfig().containsKey("tool_names")
-                            ? tool.getConfig().get("tool_names")
-                            : tool.getConfig().get("toolNames");
+                    tool.getConfig().containsKey(CONFIG_TOOL_NAMES)
+                            ? tool.getConfig().get(CONFIG_TOOL_NAMES)
+                            : tool.getConfig().get(CONFIG_TOOL_NAMES_CAMEL_CASE);
             if (!(configuredNames instanceof List<?> names)) {
                 expanded.add(tool);
                 continue;
@@ -224,8 +233,8 @@ public class ToolCompiler {
             }
 
             Map<String, Object> serverConfig = new LinkedHashMap<>(tool.getConfig());
-            serverConfig.remove("tool_names");
-            serverConfig.remove("toolNames");
+            serverConfig.remove(CONFIG_TOOL_NAMES);
+            serverConfig.remove(CONFIG_TOOL_NAMES_CAMEL_CASE);
             for (Object configuredName : names) {
                 String name = String.valueOf(configuredName);
                 OcgToolCatalog.Definition definition = OcgToolCatalog.get(name);
@@ -234,7 +243,7 @@ public class ToolCompiler {
                                 .name(name)
                                 .description(definition.description())
                                 .inputSchema(definition.inputSchema())
-                                .toolType("mcp")
+                                .toolType(TOOL_TYPE_MCP)
                                 .approvalRequired(tool.isApprovalRequired())
                                 .timeoutSeconds(tool.getTimeoutSeconds())
                                 .maxCalls(tool.getMaxCalls())
@@ -251,17 +260,18 @@ public class ToolCompiler {
         if (marker.getConfig() == null) {
             throw new IllegalArgumentException("OCG tool capability requires configuration");
         }
-        String ocgUrl = String.valueOf(marker.getConfig().getOrDefault("ocg_url", "")).trim();
+        String ocgUrl = String.valueOf(marker.getConfig().getOrDefault(CONFIG_OCG_URL, "")).trim();
         String credential =
-                String.valueOf(marker.getConfig().getOrDefault("credential", "")).trim();
+                String.valueOf(marker.getConfig().getOrDefault(CONFIG_CREDENTIAL, "")).trim();
         if (ocgUrl.isEmpty() || credential.isEmpty()) {
             throw new IllegalArgumentException(
                     "OCG tool capability requires ocg_url and credential name");
         }
 
         Map<String, Object> serverConfig = new LinkedHashMap<>();
-        serverConfig.put("server_url", ocgUrl.replaceAll("/+$", "") + "/mcp/");
-        serverConfig.put("headers", Map.of("X-API-Key", "${" + credential + "}"));
+        serverConfig.put(
+                CONFIG_SERVER_URL, ocgUrl.replaceAll("/+$", "") + OcgConstants.MCP_ENDPOINT);
+        serverConfig.put("headers", Map.of(OcgConstants.API_KEY_HEADER, "${" + credential + "}"));
         serverConfig.put("credentials", List.of(credential));
 
         List<ToolConfig> expanded = new ArrayList<>();
@@ -272,7 +282,7 @@ public class ToolCompiler {
                             .name(entry.getKey())
                             .description(definition.description())
                             .inputSchema(definition.inputSchema())
-                            .toolType("mcp")
+                            .toolType(TOOL_TYPE_MCP)
                             .approvalRequired(marker.isApprovalRequired())
                             .timeoutSeconds(marker.getTimeoutSeconds())
                             .maxCalls(marker.getMaxCalls())
@@ -286,7 +296,7 @@ public class ToolCompiler {
 
     /** Catalog-backed OCG declarations with complete schemas can bypass runtime discovery. */
     public static boolean requiresMcpDiscovery(ToolConfig tool) {
-        if (!"mcp".equals(tool.getToolType())) {
+        if (!TOOL_TYPE_MCP.equals(tool.getToolType())) {
             return false;
         }
         return OcgToolCatalog.get(tool.getName()) == null
