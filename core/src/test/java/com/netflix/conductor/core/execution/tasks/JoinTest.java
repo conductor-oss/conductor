@@ -183,6 +183,82 @@ public class JoinTest {
     }
 
     @Test
+    public void testAgentWorkflowDefKeepsToolOutputWithoutStateKeys() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+
+        Map<String, Object> toolOutput = Map.of("verdict", "RECURRING", "matchedCount", 100);
+        TaskModel toolTask = forkedTaskWithOutput("tool_1", toolOutput);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(toolTask));
+
+        TaskModel joinTask = joinTaskOn("tool_1");
+
+        assertTrue(join.execute(workflow, joinTask, mock(WorkflowExecutor.class)));
+        assertEquals(toolOutput, joinTask.getOutputData().get("tool_1"));
+    }
+
+    @Test
+    public void testMarkedAgentToolKeepsNameAndFullOutputWhenItAlsoUpdatesState() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+
+        Map<String, Object> toolOutput =
+                Map.of("customerName", "Alice", "_state_updates", Map.of("customerName", "Alice"));
+        TaskModel toolTask = forkedTaskWithOutput("lookup_customer", toolOutput);
+        toolTask.setInputData(new HashMap<>(Map.of("_agent_tool_name", "lookup_for_handoff")));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(toolTask));
+
+        TaskModel joinTask = joinTaskOn("lookup_customer");
+
+        assertTrue(join.execute(workflow, joinTask, mock(WorkflowExecutor.class)));
+        assertEquals(
+                Map.of("_agent_tool_name", "lookup_for_handoff", "_agent_tool_output", toolOutput),
+                joinTask.getOutputData().get("lookup_customer"));
+    }
+
+    @Test
+    public void testUnmarkedAgentWorkflowDefCompactsOnlyStateKeys() {
+        Join join = new Join(mock(ConductorProperties.class));
+
+        Map<String, Object> forkOutput =
+                Map.of(
+                        "state",
+                        "running",
+                        "_state_updates",
+                        Map.of("temperatureUnit", "fahrenheit"),
+                        "response",
+                        Map.of("statusCode", 200));
+        TaskModel forkedTask = forkedTaskWithOutput("t1", forkOutput);
+
+        WorkflowDef agentDef = new WorkflowDef();
+        agentDef.setMetadata(Map.of("agent_sdk", "python"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(agentDef);
+        workflow.setTasks(List.of(forkedTask));
+
+        TaskModel joinTask = joinTaskOn("t1");
+
+        assertTrue(join.execute(workflow, joinTask, null));
+        assertEquals(
+                Map.of(
+                        "state",
+                        "running",
+                        "_state_updates",
+                        Map.of("temperatureUnit", "fahrenheit")),
+                joinTask.getOutputData().get("t1"));
+    }
+
+    @Test
     public void testNonAgentWorkflowDefCopiesFullForkOutput() {
         ConductorProperties properties = mock(ConductorProperties.class);
         Join join = new Join(properties);

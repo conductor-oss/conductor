@@ -147,6 +147,108 @@ class SwarmHandoffCompilerContractTest {
         }
     }
 
+    @Test
+    void onlyTheAgentWhoseToolIsWatchedByAHandoffSkipsItsPostToolCallTurn() {
+        // "team" itself owns "lookup" and hands off on its result. "agent_a" owns an unrelated
+        // tool ("other_tool") that no handoff references. Only team's own loop should have its
+        // post-tool-call turn suppressed (needed so the handoff can route immediately on the
+        // JOIN output) — agent_a must keep looping normally so it can read its own tool's result
+        // and answer with it, instead of its turn ending right after the tool call.
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("team")
+                        .model("openai/gpt-4o")
+                        .strategy(AgentConfig.Strategy.SWARM)
+                        .tools(
+                                List.of(
+                                        ToolConfig.builder()
+                                                .name("lookup")
+                                                .description("owned by team")
+                                                .toolType("worker")
+                                                .build()))
+                        .handoffs(
+                                List.of(
+                                        HandoffConfig.builder()
+                                                .type("on_tool_result")
+                                                .target("agent_a")
+                                                .toolName("lookup")
+                                                .resultContains("ok")
+                                                .build()))
+                        .agents(
+                                List.of(
+                                        AgentConfig.builder()
+                                                .name("agent_a")
+                                                .model("openai/gpt-4o")
+                                                .tools(
+                                                        List.of(
+                                                                ToolConfig.builder()
+                                                                        .name("other_tool")
+                                                                        .description(
+                                                                                "owned by agent_a, unrelated to the handoff")
+                                                                        .toolType("worker")
+                                                                        .build()))
+                                                .build()))
+                        .build();
+
+        WorkflowDef workflow = new AgentCompiler().compile(config);
+        List<WorkflowTask> allTasks = flatten(workflow.getTasks());
+
+        // "team_loop" is ambiguous: the top-level swarm loop (routes between agent cases) and
+        // agent-0's own inline ReAct loop (agent 0 IS "team" acting as itself) share this exact
+        // reference name in different workflow scopes. Disambiguate by picking the per-turn
+        // loop, which is the one whose condition inspects finishReason.
+        WorkflowTask teamLoop =
+                allTasks.stream()
+                        .filter(task -> "team_loop".equals(task.getTaskReferenceName()))
+                        .filter(
+                                task ->
+                                        task.getLoopCondition() != null
+                                                && task.getLoopCondition().contains("finishReason"))
+                        .findFirst()
+                        .orElseThrow();
+        WorkflowTask agentALoop =
+                allTasks.stream()
+                        .filter(task -> "agent_a_loop".equals(task.getTaskReferenceName()))
+                        .findFirst()
+                        .orElseThrow();
+
+        assertThat(teamLoop.getLoopCondition())
+                .as("team owns the watched tool, so its post-tool-call turn is suppressed")
+                .contains("|| false)")
+                .doesNotContain("toolCalls");
+        assertThat(agentALoop.getLoopCondition())
+                .as(
+                        "agent_a's own tool isn't referenced by any handoff, so it must keep"
+                                + " looping after a tool call to read and answer with the result")
+                .contains("toolCalls");
+
+        // Looping again is only useful if the resumed turn can actually see what happened on the
+        // prior turn — otherwise the LLM has no way to know it already called the tool and just
+        // repeats it. agent_a's loop must carry a ctx_inject task feeding its LLM's user message,
+        // the same wiring the single-agent and hybrid loops already have.
+        assertThat(agentALoop.getLoopOver())
+                .as("agent_a's loop must inject prior state/tool-results, not just the raw prompt")
+                .anyMatch(
+                        task ->
+                                "INLINE".equals(task.getType())
+                                        && task.getTaskReferenceName().endsWith("_ctx_inject"));
+        WorkflowTask agentALlm =
+                agentALoop.getLoopOver().stream()
+                        .filter(task -> "LLM_CHAT_COMPLETE".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> agentAMessages =
+                (List<Map<String, Object>>) agentALlm.getInputParameters().get("messages");
+        assertThat(agentAMessages)
+                .as("agent_a's user message must read the ctx_inject prefix, not the bare prompt")
+                .anyMatch(
+                        msg ->
+                                "user".equals(msg.get("role"))
+                                        && String.valueOf(msg.get("message"))
+                                                .contains("_ctx_inject.output.result"));
+    }
+
     private static AgentConfig swarm() {
         return AgentConfig.builder()
                 .name("team")
