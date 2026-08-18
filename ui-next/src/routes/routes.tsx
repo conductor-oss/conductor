@@ -77,10 +77,6 @@ import {
 } from "utils/constants/route";
 import EventHandlerDefinition from "../pages/definition/EventHandler/EventHandler";
 import Execution from "../pages/execution/Execution";
-import Examples from "../pages/kitchensink/Examples";
-import Gantt from "../pages/kitchensink/Gantt";
-import KitchenSink from "../pages/kitchensink/KitchenSink";
-import ThemeSampler from "../pages/kitchensink/ThemeSampler";
 import TaskQueue from "../pages/queueMonitor/TaskQueue";
 import { Schedule } from "../pages/scheduler";
 
@@ -185,23 +181,7 @@ const getCoreAuthenticatedRoutes = () => [
     element: <ApiReferencePage />,
   },
 
-  // Dev/Debug pages (Kitchen Sink)
-  {
-    path: "/kitchen",
-    element: <KitchenSink />,
-  },
-  {
-    path: "/kitchen/examples",
-    element: <Examples />,
-  },
-  {
-    path: "/kitchen/gantt",
-    element: <Gantt />,
-  },
-  {
-    path: "/kitchen/theme",
-    element: <ThemeSampler />,
-  },
+  // Dev/Debug pages
   {
     path: "/flags",
     element: <CreatorFlags />,
