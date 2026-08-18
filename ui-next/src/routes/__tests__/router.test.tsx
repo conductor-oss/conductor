@@ -159,18 +159,6 @@ vi.mock("../pages/definition/EventHandler/EventHandler", () => ({
 vi.mock("../pages/execution/Execution", () => ({
   default: () => ({ type: "Execution" }),
 }));
-vi.mock("../pages/kitchensink/Examples", () => ({
-  default: () => ({ type: "Examples" }),
-}));
-vi.mock("../pages/kitchensink/Gantt", () => ({
-  default: () => ({ type: "Gantt" }),
-}));
-vi.mock("../pages/kitchensink/KitchenSink", () => ({
-  default: () => ({ type: "KitchenSink" }),
-}));
-vi.mock("../pages/kitchensink/ThemeSampler", () => ({
-  default: () => ({ type: "ThemeSampler" }),
-}));
 vi.mock("../pages/queueMonitor/TaskQueue", () => ({
   default: () => ({ type: "TaskQueue" }),
 }));
@@ -368,47 +356,6 @@ describe("router (OSS)", () => {
       );
 
       expect(wildcardRoutes.length).toBeGreaterThan(0);
-    });
-
-    it("should have kitchen sink development routes with correct elements", () => {
-      const routes = getRoutes();
-      const allRoutes = flattenRoutes(routes);
-
-      const kitchenRoutes = allRoutes.filter(
-        (route) => route.path && route.path.includes("/kitchen"),
-      );
-
-      expect(kitchenRoutes.length).toBeGreaterThan(0);
-
-      const kitchenSinkRoute = allRoutes.find(
-        (route) => route.path === "/kitchen",
-      );
-      const examplesRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/examples",
-      );
-      const ganttRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/gantt",
-      );
-      const themeRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/theme",
-      );
-
-      expect(kitchenSinkRoute).toBeDefined();
-      expect(kitchenSinkRoute?.element).toBeDefined();
-
-      expect(examplesRoute).toBeDefined();
-      expect(examplesRoute?.element).toBeDefined();
-
-      expect(ganttRoute).toBeDefined();
-      expect(ganttRoute?.element).toBeDefined();
-
-      expect(themeRoute).toBeDefined();
-      expect(themeRoute?.element).toBeDefined();
-
-      kitchenRoutes.forEach((route) => {
-        expect(route.element).toBeDefined();
-        expect(route.path).toContain("/kitchen");
-      });
     });
 
     it("should have a substantial number of routes", () => {
