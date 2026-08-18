@@ -23,6 +23,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import com.netflix.conductor.client.http.EventClient;
 import com.netflix.conductor.client.http.MetadataClient;
@@ -127,6 +128,26 @@ class EventHandlerStartAgentTests {
 
         Workflow terminated = awaitTerminal(executionId, 30);
         assertEquals(Workflow.WorkflowStatus.TERMINATED, terminated.getStatus());
+    }
+
+    @Test
+    @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
+    void startAgentActionOnRealPipelineAgentCompletesWithLiveLlm() {
+        String agentName = "hello_world_agent_e2e_" + UUID.randomUUID();
+        String idempotencyKey = "idempotency_" + UUID.randomUUID();
+        deployAgent(
+                basicAgentConfig(
+                        agentName,
+                        "You are a concise test agent. Answer the user's prompt in one sentence."));
+
+        fireStartAgent(agentName, "Say hello in exactly one sentence.", "session_e2e", idempotencyKey);
+        Workflow execution = awaitAgentExecution(agentName, idempotencyKey, 60);
+
+        Workflow completed = awaitTerminal(execution.getWorkflowId(), 60);
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+        Object result = completed.getOutput().get("result");
+        assertNotNull(result);
+        assertTrue(!String.valueOf(result).isBlank(), "real agent result must not be blank");
     }
 
     private static void awaitRunning(String workflowId, int timeoutSeconds) {
