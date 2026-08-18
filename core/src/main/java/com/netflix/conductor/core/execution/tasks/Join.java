@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -84,19 +85,13 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For Conductor-Agents agent executions,
-            // copy
-            // only the agent merge keys (compact) to keep the JOIN payload small; otherwise copy
-            // the full fork output (default Conductor behavior).
+            // Only add to task output if it's not empty.
             if (!forkedTask.getOutputData().isEmpty()) {
+                Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
-                    Map<String, Object> compact = compactAgentOutput(forkedTask);
-                    if (!compact.isEmpty()) {
-                        task.addOutput(joinOnRef, compact);
-                    }
-                } else {
-                    task.addOutput(joinOnRef, forkedTask.getOutputData());
+                    forkOutput = prepareAgentOutput(forkedTask);
                 }
+                task.addOutput(joinOnRef, forkOutput);
             }
 
             // Determine if the join task fails immediately due to a non-optional, non-permissive
@@ -153,21 +148,47 @@ public class Join extends WorkflowSystemTask {
         return def != null && def.isAgent();
     }
 
+    /** True when the fork branch carries state intended for a multi-agent state merge. */
+    private static boolean carriesAgentState(Map<String, Object> output) {
+        return output != null && AGENT_PROPAGATED_KEYS.stream().anyMatch(output::containsKey);
+    }
+
     /**
-     * Returns the compact state output for an agent fork, or a namespaced observation for a
-     * dynamically generated Conductor-Agents tool. The latter is the only durable way a
-     * Conductor-Agents ReAct loop can make a dynamic HTTP/MCP/HUMAN result available to its next
-     * model turn: dynamic task reference names are not known when the workflow is compiled.
+     * Shapes a fork branch's output for a Conductor-Agents JOIN:
+     *
+     * <ul>
+     *   <li>Branches marked with {@code _agent_tool_name} keep their tool identity: the full output
+     *       is wrapped under {@code _agent_tool_output}. Identity takes precedence because a tool
+     *       output may also contain state updates.
+     *   <li>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
+     *       merge keys to keep the JOIN payload small.
+     *   <li>Unmarked outputs (e.g. MCP or HTTP tool results) pass through untouched for the ReAct
+     *       state merge.
+     * </ul>
+     *
+     * <p>Constructed maps are unmodifiable; the pass-through branch intentionally returns the
+     * task's live output map to preserve default JOIN behavior.
      */
-    private static Map<String, Object> compactAgentOutput(TaskModel forkedTask) {
+    private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
         Map<String, Object> output = forkedTask.getOutputData();
         Map<String, Object> compact = new LinkedHashMap<>();
         Object agentToolName = getAgentToolName(forkedTask);
         if (agentToolName != null) {
-            compact.put("_agent_tool_name", agentToolName);
-            compact.put("_agent_tool_output", output);
-            return compact;
+            // LinkedHashMap (not Map.of): tool outputs may legitimately contain null values.
+            Map<String, Object> toolOutput = new LinkedHashMap<>();
+            toolOutput.put("_agent_tool_name", agentToolName);
+            toolOutput.put("_agent_tool_output", output);
+            return Collections.unmodifiableMap(toolOutput);
         }
+
+        if (carriesAgentState(output)) {
+            return compactAgentOutput(output);
+        }
+        return output;
+    }
+
+    private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {
+        Map<String, Object> compact = new LinkedHashMap<>();
         if (output != null) {
             for (String key : AGENT_PROPAGATED_KEYS) {
                 if (output.containsKey(key)) {
@@ -175,7 +196,7 @@ public class Join extends WorkflowSystemTask {
                 }
             }
         }
-        return compact;
+        return Collections.unmodifiableMap(compact);
     }
 
     private static Object getAgentToolName(TaskModel forkedTask) {
