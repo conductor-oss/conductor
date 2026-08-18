@@ -3,10 +3,6 @@ plugins {
 }
 
 dependencies {
-    // EventHandler.StartAgent/start_agent isn't published in any conductor-client release yet
-    // (checked 6.0.0.rc3 and 6.0.0 GA on Maven Central) — pull the common model classes from
-    // this repo's local module instead, ahead of the published client jar on the classpath.
-    testImplementation project(':conductor-common')
     testImplementation 'org.conductoross:conductor-client:6.0.0.rc3'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
