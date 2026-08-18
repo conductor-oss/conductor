@@ -63,9 +63,10 @@ This file sets feature flags (`window.conductor`) and auth config (`window.authC
 | `pnpm test:e2e:ui`                 | Open the Playwright interactive UI                 |
 | `pnpm test:e2e:headed`             | Run UI tests in a visible browser                  |
 | `pnpm test:e2e:debug`              | Step through UI tests in the Playwright debugger   |
-| `pnpm test:e2e:integration`        | Run integration tests against a live backend       |
-| `pnpm test:e2e:integration:ui`     | Integration tests in Playwright interactive UI     |
-| `pnpm test:e2e:integration:headed` | Integration tests in a visible browser             |
+| `pnpm test:e2e:integration`        | Integration E2E in Docker (Linux Chromium)         |
+| `pnpm test:e2e:integration:update-snapshots` | Regenerate integration screenshot baselines |
+| `pnpm test:e2e:integration:ui`     | Host Playwright UI (debug only; not for baselines) |
+| `pnpm test:e2e:integration:headed` | Host headed Chromium (debug only)                  |
 
 ## Testing
 
@@ -155,28 +156,29 @@ Example GitHub Actions job:
 
 ### Integration tests (Playwright + live backend)
 
-Integration tests live in `e2e/integration/` and use a separate config,
+Integration tests live in `e2e/integration/` and use
 `playwright.integration.config.ts`. They talk to a real Conductor server and
 verify the full stack end-to-end: the API client creates test data, the
 browser navigates through the UI, and assertions confirm the data is rendered
-correctly. Docker is managed automatically — no manual server management is
-required.
+correctly.
 
-#### How it works
+**Default runs use Docker for both the Conductor backend and Playwright
+(Linux Chromium)** so screenshot baselines are identical on developer machines
+and in CI — the same approach as `pnpm test:e2e:snapshots`.
 
-1. **Global setup** (`e2e/integration/global-setup.ts`) checks whether a
-   Conductor server is already listening on port 8000. If not, it builds the
-   `conductor:server` Docker image if needed (uses layer cache after first run),
-   then starts `docker/docker-compose-ui-e2e.yaml` and waits for the `/health`
-   endpoint to return 200 (up to 4 minutes to account for cold JVM starts).
-2. The app is **built with `vite build`** and then **served with `vite preview`**,
-   with `VITE_WF_SERVER=http://localhost:8000` passed to the preview server so
-   its `/api` proxy forwards requests to the Docker backend. Tests run against
-   the production bundle — the same artifact that gets deployed.
+#### How it works (`pnpm test:e2e:integration`)
+
+1. [`scripts/run-integration-e2e.sh`](scripts/run-integration-e2e.sh) ensures
+   the `conductor:server` image exists (builds it if missing) and that
+   `dist/` is present (`pnpm build` if needed).
+2. [`docker-compose.integration.yml`](docker-compose.integration.yml) starts
+   Postgres + Conductor, serves the production UI with `vite preview`, then
+   runs Playwright inside `mcr.microsoft.com/playwright` (shared network with
+   the preview container).
 3. Each test file uses `e2e/integration/api-client.ts` to create isolated test
    data (unique names per run) and cleans up in `afterAll`.
-4. **Global teardown** stops the Docker stack only if setup started it — a
-   backend you started yourself before running the tests is left untouched.
+4. The compose project (`conductor-ui-e2e-integration`) is torn down when the
+   script exits.
 
 #### Running integration tests locally
 
@@ -186,77 +188,55 @@ required.
 pnpm test:e2e:integration
 ```
 
-This single command does everything automatically:
+This single command:
 
-1. Builds the `conductor:server` Docker image if it does not already exist
-   locally — slow the first time (~5–10 min) but Docker's layer cache makes
-   subsequent runs fast (~30s) unless server-side code has changed
-2. Starts Postgres + the Conductor server via Docker Compose
-   (`docker/docker-compose-ui-e2e.yaml`) and waits up to 4 minutes for the
-   backend `/health` endpoint to respond
-3. Builds the UI (`pnpm build`) with `VITE_WF_SERVER=http://localhost:8000`
-4. Starts `vite preview` to serve the production bundle on port 1234, with
-   its `/api` proxy forwarding to the Docker backend
-5. Runs the Playwright test suite against `http://localhost:1234`
-6. Stops the Docker stack when the tests finish
+1. Builds `conductor:server` if missing (first run ~5–10 min; later ~30s via
+   layer cache)
+2. Builds the UI (`pnpm build`) when `dist/` is missing
+3. Starts Postgres + Conductor + vite preview + Playwright via
+   `docker-compose.integration.yml`
+4. Tears the stack down when finished
+
+**Visual baselines** (always update via Docker Chromium):
+
+```bash
+pnpm test:e2e:integration:update-snapshots
+# or a single file:
+pnpm test:e2e:integration:update-snapshots e2e/integration/workflows.spec.ts
+```
 
 **Common options**
 
 ```bash
-# Interactive Playwright UI — step through tests visually, great for debugging
-pnpm test:e2e:integration:ui
-
-# Watch the browser execute the tests in real time
-pnpm test:e2e:integration:headed
-
 # Run a single spec file
 pnpm test:e2e:integration e2e/integration/workflows.spec.ts
 
 # Run tests whose name matches a pattern
 pnpm test:e2e:integration --grep "appears in the"
 
-# Skip Docker management if you already have a Conductor backend running
-# on port 8000 (e.g. started with docker compose separately)
-SKIP_DOCKER=true pnpm test:e2e:integration
-
-# Keep the Docker stack running after the tests finish (faster re-runs)
-SKIP_DOCKER_TEARDOWN=true pnpm test:e2e:integration
-
-# Point the tests at a backend running on a non-default URL
-CONDUCTOR_SERVER_URL=http://localhost:9000 pnpm test:e2e:integration
+# Host-only debugging (local Chromium — do NOT use to refresh baselines)
+pnpm test:e2e:integration:ui
+pnpm test:e2e:integration:headed
 ```
 
-**Faster iteration after the first run**
+`:ui` / `:headed` still use the host Playwright +
+`docker/docker-compose-ui-e2e.yaml` path (global-setup). Prefer them for
+stepping through failures; always regenerate screenshots with
+`test:e2e:integration:update-snapshots`.
 
-On subsequent runs, if you keep the Docker stack alive with
-`SKIP_DOCKER_TEARDOWN=true`, you can skip the Docker startup wait on the next
-run because the setup script detects the backend is already healthy:
-
-```bash
-# First run — starts Docker, runs tests, leaves stack running
-SKIP_DOCKER_TEARDOWN=true pnpm test:e2e:integration
-
-# Subsequent runs — backend already up, jumps straight to build + test
-pnpm test:e2e:integration
-```
-
-To stop the stack manually when you are done:
+To stop a leftover integration stack manually:
 
 ```bash
-docker compose -p conductor-ui-e2e -f docker/docker-compose-ui-e2e.yaml down
+docker compose -p conductor-ui-e2e-integration -f docker-compose.integration.yml down
 ```
 
 #### Running integration tests in CI
 
-Build the UI first (with a raised Node heap), then run Playwright with
-`SKIP_WEBSERVER_BUILD=true` so the webServer only starts `vite preview`. Building
-inside Playwright while Docker is also up can OOM the runner when
-`E2E_COVERAGE` enables sourcemaps.
+Build `conductor:server` and the UI on the runner, then run the Dockerized
+Playwright suite (Chromium comes from the Playwright image — no host browser
+install):
 
 ```yaml
-- name: Install Playwright browsers
-  run: pnpm exec playwright install --with-deps chromium
-
 - name: Build UI
   run: pnpm build
   env:
@@ -264,12 +244,11 @@ inside Playwright while Docker is also up can OOM the runner when
     NODE_OPTIONS: --max-old-space-size=8192
 
 - name: Run integration tests
-  # Global setup builds/starts the conductor:server image automatically.
-  # SKIP_WEBSERVER_BUILD skips the Vite rebuild inside Playwright.
   run: pnpm test:e2e:integration
   env:
     E2E_COVERAGE: "true"
-    SKIP_WEBSERVER_BUILD: "true"
+    SKIP_WEBSERVER_BUILD: "true" # reuse dist/ from the build step
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
 - name: Upload integration report
   if: always()

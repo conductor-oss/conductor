@@ -14,7 +14,8 @@ interface SidebarProps {
   menuItems: MenuItemType[];
   open?: boolean;
   onToggle?: (open: boolean) => void;
-  apiVersion?: string;
+  /** undefined = loading (skeleton), null = error/unavailable, string = loaded */
+  apiVersion?: string | null;
   releaseVersion?: string;
   isAnnouncementBannerVisible?: boolean;
   customLogo?: string;
@@ -65,10 +66,10 @@ export const Sidebar = ({
     }
   };
 
-  const [conductorVersion, uiVersion]: string[] = useMemo(
-    () => [apiVersion || "latest", releaseVersion || "latest"],
-    [apiVersion, releaseVersion],
-  );
+  // Pass the three-state value straight through to SidebarVersionBlock:
+  // undefined = loading (skeleton), null = error/unavailable, string = loaded.
+  const conductorVersion = apiVersion;
+  const uiVersion = useMemo(() => releaseVersion || "latest", [releaseVersion]);
 
   const visibleItems = useMemo(
     () => menuItems.filter((item) => !item.hidden),
