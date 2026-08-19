@@ -42,7 +42,12 @@ export async function fetchWithContext(
   const newParams = { ...fetchParams };
 
   if (typeof newParams.body === "string") {
-    newParams.body = asciiSafeJson(newParams.body);
+    try {
+      JSON.parse(newParams.body);
+      newParams.body = asciiSafeJson(newParams.body);
+    } catch {
+      // body is not valid JSON (e.g. raw prompt template); leave it unchanged
+    }
   }
 
   // Need for build version (can't use proxy)
