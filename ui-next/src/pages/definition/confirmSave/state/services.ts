@@ -2,7 +2,6 @@ import { removeCopyFromStorage } from "pages/definition/ConfirmLocalCopyDialog/s
 import { fetchWithContext } from "plugins/fetch";
 import { WorkflowDef } from "types/WorkflowDef";
 import { resolveAgentSnapshotsInWorkflow } from "utils/agentMetadata";
-import { asciiSafeJson } from "utils/strings";
 import { SaveWorkflowMachineContext } from "./types";
 
 export { removeCopyFromStorage };
@@ -47,7 +46,7 @@ export const createWorkflow = async (
           ...authHeaders,
         },
 
-        body: asciiSafeJson(editorChanges),
+        body: editorChanges,
       },
     );
   } catch (error: any) {
@@ -76,7 +75,7 @@ export const updateWorkflow = async (
           "Content-Type": "application/json",
           ...authHeaders,
         },
-        body: `[${asciiSafeJson(editorChanges)}]`,
+        body: `[${editorChanges}]`,
       },
     );
   } catch (error: any) {
