@@ -135,6 +135,26 @@ public class ConductorProperties {
     private int isolatedSystemTaskWorkerThreadCount = 1;
 
     /**
+     * Per-task-type worker overrides, keyed by task type name. A positive {@code threadCount} gives
+     * the task type a dedicated pool; types without an entry share the common pool.
+     */
+    private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
+
+    public static class TaskWorkerConfig {
+
+        /** Number of dedicated threads for this task type. Zero shares the common pool. */
+        private int threadCount;
+
+        public int getThreadCount() {
+            return threadCount;
+        }
+
+        public void setThreadCount(int threadCount) {
+            this.threadCount = threadCount;
+        }
+    }
+
+    /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow
      * when async indexing to elasticsearch is enabled.
      */
@@ -451,6 +471,14 @@ public class ConductorProperties {
 
     public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
         this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
+    }
+
+    public Map<String, TaskWorkerConfig> getTaskWorkerConfigs() {
+        return taskWorkerConfigs;
+    }
+
+    public void setTaskWorkerConfigs(Map<String, TaskWorkerConfig> taskWorkerConfigs) {
+        this.taskWorkerConfigs = taskWorkerConfigs;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {
