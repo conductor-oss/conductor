@@ -6,7 +6,6 @@ import { SaveWorkflowMachineContext } from "./types";
 
 export { removeCopyFromStorage };
 
-
 export const resolveAgentSnapshots = async ({
   editorChanges,
   authHeaders,

@@ -144,8 +144,7 @@ test("em-dash in task inputParameters survives clone via the UI", async ({
   // Intercept the clone POST to verify wire-level encoding.
   const cloneRequest = page.waitForRequest(
     (req) =>
-      req.url().includes("/api/metadata/workflow") &&
-      req.method() === "POST",
+      req.url().includes("/api/metadata/workflow") && req.method() === "POST",
   );
 
   await page.locator("#confirm-clone-btn").click();

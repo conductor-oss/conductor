@@ -54,7 +54,8 @@ export const toUpperFirst = (str: string) => _upperFirst(_lowerCase(str));
 // corrupting multibyte UTF-8 sequences (e.g. em-dash E2 80 94) and causing
 // Jackson to throw "JSON parse error: Invalid UTF-8 middle byte".
 export function asciiSafeJson(json: string): string {
-  return json.replace(/[\u0080-\uFFFF]/g, (ch) =>
-    `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  return json.replace(
+    /[\u0080-\uFFFF]/g,
+    (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`,
   );
 }
