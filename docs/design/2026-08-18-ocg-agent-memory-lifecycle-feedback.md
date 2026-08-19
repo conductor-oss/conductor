@@ -24,15 +24,15 @@ canonical feedback. Conductor never compiles an LLM summarizer or a memory-write
 
 ## What is implemented
 
-| Capability | Current behavior |
-|---|---|
-| Activation | `longTermMemory.ocgUrl`, `credential`, and `agent` must all be non-blank. |
-| Recall | Compiler prepends optional INLINE → `cg_search_memories` → INLINE tasks. The call uses the original `prompt`, configured agent, resolved user scope, `include_shared=true`, and `limit=5`. |
-| Prompt safety | Only MCP text blocks are joined; the result is capped to the agent context limit and injected as *human-reviewed evidence*, never instructions. |
-| Agent boundaries | Every agent definition with its own OCG config gets its own recall prelude. Parent recall is not forwarded to children. Child runs are never captured or feedback-eligible. |
-| Capture | A completed or terminated root run starts an observable `ocg_memory_capture` workflow. Its `OCG_MEMORY_CAPTURE` task posts the redacted source run to OCG. Failed and timed-out runs are not captured. |
-| Feedback | Completed or terminated root agent runs can be rated `positive` or `negative`, with a required reason (1–2,000 characters). OCG is the source of truth. |
-| UI | `ui-next` shows **Helpful** / **Not helpful**, displays the OCG summary in a feedback dialog, and links to the capture workflow. |
+### OCG long-term memory
+
+Configured agents recall up to five relevant, human-reviewed memories before a run. Retrieved content is
+bounded and treated as evidence, never instructions.
+
+Each agent recalls independently. Successful or terminated root runs are redacted and captured through an
+observable workflow; failed or timed-out runs are excluded.
+
+Users can rate captured runs in the UI, and OCG stores that feedback as the source of truth.
 
 ## Configuration and identity
 

@@ -155,6 +155,8 @@ class ToolCompilerTest {
                                     .containsEntry("credentials", List.of("OCG_KEY"))
                                     .containsEntry("headers", Map.of("X-API-Key", "${OCG_KEY}"));
                         });
+        assertThat(expanded.getFirst().getDescription())
+                .contains("at most two targeted follow-ups", "If three queries do not find");
     }
 
     @Test

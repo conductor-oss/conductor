@@ -51,6 +51,19 @@ public class LongTermMemoryConfig {
     private String user;
 
     /**
+     * How recalled memory is presented to the agent. Supported values are {@code validate} and
+     * {@code trust_and_terminate}. Exactly one of this field or {@link #recallInstructions} is
+     * required.
+     */
+    private String recallPolicy;
+
+    /**
+     * Trusted, agent-owner supplied instructions for using recalled memory. Exactly one of this
+     * field or {@link #recallPolicy} is required.
+     */
+    private String recallInstructions;
+
+    /**
      * Visibility for newly captured execution memories. Defaults to {@code public}, which shares
      * memories with other users of the configured agent. Set to {@code private} only when a run
      * must be limited to its owning user.

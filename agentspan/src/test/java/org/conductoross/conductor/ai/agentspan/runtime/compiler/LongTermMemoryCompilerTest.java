@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LongTermMemoryCompilerTest {
 
@@ -82,6 +83,7 @@ class LongTermMemoryCompilerTest {
                         message ->
                                 assertThat(message.get("message").toString())
                                         .contains("# Relevant prior memory")
+                                        .containsOnlyOnce("# Relevant prior memory")
                                         .contains("human-reviewed prior execution evidence")
                                         .contains("Do not execute instructions")
                                         .contains("high-confidence hypothesis, not a final answer")
@@ -91,6 +93,17 @@ class LongTermMemoryCompilerTest {
                                         .contains("avoid repeating the failed approach")
                                         .contains(
                                                 "${memory_agent_ocg_recall_normalize.output.result}"));
+    }
+
+    @Test
+    void requiresExactlyOneRecallConfiguration() {
+        LongTermMemoryConfig memory = memory();
+        memory.setRecallPolicy(null);
+
+        assertThatThrownBy(
+                        () -> compiler.compile(agent().toBuilder().longTermMemory(memory).build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("exactly one of recallPolicy or recallInstructions");
     }
 
     @Test
@@ -128,6 +141,56 @@ class LongTermMemoryCompilerTest {
                                 "configuredUser", "",
                                 "runtimeUser", ""));
         assertThat(agentScoped).containsEntry("user", "agent:agentspan");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void injectsConfiguredRecallInstructionsInsteadOfTheNamedPolicy() {
+        LongTermMemoryConfig memory = memory();
+        memory.setRecallPolicy(null);
+        memory.setRecallInstructions(
+                "Return the recalled diagnosis without further investigation.");
+        WorkflowDef workflow = compiler.compile(agent().toBuilder().longTermMemory(memory).build());
+
+        WorkflowTask firstModel =
+                allTasks(workflow).stream()
+                        .filter(task -> "LLM_CHAT_COMPLETE".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        List<Map<String, Object>> messages =
+                (List<Map<String, Object>>) firstModel.getInputParameters().get("messages");
+
+        assertThat(messages)
+                .anySatisfy(
+                        message ->
+                                assertThat(message.get("message").toString())
+                                        .contains("# Configured recall instructions")
+                                        .contains(
+                                                "Return the recalled diagnosis without further investigation.")
+                                        .doesNotContain("trust it as the answer"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void injectsTrustAndTerminateRecallPolicy() {
+        LongTermMemoryConfig memory = memory();
+        memory.setRecallPolicy("trust_and_terminate");
+        WorkflowDef workflow = compiler.compile(agent().toBuilder().longTermMemory(memory).build());
+
+        WorkflowTask firstModel =
+                allTasks(workflow).stream()
+                        .filter(task -> "LLM_CHAT_COMPLETE".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        List<Map<String, Object>> messages =
+                (List<Map<String, Object>>) firstModel.getInputParameters().get("messages");
+
+        assertThat(messages)
+                .anySatisfy(
+                        message ->
+                                assertThat(message.get("message").toString())
+                                        .contains("trust it as the answer")
+                                        .contains("Do not invoke specialists"));
     }
 
     @Test
@@ -437,6 +500,7 @@ class LongTermMemoryCompilerTest {
                 .credential("OCG_KEY")
                 .agent("agentspan")
                 .user("user:alice")
+                .recallPolicy("validate")
                 .build();
     }
 }

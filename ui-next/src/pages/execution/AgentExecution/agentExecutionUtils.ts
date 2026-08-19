@@ -1156,6 +1156,9 @@ export function transformWorkflowExecutionToAgentRun(
           detail: {
             input: {
               ...(instructionsText ? { instructions: instructionsText } : {}),
+              // Keep every persisted message so the inspection panel exposes injected system
+              // instructions (for example, recall or guardrail context), not only the first one.
+              ...(messages.length ? { messages } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
             output: llmTask.outputData,
@@ -1614,6 +1617,9 @@ export function transformWorkflowExecutionToAgentRun(
           detail: {
             input: {
               ...(instructionsText ? { instructions: instructionsText } : {}),
+              // Keep every persisted message so the inspection panel exposes injected system
+              // instructions (for example, recall or guardrail context), not only the first one.
+              ...(messages.length ? { messages } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
             output: task.outputData,

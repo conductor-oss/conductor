@@ -14,6 +14,7 @@ import {
   AgentStatus,
   AgentStrategy,
   AgentTimelineKind,
+  EventType,
 } from "./types";
 
 function task(overrides: Record<string, unknown>) {
@@ -382,6 +383,35 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
       AgentTimelineKind.TURN,
       AgentTimelineKind.FINALIZATION,
     ]);
+  });
+
+  it("preserves every LLM message for inspection", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Investigate the timeout" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_loop",
+          taskType: "DO_WHILE",
+          loopOverTask: true,
+        }),
+        task({
+          referenceTaskName: "agent_llm__1",
+          taskType: "LLM_CHAT_COMPLETE",
+          loopOverTask: true,
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns[0].events.find(
+      (event) => event.type === EventType.THINKING,
+    );
+    expect((thinking?.detail as any).input.messages).toEqual(messages);
   });
 
   it("excludes preparation and finalization from agent-turn metrics", () => {

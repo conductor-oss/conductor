@@ -1,7 +1,7 @@
 [
   {
     "name": "cg_query",
-    "description": "Query the Context Graph knowledge store with natural language. Returns a narrative answer with structured data and citations. Use this as the primary tool for questions about entities, services, incidents, and their relationships.",
+    "description": "Query the Context Graph knowledge store with natural language. Returns a narrative answer with structured data and citations. Use this as the primary tool for questions about entities, services, incidents, and their relationships. Search deliberately: make one broad query, then use at most two targeted follow-ups only when they resolve a specific unanswered question. Do not retry the same search with synonyms or minor wording changes. If three queries do not find the needed evidence, state that the data was not found and proceed.",
     "inputSchema": {
       "type": "object",
       "properties": {

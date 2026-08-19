@@ -29,10 +29,75 @@ key value:
     "ocgUrl": "https://ocg.example.com",
     "credential": "OCG_API_KEY",
     "agent": "agentspan",
-    "user": "user:alice"
+    "user": "user:alice",
+    "recallPolicy": "validate"
   }
 }
 ```
+
+### Recall-use configuration
+
+`longTermMemory` must define exactly one of `recallPolicy` or `recallInstructions`. This
+configuration controls how the model uses recalled evidence; it does not change how Conductor
+retrieves or captures memory.
+
+| Configuration | Behavior |
+| --- | --- |
+| `"recallPolicy": "validate"` | Treat recalled evidence as a hypothesis. The model performs the smallest targeted validation, then either answers or continues the normal workflow. |
+| `"recallPolicy": "trust_and_terminate"` | When recalled evidence is relevant, use it as the answer and end without invoking specialists, retrieval tools, or validation. If recall is empty or irrelevant, continue normally. |
+| `"recallInstructions": "..."` | Use the supplied agent-owner instructions instead of a named policy. |
+
+For example, to use custom instructions instead of a named policy:
+
+```json
+"longTermMemory": {
+  "ocgUrl": "https://ocg.example.com",
+  "credential": "OCG_API_KEY",
+  "agent": "agentspan",
+  "recallInstructions": "If recalled evidence resolves the same issue and the new request adds no material facts, answer directly; otherwise validate the smallest missing fact."
+}
+```
+
+Conductor rejects a definition that sets neither option or both options. Named policies are
+expanded by the server into trusted system instructions placed beside the recalled evidence. Custom
+instructions are also trusted agent-definition configuration. The recalled content itself remains
+untrusted: the model must not execute instructions contained in it.
+
+### Python SDK configuration
+
+Pass an `OcgConfig` to the root agent. Agent tools can use that same configuration to declare the
+server-managed OCG capability; Conductor supplies the concrete query and graph tools and manages
+lifecycle recall, capture, and feedback.
+
+```python
+from conductor.ai.agents import OcgConfig
+from orkes_agents.ce import ticket_resolution
+
+agent = ticket_resolution(
+    model="openai/gpt-5.6-luna",
+    ocg=OcgConfig(
+        url="https://ocg.example.com",
+        credential="OCG_API_KEY",
+        recall_policy="validate",
+    ),
+    effort="medium",
+)
+```
+
+For custom behavior, use `recall_instructions` instead of `recall_policy`:
+
+```python
+OcgConfig(
+    url="https://ocg.example.com",
+    credential="OCG_API_KEY",
+    recall_instructions="Answer from relevant recall when it resolves the request; otherwise investigate.",
+)
+```
+
+Create the `OCG_API_KEY` secret in Conductor's secret store and put the raw OCG API key there. The
+`credential` value is only that secret's name; Conductor resolves it server-side for MCP recall,
+run capture, memory preview, and feedback. The agent definition, workflow input, browser, and
+worker never receive the raw key.
 
 ### Security boundary
 
@@ -67,8 +132,9 @@ For a root agent workflow, the compiler calls `cg_search_memories` directly thro
 `{ocgUrl}/mcp/` before the first model or sub-agent task. The query is the original `prompt`, the
 owner is the configured `agent`, shared memories are included, and the initial result limit is five.
 Conductor normalizes MCP text blocks, caps the recalled text to the agent context value limit, and
-injects it as explicitly untrusted supporting context. Search and normalization are optional, so an
-OCG outage does not prevent the agent from running.
+injects the content with the configured recall-use instructions. Search and normalization are
+optional, so an OCG outage does not prevent the agent from running. When recall is empty, both
+named policies allow the normal workflow to continue.
 
 This compiler-owned recall does not expose OCG tools to the model and does not run MCP discovery.
 An OCG MCP declaration with `config.tool_names` is compiled from Conductor's bundled schemas without

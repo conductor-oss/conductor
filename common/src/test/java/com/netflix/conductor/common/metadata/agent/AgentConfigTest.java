@@ -83,7 +83,8 @@ class AgentConfigTest {
                     "ocgUrl": "https://ocg.example",
                     "credential": "OCG_PUBLIC_KEY",
                     "agent": "agentspan",
-                    "user": "user:alice"
+                    "user": "user:alice",
+                    "recallPolicy": "trust_and_terminate"
                   }
                 }
                 """;
@@ -95,6 +96,7 @@ class AgentConfigTest {
         assertThat(config.getLongTermMemory().getCredential()).isEqualTo("OCG_PUBLIC_KEY");
         assertThat(config.getLongTermMemory().getAgent()).isEqualTo("agentspan");
         assertThat(config.getLongTermMemory().getUser()).isEqualTo("user:alice");
+        assertThat(config.getLongTermMemory().getRecallPolicy()).isEqualTo("trust_and_terminate");
     }
 
     @Test
