@@ -1966,12 +1966,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     private long getTaskDuration(long s, TaskModel task) {
-        long duration = task.getEndTime() - task.getStartTime();
-        s += duration;
-        if (task.getRetriedTaskId() == null) {
-            return s;
+        // Walk the retriedTaskId chain iteratively. The recursive version re-added the running sum
+        // at every hop, overstating a retried task's duration (10+20 reported 40, 10+20+30 reported
+        // 100), and a malformed chain — self-reference, cycle — overflowed the stack. The visited
+        // set makes any such chain harmless.
+        Set<String> visited = new HashSet<>();
+        for (TaskModel current = task; current != null && visited.add(current.getTaskId()); ) {
+            s += current.getEndTime() - current.getStartTime();
+            String retriedId = current.getRetriedTaskId();
+            current = retriedId == null ? null : executionDAOFacade.getTaskModel(retriedId);
         }
-        return s + getTaskDuration(s, executionDAOFacade.getTaskModel(task.getRetriedTaskId()));
+        return s;
     }
 
     @VisibleForTesting
