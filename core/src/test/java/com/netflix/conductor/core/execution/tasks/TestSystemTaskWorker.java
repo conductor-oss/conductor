@@ -15,6 +15,7 @@ package com.netflix.conductor.core.execution.tasks;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.After;
@@ -27,6 +28,7 @@ import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,6 +59,8 @@ public class TestSystemTaskWorker {
         when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(10);
         when(properties.getSystemTaskWorkerCallbackDuration()).thenReturn(Duration.ofSeconds(30));
         when(properties.getSystemTaskWorkerPollInterval()).thenReturn(Duration.ofSeconds(30));
+        when(properties.getSystemTaskQueuePopTimeout()).thenReturn(Duration.ofMillis(100));
+        when(properties.getTaskWorkerConfigs()).thenReturn(Collections.emptyMap());
 
         systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
         systemTaskWorker.start();
@@ -83,6 +87,30 @@ public class TestSystemTaskWorker {
         assertEquals(
                 systemTaskWorker.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(),
                 7);
+    }
+
+    @Test
+    public void testConfiguredTaskWorkerUsesDedicatedPool() {
+        ConductorProperties.TaskWorkerConfig taskWorkerConfig =
+                new ConductorProperties.TaskWorkerConfig();
+        taskWorkerConfig.setThreadCount(2);
+        ConductorProperties configuredProperties = new ConductorProperties();
+        configuredProperties.setSystemTaskWorkerThreadCount(10);
+        configuredProperties.setTaskWorkerConfigs(Map.of(TEST_TASK, taskWorkerConfig));
+        SystemTaskWorker configuredWorker =
+                new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, configuredProperties);
+        configuredWorker.start();
+
+        try {
+            ExecutionConfig configured = configuredWorker.getExecutionConfig(TEST_TASK);
+            ExecutionConfig shared = configuredWorker.getExecutionConfig("other_task");
+
+            assertEquals(2, configured.getSemaphoreUtil().availableSlots());
+            assertEquals(10, shared.getSemaphoreUtil().availableSlots());
+            assertNotSame(configured.getExecutorService(), shared.getExecutorService());
+        } finally {
+            configuredWorker.stop();
+        }
     }
 
     @Test
