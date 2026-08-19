@@ -26,6 +26,16 @@ A **Conductor Agent** is an agent you author in code and register on the server.
 
 Conductor Agents are one of two ways to build AI behavior. The other is a [declarative AI workflow](llm-orchestration.md), where you place LLM, MCP, and control-flow tasks directly in the workflow definition. Choose the declarative path when the orchestration itself is what you are building. Choose a Conductor Agent when the agent logic lives in code and you want to run it inside a durable process.
 
+## Server requirement
+
+Before deploying or invoking a Conductor Agent, enable the AI integration on the server:
+
+```properties
+conductor.integrations.ai.enabled=true
+```
+
+The deployed-agent control plane and `agentType: "conductor"` execution mode are unavailable when this property is false or omitted.
+
 ## Lifecycle
 
 Every Conductor Agent moves through the same five operations, and the names below are the SDK verbs you will see in code:
