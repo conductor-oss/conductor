@@ -27,7 +27,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 /** Adds OCG recall and capture behavior to an OCG-enabled compiled workflow. */
-final class OcgAgentSubCompiler {
+final class OcgLongTermMemoryCompiler {
 
     private static final String TASK_REF_ARGUMENTS_SUFFIX = "_ocg_recall_arguments";
     private static final String TASK_REF_SEARCH_SUFFIX = "_ocg_recall_search";
@@ -70,7 +70,7 @@ final class OcgAgentSubCompiler {
                     + "answering. When recall is empty or does not address the request, proceed with the normal "
                     + "workflow.";
 
-    private OcgAgentSubCompiler() {}
+    private OcgLongTermMemoryCompiler() {}
 
     /** Whether this workflow has the complete server-side configuration required for OCG. */
     static boolean isActive(AgentConfig config) {

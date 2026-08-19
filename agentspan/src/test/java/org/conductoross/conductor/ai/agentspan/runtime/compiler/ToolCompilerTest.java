@@ -461,6 +461,33 @@ class ToolCompilerTest {
     }
 
     @Test
+    void testBuildEnrichTask_AgentToolForwardsExplicitRequestToChildPrompt() {
+        ToolConfig agentTool =
+                ToolConfig.builder()
+                        .name("ocg_research")
+                        .toolType("agent_tool")
+                        .config(Map.of("workflowName", "incident_agent_ocg_research_agent"))
+                        .build();
+
+        WorkflowTask enrichTask =
+                (WorkflowTask)
+                        new ToolCompiler()
+                                .buildEnrichTask(
+                                        "incident_agent",
+                                        "incident_agent_llm",
+                                        List.of(agentTool),
+                                        "")[0];
+
+        String script = (String) enrichTask.getInputParameters().get("expression");
+        // Agent-tool dispatch uses the tool-call request as the child workflow prompt. The
+        // original root prompt is only a fallback for older generic agent tools with no request.
+        assertThat(script)
+                .contains(
+                        "var _req = _p.request || _p.prompt || _p.message || _p.input || _p.query || '';",
+                        "prompt: _req");
+    }
+
+    @Test
     void testBuildEnrichTask_AgentToolWithRetryConfig() {
         ToolConfig agentTool =
                 ToolConfig.builder()

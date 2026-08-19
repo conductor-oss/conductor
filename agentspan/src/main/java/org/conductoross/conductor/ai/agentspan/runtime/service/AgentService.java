@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.OcgResearchAgentFactory;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
@@ -1144,6 +1145,12 @@ public class AgentService {
     private void registerAgentToolWorkflows(AgentConfig config) {
         if (config.getTools() != null) {
             for (ToolConfig tool : config.getTools()) {
+                // OCG research is a server-owned specialist. Materialize it before the standard
+                // agent-tool registration flow so callers never expose raw OCG MCP tools to the
+                // parent agent.
+                if (OcgResearchAgentFactory.isOcgResearch(tool)) {
+                    OcgResearchAgentFactory.materialize(config, tool);
+                }
                 if (!"agent_tool".equals(tool.getToolType()) || tool.getConfig() == null) {
                     continue;
                 }

@@ -125,6 +125,70 @@ class AgentCompilerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void materializesOcgResearchAsManagedAgentTool() {
+        ToolConfig research =
+                ToolConfig.builder()
+                        .name("ocg_research")
+                        .toolType("ocg_research")
+                        .config(Map.of("ocg_url", "https://ocg.example", "credential", "OCG_KEY"))
+                        .build();
+        AgentConfig parent =
+                AgentConfig.builder()
+                        .name("incident_agent")
+                        .model("openai/gpt-4o")
+                        .longTermMemory(
+                                LongTermMemoryConfig.builder()
+                                        .ocgUrl("https://memory.ocg.example")
+                                        .credential("MEMORY_KEY")
+                                        .agent("conductor-agent:incident_agent")
+                                        .build())
+                        .build();
+
+        OcgResearchAgentFactory.materialize(parent, research);
+
+        assertThat(research.getToolType()).isEqualTo("agent_tool");
+        AgentConfig child = (AgentConfig) research.getConfig().get("agentConfig");
+        assertThat(child.getName()).isEqualTo("incident_agent_ocg_research_agent");
+        assertThat(child.getMaxTurns()).isEqualTo(3);
+        assertThat(child.getLongTermMemory()).isNull();
+        assertThat((String) child.getInstructions())
+                .contains("exactly one OCG tool call per turn", "at most two targeted follow-up");
+        assertThat(research.getInputSchema())
+                .containsEntry("required", List.of("request"))
+                .containsKey("properties");
+        assertThat(child.getTools())
+                .singleElement()
+                .satisfies(
+                        tool -> {
+                            assertThat(tool.getToolType()).isEqualTo("ocg");
+                            assertThat(tool.getConfig())
+                                    .containsEntry("ocg_url", "https://ocg.example")
+                                    .containsEntry("credential", "OCG_KEY");
+                        });
+    }
+
+    @Test
+    void longTermMemoryDoesNotAddOcgResearchTool() {
+        AgentConfig parent =
+                AgentConfig.builder()
+                        .name("incident_agent")
+                        .model("openai/gpt-4o")
+                        .longTermMemory(
+                                LongTermMemoryConfig.builder()
+                                        .ocgUrl("https://ocg.example")
+                                        .credential("OCG_KEY")
+                                        .agent("conductor-agent:incident_agent")
+                                        .recallPolicy("validate")
+                                        .build())
+                        .build();
+
+        compiler.compile(parent);
+
+        assertThat(parent.getTools()).isNull();
+    }
+
+    @Test
     void testCompileSimpleWithGuardrails() {
         GuardrailConfig guardrail =
                 GuardrailConfig.builder()

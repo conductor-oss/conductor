@@ -221,8 +221,8 @@ public class AgentCompiler {
         // workflow-only execution list.
         stampAgentMetadata(wf, config);
 
-        if (OcgAgentSubCompiler.isActive(config)) {
-            OcgAgentSubCompiler.apply(wf, config, contextMaxValueSizeBytes);
+        if (OcgLongTermMemoryCompiler.isActive(config)) {
+            OcgLongTermMemoryCompiler.apply(wf, config, contextMaxValueSizeBytes);
         }
 
         // Ensure every task has a name (Conductor requires it for execution)
