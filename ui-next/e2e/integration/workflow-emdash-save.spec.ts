@@ -68,60 +68,102 @@ test("em-dash in task inputParameters survives save via the UI editor", async ({
   await page.goto(`/workflowDef/${WF_NAME}/1`);
   await page.waitForLoadState("networkidle");
 
-  // Switch to Code tab — confirms em-dash is present in the editor before saving.
+  // Switch to Code tab — confirms em-dash is present in the editor.
   await page.getByRole("tab", { name: "Code" }).click();
   await expect(
     page.locator("#editor-panel-tab-content #code-tab"),
   ).toContainText(EM_DASH, { timeout: MONACO_TIMEOUT_MS });
 
+  // The save button is disabled until the editor is dirty (madeChanges=true).
+  // Dirty it by appending a trailing space to the description via Monaco's JS
+  // API — @monaco-editor/react sets window.monaco after the CDN bundle loads.
+  await page.waitForFunction(
+    () => !!(window as any).monaco?.editor?.getModels?.()?.length,
+    { timeout: MONACO_TIMEOUT_MS },
+  );
+  await page.evaluate(() => {
+    const models = (window as any).monaco.editor.getModels();
+    const model = models[0];
+    const obj = JSON.parse(model.getValue());
+    obj.description = (obj.description ?? "") + " ";
+    model.setValue(JSON.stringify(obj, null, 2));
+  });
+
+  // Wait for XState to pick up the model change and enable the save button.
+  await expect(
+    page.locator('[data-testid="workflow-definition-save-button"]'),
+  ).toBeEnabled({ timeout: 5_000 });
+
+  // Intercept the save request so we can inspect the wire body.
+  const saveRequest = page.waitForRequest(
+    (req) =>
+      req.url().includes("/api/metadata/workflow") &&
+      (req.method() === "POST" || req.method() === "PUT"),
+  );
+
   // Click Save → Confirm.
   await page.locator('[data-testid="workflow-definition-save-button"]').click();
   await page.locator("#confirm-saving-btn").click();
 
-  // Wait for the confirm panel to disappear.
+  // Capture the request body before it reaches the server.
+  const req = await saveRequest;
+  const body = req.postData() ?? "";
+
+  // The body must use — (not raw em-dash bytes) — this is what
+  // asciiSafeJson() produces and what survives WAF C1-byte stripping.
+  expect(body).toContain("\\u2014");
+  expect(body).not.toContain(EM_DASH);
+
+  // Also verify the server decoded it correctly: re-fetch and check the value.
   await expect(page.locator("#confirm-saving-btn")).not.toBeVisible({
     timeout: 10_000,
   });
   await page.waitForLoadState("networkidle");
 
-  // Re-fetch via API and assert the em-dash round-tripped correctly.
   const saved = await getWorkflowDef(WF_NAME, 1);
   const prompt = (saved.tasks[0].inputParameters as Record<string, string>)
     .prompt;
-
   expect(prompt).toContain(EM_DASH);
-  expect(prompt).not.toContain("\\u2014");
 });
 
 test("em-dash in task inputParameters survives clone via the UI", async ({
   page,
 }) => {
-  // Navigate to the workflow list and trigger the Clone dialog for our workflow.
   await page.goto("/workflowDef");
   await page.waitForLoadState("networkidle");
 
-  // Scope to the row for our workflow and click its Clone icon button.
-  const row = page.locator("tr").filter({ hasText: WF_NAME });
-  await row.getByTitle("Clone Workflow").click();
+  // The clone IconButton has no id; locate it as the sibling immediately
+  // after the run button (which does carry id="run-{name}-btn").
+  // MUI Tooltip does not add a title attribute to its child, so getByTitle
+  // does not work here.
+  await page.locator(`#run-${WF_NAME}-btn + button`).click();
 
   // The clone dialog opens — clear the name field and enter the clone name.
   await page.locator("#workflow-name-field").fill(WF_CLONE_NAME);
 
-  // Click Clone to submit — this sends the cloned workflow JSON through
-  // fetchWithContext → asciiSafeJson, which is the path the customer reported.
+  // Intercept the clone POST to verify wire-level encoding.
+  const cloneRequest = page.waitForRequest(
+    (req) =>
+      req.url().includes("/api/metadata/workflow") &&
+      req.method() === "POST",
+  );
+
   await page.locator("#confirm-clone-btn").click();
 
-  // Wait for the dialog to close.
+  const req = await cloneRequest;
+  const body = req.postData() ?? "";
+
+  expect(body).toContain("\\u2014");
+  expect(body).not.toContain(EM_DASH);
+
+  // Wait for dialog to close then verify the clone round-tripped correctly.
   await expect(page.locator("#confirm-clone-btn")).not.toBeVisible({
     timeout: 10_000,
   });
   await page.waitForLoadState("networkidle");
 
-  // Re-fetch the cloned workflow via API and assert the em-dash survived.
   const cloned = await getWorkflowDef(WF_CLONE_NAME, 1);
   const prompt = (cloned.tasks[0].inputParameters as Record<string, string>)
     .prompt;
-
   expect(prompt).toContain(EM_DASH);
-  expect(prompt).not.toContain("\\u2014");
 });
