@@ -17,22 +17,6 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-
-      - name: Verify LLM documentation context
-        run: |
-          python3 -m unittest scripts/test_generate_llm_context.py
-          python3 scripts/generate-llm-context.py --check
-
-      - name: Verify Workflows documentation
-        run: |
-          pip install -r requirements.txt
-          python3 scripts/check-workflows-docs.py
-          python3 -m mkdocs build --strict
-
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
         env:

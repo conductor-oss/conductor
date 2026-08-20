@@ -28,8 +28,7 @@
           {
             "name": "collect_answer",
             "taskReferenceName": "collect_answer_ref",
-            "type": "HUMAN",
-            "asyncComplete": true
+            "type": "HUMAN"
           },
           {
             "name": "resume_agent",

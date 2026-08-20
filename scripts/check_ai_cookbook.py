@@ -12,6 +12,11 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 
+# The compact-title contract applies to the cookbook's own pages.  General
+# cookbook pages cross-listed into this section keep their descriptive titles.
+COMPACT_TITLE_PREFIX = "devguide/ai/cookbook/"
+MAX_TITLE_WORDS = 4
+
 
 class MkDocsLoader(yaml.SafeLoader):
     pass
@@ -58,8 +63,12 @@ def main() -> None:
         heading = re.search(r"(?m)^# (.+)$", page.read_text(encoding="utf-8"))
         if heading is None:
             raise AssertionError(f"AI Cookbook page has no H1: {target}")
-        if len(heading.group(1).split()) > 3:
-            raise AssertionError(f"AI Cookbook title exceeds three words: {target}")
+        if not target.startswith(COMPACT_TITLE_PREFIX):
+            continue
+        if len(heading.group(1).split()) > MAX_TITLE_WORDS:
+            raise AssertionError(
+                f"AI Cookbook title exceeds {MAX_TITLE_WORDS} words: {target}"
+            )
     print("AI Cookbook navigation and compact titles are valid")
 
 

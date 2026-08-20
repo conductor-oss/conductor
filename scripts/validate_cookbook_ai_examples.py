@@ -17,20 +17,6 @@ EXAMPLES = ROOT / "ai/examples"
 ASSETS = ROOT / "docs/devguide/ai/cookbook/assets"
 
 COPIES = {
-    "rag-assistant.json": ("07-rag-complete.json", {}),
-    "mcp-incident-investigator.json": (
-        "10-mcp-ai-agent.json",
-        {
-            "http://localhost:3001/mcp": "http://127.0.0.1:3001/mcp",
-            "anthropic": "openai",
-            "claude-3-5-sonnet-20241022": "gpt-4o",
-        },
-    ),
-    "coding-review-agent.json": ("19-coding-agent.json", {}),
-    "web-research-brief.json": (
-        "21-web-search-research-agent.json",
-        {"anthropic": "openai", "claude-sonnet-4-20250514": "gpt-4o"},
-    ),
     "reusable-conductor-agent.json": (
         "31-conductor-agent-basic.json",
         {"planner": "guarded-incident-planner"},
@@ -54,12 +40,9 @@ COPIES = {
         "34-conductor-agent-cancel.json",
         {"planner": "guarded-incident-planner"},
     ),
-    "governed-pr-reviewer.json": ("35-governed-adaptive-agent.json", {}),
-    "ai-workflow-routing.json": ("36-ai-workflow-routing.json", {}),
-    "ai-route-support-ticket.json": ("36a-ai-route-support-ticket.json", {}),
-    "ai-route-refund-request.json": ("36b-ai-route-refund-request.json", {}),
-    "ai-route-sales-lead.json": ("36c-ai-route-sales-lead.json", {}),
 }
+
+MARKER_PREFIX = "Derived from ai/examples/"
 
 
 def replace(value: object, replacements: dict[str, str]) -> object:
@@ -81,13 +64,29 @@ def normalized(path: Path, replacements: dict[str, str]) -> dict[str, object]:
     return workflow
 
 
+def declared_copies() -> set[str]:
+    """Assets whose description claims an ``ai/examples`` source."""
+    declared = set()
+    for asset in sorted(ASSETS.glob("*.json")):
+        description = json.loads(asset.read_text(encoding="utf-8")).get("description", "")
+        if MARKER_PREFIX in description:
+            declared.add(asset.name)
+    return declared
+
+
 def main() -> None:
     for asset_name, (example_name, replacements) in COPIES.items():
         asset = ASSETS / asset_name
         example = EXAMPLES / example_name
+        for path in (asset, example):
+            if not path.is_file():
+                raise AssertionError(
+                    f"{path.relative_to(ROOT)} is missing; update COPIES if the "
+                    "cookbook page or example was renamed or removed"
+                )
         cookbook = json.loads(asset.read_text(encoding="utf-8"))
         description = cookbook.get("description", "")
-        marker = f"Derived from ai/examples/{example_name}."
+        marker = f"{MARKER_PREFIX}{example_name}."
         if marker not in description:
             raise AssertionError(f"{asset_name} is missing its source marker")
         if normalized(asset, {}) != normalized(example, replacements):
@@ -95,7 +94,13 @@ def main() -> None:
                 f"{asset_name} drifted from ai/examples/{example_name}; "
                 "make the graph change upstream or record an intentional adaptation"
             )
-    print("Cookbook AI assets match their ai/examples sources")
+    unchecked = declared_copies() - COPIES.keys()
+    if unchecked:
+        raise AssertionError(
+            "these assets declare an ai/examples source but are not in COPIES: "
+            + ", ".join(sorted(unchecked))
+        )
+    print(f"{len(COPIES)} cookbook AI assets match their ai/examples sources")
 
 
 if __name__ == "__main__":
