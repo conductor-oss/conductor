@@ -32,13 +32,13 @@ describe("AgentDetailPanel prompt tab", () => {
     const { unmount } = renderPanel(
       llmNode({ input: { message: "just the last message" } }),
     );
-    expect(screen.queryByText("Prompt (Preview)")).toBeNull();
+    expect(screen.queryByText("Prompt")).toBeNull();
     unmount();
 
     renderPanel(
       llmNode({ prompt: { messages: [{ role: "user", message: "hello" }] } }),
     );
-    expect(screen.getByText("Prompt (Preview)")).toBeTruthy();
+    expect(screen.getByText("Prompt")).toBeTruthy();
   });
 
   it("hides the tab for non-LLM nodes", () => {
@@ -49,7 +49,7 @@ describe("AgentDetailPanel prompt tab", () => {
       kind: "tool",
     });
 
-    expect(screen.queryByText("Prompt (Preview)")).toBeNull();
+    expect(screen.queryByText("Prompt")).toBeNull();
   });
 
   it("renders the preview when the tab is selected", () => {
@@ -58,7 +58,7 @@ describe("AgentDetailPanel prompt tab", () => {
         prompt: { messages: [{ role: "user", message: "the question" }] },
       }),
     );
-    fireEvent.click(screen.getByText("Prompt (Preview)"));
+    fireEvent.click(screen.getByText("Prompt"));
 
     expect(screen.getByText("the question")).toBeTruthy();
   });
@@ -82,7 +82,7 @@ describe("AgentDetailPanel prompt tab", () => {
     const { rerender } = renderPanel(
       llmNode({ prompt: { messages: [{ role: "user", message: "hello" }] } }),
     );
-    fireEvent.click(screen.getByText("Prompt (Preview)"));
+    fireEvent.click(screen.getByText("Prompt"));
     expect(screen.getByText("hello")).toBeTruthy();
 
     // Same node identity, but the messages behind the prompt tab are gone.
@@ -99,7 +99,7 @@ describe("AgentDetailPanel prompt tab", () => {
       // The Summary body, not an empty prompt pane.
       expect(screen.getByText("Kind")).toBeTruthy();
     });
-    expect(screen.queryByText("Prompt (Preview)")).toBeNull();
+    expect(screen.queryByText("Prompt")).toBeNull();
     expect(screen.queryByText("hello")).toBeNull();
   });
 });

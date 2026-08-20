@@ -1,6 +1,6 @@
 /**
  * AgentDetailPanel — right-hand panel matching Conductor's task detail style.
- * Tabs: Summary | Input | Prompt (Preview) | Output | JSON
+ * Tabs: Summary | Input | Prompt | Output | JSON
  */
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
@@ -1891,7 +1891,7 @@ export function AgentDetailPanel({
   const tabs = [
     { value: SUMMARY_TAB, label: "Summary" },
     ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
-    ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt (Preview)" }] : []),
+    ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt" }] : []),
     ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
     { value: JSON_TAB, label: "JSON" },
   ];
