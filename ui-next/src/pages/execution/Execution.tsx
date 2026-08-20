@@ -56,6 +56,30 @@ import { FlowExecutionContextProvider } from "./state";
 import { useExecutionMachine } from "./state/hook";
 import { CountdownEvents, ExecutionTabs } from "./state/types";
 
+export const getExecutionBreadcrumbItems = ({
+  pathname,
+  executionId,
+  workflowId,
+}: {
+  pathname: string;
+  executionId?: string;
+  workflowId?: string;
+}) => {
+  const isAgentExecutionRoute = pathname.startsWith(
+    `${AGENT_EXECUTIONS_URL.BASE}/`,
+  );
+
+  return isAgentExecutionRoute
+    ? [
+        { label: "Agent Executions", to: AGENT_EXECUTIONS_URL.BASE },
+        { label: executionId || "", to: "" },
+      ]
+    : [
+        { label: "Workflow Executions", to: "/executions" },
+        { label: workflowId || "", to: "" },
+      ];
+};
+
 interface SecondaryActionsProps {
   execution: WorkflowExecution;
   countdownActor: ActorRef<CountdownEvents> | undefined;
@@ -566,6 +590,16 @@ export default function Execution() {
     [execution?.workflowType, execution?.workflowName],
   );
 
+  const executionBreadcrumbItems = useMemo(
+    () =>
+      getExecutionBreadcrumbItems({
+        pathname: location.pathname,
+        executionId,
+        workflowId: execution?.workflowId,
+      }),
+    [execution?.workflowId, executionId, location.pathname],
+  );
+
   const failedTaskWithReason = useMemo(
     () =>
       execution?.tasks?.find(
@@ -707,14 +741,14 @@ export default function Execution() {
                   />
                 </Stack>
               }
-              breadcrumbItems={[
-                { label: "Workflow Executions", to: "/executions" },
-                {
-                  label: execution.workflowId || "",
-                  to: "",
-                  icon: <CopyClipboardButton text={execution.workflowId} />,
-                },
-              ]}
+              breadcrumbItems={executionBreadcrumbItems.map((item, index) =>
+                index === executionBreadcrumbItems.length - 1
+                  ? {
+                      ...item,
+                      icon: <CopyClipboardButton text={item.label} />,
+                    }
+                  : item,
+              )}
               buttonsComponent={
                 <Stack
                   flexDirection="row"

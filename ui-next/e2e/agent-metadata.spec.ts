@@ -319,3 +319,24 @@ test("renders agent identities and execution details", async ({ page }) => {
   await expect(page.getByText("openai/gpt-5")).toBeVisible();
   await expect(page.getByText("worker_tool_36")).toBeAttached();
 });
+
+test("renders agent execution breadcrumbs", async ({ page }) => {
+  await page.goto("/agentExecutions/agent-metadata-execution");
+  await page.waitForLoadState("networkidle");
+
+  const header = page.locator("#workflow-execution-header-section");
+  const breadcrumbs = header.locator(
+    "#workflow-execution-header-section-breadcrumbs",
+  );
+
+  await expect(header).toBeVisible();
+  await expect(
+    breadcrumbs.getByRole("link", { name: "Agent Executions" }),
+  ).toBeVisible();
+  await expect(
+    breadcrumbs.getByText("agent-metadata-execution", { exact: true }),
+  ).toBeVisible();
+  await expect(header).toHaveScreenshot("agent-execution-breadcrumb.png", {
+    animations: "disabled",
+  });
+});
