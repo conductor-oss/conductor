@@ -1,68 +1,134 @@
 ---
-description: "Start workflow executions in Conductor using the UI, CLI, REST APIs, or client SDKs. Pass inputs and track executions with a unique workflow ID."
+description: Start Conductor workflow executions with the CLI, REST API, Java, Python, TypeScript, or Go.
 ---
 
-# Starting Workflows
+# Start workflows
 
-In Conductor, workflows can be started using the Conductor UI, APIs, or SDKs.
+Starting a workflow creates a durable execution and returns a workflow ID. Preserve that ID: it is the primary key for status, tasks, logs, and recovery.
 
-## Using Conductor UI
+## Prerequisites
 
-The Conductor UI is useful for sandbox testing before deploying the workflows to production using the APIs or SDKs.
+- The workflow definition is registered.
+- Every `SIMPLE` task has a task definition and a running worker.
+- The CLI or selected SDK is configured for the same server.
 
-**To start a workflow:**
+## Start with the CLI
 
-1. Go to [Workbench](http://localhost:8080/workbench) in the Conductor UI.
-2. Select the  **Workflow Name** and **Workflow version**.
-3. If required, provide the workflow inputs in **Input (JSON)**.
-4. (Optional) Specify the **Correlation ID** and **Task to Domain (JSON)** for the execution.
-5. Select the ▶ icon (Execute Workflow) at the top to run the workflow.
-
-Once the workflow has started, you can view the ongoing execution by selecting the Workflow ID hyperlink in the **Execution History** side panel on the right.
-
-## Using the CLI
-
-You can start workflow executions using the Conductor CLI.
-
-### Example using the CLI
-
-In this example, the CLI is used to invoke the workflow `sample_workflow` with the input `service` specified as `fedex`.
+Use asynchronous start for long-running work:
 
 ```bash
 conductor workflow start -w sample_workflow -i '{"service":"fedex"}'
 ```
 
-## Using APIs
+Pin a version and attach a business correlation ID when repeatability and lookup matter:
 
-You can also start workflow executions using the Start Workflow API (`POST api/workflow/{name}`). `{name}` is the placeholder for the workflow name, and the request body contains the workflow inputs if any.
-
-??? note "Example using cURL"
-    In this example, a cURL request is used to invoke the workflow `sample_workflow` with the input `service` specified as `fedex`.
-
-    ```bash
-    curl '{{ server_host }}/api/workflow/sample_workflow' \
-      -H 'accept: text/plain' \
-      -H 'content-type: application/json' \
-      --data-raw '{"service":"fedex"}'
-    ```
-
-## Using SDKs
-
-Conductor offers client SDKs for popular languages which have library methods for making the Start Workflow API call. Refer to the SDK documentation to configure a client in your selected language to invoke workflow executions.
-
-### Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to invoke the workflow `sample_workflow` with the input `service`  specified as `fedex`.
-
-```javascript
-fetch("{{ server_host }}/api/workflow/sample_workflow", {
-    "headers": {
-        "accept": "text/plain",
-        "content-type": "application/json",
-    },
-    "body": "{\"service\":\"fedex\"}",
-    "method": "POST",
-});
+```bash
+conductor workflow start -w sample_workflow --version 2 \
+  --correlation order-123 -i '{"service":"fedex"}'
 ```
 
+For a bounded test, `--sync` waits for the execution result:
 
+```bash
+conductor workflow start -w sample_workflow -i '{"service":"fedex"}' --sync
+```
+
+Success is a returned workflow ID for an asynchronous start, or a workflow result with the expected status for a synchronous start.
+
+## Start with REST
+
+`POST /api/workflow/{name}` accepts the workflow input map directly and returns the workflow ID as text.
+
+```bash
+curl -sS -X POST 'http://localhost:8080/api/workflow/sample_workflow' \
+  -H 'Content-Type: application/json' \
+  --data '{"service":"fedex"}'
+```
+
+Use `POST /api/workflow` with a `StartWorkflowRequest` when you need fields such as `version`, `correlationId`, `priority`, or `taskToDomain`. Use `POST /api/workflow/execute/{name}/{version}` only when the caller should wait synchronously. The [Start Workflow API](../../../documentation/api/startworkflow.md) owns the complete request and response reference.
+
+## Start with an SDK
+
+These examples show the start call after client configuration. Use the SDK reference linked below each tab for dependency and authentication setup.
+
+=== "Java"
+
+    ```java
+    StartWorkflowRequest request = new StartWorkflowRequest();
+    request.setName("sample_workflow");
+    request.setVersion(2);
+    request.setCorrelationId("order-123");
+    request.setInput(Map.of("service", "fedex"));
+
+    String workflowId = clients.getWorkflowClient().startWorkflow(request);
+    ```
+
+    See the [Java SDK](../../../documentation/clientsdks/java-sdk.md).
+
+=== "Python"
+
+    ```python
+    from conductor.client.http.models import StartWorkflowRequest
+
+    request = StartWorkflowRequest(
+        name="sample_workflow",
+        version=2,
+        correlation_id="order-123",
+        input={"service": "fedex"},
+    )
+    workflow_id = executor.start_workflow(request)
+    ```
+
+    See the [Python SDK](../../../documentation/clientsdks/python-sdk.md).
+
+=== "TypeScript"
+
+    ```typescript
+    const workflowId = await workflowClient.startWorkflow({
+      name: "sample_workflow",
+      version: 2,
+      correlationId: "order-123",
+      input: { service: "fedex" },
+    });
+    ```
+
+    See the [JavaScript and TypeScript SDK](../../../documentation/clientsdks/js-sdk.md).
+
+=== "Go"
+
+    ```go
+    workflowID, err := workflowExecutor.StartWorkflow(&model.StartWorkflowRequest{
+        Name:          "sample_workflow",
+        Version:       2,
+        CorrelationId: "order-123",
+        Input: map[string]string{
+            "service": "fedex",
+        },
+    })
+    if err != nil {
+        return err
+    }
+    ```
+
+    See the [Go SDK](../../../documentation/clientsdks/go-sdk.md).
+
+## Inspect the execution
+
+```bash
+conductor workflow get-execution <workflow-id> -c
+```
+
+Confirm the workflow name and version, input, current status, and each task status. Submission alone is not proof that a worker or integration completed.
+
+## Limitations
+
+- Synchronous execution keeps the client waiting and is a poor fit for human tasks, timers, and long-running workers.
+- Omitting `version` selects the server's latest registered version; pin it when callers require repeatable behavior.
+- A correlation ID helps lookup but is not necessarily unique and is not a substitute for the workflow ID.
+
+Next, learn how to [view executions](viewing-workflow-executions.md) or [choose an automatic trigger](choosing-a-trigger.md).
+
+<a id="using-conductor-ui"></a>
+<a id="using-the-cli"></a>
+<a id="using-apis"></a>
+<a id="using-sdks"></a>

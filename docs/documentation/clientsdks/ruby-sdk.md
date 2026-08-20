@@ -1,11 +1,10 @@
 ---
 description: "Build Conductor workers in Ruby with idiomatic task definitions and workflow management."
+source_repo: "https://github.com/conductor-oss/ruby-sdk"
+sdk_page: ruby
 ---
 
 # Ruby SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/ruby-sdk](https://github.com/conductor-oss/ruby-sdk) | Report issues and contribute on GitHub.
 
 ## Features
 

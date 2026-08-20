@@ -1,37 +1,10 @@
 ---
 description: "Build Conductor workers in Python with decorator-based task definitions, async support, and workflow management."
+source_repo: "https://github.com/conductor-oss/python-sdk"
+sdk_page: python
 ---
 
 # Python SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/python-sdk](https://github.com/conductor-oss/python-sdk) | Report issues and contribute on GitHub.
-
-## Start Conductor Server
-
-If you don't already have a Conductor server running, pick one:
-
-**Docker Compose (recommended, includes UI):**
-
-```shell
-docker run -p 8080:8080 conductoross/conductor:latest
-```
-The UI will be available at `http://localhost:8080` and the API at `http://localhost:8080/api`
-
-**MacOS / Linux (one-liner):** (If you don't want to use docker, you can install and run the binary directly)
-```shell
-curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
-```
-
-**Conductor CLI**
-```shell
-# Installs conductor cli
-npm install -g @conductor-oss/conductor-cli
-
-# Start the open source conductor server
-conductor server start
-# see conductor server --help for all the available commands
-```
 
 ## Install the SDK
 
@@ -123,23 +96,9 @@ Run it:
 python quickstart.py
 ```
 
-> ### Using Orkes Conductor / Remote Server?
-> Export your authentication credentials as well:
->
-> ```shell
-> export CONDUCTOR_SERVER_URL="https://your-cluster.orkesconductor.io/api"
->
-> # If using Orkes Conductor that requires auth key/secret
-> export CONDUCTOR_AUTH_KEY="your-key"
-> export CONDUCTOR_AUTH_SECRET="your-secret"
->
-> # Optional — set to false to force HTTP/1.1 if your network environment has unstable long-lived HTTP/2 connections (default: true)
-> # export CONDUCTOR_HTTP2_ENABLED=false
-> ```
-> See the [Worker Configuration](https://github.com/conductor-oss/python-sdk/blob/main/WORKER_CONFIGURATION.md) guide for details.
+For optional HTTP/2 configuration, see the [Worker Configuration](https://github.com/conductor-oss/python-sdk/blob/main/WORKER_CONFIGURATION.md) guide.
 
-That's it — you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
-[http://localhost:8127](http://localhost:8127)) to see the execution.
+That's it — you just defined a worker, built a workflow, and executed it. Open the UI for the Conductor server you configured to inspect the execution.
 
 ---
 
@@ -415,52 +374,6 @@ End-to-end examples covering all APIs for each domain:
 | [Integrations](https://github.com/conductor-oss/python-sdk/blob/main/docs/INTEGRATION.md) | AI/LLM provider integrations |
 | [Metrics](https://github.com/conductor-oss/python-sdk/blob/main/METRICS.md) | Prometheus metrics collection |
 | [Examples](https://github.com/conductor-oss/python-sdk/blob/main/examples/README.md) | Complete examples catalog |
-
-## Frequently Asked Questions
-
-**Is this the same as Netflix Conductor?**
-
-Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https://github.com/Netflix/conductor) repository after Netflix contributed the project to the open-source foundation.
-
-**Is this project actively maintained?**
-
-Yes. [Orkes](https://orkes.io) is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.
-
-**Can Conductor scale to handle my workload?**
-
-Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.
-
-**Does Conductor support durable code execution?**
-
-Yes. Conductor ensures workflows complete reliably even in the face of infrastructure failures, process crashes, or network issues.
-
-**Are workflows always asynchronous?**
-
-No. While Conductor excels at asynchronous orchestration, it also supports synchronous workflow execution when immediate results are required.
-
-**Do I need to use a Conductor-specific framework?**
-
-No. Conductor is language and framework agnostic. Use your preferred language and framework — the [SDKs](https://github.com/conductor-oss/conductor#conductor-sdks) provide native integration for Python, Java, JavaScript, Go, C#, and more.
-
-**Can I mix workers written in different languages?**
-
-Yes. A single workflow can have workers written in Python, Java, Go, or any other supported language. Workers communicate through the Conductor server, not directly with each other.
-
-**What Python versions are supported?**
-
-Python 3.9 and above.
-
-**Should I use `def` or `async def` for my workers?**
-
-Use `async def` for I/O-bound tasks (API calls, database queries) — the SDK uses `AsyncTaskRunner` with a single event loop for high concurrency with low overhead. Use regular `def` for CPU-bound or blocking work — the SDK uses `TaskRunner` with a thread pool. The SDK selects the right runner automatically based on your function signature.
-
-**How do I run workers in production?**
-
-Workers are standard Python processes. Deploy them as you would any Python application — in containers, VMs, or bare metal. Workers poll the Conductor server for tasks, so no inbound ports need to be opened. See [Worker Design](https://github.com/conductor-oss/python-sdk/blob/main/docs/design/WORKER_DESIGN.md) for architecture details.
-
-**How do I test workflows without running a full Conductor server?**
-
-The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See [Workflow Testing](https://github.com/conductor-oss/python-sdk/blob/main/docs/WORKFLOW_TESTING.md) for details.
 
 ## Support
 

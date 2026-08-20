@@ -125,15 +125,15 @@ Break work into small tasks that each do one thing. This gives you:
 
 Use sub-workflows when a group of tasks represents a **bounded business capability** (e.g., "process payment", "send notification bundle"). Don't create sub-workflows for a single task — the overhead isn't worth it.
 
-### DYNAMIC_FORK vs sequential loops
+### FORK_JOIN_DYNAMIC vs sequential loops
 
 | Pattern | When to use |
 | :--- | :--- |
-| [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) | Process N items in parallel. Use when items are independent and parallelism improves throughput. |
+| [FORK_JOIN_DYNAMIC](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) | Process N items in parallel. Use when items are independent and parallelism improves throughput. |
 | [DO_WHILE](../documentation/configuration/workflowdef/operators/do-while-task.md) | Process items sequentially when ordering matters or a shared resource requires serialization. |
 
 !!! tip
-    Keep DYNAMIC_FORK fan-out under 500 concurrent tasks per workflow. Beyond that, consider batching items into chunks and forking over the chunks.
+    Bound `FORK_JOIN_DYNAMIC` fan-out for the capacity and quotas of the downstream system. Batch inputs when the generated branch count would overwhelm that system.
 
 
 ## Worker scaling
