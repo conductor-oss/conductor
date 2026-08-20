@@ -89,7 +89,7 @@ public class Join extends WorkflowSystemTask {
             if (!forkedTask.getOutputData().isEmpty()) {
                 Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
-                    forkOutput = prepareAgentOutput(forkedTask);
+                    forkOutput = prepareAgentOutput(forkOutput);
                 }
                 task.addOutput(joinOnRef, forkOutput);
             }
@@ -156,31 +156,14 @@ public class Join extends WorkflowSystemTask {
     /**
      * Shapes a fork branch's output for a Conductor-Agents JOIN:
      *
-     * <ul>
-     *   <li>Branches marked with {@code _agent_tool_name} keep their tool identity: the full output
-     *       is wrapped under {@code _agent_tool_output}. Identity takes precedence because a tool
-     *       output may also contain state updates.
-     *   <li>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
-     *       merge keys to keep the JOIN payload small.
-     *   <li>Unmarked outputs (e.g. MCP or HTTP tool results) pass through untouched for the ReAct
-     *       state merge.
-     * </ul>
+     * <p>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
+     * merge keys to keep the JOIN payload small. All other results, including MCP and HTTP tool
+     * outputs, pass through untouched for the ReAct state merge.
      *
      * <p>Constructed maps are unmodifiable; the pass-through branch intentionally returns the
      * task's live output map to preserve default JOIN behavior.
      */
-    private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
-        Map<String, Object> output = forkedTask.getOutputData();
-        Map<String, Object> compact = new LinkedHashMap<>();
-        Object agentToolName = getAgentToolName(forkedTask);
-        if (agentToolName != null) {
-            // LinkedHashMap (not Map.of): tool outputs may legitimately contain null values.
-            Map<String, Object> toolOutput = new LinkedHashMap<>();
-            toolOutput.put("_agent_tool_name", agentToolName);
-            toolOutput.put("_agent_tool_output", output);
-            return Collections.unmodifiableMap(toolOutput);
-        }
-
+    private static Map<String, Object> prepareAgentOutput(Map<String, Object> output) {
         if (carriesAgentState(output)) {
             return compactAgentOutput(output);
         }
@@ -197,22 +180,6 @@ public class Join extends WorkflowSystemTask {
             }
         }
         return Collections.unmodifiableMap(compact);
-    }
-
-    private static Object getAgentToolName(TaskModel forkedTask) {
-        Map<String, Object> input = forkedTask.getInputData();
-        Object agentToolName = input.get("_agent_tool_name");
-        if (agentToolName != null) {
-            return agentToolName;
-        }
-
-        // SUB_WORKFLOW tasks keep the original task input under workflowInput. Read the agent
-        // dispatch metadata there without changing the mapper's established input contract.
-        Object workflowInput = input.get("workflowInput");
-        if (workflowInput instanceof Map<?, ?> nestedInput) {
-            return nestedInput.get("_agent_tool_name");
-        }
-        return null;
     }
 
     @Override
