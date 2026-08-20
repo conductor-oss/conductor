@@ -77,7 +77,11 @@ const TaskCard = ({
   const { name, type, taskReferenceName } = task;
   const agentPresentation =
     type === TaskType.AGENT ? getAgentTaskPresentation(task) : undefined;
-  const primaryLabel = agentPresentation ? agentPresentation.name : name;
+  const primaryLabel = agentPresentation
+    ? agentPresentation.unresolved
+      ? `UNRESOLVED: ${agentPresentation.name}`
+      : agentPresentation.name
+    : name;
   const secondaryLabel =
     agentPresentation?.taskReferenceName ?? taskReferenceName;
 

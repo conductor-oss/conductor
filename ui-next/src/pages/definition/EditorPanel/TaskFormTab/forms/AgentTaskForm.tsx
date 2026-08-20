@@ -40,18 +40,13 @@ import { TaskFormProps } from "./types";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
-  { value: "bedrock", label: "AWS Bedrock" },
-  { value: "azure-foundry", label: "Azure AI Foundry" },
 ];
 
 /**
- * Config form for the AGENT task. `agentType: "a2a"` calls a remote Agent2Agent endpoint (poll /
- * streaming / push modes); `"conductor"` runs a registered agent on the embedded agentspan runtime
- * — its input mirrors `POST /api/agent/start` (`AgentStartRequest`), not the A2A message shape.
- * `"bedrock"` and `"azure-foundry"` call those providers' native agent runtimes directly — they
- * share the conductor branch's `agentUrl`/`credentialRef`/`rawConfig`/`context` shape (no A2A
- * message semantics, no local agent registry) and have no remote discovery endpoint, so their
- * agent snapshot is never resolved beyond the configured agentUrl.
+ * Config form for the AGENT task. Two runtimes, one task type, disjoint input shapes:
+ * `agentType: "a2a"` calls a remote Agent2Agent endpoint (poll / streaming / push modes); `"conductor"`
+ * runs a registered agent on the embedded agentspan runtime — its input mirrors `POST /api/agent/start`
+ * (`AgentStartRequest`), not the A2A message shape.
  */
 export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   const get = (p: string) => _path(p, task);
@@ -70,8 +65,6 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const isConductor = agentType === "conductor";
-  const isNativeExternal = agentType === "bedrock" || agentType === "azure-foundry";
-  const isA2a = agentType === "a2a";
   const agentName = get("inputParameters.name") as string | undefined;
   const taskInput = (task.inputParameters ?? {}) as AgentTaskInput;
   const sourceKey = agentSourceKey(taskInput);
@@ -284,48 +277,6 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 />
               </Grid>
             </>
-          ) : isNativeExternal ? (
-            <>
-              <Grid size={12}>
-                <ConductorAutocompleteVariables
-                  label="Agent URL"
-                  value={get("inputParameters.agentUrl") as string}
-                  onChange={(v) => setSource("inputParameters.agentUrl", v)}
-                  placeholder={
-                    agentType === "bedrock"
-                      ? "bedrock://AGENTID/ALIASID (optionally ?region=us-west-2)"
-                      : "https://my-resource.openai.azure.com/openai"
-                  }
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <ConductorAutocompleteVariables
-                  label="Credential reference"
-                  value={get("inputParameters.credentialRef") as string}
-                  onChange={(v) => set("inputParameters.credentialRef", v)}
-                  placeholder="Name of a stored credential/secret set"
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <ConductorAutocompleteVariables
-                  label="Session ID (optional)"
-                  value={get("inputParameters.sessionId") as string}
-                  onChange={(v) => set("inputParameters.sessionId", v)}
-                />
-              </Grid>
-              <Grid size={12}>
-                <ConductorInput
-                  label="Prompt"
-                  name="prompt"
-                  value={(get("inputParameters.prompt") as string) || ""}
-                  onTextInputChange={(v) => set("inputParameters.prompt", v)}
-                  multiline
-                  rows={6}
-                  fullWidth
-                  placeholder="Message to send to the agent"
-                />
-              </Grid>
-            </>
           ) : (
             <>
               <Grid size={12}>
@@ -350,37 +301,35 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               </Grid>
             </>
           )}
-          {!isNativeExternal && (
-            <Grid size={12}>
-              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                <Button
-                  variant="outlined"
-                  size="small"
-                  disabled={
-                    isResolving ||
-                    !(isConductor
-                      ? taskInput.agentType === "conductor" && taskInput.name
-                      : taskInput.agentType === "a2a" && taskInput.agentUrl)
-                  }
-                  onClick={() => void resolveSnapshot(taskInput)}
-                >
-                  Refresh agent details
-                </Button>
-                {isResolving && <CircularProgress size={18} />}
-                {!isResolving && snapshot && (
-                  <Typography variant="caption" color="text.secondary">
-                    {isConductor
-                      ? snapshot.resolved
-                        ? "Details loaded"
-                        : "Details unavailable"
-                      : snapshot.resolved
-                        ? "Resolved"
-                        : "Unresolved"}
-                  </Typography>
-                )}
-              </Box>
-            </Grid>
-          )}
+          <Grid size={12}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={
+                  isResolving ||
+                  !(isConductor
+                    ? taskInput.agentType === "conductor" && taskInput.name
+                    : taskInput.agentType !== "conductor" && taskInput.agentUrl)
+                }
+                onClick={() => void resolveSnapshot(taskInput)}
+              >
+                Refresh agent details
+              </Button>
+              {isResolving && <CircularProgress size={18} />}
+              {!isResolving && snapshot && (
+                <Typography variant="caption" color="text.secondary">
+                  {isConductor
+                    ? snapshot.resolved
+                      ? "Details loaded"
+                      : "Details unavailable"
+                    : snapshot.resolved
+                      ? "Resolved"
+                      : "Unresolved"}
+                </Typography>
+              )}
+            </Box>
+          </Grid>
           {resolutionWarning && (
             <Grid size={12}>
               <Alert severity="warning">{resolutionWarning}</Alert>
@@ -395,7 +344,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {(isConductor || isNativeExternal) && (
+      {isConductor && (
         <TaskFormSection title="Context">
           <ConductorFlatMapFormBase
             keyColumnLabel="Key"
@@ -409,26 +358,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {isNativeExternal && (
-        <TaskFormSection title="Provider config">
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            {agentType === "bedrock"
-              ? 'Extra Bedrock options, e.g. "region".'
-              : 'Extra Azure Foundry options, e.g. "assistantId" or "apiVersion".'}
-          </Typography>
-          <ConductorFlatMapFormBase
-            keyColumnLabel="Key"
-            valueColumnLabel="Value"
-            addItemLabel="Add config value"
-            value={_path("inputParameters.rawConfig", task)}
-            onChange={(value) =>
-              onChange(updateField("inputParameters.rawConfig", value, task))
-            }
-          />
-        </TaskFormSection>
-      )}
-
-      {isA2a && (
+      {!isConductor && (
         <TaskFormSection title="Execution mode">
           <Box display="flex" flexDirection="column" mb={3}>
             <FormControlLabel
@@ -495,7 +425,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               onChange={(v) => set("inputParameters.maxPollFailures", v)}
             />
           </Grid>
-          {isA2a && (
+          {!isConductor && (
             <Grid size={{ xs: 12, md: 6 }}>
               <ConductorAutocompleteVariables
                 label="History length"
@@ -508,7 +438,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </Grid>
       </TaskFormSection>
 
-      {isA2a && (
+      {!isConductor && (
         <TaskFormSection title="Headers">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={12}>
@@ -521,7 +451,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {isA2a && (
+      {!isConductor && (
         <TaskFormSection title="Advanced message (optional)">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={12}>
@@ -552,7 +482,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {isA2a && (
+      {!isConductor && (
         <TaskFormSection title="Advanced">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={{ xs: 12, md: 6 }}>

@@ -20,16 +20,18 @@ import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
 import { PopoverMessage } from "types/Messages";
+import { TagDto } from "types/Tag";
 import {
   AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   RUN_AGENT_URL,
 } from "utils/constants/route";
+import { featureFlags, FEATURES } from "utils/flags";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
-import TagChip from "components/ui/TagChip";
+import TagList from "components/ui/TagList";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
 
@@ -37,11 +39,17 @@ const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as n
 
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
+const toTagDtos = (tags?: string[]): TagDto[] =>
+  (tags || []).map((tag) => ({
+    key: "capability",
+    value: tag,
+    type: "METADATA",
+  }));
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
   const { isTrialExpired } = useAuth();
-  const tagsEnabled = true;
+  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");
   const { setMessage } = useContext(MessageContext);
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);
@@ -100,12 +108,8 @@ export default function AgentDefinitions() {
               label: "Tags",
               searchable: true,
               searchableFunc: (tags: string[]) => (tags || []).join(", "),
-              renderer: (tags: string[]) => (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                  {(tags || []).map((tag) => (
-                    <TagChip key={tag} label={tag} sx={{ mr: 0, mt: 0.5 }} />
-                  ))}
-                </Box>
+              renderer: (tags: string[], row: AgentSummary) => (
+                <TagList tags={toTagDtos(tags)} name={row.name} />
               ),
               grow: 2,
               tooltip: "The tags associated with the workflow",

@@ -1,4 +1,4 @@
-export type AgentRuntimeType = "a2a" | "conductor" | "bedrock" | "azure-foundry";
+export type AgentRuntimeType = "a2a" | "conductor";
 
 export interface A2AAgentInterface {
   url?: string;
@@ -98,30 +98,7 @@ export interface ConductorAgentTaskInput {
   maxPollFailures?: number;
 }
 
-export interface NativeAgentTaskInput {
-  agentType: "bedrock" | "azure-foundry";
-  /**
-   * Provider-specific agent locator, e.g. `bedrock://AGENTID/ALIASID` or an Azure Foundry endpoint
-   * URL. Same top-level field name as the A2A/Conductor branches for consistency.
-   */
-  agentUrl?: string;
-  prompt?: string;
-  /** Name of the secret/credential set the provider client resolves (access keys, Entra ID app). */
-  credentialRef?: string;
-  /** Provider-specific extras, e.g. Bedrock's `region` or Azure Foundry's `assistantId`. */
-  rawConfig?: Record<string, unknown>;
-  sessionId?: string;
-  executionId?: string;
-  context?: Record<string, unknown>;
-  pollIntervalSeconds?: number;
-  maxDurationSeconds?: number;
-  maxPollFailures?: number;
-}
-
-export type AgentTaskInput =
-  | A2AAgentTaskInput
-  | ConductorAgentTaskInput
-  | NativeAgentTaskInput;
+export type AgentTaskInput = A2AAgentTaskInput | ConductorAgentTaskInput;
 
 export interface AgentSnapshotSource {
   name?: string;

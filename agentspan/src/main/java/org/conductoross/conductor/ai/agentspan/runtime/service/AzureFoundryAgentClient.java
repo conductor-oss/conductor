@@ -42,6 +42,7 @@ import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
+import com.azure.identity.OnBehalfOfCredentialBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -435,6 +436,27 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String scope = resolveScope(request, endpoint);
         String credentialRef = request.getCredentialRef();
 
+        // Dynamic OBO: caller passes their live AAD bearer token; Conductor exchanges it for a
+        // downstream Azure token using its own service principal (CONDUCTOR_AZURE_SP secret).
+        // Requires CONDUCTOR_AZURE_SP.client_id, .client_secret, .tenant_id in the secret store.
+        if (StringUtils.isNotBlank(request.getUserAssertion())) {
+            String spRef = "CONDUCTOR_AZURE_SP";
+            String clientId = credentialResolutionService.resolve(spRef + ".client_id");
+            String clientSecret = credentialResolutionService.resolve(spRef + ".client_secret");
+            String tenantId = credentialResolutionService.resolve(spRef + ".tenant_id");
+            if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
+                log.debug("OBO: exchanging user assertion via SP {} for scope {}", clientId, scope);
+                TokenCredential cred = new OnBehalfOfCredentialBuilder()
+                        .clientId(clientId)
+                        .clientSecret(clientSecret)
+                        .tenantId(tenantId)
+                        .userAssertion(request.getUserAssertion())
+                        .build();
+                return new AuthState(cred, scope);
+            }
+            log.warn("user_assertion set but CONDUCTOR_AZURE_SP secret missing client_id/client_secret/tenant_id — falling through to credentialRef");
+        }
+
         if (StringUtils.isNotBlank(credentialRef)) {
             // API key
             String apiKey = credentialResolutionService.resolve(credentialRef + ".apiKey");
@@ -741,6 +763,13 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 tags.add("azure-foundry");
                 tags.add(isFoundryProjectEndpoint(endpoint) ? "foundry-project" : "classic-assistant");
                 if (model != null) tags.add("model:" + model);
+                JsonNode tools = item.path("tools");
+                if (tools.isArray()) {
+                    for (JsonNode tool : tools) {
+                        String toolType = tool.path("type").asText(null);
+                        if (toolType != null) tags.add(toolType);
+                    }
+                }
 
                 result.add(
                         AgentSummary.builder()

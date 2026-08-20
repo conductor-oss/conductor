@@ -12,22 +12,19 @@ import { TaskFormProps } from "./types";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
-  { value: "bedrock", label: "AWS Bedrock" },
-  { value: "azure-foundry", label: "Azure AI Foundry" },
 ];
 
 /**
  * Config form for CANCEL_AGENT. `agentType: "a2a"` cancels a running task on a remote A2A agent
- * (Agent URL + Task ID); `"conductor"`, `"bedrock"` and `"azure-foundry"` all terminate a native
- * agent execution by execution id — same shape as the Terminate Workflow task (execution id +
- * reason).
+ * (Agent URL + Task ID); `"conductor"` terminates a Conductor agent execution — same shape as the
+ * Terminate Workflow task (execution id + reason).
  */
 export const CancelAgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   const get = (p: string) => _path(p, task);
   const set = (p: string, value: any) => onChange(updateField(p, value, task));
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
-  const usesExecutionId = agentType !== "a2a";
+  const isConductor = agentType === "conductor";
 
   const headers: Record<string, string> =
     (get("inputParameters.headers") as Record<string, string>) || {};
@@ -47,7 +44,7 @@ export const CancelAgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               items={AGENT_TYPES}
             />
           </Grid>
-          {usesExecutionId ? (
+          {isConductor ? (
             <>
               <Grid size={12}>
                 <ConductorAutocompleteVariables
@@ -86,7 +83,7 @@ export const CancelAgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </Grid>
       </TaskFormSection>
 
-      {!usesExecutionId && (
+      {!isConductor && (
         <TaskFormSection title="Headers">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={12}>
