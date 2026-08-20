@@ -36,15 +36,93 @@ export type PromptEntry = {
   kind: PromptEntryKind;
   /** Role as persisted, used as the card label for non-instruction entries. */
   role: string;
-  /** Message text, readable: escaped line breaks in payloads become newlines. */
+  /**
+   * Message text, readable: escaped line breaks become newlines where that is
+   * safe to do (see `buildPromptEntries`). Unused when `structured` is set —
+   * that branch renders from `structured` instead.
+   */
   text: string;
+  /**
+   * Length of the message exactly as persisted, which is what the card header
+   * reports. Deliberately not `text.length`: for a structured entry the card
+   * renders the prose and the payload separately, so neither piece alone
+   * describes how big the message is, and the raw length does.
+   */
+  length: number;
   /** Set when the message embeds a payload worth its own JSON viewer. */
   structured?: StructuredContent;
 };
 
 const UNKNOWN_ROLE = "unknown";
-/** A paragraph whose first line is this label becomes a Markdown heading. */
-const RULES_LABEL = "RULES";
+/**
+ * A prose paragraph whose first line is a short, standalone ALL-CAPS label
+ * (`RULES`, `OUTPUT FORMAT`, `CONSTRAINTS`, …) is promoted to a Markdown `##`
+ * heading, with the rest of the paragraph reflowing underneath as usual.
+ *
+ * The bounds are deliberately tight. Agent instructions also contain
+ * genuinely shouted *sentences* for emphasis — e.g.
+ * "DO NOT EVER CALL THIS TOOL WITHOUT CONFIRMING" — and those must stay
+ * inline prose, not become a heading. Real section labels observed in
+ * practice (RULES, CONSTRAINTS, OUTPUT FORMAT, TOOLS, EXAMPLES) are one or
+ * two words and well inside the caps below, while a shouted imperative
+ * sentence is a full clause, typically 5+ words. Word count is therefore
+ * the primary signal; the character cap is just a backstop against a
+ * couple of long compound words.
+ */
+const HEADING_LABEL_MAX_WORDS = 4;
+const HEADING_LABEL_MAX_LENGTH = 30;
+/**
+ * Matches a candidate heading label: at least one uppercase letter, no
+ * lowercase letters anywhere. This alone would still admit a bare `---`
+ * divider or a `1.` list marker (neither contains a lowercase letter, but
+ * neither contains a letter at all either), so the "has an uppercase
+ * letter" half of the check is what rules those out.
+ */
+const ALL_CAPS_WITH_LETTER_PATTERN = /^[^a-z]*[A-Z][^a-z]*$/;
+
+/**
+ * Matches a Markdown list-item marker at the start of a line: `-`, `*`, `+`
+ * bullets, or ordered markers like `1.`, `2)`, `1a.`, each followed by
+ * whitespace. The two alternatives are bracketed separately so the trailing
+ * `.`/`)` only binds to the ordered form, not the bullet form.
+ */
+const LIST_ITEM_PATTERN = /^(?:[-*+]|\d+[a-z]?[.)])\s+/;
+/**
+ * Matches a Markdown table row: a line starting with `|`. Reflow must not
+ * join table rows together — `| a | b |\n| 1 | 2 |` collapsing into
+ * `| a | b | | 1 | 2 |` no longer parses as a table.
+ */
+const TABLE_ROW_PATTERN = /^\|/;
+
+/**
+ * True when `line` reads as a short section label rather than prose.
+ *
+ * Bracketed delimiters like `[TOOL RESULTS]` are deliberately excluded even
+ * though they are all-caps and short: that bracket convention marks a
+ * payload boundary (see `splitStructuredContent`), not a section title, and
+ * rendering it as a heading would claim a role it doesn't have.
+ */
+function isHeadingLabel(line: string): boolean {
+  if (line.length === 0 || line.length > HEADING_LABEL_MAX_LENGTH) {
+    return false;
+  }
+  if (line.startsWith("[") || line.startsWith("(")) return false;
+  // An all-caps list item or table row is still list/table markup, and
+  // reflowParagraph is what should be handling it — not a section title.
+  if (LIST_ITEM_PATTERN.test(line) || TABLE_ROW_PATTERN.test(line)) {
+    return false;
+  }
+  const words = line.split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.length > HEADING_LABEL_MAX_WORDS) {
+    return false;
+  }
+  return ALL_CAPS_WITH_LETTER_PATTERN.test(line);
+}
+
+/** Renders a heading label in Title Case, e.g. `OUTPUT FORMAT` → `Output Format`. */
+function toTitleCase(label: string): string {
+  return label.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
 function readMessages(input: unknown): PromptMessage[] {
   if (input == null || typeof input !== "object") return [];
@@ -161,29 +239,121 @@ export function splitStructuredContent(
 function reflowParagraph(lines: string[]): string {
   return lines.reduce((text, line) => {
     if (!text) return line;
-    const isListItem = /^(?:[-*]|\d+[a-z]?)\.\s+/.test(line);
-    return isListItem ? `${text}\n${line}` : `${text} ${line}`;
+    const staysOnOwnLine =
+      LIST_ITEM_PATTERN.test(line) || TABLE_ROW_PATTERN.test(line);
+    return staysOnOwnLine ? `${text}\n${line}` : `${text} ${line}`;
   }, "");
+}
+
+/**
+ * One chunk of `reflowInstructions`' input, in order: either a fenced code
+ * block kept byte-for-byte, or ordinary prose to be paragraph-reflowed.
+ */
+type ReflowSegment =
+  | { kind: "fence"; lines: string[] }
+  | { kind: "prose"; lines: string[] };
+
+/**
+ * Matches a fence delimiter line: \`\`\` or ~~~, three or more characters,
+ * up to three leading spaces (Markdown allows a fenced block to be indented
+ * that far and still count as unindented), and an optional trailing info
+ * string (\`\`\`json). The run of fence characters is captured so the segmenter
+ * can require a close line to repeat the *same* character, per CommonMark —
+ * a stray \`\`\` must not close a ~~~ block or vice versa.
+ */
+const FENCE_OPEN_PATTERN = /^ {0,3}(`{3,}|~{3,})/;
+
+/**
+ * Splits text into fenced and unfenced regions so `reflowInstructions` can
+ * leave fenced content untouched while still reflowing everything else.
+ *
+ * This has to be a line-oriented pass over the *whole* input, tracking fence
+ * state as it goes, rather than something layered on top of the existing
+ * blank-line paragraph split: a fenced block can legitimately contain a blank
+ * line (pretty-printed JSON is full of them), and splitting on blank lines
+ * first would sever a fence from its close and reflow both halves as prose.
+ *
+ * An opening fence that never closes swallows the remainder of the text
+ * verbatim as part of that fence, rather than guessing where it should have
+ * ended. Falling back to prose for the tail risks reflowing what is probably
+ * still code, and there is no line at which resuming "unfenced" would be
+ * clearly correct — so the fence just wins for the rest of the input.
+ */
+function segmentFences(text: string): ReflowSegment[] {
+  const segments: ReflowSegment[] = [];
+  let prose: string[] = [];
+  const lines = text.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const open = FENCE_OPEN_PATTERN.exec(lines[i]);
+    if (!open) {
+      prose.push(lines[i]);
+      continue;
+    }
+
+    if (prose.length > 0) {
+      segments.push({ kind: "prose", lines: prose });
+      prose = [];
+    }
+
+    const marker = open[1];
+    const closePattern = new RegExp(
+      `^ {0,3}${marker[0]}{${marker.length},}\\s*$`,
+    );
+    const fence = [lines[i]];
+    i++;
+    while (i < lines.length) {
+      fence.push(lines[i]);
+      if (closePattern.test(lines[i])) break;
+      i++;
+    }
+    segments.push({ kind: "fence", lines: fence });
+  }
+
+  if (prose.length > 0) segments.push({ kind: "prose", lines: prose });
+  return segments;
+}
+
+/**
+ * Paragraph-reflows one unfenced region: this is `reflowInstructions`' whole
+ * behavior from before it became fence-aware, scoped to just a prose segment.
+ */
+function reflowProse(lines: string[]): string {
+  return lines
+    .join("\n")
+    .trim()
+    .split(/\n\s*\n+/)
+    .map((paragraph) => {
+      const paragraphLines = paragraph
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (paragraphLines[0] && isHeadingLabel(paragraphLines[0])) {
+        const heading = `## ${toTitleCase(paragraphLines[0])}`;
+        const rest = reflowParagraph(paragraphLines.slice(1));
+        return rest ? `${heading}\n\n${rest}` : heading;
+      }
+      return reflowParagraph(paragraphLines);
+    })
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 /**
  * Rejoins hard-wrapped prompt text into Markdown paragraphs so compiler output
  * reads as prose. Only affects the preview — the Input tab keeps the raw text.
+ *
+ * Fenced code blocks pass through verbatim, line breaks and all: reflowing a
+ * JSON schema or example the same way as prose turns it into an unreadable
+ * inline blob instead of a renderable code block (see `segmentFences`).
  */
 export function reflowInstructions(text: string): string {
-  return text
-    .trim()
-    .split(/\n\s*\n+/)
-    .map((paragraph) => {
-      const lines = paragraph
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean);
-      if (lines[0]?.toUpperCase() === RULES_LABEL) {
-        return `## Rules\n\n${reflowParagraph(lines.slice(1))}`;
-      }
-      return reflowParagraph(lines);
-    })
+  return segmentFences(text.trim())
+    .map((segment) =>
+      segment.kind === "fence"
+        ? segment.lines.join("\n")
+        : reflowProse(segment.lines),
+    )
     .filter(Boolean)
     .join("\n\n");
 }
@@ -227,9 +397,18 @@ export function buildPromptEntries(input: unknown): PromptEntry[] {
     return {
       kind: entryKind(message, hasLeadingInstructions && index === 0),
       role: messageRole(message),
-      // Escaped breaks are unescaped for display only; the payload split runs
-      // on the raw text because JSON.parse needs the original escaping.
-      text: raw.replaceAll("\\n", "\n"),
+      // Unescape "\n" into a real line break only when the text has no real
+      // line breaks already. A genuinely double-escaped payload (round-tripped
+      // through an extra layer of JSON encoding upstream) never contains a
+      // literal newline, so unescaping it is safe; ordinary prose that merely
+      // mentions "\n" — as a delimiter, in a regex, while describing escaping —
+      // is almost always interspersed with real newlines elsewhere in the same
+      // message, so the gate leaves it untouched rather than splicing a line
+      // break into the middle of a sentence.
+      text: raw.includes("\n") ? raw : raw.replaceAll("\\n", "\n"),
+      length: raw.length,
+      // Splits on the raw text, not the unescaped text: JSON.parse needs the
+      // original escaping to reproduce the payload faithfully.
       structured: splitStructuredContent(raw),
     };
   });

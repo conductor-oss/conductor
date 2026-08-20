@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AgentDetailPanel, type DetailNodeData } from "./AgentDetailPanel";
@@ -68,5 +68,32 @@ describe("AgentDetailPanel prompt tab", () => {
     expect(screen.getByText("Task input")).toBeTruthy();
     expect(screen.queryByText("Instructions")).toBeNull();
     expect(screen.queryByText("Structured data")).toBeNull();
+  });
+
+  it("falls back to Summary when the selected tab's data disappears (e.g. switching attempts)", async () => {
+    const { rerender } = renderPanel(
+      llmNode({ messages: [{ role: "user", message: "hello" }] }),
+    );
+    fireEvent.click(screen.getByText("Prompt (Preview)"));
+    expect(screen.getByText("hello")).toBeTruthy();
+
+    // Same node identity (label + kind), but the input backing the prompt tab is gone —
+    // e.g. picking a past attempt whose inputData carries no messages.
+    rerender(
+      <AgentDetailPanel
+        node={llmNode({ message: "just the last message" })}
+        onClose={vi.fn()}
+      />,
+    );
+
+    // waitFor, not a bare assertion: MUI's Tabs repositions its indicator
+    // asynchronously when the tab set shrinks, and flushing that here keeps the
+    // update inside act() instead of warning after the test body returns.
+    await waitFor(() => {
+      // Falls back to the Summary tab body rather than an empty prompt pane.
+      expect(screen.getByText("Kind")).toBeTruthy();
+    });
+    expect(screen.queryByText("Prompt (Preview)")).toBeNull();
+    expect(screen.queryByText("hello")).toBeNull();
   });
 });

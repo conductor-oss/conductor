@@ -116,6 +116,32 @@ describe("PromptPreview", () => {
       expect(screen.queryByText(/first-tail/)).toBeNull();
     });
 
+    it("resets expansion when a card's content changes at the same position", () => {
+      const { rerender } = renderPreview({
+        messages: [{ role: "user", message: longMessage("first-tail") }],
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Show full message" }),
+      );
+      expect(screen.getByText(/first-tail/)).toBeTruthy();
+
+      rerender(
+        <PromptPreview
+          input={{
+            messages: [
+              { role: "user", message: longMessage("a-different-longer-tail") },
+            ],
+          }}
+        />,
+      );
+
+      expect(screen.queryByText(/first-tail/)).toBeNull();
+      expect(screen.queryByText(/a-different-longer-tail/)).toBeNull();
+      const toggle = screen.getByRole("button", { name: "Show full message" });
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    });
+
     it("leaves short messages uncollapsed", () => {
       renderPreview({ messages: [{ role: "user", message: "short" }] });
 
@@ -147,6 +173,32 @@ describe("PromptPreview", () => {
     expect(screen.getByText("after")).toBeTruthy();
   });
 
+  it("renders a small structured payload as preformatted text, not Monaco", () => {
+    renderPreview({
+      messages: [{ role: "user", message: '{"ok": true}' }],
+    });
+
+    expect(screen.getByText("Structured data")).toBeTruthy();
+    // @monaco-editor/react is mocked to render null, so finding the pretty-
+    // printed JSON text in the DOM proves this took the plain-text path.
+    expect(screen.getByText(/"ok": true/)).toBeTruthy();
+  });
+
+  it("keeps a large structured payload on the Monaco path", () => {
+    const payload = JSON.stringify({
+      items: Array.from({ length: 200 }, (_, i) => ({ id: i })),
+    });
+
+    renderPreview({
+      messages: [{ role: "user", message: `Context:\n${payload}` }],
+    });
+
+    expect(screen.getByText("Structured data")).toBeTruthy();
+    // @monaco-editor/react is mocked to render null, so no pretty-printed
+    // JSON text reaches the DOM when the Monaco path is taken.
+    expect(screen.queryByText(/"id": 0/)).toBeNull();
+  });
+
   it("falls back to plain text when no payload parses", () => {
     renderPreview({
       messages: [
@@ -156,6 +208,55 @@ describe("PromptPreview", () => {
 
     expect(screen.queryByText("Structured data")).toBeNull();
     expect(screen.getByText(/Context follows\./)).toBeTruthy();
+  });
+
+  describe("role accents", () => {
+    // The label Typography sits two levels below the card Box: card > header
+    // row > label. Walking up from the (uniquely-texted) role label is more
+    // robust than guessing at emotion's generated class names.
+    function cardFor(role: string): HTMLElement {
+      const label = screen.getByText(role);
+      return label.parentElement!.parentElement as HTMLElement;
+    }
+
+    it("gives assistant, user, and system cards distinct left-border colours", () => {
+      renderPreview({
+        messages: [
+          { role: "system", message: "s" },
+          { role: "user", message: "u" },
+          { role: "assistant", content: "a" },
+        ],
+      });
+
+      const colours = ["system", "user", "assistant"].map(
+        (role) => getComputedStyle(cardFor(role)).borderLeftColor,
+      );
+
+      colours.forEach((colour) => expect(colour).not.toBe(""));
+      expect(new Set(colours).size).toBe(3);
+    });
+
+    it('renders a "constructor" role without blowing up, using the fallback accent', () => {
+      renderPreview({
+        messages: [
+          { role: "constructor", message: "prototype-pollution attempt" },
+          { role: "some-other-unrecognised-role", message: "fallback too" },
+        ],
+      });
+
+      const constructorColour = getComputedStyle(
+        cardFor("constructor"),
+      ).borderLeftColor;
+      const fallbackColour = getComputedStyle(
+        cardFor("some-other-unrecognised-role"),
+      ).borderLeftColor;
+
+      // Rendered without throwing, and MUI never received a function as a
+      // colour: the "constructor" card matches another unrecognised role's
+      // card exactly, i.e. both took the real fallback accent.
+      expect(constructorColour).not.toBe("");
+      expect(constructorColour).toBe(fallbackColour);
+    });
   });
 
   it("summarizes what the preview contains", () => {

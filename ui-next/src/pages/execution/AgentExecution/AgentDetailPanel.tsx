@@ -1883,6 +1883,21 @@ export function AgentDetailPanel({
   const hasPrompt = node.kind === "llm" && hasPromptMessages(inputValue);
   const hasOutput = outputValue != null || isAgentNode;
 
+  // The selected tab can become unavailable out from under `tab` — e.g. switching to a
+  // past attempt whose data no longer has a prompt/input/output — which would otherwise
+  // leave the tab strip with nothing highlighted while its (now-orphaned) body still
+  // renders. Derive the tab actually used for rendering from `tab` plus the current
+  // availability flags rather than resetting state during render, so the tab strip and
+  // the content below always agree without an extra render pass.
+  const availableTabs = new Set<string>([
+    SUMMARY_TAB,
+    JSON_TAB,
+    ...(hasInput ? [INPUT_TAB] : []),
+    ...(hasPrompt ? [PROMPT_TAB] : []),
+    ...(hasOutput ? [OUTPUT_TAB] : []),
+  ]);
+  const activeTab = availableTabs.has(tab) ? tab : SUMMARY_TAB;
+
   return (
     <Paper
       square
@@ -2030,7 +2045,7 @@ export function AgentDetailPanel({
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <Box sx={{ flexShrink: 0 }}>
         <Tabs
-          value={tab}
+          value={activeTab}
           contextual
           variant="scrollable"
           scrollButtons="auto"
@@ -2082,14 +2097,14 @@ export function AgentDetailPanel({
         sx={{
           flex: 1,
           minHeight: 0,
-          display: tab === SUMMARY_TAB ? "block" : "flex",
+          display: activeTab === SUMMARY_TAB ? "block" : "flex",
           flexDirection: "column",
-          overflowY: tab === SUMMARY_TAB ? "auto" : "hidden",
+          overflowY: activeTab === SUMMARY_TAB ? "auto" : "hidden",
           scrollbarWidth: "none",
           "&::-webkit-scrollbar": { display: "none" },
         }}
       >
-        {tab === SUMMARY_TAB && (
+        {activeTab === SUMMARY_TAB && (
           <SummaryContent
             node={
               selectedAttempt ? buildAttemptNode(node, selectedAttempt) : node
@@ -2097,7 +2112,7 @@ export function AgentDetailPanel({
             onDrillIn={onDrillIn}
           />
         )}
-        {tab === INPUT_TAB && (
+        {activeTab === INPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2139,8 +2154,8 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === PROMPT_TAB && <PromptPreview input={inputValue} />}
-        {tab === OUTPUT_TAB && (
+        {activeTab === PROMPT_TAB && <PromptPreview input={inputValue} />}
+        {activeTab === OUTPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2182,7 +2197,7 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === JSON_TAB && (
+        {activeTab === JSON_TAB && (
           <>
             <Box
               sx={{

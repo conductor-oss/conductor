@@ -17,27 +17,65 @@ import {
   type StructuredContent,
 } from "./promptPreviewModel";
 
-/** Left border colour per role, so turns are scannable at a glance. */
-const ROLE_ACCENTS: Record<string, string> = {
-  system: "#7c3aed",
-  user: "#2563eb",
-};
+/**
+ * Left border colour per role, so turns are scannable at a glance. Built with
+ * `Object.assign` onto a null-prototype object (rather than an object
+ * literal) so a role string pulled from the persisted payload — e.g.
+ * `role: "constructor"` — can never resolve to `Object.prototype.constructor`
+ * instead of a real accent or the fallback.
+ */
+const ROLE_ACCENTS: Record<string, string> = Object.assign(
+  Object.create(null) as Record<string, string>,
+  {
+    system: "#7c3aed",
+    user: "#2563eb",
+    assistant: "#059669",
+  },
+);
 const FALLBACK_ROLE_ACCENT = "#64748b";
+
+/**
+ * Resolves a persisted role string to its accent colour, falling back for any
+ * role not in `ROLE_ACCENTS` — including prototype-polluting values like
+ * `"constructor"` or `"__proto__"`, since the record has no prototype for
+ * those to resolve against. Intentionally not exported: this file exports
+ * components only, so that Vite's fast refresh keeps working.
+ */
+function roleAccent(role: string): string {
+  return ROLE_ACCENTS[role] ?? FALLBACK_ROLE_ACCENT;
+}
 /** Characters shown before a message collapses behind "Show full message". */
 const COLLAPSED_LENGTH = 1200;
-const PAYLOAD_VIEWER_HEIGHT = 420;
+/**
+ * Below this many pretty-printed lines, a structured payload renders as plain
+ * preformatted text instead of mounting Monaco. Monaco's folding and virtual
+ * scrolling only earn their cost on substantial blobs; a trivial payload like
+ * `{"ok": true}` is cheaper and better-sized as plain text than pinned inside
+ * a fixed-height editor.
+ */
+const PAYLOAD_LINE_THRESHOLD = 15;
+/** Monaco viewer height bounds (px) for payloads at/above the line threshold. */
+const PAYLOAD_VIEWER_MIN_HEIGHT = 120;
+const PAYLOAD_VIEWER_MAX_HEIGHT = 420;
+/** Approximate px per line at Monaco's 12px font, used to size the viewer to content. */
+const PAYLOAD_VIEWER_LINE_HEIGHT = 18;
+/** Extra vertical chrome (padding, scrollbar margin) added on top of raw line height. */
+const PAYLOAD_VIEWER_CHROME = 24;
 const EMPTY_MESSAGE = "(empty message)";
 
 export function PromptPreview({ input }: { input: unknown }) {
   const entries = useMemo(() => buildPromptEntries(input), [input]);
 
   return (
-    <Box sx={{ overflowY: "auto", p: 2.5 }}>
+    <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2.5 }}>
       <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mb: 2 }}>
         {describePrompt(entries)}
       </Typography>
       {entries.map((entry, index) => (
-        <PromptEntryCard key={index} entry={entry} />
+        <PromptEntryCard
+          key={`${index}:${entry.role}:${entry.length}`}
+          entry={entry}
+        />
       ))}
     </Box>
   );
@@ -52,7 +90,7 @@ function PromptEntryCard({ entry }: { entry: PromptEntry }) {
         border: "1px solid",
         borderColor: "divider",
         borderLeft: "4px solid",
-        borderLeftColor: ROLE_ACCENTS[entry.role] ?? FALLBACK_ROLE_ACCENT,
+        borderLeftColor: roleAccent(entry.role),
         borderRadius: 1,
         mb: 1.5,
         overflow: "hidden",
@@ -60,7 +98,7 @@ function PromptEntryCard({ entry }: { entry: PromptEntry }) {
     >
       <CardHeader
         label={isInstructions ? "Instructions" : entry.role}
-        length={entry.text.length}
+        length={entry.length}
       />
       <Box sx={{ px: 1.5, py: 1 }}>
         {entry.structured ? (
@@ -148,6 +186,20 @@ function CollapsibleText({
 }
 
 function StructuredContentView({ content }: { content: StructuredContent }) {
+  const json = useMemo(
+    () => JSON.stringify(content.payload, null, 2),
+    [content.payload],
+  );
+  const lineCount = useMemo(() => json.split("\n").length, [json]);
+  const isSmallPayload = lineCount < PAYLOAD_LINE_THRESHOLD;
+  const viewerHeight = Math.min(
+    PAYLOAD_VIEWER_MAX_HEIGHT,
+    Math.max(
+      PAYLOAD_VIEWER_MIN_HEIGHT,
+      lineCount * PAYLOAD_VIEWER_LINE_HEIGHT + PAYLOAD_VIEWER_CHROME,
+    ),
+  );
+
   return (
     <>
       {content.leading ? <ContentView value={content.leading} /> : null}
@@ -161,16 +213,32 @@ function StructuredContentView({ content }: { content: StructuredContent }) {
       >
         Structured data
       </Typography>
-      <Box
-        sx={{
-          height: PAYLOAD_VIEWER_HEIGHT,
-          border: "1px solid rgba(0,0,0,0.08)",
-          borderRadius: 1,
-          overflow: "hidden",
-        }}
-      >
-        <JsonView src={content.payload} />
-      </Box>
+      {isSmallPayload ? (
+        <Box
+          component="pre"
+          sx={{
+            m: 0,
+            fontFamily: "monospace",
+            fontSize: "0.8rem",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            lineHeight: 1.6,
+          }}
+        >
+          {json}
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            height: viewerHeight,
+            border: "1px solid rgba(0,0,0,0.08)",
+            borderRadius: 1,
+            overflow: "hidden",
+          }}
+        >
+          <JsonView src={content.payload} />
+        </Box>
+      )}
       {content.trailing ? (
         <Box sx={{ mt: 1.5 }}>
           <ContentView value={content.trailing} />
