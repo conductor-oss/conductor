@@ -89,7 +89,7 @@ public class Join extends WorkflowSystemTask {
             if (!forkedTask.getOutputData().isEmpty()) {
                 Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
-                    forkOutput = prepareAgentOutput(forkOutput);
+                    forkOutput = prepareAgentOutput(forkedTask);
                 }
                 task.addOutput(joinOnRef, forkOutput);
             }
@@ -108,10 +108,26 @@ public class Join extends WorkflowSystemTask {
                                 .filter(Objects::nonNull)
                                 .filter(t -> !t.getStatus().isSuccessful())
                                 .map(TaskModel::getReasonForIncompletion)
+                                .filter(Objects::nonNull)
                                 .collect(Collectors.joining(" "));
                 failureReason.append(failureReasons);
                 task.setReasonForIncompletion(failureReason.toString());
-                task.setStatus(TaskModel.Status.FAILED);
+                // A canceled forked task (e.g. a manually terminated sub-workflow) is a
+                // cancellation, not a failure: surface CANCELED so the decider maps the
+                // workflow to TERMINATED. Any genuinely failed non-optional forked task
+                // still wins and fails the join.
+                boolean hasNonCanceledFailure =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(Objects::nonNull)
+                                .filter(t -> t.getStatus().isTerminal())
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .filter(t -> !t.getWorkflowTask().isOptional())
+                                .anyMatch(t -> t.getStatus() != TaskModel.Status.CANCELED);
+                task.setStatus(
+                        hasNonCanceledFailure
+                                ? TaskModel.Status.FAILED
+                                : TaskModel.Status.CANCELED);
                 return true;
             }
 
@@ -156,14 +172,31 @@ public class Join extends WorkflowSystemTask {
     /**
      * Shapes a fork branch's output for a Conductor-Agents JOIN:
      *
-     * <p>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
-     * merge keys to keep the JOIN payload small. All other results, including MCP and HTTP tool
-     * outputs, pass through untouched for the ReAct state merge.
+     * <ul>
+     *   <li>Branches marked with {@code _agent_tool_name} keep their tool identity: the full output
+     *       is wrapped under {@code _agent_tool_output}. Identity takes precedence because a tool
+     *       output may also contain state updates.
+     *   <li>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
+     *       merge keys to keep the JOIN payload small.
+     *   <li>Unmarked outputs (e.g. MCP or HTTP tool results) pass through untouched for the ReAct
+     *       state merge.
+     * </ul>
      *
      * <p>Constructed maps are unmodifiable; the pass-through branch intentionally returns the
      * task's live output map to preserve default JOIN behavior.
      */
-    private static Map<String, Object> prepareAgentOutput(Map<String, Object> output) {
+    private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
+        Map<String, Object> output = forkedTask.getOutputData();
+
+        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        if (agentToolName != null) {
+            // LinkedHashMap (not Map.of): tool outputs may legitimately contain null values.
+            Map<String, Object> toolOutput = new LinkedHashMap<>();
+            toolOutput.put("_agent_tool_name", agentToolName);
+            toolOutput.put("_agent_tool_output", output);
+            return Collections.unmodifiableMap(toolOutput);
+        }
+
         if (carriesAgentState(output)) {
             return compactAgentOutput(output);
         }
