@@ -1423,7 +1423,7 @@ body {
   display: flex;
   min-height: 102px;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   padding: 16px;
   border: 1px solid var(--c-border);
