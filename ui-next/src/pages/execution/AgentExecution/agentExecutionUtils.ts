@@ -1145,11 +1145,13 @@ export function transformWorkflowExecutionToAgentRun(
           detail: {
             input: {
               ...(instructionsText ? { instructions: instructionsText } : {}),
-              // Keep every persisted message so the inspection panel exposes injected system
-              // instructions (for example, recall or guardrail context), not only the first one.
-              ...(messages.length ? { messages } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: llmTask.outputData,
           },
           result: isStop && typeof result === "string" ? result : result,
@@ -1606,11 +1608,13 @@ export function transformWorkflowExecutionToAgentRun(
           detail: {
             input: {
               ...(instructionsText ? { instructions: instructionsText } : {}),
-              // Keep every persisted message so the inspection panel exposes injected system
-              // instructions (for example, recall or guardrail context), not only the first one.
-              ...(messages.length ? { messages } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: task.outputData,
           },
           tokens: {

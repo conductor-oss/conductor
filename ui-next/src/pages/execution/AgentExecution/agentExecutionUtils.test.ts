@@ -367,11 +367,12 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     const thinking = run.turns[0].events.find(
       (event) => event.type === EventType.THINKING,
     );
-    expect((thinking?.detail as any).input.messages).toEqual(messages);
-    // The concise last-message field stays for existing consumers.
-    expect((thinking?.detail as any).input.message).toBe(
-      "Investigate the timeout",
-    );
+    expect((thinking?.detail as any).prompt.messages).toEqual(messages);
+    // `input` stays the concise payload the Input tab and event rows render.
+    expect((thinking?.detail as any).input).toEqual({
+      instructions: "Coordinator instructions",
+      message: "Investigate the timeout",
+    });
   });
 
   it("preserves every LLM message for a root-level call", () => {
@@ -394,10 +395,11 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     const thinking = run.turns
       .flatMap((turn) => turn.events)
       .find((event) => event.type === EventType.THINKING);
-    expect((thinking?.detail as any).input.messages).toEqual(messages);
-    expect((thinking?.detail as any).input.message).toBe(
-      "Summarize the incident",
-    );
+    expect((thinking?.detail as any).prompt.messages).toEqual(messages);
+    expect((thinking?.detail as any).input).toEqual({
+      instructions: "Coordinator instructions",
+      message: "Summarize the incident",
+    });
   });
 
   it("excludes preparation and finalization from agent-turn metrics", () => {

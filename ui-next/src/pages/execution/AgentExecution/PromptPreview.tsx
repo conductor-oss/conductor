@@ -1,77 +1,47 @@
 /**
- * PromptPreview — reader-friendly view of the messages an LLM task was sent:
- * instructions as Markdown, embedded payloads in a JSON viewer, long messages
- * collapsed. The Input tab remains the source of truth for the raw payload.
- *
- * TODO: experimental. Reassess once users have exercised the tab, and remove it
- * if the plain Input and JSON views prove sufficient.
+ * PromptPreview — the messages an LLM task was sent, rendered for reading.
+ * The Input tab keeps the raw payload.
  */
 import { useMemo, useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
-import { ContentView, JsonView, MarkdownView } from "./ContentViews";
+import { ContentView, MarkdownView, PreformattedText } from "./ContentViews";
 import {
   buildPromptEntries,
   describePrompt,
-  reflowInstructions,
   type PromptEntry,
   type StructuredContent,
 } from "./promptPreviewModel";
 
-/**
- * Left border colour per role, so turns are scannable at a glance. Built with
- * `Object.assign` onto a null-prototype object (rather than an object
- * literal) so a role string pulled from the persisted payload — e.g.
- * `role: "constructor"` — can never resolve to `Object.prototype.constructor`
- * instead of a real accent or the fallback.
- */
-const ROLE_ACCENTS: Record<string, string> = Object.assign(
-  Object.create(null) as Record<string, string>,
-  {
-    system: "#7c3aed",
-    user: "#2563eb",
-    assistant: "#059669",
-  },
-);
+// A Map, not an object literal: a persisted role like "constructor" must not
+// resolve against Object.prototype.
+const ROLE_ACCENTS = new Map([
+  ["system", "#7c3aed"],
+  ["user", "#2563eb"],
+  ["assistant", "#059669"],
+]);
 const FALLBACK_ROLE_ACCENT = "#64748b";
 
-/**
- * Resolves a persisted role string to its accent colour, falling back for any
- * role not in `ROLE_ACCENTS` — including prototype-polluting values like
- * `"constructor"` or `"__proto__"`, since the record has no prototype for
- * those to resolve against. Intentionally not exported: this file exports
- * components only, so that Vite's fast refresh keeps working.
- */
-function roleAccent(role: string): string {
-  return ROLE_ACCENTS[role] ?? FALLBACK_ROLE_ACCENT;
-}
 /** Characters shown before a message collapses behind "Show full message". */
 const COLLAPSED_LENGTH = 1200;
-/**
- * Below this many pretty-printed lines, a structured payload renders as plain
- * preformatted text instead of mounting Monaco. Monaco's folding and virtual
- * scrolling only earn their cost on substantial blobs; a trivial payload like
- * `{"ok": true}` is cheaper and better-sized as plain text than pinned inside
- * a fixed-height editor.
- */
-const PAYLOAD_LINE_THRESHOLD = 15;
-/** Monaco viewer height bounds (px) for payloads at/above the line threshold. */
-const PAYLOAD_VIEWER_MIN_HEIGHT = 120;
-const PAYLOAD_VIEWER_MAX_HEIGHT = 420;
-/** Approximate px per line at Monaco's 12px font, used to size the viewer to content. */
-const PAYLOAD_VIEWER_LINE_HEIGHT = 18;
-/** Extra vertical chrome (padding, scrollbar margin) added on top of raw line height. */
-const PAYLOAD_VIEWER_CHROME = 24;
+const PAYLOAD_MAX_HEIGHT = 420;
 const EMPTY_MESSAGE = "(empty message)";
 
 export function PromptPreview({ input }: { input: unknown }) {
   const entries = useMemo(() => buildPromptEntries(input), [input]);
+  const summary = describePrompt(entries);
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2.5 }}>
-      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mb: 2 }}>
-        {describePrompt(entries)}
-      </Typography>
+      {summary ? (
+        <Typography
+          sx={{ fontSize: "0.75rem", color: "text.secondary", mb: 2 }}
+        >
+          {summary}
+        </Typography>
+      ) : null}
       {entries.map((entry, index) => (
+        // Content in the key: a card whose message changed remounts, so its
+        // expanded state resets.
         <PromptEntryCard
           key={`${index}:${entry.role}:${entry.length}`}
           entry={entry}
@@ -90,7 +60,7 @@ function PromptEntryCard({ entry }: { entry: PromptEntry }) {
         border: "1px solid",
         borderColor: "divider",
         borderLeft: "4px solid",
-        borderLeftColor: roleAccent(entry.role),
+        borderLeftColor: ROLE_ACCENTS.get(entry.role) ?? FALLBACK_ROLE_ACCENT,
         borderRadius: 1,
         mb: 1.5,
         overflow: "hidden",
@@ -143,11 +113,6 @@ function CardHeader({ label, length }: { label: string; length: number }) {
   );
 }
 
-/**
- * Messages of any role can be long — recalled context and tool results arrive
- * as user turns and grow just as large as instructions — so any of them may
- * collapse, each card tracking its own state.
- */
 function CollapsibleText({
   text,
   asInstructions,
@@ -163,7 +128,7 @@ function CollapsibleText({
   return (
     <>
       {asInstructions ? (
-        <MarkdownView content={reflowInstructions(shown) || EMPTY_MESSAGE} />
+        <MarkdownView content={shown || EMPTY_MESSAGE} />
       ) : (
         <ContentView value={shown || EMPTY_MESSAGE} />
       )}
@@ -190,15 +155,6 @@ function StructuredContentView({ content }: { content: StructuredContent }) {
     () => JSON.stringify(content.payload, null, 2),
     [content.payload],
   );
-  const lineCount = useMemo(() => json.split("\n").length, [json]);
-  const isSmallPayload = lineCount < PAYLOAD_LINE_THRESHOLD;
-  const viewerHeight = Math.min(
-    PAYLOAD_VIEWER_MAX_HEIGHT,
-    Math.max(
-      PAYLOAD_VIEWER_MIN_HEIGHT,
-      lineCount * PAYLOAD_VIEWER_LINE_HEIGHT + PAYLOAD_VIEWER_CHROME,
-    ),
-  );
 
   return (
     <>
@@ -213,32 +169,7 @@ function StructuredContentView({ content }: { content: StructuredContent }) {
       >
         Structured data
       </Typography>
-      {isSmallPayload ? (
-        <Box
-          component="pre"
-          sx={{
-            m: 0,
-            fontFamily: "monospace",
-            fontSize: "0.8rem",
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            lineHeight: 1.6,
-          }}
-        >
-          {json}
-        </Box>
-      ) : (
-        <Box
-          sx={{
-            height: viewerHeight,
-            border: "1px solid rgba(0,0,0,0.08)",
-            borderRadius: 1,
-            overflow: "hidden",
-          }}
-        >
-          <JsonView src={content.payload} />
-        </Box>
-      )}
+      <PreformattedText text={json} maxHeight={PAYLOAD_MAX_HEIGHT} />
       {content.trailing ? (
         <Box sx={{ mt: 1.5 }}>
           <ContentView value={content.trailing} />

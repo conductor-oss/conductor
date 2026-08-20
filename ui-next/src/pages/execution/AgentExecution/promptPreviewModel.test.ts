@@ -4,7 +4,6 @@ import {
   buildPromptEntries,
   describePrompt,
   hasPromptMessages,
-  reflowInstructions,
   splitStructuredContent,
 } from "./promptPreviewModel";
 
@@ -56,6 +55,21 @@ describe("buildPromptEntries", () => {
     ]);
   });
 
+  it("never lifts a payload out of the instructions, which render as Markdown", () => {
+    const instructions = 'Reply with:\n{"answer": "..."}';
+    const entries = buildPromptEntries({
+      instructions,
+      messages: [
+        { role: "system", message: instructions },
+        { role: "user", message: 'Context:\n{"answer": "..."}' },
+      ],
+    });
+
+    expect(entries[0].structured).toBeUndefined();
+    expect(entries[0].text).toBe(instructions);
+    expect(entries[1].structured?.payload).toEqual({ answer: "..." });
+  });
+
   it("leaves a system message alone when it does not match the instructions", () => {
     const entries = buildPromptEntries({
       instructions: "You are a helpful agent.",
@@ -94,8 +108,7 @@ describe("buildPromptEntries", () => {
       messages: [{ role: "user", message }],
     });
 
-    // The card splits this into prose + a JSON viewer, but the header still
-    // describes how big the message is, so neither piece alone is the length.
+    // The card splits this into prose and payload; the header reports the whole.
     expect(entry.structured).toBeDefined();
     expect(entry.length).toBe(message.length);
   });
@@ -143,8 +156,7 @@ describe("splitStructuredContent", () => {
   });
 
   it("keeps the instruction that follows a delimiter-wrapped payload", () => {
-    // The shape emitted by tool-result injection: an opening tag whose own line
-    // starts with "[", the payload, a closing tag, then the real instruction.
+    // Tool-result injection: a "[" tag line, the payload, a closing tag, the ask.
     const result = splitStructuredContent(
       [
         "[TOOL RESULTS]",
@@ -201,184 +213,29 @@ describe("splitStructuredContent", () => {
   ])("returns undefined for %s", (_case, text) => {
     expect(splitStructuredContent(text)).toBeUndefined();
   });
-});
 
-describe("reflowInstructions", () => {
-  it("joins hard-wrapped lines and keeps list items on their own lines", () => {
-    const reflowed = reflowInstructions(
-      ["You coordinate", "the investigation.", "", "1. Ask.", "2. Cite."].join(
-        "\n",
-      ),
-    );
-
-    expect(reflowed).toBe(
-      "You coordinate the investigation.\n\n1. Ask.\n2. Cite.",
-    );
-  });
-
-  it("keeps `-` bullet list items on their own lines", () => {
-    const reflowed = reflowInstructions(
-      ["Steps:", "- alpha", "- beta"].join("\n"),
-    );
-
-    expect(reflowed).toBe("Steps:\n- alpha\n- beta");
-  });
-
-  it("keeps `*` bullet list items on their own lines", () => {
-    const reflowed = reflowInstructions(
-      ["Steps:", "* alpha", "* beta"].join("\n"),
-    );
-
-    expect(reflowed).toBe("Steps:\n* alpha\n* beta");
-  });
-
-  it("joins wrapped prose but keeps a mixed prose+bullet paragraph's items separate", () => {
-    const reflowed = reflowInstructions(
-      [
-        "You coordinate",
-        "the investigation.",
-        "- gather evidence",
-        "- write the report",
-      ].join("\n"),
-    );
-
-    expect(reflowed).toBe(
-      "You coordinate the investigation.\n- gather evidence\n- write the report",
-    );
-  });
-
-  it("leaves an all-caps list item as a list item, not a heading", () => {
-    expect(reflowInstructions("1. STEP ONE\n2. STEP TWO")).toBe(
-      "1. STEP ONE\n2. STEP TWO",
-    );
-    expect(reflowInstructions("- NEVER GUESS\n- ALWAYS CITE")).toBe(
-      "- NEVER GUESS\n- ALWAYS CITE",
-    );
-  });
-
-  it("leaves an all-caps table row as a table row, not a heading", () => {
-    expect(reflowInstructions("| A | B |\n| 1 | 2 |")).toBe(
-      "| A | B |\n| 1 | 2 |",
-    );
-  });
-
-  it("promotes a leading RULES label to a heading", () => {
-    expect(reflowInstructions("RULES\n1. Ask before acting.")).toBe(
-      "## Rules\n\n1. Ask before acting.",
-    );
-  });
-
-  it("promotes a multi-word caps label to a Title Case heading", () => {
+  it("leaves a bracketed prose list inline", () => {
     expect(
-      reflowInstructions("OUTPUT FORMAT\nReturn a single JSON object."),
-    ).toBe("## Output Format\n\nReturn a single JSON object.");
+      splitStructuredContent("Rate 1-5.\n[1, 2, 3]\nthanks"),
+    ).toBeUndefined();
   });
 
-  it("does not promote a long shouted sentence to a heading", () => {
-    const reflowed = reflowInstructions(
-      "DO NOT EVER CALL THIS TOOL WITHOUT CONFIRMING WITH THE USER FIRST.",
-    );
-
-    expect(reflowed).toBe(
-      "DO NOT EVER CALL THIS TOOL WITHOUT CONFIRMING WITH THE USER FIRST.",
-    );
-    expect(reflowed.startsWith("##")).toBe(false);
+  it("splits a collection of records", () => {
+    expect(
+      splitStructuredContent('Results:\n[{"id": 1}, {"id": 2}]')?.payload,
+    ).toEqual([{ id: 1 }, { id: 2 }]);
   });
 
-  it("does not promote a caps label inside a fenced block", () => {
-    const reflowed = reflowInstructions(
-      ["```", "RULES", "1. Ask before acting.", "```"].join("\n"),
-    );
+  it("leaves a fenced payload alone rather than orphaning its delimiters", () => {
+    const text = 'Here is the schema:\n```json\n{"a": 1}\n```\nDo X.';
 
-    expect(reflowed).toBe(
-      ["```", "RULES", "1. Ask before acting.", "```"].join("\n"),
-    );
+    expect(splitStructuredContent(text)).toBeUndefined();
   });
 
-  it("does not promote a bracketed delimiter to a heading", () => {
-    const reflowed = reflowInstructions(
-      ["[TOOL RESULTS]", "Some trailing note."].join("\n"),
-    );
+  it("still splits a payload after a closed fence", () => {
+    const text = 'See:\n```\nexample\n```\n{"a": 1}';
 
-    expect(reflowed).toBe("[TOOL RESULTS] Some trailing note.");
-  });
-
-  it("drops blank paragraphs and surrounding whitespace", () => {
-    expect(reflowInstructions("\n\n  one  \n\n\n  two  \n\n")).toBe(
-      "one\n\ntwo",
-    );
-  });
-
-  it("keeps a fenced JSON block verbatim instead of reflowing it into one line", () => {
-    const reflowed = reflowInstructions(
-      [
-        "Respond using this shape:",
-        "",
-        "```json",
-        "{",
-        '  "answer": "text"',
-        "}",
-        "```",
-        "",
-        "Do not add prose.",
-      ].join("\n"),
-    );
-
-    expect(reflowed).toBe(
-      [
-        "Respond using this shape:",
-        "",
-        "```json",
-        "{",
-        '  "answer": "text"',
-        "}",
-        "```",
-        "",
-        "Do not add prose.",
-      ].join("\n"),
-    );
-  });
-
-  it("keeps a blank line inside a fenced block intact", () => {
-    const reflowed = reflowInstructions(
-      ["```", "first", "", "second", "```"].join("\n"),
-    );
-
-    expect(reflowed).toBe(["```", "first", "", "second", "```"].join("\n"));
-  });
-
-  it("treats an unclosed fence as running to the end of the text, verbatim", () => {
-    const reflowed = reflowInstructions(
-      [
-        "Before.",
-        "",
-        "```json",
-        "{",
-        '  "key": "value"',
-        "}",
-        "",
-        "More text that never gets closed.",
-      ].join("\n"),
-    );
-
-    expect(reflowed).toBe(
-      [
-        "Before.",
-        "",
-        "```json",
-        "{",
-        '  "key": "value"',
-        "}",
-        "",
-        "More text that never gets closed.",
-      ].join("\n"),
-    );
-  });
-
-  it("keeps Markdown table rows one per line instead of joining them", () => {
-    const reflowed = reflowInstructions(["| a | b |", "| 1 | 2 |"].join("\n"));
-
-    expect(reflowed).toBe("| a | b |\n| 1 | 2 |");
+    expect(splitStructuredContent(text)?.payload).toEqual({ a: 1 });
   });
 });
 

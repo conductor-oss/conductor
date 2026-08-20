@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 import { AgentDetailPanel, type DetailNodeData } from "./AgentDetailPanel";
 import { AgentStatus, EventType } from "./types";
 
-function llmNode(input: Record<string, unknown>): DetailNodeData {
+function llmNode(detail: {
+  input?: unknown;
+  prompt?: unknown;
+}): DetailNodeData {
   return {
     kind: "llm",
     label: "gpt-4o",
@@ -15,7 +18,7 @@ function llmNode(input: Record<string, unknown>): DetailNodeData {
       timestamp: 0,
       toolName: "gpt-4o",
       summary: "gpt-4o",
-      detail: { input, output: { result: "answer" } },
+      detail: { output: { result: "answer" }, ...detail },
     } as any,
   };
 }
@@ -25,20 +28,24 @@ function renderPanel(node: DetailNodeData) {
 }
 
 describe("AgentDetailPanel prompt tab", () => {
-  it("offers the tab only when the input carries messages", () => {
+  it("offers the tab only when the event carries prompt messages", () => {
     const { unmount } = renderPanel(
-      llmNode({ message: "just the last message" }),
+      llmNode({ input: { message: "just the last message" } }),
     );
     expect(screen.queryByText("Prompt (Preview)")).toBeNull();
     unmount();
 
-    renderPanel(llmNode({ messages: [{ role: "user", message: "hello" }] }));
+    renderPanel(
+      llmNode({ prompt: { messages: [{ role: "user", message: "hello" }] } }),
+    );
     expect(screen.getByText("Prompt (Preview)")).toBeTruthy();
   });
 
   it("hides the tab for non-LLM nodes", () => {
     renderPanel({
-      ...llmNode({ messages: [{ role: "user", message: "hello" }] }),
+      ...llmNode({
+        prompt: { messages: [{ role: "user", message: "hello" }] },
+      }),
       kind: "tool",
     });
 
@@ -47,7 +54,9 @@ describe("AgentDetailPanel prompt tab", () => {
 
   it("renders the preview when the tab is selected", () => {
     renderPanel(
-      llmNode({ messages: [{ role: "user", message: "the question" }] }),
+      llmNode({
+        prompt: { messages: [{ role: "user", message: "the question" }] },
+      }),
     );
     fireEvent.click(screen.getByText("Prompt (Preview)"));
 
@@ -57,9 +66,8 @@ describe("AgentDetailPanel prompt tab", () => {
   it("keeps the Input tab an exact raw-payload view", () => {
     renderPanel(
       llmNode({
-        instructions: "You are a helpful agent.",
-        messages: [{ role: "user", message: "hi" }],
-        message: "hi",
+        input: { instructions: "You are a helpful agent.", message: "hi" },
+        prompt: { messages: [{ role: "user", message: "hi" }] },
       }),
     );
     fireEvent.click(screen.getByText("Input"));
@@ -72,25 +80,23 @@ describe("AgentDetailPanel prompt tab", () => {
 
   it("falls back to Summary when the selected tab's data disappears (e.g. switching attempts)", async () => {
     const { rerender } = renderPanel(
-      llmNode({ messages: [{ role: "user", message: "hello" }] }),
+      llmNode({ prompt: { messages: [{ role: "user", message: "hello" }] } }),
     );
     fireEvent.click(screen.getByText("Prompt (Preview)"));
     expect(screen.getByText("hello")).toBeTruthy();
 
-    // Same node identity (label + kind), but the input backing the prompt tab is gone —
-    // e.g. picking a past attempt whose inputData carries no messages.
+    // Same node identity, but the messages behind the prompt tab are gone.
     rerender(
       <AgentDetailPanel
-        node={llmNode({ message: "just the last message" })}
+        node={llmNode({ input: { message: "just the last message" } })}
         onClose={vi.fn()}
       />,
     );
 
     // waitFor, not a bare assertion: MUI's Tabs repositions its indicator
-    // asynchronously when the tab set shrinks, and flushing that here keeps the
-    // update inside act() instead of warning after the test body returns.
+    // asynchronously when the tab set shrinks, and act() must see that.
     await waitFor(() => {
-      // Falls back to the Summary tab body rather than an empty prompt pane.
+      // The Summary body, not an empty prompt pane.
       expect(screen.getByText("Kind")).toBeTruthy();
     });
     expect(screen.queryByText("Prompt (Preview)")).toBeNull();

@@ -44,13 +44,11 @@ describe("PromptPreview", () => {
   });
 
   it("labels the leading instructions message and renders it as Markdown", () => {
+    const instructions = `${INSTRUCTIONS}\n\n## Rules\n1. Ask before acting.`;
     renderPreview({
-      instructions: `${INSTRUCTIONS}\n\nRULES\n1. Ask before acting.`,
+      instructions,
       messages: [
-        {
-          role: "system",
-          message: `${INSTRUCTIONS}\n\nRULES\n1. Ask before acting.`,
-        },
+        { role: "system", message: instructions },
         { role: "user", message: "hi" },
       ],
     });
@@ -61,6 +59,26 @@ describe("PromptPreview", () => {
     expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual(
       ["Ask before acting."],
     );
+  });
+
+  it("keeps nested list indentation in the instructions", () => {
+    const instructions = "Steps:\n\n- parent\n  - child";
+    const { container } = renderPreview({
+      instructions,
+      messages: [{ role: "system", message: instructions }],
+    });
+
+    expect(container.querySelectorAll("ul ul li")).toHaveLength(1);
+  });
+
+  it("renders instructions verbatim, without rewriting their wording", () => {
+    const instructions = "API RULES\nNever call this tool unprompted.";
+    renderPreview({
+      instructions,
+      messages: [{ role: "system", message: instructions }],
+    });
+
+    expect(screen.getByText(/API RULES/)).toBeTruthy();
   });
 
   describe("collapsing", () => {
@@ -173,30 +191,13 @@ describe("PromptPreview", () => {
     expect(screen.getByText("after")).toBeTruthy();
   });
 
-  it("renders a small structured payload as preformatted text, not Monaco", () => {
+  it("pretty-prints a structured payload in place", () => {
     renderPreview({
       messages: [{ role: "user", message: '{"ok": true}' }],
     });
 
     expect(screen.getByText("Structured data")).toBeTruthy();
-    // @monaco-editor/react is mocked to render null, so finding the pretty-
-    // printed JSON text in the DOM proves this took the plain-text path.
     expect(screen.getByText(/"ok": true/)).toBeTruthy();
-  });
-
-  it("keeps a large structured payload on the Monaco path", () => {
-    const payload = JSON.stringify({
-      items: Array.from({ length: 200 }, (_, i) => ({ id: i })),
-    });
-
-    renderPreview({
-      messages: [{ role: "user", message: `Context:\n${payload}` }],
-    });
-
-    expect(screen.getByText("Structured data")).toBeTruthy();
-    // @monaco-editor/react is mocked to render null, so no pretty-printed
-    // JSON text reaches the DOM when the Monaco path is taken.
-    expect(screen.queryByText(/"id": 0/)).toBeNull();
   });
 
   it("falls back to plain text when no payload parses", () => {
@@ -211,9 +212,8 @@ describe("PromptPreview", () => {
   });
 
   describe("role accents", () => {
-    // The label Typography sits two levels below the card Box: card > header
-    // row > label. Walking up from the (uniquely-texted) role label is more
-    // robust than guessing at emotion's generated class names.
+    // card > header row > label. Walking up from the role label beats guessing
+    // at emotion's generated class names.
     function cardFor(role: string): HTMLElement {
       const label = screen.getByText(role);
       return label.parentElement!.parentElement as HTMLElement;
@@ -251,9 +251,8 @@ describe("PromptPreview", () => {
         cardFor("some-other-unrecognised-role"),
       ).borderLeftColor;
 
-      // Rendered without throwing, and MUI never received a function as a
-      // colour: the "constructor" card matches another unrecognised role's
-      // card exactly, i.e. both took the real fallback accent.
+      // Matching another unrecognised role proves both took the fallback, so
+      // MUI never received a function as a colour.
       expect(constructorColour).not.toBe("");
       expect(constructorColour).toBe(fallbackColour);
     });

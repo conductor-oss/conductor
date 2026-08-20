@@ -1,5 +1,5 @@
 /**
- * Shared read-only renderers for the execution detail panels: a JSON editor, a
+ * Read-only renderers shared by the execution detail panels: a JSON editor, a
  * Markdown block, and a `ContentView` that picks between them by value shape.
  */
 import { Box, Typography } from "@mui/material";
@@ -31,6 +31,33 @@ export function JsonView({ src }: { src: unknown }) {
       }
       theme="vs"
     />
+  );
+}
+
+/** Raw text or JSON, as-is. `maxHeight` makes tall content scroll instead of grow. */
+export function PreformattedText({
+  text,
+  maxHeight,
+}: {
+  text: string;
+  maxHeight?: number;
+}) {
+  return (
+    <Box
+      component="pre"
+      sx={{
+        m: 0,
+        fontFamily: "monospace",
+        fontSize: "0.8rem",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        lineHeight: 1.6,
+        maxHeight,
+        overflow: maxHeight ? "auto" : undefined,
+      }}
+    >
+      {text}
+    </Box>
   );
 }
 
@@ -115,21 +142,7 @@ export function ContentView({
   }
   if (typeof value === "string") {
     if (looksLikeMarkdown(value)) return <MarkdownView content={value} />;
-    return (
-      <Box
-        component="pre"
-        sx={{
-          m: 0,
-          fontFamily: "monospace",
-          fontSize: "0.8rem",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          lineHeight: 1.6,
-        }}
-      >
-        {value}
-      </Box>
-    );
+    return <PreformattedText text={value} />;
   }
   // Object: wrap Monaco in fixed-height container (height="100%" requires flex parent,
   // which only the JSON tab provides — Input/Output tabs use block layout).

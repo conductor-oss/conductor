@@ -1880,23 +1880,26 @@ export function AgentDetailPanel({
 
   const isAgentNode = node.kind === "start" || node.kind === "subagent";
   const hasInput = inputValue != null;
-  const hasPrompt = node.kind === "llm" && hasPromptMessages(inputValue);
   const hasOutput = outputValue != null || isAgentNode;
+  // A past attempt's raw inputData already has the {instructions, messages} shape.
+  const promptValue = selectedAttempt
+    ? selectedAttempt.inputData
+    : ((node.event?.detail as { prompt?: unknown } | undefined)?.prompt ??
+      null);
+  const hasPrompt = node.kind === "llm" && hasPromptMessages(promptValue);
 
-  // The selected tab can become unavailable out from under `tab` — e.g. switching to a
-  // past attempt whose data no longer has a prompt/input/output — which would otherwise
-  // leave the tab strip with nothing highlighted while its (now-orphaned) body still
-  // renders. Derive the tab actually used for rendering from `tab` plus the current
-  // availability flags rather than resetting state during render, so the tab strip and
-  // the content below always agree without an extra render pass.
-  const availableTabs = new Set<string>([
-    SUMMARY_TAB,
-    JSON_TAB,
-    ...(hasInput ? [INPUT_TAB] : []),
-    ...(hasPrompt ? [PROMPT_TAB] : []),
-    ...(hasOutput ? [OUTPUT_TAB] : []),
-  ]);
-  const activeTab = availableTabs.has(tab) ? tab : SUMMARY_TAB;
+  const tabs = [
+    { value: SUMMARY_TAB, label: "Summary" },
+    ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
+    ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt (Preview)" }] : []),
+    ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
+    { value: JSON_TAB, label: "JSON" },
+  ];
+  // The selected tab can disappear, e.g. switching to an attempt with no prompt.
+  // Falling back keeps the strip and the body below in agreement.
+  const activeTab = tabs.some((entry) => entry.value === tab)
+    ? tab
+    : SUMMARY_TAB;
 
   return (
     <Paper
@@ -2051,44 +2054,14 @@ export function AgentDetailPanel({
           scrollButtons="auto"
           style={{ marginBottom: 0 }}
         >
-          {[
+          {tabs.map(({ value, label }) => (
             <Tab
-              key="summary"
-              label="Summary"
-              value={SUMMARY_TAB}
-              onClick={() => setTab(SUMMARY_TAB)}
-            />,
-            hasInput ? (
-              <Tab
-                key="input"
-                label="Input"
-                value={INPUT_TAB}
-                onClick={() => setTab(INPUT_TAB)}
-              />
-            ) : null,
-            hasPrompt ? (
-              <Tab
-                key="prompt"
-                label="Prompt (Preview)"
-                value={PROMPT_TAB}
-                onClick={() => setTab(PROMPT_TAB)}
-              />
-            ) : null,
-            hasOutput ? (
-              <Tab
-                key="output"
-                label="Output"
-                value={OUTPUT_TAB}
-                onClick={() => setTab(OUTPUT_TAB)}
-              />
-            ) : null,
-            <Tab
-              key="json"
-              label="JSON"
-              value={JSON_TAB}
-              onClick={() => setTab(JSON_TAB)}
-            />,
-          ].filter(Boolean)}
+              key={value}
+              label={label}
+              value={value}
+              onClick={() => setTab(value)}
+            />
+          ))}
         </Tabs>
       </Box>
 
@@ -2154,7 +2127,7 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {activeTab === PROMPT_TAB && <PromptPreview input={inputValue} />}
+        {activeTab === PROMPT_TAB && <PromptPreview input={promptValue} />}
         {activeTab === OUTPUT_TAB && (
           <>
             <Box
