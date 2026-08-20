@@ -61,7 +61,13 @@ public class DateTimeUtilsTest {
                 Arguments.of("5H 5M 5S", Duration.ofSeconds(5 * 60 * 60 + 5 * 60 + 5)),
                 Arguments.of(
                         "5D 5H 5M 5S",
-                        Duration.ofSeconds(5 * 24 * 60 * 60 + 5 * 60 * 60 + 5 * 60 + 5)));
+                        Duration.ofSeconds(5 * 24 * 60 * 60 + 5 * 60 * 60 + 5 * 60 + 5)),
+                Arguments.of("PT5S", Duration.ofSeconds(5)),
+                Arguments.of("PT5M", Duration.ofMinutes(5)),
+                Arguments.of("PT5H", Duration.ofHours(5)),
+                Arguments.of("P5D", Duration.ofDays(5)),
+                Arguments.of("PT1H30M", Duration.ofSeconds(5400)),
+                Arguments.of("P1DT2H", Duration.ofSeconds(86400 + 7200)));
     }
 
     @ParameterizedTest(name = "[{0}] is valid duration")
