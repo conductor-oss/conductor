@@ -123,6 +123,32 @@ describe("buildPromptEntries", () => {
     expect(entry.length).toBeGreaterThan(0);
   });
 
+  it("renders a tool_call turn from its toolCalls, since it carries no text", () => {
+    const toolCalls = [
+      { name: "search_web", inputParameters: { query: "renewables" } },
+    ];
+    const [entry] = buildPromptEntries({
+      messages: [{ role: "tool_call", toolCalls }],
+    });
+
+    expect(entry.length).toBeGreaterThan(0);
+    expect(entry.structured?.payload).toEqual(toolCalls);
+  });
+
+  it("prefers a tool result's own text over its echoed toolCalls", () => {
+    const [entry] = buildPromptEntries({
+      messages: [
+        {
+          role: "tool",
+          message: '{"results": []}',
+          toolCalls: [{ name: "search_web", output: { results: [] } }],
+        },
+      ],
+    });
+
+    expect(entry.structured?.payload).toEqual({ results: [] });
+  });
+
   it("skips non-object messages and falls back to an unknown role", () => {
     const entries = buildPromptEntries({
       messages: [null, "loose string", { message: "no role" }],

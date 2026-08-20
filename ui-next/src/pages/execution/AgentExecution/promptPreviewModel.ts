@@ -8,6 +8,7 @@ export type PromptMessage = {
   role?: unknown;
   message?: unknown;
   content?: unknown;
+  toolCalls?: unknown;
 };
 
 /**
@@ -59,9 +60,13 @@ function readInstructions(input: unknown): string | undefined {
   return typeof instructions === "string" ? instructions : undefined;
 }
 
-/** Messages persist their text under either `message` or `content`. */
+/**
+ * Messages persist their text under either `message` or `content`. A tool_call
+ * turn has neither: ChatMessage carries the calls it is asking for in
+ * `toolCalls` and leaves the text null, so fall back to those.
+ */
 function messageText(message: PromptMessage): string {
-  const value = message.message ?? message.content;
+  const value = message.message || message.content || message.toolCalls;
   if (typeof value === "string") return value;
   return value == null ? "" : JSON.stringify(value, null, 2);
 }
