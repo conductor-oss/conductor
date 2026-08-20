@@ -14,6 +14,7 @@ import {
   AgentStatus,
   AgentStrategy,
   AgentTimelineKind,
+  EventType,
 } from "./types";
 
 function task(overrides: Record<string, unknown>) {
@@ -338,6 +339,65 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
       AgentTimelineKind.TURN,
       AgentTimelineKind.FINALIZATION,
     ]);
+  });
+
+  it("preserves every LLM message for inspection", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Investigate the timeout" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_loop",
+          taskType: "DO_WHILE",
+          loopOverTask: true,
+        }),
+        task({
+          referenceTaskName: "agent_llm__1",
+          taskType: "LLM_CHAT_COMPLETE",
+          loopOverTask: true,
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns[0].events.find(
+      (event) => event.type === EventType.THINKING,
+    );
+    expect((thinking?.detail as any).input.messages).toEqual(messages);
+    // The concise last-message field stays for existing consumers.
+    expect((thinking?.detail as any).input.message).toBe(
+      "Investigate the timeout",
+    );
+  });
+
+  it("preserves every LLM message for a root-level call", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Summarize the incident" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_llm",
+          taskType: "LLM_CHAT_COMPLETE",
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns
+      .flatMap((turn) => turn.events)
+      .find((event) => event.type === EventType.THINKING);
+    expect((thinking?.detail as any).input.messages).toEqual(messages);
+    expect((thinking?.detail as any).input.message).toBe(
+      "Summarize the incident",
+    );
   });
 
   it("excludes preparation and finalization from agent-turn metrics", () => {

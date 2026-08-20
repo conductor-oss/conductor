@@ -1,6 +1,6 @@
 /**
  * AgentDetailPanel — right-hand panel matching Conductor's task detail style.
- * Tabs: Summary | Input | Output | JSON
+ * Tabs: Summary | Input | Prompt (Preview) | Output | JSON
  */
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
@@ -10,6 +10,7 @@ import {
   IconButton,
   Select,
   MenuItem,
+  Button,
 } from "@mui/material";
 import { X as CloseIcon, ArrowRight, Scissors } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
@@ -60,6 +61,7 @@ export interface DetailNodeData {
 
 const SUMMARY_TAB = "summary";
 const INPUT_TAB = "input";
+const PROMPT_TAB = "prompt";
 const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
 const FORMATTED_OUTPUT_TAB = "formatted";
@@ -199,6 +201,327 @@ function ContentView({ value, label }: { value: unknown; label?: string }) {
       }}
     >
       <JsonView src={value} />
+    </Box>
+  );
+}
+
+// ─── Prompt preview (LLM messages) ────────────────────────────────────────────
+
+type PromptMessage = {
+  role?: unknown;
+  message?: unknown;
+  content?: unknown;
+};
+
+function promptMessages(value: unknown): PromptMessage[] {
+  if (value == null || typeof value !== "object") return [];
+  const messages = (value as { messages?: unknown }).messages;
+  if (!Array.isArray(messages)) return [];
+  return messages.filter(
+    (message): message is PromptMessage =>
+      message != null && typeof message === "object",
+  );
+}
+
+function promptInstructions(value: unknown): string | undefined {
+  if (value == null || typeof value !== "object") return undefined;
+  const instructions = (value as { instructions?: unknown }).instructions;
+  return typeof instructions === "string" ? instructions : undefined;
+}
+
+/** Messages persist their text under either `message` or `content`. */
+function promptMessageText(message: PromptMessage): string {
+  const value = message.message ?? message.content;
+  if (typeof value === "string") return value;
+  return value == null ? "" : JSON.stringify(value, null, 2);
+}
+
+/** Makes escaped line breaks in embedded payloads readable in the preview only. */
+function readablePromptText(message: PromptMessage): string {
+  return promptMessageText(message).replaceAll("\\n", "\n");
+}
+
+type StructuredPromptContent = {
+  /** Prose before the payload; empty when the message opens with JSON. */
+  text: string;
+  payload: unknown;
+  /** Prose after the payload — closing tags, and often the actual instruction. */
+  trailing: string;
+};
+
+/**
+ * Index just past the JSON value opening at `start`, or -1 if it never closes.
+ *
+ * Only the outer container's own brackets are counted: JSON nests properly, so
+ * the other kind stays balanced in between and cannot shift the depth.
+ */
+function jsonValueEnd(text: string, start: number): number {
+  const open = text[start];
+  const close = open === "{" ? "}" : "]";
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === open) depth++;
+    else if (char === close && --depth === 0) return i + 1;
+  }
+  return -1;
+}
+
+/** Parses the JSON object/array opening at `start`, reporting where it ends. */
+function parseJsonAt(
+  text: string,
+  start: number,
+): { payload: unknown; end: number } | undefined {
+  const end = jsonValueEnd(text, start);
+  if (end < 0) return undefined;
+  try {
+    const payload = JSON.parse(text.slice(start, end));
+    if (payload == null || typeof payload !== "object") return undefined;
+    return { payload, end };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Splits a message around an embedded JSON object/array so generated payloads
+ * (tool results, recalled context, evidence blobs) render in the JSON viewer
+ * instead of as a wall of text.
+ *
+ * The payload is located by scanning to its matching close brace rather than
+ * assuming it runs to the end of the message: agent prompts routinely wrap a
+ * payload in delimiters and then state the actual instruction after it, e.g.
+ * `[TOOL RESULTS]\n[{…}]\n[/TOOL RESULTS]\n\nProduce analyses for…`. Returns
+ * undefined — and the caller falls back to plain text — when nothing parses.
+ */
+function structuredPromptContent(
+  text: string,
+): StructuredPromptContent | undefined {
+  let offset = 0;
+  for (const line of text.split("\n")) {
+    const lineStart = offset;
+    offset += line.length + 1;
+    const opener = /^\s*[[{]/.exec(line);
+    if (!opener) continue;
+    // A line may legitimately open with a bracket without being JSON at all
+    // (`[TOOL RESULTS]`); parse failures just move on to the next candidate.
+    const start = lineStart + opener[0].length - 1;
+    const found = parseJsonAt(text, start);
+    if (found) {
+      return {
+        text: text.slice(0, start).trim(),
+        payload: found.payload,
+        trailing: text.slice(found.end).trim(),
+      };
+    }
+  }
+  return undefined;
+}
+
+function reflowInstructionLines(lines: string[]): string {
+  return lines.reduce((text, line) => {
+    const isListItem = /^(?:[-*]|\d+[a-z]?)\.\s+/.test(line);
+    if (!text) return line;
+    return isListItem ? `${text}\n${line}` : `${text} ${line}`;
+  }, "");
+}
+
+/** Turns compiler-formatted prompt text into readable Markdown without altering raw input. */
+function reflowInstructions(text: string): string {
+  return text
+    .trim()
+    .split(/\n\s*\n+/)
+    .map((paragraph) => {
+      const lines = paragraph
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (lines[0]?.toUpperCase() === "RULES") {
+        return `## Rules\n\n${reflowInstructionLines(lines.slice(1))}`;
+      }
+      return reflowInstructionLines(lines);
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function InstructionView({ content }: { content: string }) {
+  return <MarkdownView content={reflowInstructions(content)} />;
+}
+
+/**
+ * TODO: This is an experimental prompt visualization. Reassess it after users
+ * have used it; remove it if the regular Input and JSON views prove sufficient.
+ */
+function PromptView({
+  messages,
+  instructions,
+}: {
+  messages: PromptMessage[];
+  instructions?: string;
+}) {
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+  const systemMessageCount = messages.filter(
+    (message) => message.role === "system",
+  ).length;
+  const hasLeadingInstructions =
+    messages[0]?.role === "system" &&
+    typeof instructions === "string" &&
+    promptMessageText(messages[0]) === instructions;
+  const systemContextCount =
+    systemMessageCount - (hasLeadingInstructions ? 1 : 0);
+  const conversationMessageCount =
+    messages.length - systemContextCount - (hasLeadingInstructions ? 1 : 0);
+
+  return (
+    <Box sx={{ overflowY: "auto", p: 2.5 }}>
+      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mb: 2 }}>
+        Preview:{hasLeadingInstructions ? " agent instructions" : ""}
+        {systemContextCount > 0
+          ? `${hasLeadingInstructions ? " ·" : ""} ${systemContextCount} system ${
+              systemContextCount === 1 ? "context message" : "context messages"
+            }`
+          : ""}
+        {conversationMessageCount > 0
+          ? `${hasLeadingInstructions || systemContextCount > 0 ? " ·" : ""} ${conversationMessageCount} conversation ${
+              conversationMessageCount === 1 ? "message" : "messages"
+            }`
+          : ""}
+        .
+      </Typography>
+      {messages.map((message, index) => {
+        const role =
+          typeof message.role === "string" ? message.role : "unknown";
+        // Compiled agent tasks currently persist their configured instructions as
+        // the first system message. Present that known duplicate as instructions;
+        // the raw Input tab continues to show the exact persisted payload.
+        const isInstructions = hasLeadingInstructions && index === 0;
+        const structured = structuredPromptContent(promptMessageText(message));
+        const text = readablePromptText(message);
+        // Long messages of any role collapse — recalled context and tool results
+        // arrive as user turns and get just as large as instructions. Structured
+        // messages are exempt: a partial payload would not be valid JSON.
+        const isLongMessage = !structured && text.length > 1200;
+        const isExpanded = expanded[index] ?? !isLongMessage;
+        const displayedText = isExpanded ? text : `${text.slice(0, 1200)}\n…`;
+
+        return (
+          <Box
+            key={index}
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderLeft: "4px solid",
+              borderLeftColor:
+                role === "system"
+                  ? "#7c3aed"
+                  : role === "user"
+                    ? "#2563eb"
+                    : "#64748b",
+              borderRadius: 1,
+              mb: 1.5,
+              overflow: "hidden",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                px: 1.5,
+                py: 0.75,
+                backgroundColor: "#f8fafc",
+                borderBottom: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {isInstructions ? "Instructions" : role}
+              </Typography>
+              <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
+                {text.length.toLocaleString()} characters
+              </Typography>
+            </Box>
+            <Box sx={{ px: 1.5, py: 1 }}>
+              {structured ? (
+                <>
+                  {structured.text ? (
+                    <Box sx={{ whiteSpace: "pre-wrap" }}>
+                      <ContentView value={structured.text} />
+                    </Box>
+                  ) : null}
+                  <Typography
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      mt: structured.text ? 2 : 0,
+                      mb: 0.75,
+                    }}
+                  >
+                    Structured data
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: 420,
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      borderRadius: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <JsonView src={structured.payload} />
+                  </Box>
+                  {structured.trailing ? (
+                    <Box sx={{ whiteSpace: "pre-wrap", mt: 1.5 }}>
+                      <ContentView value={structured.trailing} />
+                    </Box>
+                  ) : null}
+                </>
+              ) : isInstructions ? (
+                <InstructionView content={displayedText || "(empty message)"} />
+              ) : (
+                <Box sx={{ whiteSpace: "pre-wrap" }}>
+                  <ContentView value={displayedText || "(empty message)"} />
+                </Box>
+              )}
+              {isLongMessage && (
+                <Button
+                  size="small"
+                  onClick={() =>
+                    setExpanded((current) => ({
+                      ...current,
+                      [index]: !isExpanded,
+                    }))
+                  }
+                  sx={{ mt: 1, textTransform: "none" }}
+                >
+                  {isExpanded
+                    ? "Show less"
+                    : isInstructions
+                      ? "Show full instruction"
+                      : "Show full message"}
+                </Button>
+              )}
+            </Box>
+          </Box>
+        );
+      })}
     </Box>
   );
 }
@@ -2017,6 +2340,10 @@ export function AgentDetailPanel({
 
   const isAgentNode = node.kind === "start" || node.kind === "subagent";
   const hasInput = inputValue != null;
+  const messages = node.kind === "llm" ? promptMessages(inputValue) : [];
+  const instructions =
+    node.kind === "llm" ? promptInstructions(inputValue) : undefined;
+  const hasPrompt = messages.length > 0;
   const hasOutput = outputValue != null || isAgentNode;
 
   return (
@@ -2187,6 +2514,14 @@ export function AgentDetailPanel({
                 onClick={() => setTab(INPUT_TAB)}
               />
             ) : null,
+            hasPrompt ? (
+              <Tab
+                key="prompt"
+                label="Prompt (Preview)"
+                value={PROMPT_TAB}
+                onClick={() => setTab(PROMPT_TAB)}
+              />
+            ) : null,
             hasOutput ? (
               <Tab
                 key="output"
@@ -2266,6 +2601,9 @@ export function AgentDetailPanel({
               )}
             </Box>
           </>
+        )}
+        {tab === PROMPT_TAB && (
+          <PromptView messages={messages} instructions={instructions} />
         )}
         {tab === OUTPUT_TAB && (
           <>
