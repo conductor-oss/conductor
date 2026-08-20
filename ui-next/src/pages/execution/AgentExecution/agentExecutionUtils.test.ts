@@ -14,6 +14,7 @@ import {
   AgentStatus,
   AgentStrategy,
   AgentTimelineKind,
+  EventType,
 } from "./types";
 
 function task(overrides: Record<string, unknown>) {
@@ -309,6 +310,50 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     ).toBe(true);
   });
 
+  it("labels an MCP call in a loop with its semantic tool name", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "call_123__1",
+          taskType: "CALL_MCP_TOOL",
+          loopOverTask: true,
+          inputData: {
+            _agent_tool_name: "cg_query",
+            method: "cg_query",
+            arguments: { query: "health checks" },
+          },
+          outputData: { content: [] },
+        }),
+      ]),
+    );
+
+    const event = run.turns[0].events[0];
+    expect(event.toolName).toBe("MCP_TOOL_CG_QUERY");
+    expect(event.summary).toContain("MCP_TOOL_CG_QUERY");
+    expect(event.taskMeta?.taskType).toBe("CALL_MCP_TOOL");
+  });
+
+  it("uses the MCP method as the semantic name for a root-level call", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "call_456",
+          taskType: "CALL_MCP_TOOL",
+          inputData: {
+            method: "cg_get_neighbors",
+            arguments: { entity_id: "entity-1" },
+          },
+          outputData: { content: [] },
+        }),
+      ]),
+    );
+
+    const event = run.turns.flatMap((turn) => turn.events)[0];
+    expect(event.toolName).toBe("MCP_TOOL_CG_GET_NEIGHBORS");
+    expect(event.summary).toBe("MCP_TOOL_CG_GET_NEIGHBORS");
+    expect(event.taskMeta?.taskType).toBe("CALL_MCP_TOOL");
+  });
+
   it("renders root work after a loop as finalization", () => {
     const run = transformWorkflowExecutionToAgentRun(
       execution([
@@ -338,6 +383,35 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
       AgentTimelineKind.TURN,
       AgentTimelineKind.FINALIZATION,
     ]);
+  });
+
+  it("preserves every LLM message for inspection", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Investigate the timeout" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_loop",
+          taskType: "DO_WHILE",
+          loopOverTask: true,
+        }),
+        task({
+          referenceTaskName: "agent_llm__1",
+          taskType: "LLM_CHAT_COMPLETE",
+          loopOverTask: true,
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns[0].events.find(
+      (event) => event.type === EventType.THINKING,
+    );
+    expect((thinking?.detail as any).input.messages).toEqual(messages);
   });
 
   it("excludes preparation and finalization from agent-turn metrics", () => {

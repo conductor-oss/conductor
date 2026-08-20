@@ -90,6 +90,18 @@ public class AgentConfig {
     private List<GuardrailConfig> guardrails;
     private MemoryConfig memory;
 
+    /**
+     * Long-term (OCG-backed) memory configuration. When present, the compiler registers OCG's MCP
+     * server for recall and the terminal workflow listener exports the raw completed run. Distinct
+     * from the short-term {@link #memory}.
+     */
+    private LongTermMemoryConfig longTermMemory;
+
+    /**
+     * @deprecated Retained for SDK wire compatibility and ignored. OCG feedback is human-only.
+     */
+    @Deprecated private WorkerRef feedbackSink;
+
     @Builder.Default private int maxTurns = 100;
 
     private Integer maxTokens;

@@ -87,6 +87,46 @@ function LongText({ value }: { value: unknown }) {
   );
 }
 
+function LongTermMemoryDetails({ value }: { value: unknown }) {
+  const memory = asRecord(value);
+  if (!memory) return <LongText value={value} />;
+
+  const fields: Array<[string, unknown]> = [
+    ["OCG URL", firstDefined(memory, "ocgUrl", "ocg_url")],
+    ["Credential", memory.credential],
+    ["Memory agent", memory.agent],
+    ["User", memory.user],
+    ["Recall policy", firstDefined(memory, "recallPolicy", "recall_policy")],
+    [
+      "Recall instructions",
+      firstDefined(memory, "recallInstructions", "recall_instructions"),
+    ],
+  ];
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+      {fields.map(([label, fieldValue]) =>
+        fieldValue == null || fieldValue === "" ? null : (
+          <Box key={label}>
+            <Typography variant="caption" color="text.secondary">
+              {label}
+            </Typography>
+            {label === "Recall instructions" ? (
+              <LongText value={fieldValue} />
+            ) : (
+              <Typography
+                sx={{ fontSize: "0.875rem", wordBreak: "break-word" }}
+              >
+                {String(fieldValue)}
+              </Typography>
+            )}
+          </Box>
+        ),
+      )}
+    </Box>
+  );
+}
+
 const guardrailNames = (value: unknown): string[] =>
   asArray(value).map((entry) => {
     const record = asRecord(entry);
@@ -196,6 +236,11 @@ export function AgentDefinitionDetails({
   );
   const guardrails = guardrailNames(agentDef.guardrails);
   const subAgents = asArray(agentDef.agents);
+  const longTermMemory = firstDefined(
+    agentDef,
+    "longTermMemory",
+    "long_term_memory",
+  );
   const runtimeRows: Array<[string, unknown]> = [
     ["Strategy", agentDef.strategy],
     ["Maximum turns", firstDefined(agentDef, "maxTurns", "max_turns")],
@@ -244,6 +289,12 @@ export function AgentDefinitionDetails({
         <DetailRow
           label="Instructions"
           value={<LongText value={instructions} />}
+        />
+      )}
+      {longTermMemory != null && (
+        <DetailRow
+          label="Long-term memory"
+          value={<LongTermMemoryDetails value={longTermMemory} />}
         />
       )}
       {(inputGuardrails.length > 0 || outputGuardrails.length > 0) && (

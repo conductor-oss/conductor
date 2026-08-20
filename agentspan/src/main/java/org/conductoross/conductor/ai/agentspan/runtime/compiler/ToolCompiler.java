@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.conductoross.conductor.ai.agentspan.runtime.OcgConstants;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ToolConfig;
@@ -43,6 +45,13 @@ import lombok.Data;
 public class ToolCompiler {
 
     private static final Logger logger = LoggerFactory.getLogger(ToolCompiler.class);
+    private static final String TOOL_TYPE_MCP = "mcp";
+    private static final String TOOL_TYPE_OCG = "ocg";
+    private static final String CONFIG_TOOL_NAMES = "tool_names";
+    private static final String CONFIG_TOOL_NAMES_CAMEL_CASE = "toolNames";
+    private static final String CONFIG_OCG_URL = "ocg_url";
+    private static final String CONFIG_CREDENTIAL = "credential";
+    private static final String CONFIG_SERVER_URL = "server_url";
 
     /** Result of building tool call routing, including any tool-level guardrail metadata. */
     @Data
@@ -74,6 +83,19 @@ public class ToolCompiler {
             escaped.put(String.valueOf(e.getKey()), rewriteCredentialPlaceholders(v));
         }
         return escaped;
+    }
+
+    /**
+     * Rewrite {@code ${NAME}} credential placeholders in an HTTP headers map for direct placement
+     * into a real (non-INLINE) task's {@code inputParameters}. Exposed for compiler-emitted HTTP
+     * tasks (e.g. long-term memory) that must resolve credentials the same way tool HTTP calls do:
+     * the placeholder ends up as a {@code ${workflow.secrets.NAME}} reference, which conductor
+     * defers at input binding and resolves wire-only at the task's own hand-off (see {@link
+     * #secretRefHeaders}).
+     */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> escapeCredentialHeaders(Map<?, ?> headers) {
+        return (Map<String, Object>) secretRefHeaders(escapeCredentialPlaceholders(headers));
     }
 
     /**
@@ -142,7 +164,7 @@ public class ToolCompiler {
                     Map.entry("worker", "SIMPLE"),
                     Map.entry("http", "HTTP"),
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
-                    Map.entry("mcp", "CALL_MCP_TOOL"),
+                    Map.entry("mcp", CallMCPToolTaskMapper.TASK_TYPE),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),
@@ -153,6 +175,134 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     // ── Public API ───────────────────────────────────────────────────────
+
+    /**
+     * Expand server-managed OCG capability markers and explicit OCG MCP allowlists into concrete,
+     * model-callable tools from Conductor's compile-time catalog. Expanded tools carry their
+     * schemas into the LLM request and therefore do not need a runtime LIST_MCP_TOOLS task.
+     */
+    public List<ToolConfig> expandExplicitMcpTools(List<ToolConfig> tools) {
+        if (tools == null || tools.isEmpty()) {
+            return tools == null ? Collections.emptyList() : tools;
+        }
+
+        List<ToolConfig> expanded = new ArrayList<>();
+        for (ToolConfig tool : tools) {
+            if (TOOL_TYPE_OCG.equals(tool.getToolType())) {
+                expanded.addAll(expandOcgCapability(tool));
+                continue;
+            }
+            if (!TOOL_TYPE_MCP.equals(tool.getToolType()) || tool.getConfig() == null) {
+                expanded.add(tool);
+                continue;
+            }
+
+            Object configuredNames =
+                    tool.getConfig().containsKey(CONFIG_TOOL_NAMES)
+                            ? tool.getConfig().get(CONFIG_TOOL_NAMES)
+                            : tool.getConfig().get(CONFIG_TOOL_NAMES_CAMEL_CASE);
+            if (!(configuredNames instanceof List<?> names)) {
+                expanded.add(tool);
+                continue;
+            }
+
+            // The bundled schemas are safe to use only when every requested name identifies a
+            // known OCG operation. Generic MCP allowlists remain discovery-backed and are filtered
+            // against the server response at runtime.
+            boolean knownOcgAllowlist =
+                    !names.isEmpty()
+                            && names.stream()
+                                    .map(String::valueOf)
+                                    .allMatch(name -> OcgToolCatalog.get(name) != null);
+            boolean usesOcgNamespace =
+                    names.stream().map(String::valueOf).anyMatch(name -> name.startsWith("cg_"));
+            if (usesOcgNamespace && !knownOcgAllowlist) {
+                List<String> unknownNames =
+                        names.stream()
+                                .map(String::valueOf)
+                                .filter(name -> OcgToolCatalog.get(name) == null)
+                                .toList();
+                throw new IllegalArgumentException(
+                        "Unknown explicit OCG MCP tool(s) "
+                                + unknownNames
+                                + ". Add schemas to the Conductor OCG tool catalog before exposing them.");
+            }
+            if (!knownOcgAllowlist) {
+                expanded.add(tool);
+                continue;
+            }
+
+            Map<String, Object> serverConfig = new LinkedHashMap<>(tool.getConfig());
+            serverConfig.remove(CONFIG_TOOL_NAMES);
+            serverConfig.remove(CONFIG_TOOL_NAMES_CAMEL_CASE);
+            for (Object configuredName : names) {
+                String name = String.valueOf(configuredName);
+                OcgToolCatalog.Definition definition = OcgToolCatalog.get(name);
+                expanded.add(
+                        ToolConfig.builder()
+                                .name(name)
+                                .description(definition.description())
+                                .inputSchema(definition.inputSchema())
+                                .toolType(TOOL_TYPE_MCP)
+                                .approvalRequired(tool.isApprovalRequired())
+                                .timeoutSeconds(tool.getTimeoutSeconds())
+                                .maxCalls(tool.getMaxCalls())
+                                .config(new LinkedHashMap<>(serverConfig))
+                                .guardrails(tool.getGuardrails())
+                                .stateful(tool.isStateful())
+                                .build());
+            }
+        }
+        return expanded;
+    }
+
+    private List<ToolConfig> expandOcgCapability(ToolConfig marker) {
+        if (marker.getConfig() == null) {
+            throw new IllegalArgumentException("OCG tool capability requires configuration");
+        }
+        String ocgUrl = String.valueOf(marker.getConfig().getOrDefault(CONFIG_OCG_URL, "")).trim();
+        String credential =
+                String.valueOf(marker.getConfig().getOrDefault(CONFIG_CREDENTIAL, "")).trim();
+        if (ocgUrl.isEmpty() || credential.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "OCG tool capability requires ocg_url and credential name");
+        }
+
+        Map<String, Object> serverConfig = new LinkedHashMap<>();
+        serverConfig.put(
+                CONFIG_SERVER_URL, ocgUrl.replaceAll("/+$", "") + OcgConstants.MCP_ENDPOINT);
+        serverConfig.put("headers", Map.of(OcgConstants.API_KEY_HEADER, "${" + credential + "}"));
+        serverConfig.put("credentials", List.of(credential));
+
+        List<ToolConfig> expanded = new ArrayList<>();
+        for (Map.Entry<String, OcgToolCatalog.Definition> entry : OcgToolCatalog.entries()) {
+            OcgToolCatalog.Definition definition = entry.getValue();
+            expanded.add(
+                    ToolConfig.builder()
+                            .name(entry.getKey())
+                            .description(definition.description())
+                            .inputSchema(definition.inputSchema())
+                            .toolType(TOOL_TYPE_MCP)
+                            .approvalRequired(marker.isApprovalRequired())
+                            .timeoutSeconds(marker.getTimeoutSeconds())
+                            .maxCalls(marker.getMaxCalls())
+                            .config(new LinkedHashMap<>(serverConfig))
+                            .guardrails(marker.getGuardrails())
+                            .stateful(marker.isStateful())
+                            .build());
+        }
+        return expanded;
+    }
+
+    /** Catalog-backed OCG declarations with complete schemas can bypass runtime discovery. */
+    public static boolean requiresMcpDiscovery(ToolConfig tool) {
+        if (!TOOL_TYPE_MCP.equals(tool.getToolType())) {
+            return false;
+        }
+        return OcgToolCatalog.get(tool.getName()) == null
+                || tool.getInputSchema() == null
+                || tool.getInputSchema().isEmpty();
+    }
 
     /**
      * Compile a list of {@link ToolConfig} definitions into tool spec maps suitable for passing to
@@ -202,7 +352,12 @@ public class ToolCompiler {
                 Map<String, Object> configParams = new LinkedHashMap<>();
                 configParams.put("mcpServer", tool.getConfig().getOrDefault("server_url", ""));
                 Object headers = tool.getConfig().get("headers");
-                if (headers != null) {
+                if (headers instanceof Map<?, ?> headerMap) {
+                    // Keep credential placeholders inert while the tool spec passes through the
+                    // LLM task. Enrichment converts them to workflow secret references only on the
+                    // eventual CALL_MCP_TOOL task.
+                    configParams.put("headers", escapeCredentialPlaceholders(headerMap));
+                } else if (headers != null) {
                     configParams.put("headers", headers);
                 }
                 spec.put("configParams", configParams);
@@ -805,6 +960,9 @@ public class ToolCompiler {
                         mcpDiscH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpDiscH)
                                 : mcpDiscH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 serverMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -825,6 +983,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
@@ -1113,6 +1272,9 @@ public class ToolCompiler {
                         mcpH instanceof Map<?, ?>
                                 ? escapeCredentialPlaceholders((Map<?, ?>) mcpH)
                                 : mcpH);
+                serverInfo.put(
+                        "optionalDiscovery", Boolean.TRUE.equals(cfg.get("optional_discovery")));
+                copyMcpToolNames(cfg, serverInfo);
                 mcpServerMap.put(serverUrl, serverInfo);
             }
             Object mt = cfg.get("max_tools");
@@ -1131,6 +1293,7 @@ public class ToolCompiler {
             listTask.setName("LIST_MCP_TOOLS");
             listTask.setTaskReferenceName(listRef);
             listTask.setType("LIST_MCP_TOOLS");
+            listTask.setOptional(Boolean.TRUE.equals(server.get("optionalDiscovery")));
 
             Map<String, Object> listInputs = new LinkedHashMap<>();
             listInputs.put("mcpServer", server.get("serverUrl"));
@@ -1273,6 +1436,17 @@ public class ToolCompiler {
                 maxTools);
 
         return new DiscoveryResult(preTasks, toolsRef, mcpConfigRef, apiConfigRef);
+    }
+
+    private static void copyMcpToolNames(
+            Map<String, Object> source, Map<String, Object> destination) {
+        Object names =
+                source.containsKey("tool_names")
+                        ? source.get("tool_names")
+                        : source.get("toolNames");
+        if (names instanceof List<?>) {
+            destination.put("toolNames", names);
+        }
     }
 
     /** Build a dynamic filter chain for API discovery (uses _api_ prefixed task refs). */

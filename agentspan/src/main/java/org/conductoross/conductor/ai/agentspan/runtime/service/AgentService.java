@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.OcgResearchAgentFactory;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
@@ -1144,6 +1145,12 @@ public class AgentService {
     private void registerAgentToolWorkflows(AgentConfig config) {
         if (config.getTools() != null) {
             for (ToolConfig tool : config.getTools()) {
+                // OCG research is a server-owned specialist. Materialize it before the standard
+                // agent-tool registration flow so callers never expose raw OCG MCP tools to the
+                // parent agent.
+                if (OcgResearchAgentFactory.isOcgResearch(tool)) {
+                    OcgResearchAgentFactory.materialize(config, tool);
+                }
                 if (!"agent_tool".equals(tool.getToolType()) || tool.getConfig() == null) {
                     continue;
                 }
@@ -1508,13 +1515,37 @@ public class AgentService {
 
     public SearchResult<WorkflowSummary> searchExecutionsRaw(
             int start, int size, String sort, String freeText, String query) {
-        return searchExecutionsRaw(start, size, sort, freeText, query, null);
+        return searchExecutionsRaw(start, size, sort, freeText, query, null, false);
     }
 
     public SearchResult<WorkflowSummary> searchExecutionsRaw(
             int start, int size, String sort, String freeText, String query, String classifier) {
-        return workflowService.searchWorkflows(
-                start, size, sort, freeText, withClassifierFilter(query, classifier));
+        return searchExecutionsRaw(start, size, sort, freeText, query, classifier, false);
+    }
+
+    /**
+     * Search executions with an optional {@code classifier} filter (folded in as {@code classifier
+     * IN (...)}) and an optional top-level-only restriction. Top-level executions are roots (no
+     * parent); roots store {@code parent_workflow_id = ""}, so the restriction is the filter {@code
+     * parentWorkflowId = ""}. Both are ANDed onto the caller's {@code query}.
+     */
+    public SearchResult<WorkflowSummary> searchExecutionsRaw(
+            int start,
+            int size,
+            String sort,
+            String freeText,
+            String query,
+            String classifier,
+            boolean topLevelOnly) {
+        String effectiveQuery = withClassifierFilter(query, classifier);
+        if (topLevelOnly) {
+            String topLevelFilter = "parentWorkflowId = \"\"";
+            effectiveQuery =
+                    (effectiveQuery == null || effectiveQuery.isBlank())
+                            ? topLevelFilter
+                            : effectiveQuery + " AND " + topLevelFilter;
+        }
+        return workflowService.searchWorkflows(start, size, sort, freeText, effectiveQuery);
     }
 
     /**

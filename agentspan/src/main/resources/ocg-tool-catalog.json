@@ -1,0 +1,99 @@
+[
+  {
+    "name": "cg_query",
+    "description": "Query the Context Graph knowledge store with natural language. Returns a narrative answer with structured data and citations. Use this as the primary tool for questions about entities, services, incidents, and their relationships. Search deliberately: make one broad query, then use at most two targeted follow-ups only when they resolve a specific unanswered question. Do not retry the same search with synonyms or minor wording changes. If three queries do not find the needed evidence, state that the data was not found and proceed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": { "type": "string", "description": "Natural language question" },
+        "max_results": { "type": "integer", "description": "Maximum number of results (default: 10)" }
+      },
+      "required": ["query"]
+    }
+  },
+  {
+    "name": "cg_get_neighbors",
+    "description": "Get entities directly connected to an entity, with relationship details.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "entity_id": { "type": "string", "description": "Entity ID whose neighbors should be returned" },
+        "direction": { "type": "string", "enum": ["outgoing", "incoming", "both"], "description": "Edge direction (default: both)" },
+        "relationship_types": { "type": "array", "items": { "type": "string" }, "description": "Relationship types to include (empty = all)" },
+        "min_confidence": { "type": "number", "description": "Minimum relationship confidence from 0.0 to 1.0" },
+        "limit": { "type": "integer", "description": "Maximum neighbors (default: 50)" }
+      },
+      "required": ["entity_id"]
+    }
+  },
+  {
+    "name": "cg_traverse",
+    "description": "Traverse the entity graph using bounded breadth-first or depth-first search.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "start_entity_ids": { "type": "array", "items": { "type": "string" }, "description": "One or more starting entity IDs" },
+        "direction": { "type": "string", "enum": ["outgoing", "incoming", "both"], "description": "Traversal direction (default: outgoing)" },
+        "mode": { "type": "string", "enum": ["bfs", "dfs"], "description": "Traversal mode (default: bfs)" },
+        "max_depth": { "type": "integer", "description": "Maximum traversal depth (default: 3, max: 10)" },
+        "max_nodes": { "type": "integer", "description": "Maximum nodes to visit (default: 1000)" },
+        "max_fanout": { "type": "integer", "description": "Maximum edges per node (default: 50)" },
+        "relationship_types": { "type": "array", "items": { "type": "string" }, "description": "Relationship types to follow (empty = all)" },
+        "entity_types": { "type": "array", "items": { "type": "string" }, "description": "Entity types to include (empty = all)" },
+        "min_confidence": { "type": "number", "description": "Minimum edge confidence from 0.0 to 1.0" },
+        "min_weight": { "type": "number", "description": "Minimum edge weight" },
+        "include_claims": { "type": "boolean", "description": "Include top claims for discovered nodes" }
+      },
+      "required": ["start_entity_ids"]
+    }
+  },
+  {
+    "name": "cg_shortest_path",
+    "description": "Find the shortest path between two entities.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from_id": { "type": "string", "description": "Starting entity ID" },
+        "to_id": { "type": "string", "description": "Target entity ID" },
+        "direction": { "type": "string", "enum": ["outgoing", "incoming", "both"], "description": "Path direction (default: both)" },
+        "max_depth": { "type": "integer", "description": "Maximum path length (default: 5, max: 10)" },
+        "relationship_types": { "type": "array", "items": { "type": "string" }, "description": "Relationship types to follow (empty = all)" },
+        "min_confidence": { "type": "number", "description": "Minimum edge confidence from 0.0 to 1.0" }
+      },
+      "required": ["from_id", "to_id"]
+    }
+  },
+  {
+    "name": "cg_has_path",
+    "description": "Check whether a path exists between two entities.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from_id": { "type": "string", "description": "Starting entity ID" },
+        "to_id": { "type": "string", "description": "Target entity ID" },
+        "direction": { "type": "string", "enum": ["outgoing", "incoming", "both"], "description": "Path direction (default: both)" },
+        "max_depth": { "type": "integer", "description": "Maximum path length (default: 5, max: 10)" },
+        "relationship_types": { "type": "array", "items": { "type": "string" }, "description": "Relationship types to follow (empty = all)" },
+        "min_confidence": { "type": "number", "description": "Minimum edge confidence from 0.0 to 1.0" }
+      },
+      "required": ["from_id", "to_id"]
+    }
+  },
+  {
+    "name": "cg_find_all_paths",
+    "description": "Find paths between two entities, ordered by length and weight.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "from_id": { "type": "string", "description": "Starting entity ID" },
+        "to_id": { "type": "string", "description": "Target entity ID" },
+        "direction": { "type": "string", "enum": ["outgoing", "incoming", "both"], "description": "Path direction (default: both)" },
+        "max_depth": { "type": "integer", "description": "Maximum path length (default: 5, max: 10)" },
+        "max_paths": { "type": "integer", "description": "Maximum paths to return (default: 10, max: 100)" },
+        "relationship_types": { "type": "array", "items": { "type": "string" }, "description": "Relationship types to follow (empty = all)" },
+        "min_confidence": { "type": "number", "description": "Minimum edge confidence from 0.0 to 1.0" }
+      },
+      "required": ["from_id", "to_id"]
+    }
+  }
+]

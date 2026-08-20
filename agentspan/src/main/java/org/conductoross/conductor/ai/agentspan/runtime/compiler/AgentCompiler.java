@@ -108,11 +108,7 @@ public class AgentCompiler {
         }
     }
 
-    /**
-     * Public entry point: compile an {@link AgentConfig} into a {@link WorkflowDef}. An agent's
-     * compiled tool list is exactly its declared tool list — capabilities are opted into explicitly
-     * from the SDK, never injected here.
-     */
+    /** Compile an {@link AgentConfig} into a {@link WorkflowDef}. */
     public WorkflowDef compile(AgentConfig config) {
         WorkflowDef wf;
 
@@ -224,6 +220,10 @@ public class AgentCompiler {
         // classifier is what execution search indexes, so agent runs do not appear in the
         // workflow-only execution list.
         stampAgentMetadata(wf, config);
+
+        if (OcgLongTermMemoryCompiler.isActive(config)) {
+            OcgLongTermMemoryCompiler.apply(wf, config, contextMaxValueSizeBytes);
+        }
 
         // Ensure every task has a name (Conductor requires it for execution)
         if (wf.getTasks() != null) {
@@ -463,11 +463,10 @@ public class AgentCompiler {
         ParsedModel parsed = ModelParser.parse(config.getModel());
         String llmRef = toRef(config.getName()) + "_llm";
         String instructionsRef = toRef(config.getName()) + "_instructions";
-        List<ToolConfig> tools = config.getTools();
-
         ToolCompiler tc = new ToolCompiler();
+        List<ToolConfig> tools = tc.expandExplicitMcpTools(config.getTools());
         boolean hasApproval = tools.stream().anyMatch(ToolConfig::isApprovalRequired);
-        boolean hasMcp = tools.stream().anyMatch(t -> "mcp".equals(t.getToolType()));
+        boolean hasMcp = tools.stream().anyMatch(ToolCompiler::requiresMcpDiscovery);
         boolean hasApi = tools.stream().anyMatch(t -> "api".equals(t.getToolType()));
 
         WorkflowDef wf = createWorkflow(config);
@@ -483,10 +482,11 @@ public class AgentCompiler {
                             .filter(
                                     t ->
                                             !"mcp".equals(t.getToolType())
-                                                    && !"api".equals(t.getToolType()))
+                                                    || !ToolCompiler.requiresMcpDiscovery(t))
+                            .filter(t -> !"api".equals(t.getToolType()))
                             .toList();
             List<ToolConfig> mcpTools =
-                    tools.stream().filter(t -> "mcp".equals(t.getToolType())).toList();
+                    tools.stream().filter(ToolCompiler::requiresMcpDiscovery).toList();
             List<ToolConfig> apiTools =
                     tools.stream().filter(t -> "api".equals(t.getToolType())).toList();
 
@@ -835,8 +835,12 @@ public class AgentCompiler {
         String llmRef = toRef(config.getName()) + "_llm";
         String instructionsRef = toRef(config.getName()) + "_instructions";
 
-        // Build transfer tools for each sub-agent
-        List<ToolConfig> allTools = new ArrayList<>(config.getTools());
+        ToolCompiler tc = new ToolCompiler();
+        List<ToolConfig> parentTools = tc.expandExplicitMcpTools(config.getTools());
+
+        // Build transfer tools for each sub-agent. Keep the expanded parent list separately because
+        // transfer tools are compiler-owned control signals, not executable dynamic tools.
+        List<ToolConfig> allTools = new ArrayList<>(parentTools);
         for (AgentConfig sub : config.getAgents()) {
             String subDesc =
                     sub.getDescription() != null && !sub.getDescription().isEmpty()
@@ -865,9 +869,8 @@ public class AgentCompiler {
             allTools.add(transferTool);
         }
 
-        ToolCompiler tc = new ToolCompiler();
         boolean hasApproval = allTools.stream().anyMatch(ToolConfig::isApprovalRequired);
-        boolean hasMcp = allTools.stream().anyMatch(t -> "mcp".equals(t.getToolType()));
+        boolean hasMcp = allTools.stream().anyMatch(ToolCompiler::requiresMcpDiscovery);
         boolean hasApi = allTools.stream().anyMatch(t -> "api".equals(t.getToolType()));
 
         WorkflowDef wf = createWorkflow(config);
@@ -884,10 +887,11 @@ public class AgentCompiler {
                             .filter(
                                     t ->
                                             !"mcp".equals(t.getToolType())
-                                                    && !"api".equals(t.getToolType()))
+                                                    || !ToolCompiler.requiresMcpDiscovery(t))
+                            .filter(t -> !"api".equals(t.getToolType()))
                             .toList();
             List<ToolConfig> mcpTools =
-                    allTools.stream().filter(t -> "mcp".equals(t.getToolType())).toList();
+                    allTools.stream().filter(ToolCompiler::requiresMcpDiscovery).toList();
             List<ToolConfig> apiTools =
                     allTools.stream().filter(t -> "api".equals(t.getToolType())).toList();
             List<Map<String, Object>> staticSpecs = tc.compileToolSpecs(staticTools);
@@ -934,7 +938,7 @@ public class AgentCompiler {
                     tc.buildToolCallRoutingDynamicWithResult(
                             config.getName(),
                             llmRef,
-                            config.getTools(),
+                            parentTools,
                             hasApproval,
                             config.getModel(),
                             discoveryResult.getMcpConfigRef(),
@@ -942,11 +946,7 @@ public class AgentCompiler {
         } else {
             toolRoutingResult =
                     tc.buildToolCallRoutingWithResult(
-                            config.getName(),
-                            llmRef,
-                            config.getTools(),
-                            hasApproval,
-                            config.getModel());
+                            config.getName(), llmRef, parentTools, hasApproval, config.getModel());
         }
         WorkflowTask toolRouter = toolRoutingResult.getRouterTask();
 

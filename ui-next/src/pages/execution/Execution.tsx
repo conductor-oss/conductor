@@ -42,6 +42,7 @@ import { openInNewTab } from "utils/helpers";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { ActorRef } from "xstate";
 import ActionModule from "./ActionModule";
+import { AgentFeedbackControls } from "./AgentFeedbackControls";
 import { AgentDefinitionView, AgentExecutionTab } from "./AgentExecution";
 import InputOutput from "./ExecutionInputOutput";
 import ExecutionJson from "./ExecutionJson";
@@ -153,6 +154,12 @@ const SecondaryActions = ({
             execution={execution}
             refetch={refetch}
           />
+          {isAgentWorkflowExecution(execution) && (
+            <AgentFeedbackControls
+              executionId={execution.workflowId}
+              executionStatus={execution.status}
+            />
+          )}
           <ActionModule
             execution={execution}
             rerunExecutionWithLatestDefinitions={

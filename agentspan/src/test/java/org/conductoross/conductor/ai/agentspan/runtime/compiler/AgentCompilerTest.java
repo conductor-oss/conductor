@@ -47,6 +47,8 @@ class AgentCompilerTest {
 
         assertThat(wf.getName()).isEqualTo("test_agent");
         assertThat(wf.getVersion()).isEqualTo(1);
+        assertThat(wf.getInputParameters()).containsExactly("prompt", "session_id", "media", "cwd");
+        assertThat(wf.getInputTemplate()).isNullOrEmpty();
         assertThat(wf.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT)
                 .containsKey("agentDef");
@@ -120,6 +122,70 @@ class AgentCompilerTest {
         assertThat(toolStateMerge.getInputParameters())
                 .containsEntry("previousToolResults", "${workflow.variables._last_tool_results}");
         assertThat(loop.getLoopOver().get(1).getType()).isEqualTo("LLM_CHAT_COMPLETE");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void materializesOcgResearchAsManagedAgentTool() {
+        ToolConfig research =
+                ToolConfig.builder()
+                        .name("ocg_research")
+                        .toolType("ocg_research")
+                        .config(Map.of("ocg_url", "https://ocg.example", "credential", "OCG_KEY"))
+                        .build();
+        AgentConfig parent =
+                AgentConfig.builder()
+                        .name("incident_agent")
+                        .model("openai/gpt-4o")
+                        .longTermMemory(
+                                LongTermMemoryConfig.builder()
+                                        .ocgUrl("https://memory.ocg.example")
+                                        .credential("MEMORY_KEY")
+                                        .agent("conductor-agent:incident_agent")
+                                        .build())
+                        .build();
+
+        OcgResearchAgentFactory.materialize(parent, research);
+
+        assertThat(research.getToolType()).isEqualTo("agent_tool");
+        AgentConfig child = (AgentConfig) research.getConfig().get("agentConfig");
+        assertThat(child.getName()).isEqualTo("incident_agent_ocg_research_agent");
+        assertThat(child.getMaxTurns()).isEqualTo(3);
+        assertThat(child.getLongTermMemory()).isNull();
+        assertThat((String) child.getInstructions())
+                .contains("exactly one OCG tool call per turn", "at most two targeted follow-up");
+        assertThat(research.getInputSchema())
+                .containsEntry("required", List.of("request"))
+                .containsKey("properties");
+        assertThat(child.getTools())
+                .singleElement()
+                .satisfies(
+                        tool -> {
+                            assertThat(tool.getToolType()).isEqualTo("ocg");
+                            assertThat(tool.getConfig())
+                                    .containsEntry("ocg_url", "https://ocg.example")
+                                    .containsEntry("credential", "OCG_KEY");
+                        });
+    }
+
+    @Test
+    void longTermMemoryDoesNotAddOcgResearchTool() {
+        AgentConfig parent =
+                AgentConfig.builder()
+                        .name("incident_agent")
+                        .model("openai/gpt-4o")
+                        .longTermMemory(
+                                LongTermMemoryConfig.builder()
+                                        .ocgUrl("https://ocg.example")
+                                        .credential("OCG_KEY")
+                                        .agent("conductor-agent:incident_agent")
+                                        .recallPolicy("validate")
+                                        .build())
+                        .build();
+
+        compiler.compile(parent);
+
+        assertThat(parent.getTools()).isNull();
     }
 
     @Test
@@ -391,6 +457,87 @@ class AgentCompilerTest {
         assertThat(wf.getTasks().get(1).getType()).isEqualTo("SET_VARIABLE");
         assertThat(wf.getTasks().get(2).getType()).isEqualTo("DO_WHILE");
         assertThat(wf.getTasks().get(3).getType()).isEqualTo("SWITCH");
+    }
+
+    @Test
+    void hybridRoutesExpandedExplicitOcgTools() {
+        ToolConfig ocgServer =
+                ToolConfig.builder()
+                        .name("ocg_graph")
+                        .toolType("mcp")
+                        .config(
+                                Map.of(
+                                        "server_url",
+                                        "https://ocg.example/mcp/",
+                                        "tool_names",
+                                        List.of("cg_query")))
+                        .build();
+        AgentConfig subAgent =
+                AgentConfig.builder()
+                        .name("researcher")
+                        .model("openai/gpt-4o")
+                        .instructions("Research")
+                        .build();
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("hybrid_ocg")
+                        .model("openai/gpt-4o")
+                        .tools(List.of(ocgServer))
+                        .agents(List.of(subAgent))
+                        .build();
+
+        WorkflowDef workflow = compiler.compile(config);
+
+        WorkflowTask enrich =
+                walkAllTasks(workflow).stream()
+                        .filter(
+                                task ->
+                                        "hybrid_ocg_enrich_tools"
+                                                .equals(task.getTaskReferenceName()))
+                        .findFirst()
+                        .orElseThrow();
+        String expression = String.valueOf(enrich.getInputParameters().get("expression"));
+        assertThat(expression).contains("cg_query").contains("https://ocg.example/mcp/");
+    }
+
+    @Test
+    void serverManagedOcgCapabilityCompilesCatalogWithoutDiscovery() {
+        ToolConfig ocg =
+                ToolConfig.builder()
+                        .name("ocg")
+                        .toolType("ocg")
+                        .config(
+                                Map.of(
+                                        "ocg_url", "https://ocg.example",
+                                        "credential", "OCG_KEY",
+                                        "credentials", List.of("OCG_KEY")))
+                        .build();
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("ocg_retriever")
+                        .model("openai/gpt-4o")
+                        .instructions("Investigate with OCG.")
+                        .tools(List.of(ocg))
+                        .build();
+
+        WorkflowDef workflow = compiler.compile(config);
+        List<WorkflowTask> tasks = walkAllTasks(workflow);
+
+        assertThat(tasks).noneMatch(task -> "LIST_MCP_TOOLS".equals(task.getType()));
+        WorkflowTask llm =
+                tasks.stream()
+                        .filter(task -> "LLM_CHAT_COMPLETE".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        String toolSpecs = String.valueOf(llm.getInputParameters().get("tools"));
+        assertThat(toolSpecs)
+                .contains(
+                        "cg_query",
+                        "cg_get_neighbors",
+                        "cg_traverse",
+                        "cg_shortest_path",
+                        "cg_has_path",
+                        "cg_find_all_paths");
     }
 
     @Test
