@@ -296,3 +296,184 @@ describe("describePrompt", () => {
     expect(describePrompt([])).toBe("");
   });
 });
+
+/**
+ * A persisted LLM_CHAT_COMPLETE payload, copied verbatim from a local
+ * research_writer_48 run (task ac496bc7-6963-4f40-8d3b-94895e996b42). It
+ * carries the shapes the preview has to survive together: the system prompt, a
+ * delimiter-wrapped payload with the real ask after it, a tool_call turn with
+ * no text at all, and the tool results that answered it.
+ */
+const REAL_MESSAGES = [
+  {
+    role: "system",
+    message:
+      "You are a research writer. Research topics thoroughly and write structured reports with multiple sections.\n\nBefore executing, create a step-by-step plan. Think through each step carefully, then execute the plan systematically using your available tools. After each step, verify progress before moving to the next.",
+    media: [],
+  },
+  {
+    role: "user",
+    message:
+      '[TOOL RESULTS]\n[{"output":{"query":"types of renewable energy and their benefits","results":["Renewables = 30% of global electricity (2023)","Solar capacity grew 50% year-over-year"]},"name":"search_web"},{"output":{"query":"current climate change challenges","results":["Solar energy costs dropped 89% since 2010","Wind power is cheapest in many regions"]},"name":"search_web"},{"output":{"query":"renewable energy solutions for climate change","results":["Solar energy costs dropped 89% since 2010","Wind power is cheapest in many regions"]},"name":"search_web"}]\n[/TOOL RESULTS]\n\nWrite a brief report on renewable energy and climate change solutions.',
+    media: [],
+  },
+  {
+    role: "tool_call",
+    media: [],
+    toolCalls: [
+      {
+        taskReferenceName: "call_PvGu3tY9KFAuXIniDnp5Phoj_0",
+        name: "search_web",
+        type: "SIMPLE",
+        inputParameters: {
+          method: "search_web",
+          query: "types of renewable energy and their benefits",
+        },
+      },
+      {
+        taskReferenceName: "call_9zXNq9RQteUZQxXv6V2MJ8Ss_1",
+        name: "search_web",
+        type: "SIMPLE",
+        inputParameters: {
+          method: "search_web",
+          query: "current climate change challenges",
+        },
+      },
+      {
+        taskReferenceName: "call_PHBy7bIe3s0hYKDRJZjbW4RR_2",
+        name: "search_web",
+        type: "SIMPLE",
+        inputParameters: {
+          method: "search_web",
+          query: "renewable energy solutions for climate change",
+        },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    message:
+      '{"query":"types of renewable energy and their benefits","results":["Renewables = 30% of global electricity (2023)","Solar capacity grew 50% year-over-year"]}',
+    media: [],
+    toolCalls: [
+      {
+        taskReferenceName: "call_PvGu3tY9KFAuXIniDnp5Phoj_0",
+        name: "search_web",
+        type: "search_web",
+        inputParameters: {
+          _agent_tool_name: "search_web",
+          query: "types of renewable energy and their benefits",
+        },
+        output: {
+          query: "types of renewable energy and their benefits",
+          results: [
+            "Renewables = 30% of global electricity (2023)",
+            "Solar capacity grew 50% year-over-year",
+          ],
+        },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    message:
+      '{"query":"current climate change challenges","results":["Solar energy costs dropped 89% since 2010","Wind power is cheapest in many regions"]}',
+    media: [],
+    toolCalls: [
+      {
+        taskReferenceName: "call_9zXNq9RQteUZQxXv6V2MJ8Ss_1",
+        name: "search_web",
+        type: "search_web",
+        inputParameters: {
+          _agent_tool_name: "search_web",
+          query: "current climate change challenges",
+        },
+        output: {
+          query: "current climate change challenges",
+          results: [
+            "Solar energy costs dropped 89% since 2010",
+            "Wind power is cheapest in many regions",
+          ],
+        },
+      },
+    ],
+  },
+  {
+    role: "tool",
+    message:
+      '{"query":"renewable energy solutions for climate change","results":["Solar energy costs dropped 89% since 2010","Wind power is cheapest in many regions"]}',
+    media: [],
+    toolCalls: [
+      {
+        taskReferenceName: "call_PHBy7bIe3s0hYKDRJZjbW4RR_2",
+        name: "search_web",
+        type: "search_web",
+        inputParameters: {
+          _agent_tool_name: "search_web",
+          query: "renewable energy solutions for climate change",
+        },
+        output: {
+          query: "renewable energy solutions for climate change",
+          results: [
+            "Solar energy costs dropped 89% since 2010",
+            "Wind power is cheapest in many regions",
+          ],
+        },
+      },
+    ],
+  },
+] as const;
+
+/** What the transform hands the panel: the messages plus the resolved instructions. */
+const REAL_PROMPT = {
+  instructions: REAL_MESSAGES[0].message,
+  messages: REAL_MESSAGES,
+};
+
+describe("a real persisted prompt", () => {
+  const entries = buildPromptEntries(REAL_PROMPT);
+
+  it("labels every turn and leaves none empty", () => {
+    expect(
+      entries.map((entry) => [entry.kind, entry.role, entry.length]),
+    ).toEqual([
+      ["instructions", "system", 313],
+      ["conversation", "user", 653],
+      ["conversation", "tool_call", 712],
+      ["conversation", "tool", 157],
+      ["conversation", "tool", 142],
+      ["conversation", "tool", 154],
+    ]);
+  });
+
+  it("keeps the ask that follows the user turn's payload", () => {
+    expect(entries[1].structured?.leading).toBe("[TOOL RESULTS]");
+    expect(entries[1].structured?.trailing).toBe(
+      "[/TOOL RESULTS]\n\nWrite a brief report on renewable energy and climate change solutions.",
+    );
+  });
+
+  it("renders the text-less tool_call turn from its three calls", () => {
+    const payload = entries[2].structured?.payload as Array<{
+      name: string;
+      inputParameters: { query: string };
+    }>;
+
+    expect(payload.map((call) => call.name)).toEqual([
+      "search_web",
+      "search_web",
+      "search_web",
+    ]);
+    expect(payload.map((call) => call.inputParameters.query)).toEqual([
+      "types of renewable energy and their benefits",
+      "current climate change challenges",
+      "renewable energy solutions for climate change",
+    ]);
+  });
+
+  it("summarizes the whole exchange", () => {
+    expect(describePrompt(entries)).toBe(
+      "Preview: agent instructions · 5 conversation messages.",
+    );
+  });
+});

@@ -200,6 +200,35 @@ describe("PromptPreview", () => {
     expect(screen.getByText(/"ok": true/)).toBeTruthy();
   });
 
+  it("renders a tool_call turn's calls instead of an empty card", () => {
+    // Verbatim from a research_writer_48 run: a tool_call turn has no message
+    // text at all, only the calls it is asking for.
+    renderPreview({
+      messages: [
+        {
+          role: "tool_call",
+          media: [],
+          toolCalls: [
+            {
+              taskReferenceName: "call_PvGu3tY9KFAuXIniDnp5Phoj_0",
+              name: "search_web",
+              type: "SIMPLE",
+              inputParameters: {
+                method: "search_web",
+                query: "types of renewable energy and their benefits",
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(screen.queryByText("(empty message)")).toBeNull();
+    expect(screen.queryByText("0 characters")).toBeNull();
+    expect(screen.getByText("Structured data")).toBeTruthy();
+    expect(screen.getByText(/"name": "search_web"/)).toBeTruthy();
+  });
+
   it("falls back to plain text when no payload parses", () => {
     renderPreview({
       messages: [
