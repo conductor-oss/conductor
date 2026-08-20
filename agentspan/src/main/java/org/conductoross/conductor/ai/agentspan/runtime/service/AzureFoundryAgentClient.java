@@ -13,7 +13,9 @@
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +30,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -693,6 +696,131 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             this.auth = auth;
             this.apiVersion = apiVersion;
         }
+    }
+
+    /**
+     * Discover agents from an Azure endpoint. Auth uses the same 4-mode detection as {@link
+     * #buildAuthState}: API key → Service Principal → Managed Identity → DefaultAzureCredential
+     * (picks up {@code az login} locally). The endpoint and credentialRef are read from a secret
+     * that has an {@code endpoint} field — no separate application.properties config needed.
+     *
+     * <p>Returns an empty list (not an exception) on auth or network failure so one misconfigured
+     * secret doesn't break the whole agent listing.
+     *
+     * @param credentialRef name of the secret in Conductor's store (may be null/blank for
+     *     DefaultAzureCredential)
+     * @param endpoint base Azure endpoint URL
+     */
+    public List<AgentSummary> listExternalAgents(String credentialRef, String endpoint) {
+        endpoint = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
+
+        AuthState auth = buildAuthStateFromConfig(credentialRef, endpoint);
+        String apiVersion =
+                isFoundryProjectEndpoint(endpoint) ? FOUNDRY_PROJECT_API_VERSION : DEFAULT_API_VERSION;
+        String listUrl =
+                isFoundryProjectEndpoint(endpoint)
+                        ? endpoint + "/agents"
+                        : endpoint + "/openai/assistants";
+
+        try {
+            JsonNode response = get(listUrl, auth, apiVersion);
+            JsonNode data = response.path("data");
+            if (!data.isArray()) {
+                log.debug("Azure agent list from {} returned no data array", endpoint);
+                return Collections.emptyList();
+            }
+            List<AgentSummary> result = new ArrayList<>();
+            for (JsonNode item : data) {
+                String name = item.path("name").asText(item.path("id").asText("unknown"));
+                String id = item.path("id").asText();
+                String description = item.path("description").asText(null);
+                long createdAt = item.path("created_at").asLong(0) * 1000L;
+                String model = item.path("model").asText(null);
+
+                List<String> tags = new ArrayList<>();
+                tags.add("azure-foundry");
+                tags.add(isFoundryProjectEndpoint(endpoint) ? "foundry-project" : "classic-assistant");
+                if (model != null) tags.add("model:" + model);
+
+                result.add(
+                        AgentSummary.builder()
+                                .name(name)
+                                .version(1)
+                                .type("azure-foundry")
+                                .description(description)
+                                .tags(tags)
+                                .createTime(createdAt)
+                                .build());
+            }
+            log.debug("Discovered {} Azure agents from {}", result.size(), endpoint);
+            return result;
+        } catch (Exception e) {
+            log.warn("Failed to list Azure agents from {}: {}", endpoint, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Fetch the raw definition JSON for a named Azure agent. Lists all agents from the endpoint
+     * and returns the one whose name (or id) matches. Returns null if not found.
+     */
+    public Map<String, Object> getExternalAgentDef(String agentName, String credentialRef, String endpoint) {
+        endpoint = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
+        AuthState auth = buildAuthStateFromConfig(credentialRef, endpoint);
+        String apiVersion = isFoundryProjectEndpoint(endpoint) ? FOUNDRY_PROJECT_API_VERSION : DEFAULT_API_VERSION;
+        String listUrl = isFoundryProjectEndpoint(endpoint)
+                ? endpoint + "/agents"
+                : endpoint + "/openai/assistants";
+        try {
+            JsonNode response = get(listUrl, auth, apiVersion);
+            JsonNode data = response.path("data");
+            if (!data.isArray()) return null;
+            for (JsonNode item : data) {
+                String name = item.path("name").asText(null);
+                String id = item.path("id").asText(null);
+                if (agentName.equals(name) || agentName.equals(id)) {
+                    return MAPPER.convertValue(item, Map.class);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch Azure agent def for '{}' from {}: {}", agentName, endpoint, e.getMessage());
+        }
+        return null;
+    }
+
+    // Builds AuthState directly from a credentialRef string (for discovery, no startRequest needed).
+    private AuthState buildAuthStateFromConfig(String credentialRef, String endpoint) {
+        String scope = scopeFromEndpoint(endpoint);
+        if (StringUtils.isNotBlank(credentialRef)) {
+            String apiKey = credentialResolutionService.resolve(credentialRef + ".apiKey");
+            if (StringUtils.isNotBlank(apiKey)) return new AuthState(apiKey);
+
+            String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
+            String clientSecret = credentialResolutionService.resolve(credentialRef + ".client_secret");
+            String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
+            if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
+                return new AuthState(
+                        new ClientSecretCredentialBuilder()
+                                .tenantId(tenantId)
+                                .clientId(clientId)
+                                .clientSecret(clientSecret)
+                                .build(),
+                        scope);
+            }
+
+            String miClientId = credentialResolutionService.resolve(credentialRef + ".clientId");
+            if (StringUtils.isNotBlank(miClientId)) {
+                return new AuthState(
+                        new ManagedIdentityCredentialBuilder().clientId(miClientId).build(), scope);
+            }
+        }
+        return new AuthState(new DefaultAzureCredentialBuilder().build(), scope);
+    }
+
+    private String scopeFromEndpoint(String endpoint) {
+        if (endpoint.contains("inference.ml.azure.com")) return ML_INFERENCE_SCOPE;
+        if (endpoint.contains("services.ai.azure.com")) return FOUNDRY_SCOPE;
+        return DEFAULT_SCOPE;
     }
 
     // Holds either a static API key or an Azure SDK TokenCredential + scope.

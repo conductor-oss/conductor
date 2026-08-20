@@ -12,7 +12,9 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,12 +30,15 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
@@ -180,6 +185,155 @@ public class BedrockAgentClient implements ConductorAgentClient {
                 "Bedrock agent runtime does not support cancellation; removing local state for executionId={}",
                 request.getExecutionId());
         executions.remove(request.getExecutionId());
+    }
+
+    /**
+     * Discover agents from a configured AWS Bedrock region. Uses {@code bedrock-agent:ListAgents}
+     * and returns one {@link org.conductoross.conductor.common.metadata.agent.AgentSummary} per
+     * agent. Auth follows the same pattern as {@code buildRuntimeClient}: static credentials →
+     * AssumeRole → default chain (env vars, instance role, ~/.aws/credentials).
+     *
+     * <p>Returns an empty list on auth or API failure so a misconfigured entry doesn't break the
+     * whole agent listing.
+     */
+    /**
+     * Discover agents from an AWS Bedrock region. Auth follows the same pattern as {@code
+     * buildRuntimeClient}: static credentials → AssumeRole → default chain. The region and
+     * credentialRef are read from a secret that has a {@code region} field — no separate
+     * application.properties config needed.
+     *
+     * @param credentialRef name of the secret in Conductor's store (may be null/blank for default
+     *     AWS credential chain)
+     * @param region AWS region to query
+     */
+    public List<org.conductoross.conductor.common.metadata.agent.AgentSummary> listExternalAgents(
+            String credentialRef, String region) {
+        region = StringUtils.defaultIfBlank(region, "us-east-1");
+        AwsCredentialsProvider credentialsProvider = buildCredentialsProvider(credentialRef, region);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient mgmtClient =
+                software.amazon.awssdk.services.bedrockagent.BedrockAgentClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(credentialsProvider)
+                        .build()) {
+
+            List<org.conductoross.conductor.common.metadata.agent.AgentSummary> result = new ArrayList<>();
+            String nextToken = null;
+            do {
+                software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest.Builder req =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest.builder().maxResults(100);
+                if (nextToken != null) req.nextToken(nextToken);
+                software.amazon.awssdk.services.bedrockagent.model.ListAgentsResponse response =
+                        mgmtClient.listAgents(req.build());
+
+                for (software.amazon.awssdk.services.bedrockagent.model.AgentSummary agent :
+                        response.agentSummaries()) {
+                    List<String> tags = new ArrayList<>();
+                    tags.add("bedrock");
+                    tags.add("region:" + region);
+                    if (agent.agentStatus() != null) tags.add("status:" + agent.agentStatus().toString().toLowerCase());
+
+                    result.add(
+                            org.conductoross.conductor.common.metadata.agent.AgentSummary.builder()
+                                    .name(agent.agentName())
+                                    .version(1)
+                                    .type("bedrock")
+                                    .description(agent.description())
+                                    .tags(tags)
+                                    .updateTime(agent.updatedAt() != null ? agent.updatedAt().toEpochMilli() : 0L)
+                                    .build());
+                }
+                nextToken = response.nextToken();
+            } while (nextToken != null);
+
+            log.debug("Discovered {} Bedrock agents in region {}", result.size(), region);
+            return result;
+        } catch (Exception e) {
+            log.warn("Failed to list Bedrock agents in region {}: {}", region, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Fetch the raw definition for a named Bedrock agent. Lists agents to find the ID, then calls
+     * GetAgent for full details. Returns null if not found.
+     */
+    public Map<String, Object> getExternalAgentDef(String agentName, String credentialRef, String region) {
+        region = StringUtils.defaultIfBlank(region, "us-east-1");
+        AwsCredentialsProvider credentialsProvider = buildCredentialsProvider(credentialRef, region);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient mgmtClient =
+                software.amazon.awssdk.services.bedrockagent.BedrockAgentClient.builder()
+                        .region(Region.of(region))
+                        .credentialsProvider(credentialsProvider)
+                        .build()) {
+            // Find the agent ID by name
+            String agentId = null;
+            String nextToken = null;
+            outer:
+            do {
+                software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest.Builder req =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest.builder().maxResults(100);
+                if (nextToken != null) req.nextToken(nextToken);
+                software.amazon.awssdk.services.bedrockagent.model.ListAgentsResponse response = mgmtClient.listAgents(req.build());
+                for (software.amazon.awssdk.services.bedrockagent.model.AgentSummary agent : response.agentSummaries()) {
+                    if (agentName.equals(agent.agentName())) {
+                        agentId = agent.agentId();
+                        break outer;
+                    }
+                }
+                nextToken = response.nextToken();
+            } while (nextToken != null);
+
+            if (agentId == null) return null;
+
+            software.amazon.awssdk.services.bedrockagent.model.GetAgentResponse agentResponse =
+                    mgmtClient.getAgent(software.amazon.awssdk.services.bedrockagent.model.GetAgentRequest.builder()
+                            .agentId(agentId).build());
+            software.amazon.awssdk.services.bedrockagent.model.Agent agent = agentResponse.agent();
+
+            Map<String, Object> def = new java.util.LinkedHashMap<>();
+            def.put("agentId", agent.agentId());
+            def.put("agentName", agent.agentName());
+            def.put("description", agent.description());
+            def.put("instruction", agent.instruction());
+            def.put("foundationModel", agent.foundationModel());
+            def.put("agentStatus", agent.agentStatus() != null ? agent.agentStatus().toString() : null);
+            def.put("agentArn", agent.agentArn());
+            def.put("idleSessionTTLInSeconds", agent.idleSessionTTLInSeconds());
+            def.put("createdAt", agent.createdAt() != null ? agent.createdAt().toEpochMilli() : null);
+            def.put("updatedAt", agent.updatedAt() != null ? agent.updatedAt().toEpochMilli() : null);
+            def.put("provider", "bedrock");
+            def.put("region", region);
+            return def;
+        } catch (Exception e) {
+            log.warn("Failed to fetch Bedrock agent def for '{}' in region {}: {}", agentName, region, e.getMessage());
+            return null;
+        }
+    }
+
+    // Resolve AWS credentials from credentialRef: static keys → AssumeRole → default chain.
+    private AwsCredentialsProvider buildCredentialsProvider(String credentialRef, String region) {
+        if (StringUtils.isNotBlank(credentialRef)) {
+            String accessKeyId = credentialResolutionService.resolve(credentialRef + ".accessKeyId");
+            String secretAccessKey = credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
+            if (StringUtils.isNotBlank(accessKeyId) && StringUtils.isNotBlank(secretAccessKey)) {
+                return StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey));
+            }
+            String roleArn = credentialResolutionService.resolve(credentialRef + ".roleArn");
+            if (StringUtils.isNotBlank(roleArn)) {
+                String roleSessionName = StringUtils.defaultIfBlank(
+                        credentialResolutionService.resolve(credentialRef + ".roleSessionName"),
+                        "conductor-bedrock-discovery");
+                return software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider.builder()
+                        .stsClient(software.amazon.awssdk.services.sts.StsClient.builder().region(Region.of(region)).build())
+                        .refreshRequest(software.amazon.awssdk.services.sts.model.AssumeRoleRequest.builder()
+                                .roleArn(roleArn)
+                                .roleSessionName(roleSessionName)
+                                .build())
+                        .build();
+            }
+        }
+        return DefaultCredentialsProvider.create();
     }
 
     @Override
