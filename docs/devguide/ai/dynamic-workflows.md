@@ -8,7 +8,43 @@ description: "A durable adaptive graph is a workflow where an agent chooses its 
 
 An adaptive agent can choose an approved next path at runtime. A durable graph makes that choice persisted, inspectable, and governable instead of transient control flow inside one process.
 
-<img src="../../assets/images/ai/durable-adaptive-graphs.svg" alt="An agent plans, runs bounded approved work, evaluates it, then loops or finishes. A control plane provides inspect, retry, approve, pause, cancel, and recover controls." loading="lazy" />
+<svg class="dag-hero" viewBox="0 0 960 500" role="img" aria-labelledby="dag-hero-title dag-hero-desc" xmlns="http://www.w3.org/2000/svg">
+  <title id="dag-hero-title">Durable adaptive graph with operational controls</title>
+  <desc id="dag-hero-desc">An agent plans, runs approved tools in bounded parallel fan-out, evaluates progress, and either loops or finishes. An operational control plane provides inspect, retry, approve, pause, cancel, and recover controls.</desc>
+  <defs>
+    <marker id="dag-hero-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="dag-hero__arrowhead"/></marker>
+    <marker id="dag-hero-teal-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" class="dag-hero__arrowhead dag-hero__arrowhead--teal"/></marker>
+  </defs>
+  <rect width="960" height="500" rx="24" class="dag-hero__canvas"/>
+  <text x="48" y="53" class="dag-hero__title" font-family="system-ui, sans-serif" font-size="25" font-weight="700">Durable adaptive graph</text>
+  <text x="48" y="81" class="dag-hero__subtitle" font-family="system-ui, sans-serif" font-size="15">Runtime choices become durable, inspectable execution.</text>
+  <rect x="42" y="113" width="640" height="325" rx="18" class="dag-hero__zone dag-hero__zone--graph" stroke-width="2"/>
+  <text x="64" y="145" class="dag-hero__zone-label dag-hero__zone-label--graph" font-family="system-ui, sans-serif" font-size="14" font-weight="700">EXECUTION GRAPH</text>
+  <g font-family="system-ui, sans-serif" text-anchor="middle">
+    <rect x="82" y="190" width="115" height="58" rx="10" class="dag-hero__node" stroke-width="2"/><text x="139" y="215" class="dag-hero__node-label" font-size="15" font-weight="700">Plan</text><text x="139" y="234" class="dag-hero__detail" font-size="12">validated JSON</text>
+    <path d="M197 219 H252" class="dag-hero__arrow" stroke-width="2" marker-end="url(#dag-hero-arrow)"/>
+    <rect x="258" y="165" width="170" height="110" rx="10" class="dag-hero__node" stroke-width="2"/><text x="343" y="192" class="dag-hero__node-label" font-size="15" font-weight="700">Bounded execution</text><text x="343" y="213" class="dag-hero__detail" font-size="12">approved tools only</text><text x="343" y="234" class="dag-hero__detail" font-size="12">fan-out ≤ 3</text><text x="343" y="255" class="dag-hero__detail" font-size="12">approval before writes</text>
+    <path d="M428 219 H483" class="dag-hero__arrow" stroke-width="2" marker-end="url(#dag-hero-arrow)"/>
+    <rect x="489" y="190" width="115" height="58" rx="10" class="dag-hero__node" stroke-width="2"/><text x="546" y="215" class="dag-hero__node-label" font-size="15" font-weight="700">Evaluate</text><text x="546" y="234" class="dag-hero__detail" font-size="12">continue or finish</text>
+    <path d="M546 248 V328 H139 V254" class="dag-hero__loop" stroke-width="2" marker-end="url(#dag-hero-teal-arrow)"/>
+    <text x="342" y="353" class="dag-hero__loop-note" font-size="13" font-weight="700">checkpoint every decision and result</text>
+    <path d="M604 219 H645" class="dag-hero__arrow" stroke-width="2" marker-end="url(#dag-hero-arrow)"/>
+    <circle cx="658" cy="219" r="35" class="dag-hero__node" stroke-width="2"/><text x="658" y="224" class="dag-hero__node-label" font-size="14" font-weight="700">Finish</text>
+  </g>
+  <rect x="714" y="113" width="204" height="325" rx="18" class="dag-hero__zone dag-hero__zone--control" stroke-width="2"/>
+  <text x="738" y="145" class="dag-hero__zone-label dag-hero__zone-label--control" font-family="system-ui, sans-serif" font-size="14" font-weight="700">CONTROL PLANE</text>
+  <g class="dag-hero__control-chips" stroke-width="1.5" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <rect x="739" y="168" width="70" height="38" rx="8"/><rect x="822" y="168" width="70" height="38" rx="8"/>
+    <rect x="739" y="219" width="70" height="38" rx="8"/><rect x="822" y="219" width="70" height="38" rx="8"/>
+    <rect x="739" y="270" width="70" height="38" rx="8"/><rect x="822" y="270" width="70" height="38" rx="8"/>
+  </g>
+  <g class="dag-hero__control-labels" font-family="system-ui, sans-serif" font-size="13" font-weight="650" text-anchor="middle">
+    <text x="774" y="192">Inspect</text><text x="857" y="192">Retry</text><text x="774" y="243">Approve</text><text x="857" y="243">Pause</text><text x="774" y="294">Cancel</text><text x="857" y="294">Recover</text>
+  </g>
+  <path d="M714 326 H682" class="dag-hero__control-arrow" stroke-width="2" marker-end="url(#dag-hero-arrow)"/>
+  <text x="816" y="357" class="dag-hero__control-note" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">observable state, policy boundaries,</text>
+  <text x="816" y="376" class="dag-hero__control-note" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">durable recovery</text>
+</svg>
 
 The flagship example is a **governed GitHub PR reviewer**. It runs four durable evidence passes before it can ask a human to publish one review summary:
 

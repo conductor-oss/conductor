@@ -3115,3 +3115,68 @@ code.hero-terminal {
 .dag-proof-card p { max-width: 700px; margin: 0; }
 .dag-proof-card__actions { display: flex; flex-wrap: wrap; gap: .75rem; min-width: 290px; }
 @media (max-width: 760px) { .dag-proof-card { align-items: flex-start; flex-direction: column; margin: 1rem; } .dag-proof-card__actions { min-width: 0; } }
+
+/* ---------- Dark-mode image cards ---------- */
+/* Many diagrams are transparent-background PNGs with dark linework; in dark
+   mode the page shows through and the labels disappear. Back content images
+   with a light card. Logo/icon elements that already have their own dark-mode
+   treatment (inversion filters, white chips) are reset below. */
+[data-md-color-scheme="slate"] .md-typeset img {
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px;
+}
+[data-md-color-scheme="slate"] .md-typeset img.twemoji,
+[data-md-color-scheme="slate"] .md-typeset .home-sdk-card img,
+[data-md-color-scheme="slate"] .md-typeset .lang-logos img,
+[data-md-color-scheme="slate"] .md-typeset .agent-framework-strip__item img,
+[data-md-color-scheme="slate"] .md-typeset img.integration-hero__logo,
+[data-md-color-scheme="slate"] .md-typeset img.framework-logo,
+[data-md-color-scheme="slate"] .md-typeset img.framework-heading-logo,
+[data-md-color-scheme="slate"] .md-typeset .event-bus-hero__broker img {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* ---------- Durable Adaptive Graphs hero (dynamic-workflows.md inline SVG) ---------- */
+.dag-hero {
+  --dag-teal: #0f766e;
+  --dag-teal-deep: #134e4a;
+  --dag-orange: #fb923c;
+  --dag-orange-deep: #9a3412;
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 22px 0 28px;
+}
+[data-md-color-scheme="slate"] .dag-hero {
+  --dag-teal: #2dd4bf;
+  --dag-teal-deep: #99f6e4;
+  --dag-orange-deep: #fdba74;
+}
+.dag-hero__canvas { fill: var(--c-bg-secondary); }
+.dag-hero__title { fill: var(--c-text); }
+.dag-hero__subtitle,
+.dag-hero__detail { fill: var(--c-text-muted); }
+.dag-hero__arrow { fill: none; stroke: var(--c-text-muted); }
+.dag-hero__arrowhead { fill: var(--c-text-muted); }
+.dag-hero__arrowhead--teal { fill: var(--dag-teal); }
+.dag-hero__zone--graph {
+  fill: color-mix(in srgb, var(--dag-teal) 8%, var(--c-bg));
+  stroke: color-mix(in srgb, var(--dag-teal) 40%, var(--c-bg));
+}
+.dag-hero__zone--control {
+  fill: color-mix(in srgb, var(--dag-orange) 10%, var(--c-bg));
+  stroke: color-mix(in srgb, var(--dag-orange) 45%, var(--c-bg));
+}
+.dag-hero__zone-label--graph { fill: var(--dag-teal); }
+.dag-hero__zone-label--control,
+.dag-hero__control-labels,
+.dag-hero__control-note { fill: var(--dag-orange-deep); }
+.dag-hero__node { fill: var(--c-bg); stroke: var(--dag-teal); }
+.dag-hero__node-label { fill: var(--dag-teal-deep); }
+.dag-hero__loop { fill: none; stroke: var(--dag-teal); }
+.dag-hero__loop-note { fill: var(--dag-teal); }
+.dag-hero__control-chips { fill: var(--c-bg); stroke: var(--dag-orange); }
+.dag-hero__control-arrow { fill: none; stroke: var(--dag-orange); }
