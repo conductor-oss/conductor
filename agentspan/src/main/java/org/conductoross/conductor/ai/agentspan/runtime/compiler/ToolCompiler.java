@@ -175,7 +175,7 @@ public class ToolCompiler {
             spec.put("name", tool.getName());
             spec.put("type", conductorType);
             spec.put("description", tool.getDescription());
-            // Every AgentSpan spec is complete as compiled (name + description
+            // Every Conductor-Agents spec is complete as compiled (name + description
             // + inputSchema inline). The marker tells spec consumers — notably
             // orkes-conductor's OrkesLLM — to hand it to the LLM as-is and
             // never resolve/replace it by name against integration stores.

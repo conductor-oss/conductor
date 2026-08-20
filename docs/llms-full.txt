@@ -5,7 +5,9 @@ This generated file is a curated technical context for Conductor. Source pages r
 <!-- Source: devguide/workflows/index.md -->
 # Workflows
 
-A Conductor **workflow definition** is a versioned blueprint: it names the tasks, maps inputs and outputs, and declares control flow. A **workflow execution** is one durable run of that blueprint with its own ID, input, task state, output, and history. Editing a definition does not edit the recorded history of an execution; operators inspect and recover executions, while developers evolve definitions through versions.
+Conductor separates what a workflow is from each instance of when it runs. A **workflow definition** declares which tasks run, in what order, and how data passes between them. When you start a workflow, Conductor creates a **workflow execution**, which is a single run of that blueprint with its own ID, input, and history. Because the two are separate, editing a definition never rewrites the history of an execution that already ran. In practice, developers evolve definitions through versions, while operators inspect and recover executions.
+
+Every workflow moves through the same lifecycle:
 
 ```mermaid
 flowchart LR
@@ -17,7 +19,9 @@ flowchart LR
   evolve --> register
 ```
 
-Conductor persists progress between tasks. That makes workflows useful when work spans services, retries, human decisions, timers, or infrastructure restarts. It also means the task boundary is an operational contract: inputs must be resolvable, failures need a policy, and externally executed tasks need a worker that is actually polling.
+An execution is durable because Conductor saves progress after every task. That is why work can span services, wait on people or timers, and pick up where it left off after a restart. Since Conductor hands work from one task to the next, each task must spell out its own contract: where its inputs come from and what happens when it fails. Worker tasks add one more requirement. If no worker is polling for the task, the workflow simply waits and does not advance.
+
+Day-to-day work with workflows typically falls into one of the following four activities.
 
 <div class="grid cards" markdown>
 
@@ -35,7 +39,7 @@ Conductor persists progress between tasks. That makes workflows useful when work
 
 -   **Operate**
 
-    Add timeouts and retries, search executions, debug failures, recover safely, and roll out new versions. Follow the [workflow production path](production-path.md).
+    Add timeouts and retries, search executions, debug failures, recover safely, and roll out new versions. Follow the [best practices](../bestpractices.md).
 
 </div>
 
@@ -78,25 +82,52 @@ During **Operate**, configure task retries and all relevant timeouts, define ide
 
 For a first success in a local environment, follow [Run your first workflow](../../quickstart/first-workflow.md). It uses only built-in tasks and ends with an observable completed execution.
 
-For a production service, follow the [workflow production path](production-path.md). It connects contract design, validation, real-boundary testing, worker deployment, reliability policy, observability, and recovery drills. Use the Recipes section when you already understand the lifecycle and want a compact runnable variant.
+For a production service, follow the [best practices](../bestpractices.md). They connect contract design, validation, real-boundary testing, worker deployment, reliability policy, observability, and recovery drills. Use the Recipes section when you already understand the lifecycle and want a compact runnable variant.
 
 
 <!-- Source: devguide/how-tos/Workflows/creating-workflows.md -->
 # Create or update workflows
 
-A workflow definition is a versioned contract. Build it from registered task types, validate it, and register a new version for breaking changes.
+A workflow definition is a versioned JSON document. It declares the workflow's name, its inputs and outputs, and the tasks it runs. This page covers writing that document, validating it, and registering it with the server.
 
 ## Prerequisites
 
 - A reachable Conductor server and configured CLI.
-- A definition that follows the [workflow definition reference](../../../documentation/configuration/workflowdef/index.md).
 - A task definition and polling worker for every `SIMPLE` task.
 
-## 1. Define the contract
+## 1. Write the definition
 
-Specify `name`, `version`, `schemaVersion: 2`, input names, tasks, and stable `outputParameters`. Give every task a unique, descriptive `taskReferenceName`. Prefer a [built-in task](../Tasks/choosing-tasks.md) when it represents the operation.
+A minimal definition names the workflow, lists its tasks, and maps its inputs and outputs:
 
-Save the result as `workflow.json`. A `SIMPLE` task whose task definition is missing, or whose worker is not polling, remains queued at runtime.
+```json
+{
+  "name": "order_flow",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "process_order",
+      "taskReferenceName": "process_order_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "status": "${process_order_ref.output.status}"
+  }
+}
+```
+
+Save it as `workflow.json`. A few rules to follow:
+
+- Give every task a unique, descriptive `taskReferenceName`. Other tasks reference its output through that name.
+- Prefer a [built-in task](../Tasks/choosing-tasks.md) when one covers the operation. A `SIMPLE` task needs a registered task definition and a polling worker, or it stays queued at runtime.
+- Keep `outputParameters` stable across versions, because callers depend on them.
+
+The [workflow definition reference](../../../documentation/configuration/workflowdef/index.md) documents every field.
 
 ## 2. Validate before registration
 
@@ -120,7 +151,7 @@ Success is a registered name and version visible through:
 conductor workflow get <workflow-name>
 ```
 
-The REST equivalents are `POST /api/metadata/workflow` for create and `PUT /api/metadata/workflow` for an update body containing an array of definitions. The [Metadata API](../../../documentation/api/metadata.md) owns the endpoint contract.
+The REST equivalents are `POST /api/metadata/workflow` for create and `PUT /api/metadata/workflow` for an update body containing an array of definitions. See the [Metadata API](../../../documentation/api/metadata.md) for both endpoints.
 
 ## 4. Verify SIMPLE task dependencies
 
@@ -140,11 +171,21 @@ Use [Validate and test workflows](testing-workflows.md) to mock branches through
 
 <a id="updating-workflows"></a>
 
-Use a new version when inputs, outputs, task order, or failure semantics change in a way callers can observe. Register the new version, update callers deliberately, and leave the previous version available while existing callers or executions need it. See [Version and roll out](versioning-workflows.md).
+Use a new version when inputs, outputs, task order, or failure semantics change in a way callers can observe. Register the new version, update callers deliberately, and leave the previous version available while existing callers or executions need it. See [Managing Workflow Versions](versioning-workflows.md).
 
-## UI alternative
+## Create in the UI
 
-In **Definitions**, create or open a workflow, edit its JSON or graph, and save it. Keep automatic version increment enabled for production changes. Use the CLI/API flow in automation so the checked-in definition remains the source of truth.
+<a id="ui-alternative"></a>
+
+1. In the left navigation, open **Definitions** and select **Workflow**.
+2. Select **Define workflow** in the top right. The editor opens with an empty Start-to-End graph.
+3. Under **Workflow Details**, enter a unique name and a description.
+4. Add tasks either visually or as JSON:
+    - Select the **+** node on the canvas to insert a task, then configure it in the **Task** panel.
+    - Or open the **Code** tab and paste a complete JSON definition.
+5. Select **Save**. Resolve any warnings the editor reports first.
+
+To change an existing workflow, open it from **Definitions** and then **Workflow**, edit it, and save. Use the CLI/API flow in automation so the checked-in definition remains the source of truth.
 
 ## Limitations
 
@@ -164,12 +205,7 @@ Next, [start the workflow](starting-workflows.md) and inspect the returned execu
 # Workflows
 
 <section class="concept-hero concept-hero--workflows">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Durable process graph</p>
-    <h2>Coordinate work across services without losing state.</h2>
-    <p>A workflow defines the path. Conductor records each completed step, so retries, waits, and recovery continue from the last durable checkpoint.</p>
-  </div>
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
+  <svg class="concept-hero__graphic" viewBox="0 36 440 122" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
     <defs><marker id="workflow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="18" y="65" width="112" height="54" rx="10" class="concept-hero__node" />
     <text x="74" y="89" text-anchor="middle" class="concept-hero__label">Definition</text>
@@ -186,7 +222,7 @@ Next, [start the workflow](starting-workflows.md) and inspect the returned execu
   </svg>
 </section>
 
-A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
+A **workflow** is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
 
 - Classifying documents
 - Ordering from a self-checkout service
@@ -343,7 +379,7 @@ stateDiagram-v2
 <!-- Source: devguide/how-tos/Tasks/creating-tasks.md -->
 # Creating / Updating Task Definitions
 
-A [task definition](../../../documentation/configuration/taskdef.md) specifies a task’s general implementation details:
+A [task definition](../../../documentation/configuration/taskdef.md) specifies a task's general implementation details:
 
 - Timeout policy
 - Retry logic
@@ -353,10 +389,10 @@ A [task definition](../../../documentation/configuration/taskdef.md) specifies a
 
 This definition applies to all instances of the task across workflows.
 
-You can create task definitions using the Conductor UI or APIs for the following scenarios:
+You can create task definitions using the Conductor UI, CLI, or APIs for the following scenarios:
 
-- **Worker tasks**—All Worker tasks (`SIMPLE`) must be registered to the Conductor server as a task definition before it can execute in a workflow.
-- **System tasks**—System tasks don't require a task definition, but you can create one with the same name to customize retry, timeout, and rate limit behavior.
+- **Worker tasks**: all worker tasks (`SIMPLE`) must be registered to the Conductor server as a task definition before they can execute in a workflow.
+- **System tasks**: system tasks don't require a task definition, but you can create one with the same name to customize retry, timeout, and rate limit behavior.
 
 ## Using Conductor UI
 
@@ -366,27 +402,34 @@ With the UI, you can create or update task definitions visually.
 
 **To create a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select **+ New Task Definition**.
-2. Configure the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
-3. Select **Save** > **Save**.
+1. In the left navigation, open **Definitions** and select **Task**.
+2. Select **Define task**.
+3. Configure the task in the **Task** form, or open the **Code** tab to edit the JSON directly. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
+4. Select **Save**.
 
 ### Updating task definitions
 
 **To update a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select the task definition to be updated.
-2. Modify the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
-3. Select **Save** > **Save**.
+1. In the left navigation, open **Definitions** and select **Task**, then select the task definition to be updated.
+2. Modify the task in the **Task** form or the **Code** tab. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
+3. Select **Save**.
 
 ## Using the CLI
 
-You can create task definitions using the Conductor CLI. Save your task definitions to a JSON file and run:
+Save your task definition to a JSON file and run:
 
 ```bash
-conductor task create tasks.json
+conductor task create taskdef.json
 ```
 
-The file should contain an array of task definitions. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
+The file can contain a single task definition object or an array of them. To update an existing definition, edit the file and run:
+
+```bash
+conductor task update taskdef.json
+```
+
+Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ## Using APIs
 
@@ -394,68 +437,34 @@ Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for
 
 ### Creating task definitions
 
-You can also create task definitions using the Create Task Definition API (`POST api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
+You can also create task definitions using the Create Task Definition API (`POST /api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
 
 ??? note "Example using cURL"
     ```shell
-    curl '{{ server_host }}/api/metadata/taskdefs' \
+    curl 'http://localhost:8080/api/metadata/taskdefs' \
       -H 'accept: */*' \
       -H 'content-type: application/json' \
-      --data-raw '[{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
+      --data-raw '[{"name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
     ```
 
 
 ### Updating task definitions
 
-You can update task definitions using the Update Task Definition API (`PUT api/metadata/taskdefs`). This API can only be used to update a single task definition at a time.
+You can update task definitions using the Update Task Definition API (`PUT /api/metadata/taskdefs`). This API can only be used to update a single task definition at a time.
 
 ??? note "Example using cURL"
     ```shell
-    curl '{{ server_host }}/api/metadata/taskdefs' \
+    curl 'http://localhost:8080/api/metadata/taskdefs' \
       -X 'PUT' \
       -H 'accept: */*' \
       -H 'content-type: application/json' \
-      --data-raw '{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
+      --data-raw '{"name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
     ```
 
 
 ## Using SDKs
 
-Conductor offers client SDKs for popular languages which have library methods for making the API call. Refer to the SDK documentation to configure a client in your selected language to create or update task definitions.
-
-Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
-
-### Creating task definitions - Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to create the task definition `sample_task_name_1`.
-
-```javascript
-fetch("{{ server_host }}/api/metadata/taskdefs", {
-    "headers": {
-        "accept": "*/*",
-        "content-type": "application/json",
-    },
-    "body": "[{\"createdBy\":\"user\",\"name\":\"sample_task_name_1\",\"description\":\"This is a sample task for demo\",\"responseTimeoutSeconds\":10,\"timeoutSeconds\":30,\"inputKeys\":[],\"outputKeys\":[],\"timeoutPolicy\":\"TIME_OUT_WF\",\"retryCount\":3,\"retryLogic\":\"FIXED\",\"retryDelaySeconds\":5,\"inputTemplate\":{},\"rateLimitPerFrequency\":0,\"rateLimitFrequencyInSeconds\":1}]",
-    "method": "POST"
-});
-```
-
-
-### Updating task definitions - Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to update the task definition `sample_task_name_1`.
-
-```javascript
-fetch("{{ server_host }}/api/metadata/taskdefs", {
-    "headers": {
-        "accept": "*/*",
-        "content-type": "application/json",
-    },
-    "body": "{\"createdBy\":\"user\",\"name\":\"sample_task_name_1\",\"description\":\"This is a sample task for demo\",\"responseTimeoutSeconds\":10,\"timeoutSeconds\":30,\"inputKeys\":[],\"outputKeys\":[],\"timeoutPolicy\":\"TIME_OUT_WF\",\"retryCount\":3,\"retryLogic\":\"FIXED\",\"retryDelaySeconds\":5,\"inputTemplate\":{},\"rateLimitPerFrequency\":0,\"rateLimitFrequencyInSeconds\":1}",
-    "method": "PUT"
-});
-```
-
+Every [client SDK](../../../documentation/clientsdks/index.md) includes metadata-client methods that call the same create and update endpoints. Use them when task registration belongs in your application or deployment code rather than in a manual step.
 
 ## Reusing tasks
 
@@ -472,18 +481,18 @@ When reusing tasks in a multi-tenant system, all work assigned to a task goes in
 
 In Conductor, task inputs can be provided in the workflow definition in multiple ways:
 
-- As a hard-coded value – 
+- As a hard-coded value –
 ```
 "taskInputA": true
 ```
-- As a dynamic reference to the workflow inputs, workflow variables, or the inputs/outputs of prior tasks – 
+- As a dynamic reference to the workflow inputs, workflow variables, or the inputs/outputs of prior tasks –
 ```
 "taskInputA": "${workflow.input.someValue}
 ```
 
 ## Syntax for dynamic references
 
-All dynamic references are formatted as the following expression: 
+All dynamic references are formatted as the following expression:
 
 ```
 "${type.jsonpath}"
@@ -502,78 +511,78 @@ These dynamic references are formatted as dot-notation expressions, taking after
 
 Here is a non-exhaustive list of dynamic references you can use:
 
-- To reference a task’s input payload –        
+- To reference a task’s input payload –
 ```
 ${<taskReferenceName>.input}
 ```
-- To reference a task’s output payload –        
+- To reference a task’s output payload –
 ```
 ${<taskReferenceName>.output}
 ```
-- To reference a task’s input parameter –        
+- To reference a task’s input parameter –
 ```
 ${<taskReferenceName>.input.<someKey>}
 ```
-- To reference a task’s output parameter –        
+- To reference a task’s output parameter –
 ```
 ${<taskReferenceName>.output.<someKey>}
 ```
-- To reference the workflow's input payload –        
+- To reference the workflow's input payload –
 ```
 ${workflow.input}
 ```
-- To reference the workflow's output payload –        
+- To reference the workflow's output payload –
 ```
 ${workflow.output}
 ```
-- To reference the workflow's input parameter –        
+- To reference the workflow's input parameter –
 ```
 ${workflow.input.<someKey>}
 ```
-- To reference the workflow's output parameter –        
+- To reference the workflow's output parameter –
 ```
 ${workflow.output.<someKey>}
 ```
-- To reference the workflow's current status (RUNNING, PAUSED, TIMED_OUT, TERMINATED, FAILED, or COMPLETED) –        
+- To reference the workflow's current status (RUNNING, PAUSED, TIMED_OUT, TERMINATED, FAILED, or COMPLETED) –
 ```
 ${workflow.status}
 ```
-- To reference the workflow's (execution) ID –        
+- To reference the workflow's (execution) ID –
 ```
 ${workflow.workflowId}
 ```
-- (Used in sub-workflows) To reference the parent workflow (execution) ID –        
+- (Used in sub-workflows) To reference the parent workflow (execution) ID –
 ```
 ${workflow.parentWorkflowId}
 ```
-- (Used in sub-workflows) To reference the task execution ID for the Sub Workflow task in the parent workflow –        
+- (Used in sub-workflows) To reference the task execution ID for the Sub Workflow task in the parent workflow –
 ```
 ${workflow.parentWorkflowTaskId}
 ```
-- To reference the workflow's name –        
+- To reference the workflow's name –
 ```
-${workflow.workflowType} 
-```  
-- To reference the workflow's version –        
+${workflow.workflowType}
 ```
-${workflow.version} 
-```    
-- To reference the start time of the workflow execution –        
+- To reference the workflow's version –
 ```
-${workflow.createTime} 
-```  
-- To reference the workflow's correlation ID –        
+${workflow.version}
 ```
-${workflow.correlationId} 
-```  
-- To reference the workflow’s domain name that was invoked during its execution –        
+- To reference the start time of the workflow execution –
 ```
-${workflow.taskToDomain.<domainName>} 
-```  
-- To reference the workflow's variable created using the Set Variable task –        
+${workflow.createTime}
 ```
-${workflow.variables.<someKey>} 
-```   
+- To reference the workflow's correlation ID –
+```
+${workflow.correlationId}
+```
+- To reference the workflow’s domain name that was invoked during its execution –
+```
+${workflow.taskToDomain.<domainName>}
+```
+- To reference the workflow's variable created using the Set Variable task –
+```
+${workflow.variables.<someKey>}
+```
 
 
 ## Examples
@@ -789,12 +798,12 @@ Tasks are the building blocks of Conductor workflows. In this guide, familiarise
 
 Built-in tasks allow you to easily run common tasks on the Conductor server without needing to build and deploy your own task workers. Here is an introduction of the built-in tasks available in Conductor:
 
-* **[System tasks](../../../documentation/configuration/workflowdef/systemtasks/index.md)** common tasks that allow you to get started quickly without needing custom workers. 
+* **[System tasks](../../../documentation/configuration/workflowdef/systemtasks/index.md)** common tasks that allow you to get started quickly without needing custom workers.
 * **[Operators](../../../documentation/configuration/workflowdef/operators/index.md)** enable you to declaratively design the workflow's control flow and logic with minimal code required.
 
 ### System tasks
 
-Here are the system tasks available in Conductor OSS for common use: 
+Here are the system tasks available in Conductor OSS for common use:
 
 | System Task                  | Description                          |
 | :-------------------- | :----------------------------------- |
@@ -814,15 +823,15 @@ Here are the operators available in Conductor OSS for managing the flow of execu
 
 | Operator                        | Description         |
 | -------------------------- | ----------------------------------------- |
-| [Do While](../../../documentation/configuration/workflowdef/operators/do-while-task.md)         | Execute tasks repeatedly, like a _do…while…_ statement.     | 
-| [Dynamic](../../../documentation/configuration/workflowdef/operators/dynamic-task.md)           | Execute a task dynamically, like a function pointer.           | 
+| [Do While](../../../documentation/configuration/workflowdef/operators/do-while-task.md)         | Execute tasks repeatedly, like a _do…while…_ statement.     |
+| [Dynamic](../../../documentation/configuration/workflowdef/operators/dynamic-task.md)           | Execute a task dynamically, like a function pointer.           |
 | [Dynamic Fork](../../../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) | Execute a dynamic number of tasks in parallel. |
-| [Fork](../../../documentation/configuration/workflowdef/operators/fork-task.md)                 | Execute a static number of tasks in parallel.  | 
+| [Fork](../../../documentation/configuration/workflowdef/operators/fork-task.md)                 | Execute a static number of tasks in parallel.  |
 | [Join](../../../documentation/configuration/workflowdef/operators/join-task.md)                 | Join the forks after a Fork or Dynamic Fork before proceeding to the next task.                        |
 | [Set Variable](../../../documentation/configuration/workflowdef/operators/set-variable-task.md)     | Create or update workflow variables.        |
-| [Start Workflow](../../../documentation/configuration/workflowdef/operators/start-workflow-task.md) | Asynchronously start another workflow, like an entry point.   | 
-| [Sub Workflow](../../../documentation/configuration/workflowdef/operators/sub-workflow-task.md) | Synchronously start another workflow, like a subroutine.  | 
-| [Switch](../../../documentation/configuration/workflowdef/operators/switch-task.md)             | Execute tasks conditionally, like an _if…else…_ statement.     | 
+| [Start Workflow](../../../documentation/configuration/workflowdef/operators/start-workflow-task.md) | Asynchronously start another workflow, like an entry point.   |
+| [Sub Workflow](../../../documentation/configuration/workflowdef/operators/sub-workflow-task.md) | Synchronously start another workflow, like a subroutine.  |
+| [Switch](../../../documentation/configuration/workflowdef/operators/switch-task.md)             | Execute tasks conditionally, like an _if…else…_ statement.     |
 | [Terminate](../../../documentation/configuration/workflowdef/operators/terminate-task.md)       | Terminate the current workflow, like a _return_ statement.                       |
 
 ## Custom tasks
@@ -835,7 +844,7 @@ To help you decide on which tasks to use, here is a detailed comparison of simil
 
 ### Inline vs Worker tasks
 
-The [Inline task](../../../documentation/configuration/workflowdef/systemtasks/inline-task.md) is used to execute custom JavaScript code directly within the workflow. It’s ideal for lightweight operations like **simple data transformations, conditional checks, or small calculations**. Because the code executes within the Conductor JVM, Inline tasks benefit from low latency, no network overhead, and easier debugging. However, it also has limitations on using other languages, custom libraries, frameworks, or stacks. 
+The [Inline task](../../../documentation/configuration/workflowdef/systemtasks/inline-task.md) is used to execute custom JavaScript code directly within the workflow. It’s ideal for lightweight operations like **simple data transformations, conditional checks, or small calculations**. Because the code executes within the Conductor JVM, Inline tasks benefit from low latency, no network overhead, and easier debugging. However, it also has limitations on using other languages, custom libraries, frameworks, or stacks.
 
 
 The Worker task is handled by external task workers that execute a custom function or service
@@ -861,7 +870,7 @@ The Sub Workflow task provides a tighter coupling between the parent workflow an
 
 ### Fork vs Dynamic Fork tasks
 
-Both [Fork](../../../documentation/configuration/workflowdef/operators/fork-task.md) and [Dynamic Fork](../../../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) facilitate parallel execution of tasks. The Fork task executes a predetermined number of forks, while the Dynamic Fork executes a variable number of forks at runtime. 
+Both [Fork](../../../documentation/configuration/workflowdef/operators/fork-task.md) and [Dynamic Fork](../../../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) facilitate parallel execution of tasks. The Fork task executes a predetermined number of forks, while the Dynamic Fork executes a variable number of forks at runtime.
 
 If each fork must run a different set of tasks, it is best to use the Fork task, because Dynamic Forks can only run the same task for all its forks.
 
@@ -877,11 +886,11 @@ Here are some scenarios for deciding between a Dynamic task and a Switch task:
 
 | Scenario                        | Task to Use         |
 | -------------------------- | ----------------------------------------- |
-| You have a huge number of case options or the specific case options are not yet determined.         | Dynamic    | 
+| You have a huge number of case options or the specific case options are not yet determined.         | Dynamic    |
 | You need a default case option.       | Switch    |
 | Each case option involves multiple tasks.       | Switch    |
-| The conditions for each switch case is relatively straightforward.         | Switch    | 
-| The conditions for each switch case is constantly changing, or requires more complicated logic.      | Dynamic    | 
+| The conditions for each switch case is relatively straightforward.         | Switch    |
+| The conditions for each switch case is constantly changing, or requires more complicated logic.      | Dynamic    |
 
 If you opt for the Dynamic task, you must set up the control flow for how the task to run will be determined at runtime. For example, using a preceding task that must pass the task name into the Dynamic task.
 
@@ -890,12 +899,7 @@ If you opt for the Dynamic task, you must set up the control flow for how the ta
 # Workers
 
 <section class="concept-hero concept-hero--workers">
-  <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Your code, durable orchestration</p>
-    <h2>Poll, execute, and report without owning workflow state.</h2>
-    <p>Workers implement business logic in your preferred language while Conductor handles dispatch, retries, timeouts, and the durable task record.</p>
-  </div>
-  <svg class="concept-hero__graphic" viewBox="0 0 440 190" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
+  <svg class="concept-hero__graphic" viewBox="0 28 440 145" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
     <defs><marker id="worker-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
     <rect x="14" y="68" width="102" height="54" rx="10" class="concept-hero__node concept-hero__node--accent" />
     <text x="65" y="91" text-anchor="middle" class="concept-hero__label">Conductor</text>
@@ -914,7 +918,7 @@ If you opt for the Dynamic task, you must set up the control flow for how the ta
   </svg>
 </section>
 
-A worker is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
+A **worker** is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
 
 System task workers are managed by Conductor within its JVM, while `SIMPLE` task workers are to be implemented by yourself. These workers can be implemented in any programming language of your choice (Python, Java, JavaScript, C#, Go, and Clojure) and hosted anywhere outside the Conductor environment.
 
@@ -963,19 +967,38 @@ See [Scaling Workers](../how-tos/Workers/scaling-workers.md) for detailed guidan
 
 
 <!-- Source: quickstart/first-worker.md -->
-# Write your first worker
-
-**Audience:** developers who need a workflow to run their own business logic.
+# Your First Workflow & Worker
 
 **Outcome:** a `greetings` workflow that queues a `greet` task and returns `Hello Conductor` from a worker.
+
+**Time:** about 5 minutes.
 
 Complete [Connect to Conductor](connect.md) first. This guide uses the SDK connection variables configured there: `CONDUCTOR_SERVER_URL`, plus `CONDUCTOR_AUTH_KEY` and `CONDUCTOR_AUTH_SECRET` when your server requires them.
 
 ## How a worker runs
 
-When a workflow reaches a `SIMPLE` task, Conductor queues it by the task type—in this example, `greet`. An SDK worker polls that queue, runs your business logic, and reports `COMPLETED` or `FAILED`. Conductor persists the result, then advances the workflow to its next task.
+In this quickstart you build two things: a **workflow** named `greetings` — the durable definition that Conductor executes — and a **worker** — a function in your code that performs one task inside it.
 
-The task type must match in the workflow and worker. Workers can be deployed independently and should be idempotent because a task can be delivered again after a failure or timeout.
+The workflow has a single task of type `SIMPLE`, which means the work is done by your code rather than by one of Conductor's built-in tasks. Every `SIMPLE` task has a task type — here, `greet`. When a running workflow reaches that task, Conductor places it on a queue for that task type. Your worker polls the `greet` queue, runs your business logic, and reports back `COMPLETED` or `FAILED`. Conductor durably persists the result, then advances the workflow to its next task.
+
+Two rules follow from this design:
+
+- The task type must match exactly between the workflow definition and the worker — otherwise the task sits on a queue that nothing polls.
+- Workers run as ordinary processes in your own infrastructure and deploy and scale independently of the Conductor server. Conductor guarantees at-least-once delivery, meaning the same task can be delivered again after a failure or timeout — so write workers to be idempotent, where running the same task twice produces the same result.
+
+```mermaid
+flowchart LR
+    subgraph server["Conductor server"]
+        wf["greetings workflow"] --> task["greet task (SIMPLE)"]
+    end
+    queue[["greet queue"]]
+    subgraph worker["Your worker"]
+        fn["greet(name)<br/>your business logic"]
+    end
+    task -- "queues by task type" --> queue
+    fn -- "polls" --> queue
+    fn -- "reports COMPLETED / FAILED<br/>Conductor persists result, advances workflow" --> task
+```
 
 ## Language-specific quickstart
 
@@ -1390,17 +1413,29 @@ See the maintained [Rust SDK quickstart](https://github.com/conductor-oss/rust-s
   })();
 </script>
 
-## Verify and recover
+## Verify durable execution
 
-In the Conductor UI, open the `greetings` execution and inspect the completed `greet_ref` task. Its output should include `result: Hello Conductor`.
+1. Open the Conductor UI (`http://localhost:8080` for the local server) and go to **Executions → Workflow** in the left navigation. Click the newest `greetings` execution — the completed `greet_ref` task in the timeline shows `result: Hello Conductor`.
+2. Now watch durability at work. Your quickstart app exited after printing, so no worker is running. Start another execution with the CLI alone:
 
-- If `greet_ref` remains `SCHEDULED`, the worker is not polling the `greet` task type. Confirm the worker is running and that the worker task type is exactly `greet`.
-- If workflow registration says the definition already exists, use a new version or update the local test definition before running it again.
-- If `greet_ref` fails, inspect the task's input, output, and failure reason in the UI; fix the worker, restart it, and start a new execution.
+    ```bash
+    conductor workflow start -w greetings -i '{"name":"Conductor"}'
+    ```
+
+3. Refresh the executions list: the new run is `RUNNING` and `greet_ref` is `SCHEDULED` — durably queued, waiting for a worker. Nothing is lost.
+4. Run your quickstart app again. The worker polls, the waiting task completes, and the execution finishes with `result: Hello Conductor`.
+
+**Troubleshooting**
+
+- `greet_ref` stays `SCHEDULED` even with the app running: the worker is not polling the `greet` task type — confirm the worker is running and its task type is exactly `greet`.
+- Registration says the definition already exists: bump the version or update the local test definition.
+- `greet_ref` is `FAILED`: inspect the task's input, output, and failure reason in the UI, fix the worker, and start a new execution.
 
 ## Keep learning
 
-The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.
+**Next:** [Run your first agent](first-agent.md) — the same durable execution model, applied to an LLM-powered agent.
+
+Prefer no code? [Run a workflow from JSON](first-workflow.md) registers a two-step workflow with the CLI alone. The [SDKs landing page](../documentation/clientsdks/index.md) links to Go, Ruby, Rust, and the language-specific reference material and production guidance for every supported SDK.
 
 
 <!-- Source: devguide/how-tos/Workflows/testing-workflows.md -->
@@ -1689,11 +1724,11 @@ Each task status will also be clearly marked, highlighting any task errors.
 
 ### Task execution details
 
-You can also view a task's execution details by selecting a task from the following tabs: 
+You can also view a task's execution details by selecting a task from the following tabs:
 
-- **Tasks** > **Diagram** 
+- **Tasks** > **Diagram**
 - **Tasks** > **Task List**
-- **Tasks** > **Timeline** 
+- **Tasks** > **Timeline**
 
 This action opens a left-side panel that contains the following tabs:
 
@@ -1720,7 +1755,7 @@ Choose the mechanism whose owner can make the start or resume decision reliably.
 |---|---|---|
 | A request should create work now | [Direct start](starting-workflows.md) | A new workflow execution |
 | Time or cadence should create work | [Schedule](scheduling-workflows.md) | A new execution at each cron slot |
-| A broker message should create work | [Event handler](../event-bus.md#start-a-new-workflow) | A new execution for a matching event |
+| A broker message should create work | [Event handler](../../../documentation/configuration/eventhandlers.md) | A new execution for a matching event |
 | A parent workflow owns the dependency | `SUB_WORKFLOW` or `START_WORKFLOW` | A child execution, waited for or fire-and-forget |
 | An external result should resume existing work | Task signal or event-handler `complete_task`/`fail_task` | The identified task changes state |
 
@@ -1877,197 +1912,70 @@ For runnable catchup, bounded, concurrency, input, retry, and multi-step variant
 
 
 <!-- Source: devguide/how-tos/event-bus.md -->
-# Event orchestration
+# Event-Driven Orchestration
 
-<section class="concept-hero concept-hero--event-bus">
+<section class="concept-hero concept-hero--event-bus" aria-labelledby="event-overview-title">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Broker-neutral event orchestration</p>
-    <h2>Let messages start and advance durable workflow execution.</h2>
-    <p>Publish and consume through the event bus while keeping producers, brokers, and workflow transitions independently deployable.</p>
+    <p>Event-driven orchestration connects workflows to the messages around them. A workflow can publish to a broker, an incoming message or webhook can start or advance workflows, and a signal can resume one specific execution that is waiting. Each page in this section covers one of those directions, and the table below routes you to the right one.</p>
   </div>
-  <div class="event-bus-hero__visual" aria-label="Kafka, NATS, AMQP, and Amazon SQS send messages through Conductor event orchestration to workflow transitions">
-    <div class="event-bus-hero__brokers">
-      <div class="event-bus-hero__broker"><img src="../../assets/images/event-bus/kafka.svg" alt="Apache Kafka logo" loading="lazy" /><span>Kafka</span></div>
-      <div class="event-bus-hero__broker"><img src="../../assets/images/event-bus/nats.svg" alt="NATS logo" loading="lazy" /><span>NATS</span></div>
-      <div class="event-bus-hero__broker"><img src="../../assets/images/event-bus/amqp.svg" alt="AMQP logo" loading="lazy" /><span>AMQP</span></div>
-      <div class="event-bus-hero__broker"><img src="../../assets/images/event-bus/sqs.svg" alt="Amazon SQS logo" loading="lazy" /><span>SQS</span></div>
-    </div>
-    <div class="event-bus-hero__flow" aria-hidden="true"><span>Event</span><b>→</b><strong>Conductor<br /><small>event handler</small></strong><b>→</b><span>Workflow transition</span></div>
-  </div>
+  <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 220" role="img" aria-labelledby="event-overview-svg-title event-overview-svg-desc" xmlns="http://www.w3.org/2000/svg">
+    <title id="event-overview-svg-title">Event-driven orchestration paths</title>
+    <desc id="event-overview-svg-desc">A workflow publishes to a broker, which an event handler can route to a workflow or task. A webhook is verified HTTP ingress, while a signal directly advances a blocked wait task.</desc>
+    <defs><marker id="event-overview-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+    <rect x="14" y="16" width="103" height="48" rx="10" class="concept-hero__node concept-hero__node--accent"/><text x="66" y="37" text-anchor="middle" class="concept-hero__label">Workflow</text><text x="66" y="53" text-anchor="middle" class="concept-hero__detail">EVENT</text>
+    <path d="M117 40 H153" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="161" y="16" width="105" height="48" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="214" y="37" text-anchor="middle" class="concept-hero__label">Broker</text><text x="214" y="53" text-anchor="middle" class="concept-hero__detail">topic or queue</text>
+    <path d="M266 40 H298" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="306" y="16" width="120" height="48" rx="10" class="concept-hero__node event-hero__node--action"/><text x="366" y="37" text-anchor="middle" class="concept-hero__label">Handler</text><text x="366" y="53" text-anchor="middle" class="concept-hero__detail">start or update</text>
+    <rect x="14" y="103" width="112" height="48" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="70" y="124" text-anchor="middle" class="concept-hero__label">Webhook</text><text x="70" y="140" text-anchor="middle" class="concept-hero__detail">verified HTTP</text>
+    <path d="M126 127 H174" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="182" y="103" width="109" height="48" rx="10" class="concept-hero__node event-hero__node--action"/><text x="236" y="124" text-anchor="middle" class="concept-hero__label">Durable work</text><text x="236" y="140" text-anchor="middle" class="concept-hero__detail">start or resume</text>
+    <rect x="14" y="172" width="112" height="34" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="70" y="194" text-anchor="middle" class="concept-hero__label">Signal caller</text>
+    <path d="M126 189 H174" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <rect x="182" y="172" width="109" height="34" rx="10" class="concept-hero__node concept-hero__node--accent"/><text x="236" y="194" text-anchor="middle" class="concept-hero__label">Blocked WAIT</text>
+    <path d="M291 189 H341" class="concept-hero__line" marker-end="url(#event-overview-arrow)"/>
+    <text x="383" y="194" text-anchor="middle" class="concept-hero__detail">continue</text>
+  </svg>
 </section>
 
-Event orchestration connects a message to a workflow transition. In OSS Conductor, a handler can start a workflow or complete/fail an identified task. Use it when a message is the source of truth and producer/consumer lifecycles should remain decoupled.
-
-## 1. Choose the interaction
-
-| Need | Use |
-|---|---|
-| An application creates work now | [Direct workflow start](Workflows/starting-workflows.md) |
-| Time creates work | [Schedule](Workflows/scheduling-workflows.md) |
-| A message creates or advances work | Event handler |
-| A parent explicitly invokes a child | `SUB_WORKFLOW` or `START_WORKFLOW` |
-| An external caller already knows the waiting task | Task signal API |
-
-Signals and event-handler task actions resume existing work. They differ from a workflow start, which always creates a new execution.
-
-## 2. Publish from a workflow
-
-Use `EVENT` for Conductor's provider-neutral event queues. Use `KAFKA_PUBLISH` when Kafka-specific keys, headers, serializers, or producer controls are part of the contract.
-
-```json
-{
-  "name": "publish_order_event",
-  "version": 1,
-  "schemaVersion": 2,
-  "inputParameters": ["orderId", "status"],
-  "tasks": [
-    {
-      "name": "publish_order_status",
-      "taskReferenceName": "publish_order_status",
-      "type": "EVENT",
-      "sink": "conductor:order-status",
-      "inputParameters": {
-        "orderId": "${workflow.input.orderId}",
-        "status": "${workflow.input.status}",
-        "eventVersion": 1
-      }
-    }
-  ]
-}
-```
-
-For the internal sink, `conductor` expands to `conductor:<workflowName>:<taskReferenceName>`. A sink such as `conductor:order-status` expands to `conductor:<workflowName>:order-status`.
-
-The published JSON is the Event task output minus `event_produced`. It includes the task inputs plus `workflowInstanceId`, `workflowType`, `workflowVersion`, `correlationId`, and `taskToDomain`. With `asyncComplete: false` the task completes after publishing. With `true`, publishing succeeds but the task remains `IN_PROGRESS` until an external update completes or fails it.
-
-## 3. Consume through an event handler
-
-An event identifier is `provider:<provider-specific queue URI>`. Conductor splits only at the first colon; everything after it is passed unchanged to the provider. There is no universal queue/topic/subject grammar.
-
-`active` is a Java boolean and therefore defaults to `false` when omitted. Conditions and `${...}` action expressions resolve from the payload root:
-
-```json
-{
-  "name": "start_fulfillment_on_order_ready",
-  "event": "conductor:publish_order_event:order-status",
-  "condition": "$.status == 'READY'",
-  "actions": [
-    {
-      "action": "start_workflow",
-      "start_workflow": {
-        "name": "fulfill_order",
-        "version": 1,
-        "correlationId": "${orderId}",
-        "input": {
-          "orderId": "${orderId}",
-          "sourceEventId": "${workflowInstanceId}"
-        }
-      }
-    }
-  ],
-  "active": true
-}
-```
-
-Register and verify it:
-
-```bash
-curl -sS -X POST 'http://localhost:8080/api/event' \
-  -H 'Content-Type: application/json' \
-  --data-binary @docs/devguide/cookbook/examples/events/start-workflow-handler.json
-
-curl -sS 'http://localhost:8080/api/event'
-```
-
-Only active handlers are subscribed for processing. A false condition records a skipped event execution and runs no actions.
-
-<a id="start-a-new-workflow"></a>
-
-## 4. Start a new workflow
-
-The implemented `start_workflow` action accepts a workflow name, optional version and correlation ID, input, and task-domain mapping. Conductor adds `conductor.event.messageId` and `conductor.event.name` to the new workflow input, which makes the delivery traceable.
-
-Success is a new workflow execution whose input contains the resolved payload values and event metadata.
-
-## 5. Complete or fail waiting work
-
-The implemented `complete_task` and `fail_task` actions require either `taskId`, or both `workflowId` and `taskRefName`. OSS Conductor does not look up a waiting task from a business correlation key.
-
-```json
-{
-  "name": "complete_order_approval",
-  "event": "kafka:order-approvals",
-  "condition": "$.approved == true",
-  "actions": [
-    {
-      "action": "complete_task",
-      "complete_task": {
-        "workflowId": "${workflowId}",
-        "taskRefName": "approval",
-        "output": {
-          "approved": "${approved}",
-          "approvedBy": "${approvedBy}",
-          "eventId": "${eventId}"
-        }
-      }
-    }
-  ],
-  "active": true
-}
-```
-
-Representative broker payload:
-
-```json
-{
-  "eventId": "approval-7f3d",
-  "workflowId": "6f3f6db1-2b5f-4b34-a145-82b7ae814e91",
-  "approved": true,
-  "approvedBy": "reviewer@example.com"
-}
-```
-
-`fail_task` has the same targeting fields and accepts `reasonForIncompletion`. After delivery, verify the target task status and downstream workflow transition, not only broker acknowledgement.
-
-Although the shared model also declares `terminate_workflow` and `update_workflow_variables`, the OSS `SimpleActionProcessor` does not implement them and throws `UnsupportedOperationException`. Supported OSS actions are only `start_workflow`, `complete_task`, and `fail_task`.
-
-## 6. Production contracts and observability
-
-Actions within one handler are submitted concurrently. They are not a transaction: one action can succeed while another fails. Prefer one independently idempotent side effect per handler, or design compensation explicitly.
-
-Brokers can redeliver. Conductor persists event-execution records keyed from the broker message ID and action index, so a stable message ID enables duplicate suppression after the record is stored. That does not make arbitrary downstream side effects idempotent. Producers must emit stable IDs and action targets/workflows must tolerate retry.
-
-Monitor the publisher task, broker backlog/redelivery, handler activation, event-execution records, and resulting workflow/task. Carry a stable event ID in the payload and retain Conductor's injected event metadata.
-
-## Providers and required modules
-
-Every listed provider can back `EVENT` publishing and event-handler consumption when its module is on the server classpath and enabled.
-
-| Identifier | Module | Enable/configure |
+| Need | Start here | Availability |
 |---|---|---|
-| `conductor` | `core` | `conductor.event-queues.default.enabled=true` (default) |
-| `kafka` | `kafka-event-queue` | `conductor.event-queues.kafka.enabled=true`; `conductor.event-queues.kafka.bootstrap-servers` |
-| `sqs` | `awssqs-event-queue` | `conductor.event-queues.sqs.enabled=true`; AWS default credentials/region and optional `.endpoint` |
-| `nats` | `nats` or legacy `nats-streaming` module | `conductor.event-queues.nats.enabled=true`; plain NATS provider uses its connection defaults |
-| `jsm` | `nats` | `conductor.event-queues.jsm.enabled=true`; `.url`, `.durable-name`, stream and acknowledgement settings |
-| `nats_stream` | `nats-streaming` | `conductor.event-queues.nats-stream.enabled=true`; `.url`, `.cluster-id`, `.durable-name` |
-| `amqp_queue` | `amqp` | `conductor.event-queues.amqp.enabled=true`; `.hosts`, `.port`, credentials, virtual host |
-| `amqp_exchange` | `amqp` | Same AMQP module and properties; exchange behavior is provider-specific |
+| Publish workflow data to a queue or broker | [Publish events](publish-events.md) | OSS and Orkes |
+| Consume a broker message and start or update workflow work | [Consume and route events](consume-route-events.md) | OSS and Orkes |
+| Receive an HTTP callback from an external service | [Incoming webhooks](incoming-webhooks.md) | Orkes only |
+| Continue a workflow blocked on `WAIT` | [Send signals to workflows](../cookbook/sending-signals.md) | OSS and Orkes |
+| Notify external systems when executions change state | [Workflow status events](workflow-status-events.md) | OSS and Orkes |
 
-Do not use undocumented aliases such as `amqp`, `ampq`, or `nats-stream`; no provider registers those identifiers.
+`EVENT` publishes messages; an event handler consumes and routes them. A webhook is HTTP ingress, not a general-purpose event handler. A signal changes an existing workflow and does not create a new execution.
 
-## Limitations
+## Broker provider matrix
 
-External broker journeys require their infrastructure and are source/test-backed when that infrastructure is not present. The internal Conductor queue is the smallest end-to-end smoke test. For exact handler fields and endpoints, use the [Event handler reference](../../documentation/configuration/eventhandlers.md) and [Event Handlers API](../../documentation/api/eventhandlers.md).
+Provider support depends on the Conductor distribution and enabled server integration. The destination after the first colon in an event name is provider-specific.
 
-## Continue with event-driven recipes
+| Provider | OSS Conductor | Orkes |
+|---|:---:|:---:|
+| Conductor internal queue | Yes | — |
+| Kafka | Yes | Yes |
+| Amazon SQS | Yes | Yes |
+| NATS | Yes | Yes |
+| NATS JetStream | Yes | — |
+| NATS Streaming | Yes | — |
+| AMQP queue / exchange | Yes | Yes (including RabbitMQ) |
+| Azure Service Bus | — | Yes |
+| Google Cloud Pub/Sub | — | Yes |
+| IBM MQ | — | Yes |
 
-<p class="event-bus-recipes"><a class="event-bus-recipes__link" href="../cookbook/event-driven.html">Explore the Event-Driven Cookbook <span aria-hidden="true">→</span></a></p>
+## Operate the whole path
 
-<a id="supported-buses-and-configuration"></a>
-<a id="publish-an-event"></a>
-<a id="consume-events-with-handlers"></a>
-<a id="production-guidance"></a>
+Monitor broker queue depth (`event_queue_depth`), message processing (`event_queue_messages_processed`, `event_queue_messages_handled`, and `event_queue_messages_error`), and handler actions (`event_execution_success` and `event_execution_error`). Then check the resulting workflow or task: broker acknowledgement alone does not prove the downstream action reached its intended state.
+
+## Next steps
+
+- **[Publish events](publish-events.md)** — send workflow data to a broker.
+- **[Consume and route events](consume-route-events.md)** — start or advance workflows from incoming messages.
+- **[Incoming webhooks](incoming-webhooks.md)** — accept verified HTTP callbacks.
+- **[Send signals](../cookbook/sending-signals.md)** — advance an execution that is waiting.
+- **[Workflow status events](workflow-status-events.md)** — notify external systems as executions change state.
 
 
 <!-- Source: devguide/workflows/production-path.md -->
@@ -2113,7 +2021,7 @@ Give operators a workflow name, version, correlation-ID convention, and owner. M
 
 ## Next production step
 
-For platform-level deployment, metrics, and storage choices, go to [Operate durable systems](../operate/index.md). For an AI workflow or agent, use the [agent production path](../ai/production-path.md) in addition to this workflow baseline.
+For platform-level deployment and storage choices, continue to [Deploy Conductor](../running/deploy.md) and [Durable Execution](../../architecture/durable-execution.md). For an AI workflow or agent, add the controls in [Production Agent Architecture](../ai/production-agent-architecture.md) to this workflow baseline.
 
 
 <!-- Source: devguide/how-tos/Workflows/handling-errors.md -->
@@ -2571,7 +2479,7 @@ Free-text and task searches depend on the configured index backend and its index
 <!-- Source: devguide/how-tos/Workflows/debugging-workflows.md -->
 # Debugging Workflows
 
-The [workflow execution views](viewing-workflow-executions.md) in the Conductor UI are useful for debugging workflow issues. Learn how to debug failed executions and rerun them. 
+The [workflow execution views](viewing-workflow-executions.md) in the Conductor UI are useful for debugging workflow issues. Learn how to debug failed executions and rerun them.
 
 ## Debug procedure
 
@@ -2657,6 +2565,8 @@ Recovery can repeat side effects. Retry or rerun only when completed external op
 During a workflow execution, each task transitions through a series of states. Understanding these transitions is key to configuring retries, timeouts, and error handling correctly.
 
 ## State diagram
+
+Every task starts in `SCHEDULED` when it enters its queue. A worker poll moves it to `IN_PROGRESS`, and a successful result moves it to `COMPLETED`. The other transitions cover failure: `FAILED` and `TIMED_OUT` tasks return to `SCHEDULED` for retry until their retries are exhausted, and every other state is terminal.
 
 ```mermaid
 stateDiagram-v2
@@ -2834,85 +2744,97 @@ This is useful when you need a hard SLA on how long a task can run across all it
 
 
 <!-- Source: devguide/how-tos/Workflows/versioning-workflows.md -->
-# Versioning Workflows
+# Managing Workflow Versions
 
-Conductor allows you to safely run different workflow versions without disrupting ongoing or scheduled workflow executions in production. 
-
-Refer to [Updating workflows](creating-workflows.md#updating-workflows) for more information on modifying a workflow and saving it as a new version.
-
-## Rollout procedure
-
-1. Register a new workflow version instead of overwriting the version used by production callers.
-2. Validate and mock-test it, then run a real canary execution with the version pinned.
-3. Move callers, schedules, and parent-workflow references deliberately to the new version.
-4. Compare completion, failure, latency, and output-contract behavior.
-5. Keep the previous version registered until callers have migrated and its executions no longer need restart/replay support.
-
-Success means new callers start the intended version while existing executions continue against their recorded definition snapshot.
-
+Every workflow definition carries a `version` number, and Conductor can run multiple versions of the same workflow side by side. This page covers when to create a new version, how versions behave at runtime, and how to roll one out without disrupting ongoing executions.
 
 ## When to version workflows
 
-Workflow versioning is useful for various scenarios, like gradually upgrading a process, or rolling out different workflow versions to different user bases.
+Create a new version when inputs, outputs, task order, or failure behavior change in a way callers can observe. See [Update and version safely](creating-workflows.md#updating-workflows) for the registration mechanics.
 
-### Example
-
-For example, a new version of your core workflow will add a capability that is required for _customerA_.  However, _customerB_ will not be ready to implement this code for another 6 months.
-
-With workflow versioning, you can begin transitioning traffic onto version 2 for _customerA_, while _customerB_ remains on version 1. 6 months later, _customerB_ can begin transitioning traffic to version 2 as well.
-
+Versioning is also useful for gradual rollouts. For example, suppose a new version of your core workflow adds a capability that _customerA_ requires, but _customerB_ will not be ready to adopt for another 6 months. With versioning, you can move _customerA_'s traffic to version 2 now while _customerB_ stays on version 1, and migrate _customerB_ later.
 
 ## Runtime behavior with multiple workflow versions
 
-At runtime, all Conductor workflows will reference a snapshot of the workflow definition at the start of its invocation. In other words, all changes to a workflow definition are decoupled from all of its ongoing workflow executions.
+At runtime, every execution references a snapshot of the workflow definition taken when it started. Changes to a definition never affect executions that are already running.
 
 Here is an illustration of workflow versions at runtime, when you run workflows based on the latest version, versus when you run workflows based on a specific version.
 
 ![Diagram of a workflow definition's versions compared to its execution version at different points in time.](workflow-versioning-at-runtime.jpg)
 
-In the illustration above, the workflow with version V1 is executed at timestamp T1 and thus uses the workflow definition at that time.
+In the illustration above:
 
-At T2, a new workflow version V2 is created.  From that point on, any newly-triggered executions using the latest version will run based on V2, even if V1 gets updated later on at T3.
+- At T1, an execution starts on version V1, so it uses the V1 definition as it exists at T1.
+- At T2, version V2 is registered. New executions that start on the latest version now use V2.
+- At T3, the V1 definition itself is updated in place. The execution from T1 keeps running on its T1 snapshot, while any new execution pinned to V1 uses the updated T3 definition.
 
-At T3, even when the V1 workflow definition is updated, all existing V1 executions will continue based on the definition at timestamp T1. From that point on, any newly-triggered executions using version V1 will run based on the V1 definition at timestamp T3.
+### Runtime behavior during restarts
 
-
-### Runtime behavior during restarts 
-
-Likewise, by default all workflow restarts, workflow retries, and task reruns will be executed based on the snapshot of the workflow definition at the start of the _first_ execution attempt. If required, you can choose to restart workflows with the latest definitions.
+By default, restarts, retries, and task reruns also use the snapshot from the start of the first execution attempt. If required, you can instead restart a workflow with the latest definitions.
 
 Here is an illustration of workflow versions at runtime, when you restart workflows using the current definitions versus using the latest definitions.
 
 ![Diagram of workflow versions at runtime when restarting executions.](restarting-workflows-at-runtime.jpg)
 
-In the illustration above, if a V1 execution is restarted with the current definitions after a new version V2 has been created, the restarted execution will still run based on the V1 definition at T1. This applies even if the same execution is restarted after the V1 definition itself has been updated at T3.
+In the illustration above:
 
-At T2, if a V1 execution is restarted with the latest definitions, the V1 execution will restart using the V2 definition instead. This also applies even if the same execution is restarted after the V1 definition itself has been updated at T3.
+- Restarting the V1 execution with **current definitions** re-runs it on its original T1 snapshot, even after V2 exists and even after V1 is updated at T3.
+- Restarting the V1 execution with **latest definitions** re-runs it on the newest registered version, V2.
+
+## Rollout procedure
+
+1. Register the new version instead of overwriting the version production callers use: increment the `version` field in the definition and register it.
+
+    ```bash
+    conductor workflow create workflow.json
+    ```
+
+2. Validate and mock-test it, then run a real canary execution with the version pinned:
+
+    ```bash
+    conductor workflow start -w <workflow-name> --version 2 -i '{"orderId": "test-1"}'
+    ```
+
+3. Move callers, schedules, and parent-workflow references deliberately to the new version.
+4. Compare completion, failure, latency, and outputs between the two versions.
+5. Keep the previous version registered until callers have migrated and its executions no longer need restart or replay support.
+
+Success means new callers start the intended version while existing executions continue against their recorded definition snapshot.
 
 ## Upgrading running workflows
 
-Since any changes to a workflow definition will not impact its ongoing executions, running workflows need to be explicitly upgraded if required.
-
-Using the Conductor UI or APIs, you can upgrade a running workflow by terminating the execution and restarting it with the latest definition.
+Since definition changes never affect ongoing executions, a running workflow must be explicitly upgraded if required. The upgrade is a terminate followed by a restart on the latest definitions.
 
 !!! warning
     Terminating and restarting can repeat side effects. Prefer allowing running executions to finish on their snapshot unless the workflow is idempotent or compensation is defined.
 
 ### Using Conductor UI
 
-**To upgrade a running workflow**:
+**To upgrade a running workflow:**
 
-1. In **[Executions](http://localhost:8080/executions)**, select an ongoing workflow to upgrade.
-2. In the top right, select **Actions** > **Terminate**.
-3. Once terminated, select **Actions** > **Restart with Latest Definitions**.
+1. In the left navigation, open **Executions** and select **Workflow**, then select the ongoing execution to upgrade.
+2. In the top right, select **Actions** and then **Terminate**.
+3. Once terminated, select **Actions** and then **Restart with latest definitions**.
 
 ### Using Conductor APIs
 
-The API approach allows you to upgrade running workflows in bulk. Use the Bulk Terminate API (`POST /api/workflow/bulk/terminate`) to specify a list of ongoing workflows. Then, use the Bulk Restart API (`POST /api/workflow/bulk/restart`) to restart the terminated workflows.
+The API approach upgrades running workflows in bulk. Terminate the executions with the Bulk Terminate API, then restart them with the Bulk Restart API, passing `useLatestDefinitions=true`:
+
+```bash
+curl -X POST 'http://localhost:8080/api/workflow/bulk/terminate' \
+  -H 'Content-Type: application/json' \
+  -d '["<workflow-id-1>", "<workflow-id-2>"]'
+
+curl -X POST 'http://localhost:8080/api/workflow/bulk/restart?useLatestDefinitions=true' \
+  -H 'Content-Type: application/json' \
+  -d '["<workflow-id-1>", "<workflow-id-2>"]'
+```
+
+Without `useLatestDefinitions=true`, a restart uses each execution's original definition snapshot and no upgrade happens.
 
 ## Limitations and next step
 
-Omitting a version at start time selects the latest registered version, which trades rollout control for convenience. Pin versions in schedules and parent workflows when deterministic deployment matters. Next, rehearse [Debug and recover](debugging-workflows.md) for both the current and previous version.
+Omitting a version at start time selects the latest registered version, which trades rollout control for convenience. Pin versions in schedules and parent workflows when deterministic deployment matters. Next, rehearse [debugging and recovery](debugging-workflows.md) for both the current and previous version.
 
 
 <!-- Source: devguide/how-tos/Workers/scaling-workers.md -->
@@ -3068,7 +2990,7 @@ In Conductor, workflows are executed on a worker-task queue architecture, where 
 * **Task queues**—Distributed queues for each task type, where tasks are completed on a first-in-first-out basis.
 * **Task workers**—Poll the Conductor server via HTTP or gRPC for tasks, execute tasks, and update the server on the task status. Each worker is responsible for carrying out a specific task type.
 * **Data stores** (Redis by default)—High-availability persistence stores that maintain workflow and task metadata, task queues, and execution history
-* **APIs**—REST APIs for programmatic access to the Conductor server. 
+* **APIs**—REST APIs for programmatic access to the Conductor server.
 
 
 By default, Conductor uses Redis as its data store, with Elasticsearch used for its indexing backend. These [storage layers are pluggable](../../documentation/advanced/extend.md), allowing you to work with alternative backends and queue service providers.
@@ -3076,7 +2998,7 @@ By default, Conductor uses Redis as its data store, with Elasticsearch used for 
 
 ## Task execution
 
-With a worker-task queue architecture, Conductor schedules and assigns tasks to its designated task queues based on its task type. Conductor follows an RPC-based communication model where task workers run on a separate machine from the server and communicate over HTTP-based endpoints with the server. 
+With a worker-task queue architecture, Conductor schedules and assigns tasks to its designated task queues based on its task type. Conductor follows an RPC-based communication model where task workers run on a separate machine from the server and communicate over HTTP-based endpoints with the server.
 
 The workers employ a polling model for managing their designated queues, and update Conductor with the task status.
 
@@ -3087,13 +3009,13 @@ The workers employ a polling model for managing their designated queues, and upd
 ### Worker-server polling mechanism
 
 
-Each worker declares beforehand what task(s) it can execute. At runtime, task workers poll its designated task queue(s) to receive and execute scheduled work. Conductor passes task inputs to the worker for execution and collects the task outputs, continuing the process according to the workflow definition. 
+Each worker declares beforehand what task(s) it can execute. At runtime, task workers poll its designated task queue(s) to receive and execute scheduled work. Conductor passes task inputs to the worker for execution and collects the task outputs, continuing the process according to the workflow definition.
 
 By default, workers infinitely poll Conductor every 100ms. The polling interval value for each type of worker can be adjusted accordingly based on factors like workload. Here is the polling mechanism in detail:
 
-1. The application starts a workflow execution by interacting with Orkes Conductor, which returns a workflow (execution) ID. It can be used to track the workflow's progress and manage its execution.
+1. The application starts a workflow execution by interacting with Conductor, which returns a workflow (execution) ID. It can be used to track the workflow's progress and manage its execution.
 2. Conductor schedules the first task in the workflow to its task queue.
-3. The workers responsible for executing the first task within the workflow are polling Orkes Conductor for tasks to execute via HTTP or gRPC. When a task is scheduled, Conductor sends it to the next available worker, which then performs the required work.
+3. The workers responsible for executing the first task within the workflow are polling Conductor for tasks to execute via HTTP or gRPC. When a task is scheduled, Conductor sends it to the next available worker, which then performs the required work.
 4. Periodically, the worker returns the task status to Conductor (e.g. IN PROGRESS, FAILED, COMPLETED, etc).
 5. Once the first task in the workflow instance is completed, the worker returns the task output to the server, and Conductor schedules the next set of tasks to be performed.
 
@@ -3103,13 +3025,11 @@ Using the workflow ID, the application can check the Conductor server for the wo
 
 
 <!-- Source: devguide/cookbook/index.md -->
-# Cookbook
+# Design Patterns
 
 <section class="concept-hero concept-hero--cookbook">
   <div class="concept-hero__content">
-    <p class="concept-hero__eyebrow">Production patterns</p>
-    <h2>Start with a proven workflow shape.</h2>
-    <p>Choose a recipe for the orchestration problem at hand, adapt the complete definition, and run it with durable state, retries, and visibility built in.</p>
+    <p>Design patterns are complete, runnable workflow definitions for common orchestration problems. Each page takes one problem, such as parallel fan-out, sagas, timers, or human approval, and gives you a working definition to register, run, and adapt to your own tasks. This section covers workflow patterns. Agentic patterns and agent recipes live in <a href="../ai/cookbook/index.html">AI Cookbook</a>.</p>
   </div>
   <svg class="concept-hero__graphic cookbook-hero__graphic" viewBox="0 0 440 205" role="img" aria-label="Cookbook recipes for services, parallel work, timers, events, AI, and code flow into a durable Conductor workflow">
     <defs><marker id="cookbook-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
@@ -3162,6 +3082,18 @@ Using the workflow ID, the application can check the Conductor server for the wo
     <span class="cookbook-card__arrow" aria-hidden="true">→</span>
   </a>
 
+  <a class="cookbook-card" href="saga-compensation.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 9 9"/><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-9-9"/><path d="M3 12h4M17 12h4"/><path d="M7 9l-4 3 4 3M17 9l4 3-4 3"/></svg></span>
+    <span class="cookbook-card__body"><strong>Saga and compensation</strong><span>Undo a partially completed transaction: failureWorkflow, reverse-order rollback, idempotent undo.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
+  <a class="cookbook-card" href="http-poll-long-running-job.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+    <span class="cookbook-card__body"><strong>Polling a long-running job</strong><span>Wait on a slow third-party API with one HTTP_POLL task, backoff, and a poll ceiling.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
   <a class="cookbook-card" href="workflow-scheduling.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3"/></svg></span>
     <span class="cookbook-card__body"><strong>Scheduled workflows</strong><span>Cron execution, downtime catchup, bounded windows, and concurrent runs.</span></span>
@@ -3174,15 +3106,9 @@ Using the workflow ID, the application can check the Conductor server for the wo
     <span class="cookbook-card__arrow" aria-hidden="true">→</span>
   </a>
 
-  <a class="cookbook-card" href="ai-llm.html">
+  <a class="cookbook-card" href="../ai/cookbook/index.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-5l-4 3v-3H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/><path d="M9 10h.01M12 10h.01M15 10h.01"/></svg></span>
-    <span class="cookbook-card__body"><strong>AI &amp; LLM orchestration</strong><span>Chat, RAG, MCP agents, image generation, LLM-to-PDF, and provider setup.</span></span>
-    <span class="cookbook-card__arrow" aria-hidden="true">→</span>
-  </a>
-
-  <a class="cookbook-card" href="ai-workflow-routing.html">
-    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h8M12 5l-3-3M12 5 9 8M4 19h8M12 19l-3-3M12 19l-3 3M4 12h16"/><circle cx="19" cy="12" r="2"/></svg></span>
-    <span class="cookbook-card__body"><strong>Dynamic Workflows with AI</strong><span>Let an LLM select an approved workflow from a catalog, then dispatch it safely.</span></span>
+    <span class="cookbook-card__body"><strong>AI Cookbook</strong><span>Agentic workflows and SDK-authored agents: RAG, MCP tools, guardrails, human approval, deep research, handoffs, and memory.</span></span>
     <span class="cookbook-card__arrow" aria-hidden="true">→</span>
   </a>
 
@@ -3759,7 +3685,21 @@ The output data you pass when signaling the current blocked `WAIT` task is avail
 <!-- Source: devguide/cookbook/sending-signals.md -->
 # Sending signals to workflows
 
-Use a signal to complete a workflow's currently blocked `WAIT` task from an approval UI, webhook, or external callback. The signal payload becomes the task output, so later workflow steps can make a durable decision from it.
+<section class="concept-hero concept-hero--event-bus" aria-label="Send signals">
+  <div class="concept-hero__content">
+    <p>A <strong>signal</strong> advances a workflow that is already running and waiting. It resolves the first non-terminal <code>WAIT</code> task in the target execution, so the caller only needs the workflow ID. A signal never starts a new execution, cannot target an arbitrary task reference, and does not resolve <code>HUMAN</code> tasks.</p>
+  </div>
+  <svg class="concept-hero__graphic event-hero__graphic" viewBox="0 0 440 190" role="img" aria-labelledby="signal-svg-title signal-svg-desc" xmlns="http://www.w3.org/2000/svg">
+    <title id="signal-svg-title">Workflow signal flow</title>
+    <desc id="signal-svg-desc">A caller sends an output payload to a signal endpoint. It finds the first blocked Wait, including in a running sub-workflow, then the workflow continues.</desc>
+    <defs><marker id="signal-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="currentColor"/></marker></defs>
+    <rect x="14" y="68" width="96" height="54" rx="10" class="concept-hero__node event-hero__node--broker"/><text x="62" y="91" text-anchor="middle" class="concept-hero__label">Caller</text><text x="62" y="108" text-anchor="middle" class="concept-hero__detail">decision output</text>
+    <path d="M110 95 H145" class="concept-hero__line" marker-end="url(#signal-arrow)"/>
+    <rect x="153" y="68" width="100" height="54" rx="10" class="concept-hero__node concept-hero__node--accent"/><text x="203" y="91" text-anchor="middle" class="concept-hero__label">Signal API</text><text x="203" y="108" text-anchor="middle" class="concept-hero__detail">find first WAIT</text>
+    <path d="M253 95 H288" class="concept-hero__line" marker-end="url(#signal-arrow)"/>
+    <rect x="296" y="51" width="130" height="88" rx="10" class="concept-hero__node event-hero__node--action"/><text x="361" y="77" text-anchor="middle" class="concept-hero__label">Blocked WAIT</text><text x="361" y="94" text-anchor="middle" class="concept-hero__detail">workflow or running</text><text x="361" y="111" text-anchor="middle" class="concept-hero__detail">sub-workflow</text><text x="361" y="128" text-anchor="middle" class="concept-hero__detail">then continue</text>
+  </svg>
+</section>
 
 ## Define a workflow that waits for a signal
 
@@ -3823,7 +3763,7 @@ curl -X POST 'http://localhost:8080/api/tasks/<workflow-id>/COMPLETED/signal' \
   -d '{"approved":true,"approvedBy":"manager@example.com","reason":"Within policy"}'
 ```
 
-The signal target is the first non-terminal `WAIT` task in the workflow, including a currently running sub-workflow. A signal does not name a task reference; use this endpoint only when that current blocking-wait behavior is what you want.
+The signal target is the first non-terminal `WAIT` task in the workflow, including a currently running sub-workflow. It does not target `HUMAN` tasks or an arbitrary task reference. A signal does not name a task reference; use this endpoint only when that current blocking-wait behavior is what you want. When exact task targeting is required, use the task-update endpoint (`POST /api/tasks/{workflowId}/{taskRefName}/{status}`) instead.
 
 ## Signal and wait for the next workflow state
 
@@ -3835,7 +3775,7 @@ curl -X POST 'http://localhost:8080/api/tasks/<workflow-id>/COMPLETED/signal/syn
   -d '{"approved":true,"approvedBy":"manager@example.com"}'
 ```
 
-If the workflow reaches another `WAIT` task, the response represents that next blocking state. If it completes first, the response represents the completed workflow. A synchronous signal returns `404` when there is no blocked task to signal.
+If the workflow reaches another `WAIT` task, the response represents that next blocking state. If it completes first, the response represents the completed workflow. A synchronous signal returns `404` when there is no blocked task to signal; the asynchronous route returns after submitting the signal and does not provide that state in its response.
 
 ## Reject or fail the wait
 
@@ -3849,10 +3789,14 @@ curl -X POST 'http://localhost:8080/api/tasks/<workflow-id>/FAILED/signal' \
 
 The payload you send is stored as the `WAIT` task's output. Downstream tasks can reference it with expressions such as `${approval.output.approved}` or `${approval.output.reason}`.
 
-## Related recipes
+## Next steps
 
-- [Wait and timer patterns](wait-and-timers.md) — fixed waits, scheduled waits, and approval waits.
-- [Event-driven recipes](event-driven.md) — have events complete or advance workflows.
+<div class="event-next-steps">
+  <a href="../how-tos/consume-route-events.html">Route a broker event to a task →</a>
+  <a href="../how-tos/incoming-webhooks.html">Receive a verified webhook →</a>
+  <a href="../how-tos/event-bus.html">Event-driven overview →</a>
+  <a href="wait-and-timers.html">Wait and timer patterns →</a>
+</div>
 
 
 <!-- Source: devguide/cookbook/task-timeouts-and-retries.md -->
@@ -5023,7 +4967,7 @@ The sub-workflow name is resolved at runtime from the LLM output. A name not pre
 
 ## Related recipes
 
-- [AI & LLM orchestration recipes](ai-llm.md) — chat, RAG, MCP agents, and other native AI tasks.
+- [AI Cookbook](../ai/cookbook/index.md) — production starters for chat, RAG, MCP agents, and native AI tasks.
 - [Dynamic workflows as code](dynamic-workflows.md) — build workflow definitions in Python when the graph itself must be generated.
 
 
@@ -5552,7 +5496,7 @@ For more Python SDK examples, see the [Python SDK documentation](../../documenta
 
 The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations).
 
-For the formal JSON Schema definitions of workflow and task structures, see the [`schemas/`](https://github.com/conductor-oss/conductor/tree/main/schemas) directory in the repository.
+For the formal JSON Schema definitions of workflow and task structures, see [Schemas](../schemas.md). The linked source schemas are the field-level contract.
 
 
 ## Workflow Properties
@@ -5675,12 +5619,12 @@ See [example](#example-3-inputexpression) below.
 
 ## Examples
 
-### Example 1 - A Basic Workflow Definition 
+### Example 1 - A Basic Workflow Definition
 
 Assume your business logic is to simply to get some shipping information and then do the shipping. You start by
 logically partitioning them into two tasks:
 
- 1. *shipping_info* - The first task takes the provided account number, and outputs an address.  
+ 1. *shipping_info* - The first task takes the provided account number, and outputs an address.
  2. *shipping_task* - The 2nd task takes the address info and generates a shipping label.
 
 We can configure these two tasks in the `tasks` array of our Workflow Definition. Let's assume that ```shipping info``` takes an account number, and returns a name and address.
@@ -5704,10 +5648,10 @@ We can configure these two tasks in the `tasks` array of our Workflow Definition
       "taskReferenceName": "shipping_task_ref",
       "inputParameters": {
         "name": "${shipping_info_ref.output.name}",
-		"streetAddress": "${shipping_info_ref.output.streetAddress}",
-		"city": "${shipping_info_ref.output.city}",
-		"state": "${shipping_info_ref.output.state}",
-		"zipcode": "${shipping_info_ref.output.zipcode}",
+        "streetAddress": "${shipping_info_ref.output.streetAddress}",
+        "city": "${shipping_info_ref.output.city}",
+        "state": "${shipping_info_ref.output.state}",
+        "zipcode": "${shipping_info_ref.output.zipcode}",
       },
       "type": "SIMPLE"
     }
@@ -5746,8 +5690,8 @@ Consider a task `http_task` with input configured to use input/output parameters
       "name": "loc_task",
       "taskReferenceName": "loc_task_ref",
       "taskType": "SIMPLE",
-      ...      
-    },    
+      ...
+    },
     {
       "name": "http_task",
       "taskReferenceName": "http_task_ref",
@@ -5817,8 +5761,8 @@ When scheduling the task, Conductor will merge the values from workflow input an
       }
     },
     "headers": {
-    	"Accept": "application/json",
-    	"Content-Type": "application/json"
+        "Accept": "application/json",
+        "Content-Type": "application/json"
     }
   }
 }
@@ -5834,7 +5778,7 @@ Given the following task configuration:
   "inputExpression": {
     "expression": "workflow.input",
     "type": "JSON_PATH"
-  }  
+  }
 }
 ```
 
@@ -6037,7 +5981,7 @@ curl -X POST 'http://localhost:8080/api/workflow' \
 <!-- Source: documentation/api/scheduler.md -->
 # Scheduler API
 
-The scheduler controller is mounted at `/api/scheduler`. It is present when the scheduler condition is enabled. All endpoints below return `200 OK` on success unless noted otherwise.
+The scheduler controller is mounted at `/api/scheduler`. It is present only when `conductor.scheduler.enabled=true`. All endpoints below return `200 OK` on success unless noted otherwise.
 
 ## Schedule model
 
@@ -6109,6 +6053,20 @@ PUT /api/scheduler/schedules/{name}/resume
 
 `reason` is optional. Both operations return an empty `200 OK` response.
 
+## Bulk pause and resume
+
+```http
+PUT /api/scheduler/bulk/pause
+PUT /api/scheduler/bulk/resume
+Content-Type: application/json
+```
+
+Each body is a JSON array of schedule names. The response is a `BulkResponse`, with successful names and per-name errors. These endpoints are registered with the same scheduler condition as the rest of the Scheduler API.
+
+```json
+["nightly-report", "hourly-cleanup"]
+```
+
 ## Delete
 
 ```http
@@ -6157,9 +6115,9 @@ The controller has no run-now endpoint, manual-backfill endpoint, overlap-policy
 
 
 <!-- Source: documentation/configuration/eventhandlers.md -->
-# Event handlers
+# Consume and route events with event handlers
 
-An event handler binds one provider event to a condition and one or more actions.
+An event handler consumes one provider event, evaluates an optional condition, and dispatches one or more actions. Register it with the [Event Handlers API](../api/eventhandlers.md); only active handlers are subscribed for processing.
 
 ```json
 {
@@ -6188,29 +6146,31 @@ An event handler binds one provider event to a condition and one or more actions
 
 The format is `provider:<provider-specific queue URI>`. Runtime parsing splits at the first colon. Valid registered provider keys are `conductor`, `kafka`, `sqs`, `nats`, `jsm`, `nats_stream`, `amqp_queue`, and `amqp_exchange` when their modules are enabled.
 
-## Defaults and expressions
+## Conditions and payload expressions
 
 - `active` defaults to `false`.
 - An absent condition is treated as true.
-- Conditions evaluate against the payload root, for example `$.status == 'READY'`.
+- Conditions evaluate against the payload root, for example `$.status == 'READY'`. If `evaluatorType` identifies a registered evaluator, Conductor uses it; otherwise it evaluates the condition with the default script evaluator.
 - Action placeholders also resolve from the payload root, for example `${orderId}`.
 - `expandInlineJSON: true` expands stringified JSON fields before expressions resolve.
 
-## Supported OSS actions
+## Action capability matrix
 
-| Action | Target |
-|---|---|
-| `start_workflow` | Starts the named workflow and adds Conductor event metadata to input |
-| `complete_task` | Completes `taskId`, or `workflowId` + `taskRefName` |
-| `fail_task` | Fails the same target and can set `reasonForIncompletion` |
+| Action | OSS Conductor | Orkes | Behavior |
+|---|:---:|:---:|---|
+| `start_workflow` | Yes | Yes | Starts the named workflow and adds Conductor event metadata to its input |
+| `complete_task` | Yes | Yes | Completes an identified task |
+| `fail_task` | Yes | Yes | Fails an identified task; can set `reasonForIncompletion` |
+| `terminate_workflow` | No | Yes | Terminates the targeted workflow |
+| `update_workflow_variables` | No | Yes | Updates variables on the targeted workflow |
 
-`terminate_workflow` and `update_workflow_variables` exist in the shared model but are not implemented by the OSS action processor.
+For `complete_task` and `fail_task`, specify either `taskId`, or both `workflowId` and `taskRefName`. Those are exact task-targeting mechanisms; an OSS handler does not resolve a business correlation key to a waiting task. `terminate_workflow` and `update_workflow_variables` exist in the shared model but are not implemented by the OSS action processor.
 
 ## Concurrency and deduplication
 
-Actions run concurrently and are not atomic. Each action is recorded separately using the broker message ID plus its action index. Stable message IDs allow persisted duplicate detection; downstream effects still need idempotency.
+Actions run concurrently and are not atomic. Each action is recorded separately using the broker message ID plus its action index. A stable broker message ID enables persisted duplicate detection after the event-execution record is stored, but downstream workflow starts, task updates, and external side effects still require idempotency.
 
-Register handlers through the [Event Handlers API](../api/eventhandlers.md). Design and provider configuration belong in [Event orchestration](../../devguide/how-tos/event-bus.md).
+For a condition that evaluates to false, Conductor records a skipped event execution and runs no actions. For a practical first-use walkthrough, see [Consume and route events](../../devguide/how-tos/consume-route-events.md); use this page as the action and expression reference.
 
 
 <!-- Source: documentation/api/eventhandlers.md -->
@@ -6263,19 +6223,19 @@ See [Event handler configuration](../configuration/eventhandlers.md) for the dat
 
 
 <!-- Source: documentation/configuration/workflowdef/systemtasks/event-task.md -->
-# Event task
+# Publish events with the Event task
 
-`EVENT` publishes a JSON message through a registered event-queue provider.
+`EVENT` publishes a JSON message through a registered event-queue provider. It is the generic publishing task: use [`KAFKA_PUBLISH`](kafka-publish-task.md) when the message contract needs Kafka-specific keys, headers, serializers, or producer controls.
 
 ## Task parameters
 
 | Parameter | Required | Behavior |
 |---|---|---|
-| `sink` | Yes | `provider:<provider-specific queue URI>`; expressions resolve at runtime |
+| `sink` | Yes | `provider:<provider-specific destination>`; expressions resolve at runtime |
 | `inputParameters` | No | User payload fields |
 | `asyncComplete` | No | Defaults to `false`; when true the task remains `IN_PROGRESS` after publish |
 
-Registered provider identifiers are `conductor`, `kafka`, `sqs`, `nats`, `jsm`, `nats_stream`, `amqp_queue`, and `amqp_exchange`, subject to the corresponding server module being enabled.
+In OSS, registered provider identifiers are `conductor`, `kafka`, `sqs`, `nats`, `jsm`, `nats_stream`, `amqp_queue`, and `amqp_exchange`, subject to the corresponding server module being enabled. The provider owns the destination grammar after the first colon; for example, it might be a Kafka topic, an SQS queue URL, a NATS subject, or an AMQP queue/exchange.
 
 ## Conductor sink expansion
 
@@ -6286,7 +6246,7 @@ The event handler must listen on the expanded name.
 
 ## Published payload and output
 
-The task begins with its resolved input and adds:
+The task begins with its resolved input parameters and adds workflow metadata:
 
 | Field | Value |
 |---|---|
@@ -6296,11 +6256,11 @@ The task begins with its resolved input and adds:
 | `correlationId` | Parent correlation ID |
 | `taskToDomain` | Parent domain map |
 
-The task output also contains `event_produced`, the expanded sink. The published message is the task output without `event_produced`. The broker message ID is the task ID.
+The task output also contains `event_produced`, the expanded sink. The published message is the task output without `event_produced`. The Event task uses its task ID as the broker message identity, so consumers can use that stable value for duplicate detection.
 
 ## Completion behavior
 
-With `asyncComplete: false`, a successful publish completes the task. With `asyncComplete: true`, a successful publish leaves it in progress; an external task update or event-handler `complete_task`/`fail_task` action must resolve it.
+With `asyncComplete: false`, a successful publish completes the task. With `asyncComplete: true`, publishing succeeds but the task remains `IN_PROGRESS`; an external task update or an event-handler `complete_task`/`fail_task` action must resolve it.
 
 ## Example
 
@@ -6318,7 +6278,7 @@ With `asyncComplete: false`, a successful publish completes the task. With `asyn
 }
 ```
 
-Use [Event orchestration](../../../../devguide/how-tos/event-bus.md) for handler actions, delivery semantics, and provider configuration.
+For a practical first-use walkthrough, see [Publish events](../../../../devguide/how-tos/publish-events.md). Use [Event-Driven Orchestration](../../../../devguide/how-tos/event-bus.md) for the provider matrix, routing, webhooks, signals, and delivery observability.
 
 <a id="configuration-json"></a>
 <a id="conductor-sink-configuration"></a>

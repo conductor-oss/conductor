@@ -44,8 +44,8 @@ import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -84,34 +84,80 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final A2AService a2aService;
-    private final ConductorAgentClient conductorAgentClient;
+    private final Map<String, ConductorAgentClient> agentClients = new HashMap<>();
     private final String callbackUrl;
 
+    // Set only in the Spring-managed path; null when constructed directly (SDK / tests).
+    private final ApplicationContext applicationContext;
+
+    // Populated once on first task execution — deferred so that ServiceConductorAgentClient
+    // (which transitively depends on SystemTaskRegistry @DependsOn workerTaskAnnotationScanner,
+    // which depends on this bean) can be fully initialized before we look it up.
+    private volatile boolean agentClientsLoaded;
+
     /**
-     * Spring constructor.
-     *
-     * <p>The lazy injection-point proxy keeps the dependency explicit while deferring construction
-     * of the embedded implementation. That implementation depends on AgentService and
-     * WorkflowService, which eventually depend on the annotated-task scanner that creates this
-     * worker.
+     * Spring constructor — does NOT inject {@link ConductorAgentClient} beans directly to avoid a
+     * constructor-injection cycle through {@code ServiceConductorAgentClient → AgentService →
+     * WorkflowServiceImpl → WorkflowExecutorOps → SystemTaskRegistry → WorkerTaskAnnotationScanner
+     * → A2AWorkers}. The map is populated lazily on the first task execution, at which point all
+     * beans are fully initialized.
      */
     @Autowired
     public A2AWorkers(
-            A2AService a2aService,
-            @Lazy ConductorAgentClient conductorAgentClient,
-            Environment environment) {
-        this(a2aService, conductorAgentClient, environment.getProperty(CALLBACK_URL_PROPERTY));
+            A2AService a2aService, ApplicationContext applicationContext, Environment environment) {
+        this.a2aService = a2aService;
+        this.applicationContext = applicationContext;
+        this.callbackUrl = StringUtils.trimToNull(environment.getProperty(CALLBACK_URL_PROPERTY));
     }
 
+    /** Non-Spring constructor for SDK / test use — callers pass the clients directly. */
     public A2AWorkers(
-            A2AService a2aService, ConductorAgentClient conductorAgentClient, String callbackUrl) {
+            A2AService a2aService,
+            List<ConductorAgentClient> conductorAgentClients,
+            String callbackUrl) {
         this.a2aService = a2aService;
-        this.conductorAgentClient = conductorAgentClient;
+        this.applicationContext = null;
+        conductorAgentClients.forEach(this::register);
+        this.agentClientsLoaded = true;
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
-    public A2AWorkers(A2AService a2aService, ConductorAgentClient conductorAgentClient) {
-        this(a2aService, conductorAgentClient, (String) null);
+    public A2AWorkers(A2AService a2aService, List<ConductorAgentClient> conductorAgentClients) {
+        this(a2aService, conductorAgentClients, (String) null);
+    }
+
+    /**
+     * Index a client by its agent type. Two clients claiming the same type would otherwise
+     * last-one-wins on discovery order, silently shadowing one of them; {@code agentType()}
+     * defaults to {@code "conductor"}, so an implementation that forgets to override collides with
+     * the built-in client. Keep the first and say so rather than swapping it out invisibly.
+     */
+    private void register(ConductorAgentClient client) {
+        String agentType = client.agentType().toLowerCase();
+        ConductorAgentClient existing = agentClients.putIfAbsent(agentType, client);
+        if (existing != null && existing != client) {
+            log.warn(
+                    "Ignoring agent client {} — agentType '{}' is already served by {}. "
+                            + "Override agentType() so both are reachable.",
+                    client.getClass().getName(),
+                    agentType,
+                    existing.getClass().getName());
+        }
+    }
+
+    private Map<String, ConductorAgentClient> clients() {
+        if (!agentClientsLoaded && applicationContext != null) {
+            synchronized (agentClients) {
+                if (!agentClientsLoaded) {
+                    applicationContext
+                            .getBeansOfType(ConductorAgentClient.class)
+                            .values()
+                            .forEach(this::register);
+                    agentClientsLoaded = true;
+                }
+            }
+        }
+        return agentClients;
     }
 
     /** Fetch a remote agent's Agent Card. */
@@ -137,8 +183,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACallResult agent(A2ACallRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result;
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
-            result = new ConductorAgentDelegate(conductorAgentClient).execute(task);
+        ConductorAgentClient client =
+                clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (client != null) {
+            result = new ConductorAgentDelegate(client).execute(task);
         } else {
             result = executeRemote(task, request);
         }
@@ -150,14 +198,16 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACancelResult cancelAgent(A2ACancelRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result = resultFor(task);
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
+        ConductorAgentClient cancelClient =
+                clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (cancelClient != null) {
             String executionId = StringUtils.trimToNull(request.getExecutionId());
             if (executionId == null) {
-                fail(result, "CANCEL_AGENT (conductor) requires 'executionId'", true);
+                fail(result, "CANCEL_AGENT requires 'executionId'", true);
                 return finish(result, A2ACancelResult.class);
             }
             try {
-                conductorAgentClient.cancelAgent(
+                cancelClient.cancelAgent(
                         ConductorAgentCancelRequest.builder()
                                 .executionId(executionId)
                                 .reason(
@@ -172,10 +222,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             } catch (Exception e) {
                 fail(
                         result,
-                        "Failed to terminate conductor agent execution "
-                                + executionId
-                                + ": "
-                                + e.getMessage(),
+                        "Failed to cancel agent execution " + executionId + ": " + e.getMessage(),
                         false);
                 return finish(result, A2ACancelResult.class);
             }
@@ -219,8 +266,10 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             return;
         }
         A2ACallRequest request = parse(task, A2ACallRequest.class);
-        if (A2AService.isConductorAgentType(request.getAgentType())) {
-            new ConductorAgentDelegate(conductorAgentClient).cancel(task, reason);
+        ConductorAgentClient cancelClient =
+                clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        if (cancelClient != null) {
+            new ConductorAgentDelegate(cancelClient).cancel(task, reason);
             return;
         }
         String remoteTaskId =

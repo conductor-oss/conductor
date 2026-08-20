@@ -78,7 +78,7 @@ def check_nav() -> None:
 
 def check_cookbook_nav() -> None:
     config = load_config()
-    targets = section_targets(config["nav"], "Cookbook")
+    targets = section_targets(config["nav"], "Design Patterns")
     expected = [
         "devguide/cookbook/index.md",
         "devguide/cookbook/microservice-orchestration.md",
@@ -89,17 +89,18 @@ def check_cookbook_nav() -> None:
         "devguide/cookbook/http-poll-long-running-job.md",
         "devguide/cookbook/workflow-scheduling.md",
         "devguide/cookbook/dynamic-workflows.md",
+        "devguide/cookbook/event-driven.md",
     ]
     duplicates = sorted({target for target in targets if targets.count(target) > 1})
     if duplicates:
-        raise AssertionError(f"duplicate targets inside Cookbook nav: {duplicates}")
+        raise AssertionError(f"duplicate targets inside Design Patterns nav: {duplicates}")
     missing = [target for target in targets if not (DOCS / target).is_file()]
     if missing:
-        raise AssertionError(f"missing Cookbook nav targets: {missing}")
+        raise AssertionError(f"missing Design Patterns nav targets: {missing}")
     classic_targets = [target for target in targets if target.startswith("devguide/cookbook/")]
     if classic_targets != expected:
         raise AssertionError(
-            "Cookbook nav targets do not match canonical recipe order: "
+            "Design Patterns nav targets do not match canonical recipe order: "
             f"expected {expected}, got {classic_targets}"
         )
 

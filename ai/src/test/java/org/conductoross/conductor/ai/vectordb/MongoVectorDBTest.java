@@ -27,14 +27,12 @@ import org.conductoross.conductor.ai.tasks.worker.VectorDBWorkers;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoVectorDB;
 import org.conductoross.conductor.common.JsonSchemaValidator;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.env.StandardEnvironment;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MongoDBContainer;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -67,7 +65,6 @@ public class MongoVectorDBTest {
 
     @BeforeAll
     public static void setup() {
-        requireDocker();
         mongoDBContainer = new MongoDBContainer("mongo:7.0").withSharding();
         mongoDBContainer.start();
 
@@ -120,15 +117,6 @@ public class MongoVectorDBTest {
         VectorDBProvider vectorDBProvider = new VectorDBProvider(instanceConfig, noDefaults);
         VectorDBs vectorDBs = new VectorDBs(vectorDBProvider);
         aiWorkers = new VectorDBWorkers(vectorDBs, llm);
-    }
-
-    private static void requireDocker() {
-        try {
-            DockerClientFactory.instance().client();
-        } catch (Throwable t) {
-            Assumptions.abort(
-                    "Docker environment not usable for Testcontainers: " + t.getMessage());
-        }
     }
 
     @Test

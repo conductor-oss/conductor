@@ -27,16 +27,24 @@ class ExecutionConfig {
     /** Dedicated pool size, or -1 when using the shared pool. */
     private final int poolSize;
 
+    /** Dedicated pool (isolated queue or per-task-type override): permits == threadCount. */
     ExecutionConfig(int threadCount, String threadNameFormat) {
         this(newThreadPool(threadCount, threadNameFormat), threadCount, threadCount);
     }
 
     /**
-     * Non-isolated queues share the given pool but retain an independent semaphore so one busy
-     * queue cannot starve another queue's polling.
+     * Non-isolated queues: share the given pool but each gets its own semaphore, so a slow/busy
+     * queue cannot exhaust a shared permit pool and starve other queues' polling.
      */
     ExecutionConfig(ExecutorService executorService, int permits) {
         this(executorService, permits, -1);
+    }
+
+    /** Test-only: inject a pre-built semaphore (e.g. a mock). */
+    ExecutionConfig(ExecutorService executorService, SemaphoreUtil semaphoreUtil) {
+        this.executorService = executorService;
+        this.semaphoreUtil = semaphoreUtil;
+        this.poolSize = -1;
     }
 
     private ExecutionConfig(ExecutorService executorService, int permits, int poolSize) {

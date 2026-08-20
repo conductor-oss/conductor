@@ -463,8 +463,12 @@ export function useUsersListing(includeApps = false) {
 
 export function useWorkflowDefs(
   optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
+  classifier?: "workflow" | "agent",
 ): UseQueryResult<WorkflowDef[], FetchError> {
-  return useFetch<WorkflowDef[]>(WORKFLOW_METADATA_SHORT_URL, {
+  const path = classifier
+    ? `${WORKFLOW_METADATA_SHORT_URL}&classifier=${classifier}`
+    : WORKFLOW_METADATA_SHORT_URL;
+  return useFetch<WorkflowDef[]>(path, {
     staleTime: DEFAULT_STALE_TIME,
     ...optionsOverride,
   });
@@ -532,7 +536,6 @@ export const usePrefetchWorkflows = (): void => {
 
 // Version numbers do not necessarily start, or run contiguously from 1. Could arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
-// @Deprecated use useWorkflowNamesAndVersionsQuery instead
 export function useWorkflowNamesAndVersions(): Map<string, number[]> {
   const { url } = useSharedQueryContext();
   const { data } = useFetch<WorkflowDef[]>(url, {
@@ -794,9 +797,6 @@ export const useAPIReleaseVersion = ({
           return false;
         }
         return failureCount - 2 > 0;
-      },
-      onSuccess: (data: string) => {
-        localStorage.setItem("version", data);
       },
       ...option,
     },

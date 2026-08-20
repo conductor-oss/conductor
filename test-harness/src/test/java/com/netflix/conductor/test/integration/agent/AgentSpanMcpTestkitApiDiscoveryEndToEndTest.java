@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Exercises AgentSpan API discovery and MCP calls through the real Conductor engine and
+ * Exercises Conductor-Agents API discovery and MCP calls through the real Conductor engine and
  * mcp-testkit's HTTP transport. The server exposes a deterministic authenticated OpenAPI document
  * and MCP protocol surface, so this catches routing and durability regressions that a hand-built
  * JSON fixture cannot.
@@ -89,7 +89,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeperThreadCount=1",
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "conductor.ai.outbound.allow-private-networks=true",
             "conductor.external-payload-storage.type=s3",
             "conductor.external-payload-storage.s3.bucketName="
@@ -303,7 +302,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
     }
 
     @Test
-    void compiledAgentDispatchesMcpToolAndFeedsItsActualResultIntoTheNextModelTurn() {
+    void compiledAgentPreservesUnmarkedMcpOutputAcrossJoinAndStateMerge() {
         String agentName = "scripted_mcp_agent_" + UUID.randomUUID().toString().replace('-', '_');
         AgentConfig config =
                 AgentConfig.builder()
@@ -374,7 +373,36 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
         Task finalLlm = awaitScheduledLlm(started.getExecutionId());
         Workflow betweenTurns = executionService.getExecutionStatus(started.getExecutionId(), true);
         Task mcp = taskByType(betweenTurns, "CALL_MCP_TOOL");
-        assertEquals(false, outputOf(mcp).get("isError"));
+        Map<String, Object> mcpOutput = outputOf(mcp);
+        assertEquals(false, mcpOutput.get("isError"));
+        assertTrue(
+                !mcp.getInputData().containsKey("_agent_tool_name"),
+                "the MCP task must exercise the unmarked runtime-output path");
+
+        Task join = taskByReferencePrefix(betweenTurns, agentName + "_fork_join");
+        Map<String, Object> joinOutput = outputOf(join);
+        assertTrue(
+                joinOutput.values().stream().anyMatch(mcpOutput::equals),
+                () -> "JOIN dropped the completed MCP output: " + joinOutput);
+
+        Task merge = taskByReferencePrefix(betweenTurns, agentName + "_merge_state");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mergeResult = (Map<String, Object>) outputOf(merge).get("result");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> toolResults =
+                (List<Map<String, Object>>) mergeResult.get("toolResults");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> mergedMcpOutput =
+                (Map<String, Object>) toolResults.get(0).get("output");
+        assertEquals(mcpOutput.get("isError"), mergedMcpOutput.get("isError"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> originalContent =
+                (List<Map<String, Object>>) mcpOutput.get("content");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> mergedContent =
+                (List<Map<String, Object>>) mergedMcpOutput.get("content");
+        assertEquals(originalContent.get(0).get("type"), mergedContent.get(0).get("type"));
+        assertEquals(originalContent.get(0).get("text"), mergedContent.get(0).get("text"));
 
         completeLlm(finalLlm, Map.of("finishReason", "STOP", "result", "The sum is 5."));
         Workflow completed = awaitTerminal(started.getExecutionId());
@@ -551,7 +579,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
 
     private void drainAsyncSystemTaskQueues() {
         for (WorkflowSystemTask task : asyncSystemTasks) {
-            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 100)) {
+            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 0)) {
                 asyncSystemTaskExecutor.execute(task, taskId);
             }
         }
@@ -562,7 +590,7 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
             if ("LLM_CHAT_COMPLETE".equals(task.getTaskType())) {
                 continue;
             }
-            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 100)) {
+            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 0)) {
                 asyncSystemTaskExecutor.execute(task, taskId);
             }
         }
@@ -581,6 +609,17 @@ class AgentSpanMcpTestkitApiDiscoveryEndToEndTest {
                 .filter(task -> reference.equals(task.getReferenceTaskName()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("task not found: " + reference));
+    }
+
+    private Task taskByReferencePrefix(Workflow workflow, String referencePrefix) {
+        return workflow.getTasks().stream()
+                .filter(task -> task.getReferenceTaskName().startsWith(referencePrefix))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new AssertionError(
+                                        "task not found with reference prefix: "
+                                                + referencePrefix));
     }
 
     private Task taskByType(Workflow workflow, String type) {

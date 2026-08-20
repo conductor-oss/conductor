@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.a2a;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -60,7 +61,7 @@ class A2AEndToEndTest {
         // Spy to bypass SSRF check for loopback — embedded agent uses 127.0.0.1.
         service = spy(new A2AService(client));
         doNothing().when(service).validateAgentUrl(anyString());
-        workers = new A2AWorkers(service, unusedAgentClient());
+        workers = new A2AWorkers(service, List.of(unusedAgentClient()));
     }
 
     @AfterEach

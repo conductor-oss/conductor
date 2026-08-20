@@ -78,7 +78,10 @@ def render() -> str:
     for path in source_paths():
         relative = path.relative_to(DOCS)
         content = FRONT_MATTER.sub("", path.read_text(encoding="utf-8"))
-        content = expand_snippets(content, path).strip()
+        content = expand_snippets(content, path)
+        content = "\n".join(
+            line.expandtabs(4).rstrip() for line in content.splitlines()
+        ).strip()
         parts.extend([f"\n\n<!-- Source: {relative} -->\n", content, "\n"])
     return "".join(parts)
 

@@ -20,7 +20,6 @@ import java.util.List;
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -28,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.core.env.Environment;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -49,7 +47,6 @@ class JDBCEndToEndTest {
 
     @BeforeAll
     void setup() {
-        requireDocker();
         postgres = new PostgreSQLContainer<>("postgres:16-alpine");
         postgres.start();
 
@@ -71,15 +68,6 @@ class JDBCEndToEndTest {
         instanceConfig.setInstances(List.of(instance));
 
         provider = new JDBCProvider(instanceConfig);
-    }
-
-    private static void requireDocker() {
-        try {
-            DockerClientFactory.instance().client();
-        } catch (Throwable t) {
-            Assumptions.abort(
-                    "Docker environment not usable for Testcontainers: " + t.getMessage());
-        }
     }
 
     @AfterAll

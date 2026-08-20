@@ -49,6 +49,7 @@ nav:
       - Send Signals: devguide/cookbook/sending-signals.md
       - Handling Errors: devguide/how-tos/Workflows/handling-errors.md
     - Operate:
+      - Production Path: devguide/workflows/production-path.md
       - Viewing Executions: devguide/how-tos/Workflows/viewing-workflow-executions.md
       - Searching Workflows: devguide/how-tos/Workflows/searching-workflows.md
       - Debugging Workflows: devguide/how-tos/Workflows/debugging-workflows.md

@@ -178,18 +178,18 @@ class VectorDBProviderTest {
 
     @Test
     void testDefaultInstanceIsMerged() {
-        VectorDB defaultSqlite = mock(VectorDB.class);
-        when(defaultSqlite.getName()).thenReturn("default");
-        when(defaultSqlite.getType()).thenReturn("sqlite");
+        VectorDB defaultCustom = mock(VectorDB.class);
+        when(defaultCustom.getName()).thenReturn("default");
+        when(defaultCustom.getType()).thenReturn("custom");
 
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(Collections.emptyMap());
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultSqlite));
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultCustom));
 
         VectorDB result = provider.get("default", mock(TaskContext.class));
         assertNotNull(result);
-        assertEquals("sqlite", result.getType());
+        assertEquals("custom", result.getType());
     }
 
     @Test
@@ -198,9 +198,9 @@ class VectorDBProviderTest {
         when(explicit.getName()).thenReturn("default");
         when(explicit.getType()).thenReturn("postgres");
 
-        VectorDB defaultSqlite = mock(VectorDB.class);
-        when(defaultSqlite.getName()).thenReturn("default");
-        when(defaultSqlite.getType()).thenReturn("sqlite");
+        VectorDB defaultCustom = mock(VectorDB.class);
+        when(defaultCustom.getName()).thenReturn("default");
+        when(defaultCustom.getType()).thenReturn("custom");
 
         Map<String, VectorDB> instances = new HashMap<>();
         instances.put("default", explicit);
@@ -208,7 +208,7 @@ class VectorDBProviderTest {
         VectorDBInstanceConfig instanceConfig = mock(VectorDBInstanceConfig.class);
         when(instanceConfig.getVectorDBInstances()).thenReturn(instances);
 
-        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultSqlite));
+        VectorDBProvider provider = new VectorDBProvider(instanceConfig, defaults(defaultCustom));
 
         // The explicitly configured instance wins; putIfAbsent does not overwrite it.
         assertEquals("postgres", provider.get("default", mock(TaskContext.class)).getType());

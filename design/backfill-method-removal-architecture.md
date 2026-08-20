@@ -43,7 +43,7 @@ resolution. No new behavior is introduced.
 - Java 21, Gradle multi-module build.
 - Modules touched: embedded agent runtime (production) and `test-harness` (integration test).
 - Spring Boot component model; `AgentService` is a `@Component` gated by
-  `@ConditionalOnPropertyembedded agent runtime is enabled`
+  `@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")`
   and uses Lombok `@RequiredArgsConstructor`.
 - JUnit 5 (`org.junit.jupiter`) for the affected test.
 
