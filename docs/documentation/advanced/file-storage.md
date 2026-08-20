@@ -235,8 +235,6 @@ attempt each.
   after a complete response.
 - Content URLs are redacted from errors. When signing is enabled, URLs are bearer credentials.
 
-The detailed component and lifecycle rationale is in the [file storage design document](https://github.com/conductor-oss/conductor/blob/main/design/file-storage.md) in the repository.
-
 ## Migration from smart file objects
 
 The current contract replaces `FileHandler`, `ManagedFileHandler`, `FileUploader`, and
