@@ -6,6 +6,21 @@ import { Box, Typography } from "@mui/material";
 import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { defaultEditorOptions, type EditorOptions } from "shared/editor";
+
+const jsonViewerOptions: EditorOptions = {
+  ...defaultEditorOptions,
+  readOnly: true,
+  minimap: { enabled: false },
+  scrollBeyondLastLine: false,
+  lineNumbers: "off",
+  folding: true,
+  wordWrap: "on",
+  fontSize: 12,
+  renderLineHighlight: "none",
+  overviewRulerLanes: 0,
+  guides: { indentation: false },
+};
 
 /** Monaco JSON viewer. Fills its container, so give it a sized parent. */
 export function JsonView({ src }: { src: unknown }) {
@@ -15,20 +30,7 @@ export function JsonView({ src }: { src: unknown }) {
       height="100%"
       language="json"
       value={json}
-      options={
-        {
-          readOnly: true,
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          lineNumbers: "off",
-          folding: true,
-          wordWrap: "on",
-          fontSize: 12,
-          renderLineHighlight: "none",
-          overviewRulerLanes: 0,
-          renderIndentGuides: false,
-        } as any
-      }
+      options={jsonViewerOptions}
       theme="vs"
     />
   );
