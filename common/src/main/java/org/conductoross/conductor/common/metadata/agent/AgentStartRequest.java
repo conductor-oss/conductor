@@ -102,42 +102,4 @@ public class AgentStartRequest {
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
 
-    // ── External agent fields (Azure Foundry, AWS Bedrock) ────────────────────────────────────────
-
-    /**
-     * URL identifying the external agent endpoint. When set, the request is routed to the
-     * appropriate external agent client instead of the native Conductor runtime.
-     *
-     * <ul>
-     *   <li>Azure Foundry: {@code https://my-resource.cognitiveservices.azure.com} or
-     *       {@code https://my-resource.openai.azure.com/openai}
-     *   <li>AWS Bedrock: {@code bedrock://AGENT_ID/ALIAS_ID?region=us-east-1}
-     * </ul>
-     */
-    @JsonProperty("agent_url")
-    private String agentUrl;
-
-    /**
-     * Reference to a server-side credential secret. The secret content determines the auth mode
-     * (API key, SP credentials, managed identity config, etc.). Omit to use
-     * {@code DefaultAzureCredential} / default AWS credential chain.
-     */
-    private String credentialRef;
-
-    /**
-     * Dynamic OBO (On-Behalf-Of) — caller passes their live Azure AAD bearer token (without the
-     * {@code Bearer } prefix). Conductor exchanges it for an Azure-scoped downstream token using its
-     * own service principal via {@code OnBehalfOfCredential}. Takes precedence over
-     * {@code credentialRef} when set.
-     */
-    @JsonProperty("user_assertion")
-    private String userAssertion;
-
-    /**
-     * Dynamic OBO for AWS — OIDC JWT from the caller's identity provider. Conductor calls STS
-     * {@code AssumeRoleWithWebIdentity} to obtain short-lived credentials for this invocation.
-     * Requires {@code credentialRef.roleArn} to be set in the credential secret.
-     */
-    @JsonProperty("web_identity_token")
-    private String webIdentityToken;
 }

@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
-import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
-import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
@@ -223,11 +221,6 @@ public class AgentService {
     /** Start a deployed agent by name/version, or compile and start an inline agent definition. */
     @SuppressWarnings("unchecked")
     public AgentStartResponse start(AgentStartRequest request) {
-        // External agents identified by agentUrl are routed directly to the provider client.
-        if (StringUtils.isNotBlank(request.getAgentUrl())) {
-            return startExternal(request);
-        }
-
         validateStartInput(request);
         validateStartSource(request);
 
@@ -236,18 +229,6 @@ public class AgentService {
         }
 
         return startInline(request);
-    }
-
-    private AgentStartResponse startExternal(AgentStartRequest request) {
-        ConductorAgentStartRequest extReq = MAPPER.convertValue(request, ConductorAgentStartRequest.class);
-        ConductorAgentStartResponse resp;
-        String agentUrl = request.getAgentUrl();
-        if (agentUrl.startsWith("bedrock://")) {
-            resp = bedrockAgentClient.startAgent(extReq);
-        } else {
-            resp = azureFoundryAgentClient.startAgent(extReq);
-        }
-        return MAPPER.convertValue(resp, AgentStartResponse.class);
     }
 
     private AgentStartResponse startRegistered(AgentStartRequest request) {
