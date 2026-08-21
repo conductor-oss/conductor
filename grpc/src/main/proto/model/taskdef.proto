@@ -42,4 +42,5 @@ message TaskDef {
     string base_type = 21;
     int64 total_timeout_seconds = 22;
     bool task_status_listener_enabled = 23;
+    bool region_durable = 26;
 }

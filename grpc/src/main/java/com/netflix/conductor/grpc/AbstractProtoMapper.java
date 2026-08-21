@@ -1039,6 +1039,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.isTaskStatusListenerEnabled() );
+        to.setRegionDurable( from.isRegionDurable() );
         return to.build();
     }
 
@@ -1072,6 +1073,7 @@ public abstract class AbstractProtoMapper {
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
+        to.setRegionDurable( from.getRegionDurable() );
         return to;
     }
 

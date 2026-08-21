@@ -157,6 +157,7 @@ public class TaskDef extends Auditable {
      * before the caller is acked (falling back to asynchronous convergence if the sync quorum is
      * missed). Defaults to false (locally durable only).
      */
+    @ProtoField(id = 26)
     private boolean regionDurable;
 
     public TaskDef() {}
