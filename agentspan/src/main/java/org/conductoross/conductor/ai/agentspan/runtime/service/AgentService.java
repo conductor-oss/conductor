@@ -389,9 +389,7 @@ public class AgentService {
                 tags = (List<String>) caps;
             }
 
-            // Always include "conductor" as a provider tag
             if (tags == null) tags = new ArrayList<>();
-            if (!tags.contains("conductor")) tags.add(0, "conductor");
 
             agents.add(
                     AgentSummary.builder()
