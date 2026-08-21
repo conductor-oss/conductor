@@ -4,65 +4,22 @@ description: Conductor stores workflow definitions as JSON — the canonical run
 
 # JSON + Code Native Workflow Orchestration
 
-Conductor stores workflow definitions as JSON. This is not a UI convenience or a simplified mode&mdash;JSON is the canonical runtime representation. Every workflow, whether created via SDK, API, UI, or file, is stored, versioned, and executed as a JSON document.
-
-For agent orchestration and dynamic workloads, this is a structural advantage.
+Conductor stores workflow definitions as JSON. This is not a UI convenience or a simplified mode. JSON is the canonical runtime representation. Every workflow, whether created via SDK, API, UI, or file, is stored, versioned, and executed as a JSON document.
 
 
 ## What "JSON + code native" means mechanically
 
-1. **Storage.** The workflow definition is a JSON document persisted in the data store. The execution engine reads this document to schedule tasks.
-2. **Versioning.** Each version is a distinct JSON document. Multiple versions can run concurrently. Running executions use a snapshot taken at start time and are immutable against later changes.
-3. **API parity.** The JSON you write in a file is the same JSON you send to the API, see in the UI, and get back from the SDK. There is no compiled intermediate form.
-4. **Dynamic creation.** You can construct a workflow definition as a JSON object at runtime and pass it directly to the `StartWorkflowRequest` API. Conductor executes it immediately without pre-registration.
+You can write a [workflow definition](../documentation/configuration/workflowdef/index.md) in JSON directly, or in code using an [SDK](../documentation/clientsdks/index.md). Both produce the same thing: a JSON document. When you define a workflow in code, the SDK converts it to that JSON and registers it with the server. The server only ever stores, versions, and executes the JSON. Everything below applies no matter which way the workflow was written.
 
-
-## Why this matters for agents
-
-### Agents produce structured output&mdash;JSON is native
-
-LLMs already communicate in structured formats: function calls, tool-use schemas, JSON mode responses. Conductor's JSON workflow definitions are in the same format that agents already produce. An LLM can generate a workflow definition directly, and Conductor can execute it.
-
-### Runtime generation without compile/deploy
-
-Traditional workflow engines require you to define workflows in code, compile, and deploy before they can run. Conductor's JSON + code native approach means:
-
-- A planner agent can generate a new workflow definition as JSON.
-- Your code sends that JSON to `POST /api/workflow` with the definition inline.
-- Conductor validates, persists, and executes it immediately.
-- The workflow is fully durable, observable, and retryable&mdash;identical to any pre-registered workflow.
-
-This enables patterns like:
-
-- **LLM-generated plans** where the agent decides the steps at runtime.
-- **Template instantiation** where a base workflow is modified per-request.
-- **A/B testing** where different workflow versions are created and run dynamically.
-
-### Inspectability and auditability
-
-Every workflow execution is a JSON document that records:
-
-- The definition that was used (immutable snapshot).
-- Every task's input, output, status, timestamps, and retry history.
-- The workflow's input, output, variables, and state transitions.
-
-You can query, diff, export, and replay any execution. For AI agent workflows, this means you can audit exactly what the agent planned, what tools it called, what the LLM returned, and what the human approved.
-
-### Diffable versioning
-
-Because definitions are JSON, you can:
-
-- Store them in Git and review changes in pull requests.
-- Diff two versions to see exactly what changed.
-- Roll back by re-registering a previous version.
-- Run canary deployments by routing traffic between versions.
-
-Running executions are never affected by definition changes&mdash;they use the snapshot taken at start time.
+1. **Storage.** The workflow definition is a JSON document [persisted in the data store](durable-execution.md#what-persists). The execution engine reads this document to schedule tasks.
+2. **Versioning.** Each [version](../devguide/how-tos/Workflows/versioning-workflows.md) is a distinct JSON document. Multiple versions can run concurrently. Running executions use a snapshot taken at start time and are immutable against later changes.
+3. **API parity.** The JSON you write in a file is the same JSON you send to the [API](../documentation/api/metadata.md), see in the UI, and get back from the SDK. There is no compiled intermediate form.
+4. **Dynamic creation.** You can [construct a workflow definition as a JSON object at runtime](../devguide/cookbook/dynamic-workflows.md) and pass it directly to the [`StartWorkflowRequest` API](../documentation/api/startworkflow.md). Conductor executes it immediately without pre-registration.
 
 
 ## Dynamic workflows in detail
 
-Conductor supports three levels of dynamism:
+Conductor supports three levels of runtime flexibility.
 
 ### 1. Dynamic workflow definitions
 
@@ -103,7 +60,7 @@ No pre-registration needed. The definition is embedded in the execution and pers
 
 ### 2. Dynamic tasks
 
-The `DYNAMIC` task type resolves which task to execute at runtime based on input:
+The [`DYNAMIC`](../documentation/configuration/workflowdef/operators/dynamic-task.md) task type resolves which task to execute at runtime:
 
 ```json
 {
@@ -117,17 +74,17 @@ The `DYNAMIC` task type resolves which task to execute at runtime based on input
 }
 ```
 
-The value of `taskToExecute` is determined by the output of a previous task (e.g., an LLM deciding which tool to call). Conductor resolves and schedules the appropriate task type at runtime.
+The value of `taskToExecute` comes from the output of a previous task, such as an LLM choosing a tool. Conductor resolves and schedules that task at runtime.
 
 ### 3. Dynamic fork/join
 
-The `DYNAMIC_FORK` operator creates parallel branches at runtime:
+The [`FORK_JOIN_DYNAMIC`](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) operator creates parallel branches at runtime:
 
 ```json
 {
   "name": "parallel_tool_calls",
   "taskReferenceName": "fork",
-  "type": "DYNAMIC_FORK",
+  "type": "FORK_JOIN_DYNAMIC",
   "inputParameters": {
     "dynamicTasks": "${plan.output.parallelTasks}",
     "dynamicTasksInput": "${plan.output.taskInputs}"
@@ -137,36 +94,37 @@ The `DYNAMIC_FORK` operator creates parallel branches at runtime:
 }
 ```
 
-The number of branches, their task types, and their inputs are all determined at runtime. This enables an agent to decide how many tools to call in parallel based on its plan.
+The number of branches, their task types, and their inputs are all decided at runtime. Follow the fork with a [`JOIN`](../documentation/configuration/workflowdef/operators/join-task.md). If an agent produced the branch list, validate it and enforce a branch limit before executing the plan.
+
+A [sub-workflow](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized at runtime in the same way. For a governed implementation of runtime-generated plans, with capability allowlists, bounded fan-out, and approval, see [Durable Adaptive Graphs](../devguide/ai/dynamic-workflows.md).
 
 
 ## Deterministic by construction
 
-JSON workflow definitions are pure orchestration — they describe *what* runs and in *what order*, but contain no executable code. This separation is not a limitation; it is a structural guarantee.
+A JSON definition describes what runs and in what order. It contains no executable code, so it cannot open a database connection, write a file, or call an API on its own. Every side effect happens inside a [worker](../devguide/concepts/workers.md) or [system task](../documentation/configuration/workflowdef/systemtasks/index.md), where it is isolated, testable, and independently deployable. The definition itself is inert data.
 
-**No side effects in the workflow definition.** A JSON definition cannot open a database connection, write to a file, or call an API outside of a declared task. Every side effect lives in a worker or system task — isolated, testable, and independently deployable. The workflow definition itself is inert data.
+Because the definition is inert, execution is deterministic. Given the same inputs, Conductor schedules the same tasks in the same order every time. There is no ambient state and no hidden mutation. That is why [replay](durable-execution.md#replay-and-recovery) works unconditionally: restart a workflow from months ago and it re-executes the same graph. Engines that embed orchestration in application code can only promise this by restricting what your code is allowed to do.
 
-**Every run is deterministic.** Given the same inputs, a Conductor workflow will schedule the same tasks in the same order, every time. There is no ambient state, no thread-local context, no hidden mutation. This is why [replay](durable-execution.md#replay-and-recovery) works unconditionally — restart a workflow from three months ago and it re-executes the same graph. Code-based workflow engines that embed orchestration logic alongside business logic cannot make this guarantee without imposing significant constraints on what your code is allowed to do (no random numbers, no system clocks, no uncontrolled I/O).
+The same split keeps orchestration and implementation separate. Sequencing, branching, retries, and timeouts live in the definition. Implementation logic lives in workers, in any language. You can change a worker without touching the workflow, and change the workflow without redeploying workers.
 
-**Clean separation of concerns.** Orchestration logic (sequencing, branching, retries, timeouts) is defined declaratively in JSON. Implementation logic (calling APIs, transforming data, running ML models) lives in workers written in any language. Each can be tested, deployed, and versioned independently. Change a worker without touching the workflow. Change the workflow without redeploying workers.
 
-### JSON is more dynamic than code
+## Why this matters for agents
 
-The common assumption is that code-based workflows are more flexible. The opposite is true. Code-based definitions are static at deploy time — to change the workflow, you redeploy.
+### Agents produce structured output, and JSON is native
 
-Conductor's JSON definitions can be:
+LLMs already produce structured output in the form of function calls and JSON responses. A Conductor workflow definition is the same kind of object. An LLM can therefore generate a workflow definition directly. Your application validates the plan and applies its [policy boundaries](../devguide/ai/agent-guardrails.md), and Conductor executes it.
 
-- **Generated at runtime** — an LLM or planner service produces a workflow definition as JSON and Conductor executes it immediately, no compilation or deployment step.
-- **Modified per-execution** — pass a complete `workflowDef` in the start request to customize any execution on the fly.
-- **Dynamically branched** — [DYNAMIC tasks](../documentation/configuration/workflowdef/operators/dynamic-task.md) resolve which task to execute based on runtime output. [DYNAMIC_FORK](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md) creates an arbitrary number of parallel branches determined by a previous task's output. [Sub-workflows](../documentation/configuration/workflowdef/operators/sub-workflow-task.md) can be selected and parameterized dynamically.
+### Runtime generation without compile/deploy
 
-Combined, these primitives make Conductor the most dynamic workflow engine available — not despite using JSON, but because of it. A JSON definition is data, and data is easy to generate, transform, and compose programmatically. Code is not.
+Most engines require code changes, a compile, and a deploy before a new workflow can run. Conductor does not. A planner agent generates a definition as JSON, your code sends it to [`POST /api/workflow`](../documentation/api/startworkflow.md) with the definition inline, and Conductor validates, persists, and executes it immediately. The result is as durable, observable, and retryable as any pre-registered workflow.
 
-### AI-native by design
+### Inspectability and auditability
 
-LLMs produce structured output. JSON *is* structured output. There is no impedance mismatch — an agent can generate a Conductor workflow definition directly, and Conductor executes it with full durability, observability, and replayability. No code generation, no compilation, no deployment pipeline. The workflow evolves as fast as the agent can think.
+Every execution records the definition snapshot it used, every task's input, output, status, and retry history, and the workflow's own input, output, and state transitions. You can query, diff, export, and [replay](durable-execution.md#replay-and-recovery) any execution. For agent workflows, that record shows what the agent planned, which tools it called, what the model returned, and [what a person approved](../devguide/ai/human-in-the-loop.md).
 
-Code-based workflow engines require generated code to be compiled, tested, and deployed before it runs — a friction that fundamentally limits how dynamically an AI system can operate.
+### Diffable versioning
+
+Because definitions are JSON, they belong in source control. You can review changes in pull requests, diff two versions to see exactly what changed, and [roll back by re-registering an earlier version](../devguide/how-tos/Workflows/versioning-workflows.md). Multiple versions can run side by side, which makes canary rollouts straightforward. Running executions are never affected by any of this, because each keeps the snapshot taken at start.
 
 
 ## Exposing workflows as APIs and MCP tools
@@ -190,15 +148,13 @@ conductor workflow status {executionId}
     curl http://localhost:8080/api/workflow/{executionId}
     ```
 
-Workflows return structured JSON output defined by `outputParameters` in the definition. This makes them directly consumable by other agents, services, or MCP-compatible tools.
-
-For MCP integration, a Conductor workflow can be registered as an MCP tool, allowing LLMs and agent frameworks to discover and invoke it directly with structured input/output.
+A workflow returns the structured output declared by its `outputParameters`, so services and agents can call it like any other API. A workflow can also be [registered as an MCP tool](../devguide/ai/mcp-guide.md), which lets LLMs and agent frameworks discover and invoke it with structured input and output.
 
 
 ## Next steps
 
 - **[Durable Execution Semantics](durable-execution.md)** &mdash; What persists, what gets retried, failure matrix.
-- **[Why Conductor for Agents](../devguide/ai/index.md)** &mdash; How Conductor's primitives map to agent patterns.
-- **[Quickstart](../quickstart/index.md)** &mdash; Get running in 5 minutes.
+- **[Agents & AI](../devguide/ai/index.md)** &mdash; What agents are and how they run on Conductor.
+- **[Run a Workflow from JSON](../quickstart/first-workflow.md)** &mdash; Register and run a JSON workflow with the CLI.
 - **[Workflow Definition Reference](../documentation/configuration/workflowdef/index.md)** &mdash; Full JSON schema for workflow definitions.
 - **[Dynamic Fork](../documentation/configuration/workflowdef/operators/dynamic-fork-task.md)** &mdash; Runtime-determined parallel execution.

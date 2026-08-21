@@ -1,15 +1,17 @@
 ---
-description: "Why Conductor for AI agents — native LLM tasks, MCP tool calling, deterministic JSON definitions, durable human-in-the-loop, and dynamic runtime execution. Show-don't-tell with code examples."
+description: "Why Conductor for AI agents — native LLM and MCP tasks, durable human approval, governed runtime paths, and operational recovery."
 ---
 
 # Why Conductor for agents
 
-Conductor is the original durable workflow orchestration engine — born at Netflix to run microservices at internet scale, now powering AI agents with the same battle-tested execution model. Other engines give you generic primitives and say "build your agent infrastructure yourself." Conductor gives you the agent infrastructure. Here's what that looks like in practice.
+Agents fail in production for ordinary reasons. A process crashes mid-loop, a tool call fails once and the whole run is lost, and afterwards nobody can see which decision led to which action. Conductor addresses this by running every step of an agent, each model call and each tool call, as a durable workflow task. A failed step is retried, an interrupted run resumes from its last completed step, and the full history of the run is recorded.
+
+This page shows what that looks like in practice using the native tasks. The same properties apply when you bring a framework-authored agent instead; see [Conductor Agents](conductor-agents.md).
 
 
-## Call an LLM — zero boilerplate
+## Call an LLM as a workflow task
 
-Other engines treat LLM calls as generic function calls. You build the abstraction: prompt construction, provider switching, response parsing, token tracking, retry logic. On Conductor, an LLM call is a system task:
+An LLM call is a system task. The provider, model, and messages are ordinary task input:
 
 ```json
 {
@@ -28,17 +30,7 @@ Other engines treat LLM calls as generic function calls. You build the abstracti
 }
 ```
 
-That's it. No SDK wrapper, no worker code, no retry logic. Conductor executes it, persists the prompt, response, token usage, model, and latency. Switch providers by changing `llmProvider` — from `anthropic` to `openai` to `bedrock` — with zero code changes. 14+ providers supported natively.
-
-On other engines, this same task requires:
-
-- A worker/activity function that constructs the HTTP request
-- Provider-specific SDK initialization and auth
-- Response parsing and error handling
-- Custom logging for prompt/response/token tracking
-- Retry configuration in your code, not the orchestrator
-
-Every team builds this differently. Every implementation has different bugs.
+Conductor records the task input, result, token usage when returned by the provider, and task outcome alongside the workflow execution. Select a provider and model per task; see [LLM orchestration](llm-orchestration.md) for the maintained capability matrix.
 
 
 ## Discover and call tools — native MCP
@@ -66,9 +58,7 @@ MCP (Model Context Protocol) is the open standard for agent tool use. On Conduct
 ]
 ```
 
-The agent discovers tools at runtime, the LLM picks the right one, and Conductor executes it with automatic retry, timeout, and full audit trail. Connect to any MCP server — GitHub, Slack, databases, custom APIs — with no wrapper code.
-
-On other engines, you write a "Durable MCP" wrapper: a custom activity/worker that connects to the MCP server, marshals requests, handles errors, and logs results. For every MCP server. For every tool type.
+The agent discovers tools at runtime, the LLM picks an approved method, and Conductor records the call, task outcome, and result. Combine MCP with [guardrails](agent-guardrails.md) to constrain capability selection and require approval before consequential actions.
 
 
 ## Human-in-the-loop — one line, durable forever
@@ -86,9 +76,7 @@ An agent needs human approval before a risky action. On Conductor:
 }
 ```
 
-The workflow pauses. The pause survives server restarts, deploys, infrastructure changes — indefinitely. When someone approves via the API or UI, the workflow resumes with the approval payload. No polling, no timer hacks, no external state.
-
-On other engines, you implement `wait_condition()` with signal handlers, write the signal routing code, and build the approval UI integration yourself. The pause mechanism is in your workflow code, not in the platform.
+The workflow pauses until the approval is completed or rejected. The approval payload becomes durable task output, and the execution can be inspected or managed while it waits.
 
 
 ## Agent loops — checkpointed per iteration
@@ -98,8 +86,9 @@ An autonomous agent loops: plan, act, observe, repeat. On Conductor, each iterat
 ```json
 {
   "name": "agent_loop",
+  "taskReferenceName": "loop",
   "type": "DO_WHILE",
-  "loopCondition": "if ($.loop['think'].output.result.done == true) { false; } else if ($.loop['think'].output.iteration >= 20) { false; } else { true; }",
+  "loopCondition": "if ($.think['result']['route'] == 'done' || $.loop['iteration'] >= 20) { false; } else { true; }",
   "loopOver": [
     {
       "name": "think",
@@ -108,38 +97,47 @@ An autonomous agent loops: plan, act, observe, repeat. On Conductor, each iterat
         "llmProvider": "anthropic",
         "model": "claude-sonnet-4-20250514",
         "messages": [
-          {"role": "system", "message": "Goal: ${workflow.input.goal}. Previous results: ${workflow.variables.context}. Respond with {action, arguments, done}."}
-        ]
+          {"role": "system", "message": "Goal: ${workflow.input.goal}. Respond with JSON only: {\"route\": \"call_tool\", \"action\": \"tool_name\", \"arguments\": {}} or {\"route\": \"done\", \"answer\": \"final answer\"}."}
+        ],
+        "jsonOutput": true
       }
     },
     {
-      "name": "act",
-      "type": "CALL_MCP_TOOL",
+      "name": "act_or_finish",
+      "taskReferenceName": "act_or_finish",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "route",
       "inputParameters": {
-        "mcpServer": "${workflow.input.mcpServerUrl}",
-        "method": "${think.output.result.action}",
-        "arguments": "${think.output.result.arguments}"
-      }
-    },
-    {
-      "name": "remember",
-      "type": "SET_VARIABLE",
-      "inputParameters": {
-        "context": "${workflow.variables.context.concat([{action: think.output.result.action, result: act.output.content}])}"
-      }
+        "route": "${think.output.result.route}"
+      },
+      "decisionCases": {
+        "call_tool": [
+          {
+            "name": "act",
+            "taskReferenceName": "act",
+            "type": "CALL_MCP_TOOL",
+            "inputParameters": {
+              "mcpServer": "${workflow.input.mcpServerUrl}",
+              "method": "${think.output.result.action}",
+              "arguments": "${think.output.result.arguments}"
+            }
+          }
+        ],
+        "done": []
+      },
+      "defaultCase": []
     }
   ]
 }
 ```
 
-If the agent crashes at iteration 18 of 20, it resumes from iteration 18. Not from scratch. The 17 completed LLM calls and tool executions are already persisted — zero tokens wasted, zero duplicate side effects. The loop condition enforces an iteration cap so the agent can't run forever.
-
-On other engines, you build the loop in your workflow code. If the process crashes, you either restart from the beginning (burning all tokens again) or build your own checkpointing mechanism.
+Completed task outputs remain in the execution record if a later task fails. The loop condition enforces an iteration cap; tools remain responsible for idempotency because task delivery is at least once.
 
 
 ## Dynamic workflows — LLMs generate execution plans
 
-This is the capability no other engine can match. An LLM generates a complete workflow definition as JSON, and Conductor executes it immediately:
+An LLM or service can generate a complete workflow definition as JSON and submit it as a runtime plan:
 
 ```json
 {
@@ -147,18 +145,18 @@ This is the capability no other engine can match. An LLM generates a complete wo
   "type": "START_WORKFLOW",
   "inputParameters": {
     "startWorkflow": {
-      "workflowDefinition": "${planner_llm.output.result}",
+          "workflowDef": "${planner_llm.output.result}",
       "input": "${workflow.input.taskInput}"
     }
   }
 }
 ```
 
-The LLM's output is a Conductor workflow definition. No code generation. No compilation. No deployment pipeline. The generated workflow runs with the same durable execution guarantees as any hand-written workflow — persistence, retries, observability, replay.
+The LLM's output is data, not an unrestricted mutation of a running execution. Validate the definition and its allowed capabilities before starting it. The resulting workflow uses the same persisted state, retry policy, and execution controls as a registered definition.
 
-Combined with `DYNAMIC` tasks (resolve which task to run at runtime) and `DYNAMIC_FORK` (create N parallel branches at runtime), Conductor is more dynamic than code-based engines. Not despite using JSON — because of it. Data is easier to generate, transform, and compose than code.
+Combined with `DYNAMIC` tasks (resolve an approved task at runtime) and `FORK_JOIN_DYNAMIC` (create validated, bounded parallel branches at runtime), Conductor makes runtime plans inspectable and governable as data.
 
-On code-based engines, dynamic workflows require generating source code, compiling it, deploying it, and then executing it. That friction fundamentally limits how dynamically an AI system can operate.
+Use this pattern when a runtime plan needs its own execution boundary, audit trail, version, and lifecycle.
 
 
 ## RAG pipelines — native vector database support
@@ -194,7 +192,7 @@ Retrieval-augmented generation as two system tasks, no external framework:
 ]
 ```
 
-Pinecone, pgvector, and MongoDB Atlas are supported natively. No LangChain, no custom retrieval workers, no framework dependencies.
+Pinecone, pgvector, and MongoDB Atlas are supported through the vector workflow tasks. The same pattern can compose with an existing agent framework when retrieval is only one part of the graph.
 
 
 ## Multi-agent delegation — sub-workflows with lifecycle
@@ -204,7 +202,7 @@ A parent agent delegates to specialist agents. Each specialist is a sub-workflow
 ```json
 {
   "name": "parallel_research",
-  "type": "DYNAMIC_FORK",
+  "type": "FORK_JOIN_DYNAMIC",
   "inputParameters": {
     "dynamicTasks": "${planner.output.result.research_tasks}",
     "dynamicTasksInput": "${planner.output.result.task_inputs}"
@@ -219,9 +217,7 @@ The LLM decides how many research agents to spawn and what each one investigates
 
 ## Long-running workflows — evolve without breaking
 
-An agent workflow runs for days. Midway through, you need to fix a bug or add a step. On code-based engines, this is where things get painful — you end up littering your workflow code with version guards and `if/else` branches to keep old executions replaying correctly while new ones pick up the change. Every change adds a permanent branch that can never be removed. After a year of iteration, the workflow is an archaeology site of version checks.
-
-Conductor eliminates this entirely. Each execution snapshots its definition at start time:
+An agent workflow can run for days. Keep definition changes explicit and versioned so the execution behavior remains understandable while the system evolves.
 
 ```json
 {
@@ -235,14 +231,12 @@ Conductor eliminates this entirely. Each execution snapshots its definition at s
 }
 ```
 
-Running executions continue with their original definition. New executions pick up the updated definition. No version guards. No branching. No archaeology. Update the definition, register it, and move on. If you need to apply the new definition to a running execution, [restart it](../../architecture/durable-execution.md#replay-and-recovery) — Conductor re-executes the workflow with the latest definition from the beginning.
-
-This is not a minor convenience. For AI agents that run for hours or days — iterating through plan/act/observe loops, waiting for human approvals, pausing for external events — the ability to evolve the workflow definition without version branching is the difference between a maintainable system and a fragile one.
+Running executions retain the definition version they started with; new executions can be directed to a new version. If a new definition must apply to work already started, [restart the execution](../../architecture/durable-execution.md#replay-and-recovery) deliberately and evaluate its side effects.
 
 
-## Guaranteed execution — failure is not a choice
+## Failure is an explicit part of the graph
 
-Conductor was built as a state machine engine at Netflix to orchestrate microservices at internet scale. The execution model is designed around one principle: **every task will be executed to completion, or every failure will be explicitly handled.** There is no silent failure mode.
+Conductor records task state and exposes retry, timeout, failure-workflow, pause, resume, and termination controls. Build the failure policy into the graph instead of treating it as an afterthought.
 
 The guarantees:
 
@@ -250,7 +244,7 @@ The guarantees:
 - **Sweeper recovery** — A background sweeper service continuously scans for stalled tasks. If a task is `IN_PROGRESS` but its worker has gone silent (no heartbeat, past `responseTimeoutSeconds`), the sweeper requeues it. If the Conductor server itself restarts, the sweeper recovers all in-flight work on startup.
 - **Configurable retry policies** — Every task has retry count, delay, and backoff strategy. Retries are managed by the engine, not your code. Exponential backoff, fixed delay, and linear backoff are built in.
 - **Failure workflows** — When a workflow fails after exhausting retries, a `failureWorkflow` runs automatically. This is where you put compensation logic: undo API calls, release resources, send alerts. The failure workflow has the full context of what failed and why.
-- **Terminal state is always reached** — A workflow always reaches `COMPLETED`, `FAILED`, or `TERMINATED`. There is no limbo state. You can query, alert, and act on any terminal state.
+- **Terminal handling** — Use terminal states, workflow timeouts, and alerts to make the outcome actionable for operators.
 
 ```json
 {
@@ -270,16 +264,12 @@ The guarantees:
 }
 ```
 
-This task retries 5 times with exponential backoff (10s, 20s, 40s, 80s, 160s). If the worker doesn't respond within 30 seconds, the task is timed out and retried. If all retries are exhausted, the workflow fails and `agent_failure_handler` runs with full context. At no point does the task silently disappear.
-
-These guarantees apply uniformly across the entire workflow graph — including sub-workflows, dynamic forks, and agent loops. You configure them declaratively in the definition. The engine enforces them.
+Configure retry and compensation with the idempotency behavior of each external system in mind. The workflow records the outcome and failure path for operators to inspect.
 
 
-## Deterministic by construction
+## Explicit orchestration, ordinary workers
 
-JSON workflow definitions cannot have side effects. There is no ambient state, no thread-local context, no hidden mutation. Given the same inputs, a Conductor workflow schedules the same tasks in the same order, every time. This is why [replay](../../architecture/durable-execution.md#replay-and-recovery) works unconditionally — restart a workflow from three months ago and it re-executes the same graph.
-
-When workflow logic lives in code, developers must manually enforce determinism constraints: no system clocks, no random numbers, no uncontrolled I/O. Violating these constraints causes subtle replay bugs that are hard to detect and harder to debug. Conductor eliminates this entire class of bugs by construction — JSON cannot have side effects.
+The JSON definition makes graph structure, task inputs, and workflow policy visible. Put business logic and side effects in built-in tasks or workers, then design retry and compensation according to the external system's idempotency contract. This separation makes the execution path easier to inspect, version, and generate as validated data.
 
 
 ## Observability — automatic, not opt-in
@@ -295,7 +285,7 @@ Every `LLM_CHAT_COMPLETE` task automatically records:
 
 Every `CALL_MCP_TOOL` task records the method, arguments, response, and timing. Every `HUMAN` task records who approved, when, and with what payload. All of this is queryable via API and visible in the UI.
 
-On other engines, you build this logging yourself. Every team does it differently, with different coverage and different gaps.
+Use the execution view and APIs to inspect these task-level records alongside the graph path and retry history.
 
 
 ## The agent use case matrix
@@ -307,9 +297,9 @@ Every agentic pattern maps to a specific Conductor primitive:
 | **Tool-calling agent** | `LLM_CHAT_COMPLETE` + `CALL_MCP_TOOL` |
 | **Approval-gated actions** | `HUMAN` task + `SWITCH` for timeout |
 | **Planner/executor loop** | `DO_WHILE` + `SET_VARIABLE` |
-| **Multi-agent delegation** | `SUB_WORKFLOW` or `DYNAMIC_FORK` |
+| **Multi-agent delegation** | `SUB_WORKFLOW` or `FORK_JOIN_DYNAMIC` |
 | **Long wait for external system** | `HUMAN` or `WAIT` task |
-| **High fan-out research** | `DYNAMIC_FORK` + `JOIN` |
+| **High fan-out research** | `FORK_JOIN_DYNAMIC` + `JOIN` |
 | **RAG pipeline** | `LLM_SEARCH_INDEX` + `LLM_CHAT_COMPLETE` |
 | **Content generation** | `GENERATE_IMAGE` / `GENERATE_AUDIO` / `GENERATE_VIDEO` / `GENERATE_PDF` |
 | **Agent that builds its own plan** | `LLM_CHAT_COMPLETE` + `START_WORKFLOW` with inline definition |
@@ -318,7 +308,9 @@ Every agentic pattern maps to a specific Conductor primitive:
 
 ## Next steps
 
+- **[Conductor Agents](conductor-agents.md)** — Author Conductor Agents or bring existing framework agents into durable Conductor graphs.
+- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agents.
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern, fully wired.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract under every scenario.
-- **[Build Your First AI Agent](first-ai-agent.md)** — From zero to a running agent in 5 minutes.
+- **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.
 - **[Token Efficiency](token-efficiency.md)** — How durable execution saves tokens and reduces LLM costs.
