@@ -26,6 +26,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
+import org.conductoross.conductor.dao.SecretsDAO;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,7 +64,10 @@ class AgentServiceOpenStreamTest {
                         mock(WorkflowExecutor.class),
                         streamRegistry,
                         mock(SkillRegistryService.class),
-                        mock(MetadataService.class));
+                        mock(MetadataService.class),
+                        mock(AzureFoundryAgentClient.class),
+                        mock(BedrockAgentClient.class),
+                        mock(SecretsDAO.class));
     }
 
     @Test

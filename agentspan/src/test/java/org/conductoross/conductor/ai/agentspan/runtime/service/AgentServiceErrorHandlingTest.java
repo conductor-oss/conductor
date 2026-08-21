@@ -27,6 +27,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
+import org.conductoross.conductor.dao.SecretsDAO;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -61,7 +62,10 @@ class AgentServiceErrorHandlingTest {
                         mock(WorkflowExecutor.class),
                         mock(AgentStreamRegistry.class),
                         mock(SkillRegistryService.class),
-                        mock(MetadataService.class));
+                        mock(MetadataService.class),
+                        mock(AzureFoundryAgentClient.class),
+                        mock(BedrockAgentClient.class),
+                        mock(SecretsDAO.class));
     }
 
     // ── stop / signal with unknown execution ID ──────────────────────
