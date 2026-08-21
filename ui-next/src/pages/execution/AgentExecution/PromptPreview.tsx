@@ -70,7 +70,7 @@ function PromptEntryCard({ entry }: { entry: PromptEntry }) {
         label={isInstructions ? "Instructions" : entry.role}
         length={entry.length}
       />
-      <Box sx={{ px: 1.5, py: 1 }}>
+      <Box sx={{ px: 3, py: 2 }}>
         {entry.structured ? (
           // Not collapsible: a partial payload would not be valid JSON.
           <StructuredContentView content={entry.structured} />
@@ -89,8 +89,9 @@ function CardHeader({ label, length }: { label: string; length: number }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        px: 1.5,
-        py: 0.75,
+        // Matches the card body so the label lines up with the content below.
+        px: 3,
+        py: 1,
         backgroundColor: "#f8fafc",
         borderBottom: "1px solid",
         borderColor: "divider",

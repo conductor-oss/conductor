@@ -81,7 +81,11 @@ export function MarkdownView({ content }: { content: string }) {
         "& h2": { fontSize: "0.9rem" },
         "& h3": { fontSize: "0.85rem" },
         "& p": { my: 0.75, lineHeight: 1.6, fontSize: "0.875rem" },
-        "& ul,& ol": { pl: 2.5, my: 0.5 },
+        // Markers hang left of this padding box, so it has to clear the card's
+        // accent border on its own. The theme's spacing unit is 4px.
+        "& ul,& ol": { pl: 6, my: 0.5 },
+        // Nested lists indent from their parent, so they need less of their own.
+        "& li > ul,& li > ol": { pl: 4 },
         "& li": { fontSize: "0.875rem", lineHeight: 1.5 },
         "& code": {
           backgroundColor: "#f1f5f9",
