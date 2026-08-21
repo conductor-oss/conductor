@@ -101,5 +101,4 @@ public class AgentStartRequest {
      */
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
-
 }
