@@ -90,6 +90,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private static final String INFERENCE_API_VERSION = "2024-05-01-preview";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    // SSRF guard — only allow known Azure AI/ML domains as agentUrl targets.
+    private static final List<String> ALLOWED_AZURE_SUFFIXES =
+            List.of(
+                    ".openai.azure.com",
+                    ".cognitiveservices.azure.com",
+                    ".services.ai.azure.com",
+                    ".inference.ml.azure.com");
+
     private final CredentialResolutionService credentialResolutionService;
     private final OkHttpClient httpClient;
     private final ConcurrentHashMap<String, ExecutionContext> executions =
@@ -508,14 +516,19 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return DEFAULT_SCOPE;
     }
 
-    private String resolveEndpoint(ConductorAgentStartRequest request) {
+    // Package-private for unit testing.
+    String resolveEndpoint(ConductorAgentStartRequest request) {
         String url = request.getAgentUrl();
+        if (StringUtils.isBlank(url)) {
+            url = rawConfig(request, "endpoint");
+        }
         if (StringUtils.isBlank(url)) {
             url = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
         }
         if (StringUtils.isBlank(url)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided via agentUrl or the AZURE_FOUNDRY_ENDPOINT secret");
+                    "Azure Foundry endpoint must be provided via agentUrl, rawConfig.endpoint,"
+                            + " or the AZURE_FOUNDRY_ENDPOINT secret");
         }
         // Strip embedded agent/assistant ID so callers always get the bare base endpoint.
         // e.g. …/agents/shailesh-analyst  → …/api/projects/{proj}
@@ -527,7 +540,27 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 break;
             }
         }
-        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        url = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        validateAzureHost(url);
+        return url;
+    }
+
+    private static void validateAzureHost(String url) {
+        try {
+            String host = new java.net.URI(url).getHost();
+            if (host == null) throw new IllegalArgumentException("agentUrl has no host: " + url);
+            String lowerHost = host.toLowerCase(java.util.Locale.ROOT);
+            boolean allowed = ALLOWED_AZURE_SUFFIXES.stream().anyMatch(lowerHost::endsWith);
+            if (!allowed) {
+                throw new IllegalArgumentException(
+                        "agentUrl host '"
+                                + host
+                                + "' is not an allowed Azure domain. Permitted suffixes: "
+                                + ALLOWED_AZURE_SUFFIXES);
+            }
+        } catch (java.net.URISyntaxException e) {
+            throw new IllegalArgumentException("agentUrl is not a valid URL: " + url, e);
+        }
     }
 
     private String resolveAssistantId(ConductorAgentStartRequest request) {

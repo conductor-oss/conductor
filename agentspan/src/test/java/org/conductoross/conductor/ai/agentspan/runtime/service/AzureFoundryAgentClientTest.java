@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.Map;
+
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -401,6 +404,72 @@ class AzureFoundryAgentClientTest {
                             requestNoCredRef(), "https://res.openai.azure.com/openai");
 
             assertThat(auth.scope).isEqualTo("https://cognitiveservices.azure.com/.default");
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // resolveEndpoint — fallback priority and SSRF guard
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @MockitoSettings(strictness = Strictness.LENIENT)
+    class ResolveEndpoint {
+
+        @Test
+        void rawConfigEndpoint_usedWhenAgentUrlBlank() {
+            // agentUrl is blank → should fall back to rawConfig.endpoint
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .rawConfig(Map.of("endpoint", "https://res.openai.azure.com/openai"))
+                            .prompt("hi")
+                            .build();
+
+            String resolved = client.resolveEndpoint(req);
+
+            assertThat(resolved).isEqualTo("https://res.openai.azure.com/openai");
+        }
+
+        @Test
+        void agentUrl_takesPreferenceOverRawConfig() {
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .agentUrl("https://wins.openai.azure.com/openai")
+                            .rawConfig(Map.of("endpoint", "https://loses.openai.azure.com/openai"))
+                            .prompt("hi")
+                            .build();
+
+            String resolved = client.resolveEndpoint(req);
+
+            assertThat(resolved).isEqualTo("https://wins.openai.azure.com/openai");
+        }
+
+        @Test
+        void validateAzureHost_rejectsNonAzureHost() {
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .agentUrl("https://attacker.example.com/steal")
+                            .prompt("hi")
+                            .build();
+
+            assertThatThrownBy(() -> client.resolveEndpoint(req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("not an allowed Azure domain");
+        }
+
+        @Test
+        void validateAzureHost_acceptsKnownAzureDomains() {
+            String[] valid = {
+                "https://res.openai.azure.com/openai",
+                "https://res.cognitiveservices.azure.com/",
+                "https://res.services.ai.azure.com/api/projects/p/agents/a",
+                "https://ep.inference.ml.azure.com/score"
+            };
+            for (String url : valid) {
+                ConductorAgentStartRequest req =
+                        ConductorAgentStartRequest.builder().agentUrl(url).prompt("hi").build();
+                // should not throw
+                assertThat(client.resolveEndpoint(req)).isNotBlank();
+            }
         }
     }
 
