@@ -454,15 +454,17 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String tenantId = credentialResolutionService.resolve(spRef + ".tenant_id");
             if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
                 log.debug("OBO: exchanging user assertion via SP {} for scope {}", clientId, scope);
-                TokenCredential cred = new OnBehalfOfCredentialBuilder()
-                        .clientId(clientId)
-                        .clientSecret(clientSecret)
-                        .tenantId(tenantId)
-                        .userAssertion(request.getUserAssertion())
-                        .build();
+                TokenCredential cred =
+                        new OnBehalfOfCredentialBuilder()
+                                .clientId(clientId)
+                                .clientSecret(clientSecret)
+                                .tenantId(tenantId)
+                                .userAssertion(request.getUserAssertion())
+                                .build();
                 return new AuthState(cred, scope);
             }
-            log.warn("user_assertion set but CONDUCTOR_AZURE_SP secret missing client_id/client_secret/tenant_id — falling through to credentialRef");
+            log.warn(
+                    "user_assertion set but CONDUCTOR_AZURE_SP secret missing client_id/client_secret/tenant_id — falling through to credentialRef");
         }
 
         if (StringUtils.isNotBlank(credentialRef)) {
@@ -771,7 +773,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         AuthState auth = buildAuthStateFromConfig(credentialRef, endpoint);
         String apiVersion =
-                isFoundryProjectEndpoint(endpoint) ? FOUNDRY_PROJECT_API_VERSION : DEFAULT_API_VERSION;
+                isFoundryProjectEndpoint(endpoint)
+                        ? FOUNDRY_PROJECT_API_VERSION
+                        : DEFAULT_API_VERSION;
         String listUrl =
                 isFoundryProjectEndpoint(endpoint)
                         ? endpoint + "/agents"
@@ -794,7 +798,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
                 List<String> tags = new ArrayList<>();
                 tags.add("azure-foundry");
-                tags.add(isFoundryProjectEndpoint(endpoint) ? "foundry-project" : "classic-assistant");
+                tags.add(
+                        isFoundryProjectEndpoint(endpoint)
+                                ? "foundry-project"
+                                : "classic-assistant");
                 if (model != null) tags.add("model:" + model);
                 JsonNode tools = item.path("tools");
                 if (tools.isArray()) {
@@ -823,16 +830,21 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     /**
-     * Fetch the raw definition JSON for a named Azure agent. Lists all agents from the endpoint
-     * and returns the one whose name (or id) matches. Returns null if not found.
+     * Fetch the raw definition JSON for a named Azure agent. Lists all agents from the endpoint and
+     * returns the one whose name (or id) matches. Returns null if not found.
      */
-    public Map<String, Object> getExternalAgentDef(String agentName, String credentialRef, String endpoint) {
+    public Map<String, Object> getExternalAgentDef(
+            String agentName, String credentialRef, String endpoint) {
         endpoint = endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
         AuthState auth = buildAuthStateFromConfig(credentialRef, endpoint);
-        String apiVersion = isFoundryProjectEndpoint(endpoint) ? FOUNDRY_PROJECT_API_VERSION : DEFAULT_API_VERSION;
-        String listUrl = isFoundryProjectEndpoint(endpoint)
-                ? endpoint + "/agents"
-                : endpoint + "/openai/assistants";
+        String apiVersion =
+                isFoundryProjectEndpoint(endpoint)
+                        ? FOUNDRY_PROJECT_API_VERSION
+                        : DEFAULT_API_VERSION;
+        String listUrl =
+                isFoundryProjectEndpoint(endpoint)
+                        ? endpoint + "/agents"
+                        : endpoint + "/openai/assistants";
         try {
             JsonNode response = get(listUrl, auth, apiVersion);
             JsonNode data = response.path("data");
@@ -845,12 +857,17 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to fetch Azure agent def for '{}' from {}: {}", agentName, endpoint, e.getMessage());
+            log.warn(
+                    "Failed to fetch Azure agent def for '{}' from {}: {}",
+                    agentName,
+                    endpoint,
+                    e.getMessage());
         }
         return null;
     }
 
-    // Builds AuthState directly from a credentialRef string (for discovery, no startRequest needed).
+    // Builds AuthState directly from a credentialRef string (for discovery, no startRequest
+    // needed).
     private AuthState buildAuthStateFromConfig(String credentialRef, String endpoint) {
         String scope = scopeFromEndpoint(endpoint);
         if (StringUtils.isNotBlank(credentialRef)) {
@@ -858,7 +875,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             if (StringUtils.isNotBlank(apiKey)) return new AuthState(apiKey);
 
             String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
-            String clientSecret = credentialResolutionService.resolve(credentialRef + ".client_secret");
+            String clientSecret =
+                    credentialResolutionService.resolve(credentialRef + ".client_secret");
             String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
             if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
                 return new AuthState(

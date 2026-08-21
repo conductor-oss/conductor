@@ -16,6 +16,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
-import org.conductoross.conductor.dao.SecretsDAO;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;

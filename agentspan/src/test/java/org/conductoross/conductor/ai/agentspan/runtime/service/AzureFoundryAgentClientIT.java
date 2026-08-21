@@ -30,7 +30,6 @@ import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
 
 /**
  * Integration test for {@link AzureFoundryAgentClient} against a real Azure AI Foundry resource.
@@ -119,8 +118,7 @@ class AzureFoundryAgentClientIT {
 
         assertThat(status.getStatus()).isEqualTo(ConductorAgentState.COMPLETED);
         assertThat(status.getOutput()).containsKey("result");
-        System.out.println(
-                "Azure Foundry (OBO) response: " + status.getOutput().get("result"));
+        System.out.println("Azure Foundry (OBO) response: " + status.getOutput().get("result"));
     }
 
     private ConductorAgentStatusResponse pollUntilComplete(String executionId) throws Exception {

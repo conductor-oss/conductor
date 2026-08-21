@@ -432,13 +432,23 @@ public class AgentService {
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
-                        if (endpoint != null && !endpoint.isBlank() && azureFoundryAgentClient != null) {
-                            agents.addAll(azureFoundryAgentClient.listExternalAgents(secretName, endpoint));
-                        } else if (region != null && !region.isBlank() && bedrockAgentClient != null) {
-                            agents.addAll(bedrockAgentClient.listExternalAgents(secretName, region));
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            agents.addAll(
+                                    azureFoundryAgentClient.listExternalAgents(
+                                            secretName, endpoint));
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            agents.addAll(
+                                    bedrockAgentClient.listExternalAgents(secretName, region));
                         }
                     } catch (Exception e) {
-                        log.debug("Skipping secret '{}' for external agent discovery: {}", secretName, e.getMessage());
+                        log.debug(
+                                "Skipping secret '{}' for external agent discovery: {}",
+                                secretName,
+                                e.getMessage());
                     }
                 }
             } catch (Exception e) {
@@ -887,9 +897,10 @@ public class AgentService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> getAgentDef(String name, Integer version) {
-        Optional<WorkflowDef> defOpt = version != null
-                ? metadataDAO.getWorkflowDef(name, version)
-                : metadataDAO.getLatestWorkflowDef(name);
+        Optional<WorkflowDef> defOpt =
+                version != null
+                        ? metadataDAO.getWorkflowDef(name, version)
+                        : metadataDAO.getLatestWorkflowDef(name);
 
         if (defOpt.isPresent()) {
             Map<String, Object> metadata = defOpt.get().getMetadata();
@@ -906,18 +917,30 @@ public class AgentService {
                     try {
                         String secretValue = secretsDAO.getSecret(secretName);
                         if (secretValue == null || secretValue.isBlank()) continue;
-                        com.fasterxml.jackson.databind.JsonNode secretJson = MAPPER.readTree(secretValue);
+                        com.fasterxml.jackson.databind.JsonNode secretJson =
+                                MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
-                        if (endpoint != null && !endpoint.isBlank() && azureFoundryAgentClient != null) {
-                            Map<String, Object> def = azureFoundryAgentClient.getExternalAgentDef(name, secretName, endpoint);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            Map<String, Object> def =
+                                    azureFoundryAgentClient.getExternalAgentDef(
+                                            name, secretName, endpoint);
                             if (def != null) return def;
-                        } else if (region != null && !region.isBlank() && bedrockAgentClient != null) {
-                            Map<String, Object> def = bedrockAgentClient.getExternalAgentDef(name, secretName, region);
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            Map<String, Object> def =
+                                    bedrockAgentClient.getExternalAgentDef(
+                                            name, secretName, region);
                             if (def != null) return def;
                         }
                     } catch (Exception e) {
-                        log.debug("Skipping secret '{}' for external agent def lookup: {}", secretName, e.getMessage());
+                        log.debug(
+                                "Skipping secret '{}' for external agent def lookup: {}",
+                                secretName,
+                                e.getMessage());
                     }
                 }
             } catch (Exception e) {
