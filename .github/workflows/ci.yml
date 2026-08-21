@@ -34,6 +34,7 @@ jobs:
     outputs:
       persistence: ${{ steps.filter.outputs.persistence }}
       ui: ${{ steps.filter.outputs.ui }}
+      agent: ${{ steps.filter.outputs.agent }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -64,6 +65,16 @@ jobs:
             ui:
               - 'ui/**'
               - 'ui-next/**'
+            agent:
+              - 'ai/**'
+              # Directory is 'agentspan/'; ':conductor-agentspan' is only its Gradle
+              # project name, so a 'conductor-agentspan/**' pattern matches nothing.
+              - 'agentspan/**'
+              - 'server/**'
+              - 'core/**'
+              - 'sqlite-persistence/**'
+              - '.github/agent-e2e/**'
+              - '.github/workflows/ci.yml'
 
   build:
     runs-on: ubuntu-latest
@@ -547,3 +558,209 @@ jobs:
 
       - name: Build UI
         run: NODE_OPTIONS=--max-old-space-size=4096 pnpm build
+
+  # Boots the conductor server built from THIS commit in SQLite mode (the default — no external
+  # DB) and runs the released python SDK agent e2e suite against it, so a server change can't
+  # silently break the SDK before a release. The suite + bundle come from conductor-oss/python-sdk
+  # (conductor-ai-e2e-python-<version>); the server auto-configures the openai provider from
+  # OPENAI_API_KEY (conductor.ai.openai.api-key), so no manual integration setup is needed.
+  # Known failures are xfail-ed via .github/agent-e2e/known-failures-python.json so the lane can
+  # gate while a gap is fixed; see that file for the current list and why each is listed.
+  # Runs on push/dispatch/schedule, and on same-repo PRs that touch agent-relevant paths.
+  # Fork PRs are skipped on purpose: this is a public repo and GitHub withholds secrets from
+  # fork-originated workflows, so OPENAI_API_KEY would be empty, the server's openai provider
+  # would fail to initialise, and the LLM suites would fail for a reason the contributor
+  # cannot fix. The fork test is nested inside the pull_request branch — hoisting it into a
+  # top-level AND would also disable push/dispatch/schedule, where github.event.pull_request
+  # is null and the comparison is therefore false.
+  python-sdk-e2e:
+    name: Python SDK E2E (SQLite)
+    needs: detect-changes
+    if: >-
+      github.event_name != 'pull_request' ||
+      (needs.detect-changes.outputs.agent == 'true' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      checks: write   # publish the junit test-report check
+    env:
+      # Pinned python-sdk version. The suite is not downloaded as a released bundle — the SDK
+      # repo is checked out at the tag derived from this value and its e2e/ is run in place
+      # (see run-suite.sh), so the SDK under test is built from that source rather than
+      # resolved from PyPI. python-sdk release tags carry no `v` prefix.
+      #
+      # Because nothing has to be published for a ref to work, this can be any tag, branch or
+      # SHA — set the `CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION` repo/org variable to point the lane
+      # at unreleased SDK work without a commit here. The `_BUNDLE_` in the name is vestigial;
+      # it matches the repository variable already configured in GitHub settings.
+      CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION: ${{ vars.CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION || '2.0.0-rc4' }}
+      # The names the suite's conftest reads. Verify against the pinned ref before renaming:
+      # a name the suite does not read falls through to conftest's defaults silently, so the
+      # lane would run green against the wrong server and model.
+      CONDUCTOR_SERVER_URL: http://localhost:8080/api
+      CONDUCTOR_AGENT_LLM_MODEL: openai/gpt-4o-mini
+      MCP_TESTKIT_URL: http://localhost:3001
+      # Suite21 probes GET {this}/scheduler/schedules and skips the whole suite unless it
+      # answers 200; its own default is port 8089. conductor-oss serves the scheduler itself
+      # (conductor.scheduler.enabled=true by default, SchedulerResource at /api/scheduler),
+      # so point it at the same server or the scheduling tests silently do not run.
+      SCHEDULER_CONDUCTOR_URL: http://localhost:8080/api
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      E2E_KNOWN_FAILURES: ${{ github.workspace }}/.github/agent-e2e/known-failures-python.json
+      # KNOWN RISK, accepted: run-suite.sh pip-installs at run time from the SDK's own
+      # package metadata, which bounds only its direct deps — pytest, langgraph and the
+      # provider SDKs all float. An upstream release can therefore redden this lane with no
+      # change to this repo, and it will present as a server regression rather than a
+      # dependency bump. If this lane fails for no apparent reason, suspect that first and
+      # check the pip install output in the log before hunting a server cause. (Pinning the
+      # transitive set via PIP_CONSTRAINT works, but the lockfile has to be regenerated on
+      # every SDK bump, which was judged not worth the upkeep.)
+      # Minimum number of tests that must actually PASS. A pytest skip is not a failure, so a
+      # server change that breaks a test's setup silently converts pass -> skip and the lane
+      # stays green while covering less. This floor is the backstop: if fewer than this many
+      # tests pass, fail regardless of whether anything reported a failure. RAISE it when real
+      # coverage is added; LOWER it only with a written reason — a silent lowering is exactly
+      # the regression this guards against. Moving the pin can change the test set, so
+      # re-measure against the new ref rather than assuming this number still fits.
+      E2E_MIN_PASSED: "134"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Zulu JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: "21"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build server boot jar
+        run: ./gradlew :conductor-server:bootJar -x test --no-daemon
+
+      - name: Start mcp-testkit (best effort)
+        run: |
+          # Pinned: mcp-testkit 1.0.3 declares `mcp[cli]>=1.0.0` with no upper bound, and mcp
+          # 2.0.0 dropped mcp.server.fastmcp, which the testkit imports at start-up — so an
+          # unpinned install yields a testkit that exits immediately and every MCP suite skips.
+          python -m pip install --quiet 'mcp-testkit==1.0.3' 'mcp<2' || { echo "::warning::mcp-testkit install failed — MCP suites will skip"; exit 0; }
+          nohup mcp-testkit --transport http --port 3001 > mcp-testkit.log 2>&1 &
+          # Readiness = "the port answers HTTP at all", NOT 2xx. mcp-testkit serves 404 on /,
+          # so `curl -sf` (which treats 404 as failure) never succeeded: the loop always ran
+          # all 15 iterations and the message below printed unconditionally, whether or not
+          # anything was listening. Drop -f and check we got a status line instead.
+          for i in $(seq 1 15); do
+            # Fallback outside the substitution: on connection failure curl already prints
+            # "000" AND exits non-zero, so `|| echo 000` inside would concatenate to "000000"
+            # and read as a live response. The `||` also keeps `bash -e` from aborting here.
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 http://localhost:3001/)" || code="000"
+            if [ "$code" != "000" ]; then echo "mcp-testkit responding (HTTP $code) after ~${i}s"; break; fi
+            if [ "$i" -eq 15 ]; then
+              echo "::warning::mcp-testkit did not respond within 15s — MCP suites will skip"
+              tail -20 mcp-testkit.log || true
+            fi
+            sleep 1
+          done
+
+      - name: Start conductor server (SQLite)
+        run: |
+          JAR="$(ls server/build/libs/conductor-server-*-boot.jar | head -1)"
+          echo "booting $JAR"
+          nohup java -jar "$JAR" --server.port=8080 > conductor-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
+              echo "server healthy after ~$((i * 3))s"; break
+            fi
+            if [ "$i" -eq 60 ]; then echo "::error::server failed to become healthy within 180s"; tail -100 conductor-server.log; exit 1; fi
+            sleep 3
+          done
+
+      - name: Resolve the pinned SDK ref
+        id: sdk
+        run: |
+          V="${CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION}"
+          # python-sdk tags bare versions — no `v` prefix.
+          echo "ref=${V}" >> "$GITHUB_OUTPUT"
+          echo "e2e suite: conductor-oss/python-sdk @ ${V}"
+
+      # The ref can be any tag, branch or SHA — override the version variable above to point
+      # this lane at unreleased SDK work. python-sdk is public, so the default GITHUB_TOKEN
+      # is enough.
+      - name: Check out the SDK e2e suite at the pinned ref
+        uses: actions/checkout@v7
+        with:
+          repository: conductor-oss/python-sdk
+          ref: ${{ steps.sdk.outputs.ref }}
+          path: .github/agent-e2e/src-python
+
+      # run-suite.sh forwards trailing args to pytest, so `-p known_failures_plugin` loads the
+      # orkes-style xfail plugin (found via PYTHONPATH) without touching the upstream suite.
+      # Gating: a genuine failure fails the job; entries in known-failures-python.json are
+      # xfail-ed green. `-rs` prints the reason for every skip in the log — without it a test
+      # that quietly stops running is invisible in the output.
+      - name: Run python e2e (SQLite; known failures xfail-ed)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/.github/agent-e2e
+        run: |
+          bash .github/agent-e2e/run-suite.sh \
+            .github/agent-e2e/src-python -p known_failures_plugin -rs
+
+      # Skips are free — CI only reddens on failure — so a broken test setup degrades this
+      # lane silently. Enforce a floor on the PASSED count so lost coverage is loud.
+      - name: Enforce passed-count floor
+        working-directory: .github/agent-e2e/src-python
+        run: |
+          python - <<'PY'
+          import os, sys, xml.etree.ElementTree as ET
+
+          floor = int(os.environ["E2E_MIN_PASSED"])
+          path = "results/junit-e2e.xml"
+          if not os.path.exists(path):
+              sys.exit(f"::error::{path} is missing — the suite produced no results at all")
+
+          root = ET.parse(path).getroot()
+          suites = [root] if root.tag == "testsuite" else root.findall(".//testsuite")
+          tests = errors = failures = skipped = 0
+          for s in suites:
+              tests    += int(s.get("tests", 0))
+              errors   += int(s.get("errors", 0))
+              failures += int(s.get("failures", 0))
+              skipped  += int(s.get("skipped", 0))   # junit lumps xfail in with skipped
+          passed = tests - errors - failures - skipped
+
+          print(f"passed={passed} skipped(+xfail)={skipped} failed={failures} "
+                f"errors={errors} total={tests} floor={floor}")
+          if passed < floor:
+              sys.exit(
+                  f"::error::only {passed} tests passed, floor is {floor}. Tests that used to "
+                  f"pass are now skipping (a skip is not a failure, so nothing else catches "
+                  f"this). Find out why before touching E2E_MIN_PASSED."
+              )
+          PY
+
+      - name: Publish test report
+        if: always()
+        continue-on-error: true   # gating is the e2e run step's exit code; a checks-API hiccup must not fail the job
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: ".github/agent-e2e/src-python/results/junit-e2e.xml"
+          check_name: "Python SDK E2E (SQLite)"
+          fail_on_failure: false
+          require_tests: false
+
+      - name: Upload results + server log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: python-sdk-e2e-results
+          path: |
+            .github/agent-e2e/src-python/results/**
+            conductor-server.log
+            mcp-testkit.log
+          if-no-files-found: ignore
+          retention-days: 7

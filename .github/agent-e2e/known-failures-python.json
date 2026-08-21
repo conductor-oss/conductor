@@ -1,0 +1,13 @@
+{
+  "_README": "conductor-oss known failures for the agent python e2e suite (bundle: conductor-ai-e2e-python-*, from conductor-oss/python-sdk), consumed by known_failures_plugin.py via E2E_KNOWN_FAILURES. Each key is a pytest node-id (or a '<file>::<Class>::<test>' suffix); the value is a short statement of what fails plus a tracking link — keep root-cause detail in the issue, not here. Listed tests are xfail-ed so the gate stays green; a fixed bug turns its test XPASS, so remove the entry then. Do NOT list flaky tests (rerun handles those). The plugin reports each entry's match count and warns when an entry matches 0 tests (stale/typo'd) or more than 1 (over-broad). NOTE: adding an entry moves a test out of the PASSED column, so E2E_MIN_PASSED in ci.yml must be lowered by the same amount in the same commit — otherwise the passed-count floor fails the lane for an unrelated-looking reason.",
+  "_HOWTO": "Reconcile from the run's results/junit-e2e.xml. A value is either a reason string (test still RUNS so it XPASSes when fixed) or an object {\"reason\":..., \"run\":false} to xfail WITHOUT executing — use run:false only for a deterministic hang that would burn CI time, and note that a non-run xfail can never XPASS, so it must be un-listed by hand. Example: \"test_suite4_mcp_tools.py::TestSuite4McpTools::test_mcp_lifecycle\": \"reason — conductor-oss/conductor#NNNN\"",
+
+  "test_suite21_scheduling.py::TestDelete::test_get_after_delete_returns_none": "get_schedule() on a deleted schedule raises ApiException(404) instead of returning None — server/SDK contract mismatch on the not-found case. The other 10 tests in the suite pass.",
+
+  "test_suite14_stateful_domain.py::TestSuite14StatefulDomain::test_stateful_swarm_handoff_completes": {
+    "run": false,
+    "reason": "Stateful swarm handoff does not complete; workflow ends TIMED_OUT. Fixed by conductor-oss/python-sdk#459, which is unmerged, so the pinned bundle does not carry it. run:false because each attempt burns ~5min timing out (~15min with conftest's flaky(reruns=2)); being non-run it can never XPASS, so once a release carries the fix, delete this entry and raise E2E_MIN_PASSED by 1. Tracking: conductor-oss/conductor#1363."
+  },
+
+  "test_suite1_basic_validation.py::TestSuite1BasicValidation::test_llm_judge_validates_compiled_workflow": "LLM-as-judge verdict returns pass=false — the judge reports structural items from the kitchen-sink agent spec as missing from the compiled workflowDef. Tracking: TODO-issue-link."
+}
