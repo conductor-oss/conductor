@@ -13,4 +13,5 @@ message RerunWorkflowRequest {
     string re_run_from_task_id = 3;
     map<string, google.protobuf.Value> task_input = 4;
     string correlation_id = 5;
+    bool rerun_parent_downstream_tasks = 6;
 }

@@ -605,6 +605,7 @@ public abstract class AbstractProtoMapper {
         if (from.getCorrelationId() != null) {
             to.setCorrelationId( from.getCorrelationId() );
         }
+        to.setRerunParentDownstreamTasks( from.isRerunParentDownstreamTasks() );
         return to.build();
     }
 
@@ -623,6 +624,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setTaskInput(taskInputMap);
         to.setCorrelationId( from.getCorrelationId() );
+        to.setRerunParentDownstreamTasks( from.getRerunParentDownstreamTasks() );
         return to;
     }
 

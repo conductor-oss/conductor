@@ -40,6 +40,7 @@ public class RerunWorkflowRequest {
      * ancestor workflow. Off by default: only the workflow named in the request is re-run, and
      * already-completed tasks in its ancestors are left as they are.
      */
+    @ProtoField(id = 6)
     private boolean rerunParentDownstreamTasks;
 
     public String getReRunFromWorkflowId() {
