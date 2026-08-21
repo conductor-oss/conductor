@@ -7,5 +7,7 @@
   "test_suite14_stateful_domain.py::TestSuite14StatefulDomain::test_stateful_swarm_handoff_completes": {
     "run": false,
     "reason": "Stateful swarm handoff does not complete; workflow ends TIMED_OUT. Fixed by conductor-oss/python-sdk#459, which is unmerged, so the pinned bundle does not carry it. run:false because each attempt burns ~5min timing out (~15min with conftest's flaky(reruns=2)); being non-run it can never XPASS, so once a release carries the fix, delete this entry and raise E2E_MIN_PASSED by 1. Tracking: conductor-oss/conductor#1363."
-  }
+  },
+
+  "test_suite1_basic_validation.py::TestSuite1BasicValidation::test_llm_judge_validates_compiled_workflow": "LLM-as-judge verdict returns pass=false — the judge reports structural items from the kitchen-sink agent spec as missing from the compiled workflowDef. Tracking: TODO-issue-link."
 }
