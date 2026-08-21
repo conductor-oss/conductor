@@ -1,74 +1,47 @@
 ---
-description: "Build Conductor workers in C#/.NET with dependency injection, workflow management, and task polling."
+description: "Build Conductor workers and clients in C#/.NET with the official generated SDK."
+source_repo: "https://github.com/conductor-oss/csharp-sdk"
+sdk_page: csharp
 ---
 
 # C# SDK
 
-!!! info "Source"
-    GitHub: [conductor-oss/csharp-sdk](https://github.com/conductor-oss/csharp-sdk) | Report issues and contribute on GitHub.
-
-## ⭐ Conductor OSS
-Show support for the Conductor OSS.  Please help spread the awareness by starring Conductor repo.
-
-[![GitHub stars](https://img.shields.io/github/stars/conductor-oss/conductor.svg?style=social&label=Star&maxAge=)](https://GitHub.com/conductor-oss/conductor/)
-
-   
-### Setup Conductor C# Package​
+## Install the SDK
 
 ```shell
-dotnet add package conductor-csharp
+dotnet add package conductor-csharp --version VERSION
 ```
 
-## Configurations
+## Configure a workflow client
 
-### Authentication Settings (Optional)
-Configure the authentication settings if your Conductor server requires authentication.
-* keyId: Key for authentication.
-* keySecret: Secret for the key.
+The SDK quickstart configures the endpoint from the environment and uses the workflow executor API:
 
 ```csharp
-authenticationSettings: new OrkesAuthenticationSettings(
-    KeyId: "key",
-    KeySecret: "secret"
-)
-```
-
-### Access Control Setup
-See [Access Control](https://orkes.io/content/docs/getting-started/concepts/access-control) for more details on role-based access control with Conductor and generating API keys for your environment.
-
-### Configure API Client
-```csharp
-using Conductor.Api;
 using Conductor.Client;
-using Conductor.Client.Authentication;
+using Conductor.Definition;
+using Conductor.Definition.TaskType;
+using Conductor.Executor;
 
-var configuration = new Configuration() {
-    BasePath = basePath,
-    AuthenticationSettings = new OrkesAuthenticationSettings("keyId", "keySecret")
+var configuration = new Configuration {
+    BasePath = Environment.GetEnvironmentVariable("CONDUCTOR_SERVER_URL")
+        ?? "http://localhost:8080/api"
 };
 
-var workflowClient = configuration.GetClient<WorkflowResourceApi>();
+var workflow = new ConductorWorkflow()
+    .WithName("greetings")
+    .WithVersion(1);
 
-workflowClient.StartWorkflow(
-    name: "test-sdk-csharp-workflow",
-    body: new Dictionary<string, object>(),
-    version: 1
-)
+var greetTask = new SimpleTask("greet", "greet_ref")
+    .WithInput("name", workflow.Input("name"));
+workflow.WithTask(greetTask);
+
+var executor = new WorkflowExecutor(configuration);
+executor.RegisterWorkflow(workflow, overwrite: true);
+var workflowId = executor.StartWorkflow(new StartWorkflowRequest {
+    Name = "greetings",
+    Version = 1,
+    Input = new Dictionary<string, object> { ["name"] = "Conductor" }
+});
 ```
 
-### Next: [Create and run task workers](https://github.com/conductor-sdk/conductor-csharp/blob/main/docs/readme/workers.md)
-
-
-## Examples
-
-Browse all examples on GitHub: [conductor-oss/csharp-sdk/csharp-examples](https://github.com/conductor-oss/csharp-sdk/tree/main/csharp-examples)
-
-| Example | Type |
-|---|---|
-| [Examples](https://github.com/conductor-oss/csharp-sdk/tree/main/csharp-examples/Examples) | directory |
-| [Humantaskexamples](https://github.com/conductor-oss/csharp-sdk/blob/main/csharp-examples/HumanTaskExamples.cs) | file |
-| [Program](https://github.com/conductor-oss/csharp-sdk/blob/main/csharp-examples/Program.cs) | file |
-| [Runner](https://github.com/conductor-oss/csharp-sdk/blob/main/csharp-examples/Runner.cs) | file |
-| [Testworker](https://github.com/conductor-oss/csharp-sdk/blob/main/csharp-examples/TestWorker.cs) | file |
-| [Utils](https://github.com/conductor-oss/csharp-sdk/tree/main/csharp-examples/Utils) | directory |
-| [Workflowexamples](https://github.com/conductor-oss/csharp-sdk/blob/main/csharp-examples/WorkFlowExamples.cs) | file |
+For Orkes authentication, the SDK exposes `Configuration.AuthenticationSettings`; create an `OrkesAuthenticationSettings` from `CONDUCTOR_AUTH_KEY` and `CONDUCTOR_AUTH_SECRET` before constructing clients. It does not do that environment mapping automatically. See the [upstream SDK README](https://github.com/conductor-oss/csharp-sdk#configurations) for its authentication and worker examples.

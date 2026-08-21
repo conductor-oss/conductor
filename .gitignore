@@ -57,3 +57,7 @@ server/*.db*
 *.db-shm
 *.db-wal
 docs/superpowers
+
+# local working notes, not part of the published repo
+/blogs
+/design
