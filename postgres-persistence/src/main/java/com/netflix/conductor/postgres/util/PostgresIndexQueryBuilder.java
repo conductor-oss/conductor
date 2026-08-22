@@ -59,6 +59,22 @@ public class PostgresIndexQueryBuilder {
 
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
 
+    /** Internal sort marker (not a column) requesting agent root/descendant grouping. */
+    private static final String AGENT_HIERARCHY_SORT = "agent_hierarchy";
+
+    /** {@code workflow_index} columns the hierarchy CTE can carry as a group sort key. */
+    private static final String[] HIERARCHY_ROOT_FIELDS = {
+        "workflow_id",
+        "correlation_id",
+        "workflow_type",
+        "start_time",
+        "end_time",
+        "status",
+        "update_time",
+        "parent_workflow_id",
+        "classifier"
+    };
+
     private static class Condition {
         private String attribute;
         private String operator;
@@ -262,20 +278,36 @@ public class PostgresIndexQueryBuilder {
     }
 
     private String getSort() {
+        boolean hierarchical = hasAgentHierarchySort();
         ArrayList<String> sortConds = new ArrayList<>();
+        // Caller-requested keys, rewritten to read off the group's root row when grouping agents.
+        ArrayList<String> groupKeys = new ArrayList<>();
+        String hierarchyOrder = null;
+
         for (String s : sort) {
             String[] splitCond = s.split(":");
-            if (splitCond.length == 2) {
-                String attribute = camelToSnake(splitCond[0]);
-                String order = splitCond[1].toUpperCase();
-                if ("agent_hierarchy".equals(attribute)
-                        && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
-                    sortConds.add(agentHierarchySort(order));
-                } else if (Arrays.asList(VALID_FIELDS).contains(attribute)
-                        && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
-                    sortConds.add(attribute + " " + order);
-                }
+            if (splitCond.length != 2) {
+                continue;
             }
+            String attribute = camelToSnake(splitCond[0]);
+            String order = splitCond[1].toUpperCase();
+            if (!Arrays.asList(VALID_SORT_ORDER).contains(order)) {
+                continue;
+            }
+            if (AGENT_HIERARCHY_SORT.equals(attribute)) {
+                // A marker rather than a column: it only supplies the default group order.
+                hierarchyOrder = order;
+            } else if (!Arrays.asList(VALID_FIELDS).contains(attribute)) {
+                continue;
+            } else if (!hierarchical) {
+                sortConds.add(attribute + " " + order);
+            } else if (Arrays.asList(HIERARCHY_ROOT_FIELDS).contains(attribute)) {
+                groupKeys.add(rootColumn(attribute) + " " + order);
+            }
+        }
+
+        if (hierarchical && hierarchyOrder != null) {
+            sortConds.addAll(agentHierarchySort(groupKeys, hierarchyOrder));
         }
 
         if (sortConds.size() > 0) {
@@ -285,20 +317,68 @@ public class PostgresIndexQueryBuilder {
     }
 
     /**
-     * Groups an agent root and every descendant in depth-first order. The recursive CTE makes this
-     * a database operation before pagination, so a nested sub-agent cannot be separated from its
+     * Orders agent executions so a root and all of its descendants stay together, with the groups
+     * themselves ordered by the caller's requested sort. Each caller key is read off the root row
+     * (see {@link #rootColumn}) so every member of a group shares the same value; that makes the
+     * group, rather than the individual execution, the unit being sorted. {@code hierarchy_path}
+     * then imposes depth-first order strictly within a group. The recursive CTE makes this a
+     * database operation before pagination, so a nested sub-agent cannot be separated from its
      * ancestors by another execution page.
+     *
+     * <p>{@code hierarchy_path} is unique per row, so it must stay last: it is a total order on its
+     * own, and any caller key placed after it would be unreachable and silently ignored.
      */
-    private String agentHierarchySort(String order) {
-        return "COALESCE(workflow_hierarchy.root_start_time, "
+    private List<String> agentHierarchySort(List<String> groupKeys, String defaultOrder) {
+        List<String> terms = new ArrayList<>();
+        if (groupKeys.isEmpty()) {
+            terms.add(rootColumn("start_time") + " " + defaultOrder);
+        } else {
+            terms.addAll(groupKeys);
+        }
+        // Stable tiebreak between distinct groups whose sort keys compare equal. Skipped when the
+        // caller already sorts on the root id, which is unique per group and so already total.
+        String rootId = rootColumn("workflow_id");
+        if (terms.stream().noneMatch(t -> t.startsWith(rootId + " "))) {
+            terms.add(rootId + " ASC");
+        }
+        terms.add("CASE WHEN workflow_hierarchy.hier_workflow_id IS NULL THEN 1 ELSE 0 END ASC");
+        terms.add("workflow_hierarchy.hierarchy_path ASC");
+        return terms;
+    }
+
+    /**
+     * Resolves a column against the group's root row, falling back to the execution's own value
+     * when it has no hierarchy entry (such a row is its own group). The CTE prefixes every
+     * projected column so nothing it exposes collides with a {@code workflow_index} column name.
+     */
+    private String rootColumn(String attribute) {
+        return "COALESCE(workflow_hierarchy.root_"
+                + attribute
+                + ", "
                 + table
-                + ".start_time) "
-                + order
-                + ", COALESCE(workflow_hierarchy.root_workflow_id, "
-                + table
-                + ".workflow_id) ASC, CASE WHEN "
-                + "workflow_hierarchy.workflow_id IS NULL THEN 1 ELSE 0 END ASC, "
-                + "workflow_hierarchy.hierarchy_path ASC";
+                + "."
+                + attribute
+                + ")";
+    }
+
+    /**
+     * Root-row columns the hierarchy CTE must carry: the two used unconditionally for the default
+     * order and the tiebreak, plus whatever the caller asked to sort by.
+     */
+    private List<String> hierarchyRootFields() {
+        LinkedHashSet<String> fields = new LinkedHashSet<>();
+        fields.add("workflow_id");
+        fields.add("start_time");
+        for (String s : sort) {
+            String[] splitCond = s.split(":");
+            if (splitCond.length == 2) {
+                String attribute = camelToSnake(splitCond[0]);
+                if (Arrays.asList(HIERARCHY_ROOT_FIELDS).contains(attribute)) {
+                    fields.add(attribute);
+                }
+            }
+        }
+        return new ArrayList<>(fields);
     }
 
     private boolean hasAgentHierarchySort() {
@@ -306,28 +386,37 @@ public class PostgresIndexQueryBuilder {
                 && sort.stream()
                         .map(s -> s.split(":", 2)[0])
                         .map(PostgresIndexQueryBuilder::camelToSnake)
-                        .anyMatch("agent_hierarchy"::equals);
+                        .anyMatch(AGENT_HIERARCHY_SORT::equals);
     }
 
     private String hierarchyCte() {
         if (!hasAgentHierarchySort()) {
             return "";
         }
-        return "WITH RECURSIVE workflow_hierarchy(workflow_id, root_workflow_id, root_start_time, hierarchy_path) AS ("
-                + " SELECT workflow_id, workflow_id, start_time, '|' || workflow_id || '|'"
+        List<String> rootFields = hierarchyRootFields();
+        String cteColumns =
+                rootFields.stream().map(f -> "root_" + f).collect(Collectors.joining(", "));
+        String baseColumns = String.join(", ", rootFields);
+        String recursiveColumns =
+                rootFields.stream().map(f -> "parent.root_" + f).collect(Collectors.joining(", "));
+        return "WITH RECURSIVE workflow_hierarchy(hier_workflow_id, hierarchy_path, "
+                + cteColumns
+                + ") AS ("
+                + " SELECT workflow_id, '|' || workflow_id || '|', "
+                + baseColumns
                 + " FROM workflow_index WHERE parent_workflow_id IS NULL OR parent_workflow_id = ''"
                 + " UNION ALL"
-                + " SELECT child.workflow_id, parent.root_workflow_id, parent.root_start_time,"
-                + " parent.hierarchy_path || child.workflow_id || '|'"
+                + " SELECT child.workflow_id, parent.hierarchy_path || child.workflow_id || '|', "
+                + recursiveColumns
                 + " FROM workflow_index child JOIN workflow_hierarchy parent"
-                + " ON child.parent_workflow_id = parent.workflow_id"
+                + " ON child.parent_workflow_id = parent.hier_workflow_id"
                 + " WHERE strpos(parent.hierarchy_path, '|' || child.workflow_id || '|') = 0"
                 + ") ";
     }
 
     private String hierarchyJoin() {
         return hasAgentHierarchySort()
-                ? " LEFT JOIN workflow_hierarchy ON workflow_hierarchy.workflow_id = "
+                ? " LEFT JOIN workflow_hierarchy ON workflow_hierarchy.hier_workflow_id = "
                         + table
                         + ".workflow_id"
                 : "";

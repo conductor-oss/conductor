@@ -23,12 +23,19 @@ import org.mockito.Mockito;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class SqliteIndexQueryBuilderTest {
 
     private SqliteProperties properties = new SqliteProperties();
+
+    private static final String ROOT_START_TIME =
+            "COALESCE(workflow_hierarchy.root_start_time, workflow_index.start_time)";
+    private static final String ROOT_WORKFLOW_ID =
+            "COALESCE(workflow_hierarchy.root_workflow_id, workflow_index.workflow_id)";
 
     @Test
     void shouldGenerateQueryForEmptyString() throws SQLException {
@@ -303,5 +310,107 @@ public class SqliteIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
+    }
+
+    /** Builds the agent-grouped query the search endpoint produces for the given caller sort. */
+    private String agentQuery(String... sortTerms) throws SQLException {
+        List<String> sort = new ArrayList<>();
+        sort.add("agentHierarchy:DESC");
+        sort.addAll(List.of(sortTerms));
+        return new SqliteIndexQueryBuilder(
+                        "workflow_index", "classifier=agent", "", 0, 15, sort, properties)
+                .getQuery();
+    }
+
+    private static String orderBy(String query) {
+        int index = query.indexOf(" ORDER BY ");
+        assertTrue(index >= 0, "Query has no ORDER BY: " + query);
+        return query.substring(index + " ORDER BY ".length(), query.indexOf(" LIMIT ?"));
+    }
+
+    // hierarchy_path is unique per row, so it is a total order on its own. Anything the caller
+    // asked for that lands after it is unreachable -- which is exactly how the caller's sort came
+    // to be silently ignored. Nothing may follow it.
+    @Test
+    void agentHierarchySortEndsWithHierarchyPath() throws SQLException {
+        for (String sort : List.of("startTime:ASC", "startTime:DESC", "workflowType:ASC")) {
+            assertTrue(
+                    orderBy(agentQuery(sort)).endsWith("workflow_hierarchy.hierarchy_path ASC"),
+                    "Caller key must not follow hierarchy_path for " + sort);
+        }
+    }
+
+    // The caller's direction must reach the SQL rather than being fixed at DESC.
+    @Test
+    void agentHierarchySortHonoursCallerDirection() throws SQLException {
+        String ascending = orderBy(agentQuery("startTime:ASC"));
+        String descending = orderBy(agentQuery("startTime:DESC"));
+
+        assertTrue(ascending.startsWith(ROOT_START_TIME + " ASC"));
+        assertTrue(descending.startsWith(ROOT_START_TIME + " DESC"));
+        assertNotEquals(ascending, descending);
+    }
+
+    // The caller's key is read off the root row so a whole group shares it; the bare column would
+    // order individual executions instead, splitting groups apart.
+    @Test
+    void agentHierarchySortReadsCallerKeyFromRootRow() throws SQLException {
+        String order = orderBy(agentQuery("workflowType:ASC"));
+
+        assertTrue(
+                order.startsWith(
+                        "COALESCE(workflow_hierarchy.root_workflow_type,"
+                                + " workflow_index.workflow_type) ASC"));
+        assertTrue(
+                agentQuery("workflowType:ASC").contains("root_workflow_type"),
+                "CTE must project the requested root column");
+    }
+
+    // Every ORDER BY column must be table-qualified: the hierarchy join puts a second workflow_id
+    // in scope, and a bare reference made the database reject the query outright.
+    @Test
+    void agentHierarchySortQualifiesWorkflowIdAgainstAmbiguity() throws SQLException {
+        String order = orderBy(agentQuery("workflowId:DESC"));
+
+        assertFalse(
+                order.matches(".*(^|[ ,(])workflow_id[ ,)].*"),
+                "Bare workflow_id in ORDER BY is ambiguous: " + order);
+        assertTrue(order.startsWith(ROOT_WORKFLOW_ID + " DESC"));
+    }
+
+    // With no caller sort the endpoint sends the marker alone, which must still order groups.
+    @Test
+    void agentHierarchySortDefaultsToRootStartTime() throws SQLException {
+        assertEquals(
+                ROOT_START_TIME
+                        + " DESC, "
+                        + ROOT_WORKFLOW_ID
+                        + " ASC, CASE WHEN workflow_hierarchy.hier_workflow_id IS NULL THEN 1 ELSE"
+                        + " 0 END ASC, workflow_hierarchy.hierarchy_path ASC",
+                orderBy(agentQuery()));
+    }
+
+    // The marker is internal and must never reach the SQL as a column.
+    @Test
+    void agentHierarchyMarkerIsNotEmittedAsAColumn() throws SQLException {
+        assertFalse(agentQuery("startTime:ASC").contains("agent_hierarchy"));
+    }
+
+    // Grouping applies only to the workflow index; task searches must be untouched.
+    @Test
+    void agentHierarchySortIsIgnoredForTaskIndex() throws SQLException {
+        String query =
+                new SqliteIndexQueryBuilder(
+                                "task_index",
+                                "",
+                                "",
+                                0,
+                                15,
+                                List.of("agentHierarchy:DESC", "startTime:ASC"),
+                                properties)
+                        .getQuery();
+
+        assertFalse(query.contains("workflow_hierarchy"));
+        assertEquals("start_time ASC", orderBy(query));
     }
 }

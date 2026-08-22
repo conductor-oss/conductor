@@ -50,6 +50,7 @@ import com.netflix.conductor.sqlite.util.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 @ContextConfiguration(
         classes = {
@@ -1019,6 +1020,141 @@ public class SqliteIndexDAOTest {
                         .orElseThrow();
         assertEquals("agent-child", results.getResults().get(parentIndex + 1).getWorkflowId());
         assertEquals("agent-grandchild", results.getResults().get(parentIndex + 2).getWorkflowId());
+    }
+
+    // The caller's sort must order whole agent groups, and in the direction asked for. Children
+    // here start later than every root, so a flat (ungrouped) sort would interleave them between
+    // roots and fail: flat ASC would be grp-b, grp-a, grp-c, grp-b-child, grp-a-child.
+    @Test
+    public void testAgentHierarchySortOrdersGroupsByRequestedDirection() {
+        String scope = "agent-sort-direction";
+        indexAgent(scope, "grp-b", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "grp-a", "", "2023-02-07T10:00:00Z");
+        indexAgent(scope, "grp-c", "", "2023-02-07T11:00:00Z");
+        indexAgent(scope, "grp-b-child", "grp-b", "2023-02-07T12:00:00Z");
+        indexAgent(scope, "grp-a-child", "grp-a", "2023-02-07T13:00:00Z");
+
+        assertEquals(
+                "Ascending sort must order groups oldest root first",
+                List.of("grp-b", "grp-b-child", "grp-a", "grp-a-child", "grp-c"),
+                searchAgents(scope, "startTime:ASC"));
+
+        assertEquals(
+                "Descending sort must order groups newest root first",
+                List.of("grp-c", "grp-a", "grp-a-child", "grp-b", "grp-b-child"),
+                searchAgents(scope, "startTime:DESC"));
+    }
+
+    // ASC and DESC previously returned byte-identical rows, because the caller's key was appended
+    // after hierarchy_path, which is unique per row and so already a total order on its own.
+    @Test
+    public void testAgentHierarchySortDirectionChangesOrder() {
+        String scope = "agent-sort-flip";
+        indexAgent(scope, "dir-1", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "dir-2", "", "2023-02-07T10:00:00Z");
+        indexAgent(scope, "dir-3", "", "2023-02-07T11:00:00Z");
+
+        List<String> ascending = searchAgents(scope, "startTime:ASC");
+        List<String> descending = searchAgents(scope, "startTime:DESC");
+
+        assertEquals(List.of("dir-1", "dir-2", "dir-3"), ascending);
+        assertNotEquals("Ascending and descending must not agree", ascending, descending);
+        assertEquals(reversed(descending), ascending);
+    }
+
+    // Sorting on workflowId used to fail outright with a 500: the ORDER BY emitted a bare
+    // workflow_id while the hierarchy CTE was joined, making the column reference ambiguous.
+    @Test
+    public void testAgentHierarchySortByWorkflowIdIsUnambiguous() {
+        String scope = "agent-sort-id";
+        indexAgent(scope, "id-c", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "id-a", "", "2023-02-07T10:00:00Z");
+        indexAgent(scope, "id-a-child", "id-a", "2023-02-07T11:00:00Z");
+        indexAgent(scope, "id-b", "", "2023-02-07T12:00:00Z");
+
+        assertEquals(
+                "Groups must order by root id, children kept under their root",
+                List.of("id-a", "id-a-child", "id-b", "id-c"),
+                searchAgents(scope, "workflowId:ASC"));
+
+        assertEquals(
+                "Descending root id order is wrong",
+                List.of("id-c", "id-b", "id-a", "id-a-child"),
+                searchAgents(scope, "workflowId:DESC"));
+    }
+
+    // A key the hierarchy CTE has to project on demand, rather than one of the two columns it
+    // always carries. Start times are arranged so the old root-start-time-DESC order would give
+    // [late-zzz, late-zzz-child, early-aaa], and the child's own type is set so a flat sort on the
+    // key would pull it out of its group -- the root's value must decide, for the whole group.
+    @Test
+    public void testAgentHierarchySortByNonDefaultColumn() {
+        String scope = "agent-sort-type";
+        indexAgent(scope, "early-aaa", "", "2023-02-07T09:00:00Z", "aaa-type");
+        indexAgent(scope, "late-zzz", "", "2023-02-07T10:00:00Z", "zzz-type");
+        indexAgent(scope, "late-zzz-child", "late-zzz", "2023-02-07T11:00:00Z", "aaa-type");
+
+        assertEquals(
+                "Groups must order by the root's workflow type",
+                List.of("early-aaa", "late-zzz", "late-zzz-child"),
+                searchAgents(scope, "workflowType:ASC"));
+
+        assertEquals(
+                "Descending root workflow type order is wrong",
+                List.of("late-zzz", "late-zzz-child", "early-aaa"),
+                searchAgents(scope, "workflowType:DESC"));
+    }
+
+    // With no caller sort the endpoint sends the marker alone; groups default to newest root first.
+    @Test
+    public void testAgentHierarchySortWithoutCallerSortDefaultsToNewestGroupFirst() {
+        String scope = "agent-sort-default";
+        indexAgent(scope, "def-old", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "def-new", "", "2023-02-07T11:00:00Z");
+        indexAgent(scope, "def-old-child", "def-old", "2023-02-07T12:00:00Z");
+
+        assertEquals(
+                List.of("def-new", "def-old", "def-old-child"),
+                agentIds(scope, List.of("agentHierarchy:DESC")));
+    }
+
+    /** Indexes an agent execution tagged with {@code scope} so one test cannot see another's. */
+    private void indexAgent(String scope, String id, String parentWorkflowId, String startTime) {
+        indexAgent(scope, id, parentWorkflowId, startTime, "workflow-type");
+    }
+
+    private void indexAgent(
+            String scope,
+            String id,
+            String parentWorkflowId,
+            String startTime,
+            String workflowType) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id, parentWorkflowId);
+        wfs.setClassifier("agent");
+        wfs.setCorrelationId(scope);
+        wfs.setStartTime(startTime);
+        wfs.setWorkflowType(workflowType);
+        indexDAO.indexWorkflow(wfs);
+    }
+
+    private List<String> searchAgents(String scope, String sort) {
+        return agentIds(scope, List.of("agentHierarchy:DESC", sort));
+    }
+
+    private List<String> agentIds(String scope, List<String> sort) {
+        return indexDAO
+                .searchWorkflowSummary(
+                        "classifier=agent AND correlationId=\"" + scope + "\"", "*", 0, 15, sort)
+                .getResults()
+                .stream()
+                .map(WorkflowSummary::getWorkflowId)
+                .toList();
+    }
+
+    private static List<String> reversed(List<String> input) {
+        List<String> copy = new ArrayList<>(input);
+        Collections.reverse(copy);
+        return copy;
     }
 
     @Test

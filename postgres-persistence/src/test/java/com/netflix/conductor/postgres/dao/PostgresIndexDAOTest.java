@@ -781,4 +781,66 @@ public class PostgresIndexDAOTest {
         assertEquals("Should find 1 top-level order workflow", 1, results.getResults().size());
         assertEquals("wf-combined-1", results.getResults().get(0).getWorkflowId());
     }
+
+    // The caller's sort must order whole agent groups, in the direction asked for. Children start
+    // later than every root here, so a flat (ungrouped) sort would interleave them between roots:
+    // flat ASC would give pg-b, pg-a, pg-c, pg-b-child, pg-a-child.
+    @Test
+    public void testAgentHierarchySortOrdersGroupsByRequestedDirection() {
+        String scope = "pg-agent-direction";
+        indexAgent(scope, "pg-b", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "pg-a", "", "2023-02-07T10:00:00Z");
+        indexAgent(scope, "pg-c", "", "2023-02-07T11:00:00Z");
+        indexAgent(scope, "pg-b-child", "pg-b", "2023-02-07T12:00:00Z");
+        indexAgent(scope, "pg-a-child", "pg-a", "2023-02-07T13:00:00Z");
+
+        assertEquals(
+                "Ascending sort must order groups oldest root first",
+                List.of("pg-b", "pg-b-child", "pg-a", "pg-a-child", "pg-c"),
+                searchAgents(scope, "startTime:ASC"));
+
+        assertEquals(
+                "Descending sort must order groups newest root first",
+                List.of("pg-c", "pg-a", "pg-a-child", "pg-b", "pg-b-child"),
+                searchAgents(scope, "startTime:DESC"));
+    }
+
+    // Sorting on workflowId used to fail with "column reference \"workflow_id\" is ambiguous",
+    // because the ORDER BY emitted a bare column while the hierarchy CTE was joined.
+    @Test
+    public void testAgentHierarchySortByWorkflowIdIsUnambiguous() {
+        String scope = "pg-agent-id";
+        indexAgent(scope, "pgid-c", "", "2023-02-07T09:00:00Z");
+        indexAgent(scope, "pgid-a", "", "2023-02-07T10:00:00Z");
+        indexAgent(scope, "pgid-a-child", "pgid-a", "2023-02-07T11:00:00Z");
+        indexAgent(scope, "pgid-b", "", "2023-02-07T12:00:00Z");
+
+        assertEquals(
+                "Groups must order by root id, children kept under their root",
+                List.of("pgid-a", "pgid-a-child", "pgid-b", "pgid-c"),
+                searchAgents(scope, "workflowId:ASC"));
+    }
+
+    private void indexAgent(String scope, String id, String parentWorkflowId, String startTime) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id, parentWorkflowId);
+        wfs.setClassifier("agent");
+        // Scopes each ordering test to its own fixtures; the database is shared across tests.
+        wfs.setCorrelationId(scope);
+        wfs.setStartTime(startTime);
+        indexDAO.indexWorkflow(wfs);
+    }
+
+    private List<String> searchAgents(String scope, String sort) {
+        return indexDAO
+                .searchWorkflowSummary(
+                        "classifier=agent AND correlationId=\"" + scope + "\"",
+                        "*",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", sort))
+                .getResults()
+                .stream()
+                .map(WorkflowSummary::getWorkflowId)
+                .toList();
+    }
 }

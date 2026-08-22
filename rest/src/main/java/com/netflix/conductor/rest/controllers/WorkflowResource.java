@@ -415,8 +415,13 @@ public class WorkflowResource {
     /**
      * Keeps agent executions grouped with their direct sub-agent executions. The index DAOs
      * understand the internal {@code agentHierarchy} sort key and order each parent before its
-     * children, while retaining the caller's requested sort within a group. Top-level-only searches
-     * do not need this ordering because they exclude sub-agents altogether.
+     * children. The caller's sort then orders the groups themselves — it is applied to each group's
+     * root execution, so a sub-agent is never separated from its ancestors by an unrelated
+     * execution; within a group, order is depth-first. Top-level-only searches do not need this
+     * ordering because they exclude sub-agents altogether.
+     *
+     * <p>The {@code DESC} on the marker supplies only the default group order, used when the caller
+     * requested no sort of their own.
      */
     private static String withAgentHierarchySort(
             String sort, String classifier, boolean topLevelOnly) {
