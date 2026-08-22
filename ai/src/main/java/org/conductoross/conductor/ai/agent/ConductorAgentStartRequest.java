@@ -51,4 +51,24 @@ public class ConductorAgentStartRequest {
     private Map<String, Object> staticPlan;
 
     private String credentialRef;
+
+    // Remote agent URL — same field name as A2A so all agent types use a consistent top-level
+    // field.
+    // Azure Foundry: https://my-resource.openai.azure.com/openai
+    // Bedrock: bedrock://AGENTID/ALIASID  (optional ?region=us-west-2 query param)
+    @JsonProperty("agent_url")
+    private String agentUrl;
+
+    // Dynamic OBO (On-Behalf-Of) — caller passes their live token at request time.
+    // Azure: raw AAD bearer token (without "Bearer " prefix); Conductor exchanges it for an
+    //        Azure-scoped token using its own service principal via OnBehalfOfCredential.
+    // Mutually exclusive with credentialRef; userAssertion takes precedence when both are set.
+    @JsonProperty("user_assertion")
+    private String userAssertion;
+
+    // AWS: OIDC JWT from the caller's identity provider; Conductor calls STS
+    //      AssumeRoleWithWebIdentity to get short-lived creds for this invocation only.
+    // Requires credentialRef.roleArn to be set (the role to assume on behalf of the caller).
+    @JsonProperty("web_identity_token")
+    private String webIdentityToken;
 }
