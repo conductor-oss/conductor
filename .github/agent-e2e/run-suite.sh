@@ -58,7 +58,16 @@ command -v python >/dev/null 2>&1 || fail \
 # which the testkit imports at start-up — so an unpinned install yields a testkit that exits
 # immediately and every MCP suite reports the server unreachable and skips. Same pin as #1408.
 python -m pip install --quiet --upgrade pip
-python -m pip install --quiet -e '.[agents]'
+# TODO: drop the `anthropic<1` bound below once python-sdk removes temperature=0 from
+# suite 1's LLM judge and CONDUCTOR_PYTHON_E2E_BUNDLE_VERSION points at a ref carrying
+# that fix. Leaving it in place past that point silently holds the judge on an SDK major
+# the rest of the ecosystem has moved off.
+#
+# anthropic 1.0.0 removed temperature/top_p/top_k from messages.create(), and suite 1's
+# LLM judge still passes temperature=0 — so an unbounded install fails that test with a
+# TypeError before the judge is ever called. python-sdk declares `anthropic >=0.91.0`
+# with no ceiling, so the bound has to be applied here at the install site.
+python -m pip install --quiet -e '.[agents]' 'anthropic<1'
 python -m pip install --quiet pytest pytest-asyncio pytest-xdist pytest-rerunfailures \
   'mcp-testkit==1.0.3' 'mcp<2'
 

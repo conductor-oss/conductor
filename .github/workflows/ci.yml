@@ -625,7 +625,7 @@ jobs:
       # coverage is added; LOWER it only with a written reason — a silent lowering is exactly
       # the regression this guards against. Moving the pin can change the test set, so
       # re-measure against the new ref rather than assuming this number still fits.
-      E2E_MIN_PASSED: "134"
+      E2E_MIN_PASSED: "135"
     steps:
       - uses: actions/checkout@v7
 
