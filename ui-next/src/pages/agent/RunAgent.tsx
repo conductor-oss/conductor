@@ -9,12 +9,13 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { useState } from "react";
 import { Helmet } from "react-helmet";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { useAction, useFetch } from "utils/query";
 import { useLocalStorage } from "utils";
 import { v4 as uuidv4 } from "uuid";
 import { AgentSummary } from "./types";
+import { useAiModelOptions } from "./hooks/useAiModelOptions";
 
 type AgentStartResponse = {
   executionId: string;
@@ -33,8 +34,18 @@ type AgentRunHistory = {
 /** Starts a deployed agent through POST /api/agent/start. */
 export default function RunAgent() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const selectedAgent = location.state as {
+    agentName?: string;
+    agentVersion?: number;
+  } | null;
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
-  const [agentName, setAgentName] = useState("");
+  const modelOptions = useAiModelOptions();
+
+  const [agentName, setAgentName] = useState(selectedAgent?.agentName || "");
+  const [agentVersion, setAgentVersion] = useState<number | undefined>(
+    selectedAgent?.agentVersion,
+  );
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
   const [started, setStarted] = useState<AgentStartResponse>();
@@ -77,6 +88,7 @@ export default function RunAgent() {
 
   const reset = () => {
     setAgentName("");
+    setAgentVersion(undefined);
     setModel("");
     setPrompt("");
     setStarted(undefined);
@@ -91,6 +103,7 @@ export default function RunAgent() {
     startAgent({
       body: JSON.stringify({
         name: agentName,
+        version: agentVersion,
         model: model.trim() || undefined,
         prompt,
       }),
@@ -179,22 +192,31 @@ export default function RunAgent() {
                     label="Agent"
                     options={agentNames}
                     value={agentName}
-                    onChange={(_: unknown, value: string | null) =>
-                      setAgentName(value || "")
-                    }
+                    onChange={(_: unknown, value: string | null) => {
+                      setAgentName(value || "");
+                      setAgentVersion(undefined);
+                    }}
                     required
                     autoFocus
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorInput
+                  <ConductorAutoComplete
                     id="run-agent-model"
                     fullWidth
-                    label="Model override"
+                    freeSolo
+                    label="Model override (optional)"
                     placeholder="Use the deployed agent model"
                     value={model}
-                    onTextInputChange={setModel}
-                    helperText="Optional. This applies only to this execution."
+                    options={modelOptions}
+                    groupBy={(option: string) => option.split("/")[0]}
+                    onChange={(_: unknown, newValue: string | null) => {
+                      setModel(newValue ?? "");
+                    }}
+                    onInputChange={(_: unknown, newValue: string) => {
+                      setModel(newValue);
+                    }}
+                    helperText="This applies only to this execution."
                   />
                 </Grid>
                 <Grid size={12}>

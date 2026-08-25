@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.a2a;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -40,9 +41,9 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
 
 /**
- * Durability test-harness — validates the proof obligations from {@code
- * design/a2a/09-durable-a2a.md} by injecting failures against a real embedded A2A agent and the
- * real annotation-backed {@link A2AWorkers} / {@link A2AService} logic.
+ * Durability test-harness — validates the P1–P3 durability proof obligations tabulated below by
+ * injecting failures against a real embedded A2A agent and the real annotation-backed {@link
+ * A2AWorkers} / {@link A2AService} logic.
  *
  * <table>
  *   <tr><td>T1</td><td>{@link #t1_crashRecovery_resumesOnAFreshInstance()}</td><td>P1 crash-safe resume</td></tr>
@@ -85,7 +86,7 @@ class A2ADurabilityTest {
     }
 
     private A2AWorkers newWorkers(A2AService service) {
-        return new A2AWorkers(service, unusedAgentClient(), callbackUrl);
+        return new A2AWorkers(service, List.of(unusedAgentClient()), callbackUrl);
     }
 
     private Task taskModel(

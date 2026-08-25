@@ -4,6 +4,20 @@ description: "Conductor Task API — poll, update, search, and manage tasks. Inc
 
 # Task API
 
+Task responses are runtime objects. See [Task.json](../configuration/schemas.md#runtime-objects) for the full schema and [TaskDef.json](../configuration/schemas.md#definition-objects) for registered worker-task configuration.
+
+## Signal a blocked task
+
+Signal the currently blocked task in a workflow without first resolving its task ID:
+
+```http
+POST /api/tasks/{workflowId}/{status}/signal
+POST /api/tasks/{workflowId}/{status}/signal/sync
+Content-Type: application/json
+```
+
+`status` is a `TaskResult.Status`; the request body is the task output map. The asynchronous route returns after signaling. The synchronous route waits for the workflow signal response and accepts optional `returnStrategy` (`TARGET_WORKFLOW` by default) and `timeoutMillis` (default `5000`).
+
 The Task API manages task execution — polling, updating, logging, and queue management. All endpoints use the base path `/api/tasks`.
 
 ## Get Task

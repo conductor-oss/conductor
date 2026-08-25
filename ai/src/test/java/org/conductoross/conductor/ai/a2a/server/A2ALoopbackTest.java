@@ -156,7 +156,7 @@ class A2ALoopbackTest {
     }
 
     private String agentUrl() {
-        return "http://localhost:" + port + "/a2a/order_pizza";
+        return "http://localhost:" + port + "/api/a2a/workflow/order_pizza";
     }
 
     @Test
@@ -194,7 +194,7 @@ class A2ALoopbackTest {
     @Test
     void fullRoundTrip_clientTaskDrivesServerWorkflowToCompletion() {
         A2AService service = clientService();
-        A2AWorkers workers = new A2AWorkers(service, unusedAgentClient());
+        A2AWorkers workers = new A2AWorkers(service, List.of(unusedAgentClient()));
 
         Task task = new Task();
         task.setTaskId("client-task-1");

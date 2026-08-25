@@ -4,9 +4,36 @@ description: Human-in-the-loop patterns for AI agents — pre-execution approval
 
 # Human-in-the-loop
 
+<section class="integration-hero integration-hero--hitl" aria-label="Human-in-the-loop">
+  <p><strong>Human-in-the-loop</strong> means a person makes a decision inside an otherwise automated run: approving a risky action, reviewing a draft, or supplying missing input. In Conductor, the pause is a workflow task. The execution stops at that task with its complete state preserved, waits for the reviewer to respond, and then resumes the same run, whether the answer arrives in seconds or days.</p>
+  <div class="integration-action-grid integration-action-grid--three">
+    <a class="integration-action-card" href="#pre-execution-review">
+      <span class="integration-action-card__title">Approve before action</span>
+      <span>Review an agent’s proposed action before it changes the world.</span>
+    </a>
+    <a class="integration-action-card" href="#conditional-post-execution-review">
+      <span class="integration-action-card__title">Escalate selectively</span>
+      <span>Require review only for high-risk, low-confidence, or sensitive outcomes.</span>
+    </a>
+    <a class="integration-action-card" href="#llm-as-judge-automated-review">
+      <span class="integration-action-card__title">Automate first-pass review</span>
+      <span>Use an LLM judge to route exceptions to a human decision.</span>
+    </a>
+  </div>
+</section>
+
 Production agents need oversight. Conductor's `HUMAN` task is a durable pause — the workflow stops, persists its state, and resumes only when a human responds via the Task Update API. This pause survives server restarts, deploys, and infrastructure changes. Whether the reviewer responds in 5 seconds or 5 days, the workflow state is preserved and execution resumes exactly where it left off.
 
 Conductor supports two distinct patterns for human oversight, plus LLM-as-judge for automated review.
+
+```mermaid
+flowchart LR
+    Plan[Agent plans an action] --> Gate[/HUMAN task: review and decide/]
+    Gate -->|Approve| Act[Execute the action]
+    Gate -->|Reject or revise| Plan
+    Gate -->|No response yet| Stored[(Durable workflow state)]
+    Stored -->|Reviewer responds| Gate
+```
 
 
 ## Pre-execution review
@@ -179,6 +206,7 @@ Because each review step is a separate persisted task, no upstream work is repea
 
 ## Next steps
 
-- **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, error handling, and multi-agent composition.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; connect approval to governance, evaluation, recovery, and operations.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; Approval, persistence, recovery, and multi-agent composition in a production agent boundary.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
 - **[HUMAN task reference](../../documentation/configuration/workflowdef/systemtasks/human-task.md)** &mdash; Full configuration options for the HUMAN system task.

@@ -18,7 +18,7 @@ vi.mock("utils", async (importOriginal) => {
       PLAYGROUND: "PLAYGROUND",
       SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
       TASK_INDEXING: "TASK_INDEXING",
-      AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+      CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
     },
   };
 });
@@ -35,7 +35,9 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/eventHandlers/new",
   },
   EVENT_MONITOR_URL: { BASE: "/event-monitor", NAME: "/event-monitor/:name" },
+  GET_STARTED_URL: "/get-started",
   GROUP_MANAGEMENT_URL: { BASE: "/groups" },
+  HUB_URL: "/hub",
   ROLE_MANAGEMENT_URL: {
     BASE: "/roleManagement",
     TYPE_ID: "/roleManagement/:type?/:id?",
@@ -63,6 +65,7 @@ vi.mock("utils/constants/route", () => ({
     NAME: "/scheduleDef/:name",
     NEW: "/scheduleDef/new",
   },
+  SCHEDULER_EXECUTION_URL: "/schedulerExecs",
   SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
   SECRETS_URL: { BASE: "/secrets" },
   AGENT_DEFINITION_URL: {
@@ -99,10 +102,19 @@ vi.mock("utils/constants/route", () => ({
     NAME_VERSION: "/workflowDef/:name/:version",
     NEW: "/workflowDef/new",
   },
+  WORKFLOW_EXECUTION_URL: {
+    BASE: "/execution",
+    WF_ID_TASK_ID: "/execution/:id/:taskId?",
+  },
   WORKERS_URL: {
     BASE: "/workers",
   },
   TAGS_DASHBOARD_URL: { BASE: "/tags-dashboard" },
+}));
+
+vi.mock("utils/resolveDefaultHomePath", () => ({
+  resolveDefaultHomePath: () => "/executions",
+  findFirstNavigableSidebarPath: () => "/executions",
 }));
 
 vi.mock("components/features/auth/AuthGuard", () => ({
@@ -158,18 +170,6 @@ vi.mock("../pages/definition/EventHandler/EventHandler", () => ({
 }));
 vi.mock("../pages/execution/Execution", () => ({
   default: () => ({ type: "Execution" }),
-}));
-vi.mock("../pages/kitchensink/Examples", () => ({
-  default: () => ({ type: "Examples" }),
-}));
-vi.mock("../pages/kitchensink/Gantt", () => ({
-  default: () => ({ type: "Gantt" }),
-}));
-vi.mock("../pages/kitchensink/KitchenSink", () => ({
-  default: () => ({ type: "KitchenSink" }),
-}));
-vi.mock("../pages/kitchensink/ThemeSampler", () => ({
-  default: () => ({ type: "ThemeSampler" }),
 }));
 vi.mock("../pages/queueMonitor/TaskQueue", () => ({
   default: () => ({ type: "TaskQueue" }),
@@ -244,7 +244,7 @@ describe("router (OSS)", () => {
     expect(router).toBeDefined();
   });
 
-  describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
+  describe("Conductor AI integration gating", () => {
     const AGENT_PATHS = [
       "/agents",
       "/agents/new",
@@ -255,15 +255,15 @@ describe("router (OSS)", () => {
       "/agentSecrets",
     ];
 
-    it("omits agent routes when AGENTSPAN_ENABLED is off", () => {
+    it("omits agent routes when the AI integration is off", () => {
       mockFeatureFlags.isEnabled.mockReturnValue(false);
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).not.toContain(p));
     });
 
-    it("includes agent routes when AGENTSPAN_ENABLED is on", () => {
+    it("includes agent routes when the AI integration is on", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
@@ -271,7 +271,7 @@ describe("router (OSS)", () => {
 
     it("registers the create-agent route before the agent detail route", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
 
@@ -368,47 +368,6 @@ describe("router (OSS)", () => {
       );
 
       expect(wildcardRoutes.length).toBeGreaterThan(0);
-    });
-
-    it("should have kitchen sink development routes with correct elements", () => {
-      const routes = getRoutes();
-      const allRoutes = flattenRoutes(routes);
-
-      const kitchenRoutes = allRoutes.filter(
-        (route) => route.path && route.path.includes("/kitchen"),
-      );
-
-      expect(kitchenRoutes.length).toBeGreaterThan(0);
-
-      const kitchenSinkRoute = allRoutes.find(
-        (route) => route.path === "/kitchen",
-      );
-      const examplesRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/examples",
-      );
-      const ganttRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/gantt",
-      );
-      const themeRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/theme",
-      );
-
-      expect(kitchenSinkRoute).toBeDefined();
-      expect(kitchenSinkRoute?.element).toBeDefined();
-
-      expect(examplesRoute).toBeDefined();
-      expect(examplesRoute?.element).toBeDefined();
-
-      expect(ganttRoute).toBeDefined();
-      expect(ganttRoute?.element).toBeDefined();
-
-      expect(themeRoute).toBeDefined();
-      expect(themeRoute?.element).toBeDefined();
-
-      kitchenRoutes.forEach((route) => {
-        expect(route.element).toBeDefined();
-        expect(route.path).toContain("/kitchen");
-      });
     });
 
     it("should have a substantial number of routes", () => {

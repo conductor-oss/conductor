@@ -94,6 +94,38 @@ function getItemDescription(t: unknown): string | undefined {
   return undefined;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function truncateText(text: string, maxLength: number): string {
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
+/**
+ * Produces a safe diagram label for either inline instructions or a prompt-template reference.
+ * Agent definitions accept both shapes, so only strings are sliced directly.
+ */
+function instructionSnippet(
+  instructions: unknown,
+  maxLength = 55,
+): string | undefined {
+  if (typeof instructions === "string") {
+    return instructions ? truncateText(instructions, maxLength) : undefined;
+  }
+
+  if (!isRecord(instructions)) return undefined;
+
+  const templateName = instructions.name;
+  if (typeof templateName !== "string" || !templateName) return undefined;
+
+  const version = instructions.version;
+  const templateLabel = `Prompt template: ${templateName}${
+    typeof version === "number" ? ` (v${version})` : ""
+  }`;
+  return truncateText(templateLabel, maxLength);
+}
+
 function toolCat(
   t: Record<string, unknown>,
 ): "agent" | "tool" | "guardrail" | "http" | "mcp" | "rag" {
@@ -467,9 +499,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
   const agentName = (agentDef.name as string | undefined) ?? "Agent";
   const strategy = agentDef.strategy as string | undefined;
   const maxTurns = agentDef.maxTurns as number | undefined;
-  const instructions = (agentDef.instructions ?? agentDef.description) as
-    | string
-    | undefined;
+  const instructions = agentDef.instructions ?? agentDef.description;
 
   // Sub-agents from the agents[] field (orchestrator pattern)
   const agentsList =
@@ -496,7 +526,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
     ...agentsList.map((a) => ({
       name: getItemName(a),
       model: a.model as string | undefined,
-      instructions: a.instructions as string | undefined,
+      instructions: a.instructions,
       strategy: a.strategy as string | undefined,
       maxTurns: a.maxTurns as number | undefined,
       subAgentCount: ((a.agents as unknown[]) ?? []).length,
@@ -507,9 +537,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
       model: ((t.config as any)?.agentConfig?.model ?? t.model) as
         | string
         | undefined,
-      instructions: (t.config as any)?.agentConfig?.instructions as
-        | string
-        | undefined,
+      instructions:
+        isRecord(t.config) && isRecord(t.config.agentConfig)
+          ? t.config.agentConfig.instructions
+          : undefined,
       strategy: t.strategy as string | undefined,
       maxTurns: undefined as number | undefined,
       subAgentCount: 0,
@@ -517,9 +548,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
     })),
   ];
 
-  const instSnippet = instructions
-    ? instructions.slice(0, 55) + (instructions.length > 55 ? "…" : "")
-    : undefined;
+  const instSnippet = instructionSnippet(instructions);
 
   // ── Root agent node ──────────────────────────────────────────────────────────
   nodes.push({
@@ -535,8 +564,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
       badgeBg: "#e8eeff",
       borderColor: "#93c5fd",
       modelName: defModel,
-      strategy,
-      maxTurns,
+      // Only show strategy/maxTurns when the root actually coordinates sub-agents;
+      // a lone agent carries SDK defaults (e.g. HANDOFF/25) that are meaningless here.
+      strategy: allSubAgents.length > 0 ? strategy : undefined,
+      maxTurns: allSubAgents.length > 0 ? maxTurns : undefined,
     },
   });
 
@@ -554,10 +585,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
     for (let i = 0; i < allSubAgents.length; i++) {
       const sa = allSubAgents[i];
       const id = `subagent-${i}`;
-      const instSub = sa.instructions
-        ? sa.instructions.slice(0, 55) +
-          (sa.instructions.length > 55 ? "…" : "")
-        : undefined;
+      const instSub = instructionSnippet(sa.instructions);
       nodes.push({
         id,
         width: W,
@@ -571,8 +599,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
           badgeBg: "#e8eeff",
           borderColor: "#93c5fd",
           modelName: sa.model,
-          strategy: sa.strategy,
-          maxTurns: sa.maxTurns,
+          // Suppress strategy/maxTurns for leaf sub-agents — the server may echo
+          // SDK defaults (HANDOFF/25) even when the agent has no sub-agents.
+          strategy: sa.subAgentCount > 0 ? sa.strategy : undefined,
+          maxTurns: sa.subAgentCount > 0 ? sa.maxTurns : undefined,
           subAgentCount: sa.subAgentCount || undefined,
         },
       });

@@ -31,6 +31,7 @@ describe("agent guide manifest", () => {
       expect(markdown).toContain("CONDUCTOR_AUTH_KEY");
       expect(markdown).toContain("CONDUCTOR_AUTH_SECRET");
       expect(markdown).not.toContain("AGENTSPAN_SERVER_URL");
+      expect(markdown).not.toContain("AGENTSPAN_LLM_MODEL");
       expect(markdown).not.toMatch(
         /export (?:OPENAI|ANTHROPIC|GOOGLE_GEMINI)_API_KEY=/,
       );

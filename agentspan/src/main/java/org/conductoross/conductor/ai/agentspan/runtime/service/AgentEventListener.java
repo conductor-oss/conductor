@@ -41,7 +41,7 @@ import io.micrometer.core.instrument.MeterRegistry;
  */
 @Component
 @Primary
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class AgentEventListener implements TaskStatusListener, WorkflowStatusListener {
 
     private static final Logger logger = LoggerFactory.getLogger(AgentEventListener.class);

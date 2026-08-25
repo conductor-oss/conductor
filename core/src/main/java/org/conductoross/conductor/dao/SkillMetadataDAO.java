@@ -16,14 +16,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Persistence for AgentSpan skill <b>metadata</b>: the per-version manifest plus a per-skill
+ * Persistence for Conductor-Agents skill <b>metadata</b>: the per-version manifest plus a per-skill
  * "latest" pointer. Skill package <b>bytes</b> are stored separately via {@link SkillPackageDAO}.
  *
- * <p>This DAO is the Conductor-native backing store for AgentSpan's {@code
+ * <p>This DAO is the Conductor-native backing store for Conductor-Agents' {@code
  * dev.agentspan.runtime.spi.SkillMetadataDAO} SPI; an adapter in the {@code conductor-ai} module
  * bridges the two so skills persist through whichever Conductor backend is configured (Postgres,
  * MySQL, SQLite, Redis). It deliberately stores the manifest as an opaque JSON document ({@code
- * detailJson}) so the persistence layer carries no dependency on AgentSpan model types.
+ * detailJson}) so the persistence layer carries no dependency on Conductor-Agents model types.
  *
  * <p>Skills share a single global namespace (OSS Conductor is single-tenant). Authorization
  * (whether the caller may read a given skill) is the caller's concern, not this DAO's. Implemented

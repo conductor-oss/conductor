@@ -48,6 +48,10 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
         AgentConfig config = new AgentConfig();
         config.setName(getString(raw, "name", "openai_agent"));
 
+        // OpenAI Agents SDK handoffs transfer control to the specialist. Preserve that behavior
+        // unless the framework payload explicitly asks Conductor to synthesize a parent response.
+        config.setSynthesize(Boolean.TRUE.equals(raw.get("synthesize")));
+
         // Model: prefix with "openai/" if no provider specified
         String model = getString(raw, "model", "gpt-4o");
         config.setModel(ensureProvider(model, "openai"));

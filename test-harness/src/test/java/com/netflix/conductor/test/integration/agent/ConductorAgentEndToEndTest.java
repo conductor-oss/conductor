@@ -79,8 +79,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.db.type=redis_standalone",
             "conductor.queue.type=redis_standalone",
             "conductor.app.sweeperThreadCount=1",
-            "conductor.app.sweeper.sweepBatchSize=1",
-            "conductor.app.sweeper.queuePopTimeout=750",
+            "conductor.app.sweeper.sweepBatchSize=10",
+            "conductor.app.sweeper.queuePopTimeout=10",
             "conductor.integrations.ai.enabled=true"
         })
 class ConductorAgentEndToEndTest {
@@ -732,7 +732,7 @@ class ConductorAgentEndToEndTest {
      */
     private void drainQueue(String taskType) {
         WorkflowSystemTask task = systemTask(taskType);
-        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+        for (String taskId : queueDAO.pop(taskType, 5, 0)) {
             asyncSystemTaskExecutor.execute(task, taskId);
         }
     }
@@ -930,6 +930,15 @@ class ConductorAgentEndToEndTest {
         task.setName("AGENT");
         task.setTaskReferenceName("callAgent");
         task.setType("AGENT");
+        // AI task definitions ship with retryCount 3 and LINEAR_BACKOFF at 2s (AIModelTaskMapper),
+        // so a failing AGENT task was retried after 2s, 4s and 6s - with each retry starting a
+        // fresh
+        // agent execution - before the workflow failed. None of the tests here assert retry
+        // behaviour; they assert how a failure surfaces on the AGENT task. Retry on the workflow
+        // task
+        // takes precedence over the task definition (DeciderService.retry), so this makes the first
+        // failure terminal without touching the shared task definition or production defaults.
+        task.setRetryCount(0);
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("agentType", "conductor");
         taskInput.put("name", agentName);

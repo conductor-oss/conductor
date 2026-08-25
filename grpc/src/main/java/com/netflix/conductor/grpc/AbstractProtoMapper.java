@@ -278,6 +278,46 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
+    public EventHandlerPb.EventHandler.StartAgent toProto(EventHandler.StartAgent from) {
+        EventHandlerPb.EventHandler.StartAgent.Builder to = EventHandlerPb.EventHandler.StartAgent.newBuilder();
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getVersion() != null) {
+            to.setVersion( from.getVersion() );
+        }
+        if (from.getPrompt() != null) {
+            to.setPrompt( from.getPrompt() );
+        }
+        if (from.getSessionId() != null) {
+            to.setSessionId( from.getSessionId() );
+        }
+        to.addAllMedia( from.getMedia() );
+        for (Map.Entry<String, Object> pair : from.getContext().entrySet()) {
+            to.putContext( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        if (from.getIdempotencyKey() != null) {
+            to.setIdempotencyKey( from.getIdempotencyKey() );
+        }
+        return to.build();
+    }
+
+    public EventHandler.StartAgent fromProto(EventHandlerPb.EventHandler.StartAgent from) {
+        EventHandler.StartAgent to = new EventHandler.StartAgent();
+        to.setName( from.getName() );
+        to.setVersion( from.getVersion() );
+        to.setPrompt( from.getPrompt() );
+        to.setSessionId( from.getSessionId() );
+        to.setMedia( from.getMediaList().stream().collect(Collectors.toCollection(ArrayList::new)) );
+        Map<String, Object> contextMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getContextMap().entrySet()) {
+            contextMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setContext(contextMap);
+        to.setIdempotencyKey( from.getIdempotencyKey() );
+        return to;
+    }
+
     public EventHandlerPb.EventHandler.StartWorkflow toProto(EventHandler.StartWorkflow from) {
         EventHandlerPb.EventHandler.StartWorkflow.Builder to = EventHandlerPb.EventHandler.StartWorkflow.newBuilder();
         if (from.getName() != null) {
@@ -377,6 +417,9 @@ public abstract class AbstractProtoMapper {
         if (from.getUpdate_workflow_variables() != null) {
             to.setUpdateWorkflowVariables( toProto( from.getUpdate_workflow_variables() ) );
         }
+        if (from.getStart_agent() != null) {
+            to.setStartAgent( toProto( from.getStart_agent() ) );
+        }
         return to.build();
     }
 
@@ -399,6 +442,9 @@ public abstract class AbstractProtoMapper {
         if (from.hasUpdateWorkflowVariables()) {
             to.setUpdate_workflow_variables( fromProto( from.getUpdateWorkflowVariables() ) );
         }
+        if (from.hasStartAgent()) {
+            to.setStart_agent( fromProto( from.getStartAgent() ) );
+        }
         return to;
     }
 
@@ -410,6 +456,7 @@ public abstract class AbstractProtoMapper {
             case fail_task: to = EventHandlerPb.EventHandler.Action.Type.FAIL_TASK; break;
             case terminate_workflow: to = EventHandlerPb.EventHandler.Action.Type.TERMINATE_WORKFLOW; break;
             case update_workflow_variables: to = EventHandlerPb.EventHandler.Action.Type.UPDATE_WORKFLOW_VARIABLES; break;
+            case start_agent: to = EventHandlerPb.EventHandler.Action.Type.START_AGENT; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
@@ -423,6 +470,7 @@ public abstract class AbstractProtoMapper {
             case FAIL_TASK: to = EventHandler.Action.Type.fail_task; break;
             case TERMINATE_WORKFLOW: to = EventHandler.Action.Type.terminate_workflow; break;
             case UPDATE_WORKFLOW_VARIABLES: to = EventHandler.Action.Type.update_workflow_variables; break;
+            case START_AGENT: to = EventHandler.Action.Type.start_agent; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;

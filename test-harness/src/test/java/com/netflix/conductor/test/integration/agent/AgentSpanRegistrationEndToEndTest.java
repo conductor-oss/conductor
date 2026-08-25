@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * End-to-end test of the <b>real</b> AgentSpan registration/compilation pipeline — not the
+ * End-to-end test of the <b>real</b> Conductor-Agents registration/compilation pipeline — not the
  * hand-rolled {@code metadata.agentDef}-stamped {@link WorkflowDef}s in {@link
  * ConductorAgentEndToEndTest}. Every agent here is registered through {@code
  * AgentService.deploy(AgentStartRequest)} (the same call {@code POST /api/agent/deploy} makes) with
@@ -80,10 +80,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Requires a live LLM. The dedicated {@code agentspanRealE2E} Gradle task fails before running
  * the suite unless {@code ANTHROPIC_API_KEY} or {@code OPENAI_API_KEY} is set. It picks whichever
- * key is present (Anthropic preferred) rather than running the provider-agnostic AgentSpan pipeline
- * twice — these tests exercise the compiler/dispatch machinery, not provider-specific quirks, so
- * there is nothing to gain from a two-provider matrix, only 2x the LLM spend on every CI run once a
- * key is configured.
+ * key is present (Anthropic preferred) rather than running the provider-agnostic Conductor-Agents
+ * pipeline twice — these tests exercise the compiler/dispatch machinery, not provider-specific
+ * quirks, so there is nothing to gain from a two-provider matrix, only 2x the LLM spend on every CI
+ * run once a key is configured.
  *
  * <p>LLM output wording is inherently non-deterministic, so assertions favor <b>structural</b>
  * proof (a real {@code HTTP} task ran with {@code statusCode=200}; a real {@code HUMAN} task paused
@@ -102,7 +102,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
             "conductor.app.sweeper.sweepBatchSize=1",
             "conductor.app.sweeper.queuePopTimeout=750",
             "conductor.integrations.ai.enabled=true",
-            "agentspan.embedded=true",
             "conductor.external-payload-storage.type=s3",
             "conductor.external-payload-storage.s3.bucketName="
                     + AgentSpanRegistrationEndToEndTest.PAYLOAD_BUCKET,
@@ -121,12 +120,11 @@ class AgentSpanRegistrationEndToEndTest {
 
     private static final String MODEL =
             HAS_ANTHROPIC_KEY
-                    ? "anthropic/"
-                            + System.getenv().getOrDefault("ANTHROPIC_MODEL", "claude-haiku-4-5")
+                    ? "anthropic/" + resolveModelName("ANTHROPIC_MODEL", "claude-haiku-4-5")
                     // gpt-4o-mini did not reliably follow the multi-tool "you must ask via
                     // ask_question" instruction in this agentic, multi-turn shape (it sometimes
                     // answered directly without calling any tool) -- gpt-4o complies reliably.
-                    : "openai/" + System.getenv().getOrDefault("OPENAI_MODEL", "gpt-4o");
+                    : "openai/" + resolveModelName("OPENAI_MODEL", "gpt-4o");
 
     @SuppressWarnings("resource")
     private static final GenericContainer<?> REDIS =
@@ -461,7 +459,7 @@ class AgentSpanRegistrationEndToEndTest {
                 "the completed interview must preserve a terminal result: " + resultText);
     }
 
-    // ── AgentSpan registration ─────────────────────────────────────────────
+    // ── Conductor-Agents registration ──────────────────────────────────────
 
     private void deployAgent(AgentConfig config) {
         AgentStartResponse response =
@@ -524,7 +522,7 @@ class AgentSpanRegistrationEndToEndTest {
      */
     private void drainAllQueues() {
         for (WorkflowSystemTask task : asyncSystemTasks) {
-            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 100)) {
+            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 0)) {
                 asyncSystemTaskExecutor.execute(task, taskId);
             }
         }
@@ -726,5 +724,10 @@ class AgentSpanRegistrationEndToEndTest {
                         .build()) {
             s3.createBucket(CreateBucketRequest.builder().bucket(PAYLOAD_BUCKET).build());
         }
+    }
+
+    private static String resolveModelName(String envVar, String defaultValue) {
+        String envValue = System.getenv(envVar);
+        return (envValue == null || envValue.isBlank()) ? defaultValue : envValue;
     }
 }

@@ -1,0 +1,114 @@
+{
+  "name": "saga_order_compensation",
+  "description": "Compensation workflow for saga_order_fulfillment. Reads the failed execution to learn which steps completed, then undoes only those, in reverse order, idempotently.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 900,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "reason",
+    "workflowId",
+    "failureStatus",
+    "failureTaskId",
+    "failedWorkflow"
+  ],
+  "tasks": [
+    {
+      "name": "determine_what_completed",
+      "taskReferenceName": "completed_steps",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "failed": "${workflow.input.failedWorkflow}",
+        "queryExpression": "((.failed.tasks // []) | map(select(.status == \"COMPLETED\")) | map(.referenceTaskName)) as $done | {done: $done, orderId: ((.failed.input.orderId) // \"unknown\"), undoPayment: ($done | index(\"charge_payment\") != null), undoInventory: ($done | index(\"reserve_inventory\") != null)}"
+      }
+    },
+    {
+      "name": "route_payment_refund",
+      "taskReferenceName": "route_refund",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "undoPayment",
+      "inputParameters": {
+        "undoPayment": "${completed_steps.output.result.undoPayment}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "refund_payment",
+            "taskReferenceName": "refund_payment",
+            "type": "HTTP",
+            "inputParameters": {
+              "http_request": {
+                "uri": "http://localhost:8088/payments/refund",
+                "method": "POST",
+                "headers": { "Idempotency-Key": "${completed_steps.output.result.orderId}-refund" },
+                "body": {
+                  "orderId": "${completed_steps.output.result.orderId}",
+                  "reason": "${workflow.input.reason}"
+                },
+                "connectionTimeOut": 10000,
+                "readTimeOut": 40000
+              }
+            },
+            "taskDefinition": {
+              "name": "refund_payment",
+              "retryCount": 5,
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 5,
+              "responseTimeoutSeconds": 30,
+              "timeoutSeconds": 300,
+              "timeoutPolicy": "TIME_OUT_WF"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    },
+    {
+      "name": "route_inventory_release",
+      "taskReferenceName": "route_release",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "undoInventory",
+      "inputParameters": {
+        "undoInventory": "${completed_steps.output.result.undoInventory}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "release_inventory",
+            "taskReferenceName": "release_inventory",
+            "type": "HTTP",
+            "inputParameters": {
+              "http_request": {
+                "uri": "http://localhost:8088/inventory/release",
+                "method": "POST",
+                "headers": { "Idempotency-Key": "${completed_steps.output.result.orderId}-release" },
+                "body": { "orderId": "${completed_steps.output.result.orderId}" },
+                "connectionTimeOut": 10000,
+                "readTimeOut": 40000
+              }
+            },
+            "taskDefinition": {
+              "name": "release_inventory",
+              "retryCount": 5,
+              "retryLogic": "EXPONENTIAL_BACKOFF",
+              "retryDelaySeconds": 5,
+              "responseTimeoutSeconds": 30,
+              "timeoutSeconds": 300,
+              "timeoutPolicy": "TIME_OUT_WF"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "compensatedOrder": "${completed_steps.output.result.orderId}",
+    "stepsCompleted": "${completed_steps.output.result.done}",
+    "paymentRefunded": "${completed_steps.output.result.undoPayment}",
+    "inventoryReleased": "${completed_steps.output.result.undoInventory}",
+    "originalFailure": "${workflow.input.reason}"
+  }
+}

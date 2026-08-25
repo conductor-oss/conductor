@@ -210,7 +210,7 @@ export default function AdvancedSearch({
       query: queryFT.query,
       freeText: queryFT.freeText,
       // Scope results to a single classifier: "workflow" for plain workflow
-      // executions, "agent" for AgentSpan agent runs on the Agents pages.
+      // executions, "agent" for Conductor-Agents runs on the Agents pages.
       classifier: "agent",
       topLevelOnly: hideSubWorkflows,
     },
@@ -365,6 +365,8 @@ export default function AdvancedSearch({
                 sort,
                 freeText,
                 query: buildQuery().query,
+                classifier: "agent",
+                topLevelOnly: hideSubWorkflows,
               }}
             />
           )}
