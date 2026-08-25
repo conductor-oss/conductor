@@ -17,7 +17,6 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
-    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "tools.jackson.core:jackson-databind"
@@ -66,7 +65,6 @@ dependencies {
     testImplementation "org.glassfish.jaxb:jaxb-runtime"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
-    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testImplementation project(':conductor-common').sourceSets.test.output
 
     testImplementation "org.apache.groovy:groovy"

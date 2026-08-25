@@ -6,8 +6,6 @@ plugins {
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
-
-    implementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     implementation 'org.springframework.security:spring-security-core'
     implementation "org.apache.commons:commons-lang3"
 
@@ -32,7 +30,6 @@ dependencies {
     testFixturesImplementation 'org.mockito:mockito-core'
     testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
-    testFixturesImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testFixturesImplementation "org.springframework.boot:spring-boot-jdbc"
     testFixturesImplementation "tools.jackson.core:jackson-databind"
 }

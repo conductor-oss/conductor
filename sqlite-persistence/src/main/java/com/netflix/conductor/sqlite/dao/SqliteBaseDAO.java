@@ -25,7 +25,7 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.sqlite.util.*;
@@ -116,7 +116,7 @@ public abstract class SqliteBaseDAO {
 
     protected <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
-            return retryTemplate.execute(context -> getWithTransaction(function));
+            return retryTemplate.invoke(() -> getWithTransaction(function));
         } catch (Exception e) {
             throw new NonTransientException(e.getMessage(), e);
         }

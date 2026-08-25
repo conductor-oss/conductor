@@ -13,7 +13,7 @@
 package com.netflix.conductor.mysql.config;
 
 import java.sql.SQLException;
-import java.util.Optional;
+import java.time.Duration;
 
 import javax.sql.DataSource;
 
@@ -30,10 +30,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
@@ -121,27 +119,20 @@ public class MySQLConfiguration {
 
     @Bean
     public RetryTemplate mysqlRetryTemplate(MySQLProperties properties) {
-        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(properties.getDeadlockRetryMax());
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
-        return retryTemplate;
+        // deadlockRetryMax counts attempts, so the retry budget is one less. Retries are immediate:
+        // a deadlock victim only needs the competing transaction to finish, and it already has.
+        return new RetryTemplate(
+                RetryPolicy.builder()
+                        .maxRetries(Math.max(0, properties.getDeadlockRetryMax() - 1))
+                        .delay(Duration.ZERO)
+                        .predicate(CustomRetryPolicy::isDeadLockError)
+                        .build());
     }
 
-    public static class CustomRetryPolicy extends SimpleRetryPolicy {
+    /** Retries only the failures MySQL reports as a lock deadlock. */
+    public static class CustomRetryPolicy {
 
-        @Override
-        public boolean canRetry(final RetryContext context) {
-            final Optional<Throwable> lastThrowable =
-                    Optional.ofNullable(context.getLastThrowable());
-            return lastThrowable
-                    .map(throwable -> super.canRetry(context) && isDeadLockError(throwable))
-                    .orElseGet(() -> super.canRetry(context));
-        }
-
-        private boolean isDeadLockError(Throwable throwable) {
+        static boolean isDeadLockError(Throwable throwable) {
             SQLException sqlException = findCauseSQLException(throwable);
             if (sqlException == null) {
                 return false;
@@ -149,7 +140,7 @@ public class MySQLConfiguration {
             return ER_LOCK_DEADLOCK == sqlException.getErrorCode();
         }
 
-        private SQLException findCauseSQLException(Throwable throwable) {
+        private static SQLException findCauseSQLException(Throwable throwable) {
             Throwable causeException = throwable;
             while (null != causeException && !(causeException instanceof SQLException)) {
                 causeException = causeException.getCause();

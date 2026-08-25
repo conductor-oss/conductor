@@ -15,7 +15,7 @@ package com.netflix.conductor.sqlite.config;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Optional;
+import java.time.Duration;
 
 import javax.sql.DataSource;
 
@@ -33,10 +33,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.ExponentialBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.core.sync.local.LocalOnlyLock;
@@ -190,18 +188,17 @@ public class SqliteConfiguration {
 
     @Bean
     public RetryTemplate sqliteRetryTemplate(SqliteProperties properties) {
-        CustomRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(10); // Increased for SQLite locking scenarios
-
-        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-        backOffPolicy.setInitialInterval(50L); // Start with 50ms
-        backOffPolicy.setMultiplier(2.0); // Double each time
-        backOffPolicy.setMaxInterval(5000L); // Max 5 seconds
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(backOffPolicy);
-        return retryTemplate;
+        // Ten attempts in total, so nine retries. SQLite serialises writers, so a busy database
+        // needs the writer to finish rather than a quick re-run: back off from 50ms, doubling to a
+        // 5s ceiling.
+        return new RetryTemplate(
+                RetryPolicy.builder()
+                        .maxRetries(9)
+                        .delay(Duration.ofMillis(50))
+                        .multiplier(2.0)
+                        .maxDelay(Duration.ofMillis(5000))
+                        .predicate(CustomRetryPolicy::isRetryable)
+                        .build());
     }
 
     @Bean
@@ -231,7 +228,8 @@ public class SqliteConfiguration {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    public static class CustomRetryPolicy extends SimpleRetryPolicy {
+    /** Retries deadlocks, serialization conflicts, and SQLite's busy/locked failures. */
+    public static class CustomRetryPolicy {
 
         // PostgreSQL error codes
         private static final String ER_LOCK_DEADLOCK = "40P01";
@@ -241,20 +239,11 @@ public class SqliteConfiguration {
         private static final int SQLITE_BUSY = 5;
         private static final int SQLITE_LOCKED = 6;
 
-        @Override
-        public boolean canRetry(final RetryContext context) {
-            final Optional<Throwable> lastThrowable =
-                    Optional.ofNullable(context.getLastThrowable());
-            return lastThrowable
-                    .map(
-                            throwable ->
-                                    super.canRetry(context)
-                                            && (isDeadLockError(throwable)
-                                                    || isSqliteBusyError(throwable)))
-                    .orElseGet(() -> super.canRetry(context));
+        static boolean isRetryable(Throwable throwable) {
+            return isDeadLockError(throwable) || isSqliteBusyError(throwable);
         }
 
-        private boolean isDeadLockError(Throwable throwable) {
+        private static boolean isDeadLockError(Throwable throwable) {
             SQLException sqlException = findCauseSQLException(throwable);
             if (sqlException == null) {
                 return false;
@@ -263,7 +252,7 @@ public class SqliteConfiguration {
                     || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
         }
 
-        private boolean isSqliteBusyError(Throwable throwable) {
+        private static boolean isSqliteBusyError(Throwable throwable) {
             SQLException sqlException = findCauseSQLException(throwable);
             if (sqlException == null) {
                 return false;
@@ -287,7 +276,7 @@ public class SqliteConfiguration {
             return false;
         }
 
-        private SQLException findCauseSQLException(Throwable throwable) {
+        private static SQLException findCauseSQLException(Throwable throwable) {
             Throwable causeException = throwable;
             while (null != causeException && !(causeException instanceof SQLException)) {
                 causeException = causeException.getCause();

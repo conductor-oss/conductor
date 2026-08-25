@@ -22,7 +22,7 @@ import org.conductoross.conductor.es8.config.ElasticSearchProperties;
 import org.elasticsearch.client.RestClient;
 import org.junit.After;
 import org.junit.Test;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.sun.net.httpserver.HttpServer;
 import tools.jackson.databind.ObjectMapper;

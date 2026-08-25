@@ -30,7 +30,8 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -319,15 +320,17 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private <T> T executeWithRetry(Callable<T> action) throws IOException {
         try {
-            return retryTemplate.execute(context -> action.call());
-        } catch (Exception e) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
+            return retryTemplate.execute(action::call);
+        } catch (RetryException e) {
+            // Retries are exhausted; the caller cares about what actually failed, not the wrapper.
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException ioException) {
+                throw ioException;
             }
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
             }
-            throw new IOException("Elasticsearch operation failed", e);
+            throw new IOException("Elasticsearch operation failed", cause);
         }
     }
 

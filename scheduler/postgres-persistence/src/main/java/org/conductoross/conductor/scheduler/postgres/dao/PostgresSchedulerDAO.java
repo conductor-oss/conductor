@@ -16,7 +16,7 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.metrics.Monitors;

@@ -60,7 +60,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -1336,8 +1336,7 @@ public class ElasticSearchRestDAOV7 extends ElasticSearchBaseDAO implements Inde
             final BulkRequest request, final String operationDescription, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            retryTemplate.execute(
-                    context -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
+            retryTemplate.execute(() -> elasticSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

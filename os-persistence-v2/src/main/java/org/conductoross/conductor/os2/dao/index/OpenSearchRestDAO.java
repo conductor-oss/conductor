@@ -56,7 +56,7 @@ import org.opensearch.search.sort.FieldSortBuilder;
 import org.opensearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -1285,8 +1285,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             final BulkRequest request, final String operationDescription, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            retryTemplate.execute(
-                    context -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
+            retryTemplate.execute(() -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

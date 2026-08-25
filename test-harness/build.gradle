@@ -16,9 +16,6 @@ dependencies {
     testImplementation project(':conductor-ai')
     testImplementation project(':conductor-agentspan')
 
-
-    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
-
     testImplementation "tools.jackson.core:jackson-databind"
     testImplementation "tools.jackson.core:jackson-core"
 
