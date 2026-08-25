@@ -23,7 +23,7 @@ import com.netflix.conductor.dao.WorkflowMessageQueueDAO;
 import com.netflix.conductor.redis.dao.RedisWorkflowMessageQueueDAO;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Registers the Redis-backed {@link WorkflowMessageQueueDAO} when both:

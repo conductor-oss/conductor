@@ -17,7 +17,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** This class contains utility functions for parsing/expanding JSON. */
 @SuppressWarnings("unchecked")

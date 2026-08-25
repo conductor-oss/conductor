@@ -22,7 +22,7 @@ import com.netflix.conductor.cassandra.config.CassandraProperties;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.datastax.driver.core.Session;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 

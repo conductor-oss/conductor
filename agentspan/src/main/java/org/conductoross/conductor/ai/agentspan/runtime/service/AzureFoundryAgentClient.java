@@ -34,10 +34,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -376,7 +377,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         byte[] bytes;
         try {
             bytes = MAPPER.writeValueAsBytes(body);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize request body", e);
         }
         String fullUrl = url.contains("?") ? url : url + "?api-version=" + apiVersion;

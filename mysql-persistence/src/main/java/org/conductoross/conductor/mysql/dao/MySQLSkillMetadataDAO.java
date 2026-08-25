@@ -25,7 +25,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** MySQL {@link SkillMetadataDAO} — table {@code skill_metadata}. */
 public class MySQLSkillMetadataDAO extends MySQLBaseDAO implements SkillMetadataDAO {

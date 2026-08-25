@@ -17,6 +17,8 @@ import java.util.List;
 import org.conductoross.conductor.ai.providers.anthropic.api.AnthropicMessagesApi;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -59,18 +61,21 @@ public class AnthropicChatOptions implements ChatOptions {
     }
 
     @Override
-    public ChatOptions copy() {
-        return AnthropicChatOptions.builder()
-                .model(model)
-                .temperature(temperature)
-                .topP(topP)
-                .topK(topK)
-                .maxTokens(maxTokens)
-                .stopSequences(stopSequences)
-                .thinkingBudgetTokens(thinkingBudgetTokens)
-                .reasoningEffort(reasoningEffort)
-                .reasoningSummary(reasoningSummary)
-                .tools(tools)
-                .build();
+    public ChatOptions.Builder<?> mutate() {
+        return ProviderChatOptionsBuilder.from(
+                this,
+                fields ->
+                        AnthropicChatOptions.builder()
+                                .model(fields.model())
+                                .temperature(fields.temperature())
+                                .topP(fields.topP())
+                                .topK(fields.topK())
+                                .maxTokens(fields.maxTokens())
+                                .stopSequences(fields.stopSequences())
+                                .thinkingBudgetTokens(thinkingBudgetTokens)
+                                .reasoningEffort(reasoningEffort)
+                                .reasoningSummary(reasoningSummary)
+                                .tools(tools)
+                                .build());
     }
 }

@@ -24,7 +24,7 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.PollDataDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
 public class SqlitePollDataDAO extends SqliteBaseDAO implements PollDataDAO {

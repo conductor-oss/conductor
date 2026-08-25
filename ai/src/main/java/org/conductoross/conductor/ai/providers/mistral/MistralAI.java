@@ -21,6 +21,7 @@ import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -92,9 +93,7 @@ public class MistralAI implements AIModel {
                         .topP(input.getTopP())
                         .maxTokens(input.getMaxTokens())
                         .stop(input.getStopWords())
-                        .toolCallbacks(toolCallbacks)
-                        .toolNames(toolNames)
-                        .internalToolExecutionEnabled(false);
+                        .toolCallbacks(toolCallbacks);
 
         if (input.isJsonOutput()) {
             builder.responseFormat(
@@ -117,12 +116,10 @@ public class MistralAI implements AIModel {
     // Initialization helpers
 
     private MistralAiApi createMistralAiApi(OkHttpClient httpClient) {
-        OkHttpClient effective =
-                (config.getTimeout() != null)
-                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
-                        : httpClient;
-        var factory =
-                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
+        if (config.getTimeout() != null) {
+            factory.setReadTimeout(config.getTimeout());
+        }
         // Needs accept-encoding headers
         // https://github.com/spring-projects/spring-ai/issues/372
         return MistralAiApi.builder()
@@ -139,7 +136,7 @@ public class MistralAI implements AIModel {
         MistralAiChatOptions chatOptions =
                 MistralAiChatOptions.builder().temperature(null).topP(null).build();
         return MistralAiChatModel.builder()
-                .defaultOptions(chatOptions)
+                .options(chatOptions)
                 .mistralAiApi(this.mistralAiApi)
                 .build();
     }

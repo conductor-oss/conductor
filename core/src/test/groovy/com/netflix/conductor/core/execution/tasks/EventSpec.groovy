@@ -22,8 +22,8 @@ import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.core.JsonParseException
+import tools.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
 

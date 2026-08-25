@@ -40,7 +40,7 @@ import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.health.RedisMonitor;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;
 import io.orkes.conductor.scheduler.listener.ScheduleChangeListenerStub;

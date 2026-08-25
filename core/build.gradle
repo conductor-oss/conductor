@@ -17,10 +17,10 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
-    compileOnly 'org.springframework.retry:spring-retry'
+    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
-    implementation "com.fasterxml.jackson.core:jackson-annotations:${revFasterXml}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:${revFasterXml}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
+    implementation "tools.jackson.core:jackson-databind"
 
     implementation "commons-io:commons-io:${revCommonsIo}"
 
@@ -28,7 +28,7 @@ dependencies {
 
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.fasterxml.jackson.core:jackson-core:${revFasterXml}"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
 
@@ -43,7 +43,7 @@ dependencies {
     // Nashorn is deprecated and removed in Java 15+, replaced by GraalJS
     // implementation "org.openjdk.nashorn:nashorn-core:15.4"
 
-    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "io.micrometer:micrometer-core"
     implementation "com.google.guava:guava:${revGuava}"
 
     //GraalVM dependencies for executing JavaScript and Python
@@ -59,17 +59,17 @@ dependencies {
 
     // JAXB is not bundled with Java 11, dependencies added explicitly
     // These are needed by Apache BVAL
-    implementation "jakarta.xml.bind:jakarta.xml.bind-api:${revJAXB}"
-    implementation "jakarta.activation:jakarta.activation-api:${revActivation}"
+    implementation "jakarta.xml.bind:jakarta.xml.bind-api"
+    implementation "jakarta.activation:jakarta.activation-api"
 
     // Only add it as a test dependency. The actual jaxb runtime provider is provided when building the server.
-    testImplementation "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    testImplementation "org.glassfish.jaxb:jaxb-runtime"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
-    testImplementation 'org.springframework.retry:spring-retry'
+    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testImplementation project(':conductor-common').sourceSets.test.output
 
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.junit.vintage:junit-vintage-engine"

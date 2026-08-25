@@ -28,7 +28,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.postgres.dao.PostgresBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** PostgreSQL {@link FileMetadataDAO} — table {@code file_metadata}. */
 public class PostgresFileMetadataDAO extends PostgresBaseDAO implements FileMetadataDAO {

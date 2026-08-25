@@ -26,8 +26,8 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.datastax.driver.core.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
@@ -424,7 +424,7 @@ public class CassandraSchedulerArchivalDAO extends CassandraBaseDAO
         }
         try {
             return objectMapper.writeValueAsString(request);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new NonTransientException("Failed to serialize StartWorkflowRequest to JSON", e);
         }
     }

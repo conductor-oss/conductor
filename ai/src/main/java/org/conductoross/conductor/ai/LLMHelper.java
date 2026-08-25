@@ -63,9 +63,9 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -291,7 +291,7 @@ public class LLMHelper {
             // llmResponse.setResult(map);
             return map;
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             if (chatCompletion.isJsonOutput()) {
                 log.error(
                         "error converting to json, response: {}, error: {}",
@@ -367,7 +367,7 @@ public class LLMHelper {
                                 objectMapper.readValue(argsAsString, Map.class);
                         // Recursively parse any nested JSON strings
                         args = parseNestedJsonStrings(parsedArgs);
-                    } catch (JsonProcessingException ignored) {
+                    } catch (JacksonException ignored) {
                         log.warn(ignored.getMessage(), ignored);
                     }
                     args.put("method", name);
@@ -605,7 +605,7 @@ public class LLMHelper {
                 return "{}";
             }
             return objectMapper.writeValueAsString(input);
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             return String.valueOf(input);
         }
     }

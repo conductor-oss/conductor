@@ -26,7 +26,7 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.jedis.UnifiedJedisCommands;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import redis.clients.jedis.JedisPooled;
 

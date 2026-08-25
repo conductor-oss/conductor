@@ -28,7 +28,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteFileMetadataDAO extends SqliteBaseDAO implements FileMetadataDAO {
 

@@ -22,7 +22,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSingleNode;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import static com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE.*;

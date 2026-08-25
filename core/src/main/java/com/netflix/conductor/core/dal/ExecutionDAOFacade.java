@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.dal;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +47,8 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -189,7 +188,7 @@ public class ExecutionDAOFacade {
                 if (!includeTasks) {
                     workflow.getTasks().clear();
                 }
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 String errorMsg = String.format("Error reading workflow: %s", workflowId);
                 LOGGER.error(errorMsg);
                 throw new TransientException(errorMsg, e);
@@ -367,7 +366,7 @@ public class ExecutionDAOFacade {
             }
             // Idempotent deletion: missing index records should not block DAO removal.
             LOGGER.info("Workflow {} not found in index during removal, continuing", workflowId, e);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new TransientException("Workflow can not be serialized to json", e);
         }
 
@@ -388,7 +387,7 @@ public class ExecutionDAOFacade {
                                         task.getTaskId(),
                                         workflowId,
                                         e);
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 throw new TransientException(
                                         String.format(
                                                 "Task %s of workflow %s can not be serialized to json",
@@ -424,7 +423,7 @@ public class ExecutionDAOFacade {
     }
 
     private void removeWorkflowIndex(WorkflowModel workflow, boolean archiveWorkflow)
-            throws JsonProcessingException {
+            throws JacksonException {
         if (archiveWorkflow) {
             if (workflow.getStatus().isTerminal()) {
                 // Only allow archival if workflow is in terminal state
@@ -593,7 +592,7 @@ public class ExecutionDAOFacade {
     }
 
     private void removeTaskIndex(WorkflowModel workflow, TaskModel task, boolean archiveTask)
-            throws JsonProcessingException {
+            throws JacksonException {
         if (!properties.isTaskIndexingEnabled()) {
             return;
         }

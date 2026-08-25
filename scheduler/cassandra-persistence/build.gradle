@@ -6,8 +6,8 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'

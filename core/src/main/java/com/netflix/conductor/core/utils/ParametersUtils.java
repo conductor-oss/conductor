@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.core.utils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,8 +40,9 @@ import com.netflix.conductor.dao.EnvironmentDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -181,7 +181,7 @@ public class ParametersUtils {
         try {
             byte[] bytes = objectMapper.writeValueAsBytes(inputTemplate);
             return objectMapper.readValue(bytes, map);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Unable to clone input params", e);
         }
     }

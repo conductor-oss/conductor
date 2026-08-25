@@ -47,7 +47,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;

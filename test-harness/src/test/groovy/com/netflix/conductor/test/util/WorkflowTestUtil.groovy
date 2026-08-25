@@ -28,7 +28,7 @@ import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.annotation.PostConstruct
 
 import static java.util.concurrent.TimeUnit.SECONDS

@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.redis.dao;
 
-import java.io.IOException;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,8 +20,8 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class BaseDynoDAO {
 
@@ -71,7 +70,7 @@ public class BaseDynoDAO {
     protected String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
@@ -79,7 +78,7 @@ public class BaseDynoDAO {
     protected <T> T readValue(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

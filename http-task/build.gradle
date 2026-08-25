@@ -15,11 +15,12 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-restclient'
 
-    implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
     implementation("org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}")
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-restclient'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"
     testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
     testImplementation "org.bouncycastle:bcprov-jdk15on:1.70"

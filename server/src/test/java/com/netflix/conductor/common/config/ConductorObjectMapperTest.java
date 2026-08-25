@@ -22,8 +22,8 @@ import org.junit.Test;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
@@ -67,7 +67,7 @@ public class ConductorObjectMapperTest {
     }
 
     @Test
-    public void testNullOnWrite() throws JsonProcessingException {
+    public void testNullOnWrite() throws JacksonException {
         Map<String, Object> data = new HashMap<>();
         data.put("someKey", null);
         data.put("someId", "abc123");

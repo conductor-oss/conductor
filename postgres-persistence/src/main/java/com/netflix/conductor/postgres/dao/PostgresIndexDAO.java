@@ -38,7 +38,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.PostgresIndexQueryBuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
 

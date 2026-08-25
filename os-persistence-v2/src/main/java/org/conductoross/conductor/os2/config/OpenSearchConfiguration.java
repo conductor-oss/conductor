@@ -37,7 +37,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.dao.IndexDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(OpenSearchProperties.class)

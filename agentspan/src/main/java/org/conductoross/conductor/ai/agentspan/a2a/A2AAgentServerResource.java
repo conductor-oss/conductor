@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -104,7 +104,7 @@ public class A2AAgentServerResource {
         if (properties.getPublicUrl() != null && !properties.getPublicUrl().isBlank()) {
             return properties.getPublicUrl();
         }
-        return UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
+        return UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
                 .replacePath(null)
                 .replaceQuery(null)
                 .build()

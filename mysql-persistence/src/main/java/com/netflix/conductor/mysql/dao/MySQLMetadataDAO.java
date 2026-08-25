@@ -36,7 +36,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.mysql.config.MySQLProperties;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
 public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, EventHandlerDAO {

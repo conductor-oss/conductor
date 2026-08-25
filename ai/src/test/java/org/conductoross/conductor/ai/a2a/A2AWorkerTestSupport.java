@@ -33,7 +33,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** Helpers that model the engine persisting a worker result before the next poll. */
 public final class A2AWorkerTestSupport {

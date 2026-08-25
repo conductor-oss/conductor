@@ -31,7 +31,7 @@ import com.netflix.conductor.core.exception.ConflictException
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.config.LocalStackSQSConfiguration
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import groovy.json.JsonSlurper
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider

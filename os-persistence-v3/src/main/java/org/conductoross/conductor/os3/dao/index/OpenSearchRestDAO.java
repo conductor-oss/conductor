@@ -60,9 +60,9 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
@@ -622,9 +622,9 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                             .sort(s -> s.field(f -> f.field("created").order(SortOrder.Asc)))
                             .build();
 
-            SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response =
+            SearchResponse<tools.jackson.databind.node.ObjectNode> response =
                     openSearchClient.search(
-                            searchRequest, com.fasterxml.jackson.databind.node.ObjectNode.class);
+                            searchRequest, tools.jackson.databind.node.ObjectNode.class);
             return mapGetMessagesResponse(response);
         } catch (Exception e) {
             logger.error("Failed to get messages for queue: {}", queue, e);
@@ -633,12 +633,12 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     }
 
     private List<Message> mapGetMessagesResponse(
-            SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response)
+            SearchResponse<tools.jackson.databind.node.ObjectNode> response)
             throws IOException {
-        List<Hit<com.fasterxml.jackson.databind.node.ObjectNode>> hits = response.hits().hits();
+        List<Hit<tools.jackson.databind.node.ObjectNode>> hits = response.hits().hits();
         List<Message> messages = new ArrayList<>(hits.size());
-        for (Hit<com.fasterxml.jackson.databind.node.ObjectNode> hit : hits) {
-            com.fasterxml.jackson.databind.node.ObjectNode source = hit.source();
+        for (Hit<tools.jackson.databind.node.ObjectNode> hit : hits) {
+            tools.jackson.databind.node.ObjectNode source = hit.source();
             if (source != null) {
                 String messageId =
                         source.get("messageId") != null ? source.get("messageId").asText() : null;
@@ -979,11 +979,11 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     public String get(String workflowInstanceId, String fieldToGet) {
         GetRequest request =
                 new GetRequest.Builder().index(workflowIndexName).id(workflowInstanceId).build();
-        GetResponse<com.fasterxml.jackson.databind.node.ObjectNode> response;
+        GetResponse<tools.jackson.databind.node.ObjectNode> response;
         try {
             response =
                     openSearchClient.get(
-                            request, com.fasterxml.jackson.databind.node.ObjectNode.class);
+                            request, tools.jackson.databind.node.ObjectNode.class);
         } catch (IOException e) {
             logger.error(
                     "Unable to get Workflow: {} from openSearch index: {}",
@@ -994,7 +994,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         }
 
         if (response.found()) {
-            com.fasterxml.jackson.databind.node.ObjectNode source = response.source();
+            tools.jackson.databind.node.ObjectNode source = response.source();
             if (source != null && source.has(fieldToGet)) {
                 return source.get(fieldToGet).asText();
             }
@@ -1073,9 +1073,9 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         }
 
         SearchRequest searchRequest = requestBuilder.build();
-        SearchResponse<com.fasterxml.jackson.databind.node.ObjectNode> response =
+        SearchResponse<tools.jackson.databind.node.ObjectNode> response =
                 openSearchClient.search(
-                        searchRequest, com.fasterxml.jackson.databind.node.ObjectNode.class);
+                        searchRequest, tools.jackson.databind.node.ObjectNode.class);
 
         List<String> result =
                 response.hits().hits().stream().map(Hit::id).collect(Collectors.toList());

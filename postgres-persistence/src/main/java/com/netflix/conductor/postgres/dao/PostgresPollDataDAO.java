@@ -30,7 +30,7 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

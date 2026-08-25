@@ -39,7 +39,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 
 import static org.junit.Assert.assertEquals;
@@ -162,7 +162,7 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
 
         ElasticsearchClient client =
                 new ElasticsearchClient(
-                        new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper)));
+                        new RestClientTransport(restClient, new JacksonJsonpMapper(transportObjectMapper())));
         Es8IndexManagementSupport indexManagementSupport =
                 new Es8IndexManagementSupport(
                         client,
@@ -875,4 +875,20 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     private String uuid() {
         return UUID.randomUUID().toString();
     }
+
+    /**
+     * The Elasticsearch java client serialises with Jackson 2 and cannot take the Jackson 3 mapper
+     * the DAO uses, so the transport gets its own. Mirrors ElasticSearchRestDAOV8.
+     */
+    private static com.fasterxml.jackson.databind.ObjectMapper transportObjectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false);
+        mapper.setSerializationInclusion(
+                com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        return mapper;
+    }
+
 }

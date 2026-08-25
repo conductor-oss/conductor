@@ -7,11 +7,11 @@ dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')
 
-    implementation 'org.springframework.retry:spring-retry'
+    implementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     implementation 'org.springframework.security:spring-security-core'
     implementation "org.apache.commons:commons-lang3"
 
-    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "io.micrometer:micrometer-core"
     implementation 'com.zaxxer:HikariCP:5.1.0'
     implementation "com.google.guava:guava:${revGuava}"
 
@@ -32,8 +32,8 @@ dependencies {
     testFixturesImplementation 'org.mockito:mockito-core'
     testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
-    testFixturesImplementation 'org.springframework.retry:spring-retry'
-    testFixturesImplementation "com.fasterxml.jackson.core:jackson-databind"
+    testFixturesImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
+    testFixturesImplementation "tools.jackson.core:jackson-databind"
 }
 
 test {

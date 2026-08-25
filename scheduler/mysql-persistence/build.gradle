@@ -5,19 +5,19 @@ dependencies {
     implementation project(':conductor-mysql-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.retry:spring-retry'
+    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "org.apache.commons:commons-lang3"
     implementation "mysql:mysql-connector-java:8.0.33"
-    implementation "org.flywaydb:flyway-core:${revFlyway}"
-    implementation "org.flywaydb:flyway-mysql:${revFlyway}"
+    implementation "org.flywaydb:flyway-core"
+    implementation "org.flywaydb:flyway-mysql"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.retry:spring-retry'
+    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testImplementation "org.testcontainers:mysql:${revTestContainer}"
     testImplementation testFixtures(project(':conductor-scheduler-core'))
 }

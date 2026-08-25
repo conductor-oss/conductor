@@ -24,13 +24,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.node.ObjectNode;
+import org.testcontainers.shaded.tools.jackson.databind.node.JsonNodeFactory;
+import org.testcontainers.shaded.tools.jackson.databind.node.ObjectNode;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
