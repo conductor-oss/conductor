@@ -161,7 +161,6 @@ describe("agent metadata resolution", () => {
       badge: "CONDUCTOR AGENT",
       name: "researcher",
       taskReferenceName: "agent_ref",
-      unresolved: false,
     });
 
     const resolvedTask = {
@@ -177,7 +176,6 @@ describe("agent metadata resolution", () => {
     expect(getAgentTaskPresentation(resolvedTask)).toMatchObject({
       badge: "A2A AGENT",
       name: "Travel Agent",
-      unresolved: false,
     });
   });
 });

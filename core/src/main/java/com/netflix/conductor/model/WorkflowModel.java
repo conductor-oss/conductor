@@ -105,8 +105,7 @@ public class WorkflowModel {
 
     // Caller's Entra ID SSO token — set by the enterprise SSO layer, never serialized to API.
     // Used by AzureFoundryAgentClient to perform OBO exchange when useCallerIdentity=true.
-    @JsonIgnore
-    private String callerEntraToken;
+    @JsonIgnore private String callerEntraToken;
 
     // Capture the failed taskId if the workflow execution failed because of task failure
     private String failedTaskId;
