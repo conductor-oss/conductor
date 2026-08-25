@@ -1,117 +1,101 @@
-# Spring Boot 4 upgrade: issues and decisions
+# Spring Boot 4 upgrade notes
 
-Problems found while executing `SPRING4-Upgrade.md`, the decision taken for each, and any follow-up
-work that was deliberately left out of the upgrade.
+Constraints and behaviour changes that came out of the Spring Boot 4 / Jackson 3 upgrade, kept
+because they are not obvious from the code alone.
 
-## 1. spring-retry is no longer managed by the Spring Boot BOM
+## spring-retry replaced by the retry support in spring-core
 
-Spring Boot 4 removed `org.springframework.retry:spring-retry` from its dependency management.
-Framework 7 grew its own retry support under `org.springframework.core.retry`, so Boot no longer
-ships the standalone library's version.
+Spring Boot 4 removed `org.springframework.retry:spring-retry` from its dependency management,
+because Framework 7 grew its own retry support under `org.springframework.core.retry`. Conductor
+uses the framework API; the library is gone from every build file.
 
-Conductor uses `RetryTemplate`, `SimpleRetryPolicy` and the backoff policies in 77 places across
-core, every SQL persistence module, the scheduler modules, and the ES/OS index DAOs.
+Points worth knowing when touching retry code:
 
-Decision: pin `spring-retry` to 2.0.13 in `dependencies.gradle` and version the declarations. The
-library only needs `spring-context`, which it declares as optional, so it links against Framework 7
-without conflict.
+- `maxRetries` counts retries where `maxAttempts` counted attempts, so every budget is one lower
+  than the value it replaced.
+- The three SQL deadlock policies subclassed `SimpleRetryPolicy` to override `canRetry(RetryContext)`
+  and only ever read the last throwable from that context, which is what
+  `predicate(Predicate<Throwable>)` does. They are plain predicates now.
+- `execute` throws a checked `RetryException` that wraps the cause. Where a callback only throws
+  unchecked exceptions the code calls `invoke` instead, which rethrows the original cause once
+  retries are exhausted. `DefaultEventProcessor` depends on this: its redelivery decision tests for
+  `TransientException`, and the SQL DAOs rely on the `SQLException` still being the cause of the
+  `NonTransientException` they raise.
+- The two Elasticsearch `executeWithRetry` helpers unwrap `RetryException` before testing the
+  exception type; without that every failure collapses into a generic `IOException`.
 
-Follow-up: migrating to `org.springframework.core.retry` is a genuine API change. The core API models
-retry policies and backoff differently and has no direct equivalent for the `RetryContext` callbacks
-Conductor uses in the SQL configurations. Worth doing on its own, not inside this upgrade.
+Backoff mapping: `NoBackOffPolicy` to `delay(Duration.ZERO)`, `FixedBackOffPolicy(1000ms)` to
+`delay(Duration.ofSeconds(1))`, sqlite's exponential policy to
+`delay(50ms).multiplier(2.0).maxDelay(5s)`.
 
-## 2. Jackson 3 conversion failures are no longer IllegalArgumentException
+## Jackson 3 conversion failures are no longer IllegalArgumentException
 
 `ObjectMapper.convertValue` reported a failed conversion as `IllegalArgumentException` in Jackson 2.
-Jackson 3 raises `JacksonException` (a `MismatchedInputException` for this case), so a
-`catch (IllegalArgumentException)` around a conversion silently stops catching.
+Jackson 3 raises `JacksonException`, so a `catch (IllegalArgumentException)` around a conversion
+silently stops catching. `StartWorkflow.getRequest` was affected: a malformed `startWorkflow` payload
+would have escaped instead of failing the task.
 
-Found in `StartWorkflow.getRequest`, where a malformed `startWorkflow` payload would have escaped
-instead of failing the task. `StartWorkflowSpec` caught it. The catch now handles both.
+The remaining `catch (IllegalArgumentException)` sites wrap `Enum.valueOf` or `UUID.fromString` and
+are unaffected.
 
-The other `catch (IllegalArgumentException)` sites in the codebase wrap `Enum.valueOf` or
-`UUID.fromString`, not Jackson, and are unaffected.
+## Jackson 3 writes dates as ISO strings by default
 
-## 3. Spring Boot 4 no longer opens plain @Mock fields in Spring tests
+`ObjectMapperProvider` enables `WRITE_DATES_AS_TIMESTAMPS`. Jackson 2 produced epoch millis through
+`JavaTimeModule`; without the setting every date field on the API and in stored task and workflow
+documents would change shape.
 
-Spring Boot 3 shipped a Mockito test-execution listener that called
-`MockitoAnnotations.openMocks` for any `@Mock` field in a test using `SpringRunner`. Boot 4 dropped
-it along with the deprecated `@MockBean` support, so those fields arrive null.
+## Spring Boot 4 no longer opens plain @Mock fields in Spring tests
 
-Six tests relied on it (core, redis-lock, grpc-client). Each now opens its mocks explicitly in
-setup; no assertion or stub behaviour changed.
+Boot 3 shipped a Mockito test-execution listener that called `MockitoAnnotations.openMocks` for
+`@Mock` fields in tests using `SpringRunner`. Boot 4 dropped it along with the deprecated
+`@MockBean` support, so those fields arrive null unless the test opens them itself.
 
-## 4. Groovy 5 honours private access
+## Groovy 5 honours private access
 
-Groovy 4 let Groovy code read `private` members of Java classes. Groovy 5, which arrives with the
-Boot 4 BOM, does not.
+Groovy 4 let Groovy code read `private` members of Java classes; Groovy 5, which arrives with the
+Boot 4 BOM, does not. `StartWorkflow.START_WORKFLOW_PARAMETER` is package-private so the spec in the
+same package can still import it.
 
-`StartWorkflowSpec` statically imports `StartWorkflow.START_WORKFLOW_PARAMETER`. The constant is now
-package-private, which the spec is entitled to since it sits in the same package. Duplicating the
-literal in the spec was the alternative and would have let the two drift.
+## jackson-jq is on a pre-release
 
-## 5. jackson-jq is on a pre-release
+`net.thisptr:jackson-jq:2.0.0-alpha1` is the only release built against Jackson 3. It is the 1.x
+engine with the packages moved. Queries compile against the jq 1.6 dialect, matching the behaviour of
+the previous release. Worth revisiting when a stable 2.x appears.
 
-`net.thisptr:jackson-jq:2.0.0-alpha1` is the only release built against Jackson 3. It is the same
-engine as the 1.x line with the packages moved, and the JSON_JQ_TRANSFORM tests pass against it, but
-it is an alpha. Queries compile against the jq 1.6 dialect, matching the behaviour of the previous
-release. Worth revisiting when a stable 2.x appears.
+## Spring AI 2.0 dropped internalToolExecutionEnabled
 
-## 6. Spring AI 2.0 dropped internalToolExecutionEnabled
+Conductor set `internalToolExecutionEnabled(false)` so tool calls are surfaced to the workflow rather
+than executed inside the model call. Spring AI 2.0 removed the flag and moved the decision to
+`ToolExecutionEligibilityChecker` and the `ToolCallingManager` on the model builders. The `toolNames`
+setter went the same way; it was only ever populated from the tool callbacks that are still passed.
 
-Conductor set `internalToolExecutionEnabled(false)` so tool calls are surfaced to the workflow
-rather than executed inside the model call. Spring AI 2.0 removed the flag from the options API and
-moved the decision to `ToolExecutionEligibilityChecker` and the `ToolCallingManager` on the model
-builders. The `toolNames` setter went the same way; it was only ever populated from the tool
-callbacks that are still passed.
+Providers built on Conductor's own ChatModel classes never auto-executed. For the Spring-supplied
+models the behaviour is covered by `LLMHelperChatCompleteTest`, which asserts tool calls are
+surfaced. If a future Spring AI release changes that default, the fix is a no-op
+`ToolCallingManager` on those builders.
 
-The calls are removed. Providers built on Conductor's own ChatModel classes are unaffected because
-they never auto-executed. For the Spring-supplied models (mistral, ollama, bedrock) the behaviour is
-covered by `LLMHelperChatCompleteTest`, which asserts tool calls are surfaced. If a future Spring AI
-release changes that default, the fix is a no-op `ToolCallingManager` on those builders.
+## The SDK-driven test-harness suites are excluded
 
-## 7. Testcontainers suites cannot run on this machine
+The published `conductor-client` is a Jackson 2 artifact. The suites that drive it hand
+conductor-common model objects to the SDK, so the SDK links against this project's conductor-common,
+which is now Jackson 3, and its compiled calls to `ObjectMapperProvider.getObjectMapper()` fail to
+resolve. Relocating the SDK's bundled copy is not an option precisely because the model types are
+shared. The suites stay excluded until a conductor-client built on Jackson 3 is published.
 
-Docker is not installed here, and Testcontainers has no Apple `container` provider, so every suite
-that starts a container fails at initialisation with "Could not find a valid Docker environment".
-That covers the SQL and Redis persistence modules, the Elasticsearch and OpenSearch DAO tests,
-cassandra, and most of test-harness.
+## redis-concurrency-limit cannot be enabled
 
-This is environmental, not a regression: `redis-lock` fails identically on `main`. Of the 3474 tests
-that ran, every failure traces back to this, either directly or through a static initialiser that
-gives up on the container. The container-backed suites still need a run on CI before the upgrade can
-be called verified, and those are the runs that will confirm the Kafka 4.2, Jedis 7.4 and Spring
-Data Redis 4 moves end to end.
+Two problems, both older than this upgrade.
 
-## 8. Verified in a running server
+`spring-data-redis` was declared `compileOnly` in the module and never shipped by the server, so
+enabling the feature failed at startup with `NoClassDefFoundError` on `RedisConnectionFactory`. The
+server now declares it `runtimeOnly`, which makes the feature loadable.
 
-Booted the sqlite profile from the boot JAR and exercised it, since much of the risk in this upgrade
-only shows up at runtime:
+With that fixed, startup fails on an ambiguous `ConcurrentExecutionLimitDAO`: the module's DAO and
+the ExecutionDAO of whichever backend is configured both implement the interface, and neither is
+primary. It happens with sqlite as well as redis, so no bundled backend can use the module as
+shipped. Fixing it needs a decision about which bean should win.
 
-- context starts clean, `/actuator/health` UP
-- `/api-docs` serves OpenAPI 3.1 with 138 paths, which is the springdoc 3 pairing the
-  `OpenApiDocsTest` guard exists for
-- registered metadata, started a workflow, polled and completed the task through to COMPLETED
-- `JSON_JQ_TRANSFORM` evaluated `.in.a | add` to 6 on jackson-jq 2.0
-- workflow search returned the indexed workflow
-- timestamps serialise as epoch millis, unchanged from Jackson 2. This is why
-  `ObjectMapperProvider` enables `WRITE_DATES_AS_TIMESTAMPS`: Jackson 3 defaults to ISO-8601
-  strings, which would have silently changed every date field on the wire
-- `spring-boot-properties-migrator` reported exactly one dead key,
-  `management.metrics.web.server.request.autotime.percentiles`. It is now
-  `management.metrics.distribution.percentiles.http.server.requests`, and the percentile series are
-  back in `/actuator/prometheus`
-
-## 9. Minor: Hibernate Validator warns about @Valid on a Map
+## Hibernate Validator warns about @Valid on a Map
 
 Hibernate Validator 9 logs HV000271 for `@Valid` applied to a `Map` container, pointing at
-`onStateChange`. Validation still runs; the annotation should move to the type argument. Left alone
-here to keep this change focused.
-
-## 10. TaskStatusPublisherTest needed a longer wait
-
-`TaskStatusPublisher` serialises and posts notifications on a background thread, and the test waited
-one second for the first call. Measured on this branch the first notification lands at roughly 1.8s,
-almost all of it the one-off class loading of the Jackson and metrics stack on that thread;
-subsequent notifications are immediate. The wait is now 15s. The assertions are unchanged: the same
-call with the same arguments is still what the test verifies.
+`onStateChange`. Validation still runs; the annotation belongs on the type argument.

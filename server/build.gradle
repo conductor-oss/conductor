@@ -64,6 +64,8 @@ dependencies {
     }
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
+    // Runtime side of conductor-redis-concurrency-limit, which declares it compileOnly.
+    runtimeOnly 'org.springframework.data:spring-data-redis'
 
     //System Tasks
     implementation project(':conductor-http-task')
