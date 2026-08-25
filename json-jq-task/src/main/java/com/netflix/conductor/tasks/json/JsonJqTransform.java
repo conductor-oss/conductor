@@ -48,6 +48,10 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private static final String OUTPUT_RESULT_LIST = "resultList";
     private static final String OUTPUT_ERROR = "error";
     private static final Version JQ_VERSION = Versions.JQ_1_6;
+
+    /** Prefix jackson-jq uses on the wrapper exception that only echoes the query back. */
+    private static final String QUERY_ECHO_PREFIX = "Cannot compile query";
+
     private static final TypeReference<Map<String, Object>> mapType = new TypeReference<>() {};
     private final TypeReference<List<Object>> listType = new TypeReference<>() {};
     private final Scope rootScope;
@@ -120,6 +124,15 @@ public class JsonJqTransform extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * Walks the exception chain and returns the first message that tells the workflow author
+     * something they can act on.
+     *
+     * <p>jq failures arrive wrapped: the outer exception only restates the query, and the cause
+     * carries the parser message with the line and column. Older jackson-jq marked the outer
+     * message with "N/A"; 2.x prefixes it with "Cannot compile query". Both are skipped so the
+     * specific message is what reaches the task output.
+     */
     private String extractFirstValidMessage(final Exception e) {
         Throwable currentStack = e;
         final List<String> messages = new ArrayList<>();
@@ -128,7 +141,14 @@ public class JsonJqTransform extends WorkflowSystemTask {
             currentStack = currentStack.getCause();
             messages.add(currentStack.getMessage());
         }
-        return messages.stream().filter(it -> !it.contains("N/A")).findFirst().orElse("");
+        return messages.stream()
+                .filter(
+                        it ->
+                                it != null
+                                        && !it.contains("N/A")
+                                        && !it.startsWith(QUERY_ECHO_PREFIX))
+                .findFirst()
+                .orElse("");
     }
 
     private List<Object> extractBodies(List<JsonNode> nodes) {

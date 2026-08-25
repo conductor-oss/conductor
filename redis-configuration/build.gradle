@@ -14,7 +14,7 @@ dependencies {
     implementation "org.apache.commons:commons-pool2:"
 
     //Apache HTTP Client 5 (SSL support for Redis Cluster)
-    implementation "org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}"
+    implementation "org.apache.httpcomponents.client5:httpclient5"
 
     //Jakarta
     //implementation "jakarta.annotation:jakarta.annotation-api"
