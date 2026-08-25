@@ -16,6 +16,8 @@ dependencies {
     testImplementation project(':conductor-ai')
     testImplementation project(':conductor-agentspan')
 
+    testImplementation "org.conductoross:conductor-client:${revConductorClient}"
+
     testImplementation "tools.jackson.core:jackson-databind"
     testImplementation "tools.jackson.core:jackson-core"
 
@@ -147,15 +149,6 @@ afterEvaluate {
 // client API, SDK, and org.conductoross model classes intact.
 // ---------------------------------------------------------------------------
 
-configurations {
-    testCompileClasspath {
-        exclude group: 'org.conductoross', module: 'conductor-client'
-    }
-    testRuntimeClasspath {
-        exclude group: 'org.conductoross', module: 'conductor-client'
-    }
-}
-
 // Resolve conductor-client:5.0.1 in isolation (non-transitive, bypass Spring dep mgmt)
 configurations {
     conductorClientRaw {
@@ -218,10 +211,7 @@ configurations {
 }
 
 dependencies {
-    // Stripped conductor-client:5.0.1 (without bundled common classes). The fat JAR ships its own
-    // com.netflix.conductor.common, whose ObjectMapperProvider still returns a Jackson 2 mapper and
-    // would shadow the project's class on the test classpath.
-    testImplementation files(stripConductorClient)
+    // Stripped conductor-client:5.0.1 (without bundled common classes)
     functionalTestImplementation files(stripConductorClient)
 
     // JUnit 5 (e2e tests are Jupiter-based)
@@ -271,6 +261,7 @@ test {
     exclude '**/integration/http/ForkJoinSyncModeIntegrationTest.class'
     exclude '**/integration/http/HttpEndToEndTestTestHarness.class'
     exclude '**/integration/http/TestHarnessAbstractHttpEndToEndTest.class'
+    exclude '**/integration/http/functional/**'
     exclude '**/integration/grpc/GrpcEndToEndTest.class'
     exclude '**/integration/grpc/TestHarnessAbstractGrpcEndToEndTest.class'
 }

@@ -13,6 +13,8 @@
 apply plugin: 'groovy'
 
 dependencies {
+    implementation "tools.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     implementation project(':conductor-common')

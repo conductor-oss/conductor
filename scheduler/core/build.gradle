@@ -31,7 +31,9 @@ dependencies {
     testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
     testFixturesImplementation "org.springframework.boot:spring-boot-jdbc"
+    testImplementation "tools.jackson.core:jackson-databind"
     testFixturesImplementation "tools.jackson.core:jackson-databind"
+    testFixturesImplementation "tools.jackson.core:jackson-core"
 }
 
 test {

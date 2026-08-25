@@ -1,4 +1,5 @@
 dependencies {
+    implementation "tools.jackson.core:jackson-databind"
     // Core Conductor dependencies
     implementation project(':conductor-common')
     implementation project(':conductor-core')
