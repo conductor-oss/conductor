@@ -12,6 +12,7 @@
  */
 
 dependencies {
+    implementation "tools.jackson.core:jackson-databind"
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     implementation project(':conductor-redis-configuration')

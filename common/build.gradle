@@ -20,6 +20,7 @@ dependencies {
     implementation "tools.jackson.core:jackson-databind"
     implementation "tools.jackson.core:jackson-core"
     implementation "tools.jackson.module:jackson-module-kotlin"
+    implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
     implementation "com.jayway.jsonpath:json-path:${revJsonPath}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
