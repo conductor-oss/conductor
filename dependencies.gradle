@@ -18,7 +18,6 @@
  * declare the dependency without a version and let the BOM decide.
  */
 ext {
-    revApacheHttpComponentsClient5 = '5.3.1'
     revAwsSdk = '2.31.68'
     revBval = '2.0.5'
     revCassandra = '3.10.2'
@@ -37,12 +36,11 @@ ext {
     // See: https://github.com/conductor-oss/conductor/issues/964
     // -----------------------------------------------------------------
 
-    // PINNED (#964): protobuf-java must stay at 3.x.
-    // protobuf-java 4.x combined with GraalVM polyglot 25.x causes Gradle
-    // to request org.graalvm.polyglot:polyglot4 which does not exist on
-    // Maven Central, breaking compilation. Revisit when a 4.x release
-    // resolves this GraalVM capability-resolution conflict.
-    revProtoBuf = '3.25.5'
+    // protobuf 4.x. The 3.x pin from #964 existed because protobuf 4 combined with GraalVM
+    // polyglot 24.x made Gradle ask for an org.graalvm.polyglot:polyglot4 artifact that does not
+    // exist; GraalVM 25 resolves cleanly. Spring Boot 4 forces the move anyway, since the OTLP
+    // metrics registry now pulls opentelemetry-proto built against protobuf 4.
+    revProtoBuf = '4.34.0'
 
     // PINNED (#964): GraalVM polyglot artifacts - ALL must be the same version.
     // Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime

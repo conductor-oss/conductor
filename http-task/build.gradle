@@ -17,7 +17,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.springframework.boot:spring-boot-restclient'
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
     testImplementation 'org.springframework.boot:spring-boot-restclient'
