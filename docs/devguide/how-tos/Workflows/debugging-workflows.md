@@ -7,6 +7,14 @@ The [workflow execution views](viewing-workflow-executions.md) in the Conductor 
 
 ## Debug procedure
 
+Start with the persisted execution:
+
+```bash
+conductor workflow get-execution <workflow-id> -c
+```
+
+Identify the `FAILED`, `TIMED_OUT`, or terminal task and record its `reasonForIncompletion`, input, output, worker ID, and retry count. Fix the underlying worker, dependency, credentials, or definition before changing execution state.
+
 When you view the workflow execution details, the cause of the workflow failure will be stated at the top. Go to the **Tasks > Diagram** tab to quickly identify the failed task, which is marked in red. You can select the failed task to investigate the details of the failure.
 
 The following tab views or fields in the task details are useful for debugging:
@@ -36,6 +44,16 @@ Here are the recovery options:
 | Rerun from a specific task | Re-execute the workflow from a specific task, reusing the outputs of all prior tasks. This option is useful when a task in the middle of the workflow failed and you want to fix and re-run it without re-executing everything before it. |
 | Retry - From failed task | Retry the workflow from the last failed task.           |
 
+CLI equivalents:
+
+```bash
+conductor workflow retry <workflow-id>
+conductor workflow restart <workflow-id>
+conductor workflow rerun <workflow-id> --task-id <task-id>
+```
+
+After recovery, run `conductor workflow status <workflow-id>` and verify that the expected task is running or the workflow reached the intended terminal status.
+
 !!! Note
     You can set tasks to be retried automatically in case of transient failures. Refer to [Task Definition](../../../documentation/configuration/taskdef.md) for more information.
 
@@ -59,3 +77,7 @@ You can rerun a workflow from a specific task using the Rerun Workflow API (`POS
 Likewise, you can retry workflow executions from the last failed task using the Retry Workflow API (`POST api/workflow/{workflowId}/retry`) or the Bulk Retry Workflow API (`POST api/workflow/bulk/retry`).
 
 All three recovery operations — restart, rerun, and retry — work on workflows in any terminal state (COMPLETED, FAILED, TIMED_OUT, TERMINATED) and are available indefinitely. Conductor preserves the full execution history, so you can replay any workflow even months after the original run.
+
+## Limitations and next step
+
+Recovery can repeat side effects. Retry or rerun only when completed external operations are idempotent or have an explicit compensation policy. Continue with [Reliability and error handling](handling-errors.md) to make transient recovery automatic.

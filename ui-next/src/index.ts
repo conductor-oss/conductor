@@ -6,6 +6,10 @@
  * that enterprise packages can use to extend the application.
  */
 
+// Pins the Monaco CDN version for consumers of this package. Must stay a
+// side-effect import so it runs before any editor component mounts.
+import "./monacoLoader";
+
 // =============================================================================
 // Plugin System - Primary export for enterprise extensions
 // =============================================================================
@@ -104,6 +108,11 @@ export {
 // =============================================================================
 export { useAuth } from "./components/features/auth";
 export { UISidebar } from "./components/providers/sidebar/UiSidebar";
+export { mergePluginSidebarItems } from "./components/providers/sidebar/sidebarMenuUtils";
+export {
+  findFirstNavigableSidebarPath,
+  resolveDefaultHomePath,
+} from "./utils/resolveDefaultHomePath";
 
 // =============================================================================
 // Auth Infrastructure (minimal stubs for OSS mode)
