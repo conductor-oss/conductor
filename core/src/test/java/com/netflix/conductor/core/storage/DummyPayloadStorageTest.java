@@ -26,6 +26,7 @@ import org.junit.Test;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
@@ -80,7 +81,7 @@ public class DummyPayloadStorageTest {
             assertTrue(payload.containsKey("output"));
             assertEquals(payload.get("output"), "TEST_OUTPUT");
         } catch (Exception e) {
-            assertTrue(e instanceof IOException);
+            assertTrue(e instanceof IOException || e instanceof JacksonException);
         }
     }
 
