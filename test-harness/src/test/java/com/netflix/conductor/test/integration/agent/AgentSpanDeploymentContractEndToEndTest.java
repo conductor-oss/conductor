@@ -85,8 +85,6 @@ import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.test.config.LocalStackS3Configuration;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -94,6 +92,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -547,7 +547,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         HttpResponse<String> listed = plainRequest("GET", "/api/agent/list", null, null);
         assertEquals(200, listed.statusCode());
         assertTrue(
-                JSON.readTree(listed.body()).findValuesAsText("name").contains(agent),
+                JSON.readTree(listed.body()).findValuesAsString("name").contains(agent),
                 () -> "deployed agent is missing from the actual REST listing: " + listed.body());
 
         HttpResponse<String> definition =
@@ -2387,7 +2387,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertFalse(jsonArrayContains(JSON.readTree(grantable.body()), secretName));
         HttpResponse<String> metadata = plainRequest("GET", "/api/secrets/v2", null, null);
         assertEquals(200, metadata.statusCode());
-        assertFalse(JSON.readTree(metadata.body()).findValuesAsText("name").contains(secretName));
+        assertFalse(JSON.readTree(metadata.body()).findValuesAsString("name").contains(secretName));
 
         HttpResponse<String> invalid =
                 plainRequest("PUT", "/api/secrets/invalid%20secret", "x", "text/plain");
@@ -2406,7 +2406,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertTrue(
                 providerStatus.path("providers").isArray()
                         && providerStatus.path("providers").size() >= 10);
-        assertTrue(providerStatus.path("providers").findValuesAsText("name").contains("ollama"));
+        assertTrue(providerStatus.path("providers").findValuesAsString("name").contains("ollama"));
 
         HttpResponse<String> delete =
                 plainRequest("DELETE", "/api/secrets/" + secretName, null, null);
@@ -2460,7 +2460,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertEquals(200, agentRun.statusCode());
         assertTrue(
                 JSON.readTree(agentRun.body())
-                        .findValuesAsText("referenceTaskName")
+                        .findValuesAsString("referenceTaskName")
                         .contains("sdk_visible_ref"));
         HttpResponse<String> taskPage =
                 plainRequest(
@@ -2679,7 +2679,7 @@ class AgentSpanDeploymentContractEndToEndTest {
         HttpResponse<String> listed =
                 plainRequest("GET", "/api/skills?allVersions=true", null, null);
         assertEquals(200, listed.statusCode());
-        assertTrue(JSON.readTree(listed.body()).findValuesAsText("name").contains(skill));
+        assertTrue(JSON.readTree(listed.body()).findValuesAsString("name").contains(skill));
         HttpResponse<String> latest = plainRequest("GET", "/api/skills/" + skill, null, null);
         assertEquals(200, latest.statusCode());
         assertEquals(version, JSON.readTree(latest.body()).path("version").asText());

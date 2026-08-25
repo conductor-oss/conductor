@@ -25,9 +25,9 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit;
+import com.google.common.collect.ImmutableMap;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 
 import static com.netflix.conductor.cassandra.util.Constants.DAO_NAME;
 import static com.netflix.conductor.cassandra.util.Constants.ENTITY_KEY;

@@ -62,9 +62,9 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import jakarta.annotation.*;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import jakarta.annotation.*;
 
 @Trace
 public class ElasticSearchRestDAOV8 implements IndexDAO {
@@ -124,8 +124,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         com.fasterxml.jackson.databind.ObjectMapper mapper =
                 new com.fasterxml.jackson.databind.ObjectMapper();
         mapper.configure(
-                com.fasterxml.jackson.databind.DeserializationFeature
-                        .FAIL_ON_UNKNOWN_PROPERTIES,
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                 false);
         mapper.setSerializationInclusion(
                 com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
@@ -142,7 +141,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         this.elasticSearchAdminClient = restClientBuilder.build();
         this.transport =
                 new RestClientTransport(
-                        this.elasticSearchAdminClient, new JacksonJsonpMapper(transportObjectMapper()));
+                        this.elasticSearchAdminClient,
+                        new JacksonJsonpMapper(transportObjectMapper()));
         this.elasticSearchClient = new ElasticsearchClient(transport);
         this.elasticSearchAsyncClient = new ElasticsearchAsyncClient(transport);
         this.properties = properties;

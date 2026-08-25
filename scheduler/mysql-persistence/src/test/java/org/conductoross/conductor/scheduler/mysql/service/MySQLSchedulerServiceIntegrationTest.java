@@ -31,9 +31,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.service.AbstractSchedulerServiceIntegrationTest;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Runs the full {@link AbstractSchedulerServiceIntegrationTest} suite against a MySQL database

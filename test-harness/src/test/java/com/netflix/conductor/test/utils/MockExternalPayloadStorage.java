@@ -34,6 +34,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIMPLE;
@@ -144,7 +145,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
         try {
             InputStream bais = new ByteArrayInputStream(objectMapper.writeValueAsBytes(payload));
             upload(path, bais, 0);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             LOGGER.error("Error serializing map to json", e);
         }
     }
@@ -187,7 +188,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
             dynamicForkLargePayload.put("dynamicTasks", List.of(subWorkflowTask));
             dynamicForkLargePayload.put(
                     "dynamicTasksInput", Map.of("large_payload_subworkflow", largePayload));
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             // just handle this exception here and return empty map so that test will fail in case
             // this exception is thrown
         }
@@ -200,7 +201,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
             try {
                 Map<String, Object> largePayload = objectMapper.readValue(inputStream, Map.class);
                 return largePayload;
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 LOGGER.error("Error in downloading payload for path {}", path, e);
             }
         }
@@ -215,7 +216,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
             for (int i = 0; i < repeat; i++) {
                 largePayload.put(String.valueOf(i), payload);
             }
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             // just handle this exception here and return empty map so that test will fail in case
             // this exception is thrown
         }

@@ -22,7 +22,8 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
 
     testImplementation project(':conductor-server')
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 

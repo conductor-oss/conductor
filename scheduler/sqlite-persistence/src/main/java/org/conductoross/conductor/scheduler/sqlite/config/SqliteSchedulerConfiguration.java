@@ -22,9 +22,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 
-import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring auto-configuration that registers SQLite-backed {@link SchedulerDAO} and {@link

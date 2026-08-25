@@ -97,8 +97,8 @@ public class OpenSearchConfiguration {
     }
 
     /**
-     * The OpenSearch java client serialises its own request and response types with Jackson 2,
-     * so it cannot be handed Conductor's Jackson 3 mapper. This transport mapper mirrors the two
+     * The OpenSearch java client serialises its own request and response types with Jackson 2, so
+     * it cannot be handed Conductor's Jackson 3 mapper. This transport mapper mirrors the two
      * settings that matter for talking to a cluster: tolerate response fields the DTOs do not
      * declare, and omit nulls from request bodies.
      */
@@ -106,8 +106,7 @@ public class OpenSearchConfiguration {
         com.fasterxml.jackson.databind.ObjectMapper mapper =
                 new com.fasterxml.jackson.databind.ObjectMapper();
         mapper.configure(
-                com.fasterxml.jackson.databind.DeserializationFeature
-                        .FAIL_ON_UNKNOWN_PROPERTIES,
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                 false);
         mapper.setSerializationInclusion(
                 com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);

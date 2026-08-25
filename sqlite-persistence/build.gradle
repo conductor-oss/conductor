@@ -14,15 +14,17 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
     // https://mvnrepository.com/artifact/org.flywaydb/flyway-core
-    implementation 'org.flywaydb:flyway-core:11.3.1'
+    implementation 'org.flywaydb:flyway-core'
 
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
     implementation 'org.xerial:sqlite-jdbc:3.49.0.0'
 
 
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.springframework.boot:spring-boot-flyway"
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')

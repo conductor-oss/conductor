@@ -35,8 +35,8 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 
-import tools.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
+import tools.jackson.databind.JsonNode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

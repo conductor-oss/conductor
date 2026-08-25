@@ -29,10 +29,10 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.util.Query;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
+import tools.jackson.databind.ObjectMapper;
 
 public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 

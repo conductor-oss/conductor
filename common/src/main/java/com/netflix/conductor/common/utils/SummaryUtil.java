@@ -21,9 +21,9 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
+import jakarta.annotation.PostConstruct;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 
 @Component
 public class SummaryUtil {

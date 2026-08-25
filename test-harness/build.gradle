@@ -32,7 +32,8 @@ dependencies {
     testImplementation "redis.clients:jedis"
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 

@@ -41,15 +41,15 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Minimal A2A (Agent2Agent) protocol client for talking to remote agents.
@@ -134,8 +134,10 @@ public class A2AService {
             objectMapper
                     .rebuild()
                     .changeDefaultPropertyInclusion(
-                            value -> JsonInclude.Value.construct(
-                                    JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS))
+                            value ->
+                                    JsonInclude.Value.construct(
+                                            JsonInclude.Include.NON_NULL,
+                                            JsonInclude.Include.ALWAYS))
                     .build();
 
     /** Property: opt in to calling agents on loopback/RFC-1918/link-local addresses. */

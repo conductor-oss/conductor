@@ -32,11 +32,11 @@ import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.ExecutorsUtil;
 import com.netflix.conductor.sqlite.util.Query;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 

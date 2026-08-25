@@ -26,9 +26,6 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -37,6 +34,9 @@ import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
 import net.thisptr.jackson.jq.Version;
 import net.thisptr.jackson.jq.Versions;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component(JsonJqTransform.NAME)
 public class JsonJqTransform extends WorkflowSystemTask {
@@ -58,8 +58,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
         super(NAME);
         this.objectMapper = objectMapper;
         this.rootScope = Scope.newEmptyScope();
-        BuiltinFunctionLoader.getInstance()
-                .loadFunctions(JQ_VERSION, this.rootScope);
+        BuiltinFunctionLoader.getInstance().loadFunctions(JQ_VERSION, this.rootScope);
     }
 
     @Override

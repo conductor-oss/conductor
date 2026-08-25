@@ -23,8 +23,9 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * <p>Spring AI 2.0 replaced the old {@code copy()} method with {@code mutate()}, which hands back a
  * builder over the portable chat options. Provider options carry extra fields on top of those (tool
- * specs, reasoning budgets, and so on), so this builder collects the portable values and then defers
- * to a finisher supplied by the provider class, which rebuilds its own type with the extras intact.
+ * specs, reasoning budgets, and so on), so this builder collects the portable values and then
+ * defers to a finisher supplied by the provider class, which rebuilds its own type with the extras
+ * intact.
  */
 public final class ProviderChatOptionsBuilder
         implements ChatOptions.Builder<ProviderChatOptionsBuilder> {

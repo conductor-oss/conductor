@@ -31,7 +31,8 @@ import org.springframework.core.io.FileSystemResource;
 // Prevents from the datasource beans to be loaded, AS they are needed only for specific databases.
 // In case that SQL database is selected this class will be imported back in the appropriate
 // database persistence module.
-// Mongo needs no exclusion: Spring Boot 4 ships its Mongo auto-configuration in spring-boot-mongodb,
+// Mongo needs no exclusion: Spring Boot 4 ships its Mongo auto-configuration in
+// spring-boot-mongodb,
 // which the server does not depend on, so the mongodb driver pulled in by conductor-ai no longer
 // triggers it.
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})

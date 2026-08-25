@@ -40,8 +40,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.mysql.config.MySQLConfiguration;
 import com.netflix.conductor.mysql.util.Query;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;

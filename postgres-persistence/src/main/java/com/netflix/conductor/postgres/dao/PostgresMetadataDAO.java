@@ -35,9 +35,9 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO, EventHandlerDAO {
 

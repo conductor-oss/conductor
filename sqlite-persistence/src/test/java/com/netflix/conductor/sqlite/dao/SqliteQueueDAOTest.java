@@ -42,8 +42,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.sqlite.config.SqliteConfiguration;
 import com.netflix.conductor.sqlite.util.Query;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;

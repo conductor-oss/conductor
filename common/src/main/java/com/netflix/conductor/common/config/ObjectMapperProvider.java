@@ -50,8 +50,8 @@ public class ObjectMapperProvider {
     /**
      * Jackson 3 mappers are immutable, so every setting has to be applied to the builder before the
      * mapper is built. The jdk8 and java.time datatypes and the property-access optimisations that
-     * used to need separate modules are part of the core now, which is why only the proto and Kotlin
-     * modules are registered here.
+     * used to need separate modules are part of the core now, which is why only the proto and
+     * Kotlin modules are registered here.
      *
      * <p>WRITE_DATES_AS_TIMESTAMPS is enabled to keep the numeric date encoding that Jackson 2
      * produced with JavaTimeModule. Jackson 3 defaults to ISO-8601 strings, which would change the

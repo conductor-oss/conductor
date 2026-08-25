@@ -39,8 +39,8 @@ import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_KAFKA_PUBLISH;
 
