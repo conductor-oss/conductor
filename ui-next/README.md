@@ -45,28 +45,28 @@ This file sets feature flags (`window.conductor`) and auth config (`window.authC
 
 ## Available scripts
 
-| Script                             | Description                                        |
-| ---------------------------------- | -------------------------------------------------- |
-| `pnpm dev`                         | Start dev server with HMR                          |
-| `pnpm build`                       | Build standalone app to `dist/`                    |
-| `pnpm build:lib`                   | Build npm library to `dist/`                       |
-| `pnpm build:all`                   | Build both app and library                         |
-| `pnpm lint`                        | Run ESLint                                         |
-| `pnpm lint:fix`                    | Run ESLint with auto-fix                           |
-| `pnpm prettier:check`              | Check formatting                                   |
-| `pnpm prettier:write`              | Auto-format all files                              |
-| `pnpm typecheck`                   | Type-check without emitting                        |
-| `pnpm test`                        | Run Vitest unit tests (single pass)                |
-| `pnpm test:watch`                  | Run Vitest in watch mode                           |
-| `pnpm test:coverage`               | Run Vitest with v8 coverage report                 |
-| `pnpm test:e2e`                    | Run Playwright UI tests (mocked backend, headless) |
-| `pnpm test:e2e:ui`                 | Open the Playwright interactive UI                 |
-| `pnpm test:e2e:headed`             | Run UI tests in a visible browser                  |
-| `pnpm test:e2e:debug`              | Step through UI tests in the Playwright debugger   |
-| `pnpm test:e2e:integration`        | Integration E2E in Docker (Linux Chromium)         |
-| `pnpm test:e2e:integration:update-snapshots` | Regenerate integration screenshot baselines |
-| `pnpm test:e2e:integration:ui`     | Host Playwright UI (debug only; not for baselines) |
-| `pnpm test:e2e:integration:headed` | Host headed Chromium (debug only)                  |
+| Script                                       | Description                                        |
+| -------------------------------------------- | -------------------------------------------------- |
+| `pnpm dev`                                   | Start dev server with HMR                          |
+| `pnpm build`                                 | Build standalone app to `dist/`                    |
+| `pnpm build:lib`                             | Build npm library to `dist/`                       |
+| `pnpm build:all`                             | Build both app and library                         |
+| `pnpm lint`                                  | Run ESLint                                         |
+| `pnpm lint:fix`                              | Run ESLint with auto-fix                           |
+| `pnpm prettier:check`                        | Check formatting                                   |
+| `pnpm prettier:write`                        | Auto-format all files                              |
+| `pnpm typecheck`                             | Type-check without emitting                        |
+| `pnpm test`                                  | Run Vitest unit tests (single pass)                |
+| `pnpm test:watch`                            | Run Vitest in watch mode                           |
+| `pnpm test:coverage`                         | Run Vitest with v8 coverage report                 |
+| `pnpm test:e2e`                              | Run Playwright UI tests (mocked backend, headless) |
+| `pnpm test:e2e:ui`                           | Open the Playwright interactive UI                 |
+| `pnpm test:e2e:headed`                       | Run UI tests in a visible browser                  |
+| `pnpm test:e2e:debug`                        | Step through UI tests in the Playwright debugger   |
+| `pnpm test:e2e:integration`                  | Integration E2E in Docker (Linux Chromium)         |
+| `pnpm test:e2e:integration:update-snapshots` | Regenerate integration screenshot baselines        |
+| `pnpm test:e2e:integration:ui`               | Host Playwright UI (debug only; not for baselines) |
+| `pnpm test:e2e:integration:headed`           | Host headed Chromium (debug only)                  |
 
 ## Testing
 

@@ -1,5 +1,6 @@
 ---
-description: "LLM orchestration cookbook — AI agent orchestration recipes for chat completion, RAG pipelines, MCP agents with function calling, web search, code execution, coding agents, extended thinking, image generation, LLM-to-PDF, and provider configuration."
+description: AI Cookbook moved to the dedicated recipe library.
+redirect_to: devguide/ai/cookbook/index.html
 ---
 
 # AI & LLM orchestration recipes
