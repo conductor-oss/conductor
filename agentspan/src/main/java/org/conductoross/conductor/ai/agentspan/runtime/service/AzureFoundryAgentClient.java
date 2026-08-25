@@ -435,6 +435,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     // Auth detection order:
+    //   0. useCallerIdentity + callerEntraToken + SP creds → OBO bearer (enterprise only)
     //   1. apiKey in secret          → API key header (no SDK)
     //   2. client_id/secret/tenant   → ClientSecretCredential (Service Principal)
     //   3. clientId only             → ManagedIdentityCredential (user-assigned)
@@ -442,6 +443,30 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     AuthState buildAuthState(ConductorAgentStartRequest request, String endpoint) {
         String scope = resolveScope(request, endpoint);
         String credentialRef = request.getCredentialRef();
+
+        // OBO: exchange caller's Entra SSO token for a Foundry-scoped token.
+        // Only activates when all three are present: flag, user assertion, and SP credentials.
+        if (request.isUseCallerIdentity() && StringUtils.isNotBlank(request.getUserAssertion())) {
+            if (StringUtils.isNotBlank(credentialRef)) {
+                String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
+                String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
+                String clientSecret =
+                        credentialResolutionService.resolve(credentialRef + ".client_secret");
+                if (StringUtils.isNoneBlank(tenantId, clientId, clientSecret)) {
+                    String foundryToken =
+                            exchangeOboToken(
+                                    request.getUserAssertion(),
+                                    tenantId,
+                                    clientId,
+                                    clientSecret,
+                                    scope);
+                    return AuthState.ofBearer(foundryToken);
+                }
+            }
+            log.warn(
+                    "useCallerIdentity=true but SP credentials incomplete for credentialRef='{}'; falling back to credential-based auth",
+                    credentialRef);
+        }
 
         if (StringUtils.isNotBlank(credentialRef)) {
             // API key
@@ -863,30 +888,98 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return DEFAULT_SCOPE;
     }
 
-    // Holds either a static API key or an Azure SDK TokenCredential + scope.
-    // The SDK caches and auto-refreshes tokens, so headerValue() is fast on repeated calls.
+    // Exchanges the caller's Entra SSO token for a Foundry-scoped token via OAuth2 OBO flow.
+    // The raw SSO token is never forwarded to Foundry; only the exchanged token is used.
+    // Package-private so it can be stubbed in unit tests without a real token endpoint.
+    String exchangeOboToken(
+            String userAssertion,
+            String tenantId,
+            String clientId,
+            String clientSecret,
+            String scope) {
+        String tokenUrl =
+                "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
+        String formBody =
+                "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"
+                        + "&client_id="
+                        + java.net.URLEncoder.encode(
+                                clientId, java.nio.charset.StandardCharsets.UTF_8)
+                        + "&client_secret="
+                        + java.net.URLEncoder.encode(
+                                clientSecret, java.nio.charset.StandardCharsets.UTF_8)
+                        + "&assertion="
+                        + java.net.URLEncoder.encode(
+                                userAssertion, java.nio.charset.StandardCharsets.UTF_8)
+                        + "&scope="
+                        + java.net.URLEncoder.encode(scope, java.nio.charset.StandardCharsets.UTF_8)
+                        + "&requested_token_use=on_behalf_of";
+
+        Request oboRequest =
+                new Request.Builder()
+                        .url(tokenUrl)
+                        .post(
+                                RequestBody.create(
+                                        formBody.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                                        MediaType.get("application/x-www-form-urlencoded")))
+                        .build();
+
+        try (Response response = httpClient.newCall(oboRequest).execute()) {
+            String body = response.body() != null ? response.body().string() : "{}";
+            if (!response.isSuccessful()) {
+                throw new RuntimeException(
+                        "OBO token exchange failed: HTTP " + response.code() + " — " + body);
+            }
+            JsonNode json = MAPPER.readTree(body);
+            String token = json.path("access_token").asText(null);
+            if (StringUtils.isBlank(token)) {
+                throw new RuntimeException(
+                        "OBO token exchange returned no access_token: " + body);
+            }
+            return token;
+        } catch (IOException e) {
+            throw new RuntimeException("OBO token exchange failed", e);
+        }
+    }
+
+    // Holds auth for an Azure API call: API key, SDK TokenCredential, or a pre-exchanged
+    // OBO bearer token. The SDK path caches and auto-refreshes tokens.
     static class AuthState {
         final TokenCredential credential;
         final String scope;
         final String apiKey;
+        final String bearerToken; // non-null only for OBO — raw pre-exchanged token
 
         AuthState(String apiKey) {
             this.credential = null;
             this.scope = null;
             this.apiKey = apiKey;
+            this.bearerToken = null;
         }
 
         AuthState(TokenCredential credential, String scope) {
             this.credential = credential;
             this.scope = scope;
             this.apiKey = null;
+            this.bearerToken = null;
+        }
+
+        private AuthState(String bearerToken, boolean obo) {
+            this.credential = null;
+            this.scope = null;
+            this.apiKey = null;
+            this.bearerToken = bearerToken;
+        }
+
+        static AuthState ofBearer(String bearerToken) {
+            return new AuthState(bearerToken, true);
         }
 
         String headerName() {
-            return credential != null ? "Authorization" : "api-key";
+            return (credential != null || bearerToken != null) ? "Authorization" : "api-key";
         }
 
         String headerValue() {
+            if (bearerToken != null) return "Bearer " + bearerToken;
             if (credential != null) {
                 return "Bearer "
                         + credential

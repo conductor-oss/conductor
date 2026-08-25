@@ -52,6 +52,15 @@ public class ConductorAgentStartRequest {
 
     private String credentialRef;
 
+    // When true and userAssertion is set, the Azure Foundry client exchanges the caller's
+    // Entra SSO token for a Foundry-scoped token via OBO (enterprise clusters only).
+    private boolean useCallerIdentity;
+
+    // The caller's Entra ID assertion (SSO token) for OBO exchange.
+    // Named "userAssertion" to match the OAuth2 OBO spec parameter name.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String userAssertion;
+
     // Remote agent URL — same field name as A2A so all agent types use a consistent top-level
     // field.
     // Azure Foundry: https://my-resource.openai.azure.com/openai

@@ -36,6 +36,10 @@ import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 /**
@@ -470,6 +474,114 @@ class AzureFoundryAgentClientTest {
                 // should not throw
                 assertThat(client.resolveEndpoint(req)).isNotBlank();
             }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // OBO identity passthrough — buildAuthState with useCallerIdentity
+    // -------------------------------------------------------------------------
+
+    @Nested
+    @MockitoSettings(strictness = Strictness.LENIENT)
+    class OboAuthTest {
+
+        private static final String ENDPOINT =
+                "https://res.services.ai.azure.com/api/projects/proj";
+
+        // useCallerIdentity=true + callerEntraToken + complete SP creds → OBO bearer
+        @Test
+        void buildAuthState_usesOboBearer_whenCallerTokenAndCredentialsPresent() {
+            when(credentials.resolve("SP.tenant_id")).thenReturn("tid");
+            when(credentials.resolve("SP.client_id")).thenReturn("cid");
+            when(credentials.resolve("SP.client_secret")).thenReturn("csec");
+
+            AzureFoundryAgentClient spy = spy(client);
+            doReturn("foundry-token-abc")
+                    .when(spy)
+                    .exchangeOboToken(
+                            anyString(), eq("tid"), eq("cid"), eq("csec"), anyString());
+
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .credentialRef("SP")
+                            .agentUrl(
+                                    "https://res.services.ai.azure.com/api/projects/proj/agents/test")
+                            .prompt("hi")
+                            .useCallerIdentity(true)
+                            .userAssertion("sso-token-xyz")
+                            .build();
+
+            AzureFoundryAgentClient.AuthState auth = spy.buildAuthState(req, ENDPOINT);
+
+            assertThat(auth.headerName()).isEqualTo("Authorization");
+            assertThat(auth.headerValue()).isEqualTo("Bearer foundry-token-abc");
+            assertThat(auth.credential).isNull();
+        }
+
+        // useCallerIdentity=true but callerEntraToken absent → falls back to SP credential
+        @Test
+        void buildAuthState_fallsBackToCredentials_whenCallerTokenMissing() {
+            when(credentials.resolve("SP.client_id")).thenReturn("cid");
+            when(credentials.resolve("SP.client_secret")).thenReturn("csec");
+            when(credentials.resolve("SP.tenant_id")).thenReturn("tid");
+
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .credentialRef("SP")
+                            .agentUrl(
+                                    "https://res.services.ai.azure.com/api/projects/proj/agents/test")
+                            .prompt("hi")
+                            .useCallerIdentity(true)
+                            // callerEntraToken absent — OBO is skipped
+                            .build();
+
+            AzureFoundryAgentClient.AuthState auth = client.buildAuthState(req, ENDPOINT);
+
+            assertThat(auth.headerName()).isEqualTo("Authorization");
+            assertThat(auth.credential).isInstanceOf(ClientSecretCredential.class);
+        }
+
+        // useCallerIdentity=false → OBO path never entered, API key wins
+        @Test
+        void buildAuthState_ignoredWhenUseCallerIdentityFalse() {
+            when(credentials.resolve("SP.apiKey")).thenReturn("my-api-key");
+
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .credentialRef("SP")
+                            .agentUrl(
+                                    "https://res.services.ai.azure.com/api/projects/proj/agents/test")
+                            .prompt("hi")
+                            .useCallerIdentity(false)
+                            .userAssertion("sso-token-xyz")
+                            .build();
+
+            AzureFoundryAgentClient.AuthState auth = client.buildAuthState(req, ENDPOINT);
+
+            assertThat(auth.headerName()).isEqualTo("api-key");
+            assertThat(auth.headerValue()).isEqualTo("my-api-key");
+        }
+
+        // useCallerIdentity=true + callerEntraToken present but SP creds incomplete → DefaultAzureCredential
+        @Test
+        void buildAuthState_fallsBackToDefault_whenCallerIdentityRequestedButCredsIncomplete() {
+            // Only partial SP creds — OBO cannot be performed
+            when(credentials.resolve("SP.client_id")).thenReturn("cid");
+            // tenant_id and client_secret deliberately not set
+
+            ConductorAgentStartRequest req =
+                    ConductorAgentStartRequest.builder()
+                            .credentialRef("SP")
+                            .agentUrl(
+                                    "https://res.services.ai.azure.com/api/projects/proj/agents/test")
+                            .prompt("hi")
+                            .useCallerIdentity(true)
+                            .userAssertion("sso-token-xyz")
+                            .build();
+
+            AzureFoundryAgentClient.AuthState auth = client.buildAuthState(req, ENDPOINT);
+
+            assertThat(auth.credential).isInstanceOf(DefaultAzureCredential.class);
         }
     }
 
