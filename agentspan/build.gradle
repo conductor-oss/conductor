@@ -1,5 +1,4 @@
 dependencies {
-    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     compileOnly 'org.springframework.boot:spring-boot-starter'
     // Needed to compile A2A push-notification callback controller and Conductor-Agents activation glue;
     // supplied by the server at runtime.

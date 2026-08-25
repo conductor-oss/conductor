@@ -17,7 +17,6 @@ dependencies {
     implementation "tools.jackson.core:jackson-core"
     implementation "org.apache.commons:commons-lang3"
     implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testImplementation "org.springframework.boot:spring-boot-jdbc"
 
     implementation "tools.jackson.core:jackson-databind"

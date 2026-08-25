@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -278,10 +278,9 @@ public class DefaultEventProcessor {
                     eventExecution.getMessageId(),
                     payload);
 
-            // TODO: Switch to @Retryable annotation on SimpleActionProcessor.execute()
             Map<String, Object> output =
-                    retryTemplate.execute(
-                            context ->
+                    retryTemplate.invoke(
+                            () ->
                                     actionProcessor.execute(
                                             action,
                                             payload,

@@ -49,11 +49,6 @@ ext {
     revJAXRS = '4.0.0'
     revJsonPath = '2.4.0'
     revJq = '2.0.0-alpha1'
-
-    // Compat: Spring Boot 4 dropped spring-retry from its BOM in favour of the retry support that
-    // moved into spring-core. spring-retry 2.0.13 declares its Spring dependency as optional, so it
-    // runs against Framework 7 unchanged. Tracked in issues.md for a later move to core retry.
-    revSpringRetry = '2.0.13'
     revMockServerClient = '5.12.0'
     revSpringDoc = '3.1.0'
     revOrkesQueues = '2.0.0.rc3'

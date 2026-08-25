@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.time.Duration;
 import java.util.List;
 
 import javax.net.ssl.SSLContext;
@@ -38,8 +39,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.dao.IndexDAO;
 
@@ -145,11 +146,10 @@ public class ElasticSearchV8Configuration {
 
     @Bean
     public RetryTemplate es8RetryTemplate() {
-        RetryTemplate retryTemplate = new RetryTemplate();
-        FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(1000L);
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-        return retryTemplate;
+        // Three attempts in total, so two retries, a second apart. The cluster is
+        // usually briefly unavailable rather than gone, so a flat delay is enough.
+        return new RetryTemplate(
+                RetryPolicy.builder().maxRetries(2).delay(Duration.ofSeconds(1)).build());
     }
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {

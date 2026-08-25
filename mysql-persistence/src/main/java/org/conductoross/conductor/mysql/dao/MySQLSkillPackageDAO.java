@@ -17,7 +17,7 @@ import java.util.Base64;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.SkillPackageDAO;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 

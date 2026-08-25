@@ -16,7 +16,6 @@ dependencies {
     implementation project(':conductor-common-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
     implementation "commons-io:commons-io:${revCommonsIo}"
     implementation "org.apache.commons:commons-lang3"
@@ -34,7 +33,6 @@ dependencies {
     testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
     testImplementation "org.testcontainers:testcontainers:2.0.5"
     testImplementation project(':conductor-test-util').sourceSets.test.output
-    testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
 
 }
 

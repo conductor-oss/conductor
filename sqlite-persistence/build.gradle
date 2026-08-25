@@ -4,7 +4,6 @@ dependencies {
     implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
     implementation "com.google.guava:guava:${revGuava}"
 
