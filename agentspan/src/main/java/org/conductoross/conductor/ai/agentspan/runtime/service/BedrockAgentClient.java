@@ -230,19 +230,12 @@ public class BedrockAgentClient implements ConductorAgentClient {
 
                 for (software.amazon.awssdk.services.bedrockagent.model.AgentSummary agent :
                         response.agentSummaries()) {
-                    List<String> tags = new ArrayList<>();
-                    tags.add("bedrock");
-                    tags.add("region:" + region);
-                    if (agent.agentStatus() != null)
-                        tags.add("status:" + agent.agentStatus().toString().toLowerCase());
-
                     result.add(
                             org.conductoross.conductor.common.metadata.agent.AgentSummary.builder()
                                     .name(agent.agentName())
                                     .version(1)
                                     .type("bedrock")
                                     .description(agent.description())
-                                    .tags(tags)
                                     .updateTime(
                                             agent.updatedAt() != null
                                                     ? agent.updatedAt().toEpochMilli()
@@ -472,55 +465,6 @@ public class BedrockAgentClient implements ConductorAgentClient {
                         .build();
             }
         }
-        // Dynamic OBO: caller passes their OIDC JWT; Conductor calls AssumeRoleWithWebIdentity.
-        // Requires credentialRef.roleArn in the secret store (the role to assume on their behalf).
-        if (StringUtils.isNotBlank(request.getWebIdentityToken())) {
-            String roleArn =
-                    StringUtils.isNotBlank(credentialRef)
-                            ? credentialResolutionService.resolve(credentialRef + ".roleArn")
-                            : null;
-            if (StringUtils.isNotBlank(roleArn)) {
-                try {
-                    software.amazon.awssdk.services.sts.model.AssumeRoleWithWebIdentityRequest
-                            stsReq =
-                                    software.amazon.awssdk.services.sts.model
-                                            .AssumeRoleWithWebIdentityRequest.builder()
-                                            .roleArn(roleArn)
-                                            .webIdentityToken(request.getWebIdentityToken())
-                                            .roleSessionName(
-                                                    "conductor-obo-" + System.currentTimeMillis())
-                                            .durationSeconds(3600)
-                                            .build();
-                    software.amazon.awssdk.services.sts.model.AssumeRoleWithWebIdentityResponse
-                            stsResp =
-                                    StsClient.builder()
-                                            .region(Region.of(region))
-                                            .build()
-                                            .assumeRoleWithWebIdentity(stsReq);
-                    software.amazon.awssdk.services.sts.model.Credentials stsCreds =
-                            stsResp.credentials();
-                    return BedrockAgentRuntimeAsyncClient.builder()
-                            .region(Region.of(region))
-                            .credentialsProvider(
-                                    StaticCredentialsProvider.create(
-                                            software.amazon.awssdk.auth.credentials
-                                                    .AwsSessionCredentials.create(
-                                                    stsCreds.accessKeyId(),
-                                                    stsCreds.secretAccessKey(),
-                                                    stsCreds.sessionToken())))
-                            .build();
-                } catch (Exception e) {
-                    log.warn(
-                            "AssumeRoleWithWebIdentity failed for roleArn={}: {}",
-                            roleArn,
-                            e.getMessage());
-                }
-            } else {
-                log.warn(
-                        "web_identity_token set but credentialRef.roleArn not found — falling through to default chain");
-            }
-        }
-
         // Fall back to the default credential chain (env vars, EC2/ECS role, ~/.aws/credentials)
         return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(region)).build();
     }

@@ -345,7 +345,6 @@ public class AgentService {
     // ── Agent discovery ─────────────────────────────────────────────
 
     /** List all registered agents (workflow defs with agent_sdk metadata). */
-    @SuppressWarnings("unchecked")
     public List<AgentSummary> listAgents() {
         // Use the portable getAllWorkflowDefs() (present across Conductor cores, incl. orkes'
         // vendored oss-core which lacks getAllWorkflowDefsLatestVersions()) and reduce to the
@@ -383,20 +382,11 @@ public class AgentService {
                 checksum = null;
             }
 
-            List<String> tags = null;
-            Object caps = metadata.get("agent_capabilities");
-            if (caps instanceof List) {
-                tags = (List<String>) caps;
-            }
-
-            if (tags == null) tags = new ArrayList<>();
-
             agents.add(
                     AgentSummary.builder()
                             .name(def.getName())
                             .version(def.getVersion())
                             .type((String) metadata.get("agent_sdk"))
-                            .tags(tags)
                             .createTime(def.getCreateTime())
                             .updateTime(def.getUpdateTime())
                             .description(def.getDescription())
