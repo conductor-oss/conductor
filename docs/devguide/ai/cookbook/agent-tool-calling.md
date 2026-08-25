@@ -213,7 +213,7 @@ Save the agent above as `weather_agent.py`, `weather-agent.ts`, `SimpleToolAgent
 
 === "Python"
 
-    The core agent API ships in the base package. The `[agents]` extra is only needed for the LangChain, ADK, and OpenAI Agents bridges.
+    The core agent API ships in the base package. The `[agents]` extra is only needed for LangChain, ADK, and OpenAI Agents framework support.
 
     ```bash
     python -m pip install conductor-python
