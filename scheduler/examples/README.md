@@ -77,7 +77,7 @@ Expected output:
 ## Step 5 — Pause the schedule
 
 ```bash
-curl -s "http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule/pause?reason=testing+pause"
+curl -s -X PUT "http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule/pause?reason=testing+pause"
 ```
 
 Verify it's paused:
@@ -90,7 +90,7 @@ curl -s http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule
 ## Step 6 — Resume the schedule
 
 ```bash
-curl -s http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule/resume
+curl -s -X PUT http://localhost:8080/api/scheduler/schedules/every-minute-demo-schedule/resume
 ```
 
 ---
@@ -125,8 +125,8 @@ curl -s -X DELETE http://localhost:8080/api/scheduler/schedules/every-minute-dem
 | `GET`    | `/api/scheduler/schedules/search`                      | Search schedules (filter by name, workflow, paused) |
 | `GET`    | `/api/scheduler/schedules/{name}`                      | Get a schedule by name                         |
 | `DELETE` | `/api/scheduler/schedules/{name}`                      | Delete a schedule                              |
-| `GET`    | `/api/scheduler/schedules/{name}/pause`                | Pause (optional `?reason=`)                    |
-| `GET`    | `/api/scheduler/schedules/{name}/resume`               | Resume                                         |
+| `PUT`    | `/api/scheduler/schedules/{name}/pause`                | Pause (optional `?reason=`)                    |
+| `PUT`    | `/api/scheduler/schedules/{name}/resume`               | Resume                                         |
 | `GET`    | `/api/scheduler/nextFewSchedules`                      | Preview next N times (`?cronExpression=&limit=5`) |
 | `GET`    | `/api/scheduler/search/executions`                     | Search execution history (`?freeText=&size=100`) |
 
@@ -224,7 +224,7 @@ The template has `__START_MS__` / `__END_MS__` placeholders — populate with `s
 curl -s -X POST http://localhost:8080/api/metadata/workflow \
   -H "Content-Type: application/json" -d @bounded-workflow.json
 
-NOW=$(python3 -c "import time; print(int(time.time()*1000))")
+NOW=$(($(date +%s) * 1000))
 END=$((NOW + 300000))  # 5-minute window
 sed "s/__START_MS__/$NOW/; s/__END_MS__/$END/" bounded-schedule-template.json | \
   curl -s -X POST http://localhost:8080/api/scheduler/schedules \
@@ -286,8 +286,9 @@ curl -s -X POST http://localhost:8080/api/scheduler/schedules \
 
 ### 7. Input parameterization (`input-param-schedule.json` + `input-param-workflow.json`)
 
-Every triggered workflow automatically receives `_scheduledTime` and `_executedTime` (epoch ms)
-injected by the scheduler. Static keys from `startWorkflowRequest.input` are preserved.
+Every triggered workflow receives `_startedByScheduler`, `_scheduledTime`, `_executedTime`,
+`_executionId`, and `_schedulerCron` injected by the scheduler. Static keys from
+`startWorkflowRequest.input` are preserved.
 An INLINE JavaScript task computes a 24-hour report window from `scheduledTime`.
 
 Sample output from a live run:
@@ -366,7 +367,7 @@ Blasts N `POST /api/workflow` requests simultaneously, reports latency percentil
 python3 scripts/test-12-load-blast.py --url http://localhost:8080 --count 25
 
 # Two machines synchronized to the same epoch second
-TARGET=$(python3 -c "import time; print(int(time.time())+15)")
+TARGET=$(($(date +%s) + 15))
 # Machine 1:
 python3 scripts/test-12-load-blast.py --url http://localhost:8080 --count 25 --target $TARGET
 # Machine 2:

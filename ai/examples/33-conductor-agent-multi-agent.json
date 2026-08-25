@@ -2,7 +2,7 @@
   "name": "conductor_agent_multi_agent",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Durable multi-agent orchestration on the embedded runtime: a FORK_JOIN fans out to two AGENT (conductor) tasks running different registered agents, then a JOIN collects both. Each branch gets an independent executionId and the two runs poll concurrently without blocking a worker thread.",
+  "description": "Framework-agnostic Conductor Agents recipe: a FORK_JOIN fans out to two deployed specialist AGENT tasks, then a JOIN collects both. Each branch has an independent executionId and polls without blocking a worker thread.",
   "tasks": [
     {
       "name": "fork_agents",

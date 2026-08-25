@@ -912,7 +912,7 @@ export function transformWorkflowExecutionToAgentRun(
         return targetIdx === 0
           ? rootAgentName
           : ((agents?.[targetIdx - 1]?.name as string | undefined) ??
-            activeAgent);
+              activeAgent);
       };
 
       // Self-calls → HANDOFF events (the agent deciding where to route)
@@ -984,8 +984,7 @@ export function transformWorkflowExecutionToAgentRun(
           | undefined;
 
         if (explicitTransfer) {
-          const transferTo = explicitTransfer.outputData
-            ?.transfer_to as string;
+          const transferTo = explicitTransfer.outputData?.transfer_to as string;
           pendingIncomingHandoff = {
             id: `${explicitTransfer.taskId}-handoff`,
             type: EventType.HANDOFF,
@@ -1148,6 +1147,11 @@ export function transformWorkflowExecutionToAgentRun(
               ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: llmTask.outputData,
           },
           result: isStop && typeof result === "string" ? result : result,
@@ -1606,6 +1610,11 @@ export function transformWorkflowExecutionToAgentRun(
               ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: task.outputData,
           },
           tokens: {
