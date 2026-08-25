@@ -36,7 +36,7 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.exceptions.DriverException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 

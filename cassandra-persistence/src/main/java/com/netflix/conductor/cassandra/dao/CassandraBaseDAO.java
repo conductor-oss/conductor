@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.cassandra.dao;
 
-import java.io.IOException;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -26,8 +25,8 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import com.datastax.driver.core.schemabuilder.TableOptions.CompactionOptions.TimeWindowCompactionStrategyOptions.CompactionWindowUnit;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import static com.netflix.conductor.cassandra.util.Constants.DAO_NAME;
@@ -304,7 +303,7 @@ public abstract class CassandraBaseDAO {
     String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new NonTransientException("Error serializing to json", e);
         }
     }
@@ -312,7 +311,7 @@ public abstract class CassandraBaseDAO {
     <T> T readValue(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new NonTransientException("Error de-serializing json", e);
         }
     }

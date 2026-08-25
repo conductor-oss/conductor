@@ -24,8 +24,8 @@ import org.mockito.stubbing.Answer;
 
 import com.netflix.conductor.core.events.queue.Message;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
 import rx.Observable;
 import software.amazon.awssdk.services.sqs.SqsClient;

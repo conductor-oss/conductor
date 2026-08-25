@@ -24,7 +24,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 
 import static org.junit.Assert.assertEquals;

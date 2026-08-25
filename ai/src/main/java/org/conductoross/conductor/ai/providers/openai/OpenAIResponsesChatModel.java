@@ -42,7 +42,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -71,7 +71,7 @@ public class OpenAIResponsesChatModel implements ChatModel {
         }
     }
 
-    private ResponseRequest buildRequest(Prompt prompt) throws JsonProcessingException {
+    private ResponseRequest buildRequest(Prompt prompt) throws JacksonException {
         List<Message> messages = prompt.getInstructions();
         ChatOptions options = prompt.getOptions();
 
@@ -138,7 +138,7 @@ public class OpenAIResponsesChatModel implements ChatModel {
         return builder.build();
     }
 
-    private List<InputItem> convertMessage(Message msg) throws JsonProcessingException {
+    private List<InputItem> convertMessage(Message msg) throws JacksonException {
         List<InputItem> items = new ArrayList<>();
 
         switch (msg.getMessageType()) {

@@ -35,7 +35,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.sqlite.config.SqliteProperties;
 import com.netflix.conductor.sqlite.util.SqliteIndexQueryBuilder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 

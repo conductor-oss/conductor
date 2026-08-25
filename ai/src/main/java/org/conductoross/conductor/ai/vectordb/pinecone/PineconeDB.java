@@ -24,8 +24,8 @@ import org.conductoross.conductor.ai.vectordb.VectorDB;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.Struct;
@@ -140,7 +140,7 @@ public class PineconeDB extends VectorDB {
                         String json = value.getStringValue();
                         try {
                             metadataMap = objectMapper.readValue(json, Map.class);
-                        } catch (JsonProcessingException jsonProcessingException) {
+                        } catch (JacksonException jsonProcessingException) {
                             log.error(
                                     jsonProcessingException.getMessage(), jsonProcessingException);
                         }

@@ -16,6 +16,8 @@ import java.util.List;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
+
 /** Cohere-specific chat options following Spring AI patterns. */
 public class CohereChatOptions implements ChatOptions {
 
@@ -83,17 +85,21 @@ public class CohereChatOptions implements ChatOptions {
     }
 
     @Override
-    public ChatOptions copy() {
-        return builder()
-                .model(this.model)
-                .temperature(this.temperature)
-                .maxTokens(this.maxTokens)
-                .topP(this.topP)
-                .topK(this.topK)
-                .frequencyPenalty(this.frequencyPenalty)
-                .presencePenalty(this.presencePenalty)
-                .stopSequences(this.stopSequences)
-                .build();
+    public ChatOptions.Builder<?> mutate() {
+        return ProviderChatOptionsBuilder.from(
+                this,
+                fields ->
+                        CohereChatOptions.builder()
+                                .model(fields.model())
+                                .temperature(fields.temperature())
+                                .maxTokens(fields.maxTokens())
+                                .topP(fields.topP())
+                                .topK(fields.topK())
+                                .frequencyPenalty(fields.frequencyPenalty())
+                                .presencePenalty(fields.presencePenalty())
+                                .stopSequences(fields.stopSequences())
+                                
+                                .build());
     }
 
     public static class Builder {

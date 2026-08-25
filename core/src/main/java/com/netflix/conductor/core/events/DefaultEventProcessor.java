@@ -45,7 +45,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.spotify.futures.CompletableFutures;
 
 import static com.netflix.conductor.core.utils.Utils.isTransientException;

@@ -25,7 +25,7 @@ import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.CachingSchedulerDAO;
 import io.orkes.conductor.dao.scheduler.NoOpSchedulerCacheDAO;

@@ -29,7 +29,7 @@ import com.netflix.conductor.client.http.ConductorClient;
 import com.netflix.conductor.client.http.ConductorClientRequest;
 import com.netflix.conductor.client.http.ConductorClientRequest.Method;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 import io.conductor.e2e.util.ApiUtil;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

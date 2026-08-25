@@ -41,9 +41,9 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -131,7 +131,12 @@ public class A2AService {
 
     /** Serializer that drops null fields, so outgoing requests stay clean for strict agents. */
     private final ObjectMapper sendMapper =
-            objectMapper.copy().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            objectMapper
+                    .rebuild()
+                    .changeDefaultPropertyInclusion(
+                            value -> JsonInclude.Value.construct(
+                                    JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS))
+                    .build();
 
     /** Property: opt in to calling agents on loopback/RFC-1918/link-local addresses. */
     public static final String ALLOW_PRIVATE_NETWORK_PROPERTY =

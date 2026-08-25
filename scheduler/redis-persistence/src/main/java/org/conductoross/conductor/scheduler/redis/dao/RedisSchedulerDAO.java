@@ -25,7 +25,7 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.dao.BaseDynoDAO;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;

@@ -46,7 +46,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.conductor.e2e.util.ApiUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

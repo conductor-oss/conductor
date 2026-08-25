@@ -23,7 +23,7 @@ import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 

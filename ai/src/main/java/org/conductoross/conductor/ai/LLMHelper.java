@@ -64,12 +64,12 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.SchemaException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -305,7 +305,7 @@ public class LLMHelper {
             // llmResponse.setResult(map);
             return map;
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             if (chatCompletion.isJsonOutput()) {
                 log.error(
                         "error converting to json, response: {}, error: {}",
@@ -331,21 +331,19 @@ public class LLMHelper {
                 return null;
             }
 
-            Set<ValidationMessage> validationMessages =
-                    jsonSchemaValidator.validate(schemaContent, data);
+            List<Error> validationErrors = jsonSchemaValidator.validate(schemaContent, data);
 
-            if (validationMessages != null && !validationMessages.isEmpty()) {
+            if (validationErrors != null && !validationErrors.isEmpty()) {
                 return String.format(
                         "Schema validation failed %s",
-                        validationMessages.stream()
-                                .map(ValidationMessage::getMessage)
+                        validationErrors.stream()
+                                .map(Error::getMessage)
                                 .collect(Collectors.joining(", ")));
             }
             return null;
-        } catch (JsonSchemaException jpe) {
-            throw new RuntimeException(
-                    "Bad/Unsupported schema? : " + jpe.getValidationMessages().toString());
-        } catch (JsonProcessingException jpe) {
+        } catch (SchemaException jpe) {
+            throw new RuntimeException("Bad/Unsupported schema? : " + jpe.getErrors().toString());
+        } catch (JacksonException jpe) {
             throw new RuntimeException("Error parsing the json schema : " + jpe.getMessage(), jpe);
         }
     }
@@ -401,7 +399,7 @@ public class LLMHelper {
                                 objectMapper.readValue(argsAsString, Map.class);
                         // Recursively parse any nested JSON strings
                         args = parseNestedJsonStrings(parsedArgs);
-                    } catch (JsonProcessingException ignored) {
+                    } catch (JacksonException ignored) {
                         log.warn(ignored.getMessage(), ignored);
                     }
                     args.put("method", name);
@@ -639,7 +637,7 @@ public class LLMHelper {
                 return "{}";
             }
             return objectMapper.writeValueAsString(input);
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             return String.valueOf(input);
         }
     }

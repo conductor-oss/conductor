@@ -21,7 +21,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** SQLite {@link SkillPackageDAO} — table {@code skill_package} (Base64-encoded bytes). */
 public class SqliteSkillPackageDAO extends SqliteBaseDAO implements SkillPackageDAO {

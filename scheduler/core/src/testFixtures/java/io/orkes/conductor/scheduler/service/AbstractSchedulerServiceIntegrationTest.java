@@ -31,7 +31,7 @@ import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;

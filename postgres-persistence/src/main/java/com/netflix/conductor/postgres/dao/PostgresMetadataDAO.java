@@ -35,7 +35,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.*;
 

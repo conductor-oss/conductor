@@ -26,7 +26,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +46,7 @@ import com.netflix.conductor.sqlite.dao.metadata.SqliteMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteTaskMetadataDAO;
 import com.netflix.conductor.sqlite.dao.metadata.SqliteWorkflowMetadataDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 
 @Configuration(proxyBeanMethods = false)

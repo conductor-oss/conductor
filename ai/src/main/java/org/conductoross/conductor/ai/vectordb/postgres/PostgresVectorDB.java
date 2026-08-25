@@ -28,7 +28,7 @@ import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
 import org.conductoross.conductor.common.utils.TextUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;

@@ -26,7 +26,7 @@ import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.SdkBytes;
@@ -138,7 +138,6 @@ public class Bedrock implements AIModel {
                 .stopSequences(input.getStopWords())
                 .frequencyPenalty(input.getFrequencyPenalty())
                 .topK(input.getTopK())
-                .internalToolExecutionEnabled(false)
                 .presencePenalty(input.getPresencePenalty())
                 .build();
     }

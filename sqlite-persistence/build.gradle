@@ -4,12 +4,12 @@ dependencies {
     implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.retry:spring-retry'
+    compileOnly "org.springframework.retry:spring-retry:${revSpringRetry}"
 
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "org.apache.commons:commons-lang3"
 
@@ -22,14 +22,14 @@ dependencies {
 
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
 
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy-all"
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
-    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.awaitility:awaitility"
 }
 
 test {

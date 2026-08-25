@@ -12,37 +12,42 @@
  */
 package org.conductoross.conductor.common;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersionDetector;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor
 public class JsonSchemaValidator {
 
+    /**
+     * Dialect used when a schema does not declare one through $schema. Draft 2020-12 matches what
+     * SpecVersionDetector defaulted to for undeclared schemas.
+     */
+    private static final SpecificationVersion DEFAULT_DIALECT = SpecificationVersion.DRAFT_2020_12;
+
     private final ObjectMapper mapper;
 
     @SneakyThrows
-    public JsonSchema getJsonSchema(String schemaContent) {
+    public Schema getJsonSchema(String schemaContent) {
         JsonNode jsonNode = mapper.readTree(schemaContent);
-        JsonSchemaFactory factory =
-                JsonSchemaFactory.getInstance(SpecVersionDetector.detect(jsonNode));
-        return factory.getSchema(jsonNode);
+        SpecificationVersion dialect =
+                SpecificationVersion.fromSchemaNode(jsonNode).orElse(DEFAULT_DIALECT);
+        return SchemaRegistry.withDefaultDialect(dialect).getSchema(jsonNode);
     }
 
-    public Set<ValidationMessage> validate(String schemaContent, Map<String, Object> body) {
-        JsonSchema schema = getJsonSchema(schemaContent);
-        schema.initializeValidators();
+    public List<Error> validate(String schemaContent, Map<String, Object> body) {
+        Schema schema = getJsonSchema(schemaContent);
         JsonNode node = getJsonNode(body);
         return schema.validate(node);
     }

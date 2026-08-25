@@ -25,7 +25,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.postgres.dao.PostgresBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** PostgreSQL {@link SkillMetadataDAO} — table {@code skill_metadata}. */
 public class PostgresSkillMetadataDAO extends PostgresBaseDAO implements SkillMetadataDAO {

@@ -26,14 +26,17 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import net.thisptr.jackson.jq.BuiltinFunctionLoader;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.Scope;
+import net.thisptr.jackson.jq.Version;
+import net.thisptr.jackson.jq.Versions;
 
 @Component(JsonJqTransform.NAME)
 public class JsonJqTransform extends WorkflowSystemTask {
@@ -44,6 +47,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private static final String OUTPUT_RESULT = "result";
     private static final String OUTPUT_RESULT_LIST = "resultList";
     private static final String OUTPUT_ERROR = "error";
+    private static final Version JQ_VERSION = Versions.JQ_1_6;
     private static final TypeReference<Map<String, Object>> mapType = new TypeReference<>() {};
     private final TypeReference<List<Object>> listType = new TypeReference<>() {};
     private final Scope rootScope;
@@ -54,7 +58,8 @@ public class JsonJqTransform extends WorkflowSystemTask {
         super(NAME);
         this.objectMapper = objectMapper;
         this.rootScope = Scope.newEmptyScope();
-        this.rootScope.loadFunctions(Scope.class.getClassLoader());
+        BuiltinFunctionLoader.getInstance()
+                .loadFunctions(JQ_VERSION, this.rootScope);
     }
 
     @Override
@@ -76,21 +81,17 @@ public class JsonJqTransform extends WorkflowSystemTask {
 
             final Scope childScope = Scope.newChildScope(rootScope);
 
-            final List<JsonNode> result = query.apply(childScope, input);
+            final List<JsonNode> result = new ArrayList<>();
+            query.apply(childScope, input, result::add);
 
             task.setStatus(TaskModel.Status.COMPLETED);
-            if (result == null) {
+            List<Object> extractedResults = extractBodies(result);
+            if (extractedResults.isEmpty()) {
                 task.addOutput(OUTPUT_RESULT, null);
-                task.addOutput(OUTPUT_RESULT_LIST, null);
             } else {
-                List<Object> extractedResults = extractBodies(result);
-                if (extractedResults.isEmpty()) {
-                    task.addOutput(OUTPUT_RESULT, null);
-                } else {
-                    task.addOutput(OUTPUT_RESULT, extractedResults.get(0));
-                }
-                task.addOutput(OUTPUT_RESULT_LIST, extractedResults);
+                task.addOutput(OUTPUT_RESULT, extractedResults.get(0));
             }
+            task.addOutput(OUTPUT_RESULT_LIST, extractedResults);
         } catch (final Exception e) {
             LOGGER.error(
                     "Error executing task: {} in workflow: {}",
@@ -105,7 +106,8 @@ public class JsonJqTransform extends WorkflowSystemTask {
     }
 
     private LoadingCache<String, JsonQuery> createQueryCache() {
-        final CacheLoader<String, JsonQuery> loader = JsonQuery::compile;
+        final CacheLoader<String, JsonQuery> loader =
+                expression -> JsonQuery.compile(expression, JQ_VERSION);
         return Caffeine.newBuilder()
                 .expireAfterWrite(1, TimeUnit.HOURS)
                 .maximumSize(1000)

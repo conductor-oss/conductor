@@ -28,8 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import jakarta.servlet.http.HttpServletRequest;
 

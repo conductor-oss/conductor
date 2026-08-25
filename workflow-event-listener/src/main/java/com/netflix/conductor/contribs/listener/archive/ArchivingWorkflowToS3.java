@@ -23,7 +23,7 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;

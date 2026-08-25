@@ -56,8 +56,8 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 /**

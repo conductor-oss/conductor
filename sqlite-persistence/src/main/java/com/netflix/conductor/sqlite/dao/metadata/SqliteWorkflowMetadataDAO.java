@@ -25,7 +25,7 @@ import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.sqlite.dao.SqliteBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
 public class SqliteWorkflowMetadataDAO extends SqliteBaseDAO {

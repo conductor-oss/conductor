@@ -22,7 +22,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -48,7 +48,7 @@ public class TestOpenSearchRestDAOBatch extends OpenSearchRestDaoBaseTest {
                                     put("input_key", "input_value");
                                 }
                             }));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
         taskSummary.setCorrelationId(correlationId);

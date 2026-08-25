@@ -36,7 +36,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ElasticSearchProperties.class)
