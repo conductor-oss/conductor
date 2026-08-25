@@ -14,9 +14,11 @@ package com.netflix.conductor.redislock.config;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.Mockito;
 import org.redisson.api.RedissonClient;
 import org.redisson.redisnode.RedissonClusterNodes;
@@ -36,6 +38,11 @@ import static org.mockito.Mockito.when;
 public class RedisHealthIndicatorTest {
 
     @Mock private RedissonClient redissonClient;
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
     @Test
     public void shouldReturnAsHealthWhenServerTypeIsSingle() {
