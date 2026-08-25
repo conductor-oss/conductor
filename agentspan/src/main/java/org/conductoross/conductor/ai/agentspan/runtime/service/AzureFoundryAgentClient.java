@@ -897,8 +897,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String clientId,
             String clientSecret,
             String scope) {
-        String tokenUrl =
-                "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
+        String tokenUrl = "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
         String formBody =
                 "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"
                         + "&client_id="
@@ -932,8 +931,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             JsonNode json = MAPPER.readTree(body);
             String token = json.path("access_token").asText(null);
             if (StringUtils.isBlank(token)) {
-                throw new RuntimeException(
-                        "OBO token exchange returned no access_token: " + body);
+                throw new RuntimeException("OBO token exchange returned no access_token: " + body);
             }
             return token;
         } catch (IOException e) {

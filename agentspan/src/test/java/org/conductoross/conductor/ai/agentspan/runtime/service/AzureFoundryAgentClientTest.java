@@ -498,8 +498,7 @@ class AzureFoundryAgentClientTest {
             AzureFoundryAgentClient spy = spy(client);
             doReturn("foundry-token-abc")
                     .when(spy)
-                    .exchangeOboToken(
-                            anyString(), eq("tid"), eq("cid"), eq("csec"), anyString());
+                    .exchangeOboToken(anyString(), eq("tid"), eq("cid"), eq("csec"), anyString());
 
             ConductorAgentStartRequest req =
                     ConductorAgentStartRequest.builder()
@@ -562,7 +561,8 @@ class AzureFoundryAgentClientTest {
             assertThat(auth.headerValue()).isEqualTo("my-api-key");
         }
 
-        // useCallerIdentity=true + callerEntraToken present but SP creds incomplete → DefaultAzureCredential
+        // useCallerIdentity=true + callerEntraToken present but SP creds incomplete →
+        // DefaultAzureCredential
         @Test
         void buildAuthState_fallsBackToDefault_whenCallerIdentityRequestedButCredsIncomplete() {
             // Only partial SP creds — OBO cannot be performed
