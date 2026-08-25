@@ -21,7 +21,6 @@ import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.image.ImageModel;
@@ -31,6 +30,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import com.google.common.primitives.Floats;
@@ -63,8 +63,7 @@ public class Ollama implements AIModel {
         OllamaApi api = buildOllamaApi();
         var options =
                 OllamaEmbeddingOptions.builder().model(embeddingGenRequest.getModel()).build();
-        var embeddingModel =
-                OllamaEmbeddingModel.builder().ollamaApi(api).options(options).build();
+        var embeddingModel = OllamaEmbeddingModel.builder().ollamaApi(api).options(options).build();
         float[] embeddingsResponse =
                 embeddingModel
                         .embedForResponse(List.of(embeddingGenRequest.getText()))

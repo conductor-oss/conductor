@@ -18,8 +18,8 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.utils.IDGenerator;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestUtils {
 

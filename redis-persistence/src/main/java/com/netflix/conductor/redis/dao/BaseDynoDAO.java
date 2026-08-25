@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.redis.dao;
 
-
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.conductor.core.config.ConductorProperties;

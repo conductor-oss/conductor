@@ -41,6 +41,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import tools.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
+import tools.jackson.databind.JsonNode;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

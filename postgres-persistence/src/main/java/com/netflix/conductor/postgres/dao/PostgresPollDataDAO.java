@@ -30,10 +30,10 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresPollDataDAO extends PostgresBaseDAO implements PollDataDAO {
 

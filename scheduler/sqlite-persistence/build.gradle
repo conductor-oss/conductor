@@ -10,7 +10,8 @@ dependencies {
 
     implementation "org.xerial:sqlite-jdbc:3.49.0.0"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
-    implementation "org.flywaydb:flyway-core:11.3.1"
+    implementation "org.springframework.boot:spring-boot-flyway"
+    implementation "org.flywaydb:flyway-core"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

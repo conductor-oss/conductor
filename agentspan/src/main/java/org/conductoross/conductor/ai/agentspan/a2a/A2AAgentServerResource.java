@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import tools.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A2A server endpoints for native Conductor agents. Exposes agentspan agents as A2A agents. Routes:

@@ -30,9 +30,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.scheduler.dao.AbstractSchedulerArchivalDAOTest;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Runs the full {@link AbstractSchedulerArchivalDAOTest} contract suite against an in-memory SQLite

@@ -24,8 +24,6 @@ import org.conductoross.conductor.ai.vectordb.VectorDB;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.Struct;
@@ -40,6 +38,8 @@ import io.pinecone.unsigned_indices_model.ScoredVectorWithUnsignedIndices;
 import io.pinecone.unsigned_indices_model.VectorWithUnsignedIndices;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 public class PineconeDB extends VectorDB {

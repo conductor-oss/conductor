@@ -96,7 +96,9 @@ public class SubWorkflowParamsTest {
                         .build();
 
         String serializedParams =
-                orderedMapper.writerWithDefaultPrettyPrinter().writeValueAsString(subWorkflowParams);
+                orderedMapper
+                        .writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(subWorkflowParams);
         SubWorkflowParams deserializedParams =
                 orderedMapper.readValue(serializedParams, SubWorkflowParams.class);
         var x = (WorkflowDef) deserializedParams.getWorkflowDefinition();

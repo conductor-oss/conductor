@@ -11,7 +11,8 @@ dependencies {
     implementation "redis.clients:jedis"
     implementation "org.apache.commons:commons-lang3"
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.testcontainers:spock:${revTestContainer}"

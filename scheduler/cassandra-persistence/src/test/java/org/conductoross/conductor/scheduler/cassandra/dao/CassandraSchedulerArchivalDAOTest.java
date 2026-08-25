@@ -23,8 +23,8 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
 
 import com.datastax.driver.core.Session;
-import tools.jackson.databind.ObjectMapper;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 

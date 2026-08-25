@@ -60,11 +60,11 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 
 @Trace
 public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
@@ -633,8 +633,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
     }
 
     private List<Message> mapGetMessagesResponse(
-            SearchResponse<tools.jackson.databind.node.ObjectNode> response)
-            throws IOException {
+            SearchResponse<tools.jackson.databind.node.ObjectNode> response) throws IOException {
         List<Hit<tools.jackson.databind.node.ObjectNode>> hits = response.hits().hits();
         List<Message> messages = new ArrayList<>(hits.size());
         for (Hit<tools.jackson.databind.node.ObjectNode> hit : hits) {
@@ -981,9 +980,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                 new GetRequest.Builder().index(workflowIndexName).id(workflowInstanceId).build();
         GetResponse<tools.jackson.databind.node.ObjectNode> response;
         try {
-            response =
-                    openSearchClient.get(
-                            request, tools.jackson.databind.node.ObjectNode.class);
+            response = openSearchClient.get(request, tools.jackson.databind.node.ObjectNode.class);
         } catch (IOException e) {
             logger.error(
                     "Unable to get Workflow: {} from openSearch index: {}",

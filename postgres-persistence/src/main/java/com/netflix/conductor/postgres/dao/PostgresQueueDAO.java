@@ -30,11 +30,11 @@ import com.netflix.conductor.postgres.util.ExecutorsUtil;
 import com.netflix.conductor.postgres.util.PostgresQueueListener;
 import com.netflix.conductor.postgres.util.Query;
 
-import tools.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 

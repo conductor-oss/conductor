@@ -35,10 +35,10 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 import com.netflix.conductor.metrics.Monitors;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.subscriptions.Subscriptions;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class KafkaObservableQueue implements ObservableQueue {
 

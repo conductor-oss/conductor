@@ -13,6 +13,8 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
     implementation "mysql:mysql-connector-java:8.0.33"
     implementation "org.flywaydb:flyway-core"
+    implementation "org.springframework.boot:spring-boot-flyway"
+    implementation "org.springframework.boot:spring-boot-jdbc"
     implementation "org.flywaydb:flyway-mysql"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'

@@ -26,7 +26,6 @@ import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import tools.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.SdkBytes;
@@ -39,6 +38,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 public class Bedrock implements AIModel {

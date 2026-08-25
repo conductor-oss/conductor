@@ -14,9 +14,8 @@ package org.conductoross.conductor.ai.providers.cohere;
 
 import java.util.List;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
-
 import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 /** Cohere-specific chat options following Spring AI patterns. */
 public class CohereChatOptions implements ChatOptions {
@@ -98,7 +97,6 @@ public class CohereChatOptions implements ChatOptions {
                                 .frequencyPenalty(fields.frequencyPenalty())
                                 .presencePenalty(fields.presencePenalty())
                                 .stopSequences(fields.stopSequences())
-                                
                                 .build());
     }
 

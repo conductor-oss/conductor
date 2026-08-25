@@ -28,7 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.conductor.e2e.util.ApiUtil;
 
 import static org.awaitility.Awaitility.await;

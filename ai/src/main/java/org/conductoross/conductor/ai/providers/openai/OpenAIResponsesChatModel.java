@@ -42,8 +42,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
-import tools.jackson.core.JacksonException;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
 
 /**
  * Spring AI {@link ChatModel} implementation backed by the OpenAI Responses API via OkHttp.

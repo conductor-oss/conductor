@@ -36,10 +36,10 @@ import tools.jackson.databind.module.SimpleModule;
  *
  * <p>Annotated as {@link Component} so Spring can register it with {@link ObjectMapper}
  *
-     * @see AnySerializer
-     * @see AnyDeserializer
-     * @see org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration
-     */
+ * @see AnySerializer
+ * @see AnyDeserializer
+ * @see org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration
+ */
 @Component(JsonProtoModule.NAME)
 public class JsonProtoModule extends SimpleModule {
 
@@ -120,14 +120,12 @@ public class JsonProtoModule extends SimpleModule {
 
             if (type == null || !type.isString()) {
                 ctxt.reportBadDefinition(
-                        Any.class,
-                        "invalid '@type' field when deserializing ProtoBuf Any object");
+                        Any.class, "invalid '@type' field when deserializing ProtoBuf Any object");
             }
 
             if (value == null || !value.isString()) {
                 ctxt.reportBadDefinition(
-                        Any.class,
-                        "invalid '@value' field when deserializing ProtoBuf Any object");
+                        Any.class, "invalid '@value' field when deserializing ProtoBuf Any object");
             }
 
             return Any.newBuilder()

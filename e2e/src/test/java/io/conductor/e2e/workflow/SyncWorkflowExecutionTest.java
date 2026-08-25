@@ -34,7 +34,7 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 
-import tools.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.conductor.e2e.util.ApiUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

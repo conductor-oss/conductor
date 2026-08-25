@@ -33,6 +33,7 @@ dependencies {
     testFixturesImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'
     testFixturesImplementation 'org.springframework.boot:spring-boot-autoconfigure'
     testFixturesImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
+    testFixturesImplementation "org.springframework.boot:spring-boot-jdbc"
     testFixturesImplementation "tools.jackson.core:jackson-databind"
 }
 

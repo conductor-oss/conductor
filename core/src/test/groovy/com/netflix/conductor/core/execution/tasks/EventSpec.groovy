@@ -22,10 +22,10 @@ import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
-import tools.jackson.core.JsonParseException
-import tools.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
+import tools.jackson.core.exc.StreamWriteException
+import tools.jackson.databind.ObjectMapper
 
 class EventSpec extends Specification {
 
@@ -305,7 +305,7 @@ class EventSpec extends Specification {
         then:
         task.status == TaskModel.Status.FAILED
         task.reasonForIncompletion != null
-        1 * objectMapper.writeValueAsString(_ as Map) >> { throw new JsonParseException(null, "invalid json") }
+        1 * objectMapper.writeValueAsString(_ as Map) >> { throw new StreamWriteException(null, "invalid json") }
     }
 
     def "event task fails with an unexpected exception"() {

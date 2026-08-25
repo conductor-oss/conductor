@@ -37,9 +37,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 
+import rx.Observable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import rx.Observable;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;

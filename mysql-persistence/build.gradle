@@ -19,7 +19,8 @@ dependencies {
     implementation "org.flywaydb:flyway-mysql"
     implementation "org.springframework.boot:spring-boot-flyway"
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
 
 //    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
 //    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"

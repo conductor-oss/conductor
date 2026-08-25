@@ -15,10 +15,12 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
     implementation "org.postgresql:postgresql:${revPostgres}"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.springframework.boot:spring-boot-flyway"
     implementation "org.flywaydb:flyway-core"
     implementation "org.flywaydb:flyway-database-postgresql"
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-es7-persistence')

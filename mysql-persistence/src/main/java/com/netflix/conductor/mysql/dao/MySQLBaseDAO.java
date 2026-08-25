@@ -29,10 +29,10 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.mysql.util.*;
 
+import com.google.common.collect.ImmutableList;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 
 public abstract class MySQLBaseDAO {
 

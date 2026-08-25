@@ -29,8 +29,6 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -54,6 +52,8 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class SQSObservableQueue implements ObservableQueue {
 

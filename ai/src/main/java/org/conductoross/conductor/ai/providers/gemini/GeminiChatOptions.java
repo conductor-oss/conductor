@@ -15,9 +15,8 @@ package org.conductoross.conductor.ai.providers.gemini;
 import java.util.List;
 
 import org.conductoross.conductor.ai.model.ToolSpec;
-import org.springframework.ai.chat.prompt.ChatOptions;
-
 import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 
 import lombok.Builder;
 import lombok.Data;

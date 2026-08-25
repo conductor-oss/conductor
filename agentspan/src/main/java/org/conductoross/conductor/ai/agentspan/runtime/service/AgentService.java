@@ -52,9 +52,9 @@ import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @RequiredArgsConstructor

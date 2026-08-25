@@ -14,10 +14,9 @@ package org.conductoross.conductor.ai.providers.openai;
 
 import java.util.List;
 
+import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
 import org.springframework.ai.chat.prompt.ChatOptions;
-
-import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
 
 import lombok.Builder;
 import lombok.Data;

@@ -69,7 +69,8 @@ dependencies {
     testImplementation "org.springframework.retry:spring-retry:${revSpringRetry}"
     testImplementation project(':conductor-common').sourceSets.test.output
 
-    testImplementation "org.apache.groovy:groovy-all"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
     testImplementation "org.junit.vintage:junit-vintage-engine"

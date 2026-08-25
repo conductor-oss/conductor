@@ -47,9 +47,9 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
+import jakarta.annotation.PreDestroy;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import jakarta.annotation.PreDestroy;
 
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 

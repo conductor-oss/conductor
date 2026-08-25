@@ -40,7 +40,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.conductor.e2e.util.ApiUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
