@@ -91,13 +91,15 @@ The issue number links back to https://github.com/conductor-oss/conductor/issues
 
 | Dependency | Pinned at | Why |
 |---|---|---|
-| `com.google.protobuf:protobuf-java` | `3.x` | 4.x + GraalVM polyglot 25.x causes Gradle to require `polyglot4`, which does not exist on Maven Central |
-| `com.google.protobuf:protoc` | `3.25.5` | Must match `grpc-protobuf:1.73.0`, which depends on protobuf-java 3.x |
 | `org.graalvm.*` (all 5 artifacts) | same version | All must share one version — mixing causes a `"polyglot version X not compatible with Truffle Y"` runtime error |
-| `redis.clients:jedis` in `redis-concurrency-limit` | `3.6.0` | `revJedis` (6.0.0) does not work with Spring Data Redis in that module |
 | `org.codehaus.jettison:jettison` | `strictly 1.5.4` | Gradle `strictly` constraint — no higher version has been validated |
-| `org.conductoross:conductor-client` in `test-harness` | `5.0.1` | Fat JAR classpath conflict with conductor-common; resolved via a stripped JAR task |
-| `org.awaitility:awaitility` in functional tests | `4.x` | e2e tests call `pollInterval(Duration)` added in Awaitility 4.0 |
+| `org.conductoross:conductor-client` in `test-harness` | `5.0.1` | Fat JAR classpath conflict with conductor-common; resolved via a stripped JAR task. The client is still built on Jackson 2, so the SDK-driven suites are excluded from `test` — see issues.md |
+| `net.thisptr:jackson-jq` | `2.0.0-alpha1` | Only release built against Jackson 3 |
+| `org.springframework.retry:spring-retry` | `2.0.13` | Dropped from the Spring Boot 4 BOM; see issues.md |
+
+Retired by the Spring Boot 4 upgrade: the protobuf and protoc caps (GraalVM 25 resolves protobuf 4
+cleanly, and the OTLP metrics registry now requires it), the `jedis` pin in `redis-concurrency-limit`,
+and the Awaitility override in the functional tests. The Spring Boot BOM covers all of them now.
 
 ### Before bumping a PINNED dependency
 
@@ -106,6 +108,14 @@ The issue number links back to https://github.com/conductor-oss/conductor/issues
 3. Test locally: `./gradlew clean build` plus `./gradlew test` in the affected modules.
 4. If bumping GraalVM, bump **all five** `org.graalvm.*` artifacts together using `revGraalVM` in `dependencies.gradle`.
 5. Update or remove the `// PINNED` comment once the constraint is lifted.
+
+### Version overrides and the BOM
+
+Versions come from the Spring Boot BOM unless there is a stated reason not to. `dependencies.gradle`
+holds versions for libraries the BOM does not manage; `springboot-bom-overrides.gradle` holds the
+few deliberate deviations, currently Elasticsearch (Conductor supports older clusters than the BOM
+targets) and Testcontainers (the BOM moved to 2.x). Adding an override without a comment explaining
+the deviation is a review comment waiting to happen.
 
 ### PINNED vs. version floors
 

@@ -69,3 +69,41 @@ The calls are removed. Providers built on Conductor's own ChatModel classes are 
 they never auto-executed. For the Spring-supplied models (mistral, ollama, bedrock) the behaviour is
 covered by `LLMHelperChatCompleteTest`, which asserts tool calls are surfaced. If a future Spring AI
 release changes that default, the fix is a no-op `ToolCallingManager` on those builders.
+
+## 7. Testcontainers suites cannot run on this machine
+
+Docker is not installed here, and Testcontainers has no Apple `container` provider, so every suite
+that starts a container fails at initialisation with "Could not find a valid Docker environment".
+That covers the SQL and Redis persistence modules, the Elasticsearch and OpenSearch DAO tests,
+cassandra, and most of test-harness.
+
+This is environmental, not a regression: `redis-lock` fails identically on `main`. Of the 3474 tests
+that ran, every failure traces back to this, either directly or through a static initialiser that
+gives up on the container. The container-backed suites still need a run on CI before the upgrade can
+be called verified, and those are the runs that will confirm the Kafka 4.2, Jedis 7.4 and Spring
+Data Redis 4 moves end to end.
+
+## 8. Verified in a running server
+
+Booted the sqlite profile from the boot JAR and exercised it, since much of the risk in this upgrade
+only shows up at runtime:
+
+- context starts clean, `/actuator/health` UP
+- `/api-docs` serves OpenAPI 3.1 with 138 paths, which is the springdoc 3 pairing the
+  `OpenApiDocsTest` guard exists for
+- registered metadata, started a workflow, polled and completed the task through to COMPLETED
+- `JSON_JQ_TRANSFORM` evaluated `.in.a | add` to 6 on jackson-jq 2.0
+- workflow search returned the indexed workflow
+- timestamps serialise as epoch millis, unchanged from Jackson 2. This is why
+  `ObjectMapperProvider` enables `WRITE_DATES_AS_TIMESTAMPS`: Jackson 3 defaults to ISO-8601
+  strings, which would have silently changed every date field on the wire
+- `spring-boot-properties-migrator` reported exactly one dead key,
+  `management.metrics.web.server.request.autotime.percentiles`. It is now
+  `management.metrics.distribution.percentiles.http.server.requests`, and the percentile series are
+  back in `/actuator/prometheus`
+
+## 9. Minor: Hibernate Validator warns about @Valid on a Map
+
+Hibernate Validator 9 logs HV000271 for `@Valid` applied to a `Map` container, pointing at
+`onStateChange`. Validation still runs; the annotation should move to the type argument. Left alone
+here to keep this change focused.
