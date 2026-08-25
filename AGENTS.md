@@ -95,11 +95,11 @@ The issue number links back to https://github.com/conductor-oss/conductor/issues
 | `org.codehaus.jettison:jettison` | `strictly 1.5.4` | Gradle `strictly` constraint — no higher version has been validated |
 | `org.conductoross:conductor-client` in `test-harness` | `5.0.1` | Fat JAR classpath conflict with conductor-common; resolved via a stripped JAR task. The client is still built on Jackson 2, so the SDK-driven suites are excluded from `test` — see issues.md |
 | `net.thisptr:jackson-jq` | `2.0.0-alpha1` | Only release built against Jackson 3 |
-| `org.springframework.retry:spring-retry` | `2.0.13` | Dropped from the Spring Boot 4 BOM; see issues.md |
 
 Retired by the Spring Boot 4 upgrade: the protobuf and protoc caps (GraalVM 25 resolves protobuf 4
 cleanly, and the OTLP metrics registry now requires it), the `jedis` pin in `redis-concurrency-limit`,
-and the Awaitility override in the functional tests. The Spring Boot BOM covers all of them now.
+and the Awaitility override in the functional tests. spring-retry is gone entirely: retry now uses the
+support built into spring-core. The Spring Boot BOM covers the rest.
 
 ### Before bumping a PINNED dependency
 
