@@ -107,3 +107,11 @@ only shows up at runtime:
 Hibernate Validator 9 logs HV000271 for `@Valid` applied to a `Map` container, pointing at
 `onStateChange`. Validation still runs; the annotation should move to the type argument. Left alone
 here to keep this change focused.
+
+## 10. TaskStatusPublisherTest needed a longer wait
+
+`TaskStatusPublisher` serialises and posts notifications on a background thread, and the test waited
+one second for the first call. Measured on this branch the first notification lands at roughly 1.8s,
+almost all of it the one-off class loading of the Jackson and metrics stack on that thread;
+subsequent notifications are immediate. The wait is now 15s. The assertions are unchanged: the same
+call with the same arguments is still what the test verifies.
