@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RefreshButton > renders the countdown label 1`] = `
+<div>
+  <button
+    class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary css-p2mtn7-MuiButtonBase-root-MuiButton-root"
+    tabindex="0"
+    type="button"
+  >
+    Refresh in 37
+  </button>
+</div>
+`;
+
+exports[`RefreshButton > renders the every-second label 1`] = `
+<div>
+  <button
+    class="MuiButtonBase-root MuiButton-root MuiButton-text MuiButton-textPrimary MuiButton-sizeSmall MuiButton-textSizeSmall MuiButton-colorPrimary css-p2mtn7-MuiButtonBase-root-MuiButton-root"
+    tabindex="0"
+    type="button"
+  >
+    Every second
+  </button>
+</div>
+`;
