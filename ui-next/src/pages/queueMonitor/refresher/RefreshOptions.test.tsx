@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useSelector } from "@xstate/react";
 import { RefreshButton } from "./RefreshOptions";
@@ -10,12 +10,10 @@ vi.mock("@xstate/react", () => ({
 const mockedUseSelector = vi.mocked(useSelector);
 
 describe("RefreshButton", () => {
-  it("renders the countdown label", () => {
-    mockedUseSelector
-      .mockReturnValueOnce(60) // durationSet
-      .mockReturnValueOnce(23); // elapsed
+  it("renders the countdown from duration minus elapsed", () => {
+    mockedUseSelector.mockReturnValueOnce(60).mockReturnValueOnce(23);
 
-    const { container } = render(
+    render(
       <RefreshButton
         onRefresh={() => {}}
         timerActor={{} as never}
@@ -23,15 +21,13 @@ describe("RefreshButton", () => {
       />,
     );
 
-    expect(container).toMatchSnapshot();
+    expect(screen.getByRole("button", { name: "Refresh in 37" })).toBeVisible();
   });
 
   it("renders the every-second label", () => {
-    mockedUseSelector
-      .mockReturnValueOnce(1) // durationSet
-      .mockReturnValueOnce(0); // elapsed
+    mockedUseSelector.mockReturnValueOnce(1).mockReturnValueOnce(0);
 
-    const { container } = render(
+    render(
       <RefreshButton
         onRefresh={() => {}}
         timerActor={{} as never}
@@ -39,6 +35,6 @@ describe("RefreshButton", () => {
       />,
     );
 
-    expect(container).toMatchSnapshot();
+    expect(screen.getByRole("button", { name: "Every second" })).toBeVisible();
   });
 });
