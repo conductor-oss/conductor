@@ -1,12 +1,12 @@
-import { Box } from "@mui/material";
-import { FunctionComponent, ReactNode } from "react";
+import { styled } from "@mui/material/styles";
+import { ReactNode } from "react";
 import { greyBorder, greyText, lightGrey } from "theme/tokens/colors";
 
 // Metric, operator and value read as one compound control instead of two
 // separate boxes each carrying their own floating label — the label moves
 // into a single prefix chip, and the value is always enabled (no more
 // grey "disabled" fields you have to unlock by picking a condition first).
-const shellSx = {
+const Shell = styled("div")({
   display: "flex",
   alignItems: "center",
   height: 32,
@@ -15,9 +15,9 @@ const shellSx = {
   borderRadius: "4px",
   backgroundColor: "#fff",
   overflow: "hidden",
-};
+});
 
-const chipSx = {
+const Chip = styled("div")({
   display: "flex",
   alignItems: "center",
   gap: "6px",
@@ -30,20 +30,17 @@ const chipSx = {
   fontWeight: 500,
   color: greyText,
   whiteSpace: "nowrap",
-};
+});
 
-const ActiveDot: FunctionComponent<{ active: boolean }> = ({ active }) =>
-  active ? (
-    <Box
-      data-testid="filter-active-dot"
-      sx={{
-        width: 5,
-        height: 5,
-        borderRadius: "50%",
-        backgroundColor: "primary.main",
-      }}
-    />
-  ) : null;
+const ActiveDotMark = styled("span")(({ theme }) => ({
+  width: 5,
+  height: 5,
+  borderRadius: "50%",
+  backgroundColor: theme.palette.primary.main,
+}));
+
+const ActiveDot = ({ active }: { active: boolean }) =>
+  active ? <ActiveDotMark data-testid="filter-active-dot" /> : null;
 
 export interface CompoundFilterProps {
   label: string;
@@ -57,18 +54,18 @@ export interface CompoundFilterProps {
 // the filter is actually active), then whatever operator/value controls
 // the caller supplies. See queueMonitor/filter/FilterSection.tsx for the
 // operator (OperatorSelect) and value fields this is normally paired with.
-export const CompoundFilter: FunctionComponent<CompoundFilterProps> = ({
+export const CompoundFilter = ({
   label,
   active,
   operator,
   value,
-}) => (
-  <Box sx={shellSx}>
-    <Box sx={chipSx}>
+}: CompoundFilterProps) => (
+  <Shell>
+    <Chip>
       <ActiveDot active={active} />
       {label}
-    </Box>
+    </Chip>
     {operator}
     {value}
-  </Box>
+  </Shell>
 );
