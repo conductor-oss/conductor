@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -47,6 +48,7 @@ public class ConductorAgentStartRequest {
     private Integer timeoutSeconds;
     private String runId;
 
+    @JsonAlias("staticPlan")
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
 
@@ -65,6 +67,7 @@ public class ConductorAgentStartRequest {
     // field.
     // Azure Foundry: https://my-resource.openai.azure.com/openai
     // Bedrock: bedrock://AGENTID/ALIASID  (optional ?region=us-west-2 query param)
+    @JsonAlias("agentUrl")
     @JsonProperty("agent_url")
     private String agentUrl;
 }
