@@ -28,7 +28,6 @@ import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.VectorDB;
 import org.conductoross.conductor.common.utils.TextUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
@@ -38,6 +37,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 public class PostgresVectorDB extends VectorDB {

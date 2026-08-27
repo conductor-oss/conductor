@@ -15,13 +15,12 @@ package com.netflix.conductor.common.config;
 import com.netflix.conductor.common.jackson.JsonProtoModule;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import com.fasterxml.jackson.module.kotlin.KotlinModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.module.kotlin.KotlinModule;
 
 /**
  * A Factory class for creating a customized {@link ObjectMapper}. This is only used by the
@@ -34,34 +33,43 @@ public class ObjectMapperProvider {
 
     /**
      * The customizations in this method are configured using {@link
-     * org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration}
+     * org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration}
      *
      * <p>Customizations are spread across, 1. {@link ObjectMapperBuilderConfiguration} 2. {@link
-     * ObjectMapperConfiguration} 3. {@link JsonProtoModule}
+     * JsonProtoModule}
      *
      * <p>IMPORTANT: Changes in this method need to be also performed in the default {@link
      * ObjectMapper} that Spring Boot creates.
      *
-     * @see org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
+     * @see org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration
      */
     public ObjectMapper getObjectMapper() {
         return objectMapper;
     }
 
+    /**
+     * Jackson 3 mappers are immutable, so every setting has to be applied to the builder before the
+     * mapper is built. The jdk8 and java.time datatypes and the property-access optimisations that
+     * used to need separate modules are part of the core now, which is why only the proto and
+     * Kotlin modules are registered here.
+     *
+     * <p>WRITE_DATES_AS_TIMESTAMPS is enabled to keep the numeric date encoding that Jackson 2
+     * produced with JavaTimeModule. Jackson 3 defaults to ISO-8601 strings, which would change the
+     * payload format seen by existing clients and stored task/workflow documents.
+     */
     private static ObjectMapper _getObjectMapper() {
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.setDefaultPropertyInclusion(
-                JsonInclude.Value.construct(
-                        JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS));
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.registerModule(new JsonProtoModule());
-        objectMapper.registerModule(new Jdk8Module());
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.registerModule(new AfterburnerModule());
-        objectMapper.registerModule(new KotlinModule.Builder().build());
-        return objectMapper;
+        return JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .disable(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES)
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .changeDefaultPropertyInclusion(
+                        value ->
+                                JsonInclude.Value.construct(
+                                        JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS))
+                .addModule(new JsonProtoModule())
+                .addModule(new KotlinModule.Builder().build())
+                .build();
     }
 }

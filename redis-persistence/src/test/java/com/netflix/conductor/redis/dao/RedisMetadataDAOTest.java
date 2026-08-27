@@ -41,10 +41,10 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 

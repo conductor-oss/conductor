@@ -40,7 +40,6 @@ import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.health.RedisMonitor;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;
 import io.orkes.conductor.scheduler.listener.ScheduleChangeListenerStub;
@@ -49,6 +48,7 @@ import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import tools.jackson.databind.ObjectMapper;
 
 import static io.orkes.conductor.scheduler.service.SchedulerService.CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME;
 import static io.orkes.conductor.scheduler.service.SchedulerService.CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME;

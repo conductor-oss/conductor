@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
@@ -41,9 +41,9 @@ import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 
@@ -122,7 +122,7 @@ public class PostgresPollDataDAONoCacheTest {
     }
 
     @Test
-    public void updateLastPollDataTest() throws SQLException, JsonProcessingException {
+    public void updateLastPollDataTest() throws SQLException, JacksonException {
         pollDataDAO.updateLastPollData("dummy-task", "dummy-domain", "dummy-worker-id");
 
         List<Map<String, Object>> records =
@@ -137,7 +137,7 @@ public class PostgresPollDataDAONoCacheTest {
     }
 
     @Test
-    public void updateLastPollDataNullDomainTest() throws SQLException, JsonProcessingException {
+    public void updateLastPollDataNullDomainTest() throws SQLException, JacksonException {
         pollDataDAO.updateLastPollData("dummy-task", null, "dummy-worker-id");
 
         List<Map<String, Object>> records =

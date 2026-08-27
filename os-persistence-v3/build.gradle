@@ -16,31 +16,31 @@ configurations {
 }
 
 dependencies {
+    implementation "tools.jackson.core:jackson-databind"
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     implementation project(':conductor-common-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.retry:spring-retry'
 
     implementation "commons-io:commons-io:${revCommonsIo}"
     implementation "org.apache.commons:commons-lang3"
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.18.0'
+    implementation 'tools.jackson.core:jackson-core'
+    implementation "com.fasterxml.jackson.core:jackson-databind"
 
     implementation 'org.opensearch.client:opensearch-java:3.5.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
     implementation "org.opensearch.client:opensearch-rest-client:3.5.0"
     implementation "org.opensearch.client:opensearch-rest-high-level-client:3.5.0"
 
     testImplementation "net.java.dev.jna:jna:5.7.0"
-    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.awaitility:awaitility"
     testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
     testImplementation "org.testcontainers:testcontainers:2.0.5"
     testImplementation project(':conductor-test-util').sourceSets.test.output
-    testImplementation 'org.springframework.retry:spring-retry'
 
 }
 

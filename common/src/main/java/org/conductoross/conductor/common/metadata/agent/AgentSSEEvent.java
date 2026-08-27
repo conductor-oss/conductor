@@ -15,8 +15,8 @@ package org.conductoross.conductor.common.metadata.agent;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Event DTO for SSE streaming. Each event represents a semantic agent-level state change (thinking,
@@ -147,7 +147,7 @@ public class AgentSSEEvent {
     public String toJson() {
         try {
             return MAPPER.writeValueAsString(this);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return "{\"type\":\"error\",\"content\":\"Serialization failed\"}";
         }
     }

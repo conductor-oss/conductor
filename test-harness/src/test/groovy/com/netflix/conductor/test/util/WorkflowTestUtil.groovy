@@ -28,8 +28,8 @@ import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.annotation.PostConstruct
+import tools.jackson.databind.ObjectMapper
 
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.awaitility.Awaitility.await

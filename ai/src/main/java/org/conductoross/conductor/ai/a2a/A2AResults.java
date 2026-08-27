@@ -22,7 +22,7 @@ import org.conductoross.conductor.ai.a2a.model.Artifact;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Builds the task output that {@code AGENT} (polling/streaming) and the push-notification callback

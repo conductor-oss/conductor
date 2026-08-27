@@ -35,8 +35,8 @@ import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 

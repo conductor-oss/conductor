@@ -23,12 +23,12 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import tools.jackson.databind.ObjectMapper;
 
 public class ArchivingWorkflowToS3 implements WorkflowStatusListener {
 

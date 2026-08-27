@@ -13,9 +13,9 @@
 package com.netflix.conductor.postgres.config;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.sql.DataSource;
 
@@ -26,19 +26,17 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.*;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.NoBackOffPolicy;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PostgresProperties.class)
@@ -172,30 +170,23 @@ public class PostgresConfiguration {
 
     @Bean
     public RetryTemplate postgresRetryTemplate(PostgresProperties properties) {
-        SimpleRetryPolicy retryPolicy = new CustomRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setRetryPolicy(retryPolicy);
-        retryTemplate.setBackOffPolicy(new NoBackOffPolicy());
-        return retryTemplate;
+        // Three attempts in total, so two retries, taken immediately: a deadlock victim only needs
+        // the competing transaction to finish, and it already has.
+        return new RetryTemplate(
+                RetryPolicy.builder()
+                        .maxRetries(2)
+                        .delay(Duration.ZERO)
+                        .predicate(CustomRetryPolicy::isDeadLockError)
+                        .build());
     }
 
-    public static class CustomRetryPolicy extends SimpleRetryPolicy {
+    /** Retries only the failures Postgres reports as a deadlock or a serialization conflict. */
+    public static class CustomRetryPolicy {
 
         private static final String ER_LOCK_DEADLOCK = "40P01";
         private static final String ER_SERIALIZATION_FAILURE = "40001";
 
-        @Override
-        public boolean canRetry(final RetryContext context) {
-            final Optional<Throwable> lastThrowable =
-                    Optional.ofNullable(context.getLastThrowable());
-            return lastThrowable
-                    .map(throwable -> super.canRetry(context) && isDeadLockError(throwable))
-                    .orElseGet(() -> super.canRetry(context));
-        }
-
-        private boolean isDeadLockError(Throwable throwable) {
+        static boolean isDeadLockError(Throwable throwable) {
             SQLException sqlException = findCauseSQLException(throwable);
             if (sqlException == null) {
                 return false;
@@ -204,7 +195,7 @@ public class PostgresConfiguration {
                     || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
         }
 
-        private SQLException findCauseSQLException(Throwable throwable) {
+        private static SQLException findCauseSQLException(Throwable throwable) {
             Throwable causeException = throwable;
             while (null != causeException && !(causeException instanceof SQLException)) {
                 causeException = causeException.getCause();

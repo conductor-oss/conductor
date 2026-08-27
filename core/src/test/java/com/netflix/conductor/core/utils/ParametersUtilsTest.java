@@ -36,8 +36,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.dao.EnvironmentDAO;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -160,7 +160,7 @@ public class ParametersUtilsTest {
                                             objectMapper.readValue(
                                                     objectMapper.writeValueAsString(input),
                                                     Object.class);
-                                } catch (JsonProcessingException e) {
+                                } catch (JacksonException e) {
                                     e.printStackTrace();
                                     return;
                                 }

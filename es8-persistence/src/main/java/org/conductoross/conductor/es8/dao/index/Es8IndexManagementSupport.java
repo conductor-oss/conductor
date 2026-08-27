@@ -26,7 +26,8 @@ import org.apache.http.HttpStatus;
 import org.conductoross.conductor.es8.config.ElasticSearchProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 
@@ -40,8 +41,8 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
 import co.elastic.clients.transport.endpoints.BooleanResponse;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handles ES8 bootstrap and index management concerns (cluster health, templates, ILM and aliases).
@@ -440,15 +441,17 @@ class Es8IndexManagementSupport {
 
     private <T> T executeWithRetry(Callable<T> action) throws IOException {
         try {
-            return retryTemplate.execute(context -> action.call());
-        } catch (Exception e) {
-            if (e instanceof IOException ioException) {
+            return retryTemplate.execute(action::call);
+        } catch (RetryException e) {
+            // Retries are exhausted; the caller cares about what actually failed, not the wrapper.
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException ioException) {
                 throw ioException;
             }
-            if (e instanceof RuntimeException runtimeException) {
+            if (cause instanceof RuntimeException runtimeException) {
                 throw runtimeException;
             }
-            throw new IOException("Elasticsearch operation failed", e);
+            throw new IOException("Elasticsearch operation failed", cause);
         }
     }
 

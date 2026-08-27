@@ -34,8 +34,8 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 @RestControllerAdvice
 @Order(ValidationExceptionMapper.ORDER + 1)

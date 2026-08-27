@@ -66,7 +66,6 @@ public class RestConfiguration implements WebMvcConfigurer {
     public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
         configurer
                 .favorParameter(false)
-                .favorPathExtension(false)
                 .ignoreAcceptHeader(true)
                 .defaultContentType(APPLICATION_JSON, TEXT_PLAIN, APPLICATION_OCTET_STREAM);
     }

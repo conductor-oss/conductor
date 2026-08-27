@@ -22,10 +22,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * A real, embedded HTTP server that speaks the A2A protocol (JSON-RPC 2.0 + SSE + agent-card

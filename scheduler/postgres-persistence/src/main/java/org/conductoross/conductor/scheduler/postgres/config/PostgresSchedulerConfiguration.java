@@ -22,11 +22,11 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring auto-configuration that registers PostgreSQL-backed {@link SchedulerDAO} and {@link

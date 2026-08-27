@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.14'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -21,13 +21,11 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.5.14'
+    id 'org.springframework.boot' version '4.1.1'
 }
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
-
-ext["tomcat.version"] = "10.1.54"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
@@ -62,31 +60,15 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
-                // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
-                if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
-                    details.useVersion "2.18.8"
-                }
-                // Compat: Spring Boot 3.5 requires HttpClient 5.4+ for TlsSocketStrategy.
-                if (details.requested.group == 'org.apache.httpcomponents.client5'
-                        && details.requested.name == 'httpclient5') {
-                    details.useVersion "5.5.2"
-                }
-                // Compat: Flyway database modules must match Flyway core's internal API.
-                if (details.requested.group == 'org.flywaydb') {
-                    details.useVersion "11.7.2"
-                }
-                // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
-                if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
-                    details.useVersion "3.18.0"
-                }
-                // Security: CVE-2025-12183 — lz4-java minimum patched version
+                // Security: CVE-2025-12183 - lz4-java minimum patched version. Not managed by the
+                // Spring Boot BOM, so the floor has to be enforced here.
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
                 }
             }
             // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
             // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
-            // claim the same capability and Gradle can't resolve the conflict automatically.
+            // claim the same capability and Gradle cannot resolve the conflict automatically.
             // Tell Gradle to always prefer the canonical org.lz4 artifact.
             resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
                 def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
@@ -104,7 +86,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.5.14/reference/htmlsingle/#appendix.dependency-versions
+            // Managed dependency versions: https://docs.spring.io/spring-boot/4.1/appendix/dependency-versions/index.html
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }
@@ -115,8 +97,6 @@ allprojects {
         implementation('org.apache.logging.log4j:log4j-slf4j-impl')
         implementation('org.apache.logging.log4j:log4j-jul')
         implementation('org.apache.logging.log4j:log4j-web')
-        implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
-        implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
         compileOnly 'org.projectlombok:lombok:1.18.42'
 
         annotationProcessor 'org.projectlombok:lombok:1.18.42'
@@ -129,7 +109,7 @@ allprojects {
         testImplementation "org.junit.vintage:junit-vintage-engine"
         testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
 
-        // PINNED (#964): jettison must stay at exactly 1.5.4 — `strictly` prevents both
+        // PINNED (#964): jettison must stay at exactly 1.5.4. `strictly` prevents both
         // downgrade and upgrade. No known compatible higher version has been validated.
         implementation('org.codehaus.jettison:jettison') {
             version {
@@ -138,16 +118,14 @@ allprojects {
         }
         implementation('org.apache.tomcat.embed:tomcat-embed-core')
 
-        // Security: minimum version floors for CVE-patched transitive dependencies.
+        // Security: minimum version floors for CVE-patched transitive dependencies that the
+        // Spring Boot BOM does not manage.
         constraints {
             implementation('org.apache.tika:tika-core:3.2.2') {
                 because 'CVE-2025-66516: tika-parser-pdf-module vulnerability'
             }
             implementation('commons-beanutils:commons-beanutils:1.11.0') {
                 because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
-            }
-            implementation('com.microsoft.sqlserver:mssql-jdbc:12.8.2.jre11') {
-                because 'CVE-2025-59250: improper input validation'
             }
         }
     }

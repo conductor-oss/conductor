@@ -32,12 +32,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.sqlite.SQLiteDataSource;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -63,7 +64,7 @@ class ConductorAgentSpanConfigurationIntegrationTest {
         createSchema(dataSource);
 
         ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
-        RetryTemplate retryTemplate = RetryTemplate.builder().maxAttempts(1).build();
+        RetryTemplate retryTemplate = new RetryTemplate(RetryPolicy.withMaxRetries(0));
         metadataDAO = new SqliteSkillMetadataDAO(retryTemplate, objectMapper, dataSource);
         packageDAO = new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }

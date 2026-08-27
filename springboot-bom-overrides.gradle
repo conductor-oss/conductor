@@ -11,37 +11,26 @@
  *  specific language governing permissions and limitations under the License.
  */
 
-// Contains overrides for Spring Boot Dependency Management plugin
-// Spring Boot documents supported dependency version override properties at
-// https://docs.spring.io/spring-boot/3.3/appendix/dependency-versions/properties.html.
+// Overrides for the Spring Boot Dependency Management plugin.
+//
+// Everything not listed here is taken from the Spring Boot BOM. Each override below must state why
+// it deviates, using the same prefixes used elsewhere in the build: PINNED, Security, Compat.
+// Supported override property names are listed at
+// https://docs.spring.io/spring-boot/4.1/appendix/dependency-versions/properties.html
 
-// Keep server runtime dependencies on patched versions until the Spring Boot BOM includes them.
-ext['spring-framework.version'] = '6.2.19'
-ext['spring-security.version'] = '6.5.11'
-ext['log4j2.version'] = '2.25.4'
-ext['netty.version'] = '4.1.135.Final'
-ext['kafka.version'] = '3.9.1'
-
-// Conductor's default is ES6, but SB brings in ES7
+// Compat: Conductor ships selectable indexing backends (ES6/ES7/ES8 and OpenSearch) and picks one at
+// build time. The Spring Boot BOM tracks the latest Elasticsearch client, which does not speak to the
+// older clusters Conductor still supports, so the Elasticsearch coordinates are managed here instead.
+// Default is ES7; the ES8 branch below switches both the transport and the java client together.
 ext['elasticsearch.version'] = revElasticSearch7
+ext['elasticsearch-client.version'] = revElasticSearch7
 
-// When building with ES8 persistence, override Spring Boot's managed Elasticsearch versions.
-// Spring Boot 3.3.x manages `org.elasticsearch.client:elasticsearch-rest-client` via
-// `elasticsearch.version` and `co.elastic.clients:elasticsearch-java` via
-// `elasticsearch-client.version`.
 def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch'
 if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
     ext['elasticsearch.version'] = revElasticSearch8
     ext['elasticsearch-client.version'] = revElasticSearch8
 }
 
-// SB brings groovy 3.0.x which is not compatible with Spock
-ext['groovy.version'] = revGroovy
-
-// Keep Testcontainers aligned across modules instead of Spring Boot BOM defaults.
+// Compat: the Spring Boot BOM manages Testcontainers 2.x, which reorganises the container classes
+// Conductor's tests build on. Staying on 1.x until the Testcontainers 2 migration is done separately.
 ext['testcontainers.version'] = revTestContainer
-
-// Prevent Spring Boot BOM from downgrading Jedis. Modules that need jedis depend on
-// conductor-redis-api (which declares jedis as 'api'), and without this override the
-// dependency-management plugin would resolve the BOM version instead of 6.0.0.
-ext['jedis.version'] = revJedis

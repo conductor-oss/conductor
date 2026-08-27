@@ -24,11 +24,11 @@ import org.conductoross.conductor.dao.FileMetadataDAO;
 import org.conductoross.conductor.model.FileModel;
 import org.conductoross.conductor.model.file.FileUploadStatus;
 import org.conductoross.conductor.model.file.StorageType;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.postgres.dao.PostgresBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** PostgreSQL {@link FileMetadataDAO} — table {@code file_metadata}. */
 public class PostgresFileMetadataDAO extends PostgresBaseDAO implements FileMetadataDAO {
