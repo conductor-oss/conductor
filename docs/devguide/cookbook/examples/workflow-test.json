@@ -1,0 +1,42 @@
+{
+  "name": "input_param_demo_workflow",
+  "version": 1,
+  "input": {
+    "_scheduledTime": 1760000000000,
+    "_executedTime": 1760000000100
+  },
+  "workflowDef": {
+    "name": "input_param_demo_workflow",
+    "version": 1,
+    "schemaVersion": 2,
+    "tasks": [
+      {
+        "name": "compute_report_window",
+        "taskReferenceName": "compute_report_window",
+        "type": "INLINE",
+        "inputParameters": {
+          "scheduledTime": "${workflow.input._scheduledTime}",
+          "executionTime": "${workflow.input._executedTime}",
+          "evaluatorType": "javascript",
+          "expression": "({scheduledAt: $.scheduledTime, triggeredAt: $.executionTime})"
+        }
+      }
+    ],
+    "outputParameters": {
+      "scheduledAt": "${compute_report_window.output.result.scheduledAt}"
+    }
+  },
+  "taskRefToMockOutput": {
+    "compute_report_window": [
+      {
+        "status": "COMPLETED",
+        "output": {
+          "result": {
+            "scheduledAt": 1760000000000,
+            "triggeredAt": 1760000000100
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,78 +1,117 @@
 ---
-description: "Create and update workflow definitions in Conductor using the UI, CLI, REST APIs, or client SDKs. Supports versioning and JSON configuration."
+description: Write, validate, and register versioned Conductor workflow definitions with the CLI, API, or UI.
 ---
 
-# Creating / Updating Workflows
+# Create or update workflows
 
-You can create and update workflows using the Conductor UI, APIs, or SDKs. These workflows can be versioned, which is useful for [a variety of cases](versioning-workflows.md#when-to-version-workflows).
+A workflow definition is a versioned JSON document. It declares the workflow's name, its inputs and outputs, and the tasks it runs. This page covers writing that document, validating it, and registering it with the server.
 
-If your workflow definition contains any new tasks, you must also register the task definitions to Conductor before running the workflow.
+## Prerequisites
 
-## Using Conductor UI
+- A reachable Conductor server and configured CLI.
+- A task definition and polling worker for every `SIMPLE` task.
 
-With the UI, you can create or update workflow definitions visually.
+## 1. Write the definition
 
-### Creating workflows
+A minimal definition names the workflow, lists its tasks, and maps its inputs and outputs:
 
-**To create a workflow definition:**
+```json
+{
+  "name": "order_flow",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "process_order",
+      "taskReferenceName": "process_order_ref",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "status": "${process_order_ref.output.status}"
+  }
+}
+```
 
-1. In **[Definitions](http://localhost:8080/workflowDefs)**, select **+ New Workflow Definition**.
-2. Configure the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
-3. Select **Save** > **Save**.
+Save it as `workflow.json`. A few rules to follow:
 
-### Updating workflows
+- Give every task a unique, descriptive `taskReferenceName`. Other tasks reference its output through that name.
+- Prefer a [built-in task](../Tasks/choosing-tasks.md) when one covers the operation. A `SIMPLE` task needs a registered task definition and a polling worker, or it stays queued at runtime.
+- Keep `outputParameters` stable across versions, because callers depend on them.
 
-**To update a workflow definition:**
+The [workflow definition reference](../../../documentation/configuration/workflowdef/index.md) documents every field.
 
-1. In **[Definitions](http://localhost:8080/workflowDefs**)**, select the workflow to be updated.
-2. Modify the workflow definition JSON. Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
-3. Select **Save**. The workflow version will automatically increment by 1.
-4. (Optional) Clear the **Automatically set version** checkbox to save the updated workflow definition without creating a new version.
-5. Select **Save** again to confirm.
+## 2. Validate before registration
 
+```bash
+curl -i -X POST 'http://localhost:8080/api/metadata/workflow/validate' \
+  -H 'Content-Type: application/json' \
+  --data-binary @workflow.json
+```
 
-## Using the CLI
+Success is an empty `200 OK` response. Validation checks the definition, not worker availability or external connectivity.
 
-You can create or update workflow definitions using the Conductor CLI. Save your workflow definition to a JSON file and run:
+## 3. Register the definition
 
 ```bash
 conductor workflow create workflow.json
 ```
 
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
+Success is a registered name and version visible through:
 
-## Using APIs
-
-You can also create or update workflow definitions using the Update Workflow Definition API (`PUT api/metadata/workflow`).
-
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
-
-??? note "Example using cURL"
-    ```shell
-    curl '{{ server_host }}/api/metadata/workflow' \
-      -X 'PUT' \
-      -H 'accept: */*' \
-      -H 'content-type: application/json' \
-      --data-raw '[{"name":"sample_workflow","description":"shipping","version":1,"tasks":[{"name":"ship_via","taskReferenceName":"ship_via","type":"SIMPLE","inputParameters":{"service":"${workflow.input.service}"}}],"inputParameters":["service"],"outputParameters":{},"schemaVersion":2, "ownerEmail": "example@email.com"}]'
-    ```
-
-## Using SDKs
-
-Conductor offers client SDKs for popular languages which have library methods for making the API call. Refer to the SDK documentation to configure a client in your selected language to invoke workflow executions.
-
-Refer to [Workflow Definition](../../../documentation/configuration/workflowdef/index.md) for the reference guide on the full parameters.
-
-### Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to create the workflow `sample_workflow`.
-
-```javascript
-fetch("{{ server_host }}/api/metadata/workflow", {
-  "headers": {
-    "accept": "*/*",
-    "content-type": "application/json"
-  },
-  "body": "[{\"name\":\"sample_workflow\",\"description\":\"shipping\",\"version\":1,\"tasks\":[{\"name\":\"ship_via\",\"taskReferenceName\":\"ship_via\",\"type\":\"SIMPLE\",\"inputParameters\":{\"service\":\"${workflow.input.service}\"}}],\"inputParameters\":[\"service\"],\"outputParameters\":{},\"schemaVersion\":2,\"ownerEmail\": \"example@email.com\"}]",
-  "method": "PUT"
-});
+```bash
+conductor workflow get <workflow-name>
 ```
+
+The REST equivalents are `POST /api/metadata/workflow` for create and `PUT /api/metadata/workflow` for an update body containing an array of definitions. See the [Metadata API](../../../documentation/api/metadata.md) for both endpoints.
+
+## 4. Verify SIMPLE task dependencies
+
+List registered task definitions and compare them with every workflow task whose `type` is `SIMPLE`:
+
+```bash
+conductor taskDef list
+```
+
+Then verify that a worker polls each exact task type. Registration alone does not start a worker.
+
+## 5. Test and run
+
+Use [Validate and test workflows](testing-workflows.md) to mock branches through `/api/workflow/test`, then run one real execution against test dependencies.
+
+## Update and version safely
+
+<a id="updating-workflows"></a>
+
+Use a new version when inputs, outputs, task order, or failure semantics change in a way callers can observe. Register the new version, update callers deliberately, and leave the previous version available while existing callers or executions need it. See [Managing Workflow Versions](versioning-workflows.md).
+
+## Create in the UI
+
+<a id="ui-alternative"></a>
+
+1. In the left navigation, open **Definitions** and select **Workflow**.
+2. Select **Define workflow** in the top right. The editor opens with an empty Start-to-End graph.
+3. Under **Workflow Details**, enter a unique name and a description.
+4. Add tasks either visually or as JSON:
+    - Select the **+** node on the canvas to insert a task, then configure it in the **Task** panel.
+    - Or open the **Code** tab and paste a complete JSON definition.
+5. Select **Save**. Resolve any warnings the editor reports first.
+
+To change an existing workflow, open it from **Definitions** and then **Workflow**, edit it, and save. Use the CLI/API flow in automation so the checked-in definition remains the source of truth.
+
+## Limitations
+
+- Definition validation does not verify task worker deployment, credentials, broker topics, or HTTP reachability.
+- Updating the same version in place makes rollout and rollback harder to reason about.
+- Large input/output payloads belong in external storage; carry references in the workflow.
+
+Next, [start the workflow](starting-workflows.md) and inspect the returned execution.
+
+<a id="using-conductor-ui"></a>
+<a id="using-the-cli"></a>
+<a id="using-apis"></a>
+<a id="using-sdks"></a>

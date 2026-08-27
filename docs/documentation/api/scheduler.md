@@ -1,261 +1,137 @@
 ---
-description: "REST API reference for Conductor's workflow scheduler — create, list, search, pause, resume, delete schedules, preview cron execution times, and search execution history."
+description: Exact REST endpoints, request fields, defaults, and responses for the OSS Conductor scheduler.
 ---
 
 # Scheduler API
 
-All scheduler endpoints are relative to `/api/scheduler`.
+The scheduler controller is mounted at `/api/scheduler`. It is present only when `conductor.scheduler.enabled=true`. All endpoints below return `200 OK` on success unless noted otherwise.
 
-## Create or update a schedule
+## Schedule model
 
-```
+| Field | Type | Required | Runtime default or behavior |
+|---|---|---|---|
+| `name` | string | Yes | Unique key used for create-or-update |
+| `cronExpression` | string | One cron form required | Legacy single expression |
+| `zoneId` | string | No | `UTC` |
+| `cronSchedules` | array | One cron form required | Non-empty array takes precedence over `cronExpression`/`zoneId`; entry `zoneId` defaults to `UTC` |
+| `startWorkflowRequest` | object | Yes | Standard workflow start request |
+| `runCatchupScheduleInstances` | boolean | No | `false` |
+| `paused` | boolean | No | `false` |
+| `pausedReason` | string | No | Set by pause operation |
+| `scheduleStartTime` | long | No | Epoch-millisecond lower bound |
+| `scheduleEndTime` | long | No | Epoch-millisecond upper bound |
+| `description` | string | No | User description |
+| `createTime`, `updatedTime`, `createdBy`, `updatedBy`, `nextRunTime` | server fields | No | Populated by the service |
+
+A `cronSchedules` entry contains `cronExpression` and optional `zoneId`. `startWorkflowRequest.correlationId` is copied literally. The scheduler adds `_startedByScheduler`, `_scheduledTime`, `_executedTime`, `_executionId`, and `_schedulerCron` to workflow input.
+
+## Create or update
+
+```http
 POST /api/scheduler/schedules
+Content-Type: application/json
 ```
 
-Creates a new schedule or updates an existing one (matched by `name`).
+The body is one schedule object. The response is the stored schedule, including computed state such as `nextRunTime`.
 
-**Request body:**
-
-```json
-{
-  "name": "daily-report-schedule",
-  "cronExpression": "0 0 9 * * MON-FRI",
-  "zoneId": "America/New_York",
-  "startWorkflowRequest": {
-    "name": "daily_report_workflow",
-    "version": 1,
-    "input": {},
-    "correlationId": "daily-report-${scheduledTime}"
-  },
-  "runCatchupScheduleInstances": false,
-  "paused": false,
-  "scheduleStartTime": 0,
-  "scheduleEndTime": 0,
-  "description": "Triggers the daily report workflow on weekday mornings"
-}
+```bash
+curl -sS -X POST 'http://localhost:8080/api/scheduler/schedules' \
+  -H 'Content-Type: application/json' \
+  --data-binary @scheduler/examples/every-minute-schedule.json
 ```
 
-**Schedule fields:**
+## List and get
 
-| Field | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `name` | string | Yes | — | Unique schedule identifier |
-| `cronExpression` | string | Yes | — | 6-field Spring cron expression (second precision) |
-| `zoneId` | string | No | `UTC` | IANA timezone for cron evaluation |
-| `startWorkflowRequest` | object | Yes | — | Workflow trigger configuration (see below) |
-| `runCatchupScheduleInstances` | boolean | No | `false` | Fire missed slots on scheduler restart |
-| `paused` | boolean | No | `false` | Create in paused state |
-| `scheduleStartTime` | long | No | — | Earliest fire time (epoch ms) |
-| `scheduleEndTime` | long | No | — | Latest fire time (epoch ms) |
-| `description` | string | No | — | Free-text description |
-
-**startWorkflowRequest fields:**
-
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `name` | string | Yes | Workflow name |
-| `version` | integer | No | Workflow version (latest if omitted) |
-| `input` | object | No | Static input merged with auto-injected `_scheduledTime` and `_executedTime` |
-| `correlationId` | string | No | Supports `${scheduledTime}` template variable |
-| `taskToDomain` | object | No | Task-to-domain mapping |
-| `priority` | integer | No | Execution priority (0-99) |
-
-**Response:** `200 OK` — returns the saved `WorkflowSchedule` object.
-
-??? note "Example using cURL"
-    ```shell
-    curl -X POST 'http://localhost:8080/api/scheduler/schedules' \
-      -H 'Content-Type: application/json' \
-      -d '{
-        "name": "daily-report-schedule",
-        "cronExpression": "0 0 9 * * MON-FRI",
-        "zoneId": "America/New_York",
-        "startWorkflowRequest": {
-          "name": "daily_report_workflow",
-          "version": 1,
-          "correlationId": "daily-report-${scheduledTime}"
-        }
-      }'
-    ```
-
----
-
-## List all schedules
-
-```
-GET /api/scheduler/schedules
-```
-
-**Query parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `workflowName` | string | No | Filter by workflow name |
-
-**Response:** `200 OK` — array of `WorkflowSchedule` objects.
-
-??? note "Example using cURL"
-    ```shell
-    # List all
-    curl 'http://localhost:8080/api/scheduler/schedules'
-
-    # Filter by workflow
-    curl 'http://localhost:8080/api/scheduler/schedules?workflowName=daily_report_workflow'
-    ```
-
----
-
-## Search schedules
-
-```
-GET /api/scheduler/schedules/search
-```
-
-**Query parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `workflowName` | string | No | — | Filter by workflow name |
-| `scheduleName` | string | No | — | Filter by schedule name |
-| `paused` | boolean | No | — | Filter by paused state |
-| `freeText` | string | No | `*` | Free-text search |
-| `start` | integer | No | `0` | Pagination offset |
-| `size` | integer | No | `100` | Page size |
-| `sort` | string | No | — | Sort fields |
-
-**Response:** `200 OK` — `SearchResult` with `totalHits` and `results` array.
-
-??? note "Example using cURL"
-    ```shell
-    curl 'http://localhost:8080/api/scheduler/schedules/search?workflowName=daily_report_workflow&size=10'
-    ```
-
----
-
-## Get a schedule by name
-
-```
+```http
+GET /api/scheduler/schedules?workflowName={workflowName}
 GET /api/scheduler/schedules/{name}
 ```
 
-**Response:** `200 OK` — `WorkflowSchedule` object.
+`workflowName` is optional. List returns an array; get returns one schedule or the service's not-found response.
 
-??? note "Example using cURL"
-    ```shell
-    curl 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule'
-    ```
+## Search schedules
 
----
-
-## Delete a schedule
-
-```
-DELETE /api/scheduler/schedules/{name}
+```http
+GET /api/scheduler/schedules/search
 ```
 
-**Response:** `204 No Content`
+| Query | Type | Default |
+|---|---|---|
+| `workflowName` | string | unset |
+| `scheduleName` | string | unset |
+| `paused` | boolean | unset |
+| `freeText` | string | `*` |
+| `start` | integer | `0` |
+| `size` | integer | `100` |
+| `sort` | comma-separated string | empty |
 
-??? note "Example using cURL"
-    ```shell
-    curl -X DELETE 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule'
-    ```
+Returns `SearchResult<WorkflowSchedule>`.
 
----
+## Pause and resume
 
-## Pause a schedule
-
-```
-PUT /api/scheduler/schedules/{name}/pause
-```
-
-**Query parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `reason` | string | No | Reason for pausing |
-
-**Response:** `200 OK`
-
-??? note "Example using cURL"
-    ```shell
-    curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/pause?reason=maintenance+window'
-    ```
-
----
-
-## Resume a schedule
-
-```
+```http
+PUT /api/scheduler/schedules/{name}/pause?reason={reason}
 PUT /api/scheduler/schedules/{name}/resume
 ```
 
-**Response:** `200 OK`
+`reason` is optional. Both operations return an empty `200 OK` response.
 
-??? note "Example using cURL"
-    ```shell
-    curl -X PUT 'http://localhost:8080/api/scheduler/schedules/daily-report-schedule/resume'
-    ```
+## Bulk pause and resume
 
----
-
-## Preview next execution times
-
-```
-GET /api/scheduler/nextFewSchedules
+```http
+PUT /api/scheduler/bulk/pause
+PUT /api/scheduler/bulk/resume
+Content-Type: application/json
 ```
 
-Preview when a cron expression will fire next, without creating a schedule.
+Each body is a JSON array of schedule names. The response is a `BulkResponse`, with successful names and per-name errors. These endpoints are registered with the same scheduler condition as the rest of the Scheduler API.
 
-**Query parameters:**
-
-| Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `cronExpression` | string | Yes | — | Cron expression to evaluate |
-| `scheduleStartTime` | long | No | — | Window start (epoch ms) |
-| `scheduleEndTime` | long | No | — | Window end (epoch ms) |
-| `limit` | integer | No | `5` | Number of times to return |
-
-**Response:** `200 OK` — array of epoch-millisecond timestamps.
-
-??? note "Example using cURL"
-    ```shell
-    curl 'http://localhost:8080/api/scheduler/nextFewSchedules?cronExpression=0+0+9+*+*+MON-FRI&limit=5'
-    ```
-
----
-
-## Search execution history
-
+```json
+["nightly-report", "hourly-cleanup"]
 ```
+
+## Delete
+
+```http
+DELETE /api/scheduler/schedules/{name}
+```
+
+Returns an empty `200 OK` response.
+
+## Preview next times
+
+```http
+GET /api/scheduler/nextFewSchedules?cronExpression={cron}&scheduleStartTime={ms}&scheduleEndTime={ms}&limit={n}
+```
+
+`cronExpression` is required. Bounds are optional. `limit` defaults to 5 and the implementation caps results at 5. Preview uses `conductor.scheduler.schedulerTimeZone`, not a request or schedule timezone, because this endpoint accepts no `zoneId`.
+
+## Search scheduled executions
+
+```http
 GET /api/scheduler/search/executions
 ```
 
-Search past scheduled workflow executions.
+| Query | Type | Default |
+|---|---|---|
+| `query` | string | unset |
+| `freeText` | string | `*` |
+| `start` | integer | `0` |
+| `size` | integer | `100` |
+| `sort` | comma-separated string | empty |
 
-**Query parameters:**
+Returns `SearchResult<WorkflowScheduleExecutionModel>`. Execution records include the scheduler execution ID, scheduled and execution times, workflow name/ID, state, and failure details where applicable.
 
-| Parameter | Type | Required | Default | Description |
-|---|---|---|---|---|
-| `query` | string | No | — | Structured query |
-| `freeText` | string | No | `*` | Free-text search (matches schedule name, workflow name) |
-| `start` | integer | No | `0` | Pagination offset |
-| `size` | integer | No | `100` | Page size |
-| `sort` | string | No | — | Sort fields |
+## Administrator endpoints
 
-**Response:** `200 OK` — `SearchResult` with execution records:
+```http
+GET /api/scheduler/admin/requeue
+GET /api/scheduler/admin/pause
+GET /api/scheduler/admin/resume
+```
 
-| Field | Description |
-|---|---|
-| `executionId` | Unique execution record ID |
-| `scheduleName` | Parent schedule name |
-| `scheduledTime` | Cron slot time (epoch ms) |
-| `executionTime` | Actual dispatch time (epoch ms) |
-| `workflowName` | Triggered workflow name |
-| `workflowId` | Triggered workflow instance ID |
-| `state` | `POLLED`, `EXECUTED`, or `FAILED` |
-| `reason` | Failure reason (if `FAILED`) |
+These operate on scheduler internals for recovery/debugging. They are not per-schedule pause/resume endpoints and should be access-controlled.
 
-??? note "Example using cURL"
-    ```shell
-    curl 'http://localhost:8080/api/scheduler/search/executions?freeText=daily-report-schedule&size=20'
-    ```
+## Unsupported operations
+
+The controller has no run-now endpoint, manual-backfill endpoint, overlap-policy field, or correlation-template expansion. Use direct workflow start for an ad hoc run, and implement concurrency/idempotency policy in the workflow or downstream system.
