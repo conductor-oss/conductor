@@ -4,7 +4,7 @@ import { useDrag, usePinch, useWheel } from "@use-gesture/react";
 import { useSelector } from "@xstate/react";
 import { FlowEvents } from "components/features/flow/state";
 import { selectWorkflowName } from "components/features/flow/state/selectors";
-import domToImage from "dom-to-image";
+import { MessageContext } from "components/providers/messageContext";
 import {
   FunctionComponent,
   ReactNode,
@@ -18,30 +18,13 @@ import {
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { ActorRef } from "xstate";
 import { MAX_ZOOM, MIN_ZOOM } from "./constants";
+import { printScreen } from "./exportDiagram";
 import PanAndZoomContextProvider from "./PanAndZoomProvider";
 import { PanAndZoomEvents, usePanAndZoomActor } from "./state";
 import { ZoomControls } from "./ZoomControls";
 
 const isEventReallyWheel = (event: WheelEvent) => {
   return Math.abs(event.deltaY) > 25;
-};
-
-const printScreen = (workflowName: string) => {
-  const node = document.getElementById("diagram-canvas-container");
-
-  if (!node?.firstChild) return;
-
-  domToImage
-    .toPng(node.firstChild)
-    .then(function (dataUrl: string) {
-      const link = document.createElement("a");
-      link.download = `${workflowName}.png`;
-      link.href = dataUrl;
-      link.click();
-    })
-    .catch(function (error: Error) {
-      console.error("Error saving image:", error);
-    });
 };
 
 interface ViewportProps {
@@ -121,8 +104,15 @@ const PanAndZoomWrapper: FunctionComponent<PanAndZoomWrapperProps> = ({
   ] = usePanAndZoomActor(panAndZoomActor);
 
   const workflowName = useSelector(flowActor, selectWorkflowName);
+  const { setMessage } = useContext(MessageContext);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  const handlePrintScreen = useCallback(() => {
+    printScreen(workflowName || "workflow_diagram", (text) =>
+      setMessage({ text, severity: "error" }),
+    );
+  }, [workflowName, setMessage]);
 
   const getRelativeCursorPosition = useCallback((event: WheelEvent) => {
     // Get current cursor position with the viewportRef
@@ -272,7 +262,7 @@ const PanAndZoomWrapper: FunctionComponent<PanAndZoomWrapperProps> = ({
             resetPosition,
             isInconsistent,
             fitToScreen,
-            printScreen: () => printScreen(workflowName || "workflow_diagram"),
+            printScreen: handlePrintScreen,
           }}
           togglePan={handleTogglePan}
           panEnabled={panEnabled}
