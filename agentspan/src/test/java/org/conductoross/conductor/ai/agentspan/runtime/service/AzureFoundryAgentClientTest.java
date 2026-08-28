@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,12 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.azure.identity.CredentialUnavailableException;
-import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -73,7 +68,6 @@ class AzureFoundryAgentClientTest {
 
     private MockWebServer foundry;
     private InMemorySecretsDAO secrets;
-    private TokenEndpointInterceptor tokenEndpoint;
     private MutableClock clock;
     private AzureFoundryAgentClient client;
 
@@ -105,7 +99,6 @@ class AzureFoundryAgentClientTest {
         secrets.put(CREDENTIAL_REF, """
                 {"apiKey":"azure-api-key"}""");
 
-        tokenEndpoint = new TokenEndpointInterceptor();
         clock = new MutableClock();
         client = newClient(clock);
     }
@@ -117,10 +110,7 @@ class AzureFoundryAgentClientTest {
 
     private AzureFoundryAgentClient newClient(Clock clientClock) {
         OkHttpClient httpClient =
-                new OkHttpClient.Builder()
-                        .addInterceptor(tokenEndpoint)
-                        .readTimeout(5, TimeUnit.SECONDS)
-                        .build();
+                new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
         return new AzureFoundryAgentClient(
                 new CredentialResolutionService(secrets), httpClient, clientClock);
     }
@@ -625,35 +615,6 @@ class AzureFoundryAgentClientTest {
                     .setResponseCode(200)
                     .setBody(body)
                     .addHeader("Content-Type", "application/json");
-        }
-    }
-
-    /**
-     * Short-circuits the Entra ID token endpoint, whose URL {@code
-     * OAuthTokenProvider.forAzureEntraId} hardcodes, and counts how often a token is actually
-     * fetched.
-     */
-    private static final class TokenEndpointInterceptor implements Interceptor {
-
-        private final AtomicInteger requests = new AtomicInteger();
-
-        @Override
-        public Response intercept(Chain chain) throws IOException {
-            okhttp3.Request request = chain.request();
-            if (!"login.microsoftonline.com".equals(request.url().host())) {
-                return chain.proceed(request);
-            }
-            int n = requests.incrementAndGet();
-            return new Response.Builder()
-                    .request(request)
-                    .protocol(Protocol.HTTP_1_1)
-                    .code(200)
-                    .message("OK")
-                    .body(
-                            ResponseBody.create(
-                                    "{\"access_token\":\"token-" + n + "\",\"expires_in\":3600}",
-                                    JSON))
-                    .build();
         }
     }
 }
