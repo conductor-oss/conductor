@@ -21,18 +21,25 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 
 /**
- * Placeholder for a future Google Vertex AI Agent Builder client.
+ * Placeholder for a future Google Vertex AI Agent Builder client. <b>Not registered</b> — there is
+ * no {@code @Component}, so {@code agentType: vertex} is rejected as unsupported rather than served
+ * by this class.
  *
- * <p>Vertex agents are A2A-native (Google created the protocol). Auth uses Workload Identity
- * Federation or a service account key via the Google Auth Library. Sessions in Vertex map directly
- * to {@code executionId}.
+ * <p>Vertex agents are A2A-native (Google created the protocol), so they are reachable today
+ * without a bespoke client: use {@code agentType: a2a} with the agent's A2A endpoint as {@code
+ * agentUrl}. A dedicated client is only worth adding for the parts A2A does not cover.
  *
- * <p>To implement: add {@code @Component} to activate auto-registration, inject {@link
- * org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService} for
- * credentials, and replace each method body with the real Vertex AI Agent Builder REST calls.
+ * <p>To implement: add {@code @Component}, add a {@code AGENT_TYPE_VERTEX} constant to {@link
+ * org.conductoross.conductor.ai.a2a.A2AService} and return it from {@link #agentType()}, inject
+ * {@link org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService}
+ * for credentials, and replace each method body with real Vertex AI Agent Builder REST calls.
+ * Follow the pattern the other clients settled on: keep no per-run state, return the provider's own
+ * session id as the executionId, and re-derive everything else from {@code credentialRef} and
+ * {@code rawConfig} on each call, so any replica can serve any request.
  *
  * <p>rawConfig keys to support: {@code projectId}, {@code location}, {@code agentId}, {@code
- * sessionId}.
+ * sessionId}. Auth is Workload Identity Federation or a service account key via the Google Auth
+ * Library.
  */
 // @Component  -- uncomment when implemented
 public class VertexAiAgentClient implements ConductorAgentClient {

@@ -60,6 +60,21 @@ public final class ConductorAgentResults {
     /** The pending tool/human request surfaced while waiting. */
     public static final String KEY_PENDING_TOOL = "pendingTool";
 
+    /** Every tool call the agent is blocked on, when it asked for more than one. */
+    public static final String KEY_PENDING_TOOLS = "pendingTools";
+
+    /**
+     * Handle for a batch of tool calls being run on the agent's behalf. Present only while that
+     * batch is in flight, and the reason the AGENT task can stay IN_PROGRESS across replicas.
+     */
+    public static final String KEY_TOOL_DISPATCH_ID = "toolDispatchId";
+
+    /**
+     * The workflow running this agent's tools. Named to match the SUB_WORKFLOW system task's own
+     * output, which is what the execution view keys its drill-in link off.
+     */
+    public static final String KEY_SUB_WORKFLOW_ID = "subWorkflowId";
+
     /** Latest/final text emitted by the agent. */
     public static final String KEY_TEXT = "text";
 

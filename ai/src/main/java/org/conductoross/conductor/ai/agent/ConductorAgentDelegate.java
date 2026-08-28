@@ -13,9 +13,12 @@
 package org.conductoross.conductor.ai.agent;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.agent.tools.AgentToolDispatch;
+import org.conductoross.conductor.ai.agent.tools.AgentToolDispatcher;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -40,10 +43,22 @@ public class ConductorAgentDelegate {
     private static final int DEFAULT_MAX_POLL_FAILURES = 30;
 
     private final ConductorAgentClient conductorAgentClient;
+    private final AgentToolDispatcher toolDispatcher;
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     public ConductorAgentDelegate(ConductorAgentClient conductorAgentClient) {
+        this(conductorAgentClient, null);
+    }
+
+    /**
+     * @param toolDispatcher runs the agent's tool calls as workflow tasks when the task asks for
+     *     it. Null where that is not available — a remotely-polled worker has no engine to schedule
+     *     on — in which case a tool request is handed back to the workflow as before.
+     */
+    public ConductorAgentDelegate(
+            ConductorAgentClient conductorAgentClient, AgentToolDispatcher toolDispatcher) {
         this.conductorAgentClient = conductorAgentClient;
+        this.toolDispatcher = toolDispatcher;
     }
 
     /** Starts/resumes a run on the first invocation and polls it on later invocations. */
@@ -65,6 +80,13 @@ public class ConductorAgentDelegate {
                     true);
         }
 
+        String toolDispatchId =
+                asString(result.getOutputData().get(ConductorAgentResults.KEY_TOOL_DISPATCH_ID));
+        if (StringUtils.isNotBlank(toolDispatchId)) {
+            return advanceToolDispatch(
+                    result, request, executionId, toolDispatchId, task.getReferenceTaskName());
+        }
+
         try {
             ConductorAgentExecution execution;
             if (StringUtils.isBlank(executionId)) {
@@ -77,6 +99,9 @@ public class ConductorAgentDelegate {
                                         result.getOutputData()
                                                 .get(ConductorAgentResults.KEY_AGENT_NAME)));
                 result.getOutputData().put(ConductorAgentResults.KEY_POLL_FAILURES, 0);
+            }
+            if (shouldRunToolsHere(execution, request)) {
+                return dispatchTools(result, execution, request, task.getReferenceTaskName());
             }
             applyExecution(result, execution, request, pollInterval(request));
             return result;
@@ -101,10 +126,30 @@ public class ConductorAgentDelegate {
         if (StringUtils.isBlank(executionId)) {
             executionId = StringUtils.trimToNull(request.getExecutionId());
         }
+        // Tools running on this agent's behalf are not wanted either, and nothing else will stop
+        // them — cascade termination is explicit, not something the engine does off
+        // parentWorkflowId.
+        cancelToolDispatch(task);
         cancelBestEffort(
                 executionId,
                 request,
                 StringUtils.defaultIfBlank(reason, "Cancelled by parent workflow"));
+    }
+
+    private void cancelToolDispatch(Task task) {
+        if (toolDispatcher == null || task.getOutputData() == null) {
+            return;
+        }
+        String toolDispatchId =
+                asString(task.getOutputData().get(ConductorAgentResults.KEY_TOOL_DISPATCH_ID));
+        if (StringUtils.isBlank(toolDispatchId)) {
+            return;
+        }
+        try {
+            toolDispatcher.cancel(toolDispatchId);
+        } catch (Exception e) {
+            log.warn("Failed to cancel agent tool dispatch {}: {}", toolDispatchId, e.getMessage());
+        }
     }
 
     private ConductorAgentExecution startOrResume(Task task, ConductorAgentRequest request) {
@@ -114,12 +159,23 @@ public class ConductorAgentDelegate {
                 throw new NonRetryableException(
                         "AGENT (conductor) requires 'prompt' when resuming an execution");
             }
-            conductorAgentClient.respond(
-                    ConductorAgentRespondRequest.builder()
-                            .executionId(executionId)
-                            .body(Map.of("result", request.getPrompt()))
-                            .build());
-            return fromStatus(conductorAgentClient.getAgentStatus(executionId, request), null);
+            ConductorAgentStatusResponse afterRespond =
+                    conductorAgentClient.respondWithStatus(
+                            ConductorAgentRespondRequest.builder()
+                                    .executionId(executionId)
+                                    .body(Map.of("result", request.getPrompt()))
+                                    .credentialRef(request.getCredentialRef())
+                                    .rawConfig(request.getRawConfig())
+                                    .pendingTool(pendingToolFrom(task))
+                                    .pendingTools(pendingToolsFrom(task))
+                                    .build());
+            // A runtime with no status API answers inside respond(); everything else says null and
+            // is polled as usual.
+            return fromStatus(
+                    afterRespond != null
+                            ? afterRespond
+                            : conductorAgentClient.getAgentStatus(executionId, request),
+                    null);
         }
 
         if (StringUtils.isBlank(request.getPrompt())) {
@@ -128,11 +184,142 @@ public class ConductorAgentDelegate {
         request.setIdempotencyKey(
                 StringUtils.firstNonBlank(request.getIdempotencyKey(), idempotencyKey(task)));
         ConductorAgentStartResponse response = conductorAgentClient.startAgent(request);
+        // Bedrock and friends stream the whole turn inside startAgent, so the run can already be
+        // finished or blocked on a tool. Taking that state here is what puts the result in the task
+        // output rather than leaving it in the client for a poll that may land elsewhere.
         return ConductorAgentExecution.builder()
                 .executionId(response.getExecutionId())
                 .agentName(response.getAgentName())
-                .state(ConductorAgentState.RUNNING)
+                .state(
+                        response.getState() != null
+                                ? response.getState()
+                                : ConductorAgentState.RUNNING)
+                .output(response.getOutput())
+                .text(response.getOutput() != null ? resultText(response.getOutput()) : null)
+                .pendingTool(response.getPendingTool())
+                .pendingTools(response.getPendingTools())
+                .reasonForIncompletion(response.getReasonForIncompletion())
                 .build();
+    }
+
+    private boolean shouldRunToolsHere(
+            ConductorAgentExecution execution, ConductorAgentRequest request) {
+        return toolDispatcher != null
+                && Boolean.TRUE.equals(request.getAutoRunTools())
+                && execution.getState() == ConductorAgentState.WAITING
+                && execution.getPendingTools() != null
+                && !execution.getPendingTools().isEmpty();
+    }
+
+    /**
+     * Schedules the requested tools and keeps this task IN_PROGRESS while they run, so the agent
+     * and its tools stay one node in the workflow rather than a hand-wired dispatch branch.
+     */
+    private TaskResult dispatchTools(
+            TaskResult result,
+            ConductorAgentExecution execution,
+            ConductorAgentRequest request,
+            String taskRefName) {
+        Map<String, Object> output = result.getOutputData();
+        output.put(ConductorAgentResults.KEY_EXECUTION_ID, execution.getExecutionId());
+        if (execution.getAgentName() != null) {
+            output.put(ConductorAgentResults.KEY_AGENT_NAME, execution.getAgentName());
+        }
+        output.put(ConductorAgentResults.KEY_PENDING_TOOLS, execution.getPendingTools());
+        if (execution.getPendingTool() != null) {
+            output.put(ConductorAgentResults.KEY_PENDING_TOOL, execution.getPendingTool());
+        }
+
+        AgentToolDispatch dispatch =
+                toolDispatcher.dispatch(
+                        new AgentToolDispatcher.Request(
+                                result.getWorkflowInstanceId(),
+                                result.getTaskId(),
+                                taskRefName,
+                                execution.getExecutionId(),
+                                execution.getPendingTools(),
+                                request.getToolTaskNames()));
+
+        output.put(ConductorAgentResults.KEY_TOOL_DISPATCH_ID, dispatch.dispatchId());
+        // Both, matching the SUB_WORKFLOW system task: the field carries the relationship, and the
+        // output copy is what the execution view reads to offer a drill-in from the agent to the
+        // tools it is waiting on.
+        result.setSubWorkflowId(dispatch.dispatchId());
+        output.put(ConductorAgentResults.KEY_SUB_WORKFLOW_ID, dispatch.dispatchId());
+        result.setStatus(TaskResult.Status.IN_PROGRESS);
+        result.setCallbackAfterSeconds(pollInterval(request));
+        log.debug(
+                "Agent execution {} requested {} tool(s); dispatched as {}",
+                execution.getExecutionId(),
+                execution.getPendingTools().size(),
+                dispatch.dispatchId());
+        return result;
+    }
+
+    /** Waits on an in-flight tool batch, then feeds its results back to the agent. */
+    private TaskResult advanceToolDispatch(
+            TaskResult result,
+            ConductorAgentRequest request,
+            String executionId,
+            String toolDispatchId,
+            String taskRefName) {
+        AgentToolDispatch dispatch;
+        try {
+            dispatch = toolDispatcher.status(toolDispatchId);
+        } catch (Exception e) {
+            return handlePollFailure(result, request, executionId, e);
+        }
+
+        switch (dispatch.state()) {
+            case RUNNING:
+                result.setStatus(TaskResult.Status.IN_PROGRESS);
+                result.setCallbackAfterSeconds(pollInterval(request));
+                return result;
+            case FAILED:
+                // The tool's own retry policy is its contract; exhausting it fails the agent task
+                // and
+                // lets the workflow's error handling take over. The model never sees the failure.
+                toolDispatcher.cancel(toolDispatchId);
+                cancelBestEffort(executionId, request, "Agent tool execution failed");
+                return fail(result, dispatch.reason(), true);
+            case COMPLETED:
+            default:
+                break;
+        }
+
+        // The batch is done, so this task is no longer waiting on it.
+        result.getOutputData().remove(ConductorAgentResults.KEY_TOOL_DISPATCH_ID);
+        result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOL);
+        result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOLS);
+
+        try {
+            ConductorAgentStatusResponse afterRespond =
+                    conductorAgentClient.respondWithStatus(
+                            ConductorAgentRespondRequest.builder()
+                                    .executionId(executionId)
+                                    .toolResults(dispatch.resultsByToolCallId())
+                                    .credentialRef(request.getCredentialRef())
+                                    .rawConfig(request.getRawConfig())
+                                    .build());
+            ConductorAgentExecution execution =
+                    fromStatus(
+                            afterRespond != null
+                                    ? afterRespond
+                                    : conductorAgentClient.getAgentStatus(executionId, request),
+                            asString(
+                                    result.getOutputData()
+                                            .get(ConductorAgentResults.KEY_AGENT_NAME)));
+            // The next turn may ask for tools again — that is another batch, not a failure.
+            if (shouldRunToolsHere(execution, request)) {
+                return dispatchTools(result, execution, request, taskRefName);
+            }
+            applyExecution(result, execution, request, pollInterval(request));
+            return result;
+        } catch (NonRetryableException | IllegalArgumentException e) {
+            return fail(result, e.getMessage(), true);
+        } catch (Exception e) {
+            return handlePollFailure(result, request, executionId, e);
+        }
     }
 
     private TaskResult handlePollFailure(
@@ -194,6 +381,10 @@ public class ConductorAgentDelegate {
                 if (execution.getPendingTool() != null) {
                     output.put(ConductorAgentResults.KEY_PENDING_TOOL, execution.getPendingTool());
                 }
+                if (execution.getPendingTools() != null && !execution.getPendingTools().isEmpty()) {
+                    output.put(
+                            ConductorAgentResults.KEY_PENDING_TOOLS, execution.getPendingTools());
+                }
                 if (execution.getText() != null) {
                     output.put(ConductorAgentResults.KEY_TEXT, execution.getText());
                 }
@@ -243,10 +434,29 @@ public class ConductorAgentDelegate {
                 .output(output)
                 .text(output != null ? resultText(output) : null)
                 .pendingTool(status.getPendingTool())
+                .pendingTools(status.getPendingTools())
                 .reasonForIncompletion(status.getReasonForIncompletion())
                 .startTime(status.getStartTime())
                 .endTime(status.getEndTime())
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> pendingToolsFrom(Task task) {
+        if (task.getOutputData() == null) {
+            return null;
+        }
+        Object pendingTools = task.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOLS);
+        return pendingTools instanceof List<?> list ? (List<Map<String, Object>>) list : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> pendingToolFrom(Task task) {
+        if (task.getOutputData() == null) {
+            return null;
+        }
+        Object pendingTool = task.getOutputData().get(ConductorAgentResults.KEY_PENDING_TOOL);
+        return pendingTool instanceof Map<?, ?> map ? (Map<String, Object>) map : null;
     }
 
     private static String resultText(Map<String, Object> output) {
@@ -276,6 +486,8 @@ public class ConductorAgentDelegate {
                     ConductorAgentCancelRequest.builder()
                             .executionId(executionId)
                             .reason(reason)
+                            .credentialRef(request.getCredentialRef())
+                            .rawConfig(request.getRawConfig())
                             .build());
         } catch (Exception e) {
             log.warn(

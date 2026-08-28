@@ -34,6 +34,8 @@ import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
+import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
+import org.conductoross.conductor.ai.agent.tools.AgentToolDispatcher;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
@@ -145,6 +147,19 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         }
     }
 
+    /**
+     * The tool dispatcher, when this process has an engine to schedule on. Resolved from the
+     * context on first use rather than injected, for the same constructor-cycle reason as the agent
+     * clients. Absent in an SDK worker, where a tool request is handed back to the workflow
+     * instead.
+     */
+    private AgentToolDispatcher toolDispatcher() {
+        if (applicationContext == null) {
+            return null;
+        }
+        return applicationContext.getBeanProvider(AgentToolDispatcher.class).getIfAvailable();
+    }
+
     private Map<String, ConductorAgentClient> clients() {
         if (!agentClientsLoaded && applicationContext != null) {
             synchronized (agentClients) {
@@ -186,7 +201,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         ConductorAgentClient client =
                 clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
         if (client != null) {
-            result = new ConductorAgentDelegate(client).execute(task);
+            result = new ConductorAgentDelegate(client, toolDispatcher()).execute(task);
         } else {
             result = executeRemote(task, request);
         }
@@ -206,6 +221,11 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                 fail(result, "CANCEL_AGENT requires 'executionId'", true);
                 return finish(result, A2ACancelResult.class);
             }
+            // Read credentialRef and rawConfig straight off the task input: a stateless client has
+            // to re-authenticate and re-locate the run, and this task is the only place that
+            // configuration exists.
+            ConductorAgentRequest cancelConfig =
+                    objectMapper.convertValue(task.getInputData(), ConductorAgentRequest.class);
             try {
                 cancelClient.cancelAgent(
                         ConductorAgentCancelRequest.builder()
@@ -214,6 +234,8 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                                         StringUtils.firstNonBlank(
                                                 request.getReason(),
                                                 "Cancelled by CANCEL_AGENT task"))
+                                .credentialRef(cancelConfig.getCredentialRef())
+                                .rawConfig(cancelConfig.getRawConfig())
                                 .build());
                 result.getOutputData().put("executionId", executionId);
                 result.getOutputData().put("canceled", true);
@@ -269,7 +291,8 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
         ConductorAgentClient cancelClient =
                 clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
         if (cancelClient != null) {
-            new ConductorAgentDelegate(cancelClient).cancel(task, reason);
+            // With the dispatcher, so cancelling the agent also stops any tools running for it.
+            new ConductorAgentDelegate(cancelClient, toolDispatcher()).cancel(task, reason);
             return;
         }
         String remoteTaskId =
@@ -305,7 +328,9 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                         result,
                         "Unsupported agentType '"
                                 + request.getAgentType()
-                                + "' (supported: 'a2a', 'conductor')",
+                                + "' (supported: 'a2a' plus the registered runtimes "
+                                + clients().keySet().stream().sorted().toList()
+                                + ")",
                         true);
             }
             if (StringUtils.isBlank(request.getAgentUrl())) {

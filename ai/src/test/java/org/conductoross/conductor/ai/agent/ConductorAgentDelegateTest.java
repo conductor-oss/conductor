@@ -12,11 +12,15 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.a2a.model.A2AMessage;
 import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.agent.tools.AgentToolDispatch;
+import org.conductoross.conductor.ai.agent.tools.AgentToolDispatcher;
 import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -27,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Behavior coverage for the client-backed durable Conductor-agent state machine. */
@@ -189,6 +194,461 @@ class ConductorAgentDelegateTest {
 
     private static A2ATask protocolTask(TaskResult result) {
         return new ObjectMapper().convertValue(result.getOutputData().get("task"), A2ATask.class);
+    }
+
+    /**
+     * A runtime with no status API — Bedrock streams the whole turn inside the invoke — knows the
+     * outcome before startAgent returns. The delegate must record it rather than assuming RUNNING
+     * and scheduling a poll no API can answer.
+     */
+    @Test
+    void honoursATerminalStateReportedByStartAgent() {
+        SynchronousAgentClient client = new SynchronousAgentClient();
+        client.startState = ConductorAgentState.COMPLETED;
+        client.startOutput = Map.of("result", "answered in one shot");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+
+        TaskResult result = delegate.execute(task(Map.of("agentType", "bedrock", "prompt", "go")));
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("answered in one shot", result.getOutputData().get("text"));
+        assertEquals(0, client.statusCalls, "a synchronous runtime must not be polled");
+        assertNotNull(result.getOutputData().get("agentEndTime"));
+    }
+
+    /** The same runtime can also come back blocked on a tool without ever being polled. */
+    @Test
+    void honoursAWaitingStateReportedByStartAgent() {
+        SynchronousAgentClient client = new SynchronousAgentClient();
+        client.startState = ConductorAgentState.WAITING;
+        client.startPendingTool = Map.of("tool_name", "lookup");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+
+        TaskResult result = delegate.execute(task(Map.of("agentType", "bedrock", "prompt", "go")));
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals(true, result.getOutputData().get("waiting"));
+        assertEquals(Map.of("tool_name", "lookup"), result.getOutputData().get("pendingTool"));
+        assertEquals(0, client.statusCalls);
+    }
+
+    /**
+     * On resume, a status handed back by respond is used directly; the pending tool recorded by the
+     * previous turn rides along on the request, since such a runtime keeps nothing itself.
+     */
+    @Test
+    void usesTheStatusRespondHandsBackAndCarriesThePendingTool() {
+        SynchronousAgentClient client = new SynchronousAgentClient();
+        client.respondStatus =
+                ConductorAgentStatusResponse.builder()
+                        .executionId("session-1")
+                        .status(ConductorAgentState.COMPLETED)
+                        .complete(true)
+                        .output(Map.of("result", "tool answered"))
+                        .build();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+
+        Task resumed =
+                task(
+                        Map.of(
+                                "agentType", "bedrock",
+                                "prompt", "here is the tool result",
+                                "executionId", "session-1"));
+        resumed.setOutputData(Map.of("pendingTool", Map.of("tool_name", "lookup")));
+
+        TaskResult result = delegate.execute(resumed);
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("tool answered", result.getOutputData().get("text"));
+        assertEquals(0, client.statusCalls, "respond already answered; no poll needed");
+        assertEquals(
+                Map.of("tool_name", "lookup"),
+                client.respondedRequest.getPendingTool(),
+                "the pending tool must be carried to a client that stores nothing");
+    }
+
+    /** Credentials and provider config reach respond and cancel, which carry no task input. */
+    @Test
+    void passesCredentialsAndConfigToRespondAndCancel() {
+        SynchronousAgentClient client = new SynchronousAgentClient();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+
+        Task resumed =
+                task(
+                        Map.of(
+                                "agentType", "bedrock",
+                                "prompt", "go on",
+                                "executionId", "session-1",
+                                "credentialRef", "AWS_CRED",
+                                "rawConfig", Map.of("agentId", "agent-1")));
+        delegate.execute(resumed);
+
+        assertEquals("AWS_CRED", client.respondedRequest.getCredentialRef());
+        assertEquals(Map.of("agentId", "agent-1"), client.respondedRequest.getRawConfig());
+
+        delegate.cancel(resumed, "parent terminated");
+        assertEquals("AWS_CRED", client.canceledRequest.getCredentialRef());
+        assertEquals(Map.of("agentId", "agent-1"), client.canceledRequest.getRawConfig());
+    }
+
+    // --- tools run as workflow tasks (autoRunTools) --------------------------------------------
+
+    /**
+     * The point of autoRunTools: the agent and its tools stay one node in the workflow. The AGENT
+     * task must stay IN_PROGRESS while the tools run, not complete and hand the request back.
+     */
+    @Test
+    void schedulesRequestedToolsAndStaysInProgress() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        client.pendingTools =
+                List.of(
+                        Map.of("tool_name", "get_revenue", "tool_call_id", "call-1"),
+                        Map.of("tool_name", "get_headcount", "tool_call_id", "call-2"));
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        TaskResult result = delegate.execute(autoRunToolsTask());
+
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals("dispatch-1", result.getOutputData().get("toolDispatchId"));
+        // Drill-in from the agent to the tool run, both places the execution view may look.
+        assertEquals("dispatch-1", result.getSubWorkflowId());
+        assertEquals("dispatch-1", result.getOutputData().get("subWorkflowId"));
+        // Both tools were scheduled — not just the first.
+        assertEquals(2, dispatcher.request.toolCalls().size());
+        assertEquals("agent_ref", dispatcher.request.taskRefName());
+        assertEquals("wf-1", dispatcher.request.parentWorkflowId());
+    }
+
+    @Test
+    void keepsWaitingWhileToolsAreStillRunning() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status = AgentToolDispatch.running("dispatch-1");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        TaskResult result = delegate.execute(task);
+
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals(0, client.respondCalls, "the agent must not be resumed early");
+    }
+
+    @Test
+    void feedsToolResultsBackToTheAgentKeyedByCall() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        client.respondStatus =
+                ConductorAgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status(ConductorAgentState.COMPLETED)
+                        .complete(true)
+                        .output(Map.of("result", "4.2M over 37 engineers"))
+                        .build();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status =
+                AgentToolDispatch.completed(
+                        "dispatch-1",
+                        Map.of(
+                                "call-1",
+                                Map.of("revenue", "4.2M"),
+                                "call-2",
+                                Map.of("headcount", 37)));
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        TaskResult result = delegate.execute(task);
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals("4.2M over 37 engineers", result.getOutputData().get("text"));
+        // Each tool's result reaches the agent under its own call id.
+        assertEquals(
+                Map.of("call-1", Map.of("revenue", "4.2M"), "call-2", Map.of("headcount", 37)),
+                client.respondedRequest.getToolResults());
+        // The finished batch is no longer advertised as outstanding work.
+        assertFalse(result.getOutputData().containsKey("toolDispatchId"));
+        assertFalse(result.getOutputData().containsKey("pendingTools"));
+    }
+
+    @Test
+    void afailedToolRunFailsTheAgentTask() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status = AgentToolDispatch.failed("dispatch-1", "get_revenue timed out");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        TaskResult result = delegate.execute(task);
+
+        assertEquals(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR, result.getStatus());
+        assertTrue(result.getReasonForIncompletion().contains("get_revenue timed out"));
+    }
+
+    @Test
+    void asecondToolTurnIsDispatchedRatherThanTreatedAsAnError() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        // Answering the first batch makes the model ask for another tool.
+        client.respondStatus =
+                ConductorAgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status(ConductorAgentState.WAITING)
+                        .waiting(true)
+                        .pendingTools(
+                                List.of(
+                                        Map.of(
+                                                "tool_name",
+                                                "get_margin",
+                                                "tool_call_id",
+                                                "call-3")))
+                        .build();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status =
+                AgentToolDispatch.completed(
+                        "first-batch", Map.of("call-1", Map.of("revenue", "4.2M")));
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "first-batch")));
+
+        TaskResult result = delegate.execute(task);
+
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals(1, dispatcher.dispatches, "the new turn's tool should be scheduled");
+        assertEquals("dispatch-1", result.getOutputData().get("toolDispatchId"));
+        assertEquals("get_margin", dispatcher.request.toolCalls().get(0).get("tool_name"));
+    }
+
+    /** Without autoRunTools, the old hand-wired contract is untouched. */
+    @Test
+    void handsToolsBackToTheWorkflowWhenAutoRunIsOff() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        TaskResult result =
+                delegate.execute(task(Map.of("agentType", "conductor", "prompt", "go")));
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals(true, result.getOutputData().get("waiting"));
+        assertNull(dispatcher.request, "nothing should have been scheduled");
+    }
+
+    /** An SDK worker has no engine to schedule on, so it must fall back cleanly. */
+    @Test
+    void handsToolsBackWhenNoDispatcherIsAvailable() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client);
+
+        TaskResult result = delegate.execute(autoRunToolsTask());
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals(true, result.getOutputData().get("waiting"));
+    }
+
+    private static Task autoRunToolsTask() {
+        return task(
+                Map.of(
+                        "agentType", "azure-foundry",
+                        "prompt", "compare revenue per engineer",
+                        "autoRunTools", true));
+    }
+
+    /** An agent that always comes back asking for tools. */
+    private static final class ToolCallingAgentClient implements ConductorAgentClient {
+
+        private List<Map<String, Object>> pendingTools =
+                List.of(Map.of("tool_name", "get_revenue", "tool_call_id", "call-1"));
+        private ConductorAgentStatusResponse respondStatus;
+        private ConductorAgentRespondRequest respondedRequest;
+        private int respondCalls;
+
+        @Override
+        public String agentType() {
+            return "azure-foundry";
+        }
+
+        @Override
+        public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
+            return ConductorAgentStartResponse.builder()
+                    .executionId("exec-1")
+                    .agentName("analyst")
+                    .state(ConductorAgentState.WAITING)
+                    .pendingTool(pendingTools.get(0))
+                    .pendingTools(pendingTools)
+                    .build();
+        }
+
+        @Override
+        public ConductorAgentStatusResponse getAgentStatus(
+                String executionId, ConductorAgentRequest request) {
+            return ConductorAgentStatusResponse.builder()
+                    .executionId(executionId)
+                    .status(ConductorAgentState.WAITING)
+                    .waiting(true)
+                    .pendingTool(pendingTools.get(0))
+                    .pendingTools(pendingTools)
+                    .build();
+        }
+
+        @Override
+        public void respond(ConductorAgentRespondRequest request) {
+            respondCalls++;
+            respondedRequest = request;
+        }
+
+        @Override
+        public ConductorAgentStatusResponse respondWithStatus(
+                ConductorAgentRespondRequest request) {
+            respond(request);
+            return respondStatus;
+        }
+
+        @Override
+        public void cancelAgent(ConductorAgentCancelRequest request) {}
+    }
+
+    private static final class RecordingToolDispatcher implements AgentToolDispatcher {
+
+        private AgentToolDispatcher.Request request;
+        private AgentToolDispatch status = AgentToolDispatch.running("dispatch-1");
+        private String canceled;
+        private int dispatches;
+
+        @Override
+        public AgentToolDispatch dispatch(AgentToolDispatcher.Request request) {
+            this.request = request;
+            return AgentToolDispatch.running("dispatch-" + (++dispatches));
+        }
+
+        @Override
+        public AgentToolDispatch status(String dispatchId) {
+            return status;
+        }
+
+        @Override
+        public void cancel(String dispatchId) {
+            canceled = dispatchId;
+        }
+    }
+
+    /** Cancelling the agent must stop the tools running for it — nothing else will. */
+    @Test
+    void cancellingTheAgentStopsItsRunningTools() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        delegate.cancel(task, "parent terminated");
+
+        assertEquals("dispatch-1", dispatcher.canceled);
+    }
+
+    @Test
+    void cancellingWithNoToolsRunningCancelsNothing() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(new LinkedHashMap<>(Map.of("executionId", "exec-1")));
+
+        delegate.cancel(task, "parent terminated");
+
+        assertNull(dispatcher.canceled);
+    }
+
+    @Test
+    void afailedToolRunAlsoStopsTheRestOfTheBatch() {
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status = AgentToolDispatch.failed("dispatch-1", "get_revenue timed out");
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        delegate.execute(task);
+
+        // One tool failing should not leave its siblings running.
+        assertEquals("dispatch-1", dispatcher.canceled);
+    }
+
+    /** Stands in for a runtime that answers inside start/respond and cannot be polled. */
+    private static final class SynchronousAgentClient implements ConductorAgentClient {
+
+        private ConductorAgentState startState;
+        private Map<String, Object> startOutput;
+        private Map<String, Object> startPendingTool;
+        private ConductorAgentStatusResponse respondStatus;
+        private ConductorAgentRespondRequest respondedRequest;
+        private ConductorAgentCancelRequest canceledRequest;
+        private int statusCalls;
+
+        @Override
+        public String agentType() {
+            return "bedrock";
+        }
+
+        @Override
+        public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
+            return ConductorAgentStartResponse.builder()
+                    .executionId("session-1")
+                    .agentName("agent-1")
+                    .state(startState)
+                    .output(startOutput)
+                    .pendingTool(startPendingTool)
+                    .build();
+        }
+
+        // Non-terminal on purpose: cancelBestEffort probes status first and skips cancelling a run
+        // that has already finished.
+        @Override
+        public ConductorAgentStatusResponse getAgentStatus(
+                String executionId, ConductorAgentRequest request) {
+            statusCalls++;
+            return ConductorAgentStatusResponse.builder()
+                    .executionId(executionId)
+                    .status(ConductorAgentState.RUNNING)
+                    .running(true)
+                    .build();
+        }
+
+        @Override
+        public void respond(ConductorAgentRespondRequest request) {
+            respondedRequest = request;
+        }
+
+        @Override
+        public ConductorAgentStatusResponse respondWithStatus(
+                ConductorAgentRespondRequest request) {
+            respondedRequest = request;
+            return respondStatus;
+        }
+
+        @Override
+        public void cancelAgent(ConductorAgentCancelRequest request) {
+            canceledRequest = request;
+        }
     }
 
     private static final class FakeConductorAgentClient implements ConductorAgentClient {

@@ -8,8 +8,9 @@ The `AGENT` task selects its runtime with an **`agentType`** input:
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint over HTTP. See [A2A integration](a2a-integration.md).
 - `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** in-process. This page.
+- `agentType: "azure-foundry"`, `"openai-assistants"`, `"bedrock"` — drive an agent hosted on Azure AI Foundry, the OpenAI Assistants API, or AWS Bedrock. See [Hosted platform agents](hosted-agents.md).
 
-Both values drive the same `AGENT` task type with one consistent input/output contract; the branch is chosen per task by `agentType`.
+Every value drives the same `AGENT` task type with one consistent output contract; the branch is chosen per task by `agentType`.
 
 
 ## What it is

@@ -40,12 +40,15 @@ flowchart LR
 conductor.integrations.ai.enabled=true
 ```
 
-Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"` (Agent2Agent — the only runtime in OSS today); native runtimes such as LangGraph and OpenAI are planned, and the field is the extension point for them. An unrecognized `agentType` fails the task with a clear error.
+Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"`. An unrecognized value fails the task with an error naming the runtimes that are registered.
 
 **Choosing a runtime.** `agentType` picks where the agent runs:
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
 - `agentType: "conductor"` — run an agent on the **embedded agentspan runtime** (`name`). See [Conductor agents (embedded runtime)](conductor-agents.md).
+- `agentType: "azure-foundry"`, `"openai-assistants"`, `"bedrock"` — drive an agent hosted on Azure AI Foundry, the OpenAI Assistants API, or AWS Bedrock. See [Hosted platform agents](hosted-agents.md).
+
+Vertex AI agents speak A2A natively, so they are called with `agentType: "a2a"` rather than a runtime of their own.
 
 ### AGENT — send a message to an agent
 
@@ -92,7 +95,7 @@ sequenceDiagram
 
 | Field | Description |
 |---|---|
-| `agentType` | Agent runtime to use — defaults to `"a2a"`. Reserved for native runtimes (e.g. `langgraph`, `openai`) coming later; any other value is rejected today. |
+| `agentType` | Agent runtime to use — defaults to `"a2a"`. The fields on this page apply to `"a2a"` only; see [Conductor agents](conductor-agents.md) and [Hosted platform agents](hosted-agents.md) for the other runtimes' inputs. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |

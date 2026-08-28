@@ -1,5 +1,7 @@
 import { TaskDef, TaskType, WorkflowDef } from "types";
 import {
+  agentRuntimeType,
+  agentSourceIdentity,
   buildA2AAgentSnapshot,
   createUnresolvedAgentSnapshot,
   getAgentTaskPresentation,
@@ -179,5 +181,104 @@ describe("agent metadata resolution", () => {
       name: "Travel Agent",
       unresolved: false,
     });
+  });
+});
+
+describe("hosted provider runtimes", () => {
+  const foundry = {
+    agentType: "azure-foundry" as const,
+    prompt: "what is the answer?",
+    credentialRef: "AZURE_FOUNDRY_CRED",
+    rawConfig: {
+      endpoint: "https://p.services.ai.azure.com/api/projects/p1",
+      assistantId: "asst_abc123",
+      apiVersion: "2025-01-01-preview",
+    },
+  };
+
+  it("recognizes every runtime the server registers", () => {
+    expect(agentRuntimeType({ agentType: "azure-foundry" })).toBe(
+      "azure-foundry",
+    );
+    expect(agentRuntimeType({ agentType: "bedrock" })).toBe("bedrock");
+    expect(agentRuntimeType({ agentType: "openai-assistants" })).toBe(
+      "openai-assistants",
+    );
+    // Absent or unknown still falls back to A2A, matching the server default.
+    expect(agentRuntimeType({})).toBe("a2a");
+    expect(agentRuntimeType({ agentType: "not-a-runtime" })).toBe("a2a");
+  });
+
+  it("takes its identity from the platform's own id in rawConfig", () => {
+    expect(agentSourceIdentity(foundry)).toBe("asst_abc123");
+    expect(
+      agentSourceIdentity({
+        agentType: "bedrock",
+        rawConfig: { agentId: "AGENT123", agentAliasId: "ALIAS1" },
+      }),
+    ).toBe("AGENT123");
+    // Foundry accepts agentId as an alias for assistantId.
+    expect(
+      agentSourceIdentity({
+        agentType: "azure-foundry",
+        rawConfig: { agentId: "asst_alias" },
+      }),
+    ).toBe("asst_alias");
+  });
+
+  it("resolves without any remote discovery call", async () => {
+    const fetchJson = vi.fn();
+
+    const snapshot = await resolveAgentSnapshot(foundry, fetchJson);
+
+    // A hosted agent is fully named by the task input. Sending it to A2A card discovery would
+    // fail on the missing agentUrl and leave the task looking unresolved.
+    expect(fetchJson).not.toHaveBeenCalled();
+    expect(snapshot).toMatchObject({
+      schemaVersion: 1,
+      agentType: "azure-foundry",
+      displayName: "asst_abc123",
+      resolved: true,
+      provider: {
+        agentId: "asst_abc123",
+        credentialRef: "AZURE_FOUNDRY_CRED",
+        endpoint: "https://p.services.ai.azure.com/api/projects/p1",
+        apiVersion: "2025-01-01-preview",
+      },
+    });
+  });
+
+  it("labels the task card by runtime instead of calling it an unresolved A2A agent", () => {
+    const task = {
+      inputParameters: foundry,
+      taskReferenceName: "ask_the_analyst",
+      metadata: { agent: createUnresolvedAgentSnapshot(foundry) },
+    } as Pick<TaskDef, "inputParameters" | "taskReferenceName" | "metadata">;
+
+    expect(getAgentTaskPresentation(task)).toEqual({
+      badge: "AZURE FOUNDRY AGENT",
+      name: "asst_abc123",
+      taskReferenceName: "ask_the_analyst",
+      unresolved: false,
+    });
+  });
+
+  it("invalidates a snapshot when the assistant changes", () => {
+    const snapshot = createUnresolvedAgentSnapshot(foundry);
+
+    expect(isAgentSnapshotCurrent(snapshot, foundry)).toBe(true);
+    expect(
+      isAgentSnapshotCurrent(snapshot, {
+        ...foundry,
+        rawConfig: { ...foundry.rawConfig, assistantId: "asst_other" },
+      }),
+    ).toBe(false);
+    // A runtime switch is a source change too.
+    expect(
+      isAgentSnapshotCurrent(snapshot, {
+        ...foundry,
+        agentType: "openai-assistants",
+      }),
+    ).toBe(false);
   });
 });

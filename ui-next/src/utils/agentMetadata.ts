@@ -3,6 +3,8 @@ import {
   AgentMetadataSnapshot,
   AgentRuntimeType,
   AgentTaskInput,
+  ProviderAgentRuntimeType,
+  ProviderAgentSnapshot,
   TaskDef,
   TaskType,
   WorkflowDef,
@@ -31,15 +33,78 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 export const isDynamicAgentIdentity = (value: unknown): value is string =>
   typeof value === "string" && value.includes("${");
 
-export const agentRuntimeType = (input: unknown): AgentRuntimeType =>
-  isRecord(input) && input.agentType === "conductor" ? "conductor" : "a2a";
+/** Hosted-platform runtimes, keyed by the platform's own identifier in `rawConfig`. */
+const PROVIDER_RUNTIMES: Record<ProviderAgentRuntimeType, string> = {
+  bedrock: "agentId",
+  "azure-foundry": "assistantId",
+  "openai-assistants": "assistantId",
+};
+
+const KNOWN_RUNTIMES: AgentRuntimeType[] = [
+  "a2a",
+  "conductor",
+  ...(Object.keys(PROVIDER_RUNTIMES) as ProviderAgentRuntimeType[]),
+];
+
+/** Human label per runtime, for badges and detail rows. */
+export const AGENT_RUNTIME_LABELS: Record<AgentRuntimeType, string> = {
+  a2a: "A2A",
+  conductor: "Conductor",
+  bedrock: "Bedrock",
+  "azure-foundry": "Azure AI Foundry",
+  "openai-assistants": "OpenAI Assistants",
+};
+
+export const isProviderRuntime = (
+  type: AgentRuntimeType,
+): type is ProviderAgentRuntimeType => type in PROVIDER_RUNTIMES;
+
+export const agentRuntimeType = (input: unknown): AgentRuntimeType => {
+  if (!isRecord(input)) return "a2a";
+  const declared = String(input.agentType ?? "")
+    .trim()
+    .toLowerCase();
+  return (
+    KNOWN_RUNTIMES.find((runtime) => runtime === declared) ??
+    // Absent or unrecognized falls back to A2A, matching the server's default.
+    "a2a"
+  );
+};
+
+const rawConfigValue = (input: unknown, key: string): string | undefined => {
+  if (!isRecord(input) || !isRecord(input.rawConfig)) return undefined;
+  const value = input.rawConfig[key];
+  return value == null ? undefined : String(value).trim() || undefined;
+};
 
 export const agentSourceIdentity = (input: unknown): string => {
   if (!isRecord(input)) return "";
-  const identity =
-    agentRuntimeType(input) === "conductor" ? input.name : input.agentUrl;
+  const type = agentRuntimeType(input);
+  if (isProviderRuntime(type)) {
+    // Foundry accepts agentId as an alias for assistantId, so try both keys.
+    return (
+      rawConfigValue(input, PROVIDER_RUNTIMES[type]) ??
+      rawConfigValue(input, "assistantId") ??
+      rawConfigValue(input, "agentId") ??
+      ""
+    );
+  }
+  const identity = type === "conductor" ? input.name : input.agentUrl;
   return String(identity ?? "").trim();
 };
+
+const providerSnapshotFrom = (
+  input: unknown,
+  identity: string,
+): ProviderAgentSnapshot => ({
+  agentId: identity,
+  credentialRef: isRecord(input)
+    ? String(input.credentialRef ?? "").trim() || undefined
+    : undefined,
+  endpoint: rawConfigValue(input, "endpoint"),
+  region: rawConfigValue(input, "region"),
+  apiVersion: rawConfigValue(input, "apiVersion"),
+});
 
 export const agentSourceKey = (input: unknown): string => {
   if (!isRecord(input)) return "a2a||";
@@ -47,6 +112,22 @@ export const agentSourceKey = (input: unknown): string => {
   const identity = agentSourceIdentity(input);
   const version = type === "conductor" ? String(input.version ?? "latest") : "";
   return `${type}|${identity}|${version}`;
+};
+
+export const buildProviderAgentSnapshot = (
+  input: AgentTaskInput,
+): AgentMetadataSnapshot => {
+  const type = agentRuntimeType(input) as ProviderAgentRuntimeType;
+  const identity = agentSourceIdentity(input);
+  return {
+    schemaVersion: AGENT_SNAPSHOT_SCHEMA_VERSION,
+    agentType: type,
+    displayName: identity || `${AGENT_RUNTIME_LABELS[type]} agent`,
+    source: { name: identity },
+    // Nothing to discover: a hosted agent is fully named by the task input.
+    resolved: Boolean(identity),
+    provider: providerSnapshotFrom(input, identity),
+  };
 };
 
 export const createUnresolvedAgentSnapshot = (
@@ -64,12 +145,13 @@ export const createUnresolvedAgentSnapshot = (
   return {
     schemaVersion: AGENT_SNAPSHOT_SCHEMA_VERSION,
     agentType: type,
-    displayName:
-      identity || (type === "conductor" ? "Conductor agent" : "A2A agent"),
+    displayName: identity || `${AGENT_RUNTIME_LABELS[type]} agent`,
     source: {
       ...(type === "conductor"
         ? { name: identity, requestedVersion }
-        : { url: identity }),
+        : isProviderRuntime(type)
+          ? { name: identity }
+          : { url: identity }),
       ...(dynamic ? { expression: identity } : {}),
     },
     resolved: false,
@@ -80,7 +162,9 @@ export const createUnresolvedAgentSnapshot = (
             requestedVersion,
           },
         }
-      : { a2a: { url: identity } }),
+      : isProviderRuntime(type)
+        ? { provider: providerSnapshotFrom(input, identity) }
+        : { a2a: { url: identity } }),
   };
 };
 
@@ -149,6 +233,9 @@ export const isAgentSnapshotCurrent = (
     return false;
   }
   if (snapshot.agentType !== agentRuntimeType(input)) return false;
+  if (isProviderRuntime(snapshot.agentType)) {
+    return snapshot.provider?.agentId === agentSourceIdentity(input);
+  }
   if (snapshot.agentType === "conductor") {
     const record = isRecord(input) ? input : {};
     return (
@@ -177,6 +264,12 @@ export async function resolveAgentSnapshot(
   const identity = agentSourceIdentity(input);
   if (!identity || isDynamicAgentIdentity(identity)) {
     return createUnresolvedAgentSnapshot(input);
+  }
+
+  // A hosted agent needs no lookup — and must not be sent to A2A card discovery, which would
+  // fail on the missing agentUrl and leave the task looking unresolved.
+  if (isProviderRuntime(agentRuntimeType(input))) {
+    return buildProviderAgentSnapshot(input);
   }
 
   if (agentRuntimeType(input) === "conductor") {
@@ -252,8 +345,17 @@ export async function resolveAgentSnapshotsInWorkflow(
   return cloned;
 }
 
+/** Uppercase badge shown on the task card, one per runtime. */
+export const AGENT_RUNTIME_BADGES: Record<AgentRuntimeType, string> = {
+  a2a: "A2A AGENT",
+  conductor: "CONDUCTOR AGENT",
+  bedrock: "BEDROCK AGENT",
+  "azure-foundry": "AZURE FOUNDRY AGENT",
+  "openai-assistants": "OPENAI AGENT",
+};
+
 export interface AgentTaskPresentation {
-  badge: "A2A AGENT" | "CONDUCTOR AGENT";
+  badge: string;
   name: string;
   taskReferenceName: string;
   unresolved: boolean;
@@ -267,8 +369,8 @@ export const getAgentTaskPresentation = (
   const type = snapshot?.agentType ?? agentRuntimeType(input);
   const identity = snapshot?.displayName || agentSourceIdentity(input);
   return {
-    badge: type === "conductor" ? "CONDUCTOR AGENT" : "A2A AGENT",
-    name: identity || (type === "conductor" ? "Conductor agent" : "A2A agent"),
+    badge: AGENT_RUNTIME_BADGES[type],
+    name: identity || `${AGENT_RUNTIME_LABELS[type]} agent`,
     taskReferenceName: task.taskReferenceName,
     // Conductor agents are registered locally and their configured name is
     // authoritative. A missing editor snapshot only means that the optional

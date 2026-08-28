@@ -1,6 +1,7 @@
 import { Box, Chip, Divider, Paper, Typography } from "@mui/material";
 import { ReactNode, useMemo } from "react";
 import { A2AAgentCard, A2AAgentExtension, AgentMetadataSnapshot } from "types";
+import { AGENT_RUNTIME_LABELS } from "utils/agentMetadata";
 import { toolCategoryForPanel } from "utils/agentTaskCategory";
 
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -589,7 +590,7 @@ export function AgentSnapshotDetails({
         <DetailRow label="Name" value={snapshot.displayName} />
         <DetailRow
           label="Agent type"
-          value={snapshot.agentType === "conductor" ? "Conductor" : "A2A"}
+          value={AGENT_RUNTIME_LABELS[snapshot.agentType] ?? snapshot.agentType}
         />
         <DetailRow
           label="Details"
@@ -618,6 +619,21 @@ export function AgentSnapshotDetails({
           />
         )}
         <DetailRow label="Framework" value={snapshot.conductor?.framework} />
+        {snapshot.provider && (
+          <>
+            <DetailRow label="Agent ID" value={snapshot.provider.agentId} />
+            <DetailRow label="Endpoint" value={snapshot.provider.endpoint} />
+            <DetailRow label="Region" value={snapshot.provider.region} />
+            <DetailRow
+              label="API version"
+              value={snapshot.provider.apiVersion}
+            />
+            <DetailRow
+              label="Credential"
+              value={snapshot.provider.credentialRef}
+            />
+          </>
+        )}
       </Paper>
       {snapshot.conductor?.agentConfig && (
         <AgentDefinitionDetails agentDef={snapshot.conductor.agentConfig} />

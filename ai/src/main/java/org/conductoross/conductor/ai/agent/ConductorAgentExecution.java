@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import java.util.List;
 import java.util.Map;
 
 import lombok.Builder;
@@ -48,6 +49,8 @@ public class ConductorAgentExecution {
      * When {@link #state} is {@link ConductorAgentState#WAITING}: the pending tool/human request.
      */
     private Map<String, Object> pendingTool;
+
+    private List<Map<String, Object>> pendingTools;
 
     /** Failure/cancel explanation for terminal non-completed states. */
     private String reasonForIncompletion;

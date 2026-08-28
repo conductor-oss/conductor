@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,4 +28,18 @@ public class ConductorAgentCancelRequest {
 
     private String executionId;
     private String reason;
+
+    /**
+     * Credential reference from the originating task input. Carried so a stateless client can
+     * re-authenticate on any replica — cancelAgent() would otherwise have nothing to build a token
+     * from.
+     */
+    private String credentialRef;
+
+    /**
+     * Provider-specific configuration from the originating task input (endpoint, assistant/agent
+     * id, api version, ...). Carried for the same reason as {@code credentialRef}: it lets a client
+     * re-derive where the run lives instead of remembering it in process.
+     */
+    private Map<String, Object> rawConfig;
 }

@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -43,7 +44,20 @@ public class ConductorAgentStatusResponse {
 
     private Map<String, Object> output;
     private String reasonForIncompletion;
+
+    /**
+     * First outstanding tool call. Retained because task output, the UI and existing workflows all
+     * read it; {@link #pendingTools} is the complete set.
+     */
     private Map<String, Object> pendingTool;
+
+    /**
+     * Every tool call the agent is blocked on. A model may ask for several independent tools in one
+     * turn, and all of them must be answered before the run resumes — so reporting only the first
+     * leaves the caller unable to execute the rest.
+     */
+    private List<Map<String, Object>> pendingTools;
+
     private String pendingToolName;
     private String pendingToolTaskRefName;
     private long startTime;

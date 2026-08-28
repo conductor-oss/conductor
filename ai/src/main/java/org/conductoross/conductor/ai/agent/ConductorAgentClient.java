@@ -33,6 +33,15 @@ public interface ConductorAgentClient extends AutoCloseable {
 
     void respond(ConductorAgentRespondRequest request);
 
+    // Responds and, where the runtime already knows the outcome, returns it. Runtimes with a status
+    // API return null (the default) and the caller polls as usual; Bedrock completes the turn
+    // inside
+    // respond() and has nowhere to keep the answer, so it returns it here instead.
+    default ConductorAgentStatusResponse respondWithStatus(ConductorAgentRespondRequest request) {
+        respond(request);
+        return null;
+    }
+
     void cancelAgent(ConductorAgentCancelRequest request);
 
     @Override

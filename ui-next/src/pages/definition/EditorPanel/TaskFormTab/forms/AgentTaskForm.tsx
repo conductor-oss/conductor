@@ -20,11 +20,14 @@ import { fetchWithContext, useFetchContext } from "plugins/fetch";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AgentTaskInput, TaskDef } from "types";
 import {
+  agentRuntimeType,
+  agentSourceIdentity,
   agentSourceKey,
   createUnresolvedAgentSnapshot,
   getAgentSnapshot,
   isAgentSnapshotCurrent,
   isDynamicAgentIdentity,
+  isProviderRuntime,
   resolveAgentSnapshot,
   withAgentSnapshot,
 } from "utils/agentMetadata";
@@ -40,7 +43,99 @@ import { TaskFormProps } from "./types";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
+  { value: "azure-foundry", label: "Azure AI Foundry" },
+  { value: "bedrock", label: "Bedrock" },
+  { value: "openai-assistants", label: "OpenAI Assistants" },
 ];
+
+type ProviderField = {
+  key: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  width?: 6 | 12;
+};
+
+/**
+ * `rawConfig` keys each hosted runtime reads, taken from its client: AzureFoundryAgentClient,
+ * BedrockAgentClient, OpenAiAssistantsAgentClient. Required fields are the ones whose absence makes
+ * the client reject the task outright.
+ */
+const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
+  "azure-foundry": [
+    {
+      key: "endpoint",
+      label: "Project endpoint",
+      placeholder: "https://<project>.services.ai.azure.com/api/projects/<p>",
+      required: true,
+      width: 12,
+    },
+    {
+      key: "assistantId",
+      label: "Assistant ID",
+      placeholder: "asst_…",
+      required: true,
+      width: 6,
+    },
+    { key: "apiVersion", label: "API version (optional)", width: 6 },
+    { key: "scope", label: "Token scope (optional)", width: 12 },
+  ],
+  bedrock: [
+    { key: "agentId", label: "Agent ID", required: true, width: 6 },
+    { key: "agentAliasId", label: "Agent alias ID", required: true, width: 6 },
+    {
+      key: "region",
+      label: "Region (optional)",
+      placeholder: "us-east-1",
+      width: 6,
+    },
+  ],
+  "openai-assistants": [
+    {
+      key: "assistantId",
+      label: "Assistant ID",
+      placeholder: "asst_…",
+      required: true,
+      width: 6,
+    },
+    {
+      key: "baseUrl",
+      label: "Base URL (optional)",
+      placeholder: "https://api.openai.com/v1",
+      width: 6,
+    },
+  ],
+};
+
+const jsonOrEmpty = (value: unknown): string => {
+  if (value == null || value === "") return "";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+/** Keep whatever was typed while it is still mid-edit; store an object once it parses. */
+const parseJsonOrRaw = (value: string): unknown => {
+  const trimmed = value.trim();
+  if (trimmed === "") return undefined;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+};
+
+const CREDENTIAL_HELP: Record<string, string> = {
+  "azure-foundry":
+    "Secret holding the Entra ID application credential, with client_id, client_secret and tenant_id sub-keys.",
+  bedrock:
+    "Secret holding accessKeyId and secretAccessKey sub-keys. Leave blank to use the server's default AWS credential chain.",
+  "openai-assistants":
+    "Secret holding the OpenAI API key, either directly or under an api_key sub-key.",
+};
 
 /**
  * Config form for the AGENT task. Two runtimes, one task type, disjoint input shapes:
@@ -64,7 +159,12 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   }, [task]);
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
+  const runtime = agentRuntimeType(task.inputParameters);
   const isConductor = agentType === "conductor";
+  const isProvider = isProviderRuntime(runtime);
+  // Everything that used to hang off !isConductor is A2A-only — remote URL, streaming, push,
+  // headers, message shape — and must not render for a hosted runtime.
+  const isA2A = !isConductor && !isProvider;
   const agentName = get("inputParameters.name") as string | undefined;
   const taskInput = (task.inputParameters ?? {}) as AgentTaskInput;
   const sourceKey = agentSourceKey(taskInput);
@@ -88,8 +188,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   const resolveSnapshot = useCallback(
     async (input: AgentTaskInput) => {
       const requestedSourceKey = agentSourceKey(input);
-      const identity =
-        input.agentType === "conductor" ? input.name : input.agentUrl;
+      const identity = agentSourceIdentity(input);
       if (!identity || isDynamicAgentIdentity(identity)) {
         const current = latestTaskRef.current;
         if (agentSourceKey(current.inputParameters) === requestedSourceKey) {
@@ -277,6 +376,49 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 />
               </Grid>
             </>
+          ) : isProvider ? (
+            <>
+              {(PROVIDER_FIELDS[runtime] ?? []).map((field) => (
+                <Grid key={field.key} size={{ xs: 12, md: field.width ?? 6 }}>
+                  <ConductorAutocompleteVariables
+                    label={field.label}
+                    value={
+                      get(`inputParameters.rawConfig.${field.key}`) as string
+                    }
+                    onChange={(v) =>
+                      setSource(`inputParameters.rawConfig.${field.key}`, v)
+                    }
+                    placeholder={field.placeholder}
+                  />
+                </Grid>
+              ))}
+              <Grid size={{ xs: 12, md: 6 }}>
+                <ConductorAutocompleteVariables
+                  label="Credential reference"
+                  value={get("inputParameters.credentialRef") as string}
+                  onChange={(v) => set("inputParameters.credentialRef", v)}
+                  placeholder="Name of the stored secret"
+                  inputProps={{
+                    tooltip: {
+                      title: "Credential reference",
+                      content: CREDENTIAL_HELP[runtime] ?? "",
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid size={12}>
+                <ConductorInput
+                  label="Prompt"
+                  name="prompt"
+                  value={(get("inputParameters.prompt") as string) || ""}
+                  onTextInputChange={(v) => set("inputParameters.prompt", v)}
+                  multiline
+                  rows={6}
+                  fullWidth
+                  placeholder="Message to send to the agent"
+                />
+              </Grid>
+            </>
           ) : (
             <>
               <Grid size={12}>
@@ -301,35 +443,32 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               </Grid>
             </>
           )}
-          <Grid size={12}>
-            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={
-                  isResolving ||
-                  !(isConductor
-                    ? taskInput.agentType === "conductor" && taskInput.name
-                    : taskInput.agentType !== "conductor" && taskInput.agentUrl)
-                }
-                onClick={() => void resolveSnapshot(taskInput)}
-              >
-                Refresh agent details
-              </Button>
-              {isResolving && <CircularProgress size={18} />}
-              {!isResolving && snapshot && (
-                <Typography variant="caption" color="text.secondary">
-                  {isConductor
-                    ? snapshot.resolved
-                      ? "Details loaded"
-                      : "Details unavailable"
-                    : snapshot.resolved
-                      ? "Resolved"
-                      : "Unresolved"}
-                </Typography>
-              )}
-            </Box>
-          </Grid>
+          {!isProvider && (
+            <Grid size={12}>
+              <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={isResolving || !agentSourceIdentity(taskInput)}
+                  onClick={() => void resolveSnapshot(taskInput)}
+                >
+                  Refresh agent details
+                </Button>
+                {isResolving && <CircularProgress size={18} />}
+                {!isResolving && snapshot && (
+                  <Typography variant="caption" color="text.secondary">
+                    {isConductor
+                      ? snapshot.resolved
+                        ? "Details loaded"
+                        : "Details unavailable"
+                      : snapshot.resolved
+                        ? "Resolved"
+                        : "Unresolved"}
+                  </Typography>
+                )}
+              </Box>
+            </Grid>
+          )}
           {resolutionWarning && (
             <Grid size={12}>
               <Alert severity="warning">{resolutionWarning}</Alert>
@@ -341,6 +480,52 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
       {snapshot && (
         <TaskFormSection title="Agent Card">
           <AgentSnapshotDetails snapshot={snapshot} />
+        </TaskFormSection>
+      )}
+
+      {isProvider && (
+        <TaskFormSection title="Tools">
+          <Grid container spacing={2} sx={{ width: "100%" }}>
+            <Grid size={12}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!get("inputParameters.autoRunTools")}
+                    onChange={(e) =>
+                      set("inputParameters.autoRunTools", e.target.checked)
+                    }
+                  />
+                }
+                label="Run the agent's tools as tasks in this workflow"
+              />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
+                The agent stays in progress while each tool it asks for is
+                scheduled as a task of the same name, so a worker registered for
+                that tool picks it up. Leave off to have the task complete and
+                hand the tool request back to the workflow.
+              </Typography>
+            </Grid>
+            {!!get("inputParameters.autoRunTools") && (
+              <Grid size={12}>
+                <ConductorInput
+                  label="Tool to task name overrides (JSON, optional)"
+                  name="toolTaskNames"
+                  value={jsonOrEmpty(get("inputParameters.toolTaskNames"))}
+                  onTextInputChange={(v) =>
+                    set("inputParameters.toolTaskNames", parseJsonOrRaw(v))
+                  }
+                  multiline
+                  rows={3}
+                  fullWidth
+                  placeholder={'{ "get_revenue": "finance_revenue_lookup" }'}
+                />
+              </Grid>
+            )}
+          </Grid>
         </TaskFormSection>
       )}
 
@@ -358,7 +543,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {!isConductor && (
+      {isA2A && (
         <TaskFormSection title="Execution mode">
           <Box display="flex" flexDirection="column" mb={3}>
             <FormControlLabel
@@ -425,7 +610,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               onChange={(v) => set("inputParameters.maxPollFailures", v)}
             />
           </Grid>
-          {!isConductor && (
+          {isA2A && (
             <Grid size={{ xs: 12, md: 6 }}>
               <ConductorAutocompleteVariables
                 label="History length"
@@ -438,7 +623,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </Grid>
       </TaskFormSection>
 
-      {!isConductor && (
+      {isA2A && (
         <TaskFormSection title="Headers">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={12}>
@@ -451,7 +636,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {!isConductor && (
+      {isA2A && (
         <TaskFormSection title="Advanced message (optional)">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={12}>
@@ -482,7 +667,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         </TaskFormSection>
       )}
 
-      {!isConductor && (
+      {isA2A && (
         <TaskFormSection title="Advanced">
           <Grid container spacing={2} sx={{ width: "100%" }}>
             <Grid size={{ xs: 12, md: 6 }}>

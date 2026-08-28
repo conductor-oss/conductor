@@ -1,4 +1,23 @@
-export type AgentRuntimeType = "a2a" | "conductor";
+/**
+ * Runtime an AGENT task targets, mirroring the `AGENT_TYPE_*` constants on the server's
+ * `A2AService`. `a2a` is the default when `agentType` is absent.
+ */
+export type AgentRuntimeType =
+  | "a2a"
+  | "conductor"
+  | "bedrock"
+  | "azure-foundry"
+  | "openai-assistants";
+
+/**
+ * Runtimes that call a hosted agent platform. They share a shape — a `credentialRef` plus a
+ * `rawConfig` naming the agent — and, unlike A2A, need no remote discovery: the task input is the
+ * whole identity.
+ */
+export type ProviderAgentRuntimeType = Exclude<
+  AgentRuntimeType,
+  "a2a" | "conductor"
+>;
 
 export interface A2AAgentInterface {
   url?: string;
@@ -85,6 +104,24 @@ export interface A2AAgentTaskInput {
   headers?: Record<string, string>;
 }
 
+/**
+ * Input for a hosted-platform AGENT task (`bedrock`, `azure-foundry`, `openai-assistants`). The
+ * provider-specific keys live under `rawConfig`; see each client for which it requires.
+ */
+export interface ProviderAgentTaskInput {
+  agentType: ProviderAgentRuntimeType;
+  prompt?: string;
+  /** Names the secret holding the platform credential. */
+  credentialRef?: string;
+  /** e.g. assistantId / agentId, endpoint, region, apiVersion. */
+  rawConfig?: Record<string, unknown>;
+  sessionId?: string;
+  executionId?: string;
+  pollIntervalSeconds?: number;
+  maxDurationSeconds?: number;
+  maxPollFailures?: number;
+}
+
 export interface ConductorAgentTaskInput {
   agentType: "conductor";
   name: string;
@@ -98,7 +135,10 @@ export interface ConductorAgentTaskInput {
   maxPollFailures?: number;
 }
 
-export type AgentTaskInput = A2AAgentTaskInput | ConductorAgentTaskInput;
+export type AgentTaskInput =
+  | A2AAgentTaskInput
+  | ConductorAgentTaskInput
+  | ProviderAgentTaskInput;
 
 export interface AgentSnapshotSource {
   name?: string;
@@ -121,6 +161,16 @@ export interface A2AAgentSnapshot {
   agentCard?: A2AAgentCard;
 }
 
+/** What a hosted-platform agent is, as far as the definition can tell without calling out. */
+export interface ProviderAgentSnapshot {
+  /** The platform's own agent identifier — Foundry/OpenAI assistantId, Bedrock agentId. */
+  agentId: string;
+  credentialRef?: string;
+  endpoint?: string;
+  region?: string;
+  apiVersion?: string;
+}
+
 /** Versioned, descriptive snapshot persisted under WorkflowTask.metadata.agent. */
 export interface AgentMetadataSnapshot {
   schemaVersion: 1;
@@ -130,6 +180,7 @@ export interface AgentMetadataSnapshot {
   resolved: boolean;
   conductor?: ConductorAgentSnapshot;
   a2a?: A2AAgentSnapshot;
+  provider?: ProviderAgentSnapshot;
 }
 
 export interface WorkflowTaskMetadata {

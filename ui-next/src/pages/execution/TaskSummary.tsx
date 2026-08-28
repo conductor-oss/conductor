@@ -16,6 +16,25 @@ type DataType = {
   type?: string;
 };
 
+type PendingTool = { tool_name: string; tool_call_id?: string };
+
+/** Tolerant of shape: task output is provider data, not something the UI controls. */
+const asPendingTools = (value: unknown): PendingTool[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (entry == null || typeof entry !== "object") return [];
+    const name = (entry as Record<string, unknown>).tool_name;
+    if (typeof name !== "string" || name.length === 0) return [];
+    const callId = (entry as Record<string, unknown>).tool_call_id;
+    return [
+      {
+        tool_name: name,
+        tool_call_id: typeof callId === "string" ? callId : undefined,
+      },
+    ];
+  });
+};
+
 export default function TaskSummary({ taskResult }: TaskSummaryProps) {
   const shouldDisplayEvaluatedCase = useMemo(
     () => ["DECISION", "SWITCH"].includes(taskResult.taskType),
@@ -181,6 +200,43 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
         </Link>
       ),
     });
+  }
+
+  // A hosted agent (azure-foundry, bedrock, openai-assistants) reports the tools it is waiting on.
+  // Listing them here shows what the agent asked for without leaving the page; the run they execute
+  // in is linked separately below.
+  if (taskResult.workflowTask.type === TaskType.AGENT) {
+    const pendingTools = asPendingTools(taskResult.outputData?.pendingTools);
+    if (pendingTools.length > 0) {
+      data.push({
+        label: pendingTools.length === 1 ? "Tool requested" : "Tools requested",
+        value: (
+          <span>
+            {pendingTools
+              .map((tool) =>
+                tool.tool_call_id
+                  ? `${tool.tool_name} (${tool.tool_call_id})`
+                  : tool.tool_name,
+              )
+              .join(", ")}
+          </span>
+        ),
+      });
+    }
+    if (taskResult.outputData?.toolDispatchId) {
+      data.push({
+        label: "Tool run",
+        value: (
+          <Link
+            href={`${window.location.origin}/execution/${taskResult.outputData.toolDispatchId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {String(taskResult.outputData.toolDispatchId)}
+          </Link>
+        ),
+      });
+    }
   }
 
   if (
