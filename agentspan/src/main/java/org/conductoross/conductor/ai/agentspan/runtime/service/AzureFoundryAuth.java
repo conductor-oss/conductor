@@ -1,0 +1,256 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.ai.agentspan.runtime.service;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
+import com.azure.identity.ClientSecretCredentialBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * How a call to Azure AI Foundry authenticates, in one of four ways plus an on-behalf-of mode.
+ *
+ * <p>Resolution order, first match wins:
+ *
+ * <ol>
+ *   <li><b>On-behalf-of</b> — the caller's own Entra identity, when the request asks for it and
+ *       carries a user assertion and the credential holds service-principal details. The caller's
+ *       SSO token is never forwarded; it is exchanged for a Foundry-scoped one.
+ *   <li><b>API key</b> — {@code credentialRef.apiKey}, sent as an {@code api-key} header. No SDK.
+ *   <li><b>Service principal</b> — {@code .client_id} + {@code .client_secret} + {@code
+ *       .tenant_id}.
+ *   <li><b>User-assigned managed identity</b> — {@code .clientId}.
+ *   <li><b>Default credential chain</b> — environment, workload identity, managed identity, CLI.
+ * </ol>
+ *
+ * <p>The scope follows the endpoint unless overridden, because Foundry's surfaces do not share one.
+ */
+public final class AzureFoundryAuth implements AssistantsAuth {
+
+    private static final Logger log = LoggerFactory.getLogger(AzureFoundryAuth.class);
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final MediaType FORM =
+            MediaType.get("application/x-www-form-urlencoded; charset=utf-8");
+
+    /** Cognitive Services — the classic Assistants surface on {@code openai.azure.com}. */
+    public static final String DEFAULT_SCOPE = "https://cognitiveservices.azure.com/.default";
+
+    /** Foundry projects on {@code services.ai.azure.com}. */
+    public static final String FOUNDRY_SCOPE = "https://ai.azure.com/.default";
+
+    /** Azure ML online endpoints on {@code inference.ml.azure.com}. */
+    public static final String ML_INFERENCE_SCOPE = "https://ml.azure.com/.default";
+
+    private final TokenCredential credential;
+    private final String scope;
+    private final String apiKey;
+    private final String bearerToken;
+
+    private AzureFoundryAuth(
+            TokenCredential credential, String scope, String apiKey, String bearerToken) {
+        this.credential = credential;
+        this.scope = scope;
+        this.apiKey = apiKey;
+        this.bearerToken = bearerToken;
+    }
+
+    public static AzureFoundryAuth ofApiKey(String apiKey) {
+        return new AzureFoundryAuth(null, null, apiKey, null);
+    }
+
+    public static AzureFoundryAuth ofCredential(TokenCredential credential, String scope) {
+        return new AzureFoundryAuth(credential, scope, null, null);
+    }
+
+    /** A token already exchanged for the caller — never cached, since it belongs to one person. */
+    public static AzureFoundryAuth ofBearer(String bearerToken) {
+        return new AzureFoundryAuth(null, null, null, bearerToken);
+    }
+
+    /**
+     * Whether this may be reused across calls. An SDK credential and an API key belong to the
+     * deployment; a token exchanged on behalf of a caller belongs to that caller and must not be.
+     */
+    public boolean isReusable() {
+        return bearerToken == null;
+    }
+
+    @Override
+    public String headerName() {
+        return (credential != null || bearerToken != null) ? "Authorization" : "api-key";
+    }
+
+    @Override
+    public String headerValue() {
+        if (bearerToken != null) {
+            return "Bearer " + bearerToken;
+        }
+        if (credential != null) {
+            // The SDK caches and refreshes behind this call, so asking per request is cheap.
+            return "Bearer "
+                    + credential
+                            .getToken(new TokenRequestContext().addScopes(scope))
+                            .block()
+                            .getToken();
+        }
+        return apiKey;
+    }
+
+    /** The scope a Foundry surface expects, inferred from its endpoint. */
+    public static String scopeFor(String endpoint) {
+        if (endpoint != null && endpoint.contains("inference.ml.azure.com")) {
+            return ML_INFERENCE_SCOPE;
+        }
+        if (endpoint != null && endpoint.contains("services.ai.azure.com")) {
+            return FOUNDRY_SCOPE;
+        }
+        return DEFAULT_SCOPE;
+    }
+
+    /**
+     * Builds auth from a credential reference. {@code userAssertion} activates on-behalf-of when
+     * the credential also holds service-principal details; without them it falls back to the
+     * credential itself rather than failing, so a misconfigured cluster still runs as the service
+     * identity.
+     */
+    public static AzureFoundryAuth resolve(
+            CredentialResolutionService credentials,
+            OkHttpClient httpClient,
+            String credentialRef,
+            String userAssertion,
+            String scope) {
+
+        if (StringUtils.isNotBlank(userAssertion) && StringUtils.isNotBlank(credentialRef)) {
+            String tenantId = credentials.resolve(credentialRef + ".tenant_id");
+            String clientId = credentials.resolve(credentialRef + ".client_id");
+            String clientSecret = credentials.resolve(credentialRef + ".client_secret");
+            if (StringUtils.isNoneBlank(tenantId, clientId, clientSecret)) {
+                return ofBearer(
+                        exchangeOnBehalfOf(
+                                httpClient,
+                                userAssertion,
+                                tenantId,
+                                clientId,
+                                clientSecret,
+                                scope));
+            }
+            log.warn(
+                    "Caller identity was requested but credential '{}' has no service principal; using credential-based auth instead",
+                    credentialRef);
+        }
+
+        if (StringUtils.isNotBlank(credentialRef)) {
+            String apiKey = credentials.resolve(credentialRef + ".apiKey");
+            if (StringUtils.isNotBlank(apiKey)) {
+                return ofApiKey(apiKey);
+            }
+
+            String clientId = credentials.resolve(credentialRef + ".client_id");
+            String clientSecret = credentials.resolve(credentialRef + ".client_secret");
+            String tenantId = credentials.resolve(credentialRef + ".tenant_id");
+            if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
+                return ofCredential(
+                        new ClientSecretCredentialBuilder()
+                                .tenantId(tenantId)
+                                .clientId(clientId)
+                                .clientSecret(clientSecret)
+                                .build(),
+                        scope);
+            }
+
+            String managedIdentityClientId = credentials.resolve(credentialRef + ".clientId");
+            if (StringUtils.isNotBlank(managedIdentityClientId)) {
+                return ofCredential(
+                        new ManagedIdentityCredentialBuilder()
+                                .clientId(managedIdentityClientId)
+                                .build(),
+                        scope);
+            }
+        }
+
+        return ofCredential(new DefaultAzureCredentialBuilder().build(), scope);
+    }
+
+    /**
+     * Exchanges a caller's Entra token for one scoped to Foundry, via the OAuth 2.0 on-behalf-of
+     * grant. The caller's own token never reaches Foundry.
+     */
+    static String exchangeOnBehalfOf(
+            OkHttpClient httpClient,
+            String userAssertion,
+            String tenantId,
+            String clientId,
+            String clientSecret,
+            String scope) {
+        String tokenUrl = "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/token";
+        String form =
+                "grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer"
+                        + "&client_id="
+                        + encode(clientId)
+                        + "&client_secret="
+                        + encode(clientSecret)
+                        + "&assertion="
+                        + encode(userAssertion)
+                        + "&scope="
+                        + encode(scope)
+                        + "&requested_token_use=on_behalf_of";
+
+        Request request =
+                new Request.Builder()
+                        .url(tokenUrl)
+                        .post(RequestBody.create(form.getBytes(StandardCharsets.UTF_8), FORM))
+                        .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "{}";
+            if (!response.isSuccessful()) {
+                throw new IllegalStateException(
+                        "On-behalf-of token exchange failed: HTTP "
+                                + response.code()
+                                + " — "
+                                + body);
+            }
+            JsonNode json = MAPPER.readTree(body);
+            String token = json.path("access_token").asText(null);
+            if (StringUtils.isBlank(token)) {
+                throw new IllegalStateException(
+                        "On-behalf-of token exchange returned no access_token: " + body);
+            }
+            return token;
+        } catch (IOException e) {
+            throw new IllegalStateException("On-behalf-of token exchange failed", e);
+        }
+    }
+
+    private static String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+}

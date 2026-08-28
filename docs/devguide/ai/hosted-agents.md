@@ -27,6 +27,10 @@ For the other two `agentType` values, see [A2A integration](a2a-integration.md) 
 !!! note "Vertex AI"
     There is no `vertex` runtime. Vertex AI agents speak A2A natively, so call them with `agentType: "a2a"` and the agent's A2A endpoint as `agentUrl`.
 
+## They show up on their own
+
+Store a secret with an `endpoint` key (Azure) or a `region` key (Bedrock) and the agents that credential can see appear in the agent list alongside agents defined in Conductor — no separate registration step. Discovery is best effort: a credential that cannot list contributes nothing rather than breaking the listing.
+
 ## What they have in common
 
 Every hosted runtime takes the same core inputs.
@@ -156,12 +160,29 @@ The configuration has to be repeated on the resuming task, because that is where
 
 | Key | Required | Default |
 |---|---|---|
-| `endpoint` | Yes, unless the `AZURE_FOUNDRY_ENDPOINT` secret is set | — |
-| `assistantId` | Yes (`agentId` is accepted as an alias) | — |
+| `endpoint` | Yes, unless given as `agentUrl` or the `AZURE_FOUNDRY_ENDPOINT` secret is set | — |
+| `assistantId` | Yes, unless named in `agentUrl` (`agentId` is accepted as an alias) | — |
 | `apiVersion` | No | `2025-01-01-preview` |
-| `scope` | No | `credentialRef.scope`, else `https://cognitiveservices.azure.com/.default` |
+| `scope` | No | `credentialRef.scope`, else inferred from the endpoint |
 
-**Credential.** `credentialRef` names a secret holding an Entra ID application credential as JSON, read by dotted sub-key:
+**Or name both at once.** A top-level `agentUrl` can carry the endpoint and the agent together, so every agent type names its location the same field way A2A does:
+
+```json
+"agentUrl": "https://my-resource.openai.azure.com/openai/assistants/asst_abc123"
+```
+
+Conductor splits the trailing `/assistants/asst_x` (or `/agents/NAME` on a Foundry project) off as the agent, leaving the rest as the endpoint. Anything set in `rawConfig` wins over what the URL implies.
+
+**Credential.** `credentialRef` names a secret whose contents decide how Conductor authenticates. The first match wins:
+
+| Secret holds | Auth used |
+|---|---|
+| `apiKey` | Sent as an `api-key` header. No token exchange at all. |
+| `client_id` + `client_secret` + `tenant_id` | Service principal (Entra ID client credentials). |
+| `clientId` | User-assigned managed identity. |
+| *nothing, or no `credentialRef` at all* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. |
+
+So a service principal looks like:
 
 ```json
 {
@@ -171,7 +192,15 @@ The configuration has to be repeated on the resuming task, because that is where
 }
 ```
 
-Conductor exchanges those for a token with the client-credentials grant against `https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token`, caches it, and refreshes it before expiry. A `401` or `403` from Foundry discards the cached credential so the next poll picks up a rotated secret.
+and a deployment running on managed identity can configure no credential at all.
+
+Resolved credentials are cached for ten minutes per credential and scope, so a poll performs no secret-store read. A `401` or `403` from Foundry discards the cached credential, so a rotated secret is picked up on the next poll rather than at the end of that window.
+
+**Scope** follows the endpoint — `ai.azure.com` for a Foundry project, `ml.azure.com` for a model-inference endpoint, `cognitiveservices.azure.com` for the classic Assistants surface — unless `rawConfig.scope` or the credential's `.scope` sub-key overrides it.
+
+**Running as the caller.** `useCallerIdentity: true` makes the agent run as the person who triggered the workflow rather than as the deployment: their Entra ID token is exchanged, via the OAuth 2.0 on-behalf-of grant, for one scoped to Foundry, so the agent sees only what that person can. Their own token is never forwarded to Foundry, and the exchanged token is never cached or reused across requests.
+
+This needs the cluster wired to Entra ID SSO — the caller's assertion is supplied by that layer, not by a workflow definition — and a service principal on the credential to perform the exchange. Without either, the call falls back to credential-based auth rather than failing, so a partially configured cluster still runs as the service identity.
 
 **`executionId`** is the Azure **thread** id. The run acted on is always the newest one on that thread, so continuing a conversation never invalidates the handle your workflow holds.
 
@@ -263,7 +292,21 @@ Bedrock behaves differently from the other two, and it is worth knowing why befo
 }
 ```
 
+Or have Conductor assume a role instead, with `roleArn` — and optionally `roleSessionName` and `externalId`:
+
+```json
+{ "roleArn": "arn:aws:iam::123456789012:role/conductor-bedrock", "externalId": "..." }
+```
+
+The SDK refreshes the temporary credentials for as long as the agent runs.
+
 Leave `credentialRef` unset, or the secret incomplete, to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
+
+**Or name the agent in one field**, as with Azure:
+
+```json
+"agentUrl": "bedrock://AGENT123456/ALIAS1234?region=us-west-2"
+```
 
 **No status API.** `InvokeAgent` streams the whole turn, so the agent has finished — or blocked on a tool — before the start call returns. The task therefore reaches a terminal state on its **first** invocation and is never polled; `pollIntervalSeconds` has no effect.
 
@@ -278,7 +321,7 @@ Leave `credentialRef` unset, or the secret incomplete, to fall back to the serve
 | Situation | Outcome |
 |---|---|
 | Missing or malformed `rawConfig` / `credentialRef` | Task fails terminally — no retry, since a retry cannot fix it |
-| Credential not found or incomplete in the secret store | Task fails with a message naming the missing sub-keys |
+| Credential not found or incomplete in the secret store | Falls through to the next auth mode, ending at the platform's default credential chain |
 | Platform returns `401` / `403` | Cached credential discarded, task retries; a rotated secret is picked up on the next poll |
 | Platform unreachable or `5xx` | Counted as a transient poll failure, up to `maxPollFailures` |
 | Run exceeds `maxDurationSeconds` | Cancellation attempted on the platform, task fails terminally |

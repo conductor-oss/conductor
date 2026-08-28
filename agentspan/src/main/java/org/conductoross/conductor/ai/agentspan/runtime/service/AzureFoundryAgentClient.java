@@ -12,10 +12,12 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,9 +32,10 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agent.credentials.OAuthTokenProvider;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsRunApi;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +43,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * {@link ConductorAgentClient} backed by Azure AI Foundry Agents.
@@ -68,25 +75,29 @@ import okhttp3.OkHttpClient;
 public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
-    private static final String DEFAULT_SCOPE = "https://cognitiveservices.azure.com/.default";
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static final String DEFAULT_API_VERSION = "2025-01-01-preview";
 
-    // How long a cached token provider is reused before its credentials are re-read from the secret
-    // store. Bounds staleness after a credential rotation; a rejected token evicts immediately, so
-    // this is only the backstop.
-    private static final Duration TOKEN_PROVIDER_TTL = Duration.ofMinutes(10);
+    /** Foundry projects expose agents under their own, newer api-version. */
+    private static final String FOUNDRY_PROJECT_API_VERSION = "2025-05-15-preview";
+
+    // How long resolved auth is reused before the credential is re-read from the secret store.
+    // Bounds staleness after a rotation; a rejected token evicts immediately, so this is only the
+    // backstop.
+    private static final Duration AUTH_TTL = Duration.ofMinutes(10);
 
     private final CredentialResolutionService credentialResolutionService;
     private final OkHttpClient httpClient;
     private final AssistantsRunApi api;
     private final Clock clock;
 
-    // Caches the token provider, not the token — OAuthTokenProvider already caches and refreshes a
-    // token internally, but only for as long as the provider itself lives. Rebuilding one per call
-    // threw that cache away and made every 5-second status poll pay a full Entra ID round trip plus
-    // three secret-store reads. Keyed per credential and scope, per JVM; holds no run state, so it
-    // does not tie an execution to the replica that started it.
-    private final ConcurrentHashMap<ProviderKey, CachedProvider> tokenProviders =
+    // Caches resolved auth, not tokens — an SDK credential refreshes its own token, so what is
+    // worth keeping is the credential and the three secret reads behind it. Rebuilding per call
+    // made every 5-second poll pay a token round trip plus those reads. Keyed per credential and
+    // scope, per JVM; holds no run state. Auth resolved on behalf of a caller is never cached: it
+    // belongs to that person, not the deployment.
+    private final ConcurrentHashMap<ProviderKey, CachedAuth> resolvedAuth =
             new ConcurrentHashMap<>();
 
     // Explicit, because the Clock-taking test constructor below would make the choice ambiguous.
@@ -115,12 +126,16 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
-        Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
+        Azure azure =
+                azure(
+                        request.getCredentialRef(),
+                        request.getAgentUrl(),
+                        request.getRawConfig(),
+                        request.isUseCallerIdentity() ? request.getUserAssertion() : null);
         String threadId =
                 withTokenEviction(
                         azure,
-                        token ->
-                                api.createThreadAndRun(azure.target(), token, request.getPrompt()));
+                        auth -> api.createThreadAndRun(azure.target(), auth, request.getPrompt()));
         return ConductorAgentStartResponse.builder()
                 .executionId(threadId)
                 .agentName(azure.target().assistantId())
@@ -131,8 +146,13 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     @Override
     public ConductorAgentStatusResponse getAgentStatus(
             String executionId, ConductorAgentRequest request) {
-        Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
-        return withTokenEviction(azure, token -> api.status(azure.target(), token, executionId));
+        Azure azure =
+                azure(
+                        request.getCredentialRef(),
+                        request.getAgentUrl(),
+                        request.getRawConfig(),
+                        request.isUseCallerIdentity() ? request.getUserAssertion() : null);
+        return withTokenEviction(azure, auth -> api.status(azure.target(), auth, executionId));
     }
 
     @Override
@@ -141,12 +161,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
         withTokenEviction(
                 azure,
-                token -> {
-                    JsonNode run = api.latestRun(azure.target(), token, threadId);
+                auth -> {
+                    JsonNode run = api.latestRun(azure.target(), auth, threadId);
                     if ("requires_action".equals(run.path("status").asText())) {
                         api.submitToolOutputs(
                                 azure.target(),
-                                token,
+                                auth,
                                 threadId,
                                 run,
                                 AgentBodies.toolResults(request, outstandingToolCallIds(run)));
@@ -154,7 +174,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         // Multi-turn: a new run on the same thread. The caller's executionId stays
                         // valid, because the next poll resolves whichever run is newest.
                         api.addMessageAndStartRun(
-                                azure.target(), token, threadId, AgentBodies.toMessage(request));
+                                azure.target(), auth, threadId, AgentBodies.toMessage(request));
                     }
                     return null;
                 });
@@ -167,8 +187,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         try {
             withTokenEviction(
                     azure,
-                    token -> {
-                        api.cancelLatestRun(azure.target(), token, threadId);
+                    auth -> {
+                        api.cancelLatestRun(azure.target(), auth, threadId);
                         return null;
                     });
         } catch (Exception e) {
@@ -182,104 +202,286 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     // Runs one API interaction with a cached token, dropping that cached provider if Azure rejects
     // it. No retry here on purpose — the agent delegate polls again within seconds, well inside its
     // failure budget, and by then the provider has been rebuilt from the secret store.
-    private <T> T withTokenEviction(Azure azure, TokenedCall<T> call) {
-        String token = tokenProvider(azure.providerKey()).getToken();
+    // --- discovery ----------------------------------------------------------------------------
+
+    /**
+     * The agents visible at this endpoint, so Foundry agents appear in the agent list alongside
+     * agents defined in Conductor. Best effort: one misconfigured credential returns nothing rather
+     * than breaking the whole listing.
+     */
+    public List<AgentSummary> listExternalAgents(String credentialRef, String endpoint) {
+        String base = trimTrailingSlash(endpoint);
         try {
-            return call.apply(token);
+            List<AgentSummary> agents = new ArrayList<>();
+            for (JsonNode item : discoverAgents(credentialRef, base)) {
+                agents.add(
+                        AgentSummary.builder()
+                                .name(item.path("name").asText(item.path("id").asText("unknown")))
+                                .version(1)
+                                .type(A2AService.AGENT_TYPE_AZURE_FOUNDRY)
+                                .description(item.path("description").asText(null))
+                                // Azure reports seconds; AgentSummary carries millis.
+                                .createTime(item.path("created_at").asLong(0) * 1000L)
+                                .build());
+            }
+            log.debug("Discovered {} Azure Foundry agent(s) at {}", agents.size(), base);
+            return agents;
+        } catch (Exception e) {
+            log.warn("Failed to list Azure Foundry agents at {}: {}", base, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /** One agent's definition by name or id, or null when this endpoint does not have it. */
+    public Map<String, Object> getExternalAgentDef(
+            String agentName, String credentialRef, String endpoint) {
+        String base = trimTrailingSlash(endpoint);
+        try {
+            for (JsonNode item : discoverAgents(credentialRef, base)) {
+                if (agentName.equals(item.path("name").asText())
+                        || agentName.equals(item.path("id").asText())) {
+                    Map<String, Object> definition =
+                            MAPPER.convertValue(
+                                    item, new TypeReference<LinkedHashMap<String, Object>>() {});
+                    definition.put("provider", A2AService.AGENT_TYPE_AZURE_FOUNDRY);
+                    definition.put("endpoint", base);
+                    return definition;
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to fetch Azure Foundry agent '{}' at {}: {}",
+                    agentName,
+                    base,
+                    e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Lists agents from whichever surface this endpoint is. A Foundry project serves them under
+     * {@code /agents}; the classic Assistants endpoint under {@code /openai/assistants}.
+     */
+    private JsonNode discoverAgents(String credentialRef, String endpoint) {
+        boolean foundryProject = isFoundryProjectEndpoint(endpoint);
+        String url =
+                endpoint
+                        + (foundryProject ? "/agents" : "/openai/assistants")
+                        + "?api-version="
+                        + (foundryProject ? FOUNDRY_PROJECT_API_VERSION : DEFAULT_API_VERSION);
+
+        String scope =
+                StringUtils.defaultIfBlank(
+                        StringUtils.isNotBlank(credentialRef)
+                                ? credentialResolutionService.resolve(credentialRef + ".scope")
+                                : null,
+                        AzureFoundryAuth.scopeFor(endpoint));
+        AssistantsAuth auth =
+                AzureFoundryAuth.resolve(
+                        credentialResolutionService, httpClient, credentialRef, null, scope);
+
+        Request request =
+                new Request.Builder()
+                        .url(url)
+                        .get()
+                        .header(auth.headerName(), auth.headerValue())
+                        .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "{}";
+            if (!response.isSuccessful()) {
+                throw new IllegalStateException(
+                        "Azure Foundry agent listing failed: HTTP " + response.code());
+            }
+            JsonNode data = MAPPER.readTree(body).path("data");
+            return data.isArray() ? data : MAPPER.createArrayNode();
+        } catch (IOException e) {
+            throw new IllegalStateException("Azure Foundry agent listing failed", e);
+        }
+    }
+
+    /** A Foundry project endpoint, which serves the newer agent and Responses APIs. */
+    static boolean isFoundryProjectEndpoint(String endpoint) {
+        return endpoint != null
+                && endpoint.contains("services.ai.azure.com")
+                && endpoint.contains("/api/projects/");
+    }
+
+    /** A model-inference endpoint, which is synchronous and has no thread or run of its own. */
+    static boolean isInferenceEndpoint(String endpoint) {
+        return endpoint != null
+                && (endpoint.contains("inference.ml.azure.com")
+                        || (endpoint.contains("services.ai.azure.com")
+                                && !endpoint.contains("/api/projects/")));
+    }
+
+    private static String trimTrailingSlash(String value) {
+        return value != null && value.endsWith("/")
+                ? value.substring(0, value.length() - 1)
+                : value;
+    }
+
+    private <T> T withTokenEviction(Azure azure, AuthedCall<T> call) {
+        AssistantsAuth auth = auth(azure);
+        try {
+            return call.apply(auth);
         } catch (AssistantsRunApi.UnauthorizedException e) {
-            tokenProviders.remove(azure.providerKey());
+            resolvedAuth.remove(azure.providerKey());
             throw e;
         }
     }
 
-    private interface TokenedCall<T> {
-        T apply(String token);
+    private interface AuthedCall<T> {
+        T apply(AssistantsAuth auth);
     }
 
-    // Returns a cached provider when one is still fresh, otherwise resolves the credentials and
-    // builds a new one. Deliberately get-then-put rather than computeIfAbsent: buildTokenProvider
-    // reads the secret store, and running that inside a mapping function would hold a map lock
-    // across the I/O. Two threads racing here each build a valid provider and the last write wins.
-    private OAuthTokenProvider tokenProvider(ProviderKey key) {
+    /**
+     * Auth for one call, from cache when it may be reused. Auth resolved on behalf of a caller
+     * bypasses the cache: the token is that person's, and keeping it would hand their identity to
+     * whoever polls next.
+     */
+    private AssistantsAuth auth(Azure azure) {
+        ProviderKey key = azure.providerKey();
+        if (StringUtils.isNotBlank(azure.userAssertion())) {
+            return AzureFoundryAuth.resolve(
+                    credentialResolutionService,
+                    httpClient,
+                    key.credentialRef(),
+                    azure.userAssertion(),
+                    resolveScope(key));
+        }
+
         long now = clock.millis();
-        CachedProvider cached = tokenProviders.get(key);
+        CachedAuth cached = resolvedAuth.get(key);
         if (cached != null && !cached.isExpired(now)) {
-            return cached.provider();
+            return cached.auth();
         }
-        // Only a successful build is cached — a missing or incomplete credential must keep raising
-        // on every call rather than being remembered as a negative result.
-        OAuthTokenProvider provider = buildTokenProvider(key.credentialRef(), resolveScope(key));
-        tokenProviders.put(key, new CachedProvider(provider, now + TOKEN_PROVIDER_TTL.toMillis()));
-        return provider;
-    }
-
-    // Resolved on a cache miss only. The key carries the rawConfig override rather than the
-    // resolved value precisely so that looking up a cached provider needs no secret-store read: a
-    // given credentialRef and override always resolve to the same scope.
-    private String resolveScope(ProviderKey key) {
-        String scope =
-                StringUtils.defaultIfBlank(
-                        key.scopeOverride(),
-                        credentialResolutionService.resolve(key.credentialRef() + ".scope"));
-        return StringUtils.defaultIfBlank(scope, DEFAULT_SCOPE);
-    }
-
-    private OAuthTokenProvider buildTokenProvider(String credentialRef, String scope) {
-        String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
-        String clientSecret = credentialResolutionService.resolve(credentialRef + ".client_secret");
-        String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
-
-        if (StringUtils.isAnyBlank(clientId, clientSecret, tenantId)) {
-            throw new IllegalStateException(
-                    "Azure Foundry credential '"
-                            + credentialRef
-                            + "' must contain client_id, client_secret, and tenant_id");
+        // Get-then-put rather than computeIfAbsent: resolving reads the secret store, and running
+        // that inside a mapping function would hold a map lock across the I/O.
+        AzureFoundryAuth resolved =
+                AzureFoundryAuth.resolve(
+                        credentialResolutionService,
+                        httpClient,
+                        key.credentialRef(),
+                        null,
+                        resolveScope(key));
+        if (resolved.isReusable()) {
+            resolvedAuth.put(key, new CachedAuth(resolved, now + AUTH_TTL.toMillis()));
         }
-
-        return OAuthTokenProvider.forAzureEntraId(
-                httpClient, tenantId, clientId, clientSecret, scope);
+        return resolved;
     }
 
     // Everything needed to reach an Azure run, rebuilt from the originating task input on every
     // call. This is what replaces holding per-run state in process.
     private Azure azure(String credentialRef, Map<String, Object> rawConfig) {
-        if (StringUtils.isBlank(credentialRef)) {
-            throw new IllegalArgumentException(
-                    "credentialRef is required for Azure Foundry agent requests");
-        }
+        return azure(credentialRef, null, rawConfig, null);
+    }
+
+    /**
+     * Everything needed to reach an Azure run, rebuilt from the originating task input on every
+     * call. {@code agentUrl} is preferred over {@code rawConfig.endpoint} so every agent type names
+     * its location the same way A2A does.
+     */
+    private Azure azure(
+            String credentialRef,
+            String agentUrl,
+            Map<String, Object> rawConfig,
+            String userAssertion) {
+        // A credential is not required when the caller's own identity or the host's default
+        // credential chain supplies it.
+        String endpoint = resolveEndpoint(endpointFromUrl(agentUrl), rawConfig);
         String apiVersion =
                 StringUtils.defaultIfBlank(rawConfig(rawConfig, "apiVersion"), DEFAULT_API_VERSION);
         AssistantsRunApi.Target target =
                 new AssistantsRunApi.Target(
-                        resolveEndpoint(rawConfig),
-                        resolveAssistantId(rawConfig),
+                        endpoint,
+                        resolveAssistantId(agentUrl, rawConfig),
                         "api-version=" + apiVersion,
                         Map.of());
-        return new Azure(target, new ProviderKey(credentialRef, rawConfig(rawConfig, "scope")));
+        return new Azure(
+                target,
+                new ProviderKey(credentialRef, rawConfig(rawConfig, "scope"), endpoint),
+                userAssertion);
     }
 
-    private String resolveEndpoint(Map<String, Object> rawConfig) {
-        String endpoint = rawConfig(rawConfig, "endpoint");
+    /**
+     * The scope for this endpoint. Explicit configuration wins; otherwise it follows the Foundry
+     * surface, whose several APIs do not share one.
+     *
+     * <p>Resolved only when auth is being built, never to look up the cache: the {@code .scope}
+     * sub-key is a secret-store read, and doing it per poll is the cost the cache exists to avoid.
+     */
+    private String resolveScope(ProviderKey key) {
+        String configured = key.scopeOverride();
+        if (StringUtils.isBlank(configured) && StringUtils.isNotBlank(key.credentialRef())) {
+            configured = credentialResolutionService.resolve(key.credentialRef() + ".scope");
+        }
+        return StringUtils.defaultIfBlank(configured, AzureFoundryAuth.scopeFor(key.endpoint()));
+    }
+
+    private String resolveEndpoint(String agentUrl, Map<String, Object> rawConfig) {
+        String endpoint = StringUtils.defaultIfBlank(agentUrl, rawConfig(rawConfig, "endpoint"));
         if (StringUtils.isBlank(endpoint)) {
             endpoint = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
         }
         if (StringUtils.isBlank(endpoint)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided via rawConfig.endpoint or AZURE_FOUNDRY_ENDPOINT secret");
+                    "Azure Foundry endpoint must be provided via agentUrl, rawConfig.endpoint, or the AZURE_FOUNDRY_ENDPOINT secret");
         }
         return endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
 
-    private static String resolveAssistantId(Map<String, Object> rawConfig) {
-        String id = rawConfig(rawConfig, "assistantId");
+    /**
+     * The assistant to run. {@code rawConfig} wins; otherwise it is taken from the agentUrl, which
+     * may name it directly — {@code …/assistants/asst_x} on the classic surface, {@code
+     * …/agents/name} on a Foundry project.
+     */
+    private static String resolveAssistantId(String agentUrl, Map<String, Object> rawConfig) {
+        String id =
+                StringUtils.defaultIfBlank(
+                        rawConfig(rawConfig, "assistantId"), rawConfig(rawConfig, "agentId"));
         if (StringUtils.isBlank(id)) {
-            id = rawConfig(rawConfig, "agentId");
+            id = agentIdFromUrl(agentUrl);
         }
         if (StringUtils.isBlank(id)) {
             throw new IllegalArgumentException(
-                    "rawConfig.assistantId is required for Azure Foundry agent requests");
+                    "The agent must be named, either as rawConfig.assistantId or in agentUrl"
+                            + " (…/assistants/asst_x or …/agents/NAME)");
         }
         return id;
+    }
+
+    /** The trailing agent name in an agentUrl, or null when it names only the endpoint. */
+    static String agentIdFromUrl(String agentUrl) {
+        if (StringUtils.isBlank(agentUrl)) {
+            return null;
+        }
+        for (String marker : new String[] {"/agents/", "/assistants/"}) {
+            int at = agentUrl.lastIndexOf(marker);
+            if (at >= 0) {
+                String id = agentUrl.substring(at + marker.length());
+                return StringUtils.trimToNull(StringUtils.substringBefore(id, "?"));
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The endpoint an agentUrl points at, with any trailing agent name removed — so one field can
+     * carry both without the agent name ending up in every request path.
+     */
+    static String endpointFromUrl(String agentUrl) {
+        if (StringUtils.isBlank(agentUrl)) {
+            return null;
+        }
+        for (String marker : new String[] {"/agents/", "/assistants/"}) {
+            int at = agentUrl.lastIndexOf(marker);
+            if (at >= 0) {
+                // …/agents/NAME  -> …/api/projects/{proj};  …/assistants/asst_x -> …/openai
+                return agentUrl.substring(0, at);
+            }
+        }
+        return agentUrl;
     }
 
     // The calls the provider is actually waiting on, which is more authoritative than whatever the
@@ -298,13 +500,15 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return value != null ? value.toString() : null;
     }
 
-    private record Azure(AssistantsRunApi.Target target, ProviderKey providerKey) {}
+    private record Azure(
+            AssistantsRunApi.Target target, ProviderKey providerKey, String userAssertion) {}
 
-    // scopeOverride is the raw rawConfig.scope value, which may be null — never the resolved scope,
-    // so that a cache lookup costs no secret-store read.
-    private record ProviderKey(String credentialRef, String scopeOverride) {}
+    // Every part is free to compute: the raw rawConfig.scope override (may be null) and the
+    // endpoint. Never the resolved scope, whose .scope sub-key lookup would cost a secret-store
+    // read on every cache hit.
+    private record ProviderKey(String credentialRef, String scopeOverride, String endpoint) {}
 
-    private record CachedProvider(OAuthTokenProvider provider, long expiresAtMillis) {
+    private record CachedAuth(AzureFoundryAuth auth, long expiresAtMillis) {
 
         boolean isExpired(long nowMillis) {
             return nowMillis >= expiresAtMillis;

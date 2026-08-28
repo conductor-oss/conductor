@@ -28,6 +28,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsRunApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,7 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
         AssistantsRunApi.Target target = target(request.getRawConfig());
         String threadId =
                 api.createThreadAndRun(
-                        target, apiKey(request.getCredentialRef()), request.getPrompt());
+                        target, auth(request.getCredentialRef()), request.getPrompt());
         return ConductorAgentStartResponse.builder()
                 .executionId(threadId)
                 .agentName(target.assistantId())
@@ -100,14 +101,14 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
     public ConductorAgentStatusResponse getAgentStatus(
             String executionId, ConductorAgentRequest request) {
         return api.status(
-                target(request.getRawConfig()), apiKey(request.getCredentialRef()), executionId);
+                target(request.getRawConfig()), auth(request.getCredentialRef()), executionId);
     }
 
     @Override
     public void respond(ConductorAgentRespondRequest request) {
         String threadId = request.getExecutionId();
         AssistantsRunApi.Target target = target(request.getRawConfig());
-        String token = apiKey(request.getCredentialRef());
+        AssistantsAuth token = auth(request.getCredentialRef());
 
         JsonNode run = api.latestRun(target, token, threadId);
         if ("requires_action".equals(run.path("status").asText())) {
@@ -127,7 +128,7 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
         try {
             api.cancelLatestRun(
                     target(request.getRawConfig()),
-                    apiKey(request.getCredentialRef()),
+                    auth(request.getCredentialRef()),
                     request.getExecutionId());
         } catch (Exception e) {
             log.warn(
@@ -154,6 +155,10 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
 
     // Read per call rather than cached: a static API key needs no token exchange, so this is one
     // secret-store read and no network round trip.
+    private AssistantsAuth auth(String credentialRef) {
+        return AssistantsAuth.bearer(apiKey(credentialRef));
+    }
+
     private String apiKey(String credentialRef) {
         if (StringUtils.isBlank(credentialRef)) {
             throw new IllegalArgumentException(

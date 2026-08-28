@@ -406,6 +406,35 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   }}
                 />
               </Grid>
+              {runtime === "azure-foundry" && (
+                <Grid size={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={!!get("inputParameters.useCallerIdentity")}
+                        onChange={(e) =>
+                          set(
+                            "inputParameters.useCallerIdentity",
+                            e.target.checked,
+                          )
+                        }
+                      />
+                    }
+                    label="Run as the person who triggered the workflow"
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    Exchanges the caller&apos;s Entra ID token for a
+                    Foundry-scoped one, so the agent sees only what that person
+                    can. Needs the cluster wired to Entra ID SSO and a service
+                    principal on the credential; otherwise the stored credential
+                    is used.
+                  </Typography>
+                </Grid>
+              )}
               <Grid size={12}>
                 <ConductorInput
                   label="Prompt"

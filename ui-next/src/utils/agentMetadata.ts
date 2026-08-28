@@ -358,24 +358,28 @@ export interface AgentTaskPresentation {
   badge: string;
   name: string;
   taskReferenceName: string;
-  unresolved: boolean;
 }
 
+/**
+ * Deliberately reports no "unresolved" state. Resolution only runs through the editor's save flow,
+ * so a workflow registered any other way — API, SDK, curl, or a save predating agent snapshots —
+ * never has a snapshot, and a resolution attempt can also fail transiently. Neither means the
+ * configured agent is broken, so the card shows the configured identity either way.
+ */
 export const getAgentTaskPresentation = (
   task: Pick<TaskDef, "inputParameters" | "metadata" | "taskReferenceName">,
 ): AgentTaskPresentation => {
   const input = task.inputParameters ?? {};
+  // The live input is authoritative: a stored snapshot lags a live edit, since resolution only runs
+  // on save. Reuse the snapshot's display name only while its type still matches what is configured.
+  const type = agentRuntimeType(input);
   const snapshot = getAgentSnapshot(task);
-  const type = snapshot?.agentType ?? agentRuntimeType(input);
-  const identity = snapshot?.displayName || agentSourceIdentity(input);
+  const identity =
+    (snapshot?.agentType === type ? snapshot.displayName : undefined) ||
+    agentSourceIdentity(input);
   return {
     badge: AGENT_RUNTIME_BADGES[type],
     name: identity || `${AGENT_RUNTIME_LABELS[type]} agent`,
     taskReferenceName: task.taskReferenceName,
-    // Conductor agents are registered locally and their configured name is
-    // authoritative. A missing editor snapshot only means that the optional
-    // detail hydration has not completed; it does not make the agent itself
-    // unresolved. A2A identities depend on remote Agent Card discovery.
-    unresolved: type === "a2a" && !snapshot?.resolved,
   };
 };

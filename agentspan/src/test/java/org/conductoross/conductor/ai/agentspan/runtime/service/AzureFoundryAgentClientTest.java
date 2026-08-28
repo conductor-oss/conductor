@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.azure.identity.CredentialUnavailableException;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -100,10 +102,8 @@ class AzureFoundryAgentClientTest {
         foundry.start();
 
         secrets = new InMemorySecretsDAO();
-        secrets.put(
-                CREDENTIAL_REF,
-                """
-                {"client_id":"cid","client_secret":"csecret","tenant_id":"tid"}""");
+        secrets.put(CREDENTIAL_REF, """
+                {"apiKey":"azure-api-key"}""");
 
         tokenEndpoint = new TokenEndpointInterceptor();
         clock = new MutableClock();
@@ -242,14 +242,15 @@ class AzureFoundryAgentClientTest {
     }
 
     @Test
-    void missingCredentialRefFailsAsABadRequest() {
+    void aMissingCredentialRefFallsBackToTheHostsOwnIdentity() {
         ConductorAgentRequest request = new ConductorAgentRequest();
         request.setRawConfig(rawConfig());
 
-        // IllegalArgumentException is what the delegate treats as terminal rather than transient.
+        // Deliberate: a deployment running on managed identity configures no credential at all, so
+        // the default Azure credential chain is a supported mode rather than a bad request. It has
+        // nothing to find in a test JVM, which is what surfaces here.
         assertThatThrownBy(() -> client.getAgentStatus("thread-1", request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("credentialRef is required");
+                .isInstanceOf(CredentialUnavailableException.class);
     }
 
     @Test
@@ -394,9 +395,8 @@ class AzureFoundryAgentClientTest {
             client.getAgentStatus(executionId, statusRequest());
         }
 
-        // Five polls, no extra Entra ID round trip and no secret-store read at all. Before the
-        // cache, each poll cost one token request plus three secret reads.
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(1);
+        // Five polls, and not one read of the secret store. Before the cache, every poll resolved
+        // the credential again — and for a service principal, exchanged a token too.
         assertThat(secrets.reads.get()).isEqualTo(secretReadsAfterStart);
     }
 
@@ -404,36 +404,37 @@ class AzureFoundryAgentClientTest {
     void cachedProviderIsRebuiltAfterItsTtlLapses() {
         String executionId = start().getExecutionId();
         client.getAgentStatus(executionId, statusRequest());
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(1);
+        int readsWhileCached = secrets.reads.get();
 
         clock.advance(Duration.ofMinutes(11));
         client.getAgentStatus(executionId, statusRequest());
 
         // The TTL is the backstop that picks up a rotated credential even when Azure never rejects
-        // the token we hold.
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(2);
+        // what we hold.
+        assertThat(secrets.reads.get()).isGreaterThan(readsWhileCached);
     }
 
     @Test
     void providerCacheIsKeyedByCredentialRefAndScope() {
-        secrets.put(
-                "OTHER_CRED",
-                """
-                {"client_id":"cid2","client_secret":"csecret2","tenant_id":"tid2"}""");
+        secrets.put("OTHER_CRED", """
+                {"apiKey":"other-api-key"}""");
 
         String first = start(CREDENTIAL_REF).getExecutionId();
         String second = start("OTHER_CRED").getExecutionId();
+        int readsBefore = secrets.reads.get();
         client.getAgentStatus(first, statusRequest(CREDENTIAL_REF));
         client.getAgentStatus(second, statusRequest("OTHER_CRED"));
 
-        // One provider per credential — not one shared across both, and not one per call.
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(2);
+        // Cached per credential, so neither poll re-read the store — and the two never share an
+        // entry, which the distinct api-key headers below prove.
+        assertThat(secrets.reads.get()).isEqualTo(readsBefore);
+        assertThat(requestLog).anyMatch(r -> r.contains("azure-api-key"));
+        assertThat(requestLog).anyMatch(r -> r.contains("other-api-key"));
     }
 
     @Test
     void rejectedAuthEvictsCachedProvider() {
         String executionId = start().getExecutionId();
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(1);
         int secretReadsBefore = secrets.reads.get();
 
         rejectAuth.set(true);
@@ -445,7 +446,6 @@ class AzureFoundryAgentClientTest {
 
         // A rotated credential is picked up on the very next poll rather than waiting out the TTL —
         // the delegate's failure budget is shorter than the TTL.
-        assertThat(tokenEndpoint.requests.get()).isEqualTo(2);
         assertThat(secrets.reads.get()).isGreaterThan(secretReadsBefore);
     }
 
@@ -485,11 +485,9 @@ class AzureFoundryAgentClientTest {
         }
 
         assertThat(failures).isEmpty();
-        // The cache races benignly: a handful of threads may each build a provider, but nowhere
-        // near
-        // one per poll.
-        assertThat(tokenEndpoint.requests.get()).isBetween(1, threads);
-        assertThat(tokenEndpoint.requests.get()).isLessThan(threads * pollsPerThread);
+        // The cache races benignly: a few threads may each resolve auth, but nowhere near one
+        // resolution per poll.
+        assertThat(secrets.reads.get()).isLessThan(threads * pollsPerThread);
     }
 
     // --- helpers ---------------------------------------------------------------------------
@@ -549,7 +547,16 @@ class AzureFoundryAgentClientTest {
             String path = request.getPath() == null ? "" : request.getPath();
             String body = request.getBody().readUtf8();
             synchronized (requestLog) {
-                requestLog.add(request.getMethod() + " " + path + " " + body);
+                // The credential header goes in too, so a test can tell which credential was used.
+                requestLog.add(
+                        request.getMethod()
+                                + " "
+                                + path
+                                + " auth="
+                                + StringUtils.defaultString(request.getHeader("api-key"))
+                                + StringUtils.defaultString(request.getHeader("Authorization"))
+                                + " "
+                                + body);
             }
             if (rejectAuth.get()) {
                 return new MockResponse().setResponseCode(401).setBody("{\"error\":\"expired\"}");

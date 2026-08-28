@@ -33,12 +33,15 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
@@ -48,6 +51,9 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequ
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResponseHandler;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
+import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 
 /**
  * {@link ConductorAgentClient} backed by AWS Bedrock Agent Runtime.
@@ -96,7 +102,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
 
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
-        BedrockTarget target = target(request.getCredentialRef(), request.getRawConfig());
+        BedrockTarget target =
+                target(request.getCredentialRef(), request.getAgentUrl(), request.getRawConfig());
         String sessionId =
                 StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
@@ -206,6 +213,133 @@ public class BedrockAgentClient implements ConductorAgentClient {
         runtimeClients.clear();
     }
 
+    // --- discovery ----------------------------------------------------------------------------
+
+    /**
+     * The Bedrock agents visible with this credential, so they appear in the agent list alongside
+     * agents defined in Conductor. Discovery is best effort: a credential that cannot list returns
+     * nothing rather than failing the whole listing.
+     */
+    public List<AgentSummary> listExternalAgents(String credentialRef, String region) {
+        String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
+                managementClient(credentialRef, resolvedRegion)) {
+            List<AgentSummary> agents = new ArrayList<>();
+            String nextToken = null;
+            do {
+                var request =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest
+                                .builder()
+                                .maxResults(100);
+                if (nextToken != null) {
+                    request.nextToken(nextToken);
+                }
+                var response = management.listAgents(request.build());
+                for (var agent : response.agentSummaries()) {
+                    agents.add(
+                            AgentSummary.builder()
+                                    .name(agent.agentName())
+                                    .version(1)
+                                    .type(A2AService.AGENT_TYPE_BEDROCK)
+                                    .description(agent.description())
+                                    .updateTime(
+                                            agent.updatedAt() != null
+                                                    ? agent.updatedAt().toEpochMilli()
+                                                    : 0L)
+                                    .build());
+                }
+                nextToken = response.nextToken();
+            } while (nextToken != null);
+            log.debug("Discovered {} Bedrock agent(s) in {}", agents.size(), resolvedRegion);
+            return agents;
+        } catch (Exception e) {
+            log.warn("Failed to list Bedrock agents in {}: {}", resolvedRegion, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * The full definition of one Bedrock agent by name, or null when this credential cannot see it.
+     * Bedrock addresses agents by id, so the name is resolved through a listing first.
+     */
+    public Map<String, Object> getExternalAgentDef(
+            String agentName, String credentialRef, String region) {
+        String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
+        try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
+                managementClient(credentialRef, resolvedRegion)) {
+            String agentId = null;
+            String nextToken = null;
+            while (agentId == null) {
+                var request =
+                        software.amazon.awssdk.services.bedrockagent.model.ListAgentsRequest
+                                .builder()
+                                .maxResults(100);
+                if (nextToken != null) {
+                    request.nextToken(nextToken);
+                }
+                var response = management.listAgents(request.build());
+                for (var agent : response.agentSummaries()) {
+                    if (agentName.equals(agent.agentName())) {
+                        agentId = agent.agentId();
+                        break;
+                    }
+                }
+                nextToken = response.nextToken();
+                if (nextToken == null) {
+                    break;
+                }
+            }
+            if (agentId == null) {
+                return null;
+            }
+
+            var agent =
+                    management
+                            .getAgent(
+                                    software.amazon.awssdk.services.bedrockagent.model
+                                            .GetAgentRequest.builder()
+                                            .agentId(agentId)
+                                            .build())
+                            .agent();
+
+            Map<String, Object> definition = new LinkedHashMap<>();
+            definition.put("agentId", agent.agentId());
+            definition.put("agentName", agent.agentName());
+            definition.put("description", agent.description());
+            definition.put("instruction", agent.instruction());
+            definition.put("foundationModel", agent.foundationModel());
+            definition.put(
+                    "agentStatus",
+                    agent.agentStatus() != null ? agent.agentStatus().toString() : null);
+            definition.put("agentArn", agent.agentArn());
+            definition.put("idleSessionTTLInSeconds", agent.idleSessionTTLInSeconds());
+            definition.put(
+                    "createdAt",
+                    agent.createdAt() != null ? agent.createdAt().toEpochMilli() : null);
+            definition.put(
+                    "updatedAt",
+                    agent.updatedAt() != null ? agent.updatedAt().toEpochMilli() : null);
+            definition.put("provider", A2AService.AGENT_TYPE_BEDROCK);
+            definition.put("region", resolvedRegion);
+            return definition;
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to fetch Bedrock agent '{}' in {}: {}",
+                    agentName,
+                    resolvedRegion,
+                    e.getMessage());
+            return null;
+        }
+    }
+
+    private software.amazon.awssdk.services.bedrockagent.BedrockAgentClient managementClient(
+            String credentialRef, String region) {
+        return software.amazon.awssdk.services.bedrockagent.BedrockAgentClient.builder()
+                .region(Region.of(region))
+                .credentialsProvider(credentialsFor(credentialRef, region))
+                .build();
+    }
+
     /** Runs one InvokeAgent turn to completion and reduces the stream to its outcome. */
     private Turn invoke(BedrockTarget target, InvokeAgentRequest invokeRequest) {
         StringBuilder textBuffer = new StringBuilder();
@@ -280,7 +414,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     private BedrockAgentRuntimeAsyncClient runtimeClient(BedrockTarget target) {
-        return runtimeClients.computeIfAbsent(target.clientKey(), BedrockAgentClient::buildClient);
+        return runtimeClients.computeIfAbsent(target.clientKey(), this::buildClient);
     }
 
     // Visible for tests: proves one SDK client is shared per credential and region rather than
@@ -295,37 +429,124 @@ public class BedrockAgentClient implements ConductorAgentClient {
         runtimeClient(target(credentialRef, rawConfig));
     }
 
-    private static BedrockAgentRuntimeAsyncClient buildClient(ClientKey key) {
-        if (StringUtils.isNotBlank(key.accessKeyId()) && StringUtils.isNotBlank(key.secretKey())) {
-            return BedrockAgentRuntimeAsyncClient.builder()
-                    .region(Region.of(key.region()))
-                    .credentialsProvider(
-                            StaticCredentialsProvider.create(
-                                    AwsBasicCredentials.create(key.accessKeyId(), key.secretKey())))
-                    .build();
-        }
-        // Fall back to the default credential chain (instance role, env vars, ~/.aws/credentials)
-        return BedrockAgentRuntimeAsyncClient.builder().region(Region.of(key.region())).build();
+    private BedrockAgentRuntimeAsyncClient buildClient(ClientKey key) {
+        return BedrockAgentRuntimeAsyncClient.builder()
+                .region(Region.of(key.region()))
+                .credentialsProvider(credentialsFor(key.credentialRef(), key.region()))
+                .build();
     }
 
-    // Everything needed to reach the agent, rebuilt from the originating task input on every call.
+    /**
+     * AWS credentials for a reference, first match wins:
+     *
+     * <ol>
+     *   <li>static {@code .accessKeyId} + {@code .secretAccessKey}
+     *   <li>{@code .roleArn} — assumed via STS, the SDK refreshing the temporary credentials;
+     *       {@code .roleSessionName} and {@code .externalId} are honored when present
+     *   <li>the SDK default chain — environment, instance or task role, {@code ~/.aws/credentials}
+     * </ol>
+     */
+    AwsCredentialsProvider credentialsFor(String credentialRef, String region) {
+        if (StringUtils.isNotBlank(credentialRef)) {
+            String accessKeyId =
+                    credentialResolutionService.resolve(credentialRef + ".accessKeyId");
+            String secretAccessKey =
+                    credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
+            if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
+                return StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey));
+            }
+
+            String roleArn = credentialResolutionService.resolve(credentialRef + ".roleArn");
+            if (StringUtils.isNotBlank(roleArn)) {
+                AssumeRoleRequest.Builder assumeRole =
+                        AssumeRoleRequest.builder()
+                                .roleArn(roleArn)
+                                .roleSessionName(
+                                        StringUtils.defaultIfBlank(
+                                                credentialResolutionService.resolve(
+                                                        credentialRef + ".roleSessionName"),
+                                                "conductor-bedrock"));
+                String externalId =
+                        credentialResolutionService.resolve(credentialRef + ".externalId");
+                if (StringUtils.isNotBlank(externalId)) {
+                    assumeRole.externalId(externalId);
+                }
+                return StsAssumeRoleCredentialsProvider.builder()
+                        .stsClient(StsClient.builder().region(Region.of(region)).build())
+                        .refreshRequest(assumeRole.build())
+                        .build();
+            }
+        }
+        return DefaultCredentialsProvider.create();
+    }
+
     private BedrockTarget target(String credentialRef, Map<String, Object> rawConfig) {
+        return target(credentialRef, null, rawConfig);
+    }
+
+    /**
+     * Everything needed to reach the agent, rebuilt from the originating task input on every call.
+     * The agent may be named in {@code rawConfig} or as a {@code bedrock://AGENTID/ALIASID}
+     * agentUrl, so every agent type can use the same top-level field.
+     */
+    private BedrockTarget target(
+            String credentialRef, String agentUrl, Map<String, Object> rawConfig) {
         String agentId = rawConfig(rawConfig, "agentId");
         String agentAliasId = rawConfig(rawConfig, "agentAliasId");
+        String region = rawConfig(rawConfig, "region");
+
+        if (StringUtils.isAnyBlank(agentId, agentAliasId) && StringUtils.isNotBlank(agentUrl)) {
+            String[] coordinates = coordinatesFromUrl(agentUrl);
+            agentId = StringUtils.defaultIfBlank(agentId, coordinates[0]);
+            agentAliasId = StringUtils.defaultIfBlank(agentAliasId, coordinates[1]);
+            region = StringUtils.defaultIfBlank(region, coordinates[2]);
+        }
+
         if (StringUtils.isAnyBlank(agentId, agentAliasId)) {
             throw new IllegalArgumentException(
-                    "rawConfig.agentId and rawConfig.agentAliasId are required for Bedrock agent requests");
-        }
-        String region = StringUtils.defaultIfBlank(rawConfig(rawConfig, "region"), DEFAULT_REGION);
-
-        String accessKeyId = null;
-        String secretKey = null;
-        if (StringUtils.isNotBlank(credentialRef)) {
-            accessKeyId = credentialResolutionService.resolve(credentialRef + ".accessKeyId");
-            secretKey = credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
+                    "The agent must be named, either as rawConfig.agentId and rawConfig.agentAliasId"
+                            + " or as agentUrl bedrock://AGENTID/ALIASID");
         }
         return new BedrockTarget(
-                agentId, agentAliasId, new ClientKey(region, accessKeyId, secretKey));
+                agentId,
+                agentAliasId,
+                new ClientKey(StringUtils.defaultIfBlank(region, DEFAULT_REGION), credentialRef));
+    }
+
+    /**
+     * Splits {@code bedrock://AGENTID/ALIASID} — optionally {@code ?region=} — into agent id, alias
+     * id, and region. Region is null when the URL does not carry one.
+     */
+    static String[] coordinatesFromUrl(String agentUrl) {
+        if (!StringUtils.startsWith(agentUrl, "bedrock://")) {
+            throw new IllegalArgumentException(
+                    "A Bedrock agentUrl must look like bedrock://AGENTID/ALIASID"
+                            + " (optionally with ?region=<region>), got: "
+                            + agentUrl);
+        }
+        String path = agentUrl.substring("bedrock://".length());
+        String region = null;
+        int query = path.indexOf('?');
+        if (query >= 0) {
+            for (String param : path.substring(query + 1).split("&")) {
+                if (param.startsWith("region=")) {
+                    region = StringUtils.trimToNull(param.substring("region=".length()));
+                }
+            }
+            path = path.substring(0, query);
+        }
+        String[] parts = path.split("/", 2);
+        if (StringUtils.isBlank(parts[0])) {
+            throw new IllegalArgumentException("Bedrock agentUrl names no agent: " + agentUrl);
+        }
+        if (parts.length < 2 || StringUtils.isBlank(parts[1])) {
+            throw new IllegalArgumentException(
+                    "Bedrock agentUrl names no alias: "
+                            + agentUrl
+                            + " — use bedrock://AGENTID/ALIASID");
+        }
+        return new String[] {parts[0], parts[1], region};
     }
 
     private static String pendingToolName(ConductorAgentRespondRequest request) {
@@ -353,7 +574,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
     private record BedrockTarget(String agentId, String agentAliasId, ClientKey clientKey) {}
 
     /**
-     * Identity of a shareable SDK client. Static credentials are part of it; null means the chain.
+     * Identity of a shareable SDK client. Both parts are free to compute — the credential behind
+     * the reference is resolved when a client is built, not to look one up.
      */
-    private record ClientKey(String region, String accessKeyId, String secretKey) {}
+    private record ClientKey(String region, String credentialRef) {}
 }

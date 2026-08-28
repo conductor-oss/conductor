@@ -163,7 +163,6 @@ describe("agent metadata resolution", () => {
       badge: "CONDUCTOR AGENT",
       name: "researcher",
       taskReferenceName: "agent_ref",
-      unresolved: false,
     });
 
     const resolvedTask = {
@@ -179,7 +178,6 @@ describe("agent metadata resolution", () => {
     expect(getAgentTaskPresentation(resolvedTask)).toMatchObject({
       badge: "A2A AGENT",
       name: "Travel Agent",
-      unresolved: false,
     });
   });
 });
@@ -259,7 +257,6 @@ describe("hosted provider runtimes", () => {
       badge: "AZURE FOUNDRY AGENT",
       name: "asst_abc123",
       taskReferenceName: "ask_the_analyst",
-      unresolved: false,
     });
   });
 

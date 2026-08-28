@@ -67,16 +67,16 @@ public class AssistantsRunApi {
             String baseUrl, String assistantId, String query, Map<String, String> headers) {}
 
     /** Creates a thread, posts the prompt, starts a run, and returns the thread id. */
-    public String createThreadAndRun(Target target, String token, String prompt) {
-        JsonNode thread = post(target, token, "/threads", MAPPER.createObjectNode());
+    public String createThreadAndRun(Target target, AssistantsAuth auth, String prompt) {
+        JsonNode thread = post(target, auth, "/threads", MAPPER.createObjectNode());
         String threadId = thread.path("id").asText();
 
         ObjectNode message = MAPPER.createObjectNode();
         message.put("role", "user");
         message.put("content", prompt);
-        post(target, token, "/threads/" + threadId + "/messages", message);
+        post(target, auth, "/threads/" + threadId + "/messages", message);
 
-        startRun(target, token, threadId);
+        startRun(target, auth, threadId);
         return threadId;
     }
 
@@ -84,8 +84,8 @@ public class AssistantsRunApi {
      * The newest run on the thread, returned with its full status in a single call — so locating
      * the current run costs no more than fetching a remembered run id would.
      */
-    public JsonNode latestRun(Target target, String token, String threadId) {
-        JsonNode runs = get(target, token, "/threads/" + threadId + "/runs", "limit=1&order=desc");
+    public JsonNode latestRun(Target target, AssistantsAuth auth, String threadId) {
+        JsonNode runs = get(target, auth, "/threads/" + threadId + "/runs", "limit=1&order=desc");
         JsonNode data = runs.path("data");
         if (!data.isArray() || data.isEmpty()) {
             throw new IllegalStateException(
@@ -95,8 +95,9 @@ public class AssistantsRunApi {
     }
 
     /** Maps the newest run on the thread onto a Conductor status snapshot. */
-    public ConductorAgentStatusResponse status(Target target, String token, String threadId) {
-        JsonNode run = latestRun(target, token, threadId);
+    public ConductorAgentStatusResponse status(
+            Target target, AssistantsAuth auth, String threadId) {
+        JsonNode run = latestRun(target, auth, threadId);
         ConductorAgentState state = toState(run.path("status").asText("queued"));
         boolean complete =
                 state == ConductorAgentState.COMPLETED
@@ -110,7 +111,7 @@ public class AssistantsRunApi {
         String reason = null;
 
         if (state == ConductorAgentState.COMPLETED) {
-            output = latestAssistantMessage(target, token, threadId);
+            output = latestAssistantMessage(target, auth, threadId);
         } else if (state == ConductorAgentState.WAITING) {
             pendingTools = describeToolCalls(run);
             if (!pendingTools.isEmpty()) {
@@ -148,7 +149,7 @@ public class AssistantsRunApi {
      */
     public void submitToolOutputs(
             Target target,
-            String token,
+            AssistantsAuth auth,
             String threadId,
             JsonNode run,
             Map<String, String> resultsByToolCallId) {
@@ -180,7 +181,7 @@ public class AssistantsRunApi {
         }
         post(
                 target,
-                token,
+                auth,
                 "/threads/"
                         + threadId
                         + "/runs/"
@@ -191,20 +192,20 @@ public class AssistantsRunApi {
 
     /** Continues the conversation: appends a user message and starts a fresh run on the thread. */
     public void addMessageAndStartRun(
-            Target target, String token, String threadId, String content) {
+            Target target, AssistantsAuth auth, String threadId, String content) {
         ObjectNode message = MAPPER.createObjectNode();
         message.put("role", "user");
         message.put("content", content);
-        post(target, token, "/threads/" + threadId + "/messages", message);
-        startRun(target, token, threadId);
+        post(target, auth, "/threads/" + threadId + "/messages", message);
+        startRun(target, auth, threadId);
     }
 
     /** Cancels whichever run is currently newest on the thread. */
-    public void cancelLatestRun(Target target, String token, String threadId) {
-        String runId = latestRun(target, token, threadId).path("id").asText();
+    public void cancelLatestRun(Target target, AssistantsAuth auth, String threadId) {
+        String runId = latestRun(target, auth, threadId).path("id").asText();
         post(
                 target,
-                token,
+                auth,
                 "/threads/" + threadId + "/runs/" + runId + "/cancel",
                 MAPPER.createObjectNode());
     }
@@ -229,17 +230,17 @@ public class AssistantsRunApi {
         return run.path("required_action").path("submit_tool_outputs").path("tool_calls");
     }
 
-    private void startRun(Target target, String token, String threadId) {
+    private void startRun(Target target, AssistantsAuth auth, String threadId) {
         ObjectNode runBody = MAPPER.createObjectNode();
         runBody.put("assistant_id", target.assistantId());
-        post(target, token, "/threads/" + threadId + "/runs", runBody);
+        post(target, auth, "/threads/" + threadId + "/runs", runBody);
     }
 
     private Map<String, Object> latestAssistantMessage(
-            Target target, String token, String threadId) {
+            Target target, AssistantsAuth auth, String threadId) {
         // order=desc so the first assistant message is the newest, rather than relying on the
         // endpoint's default ordering.
-        JsonNode messages = get(target, token, "/threads/" + threadId + "/messages", "order=desc");
+        JsonNode messages = get(target, auth, "/threads/" + threadId + "/messages", "order=desc");
         for (JsonNode message : messages.path("data")) {
             if ("assistant".equals(message.path("role").asText())) {
                 return Map.of("result", extractText(message));
@@ -274,7 +275,7 @@ public class AssistantsRunApi {
         };
     }
 
-    private JsonNode post(Target target, String token, String path, ObjectNode body) {
+    private JsonNode post(Target target, AssistantsAuth auth, String path, ObjectNode body) {
         byte[] bytes;
         try {
             bytes = MAPPER.writeValueAsBytes(body);
@@ -282,15 +283,16 @@ public class AssistantsRunApi {
             throw new RuntimeException("Failed to serialize request body", e);
         }
         return execute(
-                request(target, token, path, null).post(RequestBody.create(bytes, JSON)).build(),
+                request(target, auth, path, null).post(RequestBody.create(bytes, JSON)).build(),
                 path);
     }
 
-    private JsonNode get(Target target, String token, String path, String extraQuery) {
-        return execute(request(target, token, path, extraQuery).get().build(), path);
+    private JsonNode get(Target target, AssistantsAuth auth, String path, String extraQuery) {
+        return execute(request(target, auth, path, extraQuery).get().build(), path);
     }
 
-    private Request.Builder request(Target target, String token, String path, String extraQuery) {
+    private Request.Builder request(
+            Target target, AssistantsAuth auth, String path, String extraQuery) {
         StringBuilder url = new StringBuilder(target.baseUrl()).append(path);
         String query = joinQuery(target.query(), extraQuery);
         if (!query.isEmpty()) {
@@ -299,7 +301,7 @@ public class AssistantsRunApi {
         Request.Builder builder =
                 new Request.Builder()
                         .url(url.toString())
-                        .header("Authorization", "Bearer " + token);
+                        .header(auth.headerName(), auth.headerValue());
         if (target.headers() != null) {
             target.headers().forEach(builder::header);
         }
