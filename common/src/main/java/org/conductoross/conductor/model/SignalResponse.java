@@ -28,4 +28,5 @@ public abstract class SignalResponse {
     private String correlationId;
     private Map<String, Object> input;
     private Map<String, Object> output;
+    private boolean signalTimeout;
 }

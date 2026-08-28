@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * Task mapper for the {@code AGENT} task type.
  *
  * <p>Produces the SCHEDULED task (with retry defaults) that the {@code AGENT} {@link
- * org.conductoross.conductor.ai.a2a.AgentTask} system task then executes asynchronously.
+ * org.conductoross.conductor.ai.tasks.worker.A2AWorkers} worker then executes asynchronously.
  */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)

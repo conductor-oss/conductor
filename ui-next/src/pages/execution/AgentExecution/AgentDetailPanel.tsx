@@ -1,6 +1,6 @@
 /**
  * AgentDetailPanel — right-hand panel matching Conductor's task detail style.
- * Tabs: Summary | Input | Output | JSON
+ * Tabs: Summary | Input | Prompt | Output | JSON
  */
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
@@ -13,13 +13,15 @@ import {
 } from "@mui/material";
 import { X as CloseIcon, ArrowRight, Scissors } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
-import Editor from "@monaco-editor/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { AgentDefinitionDetails } from "components/features/agents/AgentSnapshotDetails";
+import { ContentView, JsonView } from "./ContentViews";
+import { PromptPreview } from "./PromptPreview";
+import { hasPromptMessages } from "./promptPreviewModel";
 import {
   AgentEvent,
   AgentRunData,
   AgentStatus,
+  AgentStrategy,
   EventType,
   TaskAttempt,
 } from "./types";
@@ -27,8 +29,9 @@ import {
   formatTokens,
   formatDuration,
   getModelIconPath,
+  transformWorkflowExecutionToAgentRun,
 } from "./agentExecutionUtils";
-import { toolCategoryForPanel } from "utils/agentTaskCategory";
+import { WorkflowExecution } from "types/Execution";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,149 +53,346 @@ export interface DetailNodeData {
   groupType?: "agents" | "tools";
   groupAgents?: AgentRunData[];
   groupEvents?: AgentEvent[];
+  strategy?: AgentStrategy;
 }
 
 // ─── Tab keys ────────────────────────────────────────────────────────────────
 
 const SUMMARY_TAB = "summary";
 const INPUT_TAB = "input";
+const PROMPT_TAB = "prompt";
 const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
+const FORMATTED_OUTPUT_TAB = "formatted";
+const RAW_OUTPUT_TAB = "raw";
 
-// ─── JSON editor viewer (Monaco, fills available height) ─────────────────────
-
-function JsonView({ src }: { src: unknown }) {
-  const json = JSON.stringify(src, null, 2);
-  return (
-    <Editor
-      height="100%"
-      language="json"
-      value={json}
-      options={
-        {
-          readOnly: true,
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          lineNumbers: "off",
-          folding: true,
-          wordWrap: "on",
-          fontSize: 12,
-          renderLineHighlight: "none",
-          overviewRulerLanes: 0,
-          renderIndentGuides: false,
-        } as any
-      }
-      theme="vs"
-    />
-  );
+function formattedOutput(value: unknown): unknown {
+  if (typeof value !== "object" || value == null || Array.isArray(value)) {
+    return value;
+  }
+  const record = value as Record<string, unknown>;
+  for (const key of ["result", "output", "answer", "message", "content"]) {
+    if (typeof record[key] === "string") return record[key];
+  }
+  return value;
 }
 
-// ─── Markdown renderer ────────────────────────────────────────────────────────
-
-function looksLikeMarkdown(text: string): boolean {
-  return /^#{1,6}\s|\*\*[^*]+\*\*|^[-*]\s|\n#{1,6}\s|^\d+\.\s|^>\s/m.test(text);
-}
-
-function MarkdownView({ content }: { content: string }) {
+/** Keeps human-readable Markdown/text and the exact execution payload together. */
+function OutputView({ value }: { value: unknown }) {
+  const [view, setView] = useState(FORMATTED_OUTPUT_TAB);
   return (
     <Box
-      sx={{
-        "& h1,& h2,& h3": {
-          fontWeight: 700,
-          mt: 1.5,
-          mb: 0.75,
-          lineHeight: 1.3,
-        },
-        "& h1": { fontSize: "1rem" },
-        "& h2": { fontSize: "0.9rem" },
-        "& h3": { fontSize: "0.85rem" },
-        "& p": { my: 0.75, lineHeight: 1.6, fontSize: "0.875rem" },
-        "& ul,& ol": { pl: 2.5, my: 0.5 },
-        "& li": { fontSize: "0.875rem", lineHeight: 1.5 },
-        "& code": {
-          backgroundColor: "#f1f5f9",
-          borderRadius: 0.5,
-          px: 0.5,
-          fontFamily: "monospace",
-          fontSize: "0.8rem",
-        },
-        "& pre": {
-          backgroundColor: "#f1f5f9",
-          borderRadius: 1,
-          p: 1.5,
-          overflowX: "auto",
-          my: 1,
-          "& code": { backgroundColor: "transparent", p: 0 },
-        },
-        "& blockquote": {
-          borderLeft: "3px solid",
-          borderColor: "divider",
-          pl: 1.5,
-          my: 0.75,
-          color: "text.secondary",
-        },
-        "& strong": { fontWeight: 700 },
-        "& a": { color: "primary.main" },
-        "& table": { borderCollapse: "collapse", width: "100%", my: 1 },
-        "& th,& td": {
-          border: "1px solid",
-          borderColor: "divider",
-          px: 1,
-          py: 0.5,
-          fontSize: "0.875rem",
-        },
-        "& th": { backgroundColor: "grey.50", fontWeight: 600 },
-      }}
+      sx={{ display: "flex", flex: 1, minHeight: 0, flexDirection: "column" }}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <Tabs value={view} contextual style={{ marginBottom: 0 }}>
+        <Tab
+          label="Formatted"
+          value={FORMATTED_OUTPUT_TAB}
+          onClick={() => setView(FORMATTED_OUTPUT_TAB)}
+        />
+        <Tab
+          label="JSON"
+          value={RAW_OUTPUT_TAB}
+          onClick={() => setView(RAW_OUTPUT_TAB)}
+        />
+      </Tabs>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2 }}>
+        {view === FORMATTED_OUTPUT_TAB ? (
+          <ContentView
+            value={formattedOutput(value)}
+            label="output captured for this execution"
+          />
+        ) : value == null ? (
+          <ContentView
+            value={value}
+            label="output captured for this execution"
+          />
+        ) : (
+          <Box sx={{ height: 400 }}>
+            <JsonView src={value} />
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
 
-// ─── Smart content renderer (text/markdown/JSON) ──────────────────────────────
+interface FetchedAgentExecution {
+  run: AgentRunData;
+  rawExecution: WorkflowExecution;
+}
 
-function ContentView({ value, label }: { value: unknown; label?: string }) {
-  if (value == null) {
-    return (
-      <Typography
-        variant="body2"
-        color="text.disabled"
-        sx={{ py: 2, textAlign: "center", fontSize: "0.875rem" }}
-      >
-        No {label ?? "data"}
-      </Typography>
-    );
-  }
-  if (typeof value === "string") {
-    if (looksLikeMarkdown(value)) return <MarkdownView content={value} />;
-    return (
-      <Box
-        component="pre"
-        sx={{
-          m: 0,
-          fontFamily: "monospace",
-          fontSize: "0.8rem",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          lineHeight: 1.6,
-        }}
-      >
-        {value}
-      </Box>
-    );
-  }
-  // Object: wrap Monaco in fixed-height container (height="100%" requires flex parent,
-  // which only the JSON tab provides — Input/Output tabs use block layout).
+const fetchedAgentExecutions = new Map<string, FetchedAgentExecution | null>();
+
+function isTerminalExecution(execution: WorkflowExecution): boolean {
+  return execution.status !== "RUNNING" && execution.status !== "PAUSED";
+}
+
+function useAgentExecutionDetail(run: AgentRunData): {
+  data: FetchedAgentExecution | null;
+  loading: boolean;
+} {
+  const executionId = run.subWorkflowId;
+  const [data, setData] = useState<FetchedAgentExecution | null>(
+    executionId ? (fetchedAgentExecutions.get(executionId) ?? null) : null,
+  );
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!executionId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
+    const cached = fetchedAgentExecutions.get(executionId);
+    if (cached && isTerminalExecution(cached.rawExecution)) {
+      setData(cached);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setData(null);
+    setLoading(true);
+    fetch(`/api/agent/executions/${executionId}/full`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((rawExecution: WorkflowExecution | null) => {
+        if (cancelled) return;
+        const detail = rawExecution
+          ? {
+              run: transformWorkflowExecutionToAgentRun(rawExecution),
+              rawExecution,
+            }
+          : null;
+        if (rawExecution && isTerminalExecution(rawExecution)) {
+          fetchedAgentExecutions.set(executionId, detail);
+        } else {
+          fetchedAgentExecutions.delete(executionId);
+        }
+        setData(detail);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        fetchedAgentExecutions.set(executionId, null);
+        setData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [executionId, run.status]);
+
+  return { data, loading };
+}
+
+function AgentInspector({
+  run,
+  invocationStrategy,
+  onDrillIn,
+}: {
+  run: AgentRunData;
+  invocationStrategy?: AgentStrategy;
+  onDrillIn?: (run: AgentRunData) => void;
+}) {
+  const [tab, setTab] = useState(SUMMARY_TAB);
+  const { data: fetched, loading } = useAgentExecutionDetail(run);
+  const effectiveRun = fetched?.run ?? run;
+  const input = effectiveRun.input ?? run.input;
+  const output = effectiveRun.output ?? run.output;
+  const definition = effectiveRun.agentDef ?? run.agentDef;
+  const agentType = effectiveRun.agentType ?? run.agentType ?? "Unavailable";
+  const strategy =
+    (definition?.strategy as AgentStrategy | undefined) ??
+    effectiveRun.strategy;
+  const orchestratedBy = invocationStrategy ?? run.invocationStrategy;
+  const promptTokens = effectiveRun.totalTokens.promptTokens;
+  const completionTokens = effectiveRun.totalTokens.completionTokens;
+  const rawJson = fetched?.rawExecution ?? {
+    agentName: effectiveRun.agentName,
+    agentType,
+    strategy,
+    status: effectiveRun.status,
+    model: effectiveRun.model,
+    input,
+    output,
+    agentDef: definition,
+  };
+
   return (
     <Box
-      sx={{
-        height: 400,
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 1,
-        overflow: "hidden",
-      }}
+      sx={{ display: "flex", minHeight: 0, flex: 1, flexDirection: "column" }}
     >
-      <JsonView src={value} />
+      <Tabs
+        value={tab}
+        contextual
+        variant="scrollable"
+        scrollButtons="auto"
+        style={{ marginBottom: 0 }}
+      >
+        <Tab
+          label="Summary"
+          value={SUMMARY_TAB}
+          onClick={() => setTab(SUMMARY_TAB)}
+        />
+        <Tab
+          label="Input"
+          value={INPUT_TAB}
+          onClick={() => setTab(INPUT_TAB)}
+        />
+        <Tab
+          label="Output"
+          value={OUTPUT_TAB}
+          onClick={() => setTab(OUTPUT_TAB)}
+        />
+        <Tab
+          label="Configuration"
+          value="configuration"
+          onClick={() => setTab("configuration")}
+        />
+        <Tab label="JSON" value={JSON_TAB} onClick={() => setTab(JSON_TAB)} />
+      </Tabs>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY:
+            tab === SUMMARY_TAB || tab === "configuration" ? "auto" : "hidden",
+          display:
+            tab === SUMMARY_TAB || tab === "configuration" ? "block" : "flex",
+          flexDirection: "column",
+        }}
+      >
+        {tab === SUMMARY_TAB && (
+          <Box>
+            {loading && (
+              <Typography
+                sx={{
+                  px: 2,
+                  pt: 1.5,
+                  fontSize: "0.75rem",
+                  color: "text.secondary",
+                }}
+              >
+                Loading full child execution details…
+              </Typography>
+            )}
+            <SummaryTable>
+              <SummaryRow label="Name" value={effectiveRun.agentName} />
+              <SummaryRow label="Agent type" value={agentType} />
+              <SummaryRow label="Strategy" value={strategy ?? "Unavailable"} />
+              {orchestratedBy && orchestratedBy !== strategy && (
+                <SummaryRow label="Invocation mode" value={orchestratedBy} />
+              )}
+              <SummaryRow
+                label="Model"
+                value={effectiveRun.model ?? "Unavailable"}
+              />
+              <SummaryRow
+                label="Status"
+                value={<StatusBadgeInline status={effectiveRun.status} />}
+              />
+              <SummaryRow
+                label="Execution ID"
+                value={effectiveRun.subWorkflowId ?? effectiveRun.id}
+              />
+              <SummaryRow
+                label="Duration"
+                value={formatDuration(effectiveRun.totalDurationMs)}
+              />
+              <SummaryRow
+                label="Turns"
+                value={String(effectiveRun.turns.length)}
+              />
+              <SummaryRow
+                label="Prompt tokens"
+                value={formatTokens(promptTokens)}
+              />
+              <SummaryRow
+                label="Completion tokens"
+                value={formatTokens(completionTokens)}
+              />
+              <SummaryRow
+                label="Total tokens"
+                value={formatTokens(effectiveRun.totalTokens.totalTokens)}
+              />
+              {effectiveRun.finishReason && (
+                <SummaryRow
+                  label="Finish reason"
+                  value={effectiveRun.finishReason.toUpperCase()}
+                />
+              )}
+              {effectiveRun.failureReason && (
+                <SummaryRow
+                  label="Failure reason"
+                  value={
+                    <span style={{ color: "#DC2626" }}>
+                      {effectiveRun.failureReason}
+                    </span>
+                  }
+                />
+              )}
+            </SummaryTable>
+            {onDrillIn && effectiveRun.subWorkflowId && (
+              <Box sx={{ px: 2, pb: 1 }}>
+                <Box
+                  onClick={() => onDrillIn(effectiveRun)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    fontWeight: 500,
+                    color: "#fff",
+                    backgroundColor: "#4969e4",
+                    "&:hover": { backgroundColor: "#3858d6" },
+                  }}
+                >
+                  View full execution <ArrowRight size={14} />
+                </Box>
+              </Box>
+            )}
+          </Box>
+        )}
+        {tab === INPUT_TAB && (
+          <Box sx={{ flex: 1, minHeight: 0, p: 2, overflowY: "auto" }}>
+            <ContentView
+              value={input}
+              label="input captured for this execution"
+            />
+          </Box>
+        )}
+        {tab === OUTPUT_TAB && <OutputView value={output} />}
+        {tab === "configuration" && (
+          <Box sx={{ p: 2 }}>
+            {loading && !definition ? (
+              <Typography color="text.disabled" sx={{ fontSize: "0.875rem" }}>
+                Loading agent configuration…
+              </Typography>
+            ) : definition ? (
+              <AgentDefinitionDetails
+                agentDef={definition}
+                title="Agent configuration"
+              />
+            ) : (
+              <Typography color="text.disabled" sx={{ fontSize: "0.875rem" }}>
+                No agent configuration captured for this execution.
+              </Typography>
+            )}
+          </Box>
+        )}
+        {tab === JSON_TAB && (
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <JsonView src={rawJson} />
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -353,621 +553,6 @@ function CondensationBanner({
           {info.trigger}
         </Typography>
       </Box>
-    </Box>
-  );
-}
-
-// ─── Agent definition section ─────────────────────────────────────────────────
-
-function getItemName(t: unknown, fallback = "[item]"): string {
-  if (typeof t === "string") return t;
-  if (t && typeof t === "object") {
-    const o = t as Record<string, unknown>;
-    const n = o.name ?? o._worker_ref ?? (o.function as any)?.name;
-    if (typeof n === "string" && n) return n;
-  }
-  return fallback;
-}
-
-function TagList({
-  items,
-  color,
-  bg,
-  border,
-}: {
-  items: string[];
-  color: string;
-  bg: string;
-  border: string;
-}) {
-  return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-      {items.slice(0, 12).map((name, i) => (
-        <Box
-          key={i}
-          sx={{
-            px: 0.75,
-            py: 0.25,
-            borderRadius: 0.5,
-            backgroundColor: bg,
-            border: `1px solid ${border}`,
-            fontSize: "0.72rem",
-            color,
-          }}
-        >
-          {name}
-        </Box>
-      ))}
-      {items.length > 12 && (
-        <Box
-          sx={{
-            fontSize: "0.72rem",
-            color: "text.secondary",
-            alignSelf: "center",
-          }}
-        >
-          +{items.length - 12} more
-        </Box>
-      )}
-    </Box>
-  );
-}
-
-const TOOL_TYPE_BADGE: Record<
-  string,
-  { label: string; color: string; bg: string; border: string }
-> = {
-  tool: { label: "@tool", color: "#0369a1", bg: "#e0f2fe", border: "#7dd3fc" },
-  http: { label: "HTTP", color: "#6b7280", bg: "#f3f4f6", border: "#d1d5db" },
-  mcp: { label: "MCP", color: "#7c3aed", bg: "#ede9fe", border: "#c4b5fd" },
-  rag: { label: "RAG", color: "#0f766e", bg: "#ccfbf1", border: "#99f6e4" },
-};
-
-function getToolDescription(t: Record<string, unknown>): string | undefined {
-  const d = t.description ?? (t.function as any)?.description;
-  return typeof d === "string" && d ? d : undefined;
-}
-
-function ToolList({
-  tools,
-  category,
-}: {
-  tools: Array<Record<string, unknown>>;
-  category: string;
-}) {
-  const badge = TOOL_TYPE_BADGE[category] ?? TOOL_TYPE_BADGE.tool;
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-      {tools.slice(0, 20).map((t, i) => {
-        const name = getItemName(t);
-        const desc = getToolDescription(t);
-        return (
-          <Box
-            key={i}
-            sx={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 1,
-              px: 1,
-              py: 0.75,
-              borderRadius: 1,
-              border: `1px solid ${badge.border}`,
-              backgroundColor: badge.bg,
-            }}
-          >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                <Typography
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.78rem",
-                    color: badge.color,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {name}
-                </Typography>
-              </Box>
-              {desc && (
-                <Typography
-                  sx={{
-                    fontSize: "0.7rem",
-                    color: "text.secondary",
-                    lineHeight: 1.4,
-                    mt: 0.25,
-                  }}
-                >
-                  {desc.length > 120 ? desc.slice(0, 120) + "…" : desc}
-                </Typography>
-              )}
-            </Box>
-            <Box
-              sx={{
-                flexShrink: 0,
-                px: 0.75,
-                py: 0.15,
-                borderRadius: 0.5,
-                backgroundColor: "#fff",
-                border: `1px solid ${badge.border}`,
-                fontSize: "0.62rem",
-                fontWeight: 700,
-                color: badge.color,
-                letterSpacing: "0.03em",
-              }}
-            >
-              {badge.label}
-            </Box>
-          </Box>
-        );
-      })}
-      {tools.length > 20 && (
-        <Box sx={{ fontSize: "0.72rem", color: "text.secondary", pl: 1 }}>
-          +{tools.length - 20} more
-        </Box>
-      )}
-    </Box>
-  );
-}
-
-/** Categorise a tool entry by its toolType field — delegates to shared utility */
-const toolCategory = toolCategoryForPanel;
-
-/** Compact card for an agent_tool entry (shows model + nested tools + instructions).
- *  Expandable on click to show full instructions and all nested tools. */
-function AgentToolCard({ tool }: { tool: Record<string, unknown> }) {
-  const [expanded, setExpanded] = useState(false);
-  const name = getItemName(tool);
-  const agentConfig = (tool.config as any)?.agentConfig as
-    | Record<string, unknown>
-    | undefined;
-  const model = (agentConfig?.model ?? tool.model) as string | undefined;
-  const nestedTools = (agentConfig?.tools ?? tool.tools) as
-    | Array<unknown>
-    | undefined;
-  const instructions = agentConfig?.instructions as string | undefined;
-  const iconPath = getModelIconPath(model);
-
-  const maxInstr = expanded ? Infinity : 100;
-  const maxTools = expanded ? Infinity : 8;
-
-  return (
-    <Box
-      onClick={() => setExpanded((e) => !e)}
-      sx={{
-        border: "2px solid #93c5fd",
-        borderRadius: 1,
-        backgroundColor: "#f8f9ff",
-        p: 1,
-        mb: 0.5,
-        cursor: "pointer",
-        transition: "border-color 0.15s, box-shadow 0.15s",
-        "&:hover": {
-          borderColor: "#4969e4",
-          boxShadow: "0 1px 4px rgba(73,105,228,0.15)",
-        },
-      }}
-    >
-      {/* Name + model + badge */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
-        {iconPath && (
-          <img
-            src={iconPath}
-            style={{
-              width: 13,
-              height: 13,
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-            alt=""
-          />
-        )}
-        <Typography
-          sx={{
-            fontWeight: 600,
-            fontSize: "0.78rem",
-            color: "#4969e4",
-            flex: 1,
-          }}
-        >
-          {name}
-        </Typography>
-        {model && (
-          <Typography
-            sx={{ fontSize: "0.68rem", color: "text.disabled", flexShrink: 0 }}
-          >
-            {model}
-          </Typography>
-        )}
-        <Box
-          sx={{
-            flexShrink: 0,
-            px: 0.75,
-            py: 0.15,
-            borderRadius: 0.5,
-            backgroundColor: "#e8eeff",
-            border: "1px solid #93c5fd",
-            fontSize: "0.62rem",
-            fontWeight: 700,
-            color: "#3d5fc0",
-            letterSpacing: "0.03em",
-          }}
-        >
-          AGENT
-        </Box>
-      </Box>
-      {/* Instructions snippet */}
-      {instructions && (
-        <Typography
-          sx={{
-            fontSize: "0.7rem",
-            color: "text.secondary",
-            lineHeight: 1.4,
-            mb: nestedTools?.length ? 0.5 : 0,
-          }}
-        >
-          {instructions.length > maxInstr
-            ? instructions.slice(0, maxInstr) + "…"
-            : instructions}
-        </Typography>
-      )}
-      {/* Nested tools */}
-      {nestedTools && nestedTools.length > 0 && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4 }}>
-          {nestedTools.slice(0, maxTools).map((nt, i) => (
-            <Box
-              key={i}
-              sx={{
-                px: 0.5,
-                py: 0.15,
-                borderRadius: 0.5,
-                backgroundColor: "#e8eeff",
-                border: "1px solid #c7d2fc",
-                fontSize: "0.66rem",
-                color: "#6366f1",
-              }}
-            >
-              {getItemName(nt)}
-            </Box>
-          ))}
-          {!expanded && nestedTools.length > 8 && (
-            <Box
-              sx={{
-                fontSize: "0.66rem",
-                color: "text.disabled",
-                alignSelf: "center",
-              }}
-            >
-              +{nestedTools.length - 8}
-            </Box>
-          )}
-        </Box>
-      )}
-      {/* Expand hint */}
-      <Typography
-        sx={{
-          fontSize: "0.62rem",
-          color: "text.disabled",
-          mt: 0.5,
-          textAlign: "right",
-        }}
-      >
-        {expanded ? "click to collapse" : "click to expand"}
-      </Typography>
-    </Box>
-  );
-}
-
-/** Extract guardrail function name from an input/output guardrail entry */
-function guardrailFnName(g: unknown): string {
-  if (!g || typeof g !== "object") return getItemName(g);
-  const obj = g as Record<string, unknown>;
-  const fn = obj.guardrail_function as Record<string, unknown> | undefined;
-  if (fn) return getItemName(fn);
-  return (obj.name as string) ?? getItemName(g);
-}
-
-/** Small inline pipeline chip */
-function PipelineChip({
-  label,
-  color,
-  bg,
-  border,
-}: {
-  label: string;
-  color: string;
-  bg: string;
-  border: string;
-}) {
-  return (
-    <Box
-      sx={{
-        px: 0.75,
-        py: 0.25,
-        borderRadius: 0.5,
-        backgroundColor: bg,
-        border: `1px solid ${border}`,
-        fontSize: "0.72rem",
-        color,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </Box>
-  );
-}
-
-function GuardrailPipeline({
-  inputGrs,
-  outputGrs,
-}: {
-  inputGrs: string[];
-  outputGrs: string[];
-}) {
-  const arrow = (
-    <Box
-      sx={{
-        color: "#9ca3af",
-        fontSize: "0.72rem",
-        lineHeight: 1,
-        flexShrink: 0,
-      }}
-    >
-      →
-    </Box>
-  );
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: 0.5,
-        rowGap: 0.75,
-      }}
-    >
-      {inputGrs.map((name, i) => (
-        <Box
-          key={`ip-${i}`}
-          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-        >
-          <PipelineChip
-            label={name}
-            color="#7c3aed"
-            bg="#faf5ff"
-            border="#e9d5ff"
-          />
-          {arrow}
-        </Box>
-      ))}
-      <PipelineChip
-        label="LLM Call"
-        color="#374151"
-        bg="#f3f4f6"
-        border="#d1d5db"
-      />
-      {outputGrs.map((name, i) => (
-        <Box
-          key={`op-${i}`}
-          sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-        >
-          {arrow}
-          <PipelineChip
-            label={name}
-            color="#0369a1"
-            bg="#e0f2fe"
-            border="#bae6fd"
-          />
-        </Box>
-      ))}
-    </Box>
-  );
-}
-
-function AgentDefSection({ agentDef }: { agentDef: Record<string, unknown> }) {
-  const rawInstr = agentDef.instructions ?? agentDef.description;
-  const instructions = typeof rawInstr === "string" ? rawInstr : undefined;
-  const dynamicInstr =
-    rawInstr && typeof rawInstr === "object"
-      ? (rawInstr as Record<string, unknown>)
-      : undefined;
-  const allTools =
-    (agentDef.tools as Array<Record<string, unknown>> | undefined) ?? [];
-  const defModel = agentDef.model as string | undefined;
-
-  // Read guardrails from both old and new field names
-  const inputGuardrails =
-    (agentDef.input_guardrails as Array<unknown> | undefined) ?? [];
-  const outputGuardrails =
-    (agentDef.output_guardrails as Array<unknown> | undefined) ?? [];
-  const legacyGuardrails =
-    (agentDef.guardrails as Array<unknown> | undefined) ?? [];
-
-  // Split tools by category
-  const agentTools = allTools.filter((t) => toolCategory(t) === "agent");
-  const regularTools = allTools.filter((t) => toolCategory(t) === "tool");
-  const guardrailTools = allTools.filter(
-    (t) => toolCategory(t) === "guardrail",
-  );
-  const httpTools = allTools.filter((t) => toolCategory(t) === "http");
-  const mcpTools = allTools.filter((t) => toolCategory(t) === "mcp");
-  const ragTools = allTools.filter((t) => toolCategory(t) === "rag");
-
-  const inputGrNames = inputGuardrails.map((g) => guardrailFnName(g));
-  const outputGrNames = outputGuardrails.map((g) => guardrailFnName(g));
-  const legacyGrNames = [
-    ...guardrailTools.map((g) => getItemName(g)),
-    ...legacyGuardrails.map((g) => getItemName(g)),
-  ];
-  const hasGuardrailPipeline =
-    inputGrNames.length > 0 || outputGrNames.length > 0;
-
-  const hasContent =
-    instructions ||
-    dynamicInstr ||
-    allTools.length ||
-    hasGuardrailPipeline ||
-    legacyGrNames.length > 0 ||
-    defModel;
-  if (!hasContent) return null;
-
-  return (
-    <Box sx={{ borderTop: "1px solid rgba(0,0,0,0.06)", mt: 1 }}>
-      <Typography
-        sx={{
-          px: 3,
-          pt: 1.5,
-          pb: 0.5,
-          fontSize: "0.65rem",
-          fontWeight: 600,
-          color: "#4969e4",
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-        }}
-      >
-        Agent Definition
-      </Typography>
-
-      {defModel && (
-        <SummaryRow
-          label="Configured model"
-          value={<ModelValue model={defModel} />}
-        />
-      )}
-
-      {/* Guardrail pipeline: |ip gr| → |LLM| → |op gr| */}
-      {hasGuardrailPipeline && (
-        <SummaryRow
-          label="Guardrail pipeline"
-          value={
-            <GuardrailPipeline
-              inputGrs={inputGrNames}
-              outputGrs={outputGrNames}
-            />
-          }
-        />
-      )}
-
-      {/* Agent tools — each shown as a mini card */}
-      {agentTools.length > 0 && (
-        <SummaryRow
-          label={`Agents (${agentTools.length})`}
-          value={
-            <Box>
-              {agentTools.map((t, i) => (
-                <AgentToolCard key={i} tool={t} />
-              ))}
-            </Box>
-          }
-        />
-      )}
-
-      {/* Regular tools (worker, tool, simple) */}
-      {regularTools.length > 0 && (
-        <SummaryRow
-          label={`Tools (${regularTools.length})`}
-          value={<ToolList tools={regularTools} category="tool" />}
-        />
-      )}
-
-      {/* HTTP tools */}
-      {httpTools.length > 0 && (
-        <SummaryRow
-          label={`HTTP (${httpTools.length})`}
-          value={<ToolList tools={httpTools} category="http" />}
-        />
-      )}
-
-      {/* MCP tools */}
-      {mcpTools.length > 0 && (
-        <SummaryRow
-          label={`MCP (${mcpTools.length})`}
-          value={<ToolList tools={mcpTools} category="mcp" />}
-        />
-      )}
-
-      {/* RAG tools */}
-      {ragTools.length > 0 && (
-        <SummaryRow
-          label={`RAG (${ragTools.length})`}
-          value={<ToolList tools={ragTools} category="rag" />}
-        />
-      )}
-
-      {/* Legacy guardrails (from tools list with toolType="guardrail" or agentDef.guardrails) */}
-      {legacyGrNames.length > 0 && !hasGuardrailPipeline && (
-        <SummaryRow
-          label={`Guardrails (${legacyGrNames.length})`}
-          value={
-            <TagList
-              items={legacyGrNames}
-              color="#0369a1"
-              bg="#e0f2fe"
-              border="#bae6fd"
-            />
-          }
-        />
-      )}
-
-      {/* Instructions */}
-      {instructions && (
-        <SummaryRow
-          label="Instructions"
-          value={
-            <Box
-              component="pre"
-              sx={{
-                m: 0,
-                fontSize: "0.78rem",
-                fontFamily: "inherit",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                color: "text.secondary",
-                lineHeight: 1.5,
-                maxHeight: 180,
-                overflowY: "auto",
-              }}
-            >
-              {instructions}
-            </Box>
-          }
-        />
-      )}
-      {/* Dynamic instructions (worker ref) */}
-      {!instructions && dynamicInstr && (
-        <SummaryRow
-          label="Instructions"
-          value={
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-                fontSize: "0.78rem",
-                color: "text.secondary",
-              }}
-            >
-              <Box
-                sx={{
-                  px: 0.75,
-                  py: 0.25,
-                  borderRadius: 0.5,
-                  backgroundColor: "#f0f4ff",
-                  border: "1px solid #d1d9f5",
-                  fontSize: "0.72rem",
-                  color: "#4969e4",
-                }}
-              >
-                {getItemName(dynamicInstr)}
-              </Box>
-              <span style={{ fontStyle: "italic", fontSize: "0.72rem" }}>
-                {typeof dynamicInstr.description === "string"
-                  ? dynamicInstr.description
-                  : "dynamic"}
-              </span>
-            </Box>
-          }
-        />
-      )}
     </Box>
   );
 }
@@ -1241,159 +826,11 @@ function GroupDetailPanel({
         }}
       >
         {selAgent && (
-          <Box>
-            <SummaryTable>
-              <SummaryRow label="Agent" value={selAgent.agentName} />
-              {selAgent.model && (
-                <SummaryRow
-                  label="Model"
-                  value={<ModelValue model={selAgent.model} />}
-                />
-              )}
-              <SummaryRow
-                label="Status"
-                value={<StatusBadgeInline status={selAgent.status} />}
-              />
-              {selAgent.totalDurationMs > 0 && (
-                <SummaryRow
-                  label="Duration"
-                  value={formatDuration(selAgent.totalDurationMs)}
-                />
-              )}
-              {selAgent.totalTokens.promptTokens +
-                selAgent.totalTokens.completionTokens >
-                0 && (
-                <>
-                  <SummaryRow
-                    label="Prompt tokens"
-                    value={formatTokens(selAgent.totalTokens.promptTokens)}
-                  />
-                  <SummaryRow
-                    label="Completion tokens"
-                    value={formatTokens(selAgent.totalTokens.completionTokens)}
-                  />
-                  <SummaryRow
-                    label="Total tokens"
-                    value={formatTokens(
-                      selAgent.totalTokens.promptTokens +
-                        selAgent.totalTokens.completionTokens,
-                    )}
-                  />
-                </>
-              )}
-              {selAgent.turns.length > 0 && (
-                <SummaryRow label="Turns" value={selAgent.turns.length} />
-              )}
-              {selAgent.finishReason && (
-                <SummaryRow
-                  label="Finish reason"
-                  value={selAgent.finishReason.toUpperCase()}
-                />
-              )}
-              {selAgent.failureReason && (
-                <SummaryRow
-                  label="Failure reason"
-                  value={
-                    <span style={{ color: "#DC2626" }}>
-                      {selAgent.failureReason}
-                    </span>
-                  }
-                />
-              )}
-            </SummaryTable>
-            {/* Input */}
-            {selAgent.input && (
-              <Box
-                sx={{
-                  mx: 2,
-                  mb: 1.5,
-                  mt: 1.5,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    borderBottom: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#6b7280",
-                    }}
-                  >
-                    Input
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 2, py: 1 }}>
-                  <ContentView value={selAgent.input} label="input" />
-                </Box>
-              </Box>
-            )}
-            {/* Output */}
-            {selAgent.output && (
-              <Box
-                sx={{
-                  mx: 2,
-                  mb: 1.5,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 1,
-                  overflow: "hidden",
-                }}
-              >
-                <Box
-                  sx={{
-                    px: 2,
-                    py: 0.75,
-                    borderBottom: "1px solid #e5e7eb",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontSize: "0.75rem",
-                      fontWeight: 600,
-                      color: "#6b7280",
-                    }}
-                  >
-                    Output
-                  </Typography>
-                </Box>
-                <Box sx={{ px: 2, py: 1 }}>
-                  <ContentView value={selAgent.output} label="output" />
-                </Box>
-              </Box>
-            )}
-            {onDrillIn && selAgent.subWorkflowId && (
-              <Box sx={{ px: 2, py: 1 }}>
-                <Box
-                  onClick={() => onDrillIn(selAgent)}
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.75,
-                    px: 1.5,
-                    py: 0.75,
-                    borderRadius: 1,
-                    cursor: "pointer",
-                    fontSize: "0.8rem",
-                    fontWeight: 500,
-                    color: "#fff",
-                    backgroundColor: "#4969e4",
-                    "&:hover": { backgroundColor: "#3858d6" },
-                  }}
-                >
-                  View full execution <ArrowRight size={14} />
-                </Box>
-              </Box>
-            )}
-          </Box>
+          <AgentInspector
+            run={selAgent}
+            invocationStrategy={node.strategy}
+            onDrillIn={onDrillIn}
+          />
         )}
         {selEvent && (
           <Box>
@@ -1649,7 +1086,11 @@ function SummaryContent({
             Loading agent definition…
           </Box>
         )}
-        {effectiveAgentDef && <AgentDefSection agentDef={effectiveAgentDef} />}
+        {effectiveAgentDef && (
+          <Box sx={{ px: 2, py: 1 }}>
+            <AgentDefinitionDetails agentDef={effectiveAgentDef} />
+          </Box>
+        )}
       </Box>
     );
   }
@@ -2083,7 +1524,11 @@ function SummaryContent({
             Loading agent definition…
           </Box>
         )}
-        {effectiveAgentDef && <AgentDefSection agentDef={effectiveAgentDef} />}
+        {effectiveAgentDef && (
+          <Box sx={{ px: 2, py: 1 }}>
+            <AgentDefinitionDetails agentDef={effectiveAgentDef} />
+          </Box>
+        )}
       </Box>
     );
   }
@@ -2334,6 +1779,87 @@ export function AgentDetailPanel({
     );
   }
 
+  // Agent identity nodes share the same inspector whether they are the root
+  // start node or a direct sub-agent node. Parallel groups render this same
+  // inspector for their selected child above.
+  if ((node.kind === "start" || node.kind === "subagent") && node.subAgentRun) {
+    return (
+      <Paper
+        square
+        elevation={0}
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Box
+          sx={{
+            px: 2.5,
+            pt: 2,
+            pb: 1.5,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+            <IconButton
+              size="small"
+              onClick={onClose}
+              sx={{ width: 28, height: 28, mt: 0.25 }}
+            >
+              <CloseIcon size={16} />
+            </IconButton>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  mb: 0.5,
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "1rem",
+                    lineHeight: 1.3,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {node.subAgentRun.agentName}
+                </Typography>
+                <StatusChip status={node.subAgentRun.status} />
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: "0.7rem",
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {KIND_DISPLAY[node.kind]}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        <AgentInspector
+          run={node.subAgentRun}
+          invocationStrategy={node.strategy}
+          onDrillIn={onDrillIn}
+        />
+      </Paper>
+    );
+  }
+
   // When viewing a past attempt, override input/output with that attempt's data
   const selectedAttempt: TaskAttempt | null =
     hasMultipleAttempts && selectedAttemptIdx < allAttempts.length - 1
@@ -2355,6 +1881,25 @@ export function AgentDetailPanel({
   const isAgentNode = node.kind === "start" || node.kind === "subagent";
   const hasInput = inputValue != null;
   const hasOutput = outputValue != null || isAgentNode;
+  // A past attempt's raw inputData already has the {instructions, messages} shape.
+  const promptValue = selectedAttempt
+    ? selectedAttempt.inputData
+    : ((node.event?.detail as { prompt?: unknown } | undefined)?.prompt ??
+      null);
+  const hasPrompt = node.kind === "llm" && hasPromptMessages(promptValue);
+
+  const tabs = [
+    { value: SUMMARY_TAB, label: "Summary" },
+    ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
+    ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt" }] : []),
+    ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
+    { value: JSON_TAB, label: "JSON" },
+  ];
+  // The selected tab can disappear, e.g. switching to an attempt with no prompt.
+  // Falling back keeps the strip and the body below in agreement.
+  const activeTab = tabs.some((entry) => entry.value === tab)
+    ? tab
+    : SUMMARY_TAB;
 
   return (
     <Paper
@@ -2503,42 +2048,20 @@ export function AgentDetailPanel({
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <Box sx={{ flexShrink: 0 }}>
         <Tabs
-          value={tab}
+          value={activeTab}
           contextual
           variant="scrollable"
           scrollButtons="auto"
           style={{ marginBottom: 0 }}
         >
-          {[
+          {tabs.map(({ value, label }) => (
             <Tab
-              key="summary"
-              label="Summary"
-              value={SUMMARY_TAB}
-              onClick={() => setTab(SUMMARY_TAB)}
-            />,
-            hasInput ? (
-              <Tab
-                key="input"
-                label="Input"
-                value={INPUT_TAB}
-                onClick={() => setTab(INPUT_TAB)}
-              />
-            ) : null,
-            hasOutput ? (
-              <Tab
-                key="output"
-                label="Output"
-                value={OUTPUT_TAB}
-                onClick={() => setTab(OUTPUT_TAB)}
-              />
-            ) : null,
-            <Tab
-              key="json"
-              label="JSON"
-              value={JSON_TAB}
-              onClick={() => setTab(JSON_TAB)}
-            />,
-          ].filter(Boolean)}
+              key={value}
+              label={label}
+              value={value}
+              onClick={() => setTab(value)}
+            />
+          ))}
         </Tabs>
       </Box>
 
@@ -2547,14 +2070,14 @@ export function AgentDetailPanel({
         sx={{
           flex: 1,
           minHeight: 0,
-          display: tab === SUMMARY_TAB ? "block" : "flex",
+          display: activeTab === SUMMARY_TAB ? "block" : "flex",
           flexDirection: "column",
-          overflowY: tab === SUMMARY_TAB ? "auto" : "hidden",
+          overflowY: activeTab === SUMMARY_TAB ? "auto" : "hidden",
           scrollbarWidth: "none",
           "&::-webkit-scrollbar": { display: "none" },
         }}
       >
-        {tab === SUMMARY_TAB && (
+        {activeTab === SUMMARY_TAB && (
           <SummaryContent
             node={
               selectedAttempt ? buildAttemptNode(node, selectedAttempt) : node
@@ -2562,7 +2085,7 @@ export function AgentDetailPanel({
             onDrillIn={onDrillIn}
           />
         )}
-        {tab === INPUT_TAB && (
+        {activeTab === INPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2604,7 +2127,8 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === OUTPUT_TAB && (
+        {activeTab === PROMPT_TAB && <PromptPreview input={promptValue} />}
+        {activeTab === OUTPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2646,7 +2170,7 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === JSON_TAB && (
+        {activeTab === JSON_TAB && (
           <>
             <Box
               sx={{

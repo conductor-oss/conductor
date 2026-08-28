@@ -84,7 +84,7 @@ The server will be available at `http://localhost:3001/mcp`.
 | `20-extended-thinking.json` | Extended thinking with token budget for reasoning | Anthropic |
 | `21-web-search-research-agent.json` | Research agent: web search → synthesize → PDF | OpenAI, Anthropic |
 | `22-multi-turn-chain.json` | Multi-turn conversation chaining with previousResponseId | OpenAI |
-| `30-rag-sqlite-vec.json` | Zero-infra RAG on the bundled SQLite + sqlite-vec store | OpenAI, SQLite (built-in) |
+| `36-ai-workflow-routing.json` | LLM selects an approved child workflow, then runs it as a dynamic sub-workflow | OpenAI; register the paired `36a`–`36c` child workflows |
 
 ### A2A (Agent2Agent) examples
 
@@ -105,6 +105,25 @@ by registering them with `metadata.a2a.enabled=true` and `conductor.a2a.server.e
 | `27-a2a-multi-agent.json` | Call multiple agents in parallel (FORK_JOIN → JOIN) | A2A agents |
 | `28-a2a-llm-pick-skill.json` | Discover an agent, let an LLM pick the prompt, then call it | A2A agent, OpenAI/Anthropic |
 | `29-a2a-client-multi-turn.json` | Client multi-turn: branch on input-required, re-call with the same context | A2A agent |
+
+### Conductor Agents workflow-integration recipes
+
+<!-- TODO: verify against live server -->
+
+These recipes integrate a deployed **Conductor Agent** into a larger workflow via `AGENT` with
+`agentType: "conductor"`. The agent can be authored with any supported SDK bridge; these JSON
+files deliberately remain framework-agnostic. They require a running embedded Agent API with
+`conductor.integrations.ai.enabled=true` and at least one deployed agent (example 33 needs
+`planner` and `researcher`). The `AGENT` task is non-blocking — it starts the run and polls until
+it reaches a terminal (or `WAITING`) state.
+
+| File | Workflow name | Description | Requirements |
+|------|---------------|-------------|--------------|
+| `31-conductor-agent-basic.json` | `conductor_agent_basic` | Reusable deployed agent as a workflow step | `conductor.integrations.ai.enabled=true`, a deployed agent |
+| `32-conductor-agent-human-in-loop.json` | `conductor_agent_human_in_loop` | Pause, collect human input, and resume via `executionId` | `conductor.integrations.ai.enabled=true`, a deployed agent |
+| `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Parallel specialists via `FORK_JOIN` -> `JOIN` | `conductor.integrations.ai.enabled=true`, two deployed agents |
+| `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Cancellation propagation to an in-flight agent | `conductor.integrations.ai.enabled=true`, a deployed agent |
+| `35-governed-adaptive-agent.json` | `governed_github_pr_reviewer` | Four-pass GitHub PR reviewer: context, files, CI, then bounded adaptive deep dive; a human must approve the single comment write | Configured LLM provider and an authenticated GitHub MCP endpoint exposing `pull_request_read` and `add_issue_comment` |
 
 ---
 
@@ -235,26 +254,6 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/complete_rag_demo' \
   -H 'Content-Type: application/json' \
   -d '{}'
-```
-
-### 30. RAG on SQLite (sqlite-vec, zero infrastructure)
-
-Runs the full index → search → answer RAG loop against the **embedded** SQLite + sqlite-vec vector
-store — no PostgreSQL, MongoDB or Pinecone required. When the server runs with `conductor.db.type=sqlite`
-and `conductor.integrations.ai.enabled=true`, Conductor bundles the native `vec0` extension and
-auto-registers a vector DB instance named `default`, which this workflow targets. Embeddings are
-requested at 256 dimensions to match that default instance.
-
-```bash
-# Register
-curl -X POST 'http://localhost:8080/api/metadata/workflow' \
-  -H 'Content-Type: application/json' \
-  -d @30-rag-sqlite-vec.json
-
-# Execute with a question
-curl -X POST 'http://localhost:8080/api/workflow/rag_sqlite_vec_demo' \
-  -H 'Content-Type: application/json' \
-  -d '{"question": "What vector databases does Conductor support?"}'
 ```
 
 ### 8. MCP List Tools
@@ -477,6 +476,76 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
 curl -X POST 'http://localhost:8080/api/workflow/multi_turn_chain' \
   -H 'Content-Type: application/json' \
   -d '{"topic": "Real-time collaborative document editor"}'
+```
+
+### 31. Conductor Agents: Basic workflow integration
+
+```bash
+# Requires conductor.integrations.ai.enabled=true and a deployed 'planner' Conductor Agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @31-conductor-agent-basic.json
+
+# Execute — runs the agent to completion and surfaces text/output/state
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_basic' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Draft a project plan for a mobile app launch"}'
+```
+
+Tune the run with the optional `pollIntervalSeconds` (poll cadence, default 5),
+`maxDurationSeconds` (absolute deadline, default 86400), and `maxPollFailures` (consecutive
+transient poll-failure cap, default 30) input parameters on the `AGENT` task.
+
+### 32. Conductor Agents: Human-in-the-loop workflow integration
+
+```bash
+# Requires conductor.integrations.ai.enabled=true and a deployed 'planner' Conductor Agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @32-conductor-agent-human-in-loop.json
+
+# Execute — when the run pauses (waiting=true), a HUMAN task collects the answer and a second
+# AGENT call resumes the run using its executionId
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_human_in_loop' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Book a meeting; ask me for the preferred time if unclear"}'
+```
+
+### 33. Conductor Agents: Parallel workflow integration
+
+```bash
+# Requires conductor.integrations.ai.enabled=true and two deployed Conductor Agents: 'planner' and 'researcher'
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @33-conductor-agent-multi-agent.json
+
+# Execute — fans out to both agents in parallel (FORK_JOIN), then JOINs their results
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_multi_agent' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Assess the market for an AI note-taking app"}'
+```
+
+### 34. Conductor Agents: Cancellation workflow integration
+
+```bash
+# Requires conductor.integrations.ai.enabled=true and a deployed 'planner' Conductor Agent
+
+# Register
+curl -X POST 'http://localhost:8080/api/metadata/workflow' \
+  -H 'Content-Type: application/json' \
+  -d @34-conductor-agent-cancel.json
+
+# Execute — starts a long-running agent run, then TERMINATEs the workflow, cancelling the
+# in-flight agent task (CANCELED mapping)
+curl -X POST 'http://localhost:8080/api/workflow/conductor_agent_cancel' \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt": "Begin a long-running research job"}'
 ```
 
 ---

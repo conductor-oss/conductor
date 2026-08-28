@@ -37,14 +37,23 @@ public class AnnotatedMethodResultMapper {
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
 
+    /** Applies a result with the default lifecycle for a synchronous annotated method. */
+    public void applyResult(Object invocationResult, TaskModel task, Method method) {
+        TaskResult contextResult = new TaskResult();
+        contextResult.setStatus(TaskResult.Status.COMPLETED);
+        applyResult(invocationResult, task, method, contextResult);
+    }
+
     /**
      * Applies the method invocation result to the task model.
      *
      * @param invocationResult The result returned from the method invocation
      * @param task The task model to update
      * @param method The method that was invoked
+     * @param contextResult Lifecycle state accumulated through the current TaskContext
      */
-    public void applyResult(Object invocationResult, TaskModel task, Method method) {
+    public void applyResult(
+            Object invocationResult, TaskModel task, Method method, TaskResult contextResult) {
         log.debug(
                 "annotated task {} invocationResult {} with status {}",
                 task.getTaskType(),
@@ -53,6 +62,7 @@ public class AnnotatedMethodResultMapper {
 
         if (invocationResult == null) {
             task.setStatus(TaskModel.Status.COMPLETED);
+            applyLifecycle(contextResult, task);
             return;
         }
 
@@ -67,14 +77,8 @@ public class AnnotatedMethodResultMapper {
         } else if (invocationResult instanceof TaskResult) {
             TaskResult result = objectMapper.convertValue(invocationResult, TaskResult.class);
             task.getOutputData().putAll(result.getOutputData());
-            switch (result.getStatus()) {
-                case FAILED -> task.setStatus(TaskModel.Status.FAILED);
-                case COMPLETED -> task.setStatus(TaskModel.Status.COMPLETED);
-                case FAILED_WITH_TERMINAL_ERROR ->
-                        task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-                case IN_PROGRESS -> task.setStatus(TaskModel.Status.IN_PROGRESS);
-            }
-            task.setCallbackAfterSeconds(result.getCallbackAfterSeconds());
+            applyLifecycle(result, task);
+            return;
         } else if (invocationResult instanceof Map) {
             // Return Map becomes output data
             @SuppressWarnings("unchecked")
@@ -101,6 +105,34 @@ public class AnnotatedMethodResultMapper {
             task.getOutputData().putAll(resultAsMap);
             task.setStatus(TaskModel.Status.COMPLETED);
         }
+
+        applyLifecycle(contextResult, task);
+    }
+
+    private void applyLifecycle(TaskResult result, TaskModel task) {
+        TaskResult.Status status = result.getStatus();
+        if (result.getCallbackAfterSeconds() > 0
+                && status != TaskResult.Status.FAILED
+                && status != TaskResult.Status.FAILED_WITH_TERMINAL_ERROR
+                && status != TaskResult.Status.CANCELED) {
+            status = TaskResult.Status.IN_PROGRESS;
+        }
+
+        if (status != null) {
+            switch (status) {
+                case FAILED -> task.setStatus(TaskModel.Status.FAILED);
+                case COMPLETED -> task.setStatus(TaskModel.Status.COMPLETED);
+                case FAILED_WITH_TERMINAL_ERROR ->
+                        task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+                case IN_PROGRESS -> task.setStatus(TaskModel.Status.IN_PROGRESS);
+                case CANCELED -> task.setStatus(TaskModel.Status.CANCELED);
+            }
+        }
+        task.setCallbackAfterSeconds(result.getCallbackAfterSeconds());
+        task.setReasonForIncompletion(result.getReasonForIncompletion());
+        task.setWorkerId(result.getWorkerId());
+        task.setSubWorkflowId(result.getSubWorkflowId());
+        task.setExternalOutputPayloadStoragePath(result.getExternalOutputPayloadStoragePath());
     }
 
     private boolean isPrimitive(Object value) {

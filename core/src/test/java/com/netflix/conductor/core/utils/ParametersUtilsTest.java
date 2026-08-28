@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +33,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.dao.EnvironmentDAO;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +42,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -374,5 +381,136 @@ public class ParametersUtilsTest {
         Map<String, Object> workflowInput =
                 parametersUtils.getWorkflowInput(workflowDef, inputParams);
         assertEquals("supplied_value", workflowInput.get(keyName));
+    }
+
+    @Test
+    public void testWorkflowEnvResolvesEagerly() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        when(env.getEnvVariable("REGION")).thenReturn("us-east-1");
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("region", "${workflow.env.REGION}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("us-east-1", out.get("region"));
+    }
+
+    @Test
+    public void testWorkflowEnvResolvesJsonPath() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        when(env.getEnvVariable("CONFIG"))
+                .thenReturn("{\"host\":\"db.example.com\",\"port\":5432}");
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("host", "${workflow.env.CONFIG.host}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("db.example.com", out.get("host"));
+    }
+
+    @Test
+    public void testWorkflowSecretsLeftLiteralDuringNormalResolution() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("${workflow.secrets.DB_PASSWORD}", out.get("pwd"));
+    }
+
+    @Test
+    public void testSubstituteSecretsResolvesPlainAndJsonPath() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("DB_PASSWORD")).thenReturn("s3cr3t");
+        when(secrets.getSecret("CREDS")).thenReturn("{\"user\":\"neo\",\"pass\":\"zion\"}");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        input.put("user", "${workflow.secrets.CREDS.user}");
+        input.put("header", "Bearer ${workflow.secrets.DB_PASSWORD}");
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertEquals("s3cr3t", out.get("pwd"));
+        assertEquals("neo", out.get("user"));
+        assertEquals("Bearer s3cr3t", out.get("header"));
+        // original input unmutated
+        assertEquals("${workflow.secrets.DB_PASSWORD}", input.get("pwd"));
+    }
+
+    @Test
+    public void testSubstituteSecretsResolvesInsideList() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("TOKEN")).thenReturn("tkn");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("headers", List.of("Bearer ${workflow.secrets.TOKEN}", "static"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertEquals(List.of("Bearer tkn", "static"), out.get("headers"));
+        // original input unmutated
+        assertEquals(List.of("Bearer ${workflow.secrets.TOKEN}", "static"), input.get("headers"));
+    }
+
+    @Test
+    public void testSubstituteSecretsMalformedJsonResolvesToNull() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("CREDS")).thenReturn("not-json");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("v", "${workflow.secrets.CREDS.field}");
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertNull(out.get("v"));
+    }
+
+    @Test
+    public void testSubstituteSecretsNullDaoReturnsInput() {
+        ParametersUtils pu = new ParametersUtils(objectMapper);
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        assertTrue(pu.substituteSecrets(input) == input);
+    }
+
+    @Test
+    public void testSubstituteSecretsReturnsSameInstanceWhenNoSecretRef() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("a", "plain");
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("c", "no secret here");
+        input.put("b", nested);
+        input.put("d", List.of(1, 2, "x"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertSame(input, out);
     }
 }

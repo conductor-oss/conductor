@@ -5,11 +5,13 @@ on:
     branches:
       - main
     paths:
+      - "ui/**"
       - "ui-next/**"
   push:
     branches:
       - main
     paths:
+      - "ui/**"
       - "ui-next/**"
 
 permissions:
@@ -31,6 +33,34 @@ jobs:
           sudo rm -rf /usr/local/share/boost
           sudo apt-get clean
 
+      # ── Docker image build (started first, runs in the background) ─────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Cache Docker layers for conductor:server
+        uses: actions/cache@v5
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-conductor-server-${{ hashFiles('docker/server/Dockerfile', '**/build.gradle', 'settings.gradle') }}
+          restore-keys: ${{ runner.os }}-conductor-server-
+
+      - name: Build conductor:server image (background)
+        run: |
+          nohup bash -c '
+            docker buildx build \
+              --file docker/server/Dockerfile \
+              --tag conductor:server \
+              --build-arg SKIP_UI=true \
+              --cache-from type=local,src=/tmp/.buildx-cache \
+              --cache-to type=local,dest=/tmp/.buildx-cache-new,mode=min \
+              --load \
+              . > /tmp/docker-build.log 2>&1
+            echo $? > /tmp/docker-build-exit
+          ' &
+          echo $! > /tmp/docker-build.pid
+          echo "Docker build started in background (PID: $(cat /tmp/docker-build.pid))"
+
+      # ── Node / Playwright setup (runs while Docker builds) ─────────────
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -48,50 +78,48 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: ui-next
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium
+      - name: Build UI (with coverage sourcemaps)
+        run: pnpm build
         working-directory: ui-next
+        env:
+          E2E_COVERAGE: "true"
+          NODE_OPTIONS: --max-old-space-size=8192
 
-      # OS-level dependencies (apt packages) cannot be cached — always install.
-      - name: Install Playwright OS dependencies
-        run: pnpm exec playwright install-deps chromium
-        working-directory: ui-next
+      # ── Sync: wait for the Docker build to finish ──────────────────────
+      - name: Wait for Docker build
+        run: |
+          PID=$(cat /tmp/docker-build.pid)
+          echo "Waiting for Docker build (PID: $PID)..."
+          while kill -0 "$PID" 2>/dev/null; do
+            sleep 5
+          done
+          EXIT_CODE=$(cat /tmp/docker-build-exit)
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Docker build failed (exit $EXIT_CODE)"
+            cat /tmp/docker-build.log
+            exit 1
+          fi
+          echo "Docker build completed successfully"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Cache Docker layers for conductor:server
-        uses: actions/cache@v5
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-conductor-server-${{ hashFiles('docker/server/Dockerfile', '**/build.gradle', 'settings.gradle') }}
-          restore-keys: ${{ runner.os }}-conductor-server-
-
-      - name: Build conductor:server Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/server/Dockerfile
-          tags: conductor:server
-          load: true
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=min
-
-      - name: Move Docker layer cache
+      - name: Rotate Docker layer cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Run integration E2E tests
+      - name: Run integration E2E tests with coverage
         run: pnpm test:e2e:integration
+        working-directory: ui-next
+        env:
+          E2E_COVERAGE: "true"
+          # dist/ already built above — skip rebuild inside the wrapper script.
+          SKIP_WEBSERVER_BUILD: "true"
+          # Forwarded into docker-compose.integration.yml for LLM task execution;
+          # also gates the LLM "completes successfully" Playwright tests.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Generate frontend coverage report and enforce threshold
+        if: success() || failure()
+        run: node scripts/playwright-coverage-report.mjs
         working-directory: ui-next
 
       - name: Upload Playwright integration report
@@ -101,3 +129,11 @@ jobs:
           name: playwright-integration-report
           path: ui-next/playwright-integration-report/
           retention-days: 7
+
+      - name: Upload frontend coverage report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: ui-next/playwright-coverage-report/
+          retention-days: 14

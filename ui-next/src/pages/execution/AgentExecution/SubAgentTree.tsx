@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Chip, Collapse, IconButton, Typography } from "@mui/material";
 import {
   ArrowRight,
@@ -9,12 +9,18 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
-import { formatDuration, formatTokens } from "./agentExecutionUtils";
+import {
+  agentValuePreview,
+  formatDuration,
+  formatTokens,
+} from "./agentExecutionUtils";
 
 interface SubAgentTreeProps {
   subAgents: AgentRunData[];
   strategy?: AgentStrategy;
   onDrillIn: (agentRun: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (agentRun: AgentRunData) => void;
   depth?: number;
 }
 
@@ -40,10 +46,16 @@ const OUTPUT_PREVIEW_LINES = 4;
 interface SubAgentNodeProps {
   agent: AgentRunData;
   onDrillIn: (run: AgentRunData) => void;
+  onExpand?: (run: AgentRunData) => void;
   depth: number;
 }
 
-function SubAgentNode({ agent, onDrillIn, depth }: SubAgentNodeProps) {
+function SubAgentNode({
+  agent,
+  onDrillIn,
+  onExpand,
+  depth,
+}: SubAgentNodeProps) {
   const [outputExpanded, setOutputExpanded] = useState(false);
   const [childrenExpanded, setChildrenExpanded] = useState(false);
 
@@ -52,18 +64,29 @@ function SubAgentNode({ agent, onDrillIn, depth }: SubAgentNodeProps) {
   const hasOutput = !!agent.output;
   const hasFailure =
     !!agent.failureReason && agent.status === AgentStatus.FAILED;
+  // Definition says this agent has its own children, but that execution
+  // hasn't been fetched yet — show an "Expand" control instead of the caret
+  // toggle (issue #1452: nested sub-agents beyond one level were invisible).
+  const canExpand = !hasChildren && !agent.expanded && !!agent.subAgentCount;
+
+  // Auto-reveal once the fetch completes, so the user doesn't have to click
+  // the caret toggle separately right after clicking "Expand".
+  useEffect(() => {
+    if (agent.expanded) setChildrenExpanded(true);
+  }, [agent.expanded]);
 
   const indent = depth * 16;
 
   // Determine if output is long enough to need truncation
-  const outputLines = agent.output?.split("\n") ?? [];
+  const outputText = agentValuePreview(agent.output, 10_000);
+  const outputLines = outputText?.split("\n") ?? [];
   const isLongOutput =
     outputLines.length > OUTPUT_PREVIEW_LINES ||
-    (agent.output?.length ?? 0) > 400;
+    (outputText?.length ?? 0) > 400;
   const previewText =
     isLongOutput && !outputExpanded
       ? outputLines.slice(0, OUTPUT_PREVIEW_LINES).join("\n") + "\n…"
-      : agent.output;
+      : outputText;
 
   return (
     <Box>
@@ -140,6 +163,35 @@ function SubAgentNode({ agent, onDrillIn, depth }: SubAgentNodeProps) {
               <CaretRight size={13} />
             )}
           </IconButton>
+        )}
+
+        {/* Expand in place — fetches this sub-agent's own execution instead
+            of navigating away, revealing its children (issue #1452). */}
+        {canExpand && (
+          <Box
+            onClick={() => {
+              if (!agent.expanding) onExpand?.(agent);
+            }}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              fontSize: "0.7rem",
+              color: agent.expandError ? "#d32f2f" : "text.secondary",
+              backgroundColor: agent.expandError ? "#ffebee" : "grey.100",
+              cursor: agent.expanding ? "default" : "pointer",
+              flexShrink: 0,
+            }}
+          >
+            {agent.expanding
+              ? "Loading…"
+              : agent.expandError
+                ? "Retry expand"
+                : `Expand (${agent.subAgentCount})`}
+          </Box>
         )}
 
         {/* Drill-in */}
@@ -224,6 +276,7 @@ function SubAgentNode({ agent, onDrillIn, depth }: SubAgentNodeProps) {
             <SubAgentTree
               subAgents={allSubAgents}
               onDrillIn={onDrillIn}
+              onExpand={onExpand}
               depth={depth + 1}
             />
           </Box>
@@ -237,6 +290,7 @@ export function SubAgentTree({
   subAgents,
   strategy,
   onDrillIn,
+  onExpand,
   depth = 0,
 }: SubAgentTreeProps) {
   if (subAgents.length === 0) return null;
@@ -380,6 +434,7 @@ export function SubAgentTree({
           key={agent.id}
           agent={agent}
           onDrillIn={onDrillIn}
+          onExpand={onExpand}
           depth={depth}
         />
       ))}

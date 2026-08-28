@@ -773,8 +773,17 @@ export const roleUser = "#C8ABFF";
 //workflow-manager
 export const roleWfManager = "#8DE0F9";
 
-//workflow-manager
+//metadata-manager
 export const roleMetaManager = "#FCD181";
+
+//human-task-manager
+export const roleHumanTaskManager = "#FFBEA4";
+
+//event-handler-manager
+export const roleEventHandlerManager = "#BAB9F1";
+
+//custom
+export const roleCustom = "#F4A8A0";
 
 // New Sidebar colors
 export const sidebarBlacky = "#060606";

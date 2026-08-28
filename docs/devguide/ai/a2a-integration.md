@@ -2,14 +2,21 @@
 description: "A2A (Agent2Agent) integration with Conductor — call remote agents as durable workflow tasks, and expose Conductor workflows as A2A agents. Crash-safe, resumable, observable."
 ---
 
-# A2A integration
+# A2A Integration
 
-[A2A (Agent2Agent)](https://a2a-protocol.org/) is an open protocol for agents to talk to one another over HTTP/JSON-RPC. Conductor integrates A2A in **both directions**:
-
-- **Client** — call a remote A2A agent from a workflow as a durable system task (`AGENT`, `GET_AGENT_CARD`, `CANCEL_AGENT`).
-- **Server** — expose any Conductor workflow as an A2A agent that other A2A clients (Google ADK, CrewAI, LangGraph, another Conductor) can discover and invoke.
-
-The integration is **durable**: a remote agent call survives a server crash, restart, or redeploy, and resumes from where it left off — the call's state lives in the workflow execution, not in a thread.
+<section class="integration-hero integration-hero--a2a" aria-label="A2A integration">
+  <p><strong><a href="https://a2a-protocol.org/">A2A (Agent2Agent)</a></strong> is the open protocol agents use to talk to each other over HTTP. With Conductor it works in both directions: a workflow can call a remote A2A agent as a durable step, and a Conductor workflow can be exposed for any A2A client to discover and invoke. Either way, Conductor records the handoff and its result.</p>
+  <div class="integration-action-grid">
+    <a class="integration-action-card" href="#call-a-remote-agent-from-a-workflow-client">
+      <span class="integration-action-card__title">Call remote agents</span>
+      <span>Use durable <code>AGENT</code>, <code>GET_AGENT_CARD</code>, and <code>CANCEL_AGENT</code> tasks.</span>
+    </a>
+    <a class="integration-action-card" href="#expose-a-workflow-as-an-a2a-agent-server">
+      <span class="integration-action-card__title">Expose workflows as agents</span>
+      <span>Give external A2A clients a discoverable, durable workflow endpoint.</span>
+    </a>
+  </div>
+</section>
 
 
 ## What is A2A
@@ -40,7 +47,12 @@ flowchart LR
 conductor.integrations.ai.enabled=true
 ```
 
-Each task takes an **`agentType`** input that selects the agent runtime. It defaults to `"a2a"` (Agent2Agent — the only runtime in OSS today); native runtimes such as LangGraph and OpenAI are planned, and the field is the extension point for them. An unrecognized `agentType` fails the task with a clear error.
+Each task takes an **`agentType`** input that selects one of the two supported `AGENT` modes. It does not select an authoring framework such as OpenAI Agents, Google ADK, or LangGraph. An unrecognized value fails the task with a clear error.
+
+**Choosing a runtime.** `agentType` picks where the agent runs:
+
+- `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
+- `agentType: "conductor"` — run a deployed **Conductor Agent** by `name`. See [Conductor Agents](conductor-agents.md).
 
 ### AGENT — send a message to an agent
 
@@ -87,7 +99,7 @@ sequenceDiagram
 
 | Field | Description |
 |---|---|
-| `agentType` | Agent runtime to use — defaults to `"a2a"`. Reserved for native runtimes (e.g. `langgraph`, `openai`) coming later; any other value is rejected today. |
+| `agentType` | `"a2a"` (default) calls a remote A2A endpoint. `"conductor"` runs a deployed Conductor Agent. It does not select a framework; other values are rejected. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |
@@ -118,7 +130,7 @@ Downstream tasks read these with `${agent.output.text}`, `${agent.output.taskId}
 #### Three execution modes
 
 - **Poll** (default) — the task is `IN_PROGRESS` and polled via `tasks/get` at `pollIntervalSeconds`. No thread is held between polls; the call survives restarts.
-- **Streaming** (`streaming: true`) — consumes the agent's SSE stream and aggregates events. Requires `capabilities.streaming=true` on the agent card. Holds a thread for the stream's duration.
+- **Streaming** (`streaming: true`) — consumes the agent's SSE stream and aggregates events. Requires `capabilities.streaming=true` on the agent card. Holds a thread for the stream's duration — best for interactive/short streams; for long-running work prefer poll or push. Bounded by `maxDurationSeconds` (default 86400) as an absolute call deadline, so a connection an agent keeps alive (via data or keepalives) without ever finishing can't hold the thread indefinitely.
 - **Push** (`pushNotification: true`) — the agent calls Conductor's webhook when the task finishes, so nothing polls in the meantime. Requires `conductor.a2a.callback.url`. A slow **backstop poll** still runs (`pushBackstopPollSeconds`, default 300) so a lost webhook can't hang the task.
 
 #### Push notifications — end to end
@@ -211,6 +223,21 @@ Resolves the agent card from `/.well-known/agent-card.json` (falling back to the
 }
 ```
 
+`agentType: "conductor"` terminates a conductor agent execution instead — same idea as [Conductor agents](conductor-agents.md), but as a one-shot task rather than the `AGENT` task's own cancel lifecycle:
+
+```json
+{
+  "name": "cancel_agent_task",
+  "taskReferenceName": "cancel",
+  "type": "CANCEL_AGENT",
+  "inputParameters": {
+    "agentType": "conductor",
+    "executionId": "${agent.output.executionId}",
+    "reason": "No longer needed"
+  }
+}
+```
+
 ### Multi-turn (input-required)
 
 When a remote task reaches `input-required` (or `auth-required`), `AGENT` **completes** and surfaces the agent's question plus the `taskId`/`contextId` in its output. The workflow branches on that state and issues another `AGENT` task with the **same `taskId` and `contextId`** carrying the answer — resuming the same remote task rather than starting a new conversation:
@@ -294,23 +321,24 @@ workflow execution **is** the durable, resumable A2A task — that's the native 
 sequenceDiagram
     autonumber
     participant Client as External A2A client
-    participant S as A2AServerResource
-    participant A as A2AWorkflowAgent
-    participant E as Conductor engine
-    Client->>S: GET …/.well-known/agent-card.json
-    S-->>Client: Agent Card (one skill = the workflow)
-    Client->>S: POST message/send
-    S->>A: sendMessage
-    A->>E: startWorkflow (idempotencyKey = A2A messageId)
-    E-->>A: workflowId
-    A-->>Client: Task { id = workflowId, state: working }
-    loop tasks/get until terminal
-        Client->>S: tasks/get
-        S->>E: getExecutionStatus
-        E-->>S: RUNNING → COMPLETED
-        S-->>Client: Task { state, artifacts }
+    participant Server as A2A server
+    participant Agent as Workflow adapter
+    participant Engine as Conductor engine
+    Client->>Server: GET agent card
+    Server-->>Client: Agent Card
+    Client->>Server: POST message send
+    Server->>Agent: Send message
+    Agent->>Engine: Start workflow
+    Engine-->>Agent: Workflow ID
+    Agent-->>Client: Task is working
+    loop Until terminal
+        Client->>Server: Get task status
+        Server->>Engine: Get workflow status
+        Engine-->>Server: Workflow state
+        Server-->>Client: Task state and artifacts
     end
-    note over Client,E: blocked on HUMAN/WAIT → input-required;<br/>a follow-up message/send resumes the same execution
+    Note over Client,Engine: HUMAN or WAIT returns input-required
+    Note over Client,Engine: A follow-up message resumes the same execution
 ```
 
 Enable the server and opt the workflow in:
@@ -332,13 +360,16 @@ conductor.a2a.server.exposed-workflows=order_pizza,book_appointment
 }
 ```
 
-**Routing: one agent per workflow.** Each exposed workflow is its own focused agent at `{basePath}/{workflow}` (default basePath `/a2a`):
+**Routing: one agent per workflow.** Each exposed workflow is its own focused agent under `/api/a2a/workflow`; native Conductor agents are under `/api/a2a/agent`:
 
 | Method & path | Purpose |
 |---|---|
-| `GET /a2a/{workflow}/.well-known/agent-card.json` | Agent Card (also `/agent.json`). |
-| `POST /a2a/{workflow}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
-| `GET /a2a` | Convenience listing of exposed agents (non-spec). |
+| `GET /api/a2a/workflow/{name}/.well-known/agent-card.json` | Agent Card for a workflow-backed agent (also `/agent.json`). |
+| `POST /api/a2a/workflow/{name}` | JSON-RPC: `message/send`, `message/stream` (SSE), `tasks/get`, `tasks/cancel`. |
+| `GET /api/a2a/workflow` | Convenience listing of exposed workflow agents (non-spec). |
+| `GET /api/a2a/agent/{name}/.well-known/agent-card.json` | Agent Card for a native Conductor agent (also `/agent.json`). |
+| `POST /api/a2a/agent/{name}` | JSON-RPC: same methods, backed by the Conductor Agents runtime. |
+| `GET /api/a2a/agent` | Convenience listing of exposed native agents (non-spec). |
 
 Exposed agents advertise `capabilities.streaming=true`.
 
@@ -346,10 +377,10 @@ Exposed agents advertise `capabilities.streaming=true`.
 
 ```bash
 # 1. Discover
-curl http://localhost:8080/a2a/order_pizza/.well-known/agent-card.json
+curl http://localhost:8080/api/a2a/workflow/order_pizza/.well-known/agent-card.json
 
 # 2. Start a task (message/send → starts the workflow)
-curl -X POST http://localhost:8080/a2a/order_pizza \
+curl -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{
     "jsonrpc": "2.0", "id": 1, "method": "message/send",
@@ -361,7 +392,7 @@ curl -X POST http://localhost:8080/a2a/order_pizza \
 # → result is an A2A Task: { "id": "<workflowId>", "contextId": ..., "status": { "state": "working" } }
 
 # 3. Poll
-curl -X POST http://localhost:8080/a2a/order_pizza \
+curl -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc": "2.0", "id": 2, "method": "tasks/get", "params": { "id": "<workflowId>" } }'
 ```
@@ -375,7 +406,7 @@ then `status-update` events as the workflow's A2A state changes and `artifact-up
 output is produced, ending with a `final` status-update at a terminal / input-required state.
 
 ```bash
-curl -N -X POST http://localhost:8080/a2a/order_pizza \
+curl -N -X POST http://localhost:8080/api/a2a/workflow/order_pizza \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":1, "method":"message/stream",
         "params": { "message": { "role":"user", "messageId":"m-1",
@@ -441,7 +472,7 @@ confirms:
 **Turn 1 — start.** The workflow reaches the `HUMAN` task and parks at `input-required`:
 
 ```bash
-curl -X POST http://localhost:8080/a2a/book_appointment \
+curl -X POST http://localhost:8080/api/a2a/workflow/book_appointment \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":1, "method":"message/send",
         "params": { "message": { "role":"user", "messageId":"m-1",
@@ -468,7 +499,7 @@ curl -X POST http://localhost:8080/a2a/book_appointment \
 completes with the message as its input and the workflow finishes:
 
 ```bash
-curl -X POST http://localhost:8080/a2a/book_appointment \
+curl -X POST http://localhost:8080/api/a2a/workflow/book_appointment \
   -H 'Content-Type: application/json' \
   -d '{ "jsonrpc":"2.0", "id":2, "method":"message/send",
         "params": { "message": { "role":"user", "messageId":"m-2", "taskId":"wf-7f3a91",
@@ -535,8 +566,10 @@ A2A code paths emit metrics through the shared Conductor metrics registry and se
 | `conductor.a2a.callback.url` | — | Externally-reachable base URL for push callbacks. |
 | `conductor.a2a.client.allow-private-network` | `false` | Allow agent URLs on private/loopback networks (metadata still blocked). |
 | `conductor.a2a.server.enabled` | `false` | Enables the A2A server endpoints. |
-| `conductor.a2a.server.basePath` | `/a2a` | Base path for exposed agents. |
+| `conductor.a2a.server.basePath` | `/api/a2a/workflow` | Base path for workflow-backed agents. |
+| `conductor.a2a.server.agentBasePath` | `/api/a2a/agent` | Base path for native Conductor agents. |
 | `conductor.a2a.server.exposed-workflows` | — | Comma-separated workflow names to expose. |
+| `conductor.a2a.server.expose-all` | `false` | Expose all registered workflows automatically (dev/single-tenant). |
 | `conductor.a2a.server.public-url` | request-derived | Base URL advertised in the agent card. |
 | `conductor.a2a.server.provider-organization` | `Conductor` | `provider.organization` on the card. |
 

@@ -148,7 +148,8 @@ public class EventHandler {
             complete_task,
             fail_task,
             terminate_workflow,
-            update_workflow_variables
+            update_workflow_variables,
+            start_agent
         }
 
         @ProtoField(id = 1)
@@ -171,6 +172,9 @@ public class EventHandler {
 
         @ProtoField(id = 7)
         private UpdateWorkflowVariables update_workflow_variables;
+
+        @ProtoField(id = 8)
+        private StartAgent start_agent;
 
         /**
          * @return the action
@@ -270,6 +274,20 @@ public class EventHandler {
         public void setUpdate_workflow_variables(
                 UpdateWorkflowVariables update_workflow_variables) {
             this.update_workflow_variables = update_workflow_variables;
+        }
+
+        /**
+         * @return the start_agent
+         */
+        public StartAgent getStart_agent() {
+            return start_agent;
+        }
+
+        /**
+         * @param start_agent the start_agent to set
+         */
+        public void setStart_agent(StartAgent start_agent) {
+            this.start_agent = start_agent;
         }
     }
 
@@ -466,6 +484,134 @@ public class EventHandler {
 
         public void setTaskToDomain(Map<String, String> taskToDomain) {
             this.taskToDomain = taskToDomain;
+        }
+    }
+
+    /**
+     * Starts an execution of a previously deployed agent definition, identified by {@link #name}
+     * and optional {@link #version}. Field names mirror {@code AgentStartRequest} so the action
+     * processor can map this directly onto that request.
+     */
+    @ProtoMessage
+    public static class StartAgent {
+
+        @ProtoField(id = 1)
+        private String name;
+
+        @ProtoField(id = 2)
+        private Integer version;
+
+        @ProtoField(id = 3)
+        private String prompt;
+
+        @ProtoField(id = 4)
+        private String sessionId;
+
+        @ProtoField(id = 5)
+        private List<String> media;
+
+        @ProtoField(id = 6)
+        private Map<String, Object> context;
+
+        @ProtoField(id = 7)
+        private String idempotencyKey;
+
+        /**
+         * @return the name of the deployed agent definition to start
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * @param name the name to set
+         */
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        /**
+         * @return the version; the latest version is used when null
+         */
+        public Integer getVersion() {
+            return version;
+        }
+
+        /**
+         * @param version the version to set
+         */
+        public void setVersion(Integer version) {
+            this.version = version;
+        }
+
+        /**
+         * @return the prompt
+         */
+        public String getPrompt() {
+            return prompt;
+        }
+
+        /**
+         * @param prompt the prompt to set
+         */
+        public void setPrompt(String prompt) {
+            this.prompt = prompt;
+        }
+
+        /**
+         * @return the sessionId
+         */
+        public String getSessionId() {
+            return sessionId;
+        }
+
+        /**
+         * @param sessionId the sessionId to set
+         */
+        public void setSessionId(String sessionId) {
+            this.sessionId = sessionId;
+        }
+
+        /**
+         * @return the media
+         */
+        public List<String> getMedia() {
+            return media;
+        }
+
+        /**
+         * @param media the media to set
+         */
+        public void setMedia(List<String> media) {
+            this.media = media;
+        }
+
+        /**
+         * @return the context
+         */
+        public Map<String, Object> getContext() {
+            return context;
+        }
+
+        /**
+         * @param context the context to set
+         */
+        public void setContext(Map<String, Object> context) {
+            this.context = context;
+        }
+
+        /**
+         * @return the idempotencyKey
+         */
+        public String getIdempotencyKey() {
+            return idempotencyKey;
+        }
+
+        /**
+         * @param idempotencyKey the idempotencyKey to set
+         */
+        public void setIdempotencyKey(String idempotencyKey) {
+            this.idempotencyKey = idempotencyKey;
         }
     }
 

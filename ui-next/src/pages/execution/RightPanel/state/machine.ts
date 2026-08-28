@@ -108,6 +108,10 @@ export const rightPanelMachine = createMachine<
                     cond: "isOutputTab",
                   },
                   {
+                    target: RightPanelStates.AGENT_CARD,
+                    cond: "isAgentCardTab",
+                  },
+                  {
                     target: RightPanelStates.LOGS,
                     cond: "isLogsTab",
                   },
@@ -146,6 +150,7 @@ export const rightPanelMachine = createMachine<
               },
               [RightPanelStates.INPUT]: {},
               [RightPanelStates.OUTPUT]: {},
+              [RightPanelStates.AGENT_CARD]: {},
               [RightPanelStates.LOGS]: {
                 initial: RightPanelStates.FETCH_SELECTED_TASK_LOGS,
                 on: {

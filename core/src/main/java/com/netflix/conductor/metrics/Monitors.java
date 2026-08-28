@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +69,7 @@ public class Monitors {
     private static final Map<String, Timer> timers = new ConcurrentHashMap<>();
     private static final Map<String, DistributionSummary> distributionSummaries =
             new ConcurrentHashMap<>();
+    private static final Set<String> registeredWebhookQueueGauges = ConcurrentHashMap.newKeySet();
 
     private Monitors() {}
 
@@ -476,6 +479,54 @@ public class Monitors {
 
     public static void recordWorkflowArchived(String workflowType, WorkflowModel.Status status) {
         counter("workflow_archived", "workflowName", workflowType, "workflowStatus", status.name());
+    }
+
+    public static void recordWebhookPublishSuccess(
+            String notificationType, String name, String status) {
+        counter(
+                "webhook_publish_success",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"),
+                "status",
+                StringUtils.defaultIfBlank(status, "unknown"));
+    }
+
+    public static void recordWebhookPublishFailure(
+            String notificationType, String name, String errorType) {
+        counter(
+                "webhook_publish_failure",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"),
+                "errorType",
+                StringUtils.defaultIfBlank(errorType, "unknown"));
+    }
+
+    public static void recordWebhookEnqueueFailure(String notificationType, String name) {
+        counter(
+                "webhook_enqueue_failure",
+                "notificationType",
+                notificationType,
+                "name",
+                StringUtils.defaultIfBlank(name, "unknown"));
+    }
+
+    /**
+     * Registers a pull-style gauge that reads {@link BlockingQueue#size()} at scrape time. Tagged
+     * by {@code notificationType} only — each publisher owns one shared queue, so per-name depth is
+     * not meaningful (unlike success/failure counters).
+     */
+    public static void registerWebhookQueueDepthGauge(
+            BlockingQueue<?> queue, String notificationType) {
+        String key = "webhook_queue_depth:" + notificationType;
+        if (registeredWebhookQueueGauges.add(key)) {
+            Gauge.builder("webhook_queue_depth", queue, BlockingQueue::size)
+                    .tag("notificationType", notificationType)
+                    .register(registry);
+        }
     }
 
     public static void recordArchivalDelayQueueSize(int val) {

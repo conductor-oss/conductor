@@ -14,9 +14,13 @@ import {
   Typography,
 } from "@mui/material";
 import { ArrowLeft, Graph, ListBullets } from "@phosphor-icons/react";
-import { getModelIconPath } from "./agentExecutionUtils";
+import { agentValuePreview, getModelIconPath } from "./agentExecutionUtils";
 import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
-import { formatDuration, formatTokens } from "./agentExecutionUtils";
+import {
+  formatDuration,
+  formatTokens,
+  timelineItemId,
+} from "./agentExecutionUtils";
 import { AgentExecutionDiagram } from "./AgentExecutionDiagram";
 import { AgentDetailPanel, DetailNodeData } from "./AgentDetailPanel";
 import { TurnBar } from "./TurnBar";
@@ -25,11 +29,24 @@ import { TurnDetail } from "./TurnDetail";
 interface AgentRunViewProps {
   agentRun: AgentRunData;
   onDrillIn: (subAgentRun: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (subAgentRun: AgentRunData) => void;
   onBack?: () => void;
   isRoot?: boolean;
 }
 
 type ViewMode = "diagram" | "timeline";
+
+function findSubAgent(run: AgentRunData, id: string): AgentRunData | undefined {
+  for (const turn of run.turns) {
+    for (const subAgent of turn.subAgents) {
+      if (subAgent.id === id) return subAgent;
+      const nested = findSubAgent(subAgent, id);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
+}
 
 // ─── Status chip ──────────────────────────────────────────────────────────────
 
@@ -290,13 +307,14 @@ function AgentRunHeader({
 export function AgentRunView({
   agentRun,
   onDrillIn,
+  onExpand,
   onBack,
   isRoot,
 }: AgentRunViewProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<DetailNodeData | null>(null);
   const [selectedTurn, setSelectedTurn] = useState(
-    agentRun.turns[0]?.turnNumber ?? 1,
+    agentRun.turns[0] ? timelineItemId(agentRun.turns[0]) : "turn-1",
   );
   const [panelWidth, setPanelWidth] = useState<number>(1125);
   const [viewMode, setViewMode] = useState<ViewMode>("diagram");
@@ -310,8 +328,29 @@ export function AgentRunView({
   useEffect(() => {
     setSelectedId(null);
     setSelectedNode(null);
-    setSelectedTurn(agentRun.turns[0]?.turnNumber ?? 1);
+    setSelectedTurn(
+      agentRun.turns[0] ? timelineItemId(agentRun.turns[0]) : "turn-1",
+    );
   }, [agentRun.id]);
+
+  // A selected node may outlive the execution snapshot from which it was
+  // created. Keep its sub-agent data synchronized as polling adds the final
+  // status and output to the parent execution.
+  useEffect(() => {
+    if (!selectedId) return;
+    setSelectedNode((current) => {
+      const selectedRunId = current?.subAgentRun?.id;
+      if (!current || !selectedRunId) return current;
+
+      const latestRun = findSubAgent(agentRun, selectedRunId);
+      if (!latestRun || latestRun === current.subAgentRun) return current;
+      return {
+        ...current,
+        status: latestRun.status,
+        subAgentRun: latestRun,
+      };
+    });
+  }, [agentRun, selectedId]);
 
   const handleDragStart = useCallback((e: ReactMouseEvent) => {
     isDragging.current = true;
@@ -339,7 +378,7 @@ export function AgentRunView({
   };
 
   const activeTurnData =
-    agentRun.turns.find((t) => t.turnNumber === selectedTurn) ??
+    agentRun.turns.find((t) => timelineItemId(t) === selectedTurn) ??
     agentRun.turns[0];
 
   return (
@@ -492,7 +531,7 @@ export function AgentRunView({
                     </Typography>
                   </Box>
                 )}
-                {agentRun.input && (
+                {agentRun.input != null && (
                   <Box
                     sx={{
                       mt: 0.5,
@@ -525,9 +564,7 @@ export function AgentRunView({
                         wordBreak: "break-word",
                       }}
                     >
-                      {agentRun.input.length > 500
-                        ? agentRun.input.slice(0, 500) + "..."
-                        : agentRun.input}
+                      {agentValuePreview(agentRun.input, 500)}
                     </Typography>
                   </Box>
                 )}
@@ -546,6 +583,7 @@ export function AgentRunView({
               selectedId={selectedId}
               onNodeSelect={handleNodeSelect}
               onDrillIn={onDrillIn}
+              onExpand={onExpand}
               onBack={onBack}
             />
           ) : (
@@ -560,7 +598,11 @@ export function AgentRunView({
               }}
             >
               {activeTurnData && (
-                <TurnDetail turn={activeTurnData} onDrillIn={onDrillIn} />
+                <TurnDetail
+                  turn={activeTurnData}
+                  onDrillIn={onDrillIn}
+                  onExpand={onExpand}
+                />
               )}
             </Box>
           )}

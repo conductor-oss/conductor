@@ -1,91 +1,133 @@
 ---
-description: AI agent orchestration and LLM orchestration with Conductor — LLM tasks with function calling, tool use via MCP, human-in-the-loop approval, dynamic workflows, vector database workflows, and saga pattern compensation. The open source workflow engine for AI agents.
+description: "What an agent is in Conductor and how agent turns run as durable workflow tasks with tools, approvals, and a full execution history."
 ---
 
-# AI Cookbook
+# Agents & AI
 
-Conductor is not an AI framework. It is a durable execution engine that provides AI agent orchestration and LLM orchestration by solving the hard infrastructure problems that AI agents create: long-running processes, unreliable external calls, function calling and tool use, human-in-the-loop approval, structured output, and the need to survive failures across any of these steps. Conductor makes every agent a durable agent — one that survives crashes, retries, and infrastructure failures without losing progress.
+## What is an agent?
 
+An agent is a program that uses an LLM to decide what to do next. Instead of following a fixed sequence of steps, it works in turns: the model reads the goal and the context so far, then proposes the next action. That action might be a tool call, a question for a person, or a final answer. The result of each action becomes context for the next turn, and the loop continues until the goal is met.
 
-## The problem agents create
+<section class="agent-runtime-hero" aria-label="The Conductor agent turn loop">
+  <svg class="agent-runtime-hero__diagram" viewBox="0 0 520 312" role="img" aria-labelledby="agent-runtime-diagram-title agent-runtime-diagram-description">
+    <title id="agent-runtime-diagram-title">The Conductor agent turn loop</title>
+    <desc id="agent-runtime-diagram-description">An LLM proposes the next action. Conductor validates the proposal, persists state, and schedules the work. Workers, MCP tools, remote agents, and people execute it. Results are saved and start the next turn.</desc>
+    <defs>
+      <marker id="agent-runtime-arrow-runtime" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" class="agent-runtime-hero__arrowhead agent-runtime-hero__arrowhead--runtime" />
+      </marker>
+    </defs>
+    <rect x="110" y="16" width="300" height="56" rx="12" class="agent-runtime-hero__brain-box" />
+    <text x="260" y="39" text-anchor="middle" class="agent-runtime-hero__runtime-title agent-runtime-hero__runtime-title--brain">LLM decides the next step</text>
+    <text x="260" y="59" text-anchor="middle" class="agent-runtime-hero__detail">proposes a tool call, a question, or an answer</text>
+    <path d="M 260 72 V 92" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <rect x="80" y="94" width="360" height="72" rx="14" class="agent-runtime-hero__runtime-box" />
+    <text x="260" y="119" text-anchor="middle" class="agent-runtime-hero__runtime-title">Conductor</text>
+    <text x="260" y="138" text-anchor="middle" class="agent-runtime-hero__runtime-detail">validates the proposal · applies approvals</text>
+    <text x="260" y="155" text-anchor="middle" class="agent-runtime-hero__runtime-detail">persists state · schedules the work</text>
+    <path d="M 260 166 V 188" class="agent-runtime-hero__arrow agent-runtime-hero__arrow--runtime" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <rect x="31" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="86" y="217" text-anchor="middle" class="agent-runtime-hero__label">Workers</text>
+    <text x="86" y="234" text-anchor="middle" class="agent-runtime-hero__detail">your code</text>
+    <rect x="147" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="202" y="217" text-anchor="middle" class="agent-runtime-hero__label">MCP tools</text>
+    <text x="202" y="234" text-anchor="middle" class="agent-runtime-hero__detail">tools + data</text>
+    <rect x="263" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="318" y="217" text-anchor="middle" class="agent-runtime-hero__label">Remote agents</text>
+    <text x="318" y="234" text-anchor="middle" class="agent-runtime-hero__detail">A2A protocol</text>
+    <rect x="379" y="192" width="110" height="56" rx="9" class="agent-runtime-hero__hands-card" />
+    <text x="434" y="217" text-anchor="middle" class="agent-runtime-hero__label">People</text>
+    <text x="434" y="234" text-anchor="middle" class="agent-runtime-hero__detail">review + input</text>
+    <path d="M 260 254 V 276 H 24 V 44 H 102" class="agent-runtime-hero__turn-loop" marker-end="url(#agent-runtime-arrow-runtime)" />
+    <text x="272" y="296" text-anchor="middle" class="agent-runtime-hero__compile">results are saved and start the next turn</text>
+  </svg>
+</section>
 
-An AI agent is a long-running process that:
+In Conductor, that loop runs as a durable workflow. The model's proposal is data, not a command. Conductor validates it, applies any required approvals, and only then schedules the work. The work itself runs as ordinary tasks, using the same building blocks a workflow already has: your workers, MCP tools, remote agents, and people. Because every result is persisted before the next turn starts, a crash, deploy, or long wait never loses the agent's progress.
 
-1. **Calls an LLM** to decide what to do next.
-2. **Calls tools** (APIs, databases, other services) to take action.
-3. **Waits** for external events, human approval, or time-based delays.
-4. **Loops** through plan/act/observe cycles until a goal is reached.
-5. **Returns structured output** to the caller or another system.
+## Three ways to build
 
-Each of these steps can fail, take minutes to hours, or require intervention. Running this in a single process means any crash loses all progress. Running it in a queue means building your own state machine, retry logic, and observability. Conductor provides all of this out of the box.
+The paths are complementary. A production workflow can use native AI tasks, invoke a compiled Conductor Agent, and delegate specialist work to a remote A2A agent in the same durable graph.
 
+<div class="agent-overview-grid agent-overview-grid--three">
+  <a class="agent-overview-card agent-overview-card--link" href="llm-orchestration.html">
+    <span class="agent-overview-card__kicker">Direct composition</span>
+    <strong>Declarative AI workflows</strong>
+    <span>Compose LLM, MCP, vector-search, control-flow, wait, and human tasks directly. Choose this when the workflow definition should expose the complete orchestration.</span>
+  </a>
+  <a class="agent-overview-card agent-overview-card--link" href="conductor-agents.html">
+    <span class="agent-overview-card__kicker">Compiled graphs</span>
+    <strong>Conductor Agents</strong>
+    <span>Author with a Conductor SDK or bring a supported framework agent. Compile it into an inspectable graph, deploy it, and reuse it as an <code>AGENT</code> task.</span>
+  </a>
+  <a class="agent-overview-card agent-overview-card--link" href="a2a-integration.html">
+    <span class="agent-overview-card__kicker">Remote delegation</span>
+    <strong>A2A agents</strong>
+    <span>Invoke an agent running behind the Agent2Agent protocol through a durable <code>AGENT</code> task. Conductor manages the handoff without compiling that agent locally.</span>
+  </a>
+</div>
 
-## How it works
+## Operating principles
 
-```mermaid
-graph LR
-    A[Your Agent Code] -->|start workflow| B[Conductor Server]
-    B -->|schedule tasks| C[Task Queue]
-    C -->|poll| D[LLM Worker]
-    C -->|poll| E[Tool Worker]
-    C -->|poll| F[MCP Worker]
-    B -->|persist every step| G[(Durable Storage)]
-    B -->|pause & resume| H[HUMAN / WAIT]
-    H -->|API call or signal| B
-    D -->|result| B
-    E -->|result| B
-    F -->|result| B
-```
+Adaptive behavior stays manageable when the execution contract is explicit. These principles apply across all three authoring paths.
 
-Your agent code starts a workflow. Conductor schedules each step as a task, persists every input and output to durable storage, and manages retries, timeouts, and pauses. Workers (LLM calls, tool calls, MCP calls) poll for tasks, execute them, and return results. If any worker or the server itself crashes, execution resumes from the last completed step.
+<div class="agent-overview-grid agent-overview-grid--principles">
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__number">01</span>
+    <strong>Model output is a proposal</strong>
+    <span>Plans and tool arguments must pass schema validation, policy, guardrails, and approval before they become executable work.</span>
+  </div>
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__number">02</span>
+    <strong>State belongs in the workflow</strong>
+    <span>Progress, waits, decisions, and results live in durable execution state—not only in the memory of an agent process.</span>
+  </div>
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__number">03</span>
+    <strong>Side effects cross task boundaries</strong>
+    <span>Workers and system tasks perform approved actions through bounded, observable interfaces with defined retries and timeouts.</span>
+  </div>
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__number">04</span>
+    <strong>Every turn is governable</strong>
+    <span>Proposals, policy outcomes, approvals, inputs, outputs, retries, timing, and terminal state remain inspectable and recoverable.</span>
+  </div>
+</div>
 
+## What you gain
 
-## How Conductor's primitives map to agent patterns
+Conductor applies the same durable execution model to adaptive agents and ordinary distributed workflows.
 
-| Agent pattern | Conductor primitive | What happens mechanically |
-|---|---|---|
-| **LLM call** | `LLM_CHAT_COMPLETE` / `LLM_TEXT_COMPLETE` system task | Native LLM task. Configure provider and model as parameters. Retried on failure. Prompt, response, and token usage persisted. Supports built-in tools: web search, code execution, file search, extended thinking. |
-| **Embeddings** | `LLM_GENERATE_EMBEDDINGS` system task | Generate vector embeddings using any configured provider. Output stored and passed to downstream tasks. |
-| **Tool call / function calling** | `CALL_MCP_TOOL` system task, or `SIMPLE` / `HTTP` task | Call tools on any MCP server, or implement custom tool workers. Each call is tracked, retried on failure, and fully auditable. |
-| **Tool discovery** | `LIST_MCP_TOOLS` system task | Discover available tools from an MCP server at runtime. Feed the tool list to an LLM for dynamic tool selection. |
-| **RAG / semantic search** | `LLM_INDEX_TEXT` + `LLM_SEARCH_INDEX` system tasks | Index documents and run semantic search against Pinecone, pgvector, or MongoDB Atlas. No external RAG framework needed. |
-| **Wait for human approval** | `HUMAN` task | Workflow pauses. Remains `IN_PROGRESS` in persistent storage. Resumes when the Task Update API is called with approval/rejection. Survives deploys. |
-| **Wait for external event** | `WAIT` task (time-based) or `HUMAN` task with event handler | Durable pause. Timer or signal resolution survives server restarts. |
-| **Wait for webhook** | `HUMAN` task + webhook endpoint | External system calls the Task Update API with payload. Workflow resumes with that payload as task output. |
-| **Plan/act/observe loop** | `DO_WHILE` operator | Loop until a condition is met. Each iteration is a persisted step. The loop counter and state survive failures. |
-| **Dynamic tool selection** | `DYNAMIC` task or `DYNAMIC_FORK` | The LLM output determines which task(s) to run next. Conductor resolves the task type at runtime. |
-| **Multi-agent / sub-agent** | `SUB_WORKFLOW` task | Spawn a child agent as a sub-workflow. Parent waits for completion. Failure in a child can trigger compensation in the parent. Full observability across the entire agent tree. |
-| **Rollback on failure** | `failureWorkflow` + compensation pattern | When an agent fails after taking real-world actions, a failure workflow runs compensating tasks (undo API calls, send notifications, release resources). |
-| **Structured output** | Workflow `outputParameters` | Map task outputs to a structured JSON response using Conductor's expression syntax. |
-| **Expose as API** | Conductor REST API: `POST /api/workflow/{name}` | Any workflow is callable via HTTP. Start synchronously or asynchronously. Get structured output back. |
-| **Expose as MCP tool** | MCP Gateway integration | Register any workflow as an MCP tool. LLMs and agents invoke it directly via `LIST_MCP_TOOLS` / `CALL_MCP_TOOL` and receive structured output. |
+<div class="agent-overview-grid agent-overview-grid--outcomes">
+  <div class="agent-overview-card"><strong>Durable execution</strong><span>Resume from persisted progress across crashes, deploys, retries, and long waits.</span></div>
+  <div class="agent-overview-card"><strong>Policy and guardrails</strong><span>Validate model proposals and constrain tools, inputs, fan-out, time, and cost before execution.</span></div>
+  <div class="agent-overview-card"><strong>Turn-by-turn observability</strong><span>Inspect the durable record of decisions, policy outcomes, task data, timing, and failures.</span></div>
+  <div class="agent-overview-card"><strong>Human control</strong><span>Pause without losing state, collect review or input, then resume the same execution.</span></div>
+  <div class="agent-overview-card"><strong>Framework and protocol interoperability</strong><span>Use supported agent frameworks, MCP tools, and remote A2A agents behind stable workflow boundaries.</span></div>
+  <div class="agent-overview-card"><strong>Ordinary workflow composition</strong><span>Place agents beside APIs, workers, branching, schedules, notifications, and compensation logic.</span></div>
+</div>
 
+## Where to start
 
-## What you'd have to build without Conductor
+Choose the boundary that matches what you are building, then deepen only the part of the platform you need.
 
-If you run agents on a framework like LangChain, CrewAI, or LangGraph without a durable execution backend, you are responsible for:
-
-- **State persistence** &mdash; Checkpointing agent progress so crashes don't restart from zero.
-- **Retry logic** &mdash; Retrying failed LLM and tool calls with backoff, deduplication, and timeout handling.
-- **Human-in-the-loop** &mdash; Building a pause/resume mechanism that survives process restarts and deploys.
-- **Compensation** &mdash; Rolling back side effects (sent emails, created records, charged payments) when a downstream step fails.
-- **Observability** &mdash; Logging every LLM prompt, response, tool call, and decision in a queryable, auditable format.
-- **Multi-agent coordination** &mdash; Managing parent-child lifecycle, failure propagation, and shared state across sub-agents.
-- **Scalability** &mdash; Distributing work across multiple worker processes and scaling them independently.
-
-Conductor provides all of this as infrastructure. Your agent code focuses on the logic — what to ask the LLM, which tools to call, what to do with the results.
-
-
-## Next steps
-
-- **[Build Your First AI Agent](first-ai-agent.md)** &mdash; Step-by-step: discover MCP tools, call an LLM, execute, add human approval, make it autonomous. 5 minutes.
-- **[AI & LLM Recipes](../cookbook/ai-llm.md)** &mdash; Ready-to-use recipes: chat completion, RAG, MCP agents, web search, code execution, coding agents, extended thinking, and more.
-- **[LLM Orchestration](llm-orchestration.md)** &mdash; Native LLM providers, built-in tools, vector databases, and content generation.
-- **[MCP Integration](mcp-guide.md)** &mdash; Connect to any MCP server, expose workflows as MCP tools, multi-server agents.
-- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; The canonical reference architecture for a durable production agent. End-to-end pattern with every primitive mapped.
-- **[Failure Semantics for AI Agents](failure-semantics.md)** &mdash; The exact failure contract: what happens under crashes, retries, duplicates, long waits, and partial side effects.
-- **[Why Conductor for Agents](why-conductor.md)** &mdash; What Conductor gives you out of the box for agentic workflows.
-- **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
-- **[Human-in-the-Loop](human-in-the-loop.md)** &mdash; Pre-execution review, conditional approval, and LLM-as-judge patterns.
-- **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agent loops, dynamic workflow generation, and tool use examples.
-- **[Token Efficiency](token-efficiency.md)** &mdash; How durable execution saves tokens and reduces LLM costs.
+<div class="agent-overview-grid agent-overview-grid--three agent-overview-grid--next">
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__kicker">Build</span>
+    <strong>Choose an authoring path</strong>
+    <span>Compare the three agent models, then learn the native model and retrieval tasks available to declarative workflows.</span>
+    <span class="agent-overview-card__links"><a href="../concepts/agents.html">Agent concepts</a><a href="llm-orchestration.html">LLM orchestration</a></span>
+  </div>
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__kicker">Integrate</span>
+    <strong>Bring agents into a durable graph</strong>
+    <span>Compile SDK or framework-authored agents locally, or invoke independently deployed agents through A2A.</span>
+    <span class="agent-overview-card__links"><a href="conductor-agents.html">Conductor Agents</a><a href="a2a-integration.html">A2A integration</a></span>
+  </div>
+  <div class="agent-overview-card">
+    <span class="agent-overview-card__kicker">Operate</span>
+    <strong>Design for production</strong>
+    <span>Apply the reference architecture, then move through governance, evaluation, deployment, recovery, and operations.</span>
+    <span class="agent-overview-card__links"><a href="production-agent-architecture.html">Production architecture</a><a href="production-path.html">Production path</a></span>
+  </div>
+</div>

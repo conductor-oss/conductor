@@ -258,4 +258,20 @@ public interface TaskService {
             TaskResult.Status status,
             String workerId,
             Map<String, Object> output);
+
+    /**
+     * Signals the first pending (non-terminal) {@code WAIT} task of a workflow by applying the
+     * given status and output to it. The search descends into running sub-workflows. This backs the
+     * {@code POST /tasks/{workflowId}/{status}/signal} endpoints, letting a caller signal a
+     * workflow's currently blocked task without knowing its task reference name.
+     *
+     * @param workflowId the (root) workflow to signal
+     * @param status the status to apply to the pending task
+     * @param output the task output
+     * @return the id of the task that was signaled, or {@code null} if no pending task was found
+     */
+    String signalTask(
+            @NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+            @NotNull(message = "Status cannot be null.") TaskResult.Status status,
+            Map<String, Object> output);
 }

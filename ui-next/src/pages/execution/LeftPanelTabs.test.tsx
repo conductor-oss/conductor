@@ -35,9 +35,10 @@ describe("LeftPanelTabs", () => {
     );
     expect(tabLabels()).toEqual([
       "Agent Execution",
-      "Debug View",
+      "Workflow View",
       "Task List",
       "Timeline",
+      "Input/Output",
       "Agent Definition",
       "JSON",
     ]);
@@ -75,6 +76,22 @@ describe("LeftPanelTabs", () => {
     screen.getByRole("tab", { name: "Agent Definition" }).click();
     expect(onChangeExecutionTab).toHaveBeenCalledWith(
       ExecutionTabs.SUMMARY_TAB,
+    );
+  });
+
+  it("opens the existing Input/Output view for an agent execution", () => {
+    const onChangeExecutionTab = vi.fn();
+    render(
+      <LeftPanelTabs
+        execution={agentExecution}
+        openedTab={ExecutionTabs.AGENT_EXECUTION_TAB}
+        onChangeExecutionTab={onChangeExecutionTab}
+      />,
+    );
+
+    screen.getByRole("tab", { name: "Input/Output" }).click();
+    expect(onChangeExecutionTab).toHaveBeenCalledWith(
+      ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB,
     );
   });
 });

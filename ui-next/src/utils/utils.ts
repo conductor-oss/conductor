@@ -123,6 +123,22 @@ export const tryFunc = async <T, E extends ErrorObj | undefined = undefined>({
 
 export const capitalizeFirstLetter = _capitalize;
 
+// Renders a raw status enum as human-readable text. Conductor statuses are
+// upper-snake-case (e.g. IN_PROGRESS, TIMED_OUT); a plain capitalize leaves the
+// underscore and only title-cases the first word ("In_progress"). Split on
+// underscores and title-case each word so multi-word statuses read correctly
+// ("In Progress", "Timed Out") while single-word ones are unchanged.
+export const humanizeStatus = (status?: string): string => {
+  if (!status) {
+    return "";
+  }
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((word) => capitalizeFirstLetter(word))
+    .join(" ");
+};
+
 export const getTitleSuffix = (type?: string, id?: string) => {
   if (type) {
     return ` - ${capitalizeFirstLetter(type)}` + (id ? ` - ${id}` : "");

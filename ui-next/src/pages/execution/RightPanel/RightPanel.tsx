@@ -27,6 +27,7 @@ import { featureFlags, FEATURES } from "utils/flags";
 import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
+  AGENT_CARD_TAB,
   DEFINITION_TAB,
   PLUGIN_PANEL_TAB_BASE,
   INPUT_TAB,
@@ -35,6 +36,11 @@ import {
   OUTPUT_TAB,
   SUMMARY_TAB,
 } from "../state/constants";
+import { AgentSnapshotDetails } from "components/features/agents/AgentSnapshotDetails";
+import {
+  createUnresolvedAgentSnapshot,
+  getAgentSnapshot,
+} from "utils/agentMetadata";
 import TaskLogs from "../TaskLogs";
 import TaskSummary from "../TaskSummary";
 import { pluginRegistry } from "plugins/registry";
@@ -43,6 +49,7 @@ import { useRightPanelActor } from "./state/hook";
 import { SummaryTask } from "./SummaryTask";
 import { dropdownIcon } from "./dropdownIcon";
 import { SecondaryActions } from "./SecondaryActions";
+import { getTaskOutputForDisplay } from "./taskOutput";
 
 const executionTaskHeaderContainerQuery = {
   small: { maxWidth: 699 },
@@ -80,7 +87,6 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
       errorMessage,
       currentTab,
       maybeSiblings,
-      isReRunFromTaskInProgress,
       executionId,
       authHeaders,
     },
@@ -95,6 +101,14 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   ] = useRightPanelActor(rightPanelActor);
 
   const dfOptions: ExecutionTask[] = maybeSiblings;
+  const isAgentTask = selectedTask?.workflowTask.type === TaskType.AGENT;
+  const agentSnapshot = useMemo(() => {
+    if (!isAgentTask || !selectedTask) return undefined;
+    return (
+      getAgentSnapshot(selectedTask.workflowTask) ??
+      createUnresolvedAgentSnapshot(selectedTask.inputData)
+    );
+  }, [isAgentTask, selectedTask]);
 
   const maybeStatusForm = useMemo(
     () =>
@@ -319,29 +333,45 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
           scrollButtons={containerQueryState["small"] ? true : "auto"}
           allowScrollButtonsMobile
         >
-          <Tab label="Summary" onClick={() => changeCurrentTab(SUMMARY_TAB)} />
+          <Tab
+            label="Summary"
+            value={SUMMARY_TAB}
+            onClick={() => changeCurrentTab(SUMMARY_TAB)}
+          />
           <Tab
             label="Input"
+            value={INPUT_TAB}
             onClick={() => changeCurrentTab(INPUT_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="Output"
+            value={OUTPUT_TAB}
             onClick={() => changeCurrentTab(OUTPUT_TAB)}
             disabled={!selectedTask.status}
           />
+          {isAgentTask && (
+            <Tab
+              label="Agent Card"
+              value={AGENT_CARD_TAB}
+              onClick={() => changeCurrentTab(AGENT_CARD_TAB)}
+            />
+          )}
           <Tab
             label="Logs"
+            value={LOGS_TAB}
             onClick={() => changeCurrentTab(LOGS_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="JSON"
+            value={JSON_TAB}
             onClick={() => changeCurrentTab(JSON_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="Definition"
+            value={DEFINITION_TAB}
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
           {pluginPanels.map((panel, i) => (
@@ -385,7 +415,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
               prunedNotice
             ) : (
               <ReactJson
-                src={isReRunFromTaskInProgress ? {} : selectedTask.outputData}
+                src={getTaskOutputForDisplay(selectedTask)}
                 title="Task output"
                 overflowY="auto"
                 overflowX="hidden"
@@ -393,6 +423,19 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 editorHeight="calc(100vh - 280px)"
               />
             ))}
+          {currentTab === AGENT_CARD_TAB && agentSnapshot && (
+            <Box
+              data-testid="agent-card-panel"
+              sx={{
+                p: 3,
+                overflowY: "auto",
+                overflowX: "hidden",
+                maxHeight: "calc(100vh - 200px)",
+              }}
+            >
+              <AgentSnapshotDetails snapshot={agentSnapshot} />
+            </Box>
+          )}
           {currentTab === LOGS_TAB &&
             (isKeptLastNPruned ? (
               prunedNotice

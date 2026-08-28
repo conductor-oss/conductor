@@ -1,0 +1,9 @@
+{
+  "model": "openai/gpt-4o",
+  "agentModels": {},
+  "skillMd": "---\nname: simple-skill\ndescription: A simple test skill.\n---\n# Simple Skill\n\nYou are a helpful assistant.",
+  "agentFiles": {},
+  "scripts": {},
+  "resourceFiles": [],
+  "crossSkillRefs": {}
+}

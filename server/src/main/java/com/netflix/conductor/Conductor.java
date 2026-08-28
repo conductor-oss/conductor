@@ -37,6 +37,7 @@ import org.springframework.core.io.FileSystemResource;
         basePackages = {
             "com.netflix.conductor",
             "io.orkes.conductor",
+            "dev.agentspan",
             "org.conductoross.conductor"
         })
 public class Conductor implements ApplicationRunner {

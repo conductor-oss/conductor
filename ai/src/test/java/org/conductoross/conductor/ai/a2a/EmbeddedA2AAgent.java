@@ -59,6 +59,7 @@ final class EmbeddedA2AAgent implements AutoCloseable {
     private volatile String text = "42";
     private volatile String question = "Which currency?";
     private volatile boolean failGetTask = false;
+    private volatile boolean hangStream = false;
 
     EmbeddedA2AAgent() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -89,6 +90,16 @@ final class EmbeddedA2AAgent implements AutoCloseable {
     /** Simulates an agent that goes unreachable while a task is being polled. */
     EmbeddedA2AAgent failGetTask(boolean fail) {
         this.failGetTask = fail;
+        return this;
+    }
+
+    /**
+     * When {@code true}, {@code message/stream} never sends its terminal event — it sends SSE
+     * comment keepalives (which a real client's per-read timeout does not treat as inactivity) for
+     * a few seconds and then just stops, simulating a stuck-but-alive remote agent.
+     */
+    EmbeddedA2AAgent hangStream(boolean hang) {
+        this.hangStream = hang;
         return this;
     }
 
@@ -200,6 +211,22 @@ final class EmbeddedA2AAgent implements AutoCloseable {
         exchange.sendResponseHeaders(200, 0);
         try (OutputStream os = exchange.getResponseBody()) {
             writeEvent(os, resultEnvelope(taskJson("working", null, null)));
+            if (hangStream) {
+                // Alive but stuck: keepalive comments (ignored by SSE parsers, but real data on
+                // the wire) reset a client's per-read timeout, so only an overall call deadline
+                // can bound this — never sends the terminal event.
+                for (int i = 0; i < 25; i++) {
+                    os.write(": keepalive\n\n".getBytes(StandardCharsets.UTF_8));
+                    os.flush();
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+                return;
+            }
             writeEvent(
                     os,
                     resultEnvelope(

@@ -9,6 +9,7 @@ const SCHEDULER_SEARCH_PATH = "/scheduler/schedules/search?";
 /** Server-side cap for scheduler search page size. */
 const SCHEDULER_SEARCH_MAX_SIZE = 1000;
 
+/** Full schedule list (used by Scheduler Executions name dropdown / similar lookups). */
 export const useGetSchedulerDefinitions = () => {
   const fetchContext = useFetchContext();
   const fetchParams = { headers: useAuthHeaders() };

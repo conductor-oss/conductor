@@ -12,13 +12,20 @@
  */
 package org.conductoross.conductor.controllers;
 
+import java.io.IOException;
+
+import org.conductoross.conductor.core.storage.FileContent;
 import org.conductoross.conductor.core.storage.FileStorageService;
 import org.conductoross.conductor.model.file.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.FILES;
@@ -46,52 +53,100 @@ public class FileResource {
         return fileStorageService.createFile(request);
     }
 
-    @GetMapping("/{fileId}/upload-url")
+    @GetMapping("/{workflowId}/{fileId}/upload-url")
     @Operation(summary = "Get presigned upload URL")
-    public FileUploadUrlResponse getUploadUrl(@PathVariable("fileId") String fileId) {
-        return fileStorageService.getUploadUrl(fileId);
+    public FileUploadUrlResponse getUploadUrl(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        return fileStorageService.getUploadUrl(workflowId, fileId);
     }
 
-    @PostMapping("/{fileId}/upload-complete")
+    @PutMapping("/content/{workflowId}/{fileId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Stream raw file content to Conductor storage")
+    public void uploadFileContent(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("fileId") String fileId,
+            HttpServletRequest request)
+            throws IOException {
+        fileStorageService.uploadContent(workflowId, fileId, request.getInputStream());
+    }
+
+    @GetMapping("/content/{workflowId}/{fileId}")
+    @Operation(summary = "Stream raw file content from Conductor storage")
+    public ResponseEntity<StreamingResponseBody> downloadFileContent(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        FileContent content = fileStorageService.downloadContent(workflowId, fileId);
+        StreamingResponseBody responseBody = outputStream -> copyAndClose(content, outputStream);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.getContentType()))
+                .contentLength(content.getContentLength())
+                .body(responseBody);
+    }
+
+    @PostMapping("/{workflowId}/{fileId}/upload-complete")
     @Operation(summary = "Confirm file upload completion")
-    public FileUploadCompleteResponse confirmUpload(@PathVariable("fileId") String fileId) {
-        return fileStorageService.confirmUpload(fileId);
+    public FileUploadCompleteResponse confirmUpload(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        return fileStorageService.confirmUpload(workflowId, fileId);
     }
 
     @GetMapping("/{workflowId}/{fileId}/download-url")
     @Operation(summary = "Get presigned download URL")
     public FileDownloadUrlResponse getDownloadUrl(
             @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
-        return fileStorageService.getDownloadUrl(fileId, workflowId);
+        return fileStorageService.getDownloadUrl(workflowId, fileId);
     }
 
-    @GetMapping("/{fileId}")
+    @GetMapping("/{workflowId}/{fileId}")
     @Operation(summary = "Get file metadata")
-    public FileHandle getFileMetadata(@PathVariable("fileId") String fileId) {
-        return fileStorageService.getFileMetadata(fileId);
+    public FileHandle getFileMetadata(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        return fileStorageService.getFileMetadata(workflowId, fileId);
     }
 
-    @PostMapping("/{fileId}/multipart")
+    @PostMapping("/{workflowId}/{fileId}/multipart")
     @Operation(summary = "Initiate multipart upload")
-    public MultipartInitResponse initiateMultipartUpload(@PathVariable("fileId") String fileId) {
-        return fileStorageService.initiateMultipartUpload(fileId);
+    public MultipartInitResponse initiateMultipartUpload(
+            @PathVariable("workflowId") String workflowId, @PathVariable("fileId") String fileId) {
+        return fileStorageService.initiateMultipartUpload(workflowId, fileId);
     }
 
-    @GetMapping("/{fileId}/multipart/{uploadId}/part/{partNumber}")
-    @Operation(summary = "Get presigned URL for a multipart part (S3 only)")
+    @GetMapping("/{workflowId}/{fileId}/multipart/{uploadId}/part/{partNumber}")
+    @Operation(summary = "Get a signed URL for a multipart part")
     public FileUploadUrlResponse getPartUploadUrl(
+            @PathVariable("workflowId") String workflowId,
             @PathVariable("fileId") String fileId,
             @PathVariable("uploadId") String uploadId,
             @PathVariable("partNumber") int partNumber) {
-        return fileStorageService.getPartUploadUrl(fileId, uploadId, partNumber);
+        return fileStorageService.getPartUploadUrl(workflowId, fileId, uploadId, partNumber);
     }
 
-    @PostMapping("/{fileId}/multipart/{uploadId}/complete")
+    @PostMapping("/{workflowId}/{fileId}/multipart/{uploadId}/complete")
     @Operation(summary = "Complete multipart upload")
     public FileUploadCompleteResponse completeMultipartUpload(
+            @PathVariable("workflowId") String workflowId,
             @PathVariable("fileId") String fileId,
             @PathVariable("uploadId") String uploadId,
             @RequestBody MultipartCompleteRequest request) {
-        return fileStorageService.completeMultipartUpload(fileId, uploadId, request.getPartETags());
+        return fileStorageService.completeMultipartUpload(
+                workflowId, fileId, uploadId, request.getPartETags());
+    }
+
+    @DeleteMapping("/{workflowId}/{fileId}/multipart/{uploadId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Abort multipart upload")
+    public void abortMultipartUpload(
+            @PathVariable("workflowId") String workflowId,
+            @PathVariable("fileId") String fileId,
+            @PathVariable("uploadId") String uploadId) {
+        fileStorageService.abortMultipartUpload(workflowId, fileId, uploadId);
+    }
+
+    private void copyAndClose(FileContent content, java.io.OutputStream outputStream)
+            throws IOException {
+        try (content) {
+            content.getInputStream().transferTo(outputStream);
+        }
     }
 }

@@ -1,6 +1,7 @@
 import { TaskStatus } from "./TaskStatus";
 import { TaskType, TaskDef } from "./common";
 import { WorkflowDef } from "./WorkflowDef";
+import { WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 export type ExecutedData = {
   status: TaskStatus;
@@ -31,6 +32,7 @@ export interface ExecutionTask<
     taskReferenceName: string;
     type: string;
     description?: string;
+    metadata?: WorkflowTaskMetadata;
   };
   inputData?: T & {
     subWorkflowName?: string;
@@ -39,6 +41,7 @@ export interface ExecutionTask<
   };
   outputData?: {
     subWorkflowId?: string;
+    executionId?: string;
     caseOutput?: string[];
     [key: string]: unknown;
   };
@@ -106,6 +109,11 @@ export interface WorkflowExecution {
   event?: string;
   variables?: Record<string, unknown>;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
+  aggregateTokenUsage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 export interface DetailedTime {

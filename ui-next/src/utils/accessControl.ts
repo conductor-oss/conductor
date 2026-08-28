@@ -41,6 +41,8 @@ export const accessControl = {
         "USER",
         "METADATA_MANAGER",
         "WORKFLOW_MANAGER",
+        "HUMAN_TASK_MANAGER",
+        "EVENT_HANDLER_MANAGER",
       ])
     ) {
       return false;
@@ -55,5 +57,7 @@ export enum Role {
   USER = "USER",
   METADATA_MANAGER = "METADATA_MANAGER",
   WORKFLOW_MANAGER = "WORKFLOW_MANAGER",
+  HUMAN_TASK_MANAGER = "HUMAN_TASK_MANAGER",
+  EVENT_HANDLER_MANAGER = "EVENT_HANDLER_MANAGER",
   USER_READ_ONLY = "USER_READ_ONLY",
 }
