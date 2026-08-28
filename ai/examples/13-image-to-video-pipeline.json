@@ -12,7 +12,7 @@
         "llmProvider": "openai",
         "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water, photorealistic, wide landscape",
-        "width": 1792,
+        "width": 1536,
         "height": 1024,
         "n": 1
       }
