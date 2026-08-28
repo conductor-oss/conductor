@@ -179,6 +179,47 @@ const EMPTY_TASK_SEARCH = {
   results: [],
 };
 
+/**
+ * OSS queue monitor fetches sizes and poll records as two endpoints and joins
+ * them in the client. Register these AFTER `mockCommonApis` so they win over
+ * the `/api/**` catch-all.
+ */
+export const QUEUE_MONITOR_SIZES = {
+  send_email: 12,
+  process_payment: 0,
+  idle_queue: 3,
+};
+
+export const QUEUE_MONITOR_POLL_DATA = [
+  {
+    queueName: "send_email",
+    domain: "",
+    workerId: "worker-east",
+    lastPollTime: 0,
+  },
+  {
+    queueName: "send_email",
+    domain: "",
+    workerId: "worker-west",
+    lastPollTime: 0,
+  },
+  {
+    queueName: "process_payment",
+    domain: "",
+    workerId: "worker-pay",
+    lastPollTime: 0,
+  },
+];
+
+export async function mockQueueMonitorApis(page: Page): Promise<void> {
+  await page.route("**/api/tasks/queue/polldata/all**", (route) =>
+    route.fulfill({ json: QUEUE_MONITOR_POLL_DATA }),
+  );
+  await page.route("**/api/tasks/queue/all**", (route) =>
+    route.fulfill({ json: QUEUE_MONITOR_SIZES }),
+  );
+}
+
 /** Mock API endpoints that are fetched on initial page load */
 export async function mockCommonApis(page: Page): Promise<void> {
   // Workflow execution search (WorkflowSearch page default load)
