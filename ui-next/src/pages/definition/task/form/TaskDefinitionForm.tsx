@@ -162,7 +162,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                   tooltip={{
                     title: "Rate limit per frequency",
                     content:
-                      "The maximum number of task executions handed to workers per frequency window. No rate limit if set to 0. Use together with the frequency window.",
+                      "The number of task executions given to workers per frequency window.",
                   }}
                 />
               </Grid>
@@ -182,8 +182,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                   placeholder="1"
                   tooltip={{
                     title: "Frequency seconds",
-                    content:
-                      "The duration of the rate limit window in seconds. Use together with rate limit per frequency.",
+                    content: "The duration of the frequency window in seconds.",
                   }}
                 />
               </Grid>
@@ -204,7 +203,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                   tooltip={{
                     title: "Concurrent execution limit",
                     content:
-                      "The number of task executions allowed to run at any one time. Unlike rate limiting, this counts tasks already in progress. No limit if set to 0.",
+                      "The number of task executions that can be executed concurrently.",
                   }}
                 />
               </Grid>
