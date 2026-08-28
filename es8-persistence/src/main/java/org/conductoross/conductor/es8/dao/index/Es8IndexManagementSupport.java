@@ -252,6 +252,7 @@ class Es8IndexManagementSupport {
 
     private void createWorkflowIndex() throws IOException {
         ensureWriteIndex(workflowIndexName);
+        ensureWorkflowClassifierMapping();
     }
 
     private void createTaskIndex() throws IOException {
@@ -412,6 +413,20 @@ class Es8IndexManagementSupport {
                     return null;
                 });
         logger.info("Created write index '{}' for alias '{}'", indexName, aliasName);
+    }
+
+    void ensureWorkflowClassifierMapping() throws IOException {
+        executeWithRetry(
+                () -> {
+                    elasticSearchClient
+                            .indices()
+                            .putMapping(
+                                    r ->
+                                            r.index(workflowIndexName)
+                                                    .properties(
+                                                            "classifier", p -> p.keyword(k -> k)));
+                    return null;
+                });
     }
 
     private void waitForHealthyCluster() throws IOException {
