@@ -242,12 +242,26 @@ public class AssistantsRunApi {
         JsonNode messages = get(target, token, "/threads/" + threadId + "/messages", "order=desc");
         for (JsonNode message : messages.path("data")) {
             if ("assistant".equals(message.path("role").asText())) {
-                return Map.of(
-                        "result",
-                        message.path("content").path(0).path("text").path("value").asText(""));
+                return Map.of("result", extractText(message));
             }
         }
         return null;
+    }
+
+    /**
+     * The text part of an assistant message.
+     *
+     * <p>Scans the parts rather than taking the first: an assistant with code interpreter returns
+     * an {@code image_file} part ahead of the text, so {@code content[0].text} is empty for exactly
+     * the agents most likely to produce a chart.
+     */
+    private static String extractText(JsonNode message) {
+        for (JsonNode part : message.path("content")) {
+            if ("text".equals(part.path("type").asText())) {
+                return part.path("text").path("value").asText("");
+            }
+        }
+        return "";
     }
 
     private static ConductorAgentState toState(String status) {

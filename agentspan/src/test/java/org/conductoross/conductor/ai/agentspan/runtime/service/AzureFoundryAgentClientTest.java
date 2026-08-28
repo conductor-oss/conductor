@@ -88,6 +88,9 @@ class AzureFoundryAgentClientTest {
      */
     private final AtomicInteger toolCallCount = new AtomicInteger(1);
 
+    /** Assistants with code interpreter put an image part ahead of the text part. */
+    private final AtomicBoolean assistantReturnsImageFirst = new AtomicBoolean(false);
+
     private final List<String> requestLog = new ArrayList<>();
 
     @BeforeEach
@@ -257,6 +260,19 @@ class AzureFoundryAgentClientTest {
         assertThatThrownBy(() -> client.getAgentStatus(executionId, statusRequest()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("has no runs");
+    }
+
+    @Test
+    void textIsFoundEvenWhenTheAssistantReturnsAnImagePartFirst() {
+        String executionId = start().getExecutionId();
+        runStatus.set("completed");
+        assistantReturnsImageFirst.set(true);
+
+        ConductorAgentStatusResponse response = client.getAgentStatus(executionId, statusRequest());
+
+        // Taking content[0] made the result empty for exactly the assistants most likely to
+        // produce a chart.
+        assertThat(response.getOutput()).isEqualTo(Map.of("result", "the answer"));
     }
 
     // --- parallel tool calls ------------------------------------------------------------------
@@ -580,12 +596,19 @@ class AzureFoundryAgentClientTest {
                                 + "]}}}]}");
             }
             if (path.contains("/messages")) {
+                if (assistantReturnsImageFirst.get()) {
+                    return json(
+                            """
+                            {"data":[{"role":"assistant","content":[
+                               {"type":"image_file","image_file":{"file_id":"file-1"}},
+                               {"type":"text","text":{"value":"the answer"}}]}]}""");
+                }
                 return "POST".equals(request.getMethod())
                         ? json("{\"id\":\"msg-1\"}")
                         : json(
                                 """
-                                {"data":[{"role":"assistant","content":[{"text":{"value":"the answer"}}]},
-                                         {"role":"user","content":[{"text":{"value":"what is the answer?"}}]}]}""");
+                                {"data":[{"role":"assistant","content":[{"type":"text","text":{"value":"the answer"}}]},
+                                         {"role":"user","content":[{"type":"text","text":{"value":"what is the answer?"}}]}]}""");
             }
             return new MockResponse().setResponseCode(404).setBody("{}");
         }

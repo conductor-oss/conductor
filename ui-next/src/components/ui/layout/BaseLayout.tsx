@@ -14,8 +14,8 @@ import { UISidebar } from "components/providers/sidebar/UiSidebar";
 import { releaseVersion } from "utils/releaseVersion";
 import AppBarModules from "plugins/AppBarModules";
 import { useAuth } from "components/features/auth";
+import { useAPIReleaseVersion } from "utils";
 
-const apiVersion = localStorage.getItem("version");
 const toolBarHeight = 60;
 
 type Props = {
@@ -23,6 +23,19 @@ type Props = {
 };
 
 export const BaseLayout = ({ children }: Props) => {
+  const {
+    data: apiVersion,
+    isLoading: apiVersionLoading,
+    isError: apiVersionError,
+  } = useAPIReleaseVersion();
+  // undefined = still loading (sidebar shows skeleton)
+  // null      = settled without data / error (sidebar shows just uiVersion)
+  // string    = loaded successfully
+  const resolvedApiVersion = apiVersionLoading
+    ? undefined
+    : apiVersionError
+      ? null
+      : (apiVersion ?? null);
   const {
     toggleMenu,
     isMobile,
@@ -86,7 +99,7 @@ export const BaseLayout = ({ children }: Props) => {
       >
         {hideSideBar ? null : (
           <UISidebar
-            apiVersion={apiVersion || ""}
+            apiVersion={resolvedApiVersion}
             releaseVersion={releaseVersion}
           />
         )}

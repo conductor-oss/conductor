@@ -1,50 +1,23 @@
 ---
 description: "Build Conductor workers in Java with automated polling, thread management, and Spring Boot integration."
+source_repo: "https://github.com/conductor-oss/java-sdk"
+sdk_page: java
 ---
 
 # Java SDK
 
-!!! info "Source"
-    GitHub: [conductor-oss/java-sdk](https://github.com/conductor-oss/java-sdk) | Report issues and contribute on GitHub.
-
-## Start Conductor server
-
-If you don't already have a Conductor server running, pick one:
-
-**Docker (recommended, includes UI):**
-
-```shell
-docker run -p 8080:8080 conductoross/conductor:latest
-```
-The UI will be available at `http://localhost:8080` and the API at `http://localhost:8080/api`
-
-**MacOS / Linux (one-liner):** (If you don't want to use docker, you can install and run the binary directly)
-```shell
-curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
-```
-
-**Conductor CLI**
-```shell
-# Installs conductor cli
-npm install -g @conductor-oss/conductor-cli
-
-# Start the open source conductor server
-conductor server start
-# see conductor server --help for all the available commands
-```
-
 ## Install the SDK
 
-The SDK requires Java 17+. Add the following dependency to your project:
+The SDK requires Java 21+. Add the following dependency to your project:
 
 **For Gradle:**
 
 ```gradle
 dependencies {
-    implementation 'org.conductoross:conductor-client:5.0.1'
+    implementation 'org.conductoross:conductor-client:VERSION'
 
     // Optionally, you can also add spring module for auto configuration
-    // implementation 'org.conductoross:conductor-client-spring:5.0.1'
+    // implementation 'org.conductoross:conductor-client-spring:VERSION'
 }
 ```
 
@@ -54,7 +27,7 @@ dependencies {
 <dependency>
     <groupId>org.conductoross</groupId>
     <artifactId>conductor-client</artifactId>
-    <version>5.0.1</version>
+    <version>VERSION</version>
 </dependency>
 ```
 *Optionally, you can also add spring module for auto configuration*
@@ -62,7 +35,7 @@ dependencies {
 <dependency>
     <groupId>org.conductoross</groupId>
     <artifactId>conductor-client-spring</artifactId>
-    <version>5.0.1</version>
+    <version>VERSION</version>
 </dependency>
 ```
 
@@ -153,19 +126,7 @@ Run it:
 ./gradlew run
 ```
 
-> ### Using Orkes Conductor / Remote Server?
-> Export your authentication credentials as well:
->
-> ```shell
-> export CONDUCTOR_SERVER_URL="https://your-cluster.orkesconductor.io/api"
->
-> # If using Orkes Conductor that requires auth key/secret
-> export CONDUCTOR_AUTH_KEY="your-key"
-> export CONDUCTOR_AUTH_SECRET="your-secret"
-> ```
-
-That's it -- you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
-[http://localhost:8080](http://localhost:8080)) to see the execution.
+That's it -- you just defined a worker, built a workflow, and executed it. Open the UI for the Conductor server you configured to inspect the execution.
 
 ## Comprehensive worker example
 
@@ -256,7 +217,7 @@ executor.initWorkers("com.mycompany.workers");  // Package to scan for @WorkerTa
 | Complexity | Simple | Complex (service mesh, load balancer) |
 
 **Learn more:**
-- [Worker SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/worker_sdk.md) — Complete worker framework documentation
+- [Worker SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/docs/workers.md) — Complete worker framework documentation
 - [Worker Examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/) — Sample worker implementations
 
 ## Monitoring Workers
@@ -266,7 +227,7 @@ Enable metrics collection for monitoring workers:
 ```java
 // Using conductor-client-metrics module
 dependencies {
-    implementation 'org.conductoross:conductor-client-metrics:5.0.1'
+    implementation 'org.conductoross:conductor-client-metrics:VERSION'
 }
 ```
 
@@ -341,8 +302,8 @@ workflowClient.restartWorkflow(workflowId, false);
 ```
 
 **Learn more:**
-- [Workflow SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/workflow_sdk.md) — Workflow-as-code documentation
-- [Workflow Testing](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) — Unit testing workflows
+- [Workflow SDK Guide](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflows.md) — Workflow-as-code documentation
+- [Workflow Testing](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflow-testing.md) — Unit testing workflows
 
 ## Troubleshooting
 
@@ -626,7 +587,7 @@ See the [Examples Guide](https://github.com/conductor-oss/java-sdk/blob/main/exa
 | [Events](https://github.com/conductor-oss/java-sdk/tree/main/examples/old/src/main/java/com/netflix/conductor/sdk/examples/events) | Event-driven workflows | `./gradlew :examples:run -PmainClass=com.netflix.conductor.sdk.examples.events.EventHandlerExample` |
 | [All AI examples](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/AgenticExamplesRunner.java) | All agentic/LLM workflows | `./gradlew :examples:run --args="--all"` |
 | [RAG Workflow](https://github.com/conductor-oss/java-sdk/blob/main/examples/old/src/main/java/io/orkes/conductor/sdk/examples/agentic/RagWorkflowExample.java) | RAG pipeline (index → search → answer) | `./gradlew :examples:run -PmainClass=io.orkes.conductor.sdk.examples.agentic.RagWorkflowExample` |
-| [Media Transcoder](https://github.com/conductor-oss/file-storage-java-sdk/tree/main/examples/file-storage/media-transcoder) | File-handling pipeline: upload video → transcode → thumbnail → manifest | `mvn -f examples/file-storage/media-transcoder/pom.xml exec:java` |
+| [Media Transcoder](https://github.com/conductor-oss/java-sdk/tree/main/examples/file-storage/media-transcoder) | File-handling pipeline: upload video → transcode → thumbnail → manifest | `mvn -f examples/file-storage/media-transcoder/pom.xml exec:java` |
 
 ## API Journey Examples
 
@@ -643,9 +604,9 @@ End-to-end examples covering all APIs for each domain:
 
 | Document | Description |
 |----------|-------------|
-| [Worker SDK](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/worker_sdk.md) | Complete worker framework guide |
-| [Workflow SDK](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/workflow_sdk.md) | Workflow-as-code documentation |
-| [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) | Unit testing workflows and workers |
+| [Worker SDK](https://github.com/conductor-oss/java-sdk/blob/main/docs/workers.md) | Complete worker framework guide |
+| [Workflow SDK](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflows.md) | Workflow-as-code documentation |
+| [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/docs/workflow-testing.md) | Unit testing workflows and workers |
 | [Conductor Client](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client/README.md) | HTTP client library documentation |
 | [Client Metrics](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client-metrics/README.md) | Prometheus metrics collection |
 | [Spring Integration](https://github.com/conductor-oss/java-sdk/blob/main/conductor-client-spring/README.md) | Spring Boot auto-configuration |
@@ -657,52 +618,6 @@ End-to-end examples covering all APIs for each domain:
 - [Open an issue (Conductor server)](https://github.com/conductor-oss/conductor/issues) for Conductor OSS server issues
 - [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) for community discussion and help
 - [Orkes Community Forum](https://community.orkes.io/) for Q&A
-
-## Frequently Asked Questions
-
-**Is this the same as Netflix Conductor?**
-
-Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https://github.com/Netflix/conductor) repository after Netflix contributed the project to the open-source foundation.
-
-**Is this project actively maintained?**
-
-Yes. [Orkes](https://orkes.io) is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.
-
-**Can Conductor scale to handle my workload?**
-
-Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.
-
-**Does Conductor support durable code execution?**
-
-Yes. Conductor ensures workflows complete reliably even in the face of infrastructure failures, process crashes, or network issues.
-
-**Are workflows always asynchronous?**
-
-No. While Conductor excels at asynchronous orchestration, it also supports synchronous workflow execution when immediate results are required.
-
-**Do I need to use a Conductor-specific framework?**
-
-No. Conductor is language and framework agnostic. Use your preferred language and framework -- the [SDKs](https://github.com/conductor-oss/conductor#conductor-sdks) provide native integration for Python, Java, JavaScript, Go, C#, and more.
-
-**Can I mix workers written in different languages?**
-
-Yes. A single workflow can have workers written in Python, Java, Go, or any other supported language. Workers communicate through the Conductor server, not directly with each other.
-
-**What Java versions are supported?**
-
-Java 17 and above.
-
-**Should I use Worker interface or @WorkerTask annotation?**
-
-Use `@WorkerTask` annotation for simpler, cleaner code -- input parameters are automatically mapped and return values become task output. Use the `Worker` interface when you need full control over task execution, access to task metadata, or custom error handling.
-
-**How do I run workers in production?**
-
-Workers are standard Java applications. Deploy them as you would any Java application -- in containers, VMs, or bare metal. Workers poll the Conductor server for tasks, so no inbound ports need to be opened.
-
-**How do I test workflows without running a full Conductor server?**
-
-The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See [Testing Framework](https://github.com/conductor-oss/java-sdk/blob/main/java-sdk/testing_framework.md) for details.
 
 ## License
 

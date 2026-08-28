@@ -356,8 +356,8 @@ class OpenAiAssistantsAgentClientTest {
                         ? json("{\"id\":\"msg-1\"}")
                         : json(
                                 """
-                                {"data":[{"role":"assistant","content":[{"text":{"value":"the answer"}}]},
-                                         {"role":"user","content":[{"text":{"value":"what is the answer?"}}]}]}""");
+                                {"data":[{"role":"assistant","content":[{"type":"text","text":{"value":"the answer"}}]},
+                                         {"role":"user","content":[{"type":"text","text":{"value":"what is the answer?"}}]}]}""");
             }
             return new MockResponse().setResponseCode(404).setBody("{}");
         }

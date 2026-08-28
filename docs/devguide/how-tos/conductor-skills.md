@@ -1,17 +1,31 @@
 ---
-description: "Conductor Skills — teach your AI coding agent to create, run, monitor, and manage Conductor workflows. Works with Claude Code, Cursor, Copilot, Gemini CLI, and more."
+description: "Conductor Skills teach your AI coding agent to create, run, monitor, and manage Conductor workflows. Works with Claude Code, Cursor, Copilot, Gemini CLI, and more."
 ---
 
-# Build with AI agents
+# Build with Your AI Coding Agent
 
-Conductor Skills teaches your AI coding agent to create, run, monitor, and manage Conductor workflows. Instead of writing JSON definitions and CLI commands by hand, describe what you want in natural language and your agent builds it for you — complete workflows, workers, error handling, and monitoring.
+**Time:** about 2 minutes to install.
+
+[Conductor Skills](https://github.com/conductor-oss/conductor-skills) teaches your AI coding agent to create, run, monitor, and manage Conductor workflows and agents. Describe what you want in natural language and your agent builds it for you.
 
 Works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, Windsurf, Cline, Amazon Q, Aider, Roo Code, Amp, and OpenCode.
 
+You can also point any AI assistant directly at these docs: [Conductor for AI assistants](../ai/conductor-for-ai-assistants.md) is the canonical guidance page, [/llms.txt](../../llms.txt) is a machine-readable index, and [/llms-full.txt](../../llms-full.txt) is the complete documentation in a single file.
+
+## Prerequisite: a Conductor server
+
+Your agent needs a server to talk to. If you don't have one, start a local server first:
+
+```bash
+npm install -g @conductor-oss/conductor-cli
+conductor server start
+```
+
+You can also use the free hosted [Developer Edition](https://developer.orkescloud.com/). See [Connect to Conductor](../../quickstart/connect.md).
 
 ## Install
 
-One command installs for all detected agents on your system:
+One command detects the AI coding agents installed on your machine and installs Conductor Skills for each of them:
 
 === "macOS / Linux"
 
@@ -25,7 +39,7 @@ One command installs for all detected agents on your system:
     irm https://conductor-oss.github.io/conductor-skills/install.ps1 -OutFile install.ps1; .\install.ps1 -All
     ```
 
-To install for a specific agent only:
+To install for a single agent, pass its flag with `--agent` — for example, Claude Code:
 
 ```bash
 curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s -- --agent claude
@@ -36,7 +50,9 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 
 After installing, tell your agent where your Conductor server is:
 
-> *"Connect to my Conductor server at http://localhost:8080/api"*
+```text
+Connect to my Conductor server at http://localhost:8080/api
+```
 
 Or set the environment variable directly:
 
@@ -47,9 +63,9 @@ export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 
 ## What your agent can do
 
-Once installed, your AI agent can:
+The following are examples you can prompt your coding agent.
 
-| Capability | What you say | What happens |
+| Capability | Prompt | Result |
 |---|---|---|
 | **Create workflows** | *"Create a workflow that calls the GitHub API and sends a Slack notification"* | Agent generates the full workflow definition with HTTP tasks, input expressions, and output parameters |
 | **Run workflows** | *"Run my-workflow with input userId 123"* | Agent starts the execution and returns the execution ID |
@@ -62,13 +78,17 @@ Once installed, your AI agent can:
 | **Visualize** | *"Show me a diagram of the order-processing workflow"* | Agent renders a Mermaid diagram of the workflow |
 
 
-## Walkthrough: build an order processing system
+## Example walkthrough: Build an order processing system
 
-This walkthrough shows how to build a complete application using Conductor as the backend — entirely through natural language prompts to your AI agent.
+This example shows how to build a Conductor application using natural language prompts to your coding agent.
 
 ### Step 1: Create the workflow
 
-> *"Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a WAIT task before payment so a human can review high-value orders."*
+**Prompt:**
+
+```text
+Create an order processing workflow with these steps: validate the order, check inventory, charge payment, and fulfill the order. If payment fails, compensate by releasing the inventory hold. Add a HUMAN task before payment so a human can review high-value orders.
+```
 
 Your agent creates the workflow definition:
 
@@ -108,14 +128,17 @@ Your agent creates the workflow definition:
       "name": "review_gate",
       "taskReferenceName": "review_gate",
       "type": "SWITCH",
-      "evaluatorType": "javascript",
-      "expression": "$.workflow.input.totalAmount > 500 ? 'needs_review' : 'auto_approve'",
+      "evaluatorType": "graaljs",
+      "expression": "$.totalAmount > 500 ? 'needs_review' : 'auto_approve'",
+      "inputParameters": {
+        "totalAmount": "${workflow.input.totalAmount}"
+      },
       "decisionCases": {
         "needs_review": [
           {
             "name": "human_review",
             "taskReferenceName": "review",
-            "type": "WAIT",
+            "type": "HUMAN",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "amount": "${workflow.input.totalAmount}"
@@ -167,17 +190,25 @@ Your agent creates the workflow definition:
 }
 ```
 
-The agent registers the workflow automatically.
+The agent should also register the workflow automatically.
 
 ### Step 2: Create the compensation workflow
 
-> *"Create the compensation workflow for order_processing. It should release the inventory hold and refund the payment if it was charged."*
+**Prompt:**
+
+```text
+Create the compensation workflow for order_processing. It should release the inventory hold and refund the payment if it was charged.
+```
 
 Your agent creates `order_processing_compensation` with the reverse operations.
 
 ### Step 3: Write a custom worker
 
-> *"Write a Python worker that validates orders by checking that all items exist and quantities are positive"*
+**Prompt:**
+
+```text
+Write a Python worker that validates orders by checking that all items exist and quantities are positive
+```
 
 Your agent generates the worker code using the Conductor Python SDK:
 
@@ -199,9 +230,15 @@ def validate_order(task):
 
 ### Step 4: Run the workflow
 
-> *"Run order_processing with orderId ORD-001, customerId CUST-42, items [{productId: SKU-100, quantity: 2}], totalAmount 750"*
+**Prompt:**
 
+```text
+Run order_processing with orderId ORD-001, customerId CUST-42, items [{productId: SKU-100, quantity: 2}], totalAmount 750
 ```
+
+**Output:**
+
+``` { .text .no-copy }
 Workflow started.
 - Execution ID: f8a2b3c4-d5e6-7890-abcd-ef1234567890
 - Status: RUNNING
@@ -210,32 +247,54 @@ Workflow started.
 
 ### Step 5: Approve the review
 
-> *"Approve the review task in execution f8a2b3c4"*
+**Prompt:**
 
+```text
+Approve the review task in execution f8a2b3c4
 ```
+
+**Output:**
+
+``` { .text .no-copy }
 Task signaled: review → COMPLETED
 Workflow is now executing charge_payment.
 ```
 
 ### Step 6: Monitor and debug
 
-> *"Show me all failed order_processing executions from today"*
+**Prompt:**
 
+```text
+Show me all failed order_processing executions from today
 ```
+
+**Output:**
+
+``` { .text .no-copy }
 Found 2 failed executions:
 1. exec-abc — Failed at charge_payment (HTTP 402: Insufficient funds)
 2. exec-def — Failed at check_inventory (HTTP 409: Item SKU-200 out of stock)
 ```
 
-> *"Retry exec-abc"*
+**Prompt:**
 
+```text
+Retry exec-abc
 ```
+
+**Output:**
+
+``` { .text .no-copy }
 Execution exec-abc retried. Status: RUNNING.
 ```
 
 ### Step 7: Visualize
 
-> *"Show me a diagram of order_processing"*
+**Prompt:**
+
+```text
+Show me a diagram of order_processing
+```
 
 Your agent renders:
 
@@ -277,7 +336,8 @@ curl -sSL https://conductor-oss.github.io/conductor-skills/install.sh | bash -s 
 
 ## Next steps
 
+**Next:** build one yourself with [Your First Workflow & Worker](../../quickstart/first-worker.md), or jump ahead to [Your First Agent](../../quickstart/first-agent.md).
+
 - **[conductor-skills repository](https://github.com/conductor-oss/conductor-skills)** &mdash; Full documentation, more examples, and source code.
-- **[Quickstart](../../quickstart/index.md)** &mdash; Get a Conductor server running to use with your agent.
-- **[AI & Agents](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
+- **[Agents overview](../ai/index.md)** &mdash; Build durable AI agent workflows on Conductor.
 - **[Client SDKs](../../documentation/clientsdks/index.md)** &mdash; Language SDKs for writing workers and programmatic access.

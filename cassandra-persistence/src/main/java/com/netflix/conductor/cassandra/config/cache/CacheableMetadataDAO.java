@@ -71,15 +71,18 @@ public class CacheableMetadataDAO implements MetadataDAO {
                 "Scheduled cache refresh for Task Definitions, every {} seconds", cacheRefreshTime);
     }
 
+    // The key expressions reference the argument positionally rather than by name: this module is
+    // not compiled with -parameters, so a "#taskDef" reference resolves to null and every call
+    // fails with SpelEvaluationException EL1007E instead of being cached.
     @Override
-    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    @CachePut(value = TASK_DEF_CACHE, key = "#p0.name")
     public TaskDef createTaskDef(TaskDef taskDef) {
         cassandraMetadataDAO.createTaskDef(taskDef);
         return taskDef;
     }
 
     @Override
-    @CachePut(value = TASK_DEF_CACHE, key = "#taskDef.name")
+    @CachePut(value = TASK_DEF_CACHE, key = "#p0.name")
     public TaskDef updateTaskDef(TaskDef taskDef) {
         return cassandraMetadataDAO.updateTaskDef(taskDef);
     }
