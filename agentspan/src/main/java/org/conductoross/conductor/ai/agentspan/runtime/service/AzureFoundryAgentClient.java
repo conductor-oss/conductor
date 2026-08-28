@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +32,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
+import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
@@ -46,8 +48,12 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -75,12 +81,16 @@ import okhttp3.Response;
 public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final String DEFAULT_API_VERSION = "2025-01-01-preview";
 
     /** Foundry projects expose agents under their own, newer api-version. */
     private static final String FOUNDRY_PROJECT_API_VERSION = "2025-05-15-preview";
+
+    /** Model inference on Foundry serverless. */
+    private static final String INFERENCE_API_VERSION = "2024-05-01-preview";
 
     // How long resolved auth is reused before the credential is re-read from the secret store.
     // Bounds staleness after a rotation; a rejected token evicts immediately, so this is only the
@@ -124,6 +134,18 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return A2AService.AGENT_TYPE_AZURE_FOUNDRY;
     }
 
+    /**
+     * Routes to the surface this endpoint actually is. Foundry has three, and they are not one
+     * protocol:
+     *
+     * <ul>
+     *   <li>{@code inference.ml.azure.com}, or {@code services.ai.azure.com} without a project —
+     *       model inference, synchronous
+     *   <li>{@code services.ai.azure.com/api/projects/…} — a project's Responses API, synchronous
+     *   <li>anything else, typically {@code openai.azure.com} — classic Assistants threads and
+     *       runs, which is the only pollable one
+     * </ul>
+     */
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         Azure azure =
@@ -132,6 +154,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         request.getAgentUrl(),
                         request.getRawConfig(),
                         request.isUseCallerIdentity() ? request.getUserAssertion() : null);
+        Surface surface = surfaceOf(azure.target().baseUrl(), request.getRawConfig());
+        if (surface == Surface.INFERENCE) {
+            return withTokenEviction(azure, auth -> startInference(request, azure, auth));
+        }
+        if (surface == Surface.RESPONSES) {
+            return withTokenEviction(azure, auth -> startResponse(request, azure, auth));
+        }
+
         String threadId =
                 withTokenEviction(
                         azure,
@@ -143,6 +173,136 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .build();
     }
 
+    /**
+     * Model inference — an OpenAI-compatible chat completion. Synchronous, so the answer is
+     * reported from the start call and the task never polls; there is no thread or run to poll for.
+     */
+    private ConductorAgentStartResponse startInference(
+            ConductorAgentStartRequest request, Azure azure, AssistantsAuth auth) {
+        String endpoint = azure.target().baseUrl();
+        String model =
+                StringUtils.defaultIfBlank(rawConfig(request.getRawConfig(), "model"), "gpt-4o");
+        String instructions = rawConfig(request.getRawConfig(), "instructions");
+
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("model", model);
+        ArrayNode messages = body.putArray("messages");
+        if (StringUtils.isNotBlank(instructions)) {
+            ObjectNode system = messages.addObject();
+            system.put("role", "system");
+            system.put("content", instructions);
+        }
+        ObjectNode user = messages.addObject();
+        user.put("role", "user");
+        user.put("content", request.getPrompt());
+
+        // An Azure ML scoring endpoint is the whole URL and takes no api-version; a Foundry
+        // serverless /models endpoint wants /chat/completions and one.
+        boolean mlEndpoint = endpoint.contains("inference.ml.azure.com");
+        String url = mlEndpoint ? endpoint : endpoint + "/chat/completions";
+        JsonNode response = postJson(url, body, auth, mlEndpoint ? null : INFERENCE_API_VERSION);
+
+        String text = response.path("choices").path(0).path("message").path("content").asText("");
+        return ConductorAgentStartResponse.builder()
+                .executionId(
+                        StringUtils.defaultIfBlank(
+                                response.path("id").asText(null), UUID.randomUUID().toString()))
+                .agentName(model)
+                .requiredWorkers(Collections.emptyList())
+                .state(ConductorAgentState.COMPLETED)
+                .output(Map.of("result", text))
+                .build();
+    }
+
+    /**
+     * A Foundry project agent through the Responses API. The agent's own instructions and tools are
+     * fetched and forwarded, so its web search, code interpreter and file search actually run.
+     * Synchronous, like inference.
+     */
+    private ConductorAgentStartResponse startResponse(
+            ConductorAgentStartRequest request, Azure azure, AssistantsAuth auth) {
+        String endpoint = azure.target().baseUrl();
+        String agentId = azure.target().assistantId();
+        JsonNode definition = fetchAgentDefinition(endpoint, agentId, auth);
+
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put(
+                "model",
+                StringUtils.defaultIfBlank(rawConfig(request.getRawConfig(), "model"), "gpt-4o"));
+        String instructions =
+                StringUtils.defaultIfBlank(
+                        rawConfig(request.getRawConfig(), "instructions"),
+                        definition.path("instructions").asText(""));
+        if (StringUtils.isNotBlank(instructions)) {
+            body.put("instructions", instructions);
+        }
+        JsonNode tools = definition.path("tools");
+        if (tools.isArray() && !tools.isEmpty()) {
+            body.set("tools", toResponsesApiTools(tools));
+        }
+        ObjectNode message = body.putArray("input").addObject();
+        message.put("role", "user");
+        message.put("content", request.getPrompt());
+
+        JsonNode response =
+                postJson(endpoint + "/openai/responses", body, auth, FOUNDRY_PROJECT_API_VERSION);
+        return ConductorAgentStartResponse.builder()
+                .executionId(response.path("id").asText())
+                .agentName(agentId)
+                .requiredWorkers(Collections.emptyList())
+                .state(ConductorAgentState.COMPLETED)
+                .output(Map.of("result", extractResponseText(response)))
+                .build();
+    }
+
+    /** The agent's latest definition, or an empty object when it cannot be read. */
+    private JsonNode fetchAgentDefinition(String endpoint, String agentId, AssistantsAuth auth) {
+        try {
+            JsonNode agent =
+                    getJson(endpoint + "/agents/" + agentId, auth, FOUNDRY_PROJECT_API_VERSION);
+            return agent.path("versions").path("latest").path("definition");
+        } catch (Exception e) {
+            log.warn("Could not read definition for agent {}: {}", agentId, e.getMessage());
+            return MAPPER.createObjectNode();
+        }
+    }
+
+    /**
+     * The Responses API needs code_interpreter wrapped in a container; other tools pass through.
+     */
+    static JsonNode toResponsesApiTools(JsonNode definitionTools) {
+        ArrayNode adapted = MAPPER.createArrayNode();
+        for (JsonNode tool : definitionTools) {
+            if ("code_interpreter".equals(tool.path("type").asText())) {
+                ObjectNode wrapped = adapted.addObject();
+                wrapped.put("type", "code_interpreter");
+                wrapped.putObject("container").put("type", "auto");
+            } else {
+                adapted.add(tool);
+            }
+        }
+        return adapted;
+    }
+
+    /** The text parts of a Responses API reply, in order. */
+    static String extractResponseText(JsonNode response) {
+        StringBuilder text = new StringBuilder();
+        for (JsonNode output : response.path("output")) {
+            for (JsonNode content : output.path("content")) {
+                if ("output_text".equals(content.path("type").asText())) {
+                    String part = content.path("text").asText("");
+                    if (!part.isEmpty()) {
+                        if (text.length() > 0) {
+                            text.append('\n');
+                        }
+                        text.append(part);
+                    }
+                }
+            }
+        }
+        return text.toString();
+    }
+
     @Override
     public ConductorAgentStatusResponse getAgentStatus(
             String executionId, ConductorAgentRequest request) {
@@ -152,6 +312,16 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         request.getAgentUrl(),
                         request.getRawConfig(),
                         request.isUseCallerIdentity() ? request.getUserAssertion() : null);
+        if (surfaceOf(azure.target().baseUrl(), request.getRawConfig()) != Surface.ASSISTANTS) {
+            // These surfaces answer inside startAgent and the result is already in the task output.
+            // Reaching here means the task was requeued after that, so the honest answer is the
+            // terminal state that no longer needs polling.
+            return ConductorAgentStatusResponse.builder()
+                    .executionId(executionId)
+                    .status(ConductorAgentState.COMPLETED)
+                    .complete(true)
+                    .build();
+        }
         return withTokenEviction(azure, auth -> api.status(azure.target(), auth, executionId));
     }
 
@@ -159,6 +329,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     public void respond(ConductorAgentRespondRequest request) {
         String threadId = request.getExecutionId();
         Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
+        if (surfaceOf(azure.target().baseUrl(), request.getRawConfig()) != Surface.ASSISTANTS) {
+            throw new IllegalArgumentException(
+                    "This Azure endpoint answers in one shot and has no conversation to continue;"
+                            + " start a new AGENT task instead of resuming "
+                            + threadId);
+        }
         withTokenEviction(
                 azure,
                 auth -> {
@@ -300,6 +476,43 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
     }
 
+    /**
+     * Which Foundry surface an endpoint is.
+     *
+     * <p>Inferred from the hostname, which covers the public cloud. {@code rawConfig.surface} —
+     * {@code inference}, {@code responses}, or {@code assistants} — overrides that, because the
+     * hostnames of sovereign clouds ({@code .azure.us}, {@code .azure.cn}), private endpoints and
+     * proxies do not match the public patterns.
+     */
+    static Surface surfaceOf(String endpoint, Map<String, Object> rawConfig) {
+        String declared = rawConfig(rawConfig, "surface");
+        if (StringUtils.isNotBlank(declared)) {
+            return switch (declared.trim().toLowerCase()) {
+                case "inference" -> Surface.INFERENCE;
+                case "responses" -> Surface.RESPONSES;
+                case "assistants" -> Surface.ASSISTANTS;
+                default ->
+                        throw new IllegalArgumentException(
+                                "rawConfig.surface must be inference, responses, or assistants; got: "
+                                        + declared);
+            };
+        }
+        if (isInferenceEndpoint(endpoint)) {
+            return Surface.INFERENCE;
+        }
+        return isFoundryProjectEndpoint(endpoint) ? Surface.RESPONSES : Surface.ASSISTANTS;
+    }
+
+    /** The three APIs Foundry serves, which do not share a protocol. */
+    enum Surface {
+        /** Chat completions. Synchronous. */
+        INFERENCE,
+        /** A project's Responses API. Synchronous. */
+        RESPONSES,
+        /** Classic threads and runs. The only pollable one. */
+        ASSISTANTS
+    }
+
     /** A Foundry project endpoint, which serves the newer agent and Responses APIs. */
     static boolean isFoundryProjectEndpoint(String endpoint) {
         return endpoint != null
@@ -313,6 +526,64 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 && (endpoint.contains("inference.ml.azure.com")
                         || (endpoint.contains("services.ai.azure.com")
                                 && !endpoint.contains("/api/projects/")));
+    }
+
+    private JsonNode postJson(String url, ObjectNode body, AssistantsAuth auth, String apiVersion) {
+        byte[] bytes;
+        try {
+            bytes = MAPPER.writeValueAsBytes(body);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to serialize request body", e);
+        }
+        return execute(
+                new Request.Builder()
+                        .url(withApiVersion(url, apiVersion))
+                        .post(RequestBody.create(bytes, JSON))
+                        .header(auth.headerName(), auth.headerValue())
+                        .build(),
+                url);
+    }
+
+    private JsonNode getJson(String url, AssistantsAuth auth, String apiVersion) {
+        return execute(
+                new Request.Builder()
+                        .url(withApiVersion(url, apiVersion))
+                        .get()
+                        .header(auth.headerName(), auth.headerValue())
+                        .build(),
+                url);
+    }
+
+    private static String withApiVersion(String url, String apiVersion) {
+        if (StringUtils.isBlank(apiVersion) || url.contains("api-version=")) {
+            return url;
+        }
+        return url + (url.contains("?") ? "&" : "?") + "api-version=" + apiVersion;
+    }
+
+    private JsonNode execute(Request request, String label) {
+        try (Response response = httpClient.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "{}";
+            if (response.code() == 401 || response.code() == 403) {
+                throw new AssistantsRunApi.UnauthorizedException(
+                        "Azure Foundry call to "
+                                + label
+                                + " was rejected: HTTP "
+                                + response.code());
+            }
+            if (!response.isSuccessful()) {
+                throw new IllegalStateException(
+                        "Azure Foundry call to "
+                                + label
+                                + " failed: HTTP "
+                                + response.code()
+                                + " — "
+                                + body);
+            }
+            return MAPPER.readTree(body);
+        } catch (IOException e) {
+            throw new IllegalStateException("Azure Foundry call to " + label + " failed", e);
+        }
     }
 
     private static String trimTrailingSlash(String value) {

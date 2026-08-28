@@ -139,6 +139,21 @@ The configuration has to be repeated on the resuming task, because that is where
 
 ## Azure AI Foundry
 
+Foundry is three APIs behind one `agentType`, and the endpoint decides which:
+
+| Endpoint | API | Behaviour |
+|---|---|---|
+| `…openai.azure.com/openai` | Classic Assistants — threads and runs | Polled; supports tool calls and multi-turn |
+| `…services.ai.azure.com/api/projects/…` | The project's Responses API | Answers in one call |
+| `…inference.ml.azure.com`, or `…services.ai.azure.com/models` | Model inference (chat completions) | Answers in one call |
+
+The two one-shot surfaces complete the `AGENT` task on its first invocation — there is nothing to poll, so `pollIntervalSeconds` has no effect and the execution cannot be resumed. Only the classic Assistants surface has the tool-call loop described above.
+
+For a project agent, its configured instructions and tools are read from the agent definition and forwarded, so its web search, code interpreter and file search actually run.
+
+!!! note "Endpoints the hostname cannot classify"
+    Sovereign clouds (`.azure.us`, `.azure.cn`), private endpoints and proxies do not match the public hostname patterns. Set `rawConfig.surface` to `assistants`, `responses`, or `inference` to say outright which API the endpoint serves.
+
 ```json
 {
   "name": "ask_the_analyst",
@@ -164,6 +179,9 @@ The configuration has to be repeated on the resuming task, because that is where
 | `assistantId` | Yes, unless named in `agentUrl` (`agentId` is accepted as an alias) | — |
 | `apiVersion` | No | `2025-01-01-preview` |
 | `scope` | No | `credentialRef.scope`, else inferred from the endpoint |
+| `surface` | No | Inferred from the endpoint — `assistants`, `responses`, or `inference` |
+| `model` | No (one-shot surfaces) | `gpt-4o` |
+| `instructions` | No (one-shot surfaces) | The agent definition's own instructions |
 
 **Or name both at once.** A top-level `agentUrl` can carry the endpoint and the agent together, so every agent type names its location the same field way A2A does:
 
