@@ -231,7 +231,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 **Provider-Specific Notes:**
 
-- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
+- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1536x1024`, `1024x1792`. Returns video + webp thumbnail.
 - **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
@@ -1439,7 +1439,7 @@ A workflow that generates an image and a video in sequence:
         "llmProvider": "openai",
         "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water",
-        "width": 1792,
+        "width": 1536,
         "height": 1024,
         "n": 1
       }
