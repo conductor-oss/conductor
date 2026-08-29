@@ -193,21 +193,73 @@ describe("AgentTaskForm metadata resolution", () => {
           name: "agent",
           taskReferenceName: "agent_ref",
           type: TaskType.AGENT,
-          inputParameters: { agentType: "azure-foundry", agentUrl: "https://foundry.example" },
+          inputParameters: {
+            agentType: "azure-foundry",
+            agentUrl: "https://foundry.example",
+          },
         }}
       />,
     );
 
-    expect(screen.getByLabelText(/Run as the person who triggered the workflow/)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Run as the person who triggered the workflow/),
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText(/Run as the person who triggered the workflow/));
+    fireEvent.click(
+      screen.getByLabelText(/Run as the person who triggered the workflow/),
+    );
     expect(savedTask().inputParameters?.useCallerIdentity).toBe(true);
 
     // A2A does not expose the toggle
     fireEvent.change(screen.getByLabelText("agentType"), {
       target: { value: "a2a" },
     });
-    expect(screen.queryByLabelText(/Run as the person who triggered the workflow/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Run as the person who triggered the workflow/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the token scope when the agent authenticates with an API key", () => {
+    // An API key rides as a header, so there is no token and nothing to scope. Offering the field
+    // there invites the author to configure something the client will never read.
+    const { unmount } = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "azure-foundry",
+            credentials: { apiKey: "${workflow.secrets.AZURE_KEY}" },
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByLabelText("Token scope (optional)"),
+    ).not.toBeInTheDocument();
+
+    // A service principal does mint a token, so the override comes back. Rendered fresh: the
+    // harness seeds its task once, so a rerender would keep the API-key state.
+    unmount();
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "azure-foundry",
+            credentials: {
+              client_id: "a",
+              client_secret: "b",
+              tenant_id: "c",
+            },
+          },
+        }}
+      />,
+    );
+    expect(screen.getByLabelText("Token scope (optional)")).toBeInTheDocument();
   });
 
   it("invalidates changed sources and never resolves dynamic expressions", async () => {

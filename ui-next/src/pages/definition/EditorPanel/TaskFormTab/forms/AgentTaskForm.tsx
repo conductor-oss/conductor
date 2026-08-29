@@ -40,6 +40,7 @@ import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import AgentCredentialsSection from "./agent/AgentCredentialsSection";
+import { detectAuthMethod } from "./agent/agentAuthMethods";
 
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
@@ -55,6 +56,9 @@ type ProviderField = {
   placeholder?: string;
   required?: boolean;
   width?: 6 | 12;
+  hint?: string;
+  /** Only meaningful when a token is minted — hidden under API key auth, which mints none. */
+  tokenOnly?: boolean;
 };
 
 /**
@@ -79,7 +83,14 @@ const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
       width: 6,
     },
     { key: "apiVersion", label: "API version (optional)", width: 6 },
-    { key: "scope", label: "Token scope (optional)", width: 12 },
+    {
+      key: "scope",
+      label: "Token scope (optional)",
+      width: 12,
+      tokenOnly: true,
+      placeholder: "Derived from the endpoint",
+      hint: "Which Azure resource the token is valid for. Conductor derives it from the endpoint host, so leave this empty unless you are on a sovereign cloud or behind a proxy that hides it.",
+    },
   ],
   bedrock: [
     { key: "agentId", label: "Agent ID", required: true, width: 6 },
@@ -152,6 +163,12 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const runtime = agentRuntimeType(task.inputParameters);
+  // An API key is sent as a header, so nothing is scoped; every other method mints a token.
+  const mintsToken =
+    detectAuthMethod(
+      runtime,
+      task.inputParameters?.credentials as Record<string, unknown> | undefined,
+    )?.id !== "apiKey";
   const isConductor = agentType === "conductor";
   const isProvider = isProviderRuntime(runtime);
   // Everything that used to hang off !isConductor is A2A-only — remote URL, streaming, push,
@@ -370,20 +387,31 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
             </>
           ) : isProvider ? (
             <>
-              {(PROVIDER_FIELDS[runtime] ?? []).map((field) => (
-                <Grid key={field.key} size={{ xs: 12, md: field.width ?? 6 }}>
-                  <ConductorAutocompleteVariables
-                    label={field.label}
-                    value={
-                      get(`inputParameters.rawConfig.${field.key}`) as string
-                    }
-                    onChange={(v) =>
-                      setSource(`inputParameters.rawConfig.${field.key}`, v)
-                    }
-                    placeholder={field.placeholder}
-                  />
-                </Grid>
-              ))}
+              {(PROVIDER_FIELDS[runtime] ?? [])
+                .filter((field) => !field.tokenOnly || mintsToken)
+                .map((field) => (
+                  <Grid key={field.key} size={{ xs: 12, md: field.width ?? 6 }}>
+                    <ConductorAutocompleteVariables
+                      label={field.label}
+                      value={
+                        get(`inputParameters.rawConfig.${field.key}`) as string
+                      }
+                      onChange={(v) =>
+                        setSource(`inputParameters.rawConfig.${field.key}`, v)
+                      }
+                      placeholder={field.placeholder}
+                    />
+                    {field.hint && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                      >
+                        {field.hint}
+                      </Typography>
+                    )}
+                  </Grid>
+                ))}
               <Grid size={12}>
                 <AgentCredentialsSection
                   runtime={runtime}
