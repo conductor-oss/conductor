@@ -25,7 +25,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ class OpenAiAssistantsAgentClientTest {
     private static final String CREDENTIAL_REF = "OPENAI_KEY";
 
     private MockWebServer openai;
-    private InMemorySecretsDAO secrets;
+    private Map<String, String> credentials;
     private OpenAiAssistantsAgentClient client;
 
     private final AtomicReference<String> runStatus = new AtomicReference<>("in_progress");
@@ -69,8 +68,7 @@ class OpenAiAssistantsAgentClientTest {
         openai.setDispatcher(new AssistantsDispatcher());
         openai.start();
 
-        secrets = new InMemorySecretsDAO();
-        secrets.put(CREDENTIAL_REF, "sk-test-key");
+        credentials = Map.of("api_key", "sk-test-key");
         client = newClient();
     }
 
@@ -81,7 +79,6 @@ class OpenAiAssistantsAgentClientTest {
 
     private OpenAiAssistantsAgentClient newClient() {
         return new OpenAiAssistantsAgentClient(
-                new CredentialResolutionService(secrets),
                 new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build());
     }
 
@@ -112,17 +109,6 @@ class OpenAiAssistantsAgentClientTest {
         client.getAgentStatus("thread-1", statusRequest());
 
         assertThat(received).allSatisfy(r -> assertThat(r.path()).doesNotContain("api-version"));
-    }
-
-    @Test
-    void readsTheApiKeyFromAnApiKeySubKeyToo() {
-        secrets.remove(CREDENTIAL_REF);
-        secrets.put(CREDENTIAL_REF, """
-                {"api_key":"sk-nested"}""");
-
-        start();
-
-        assertThat(received.get(0).authorization()).isEqualTo("Bearer sk-nested");
     }
 
     @Test
@@ -204,7 +190,7 @@ class OpenAiAssistantsAgentClientTest {
         // Already exercised implicitly — the mock server is a baseUrl override — so assert the
         // default is what production would use when the override is absent.
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CREDENTIAL_REF);
+        request.setCredentials(credentials);
         request.setRawConfig(Map.of("assistantId", "asst-1"));
 
         // No server at api.openai.com from this test, so the call must fail trying to reach it
@@ -222,7 +208,7 @@ class OpenAiAssistantsAgentClientTest {
                 ConductorAgentCancelRequest.builder()
                         .executionId(executionId)
                         .reason("cancelled by parent")
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
 
@@ -232,7 +218,7 @@ class OpenAiAssistantsAgentClientTest {
     @Test
     void missingAssistantIdFailsAsABadRequest() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CREDENTIAL_REF);
+        request.setCredentials(credentials);
         request.setRawConfig(Map.of("baseUrl", baseUrl()));
 
         assertThatThrownBy(() -> client.getAgentStatus("thread-1", request))
@@ -241,24 +227,26 @@ class OpenAiAssistantsAgentClientTest {
     }
 
     @Test
-    void missingCredentialRefFailsAsABadRequest() {
+    void aMissingApiKeySaysSo() {
         ConductorAgentRequest request = new ConductorAgentRequest();
+        request.setCredentials(Map.of());
         request.setRawConfig(rawConfig());
 
         assertThatThrownBy(() -> client.getAgentStatus("thread-1", request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("credentialRef is required");
+                .hasMessageContaining("credentials.api_key is required");
     }
 
     @Test
-    void anUnresolvableCredentialSaysWhatIsMissing() {
+    void anUnsubstitutedSecretReferenceIsRejected() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef("NOT_STORED");
+        request.setCredentials(Map.of("api_key", "${workflow.secrets.OPENAI_KEY}"));
         request.setRawConfig(rawConfig());
 
+        // Sending the literal reference as a bearer token would be worse than failing.
         assertThatThrownBy(() -> client.getAgentStatus("thread-1", request))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("must hold the API key");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unresolved secret reference");
     }
 
     // --- helpers ---------------------------------------------------------------------------
@@ -267,7 +255,7 @@ class OpenAiAssistantsAgentClientTest {
         return client.startAgent(
                 ConductorAgentStartRequest.builder()
                         .prompt("what is the answer?")
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
     }
@@ -282,7 +270,7 @@ class OpenAiAssistantsAgentClientTest {
 
     private ConductorAgentRequest statusRequest() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CREDENTIAL_REF);
+        request.setCredentials(credentials);
         request.setRawConfig(rawConfig());
         return request;
     }
@@ -292,7 +280,7 @@ class OpenAiAssistantsAgentClientTest {
         return ConductorAgentRespondRequest.builder()
                 .executionId(executionId)
                 .body(body)
-                .credentialRef(CREDENTIAL_REF)
+                .credentials(credentials)
                 .rawConfig(rawConfig())
                 .build();
     }

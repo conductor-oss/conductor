@@ -27,6 +27,12 @@ For the other two `agentType` values, see [A2A integration](a2a-integration.md) 
 !!! note "Vertex AI"
     There is no `vertex` runtime. Vertex AI agents speak A2A natively, so call them with `agentType: "a2a"` and the agent's A2A endpoint as `agentUrl`.
 
+!!! note "Credentials are values, not secret names"
+    Conductor substitutes `${workflow.secrets.NAME}` — and `${workflow.secrets.NAME.sub_key}` — in task
+    input before the task runs, the same way an HTTP task takes an `Authorization` header. Agent
+    clients are handed the resolved values and never read the secret store themselves, so a
+    credential belongs in `credentials` as a reference, and the engine does the rest.
+
 ## They show up on their own
 
 Store a secret with an `endpoint` key (Azure) or a `region` key (Bedrock) and the agents that credential can see appear in the agent list alongside agents defined in Conductor — no separate registration step. Discovery is best effort: a credential that cannot list contributes nothing rather than breaking the listing.
@@ -39,7 +45,7 @@ Every hosted runtime takes the same core inputs.
 |---|---|
 | `agentType` | Selects the runtime (required). |
 | `prompt` | The message to send. |
-| `credentialRef` | Name of the stored secret holding the platform credential. Shape differs per platform — see below. |
+| `credentials` | The platform credential, as values. Reference secrets with `${workflow.secrets.NAME.key}`; Conductor substitutes them before the task runs. Which keys matter differs per platform — see below. |
 | `rawConfig` | Platform-specific configuration: which agent, where it lives. |
 | `executionId` | Set on a **later** `AGENT` task to resume an existing conversation instead of starting one. |
 | `autoRunTools` | Run the agent's tool calls as tasks in this workflow instead of handing them back (default false). See below. |
@@ -82,7 +88,11 @@ Set `autoRunTools: true` and the `AGENT` task **stays `IN_PROGRESS`** while each
     "agentType": "azure-foundry",
     "prompt": "compare Q3 revenue per engineer against Q2",
     "autoRunTools": true,
-    "credentialRef": "AZURE_FOUNDRY_CRED",
+    "credentials": {
+      "client_id":     "${workflow.secrets.AZURE_CRED.client_id}",
+      "client_secret": "${workflow.secrets.AZURE_CRED.client_secret}",
+      "tenant_id":     "${workflow.secrets.AZURE_CRED.tenant_id}"
+    },
     "rawConfig": {
       "endpoint": "https://my-project.services.ai.azure.com/api/projects/p1",
       "assistantId": "asst_abc123"
@@ -121,7 +131,7 @@ Without `autoRunTools`, the `AGENT` task **completes** with `waiting: true` rath
     "agentType": "azure-foundry",
     "executionId": "${ask_the_analyst.output.executionId}",
     "prompt": "${lookup_revenue.output.response}",
-    "credentialRef": "AZURE_FOUNDRY_CRED",
+    "credentials": { "apiKey": "${workflow.secrets.AZURE_CRED.apiKey}" },
     "rawConfig": {
       "endpoint": "${workflow.input.foundryEndpoint}",
       "assistantId": "asst_abc123"
@@ -162,7 +172,11 @@ For a project agent, its configured instructions and tools are read from the age
   "inputParameters": {
     "agentType": "azure-foundry",
     "prompt": "${workflow.input.question}",
-    "credentialRef": "AZURE_FOUNDRY_CRED",
+    "credentials": {
+      "client_id":     "${workflow.secrets.AZURE_CRED.client_id}",
+      "client_secret": "${workflow.secrets.AZURE_CRED.client_secret}",
+      "tenant_id":     "${workflow.secrets.AZURE_CRED.tenant_id}"
+    },
     "rawConfig": {
       "endpoint": "https://my-project.services.ai.azure.com/api/projects/p1",
       "assistantId": "asst_abc123"
@@ -175,10 +189,10 @@ For a project agent, its configured instructions and tools are read from the age
 
 | Key | Required | Default |
 |---|---|---|
-| `endpoint` | Yes, unless given as `agentUrl` or the `AZURE_FOUNDRY_ENDPOINT` secret is set | — |
+| `endpoint` | Yes, unless given as `agentUrl` | — |
 | `assistantId` | Yes, unless named in `agentUrl` (`agentId` is accepted as an alias) | — |
 | `apiVersion` | No | `2025-01-01-preview` |
-| `scope` | No | `credentialRef.scope`, else inferred from the endpoint |
+| `scope` | No | `credentials.scope`, else inferred from the endpoint |
 | `surface` | No | Inferred from the endpoint — `assistants`, `responses`, or `inference` |
 | `model` | No (one-shot surfaces) | `gpt-4o` |
 | `instructions` | No (one-shot surfaces) | The agent definition's own instructions |
@@ -191,26 +205,26 @@ For a project agent, its configured instructions and tools are read from the age
 
 Conductor splits the trailing `/assistants/asst_x` (or `/agents/NAME` on a Foundry project) off as the agent, leaving the rest as the endpoint. Anything set in `rawConfig` wins over what the URL implies.
 
-**Credential.** `credentialRef` names a secret whose contents decide how Conductor authenticates. The first match wins:
+**Credential.** Which keys `credentials` holds decides how Conductor authenticates. The first match wins:
 
-| Secret holds | Auth used |
+| Keys present | Auth used |
 |---|---|
 | `apiKey` | Sent as an `api-key` header. No token exchange at all. |
 | `client_id` + `client_secret` + `tenant_id` | Service principal (Entra ID client credentials). |
-| `clientId` | User-assigned managed identity. |
-| *nothing, or no `credentialRef` at all* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. |
+| `managedIdentityClientId` | User-assigned managed identity. |
+| *none* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. |
 
-So a service principal looks like:
+So a service principal, with the values coming from a stored secret:
 
 ```json
-{
-  "client_id": "<application (client) id>",
-  "client_secret": "<client secret value>",
-  "tenant_id": "<directory (tenant) id>"
+"credentials": {
+  "client_id":     "${workflow.secrets.AZURE_CRED.client_id}",
+  "client_secret": "${workflow.secrets.AZURE_CRED.client_secret}",
+  "tenant_id":     "${workflow.secrets.AZURE_CRED.tenant_id}"
 }
 ```
 
-and a deployment running on managed identity can configure no credential at all.
+and a deployment running on managed identity can omit `credentials` entirely.
 
 Resolved credentials are cached for ten minutes per credential and scope, so a poll performs no secret-store read. A `401` or `403` from Foundry discards the cached credential, so a rotated secret is picked up on the next poll rather than at the end of that window.
 
@@ -218,7 +232,7 @@ Resolved credentials are cached for ten minutes per credential and scope, so a p
 
 **Running as the caller.** `useCallerIdentity: true` makes the agent run as the person who triggered the workflow rather than as the deployment: their Entra ID token is exchanged, via the OAuth 2.0 on-behalf-of grant, for one scoped to Foundry, so the agent sees only what that person can. Their own token is never forwarded to Foundry, and the exchanged token is never cached or reused across requests.
 
-This needs the cluster wired to Entra ID SSO — the caller's assertion is supplied by that layer, not by a workflow definition — and a service principal on the credential to perform the exchange. Without either, the call falls back to credential-based auth rather than failing, so a partially configured cluster still runs as the service identity.
+This needs the cluster wired to Entra ID SSO — the caller's assertion is supplied by that layer, not by a workflow definition — and a service principal in `credentials` to perform the exchange. Without either, the call falls back to credential-based auth rather than failing, so a partially configured cluster still runs as the service identity.
 
 **`executionId`** is the Azure **thread** id. The run acted on is always the newest one on that thread, so continuing a conversation never invalidates the handle your workflow holds.
 
@@ -236,7 +250,7 @@ Same thread-and-run protocol as Foundry — the difference is auth and the base 
   "inputParameters": {
     "agentType": "openai-assistants",
     "prompt": "${workflow.input.question}",
-    "credentialRef": "OPENAI_API_KEY",
+    "credentials": { "api_key": "${workflow.secrets.OPENAI_KEY}" },
     "rawConfig": {
       "assistantId": "asst_abc123"
     }
@@ -251,16 +265,10 @@ Same thread-and-run protocol as Foundry — the difference is auth and the base 
 | `assistantId` | Yes | — |
 | `baseUrl` | No | `https://api.openai.com/v1` |
 
-**Credential.** `credentialRef` names a secret holding the API key, either directly:
-
-```
-sk-...
-```
-
-or under an `api_key` sub-key:
+**Credential.** `credentials.api_key` holds the key:
 
 ```json
-{ "api_key": "sk-..." }
+"credentials": { "api_key": "${workflow.secrets.OPENAI_KEY}" }
 ```
 
 Requests carry `Authorization: Bearer <key>` and `OpenAI-Beta: assistants=v2`.
@@ -283,7 +291,10 @@ Bedrock behaves differently from the other two, and it is worth knowing why befo
   "inputParameters": {
     "agentType": "bedrock",
     "prompt": "${workflow.input.question}",
-    "credentialRef": "AWS_BEDROCK_CRED",
+    "credentials": {
+      "accessKeyId":     "${workflow.secrets.AWS_CRED.accessKeyId}",
+      "secretAccessKey": "${workflow.secrets.AWS_CRED.secretAccessKey}"
+    },
     "rawConfig": {
       "agentId": "AGENT123456",
       "agentAliasId": "ALIAS1234",
@@ -301,24 +312,24 @@ Bedrock behaves differently from the other two, and it is worth knowing why befo
 | `agentAliasId` | Yes | — |
 | `region` | No | `us-east-1` |
 
-**Credential.** `credentialRef` names a secret holding:
+**Credential.** `credentials` holds either static keys:
 
 ```json
-{
-  "accessKeyId": "<access key id>",
-  "secretAccessKey": "<secret access key>"
+"credentials": {
+  "accessKeyId":     "${workflow.secrets.AWS_CRED.accessKeyId}",
+  "secretAccessKey": "${workflow.secrets.AWS_CRED.secretAccessKey}"
 }
 ```
 
 Or have Conductor assume a role instead, with `roleArn` — and optionally `roleSessionName` and `externalId`:
 
 ```json
-{ "roleArn": "arn:aws:iam::123456789012:role/conductor-bedrock", "externalId": "..." }
+"credentials": { "roleArn": "arn:aws:iam::123456789012:role/conductor-bedrock" }
 ```
 
 The SDK refreshes the temporary credentials for as long as the agent runs.
 
-Leave `credentialRef` unset, or the secret incomplete, to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
+Omit `credentials` to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
 
 **Or name the agent in one field**, as with Azure:
 
@@ -338,8 +349,9 @@ Leave `credentialRef` unset, or the secret incomplete, to fall back to the serve
 
 | Situation | Outcome |
 |---|---|
-| Missing or malformed `rawConfig` / `credentialRef` | Task fails terminally — no retry, since a retry cannot fix it |
-| Credential not found or incomplete in the secret store | Falls through to the next auth mode, ending at the platform's default credential chain |
+| Missing or malformed `rawConfig` / `credentials` | Task fails terminally — no retry, since a retry cannot fix it |
+| Credentials absent or incomplete | Falls through to the next auth mode, ending at the platform's default credential chain |
+| A credential still holding `${workflow.secrets.…}` | Task fails. Conductor does not substitute secrets for input held in external payload storage, and running as the host's identity instead would be worse than failing |
 | Platform returns `401` / `403` | Cached credential discarded, task retries; a rotated secret is picked up on the next poll |
 | Platform unreachable or `5xx` | Counted as a transient poll failure, up to `maxPollFailures` |
 | Run exceeds `maxDurationSeconds` | Cancellation attempted on the platform, task fails terminally |

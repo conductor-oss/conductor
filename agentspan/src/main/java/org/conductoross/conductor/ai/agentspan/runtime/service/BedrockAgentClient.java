@@ -32,7 +32,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,9 +70,9 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
  * any replica.
  *
  * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
- * Credentials are resolved per request from {@code credentialRef}, falling back to the default AWS
- * credential chain, so the client registers whether or not Bedrock is configured; an unconfigured
- * runtime fails only if a workflow routes to it.
+ * Credentials arrive as values on the request, falling back to the default AWS credential chain, so
+ * the client registers whether or not Bedrock is configured; an unconfigured runtime fails only if
+ * a workflow routes to it.
  */
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
@@ -82,18 +81,13 @@ public class BedrockAgentClient implements ConductorAgentClient {
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);
     private static final String DEFAULT_REGION = "us-east-1";
 
-    private final CredentialResolutionService credentialResolutionService;
-
-    // One SDK client per credential and region, not per execution. Each one owns Netty event loops
-    // and a connection pool, so building one per invocation leaked both — the map used to hold
-    // every
-    // execution ever started, and nothing removed a completed one.
+    // One SDK client per credential and region, not per execution. Each owns Netty event loops and
+    // a connection pool, so building one per invocation leaked both: the map held every execution
+    // ever started and nothing removed a completed one.
     private final ConcurrentHashMap<ClientKey, BedrockAgentRuntimeAsyncClient> runtimeClients =
             new ConcurrentHashMap<>();
 
-    public BedrockAgentClient(CredentialResolutionService credentialResolutionService) {
-        this.credentialResolutionService = credentialResolutionService;
-    }
+    public BedrockAgentClient() {}
 
     @Override
     public String agentType() {
@@ -103,7 +97,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
     @Override
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         BedrockTarget target =
-                target(request.getCredentialRef(), request.getAgentUrl(), request.getRawConfig());
+                target(request.getCredentials(), request.getAgentUrl(), request.getRawConfig());
         String sessionId =
                 StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
@@ -152,7 +146,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
     @Override
     public ConductorAgentStatusResponse respondWithStatus(ConductorAgentRespondRequest request) {
         String sessionId = request.getExecutionId();
-        BedrockTarget target = target(request.getCredentialRef(), request.getRawConfig());
+        BedrockTarget target = target(request.getCredentials(), request.getRawConfig());
 
         // The action group to answer comes from the pending tool the last turn reported, carried on
         // the request rather than remembered here.
@@ -220,10 +214,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
      * agents defined in Conductor. Discovery is best effort: a credential that cannot list returns
      * nothing rather than failing the whole listing.
      */
-    public List<AgentSummary> listExternalAgents(String credentialRef, String region) {
+    public List<AgentSummary> listExternalAgents(Map<String, String> credentials, String region) {
         String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
         try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
-                managementClient(credentialRef, resolvedRegion)) {
+                managementClient(credentials, resolvedRegion)) {
             List<AgentSummary> agents = new ArrayList<>();
             String nextToken = null;
             do {
@@ -263,10 +257,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
      * Bedrock addresses agents by id, so the name is resolved through a listing first.
      */
     public Map<String, Object> getExternalAgentDef(
-            String agentName, String credentialRef, String region) {
+            String agentName, Map<String, String> credentials, String region) {
         String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
         try (software.amazon.awssdk.services.bedrockagent.BedrockAgentClient management =
-                managementClient(credentialRef, resolvedRegion)) {
+                managementClient(credentials, resolvedRegion)) {
             String agentId = null;
             String nextToken = null;
             while (agentId == null) {
@@ -333,10 +327,10 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     private software.amazon.awssdk.services.bedrockagent.BedrockAgentClient managementClient(
-            String credentialRef, String region) {
+            Map<String, String> credentials, String region) {
         return software.amazon.awssdk.services.bedrockagent.BedrockAgentClient.builder()
                 .region(Region.of(region))
-                .credentialsProvider(credentialsFor(credentialRef, region))
+                .credentialsProvider(credentialsFor(credentials, region))
                 .build();
     }
 
@@ -425,14 +419,14 @@ public class BedrockAgentClient implements ConductorAgentClient {
 
     // Visible for tests: resolves and warms the shared client the way an invoke would, without
     // performing one.
-    void warmRuntimeClient(String credentialRef, Map<String, Object> rawConfig) {
-        runtimeClient(target(credentialRef, rawConfig));
+    void warmRuntimeClient(Map<String, String> credentials, Map<String, Object> rawConfig) {
+        runtimeClient(target(credentials, rawConfig));
     }
 
     private BedrockAgentRuntimeAsyncClient buildClient(ClientKey key) {
         return BedrockAgentRuntimeAsyncClient.builder()
                 .region(Region.of(key.region()))
-                .credentialsProvider(credentialsFor(key.credentialRef(), key.region()))
+                .credentialsProvider(credentialsFor(key.credentials(), key.region()))
                 .build();
     }
 
@@ -446,43 +440,38 @@ public class BedrockAgentClient implements ConductorAgentClient {
      *   <li>the SDK default chain — environment, instance or task role, {@code ~/.aws/credentials}
      * </ol>
      */
-    AwsCredentialsProvider credentialsFor(String credentialRef, String region) {
-        if (StringUtils.isNotBlank(credentialRef)) {
-            String accessKeyId =
-                    credentialResolutionService.resolve(credentialRef + ".accessKeyId");
-            String secretAccessKey =
-                    credentialResolutionService.resolve(credentialRef + ".secretAccessKey");
-            if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
-                return StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKeyId, secretAccessKey));
-            }
+    AwsCredentialsProvider credentialsFor(Map<String, String> credentials, String region) {
+        String accessKeyId = AzureFoundryAuth.credential(credentials, "accessKeyId");
+        String secretAccessKey = AzureFoundryAuth.credential(credentials, "secretAccessKey");
+        if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
+            return StaticCredentialsProvider.create(
+                    AwsBasicCredentials.create(accessKeyId, secretAccessKey));
+        }
 
-            String roleArn = credentialResolutionService.resolve(credentialRef + ".roleArn");
-            if (StringUtils.isNotBlank(roleArn)) {
-                AssumeRoleRequest.Builder assumeRole =
-                        AssumeRoleRequest.builder()
-                                .roleArn(roleArn)
-                                .roleSessionName(
-                                        StringUtils.defaultIfBlank(
-                                                credentialResolutionService.resolve(
-                                                        credentialRef + ".roleSessionName"),
-                                                "conductor-bedrock"));
-                String externalId =
-                        credentialResolutionService.resolve(credentialRef + ".externalId");
-                if (StringUtils.isNotBlank(externalId)) {
-                    assumeRole.externalId(externalId);
-                }
-                return StsAssumeRoleCredentialsProvider.builder()
-                        .stsClient(StsClient.builder().region(Region.of(region)).build())
-                        .refreshRequest(assumeRole.build())
-                        .build();
+        String roleArn = AzureFoundryAuth.credential(credentials, "roleArn");
+        if (StringUtils.isNotBlank(roleArn)) {
+            AssumeRoleRequest.Builder assumeRole =
+                    AssumeRoleRequest.builder()
+                            .roleArn(roleArn)
+                            .roleSessionName(
+                                    StringUtils.defaultIfBlank(
+                                            AzureFoundryAuth.credential(
+                                                    credentials, "roleSessionName"),
+                                            "conductor-bedrock"));
+            String externalId = AzureFoundryAuth.credential(credentials, "externalId");
+            if (StringUtils.isNotBlank(externalId)) {
+                assumeRole.externalId(externalId);
             }
+            return StsAssumeRoleCredentialsProvider.builder()
+                    .stsClient(StsClient.builder().region(Region.of(region)).build())
+                    .refreshRequest(assumeRole.build())
+                    .build();
         }
         return DefaultCredentialsProvider.create();
     }
 
-    private BedrockTarget target(String credentialRef, Map<String, Object> rawConfig) {
-        return target(credentialRef, null, rawConfig);
+    private BedrockTarget target(Map<String, String> credentials, Map<String, Object> rawConfig) {
+        return target(credentials, null, rawConfig);
     }
 
     /**
@@ -491,7 +480,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
      * agentUrl, so every agent type can use the same top-level field.
      */
     private BedrockTarget target(
-            String credentialRef, String agentUrl, Map<String, Object> rawConfig) {
+            Map<String, String> credentials, String agentUrl, Map<String, Object> rawConfig) {
         String agentId = rawConfig(rawConfig, "agentId");
         String agentAliasId = rawConfig(rawConfig, "agentAliasId");
         String region = rawConfig(rawConfig, "region");
@@ -511,7 +500,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
         return new BedrockTarget(
                 agentId,
                 agentAliasId,
-                new ClientKey(StringUtils.defaultIfBlank(region, DEFAULT_REGION), credentialRef));
+                new ClientKey(StringUtils.defaultIfBlank(region, DEFAULT_REGION), credentials));
     }
 
     /**
@@ -574,8 +563,8 @@ public class BedrockAgentClient implements ConductorAgentClient {
     private record BedrockTarget(String agentId, String agentAliasId, ClientKey clientKey) {}
 
     /**
-     * Identity of a shareable SDK client. Both parts are free to compute — the credential behind
-     * the reference is resolved when a client is built, not to look one up.
+     * Identity of a shareable SDK client — one per region and credential, so a client is reused
+     * rather than built per invocation.
      */
-    private record ClientKey(String region, String credentialRef) {}
+    private record ClientKey(String region, Map<String, String> credentials) {}
 }

@@ -34,7 +34,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +66,7 @@ class AzureFoundryAgentClientTest {
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private MockWebServer foundry;
-    private InMemorySecretsDAO secrets;
+    private Map<String, String> credentials;
     private MutableClock clock;
     private AzureFoundryAgentClient client;
 
@@ -95,9 +94,9 @@ class AzureFoundryAgentClientTest {
         foundry.setDispatcher(new FoundryDispatcher());
         foundry.start();
 
-        secrets = new InMemorySecretsDAO();
-        secrets.put(CREDENTIAL_REF, """
-                {"apiKey":"azure-api-key"}""");
+        // Conductor substitutes ${workflow.secrets.*} before the task runs, so a client is handed
+        // values and never touches a secret store.
+        credentials = Map.of("apiKey", "azure-api-key");
 
         clock = new MutableClock();
         client = newClient(clock);
@@ -111,8 +110,7 @@ class AzureFoundryAgentClientTest {
     private AzureFoundryAgentClient newClient(Clock clientClock) {
         OkHttpClient httpClient =
                 new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
-        return new AzureFoundryAgentClient(
-                new CredentialResolutionService(secrets), httpClient, clientClock);
+        return new AzureFoundryAgentClient(httpClient, clientClock);
     }
 
     // --- statelessness ---------------------------------------------------------------------
@@ -147,7 +145,7 @@ class AzureFoundryAgentClientTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId(executionId)
                         .body(Map.of("result", "tool output"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
         assertThat(requestLog).anyMatch(r -> r.contains("/submit_tool_outputs"));
@@ -156,7 +154,7 @@ class AzureFoundryAgentClientTest {
                 ConductorAgentCancelRequest.builder()
                         .executionId(executionId)
                         .reason("cancelled by parent")
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
         assertThat(requestLog).anyMatch(r -> r.contains("/cancel"));
@@ -201,7 +199,7 @@ class AzureFoundryAgentClientTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId(executionId)
                         .body(Map.of("result", "and now a follow-up question"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
 
@@ -223,7 +221,7 @@ class AzureFoundryAgentClientTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId(executionId)
                         .body(Map.of("result", "and now a follow-up question"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
 
@@ -304,7 +302,7 @@ class AzureFoundryAgentClientTest {
                                 Map.of(
                                         "call-1", Map.of("revenue", "4.2M"),
                                         "call-2", Map.of("headcount", 37)))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
 
@@ -329,7 +327,7 @@ class AzureFoundryAgentClientTest {
                                         ConductorAgentRespondRequest.builder()
                                                 .executionId(executionId)
                                                 .body(Map.of("result", "only one answer"))
-                                                .credentialRef(CREDENTIAL_REF)
+                                                .credentials(credentials)
                                                 .rawConfig(rawConfig())
                                                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -347,7 +345,7 @@ class AzureFoundryAgentClientTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId(executionId)
                         .body(Map.of("result", "the only answer"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig())
                         .build());
 
@@ -366,7 +364,7 @@ class AzureFoundryAgentClientTest {
                                         ConductorAgentRespondRequest.builder()
                                                 .executionId(executionId)
                                                 .toolResults(Map.of("call-1", Map.of("ok", true)))
-                                                .credentialRef(CREDENTIAL_REF)
+                                                .credentials(credentials)
                                                 .rawConfig(rawConfig())
                                                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -379,7 +377,7 @@ class AzureFoundryAgentClientTest {
     @Test
     void tokenProviderIsReusedAcrossPolls() {
         String executionId = start().getExecutionId();
-        int secretReadsAfterStart = secrets.reads.get();
+        int resolutionsAfterStart = client.authResolutions();
 
         for (int i = 0; i < 5; i++) {
             client.getAgentStatus(executionId, statusRequest());
@@ -387,37 +385,35 @@ class AzureFoundryAgentClientTest {
 
         // Five polls, and not one read of the secret store. Before the cache, every poll resolved
         // the credential again — and for a service principal, exchanged a token too.
-        assertThat(secrets.reads.get()).isEqualTo(secretReadsAfterStart);
+        assertThat(client.authResolutions()).isEqualTo(resolutionsAfterStart);
     }
 
     @Test
     void cachedProviderIsRebuiltAfterItsTtlLapses() {
         String executionId = start().getExecutionId();
         client.getAgentStatus(executionId, statusRequest());
-        int readsWhileCached = secrets.reads.get();
+        int resolutionsWhileCached = client.authResolutions();
 
         clock.advance(Duration.ofMinutes(11));
         client.getAgentStatus(executionId, statusRequest());
 
         // The TTL is the backstop that picks up a rotated credential even when Azure never rejects
         // what we hold.
-        assertThat(secrets.reads.get()).isGreaterThan(readsWhileCached);
+        assertThat(client.authResolutions()).isGreaterThan(resolutionsWhileCached);
     }
 
     @Test
-    void providerCacheIsKeyedByCredentialRefAndScope() {
-        secrets.put("OTHER_CRED", """
-                {"apiKey":"other-api-key"}""");
-
+    void authIsCachedPerCredential() {
         String first = start(CREDENTIAL_REF).getExecutionId();
         String second = start("OTHER_CRED").getExecutionId();
-        int readsBefore = secrets.reads.get();
+        int resolutionsBefore = client.authResolutions();
         client.getAgentStatus(first, statusRequest(CREDENTIAL_REF));
         client.getAgentStatus(second, statusRequest("OTHER_CRED"));
 
-        // Cached per credential, so neither poll re-read the store — and the two never share an
-        // entry, which the distinct api-key headers below prove.
-        assertThat(secrets.reads.get()).isEqualTo(readsBefore);
+        // One resolution per credential at start, then nothing: both polls hit the cache. The two
+        // never share an entry, which the distinct api-key headers below prove.
+        assertThat(resolutionsBefore).isEqualTo(2);
+        assertThat(client.authResolutions()).isEqualTo(resolutionsBefore);
         assertThat(requestLog).anyMatch(r -> r.contains("azure-api-key"));
         assertThat(requestLog).anyMatch(r -> r.contains("other-api-key"));
     }
@@ -425,7 +421,7 @@ class AzureFoundryAgentClientTest {
     @Test
     void rejectedAuthEvictsCachedProvider() {
         String executionId = start().getExecutionId();
-        int secretReadsBefore = secrets.reads.get();
+        int resolutionsBefore = client.authResolutions();
 
         rejectAuth.set(true);
         assertThatThrownBy(() -> client.getAgentStatus(executionId, statusRequest()))
@@ -436,7 +432,7 @@ class AzureFoundryAgentClientTest {
 
         // A rotated credential is picked up on the very next poll rather than waiting out the TTL —
         // the delegate's failure budget is shorter than the TTL.
-        assertThat(secrets.reads.get()).isGreaterThan(secretReadsBefore);
+        assertThat(client.authResolutions()).isGreaterThan(resolutionsBefore);
     }
 
     @Test
@@ -477,7 +473,7 @@ class AzureFoundryAgentClientTest {
         assertThat(failures).isEmpty();
         // The cache races benignly: a few threads may each resolve auth, but nowhere near one
         // resolution per poll.
-        assertThat(secrets.reads.get()).isLessThan(threads * pollsPerThread);
+        assertThat(client.authResolutions()).isLessThan(threads * pollsPerThread);
     }
 
     // --- helpers ---------------------------------------------------------------------------
@@ -486,11 +482,18 @@ class AzureFoundryAgentClientTest {
         return start(CREDENTIAL_REF);
     }
 
+    /** A distinct credential per name, so a test can tell two apart on the wire. */
+    private static Map<String, String> credentialsFor(String credentialRef) {
+        return CREDENTIAL_REF.equals(credentialRef)
+                ? Map.of("apiKey", "azure-api-key")
+                : Map.of("apiKey", "other-api-key");
+    }
+
     private ConductorAgentStartResponse start(String credentialRef) {
         return client.startAgent(
                 ConductorAgentStartRequest.builder()
                         .prompt("what is the answer?")
-                        .credentialRef(credentialRef)
+                        .credentials(credentialsFor(credentialRef))
                         .rawConfig(rawConfig())
                         .build());
     }
@@ -509,7 +512,7 @@ class AzureFoundryAgentClientTest {
 
     private ConductorAgentRequest statusRequest(String credentialRef) {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(credentialRef);
+        request.setCredentials(credentialsFor(credentialRef));
         request.setRawConfig(rawConfig());
         return request;
     }

@@ -12,9 +12,10 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,14 +37,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class AzureFoundryAuthTest {
 
-    private InMemorySecretsDAO secrets;
-    private CredentialResolutionService credentials;
     private OkHttpClient httpClient;
 
     @BeforeEach
     void setUp() {
-        secrets = new InMemorySecretsDAO();
-        credentials = new CredentialResolutionService(secrets);
         httpClient = new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build();
     }
 
@@ -52,17 +49,14 @@ class AzureFoundryAuthTest {
         httpClient.dispatcher().executorService().shutdown();
     }
 
-    private AzureFoundryAuth resolve(String credentialRef) {
+    private AzureFoundryAuth resolve(Map<String, String> credentials) {
         return AzureFoundryAuth.resolve(
-                credentials, httpClient, credentialRef, null, AzureFoundryAuth.DEFAULT_SCOPE);
+                credentials, httpClient, null, AzureFoundryAuth.DEFAULT_SCOPE);
     }
 
     @Test
     void anApiKeyIsSentAsAnApiKeyHeaderWithNoSdkInvolved() {
-        secrets.put("CRED", """
-                {"apiKey":"sk-azure"}""");
-
-        AzureFoundryAuth auth = resolve("CRED");
+        AzureFoundryAuth auth = resolve(Map.of("apiKey", "sk-azure"));
 
         assertThat(auth.headerName()).isEqualTo("api-key");
         assertThat(auth.headerValue()).isEqualTo("sk-azure");
@@ -71,23 +65,22 @@ class AzureFoundryAuthTest {
 
     @Test
     void anApiKeyWinsOverAServicePrincipalOnTheSameCredential() {
-        secrets.put(
-                "CRED",
-                """
-                {"apiKey":"sk-azure","client_id":"cid","client_secret":"cs","tenant_id":"tid"}""");
-
         // First match wins, and the API key needs no token exchange at all.
-        assertThat(resolve("CRED").headerName()).isEqualTo("api-key");
+        assertThat(
+                        resolve(
+                                        Map.of(
+                                                "apiKey", "sk-azure",
+                                                "client_id", "cid",
+                                                "client_secret", "cs",
+                                                "tenant_id", "tid"))
+                                .headerName())
+                .isEqualTo("api-key");
     }
 
     @Test
     void aServicePrincipalBecomesABearerCredential() {
-        secrets.put(
-                "CRED",
-                """
-                {"client_id":"cid","client_secret":"cs","tenant_id":"tid"}""");
-
-        AzureFoundryAuth auth = resolve("CRED");
+        AzureFoundryAuth auth =
+                resolve(Map.of("client_id", "cid", "client_secret", "cs", "tenant_id", "tid"));
 
         assertThat(auth.headerName()).isEqualTo("Authorization");
         assertThat(auth.isReusable()).isTrue();
@@ -95,10 +88,7 @@ class AzureFoundryAuthTest {
 
     @Test
     void aManagedIdentityClientIdBecomesABearerCredential() {
-        secrets.put("CRED", """
-                {"clientId":"mi-client"}""");
-
-        AzureFoundryAuth auth = resolve("CRED");
+        AzureFoundryAuth auth = resolve(Map.of("managedIdentityClientId", "mi-client"));
 
         assertThat(auth.headerName()).isEqualTo("Authorization");
         assertThat(auth.isReusable()).isTrue();
@@ -108,7 +98,23 @@ class AzureFoundryAuthTest {
     void noCredentialFallsBackToTheDefaultChain() {
         // A deployment running on managed identity configures nothing at all.
         assertThat(resolve(null).headerName()).isEqualTo("Authorization");
-        assertThat(resolve("NOT_STORED").headerName()).isEqualTo("Authorization");
+        assertThat(resolve(Map.of()).headerName()).isEqualTo("Authorization");
+    }
+
+    @Test
+    void anUnsubstitutedSecretReferenceIsRejected() {
+        // Conductor does not substitute secrets for task input held in external payload storage.
+        // Passing the literal on would make every lookup miss and drop us to the host's own
+        // identity — the agent would run as someone else with no error at all.
+        assertThatThrownBy(
+                        () ->
+                                resolve(
+                                        Map.of(
+                                                "client_id",
+                                                "${workflow.secrets.AZURE_CRED.client_id}")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("client_id")
+                .hasMessageContaining("unresolved secret reference");
     }
 
     @Test
@@ -119,6 +125,32 @@ class AzureFoundryAuthTest {
                 .isEqualTo(AzureFoundryAuth.FOUNDRY_SCOPE);
         assertThat(AzureFoundryAuth.scopeFor("https://r.openai.azure.com/openai"))
                 .isEqualTo(AzureFoundryAuth.DEFAULT_SCOPE);
+    }
+
+    @Test
+    void noAgentClientCanReachTheSecretStore() throws Exception {
+        // The architectural rule this change exists to enforce: Conductor resolves
+        // ${workflow.secrets.*} for a task before it runs, so clients are handed values. A client
+        // holding a secret store would be resolving credentials from inside task execution again.
+        for (Class<?> client :
+                List.of(
+                        AzureFoundryAgentClient.class,
+                        BedrockAgentClient.class,
+                        OpenAiAssistantsAgentClient.class,
+                        AzureFoundryAuth.class)) {
+            assertThat(client.getDeclaredFields())
+                    .as("%s must not hold a secret store", client.getSimpleName())
+                    .noneMatch(
+                            field ->
+                                    field.getType()
+                                            .getName()
+                                            .endsWith("CredentialResolutionService"));
+            for (var constructor : client.getDeclaredConstructors()) {
+                assertThat(constructor.getParameterTypes())
+                        .as("%s must not be given a secret store", client.getSimpleName())
+                        .noneMatch(type -> type.getName().endsWith("CredentialResolutionService"));
+            }
+        }
     }
 
     // --- on behalf of the caller --------------------------------------------------------------
@@ -165,16 +197,10 @@ class AzureFoundryAuthTest {
                         .addHeader("Content-Type", "application/json"));
         entra.start();
         try {
-            secrets.put(
-                    "CRED",
-                    """
-                    {"client_id":"cid","client_secret":"cs","tenant_id":"tid"}""");
-
             AzureFoundryAuth auth =
                     AzureFoundryAuth.resolve(
-                            credentials,
+                            Map.of("client_id", "cid", "client_secret", "cs", "tenant_id", "tid"),
                             redirectedTo(entra),
-                            "CRED",
                             "callers-sso-token",
                             AzureFoundryAuth.FOUNDRY_SCOPE);
 
@@ -189,14 +215,10 @@ class AzureFoundryAuthTest {
 
     @Test
     void anIncompleteServicePrincipalFallsBackInsteadOfFailingTheCall() {
-        secrets.put("CRED", """
-                {"tenant_id":"tid"}""");
-
         AzureFoundryAuth auth =
                 AzureFoundryAuth.resolve(
-                        credentials,
+                        Map.of("tenant_id", "tid"),
                         httpClient,
-                        "CRED",
                         "callers-sso-token",
                         AzureFoundryAuth.FOUNDRY_SCOPE);
 

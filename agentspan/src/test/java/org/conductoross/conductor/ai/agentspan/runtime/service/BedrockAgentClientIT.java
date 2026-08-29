@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
@@ -19,16 +20,11 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 /**
  * Integration test for {@link BedrockAgentClient}.
@@ -44,7 +40,6 @@ import static org.mockito.Mockito.when;
  *
  * Uses shailesh-test-agent (KZGTZ8AKK2 / TSTALIASID) in us-east-1.
  */
-@ExtendWith(MockitoExtension.class)
 class BedrockAgentClientIT {
 
     private static final String AGENT_ID = "KZGTZ8AKK2";
@@ -53,15 +48,13 @@ class BedrockAgentClientIT {
     private static final String AGENT_URL =
             "bedrock://" + AGENT_ID + "/" + ALIAS_ID + "?region=" + REGION;
 
-    @Mock CredentialResolutionService credentials;
-
     private BedrockAgentClient client;
 
     @BeforeEach
     void setUp() {
         Assumptions.assumeTrue(
                 System.getenv("AWS_ACCESS_KEY_ID") != null, "Skipping — AWS_ACCESS_KEY_ID not set");
-        client = new BedrockAgentClient(credentials);
+        client = new BedrockAgentClient();
     }
 
     @Test
@@ -105,12 +98,13 @@ class BedrockAgentClientIT {
                 "Skipping — env has session-token (STS) creds; static path needs permanent IAM keys");
 
         // credentialRef = "CRED", secret has accessKeyId + secretAccessKey
-        when(credentials.resolve("CRED.accessKeyId")).thenReturn(accessKey);
-        when(credentials.resolve("CRED.secretAccessKey")).thenReturn(secretKey);
+        // Stands in for what Conductor substitutes into task input at hand-off.
+        Map<String, String> credentials =
+                Map.of("accessKeyId", accessKey, "secretAccessKey", secretKey);
 
         ConductorAgentStartRequest request =
                 ConductorAgentStartRequest.builder()
-                        .credentialRef("CRED")
+                        .credentials(credentials)
                         .agentUrl(AGENT_URL)
                         .prompt("Say hello in exactly 3 words.")
                         .build();

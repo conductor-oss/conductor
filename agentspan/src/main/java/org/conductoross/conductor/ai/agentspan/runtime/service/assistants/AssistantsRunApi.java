@@ -21,6 +21,8 @@ import java.util.Map;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -45,7 +47,7 @@ import okhttp3.Response;
 public class AssistantsRunApi {
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
     private final OkHttpClient httpClient;
 
@@ -66,7 +68,10 @@ public class AssistantsRunApi {
     public record Target(
             String baseUrl, String assistantId, String query, Map<String, String> headers) {}
 
-    /** Creates a thread, posts the prompt, starts a run, and returns the thread id. */
+    /**
+     * Creates a thread, posts the prompt, starts a run, and returns the thread id. Note, this is
+     * not about JVM thread, but rather the agent conversation thread
+     */
     public String createThreadAndRun(Target target, AssistantsAuth auth, String prompt) {
         JsonNode thread = post(target, auth, "/threads", MAPPER.createObjectNode());
         String threadId = thread.path("id").asText();

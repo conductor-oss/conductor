@@ -221,7 +221,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                 fail(result, "CANCEL_AGENT requires 'executionId'", true);
                 return finish(result, A2ACancelResult.class);
             }
-            // Read credentialRef and rawConfig straight off the task input: a stateless client has
+            // Read credentials and rawConfig straight off the task input: a stateless client has
             // to re-authenticate and re-locate the run, and this task is the only place that
             // configuration exists.
             ConductorAgentRequest cancelConfig =
@@ -234,7 +234,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                                         StringUtils.firstNonBlank(
                                                 request.getReason(),
                                                 "Cancelled by CANCEL_AGENT task"))
-                                .credentialRef(cancelConfig.getCredentialRef())
+                                .credentials(cancelConfig.getCredentials())
                                 .rawConfig(cancelConfig.getRawConfig())
                                 .build());
                 result.getOutputData().put("executionId", executionId);

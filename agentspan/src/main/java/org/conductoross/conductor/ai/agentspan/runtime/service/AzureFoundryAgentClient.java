@@ -34,7 +34,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsRunApi;
 import org.conductoross.conductor.common.metadata.agent.AgentSummary;
@@ -45,11 +44,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.SneakyThrows;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -61,13 +63,12 @@ import okhttp3.Response;
  *
  * <p>The wire protocol is the OpenAI Assistants thread-and-run API, shared with {@link
  * OpenAiAssistantsAgentClient} through {@link AssistantsRunApi}. What this class adds is Azure's
- * auth — Entra ID client credentials, resolved from the Conductor secret store via {@code
- * credentialRef} with sub-keys {@code .client_id}, {@code .client_secret}, {@code .tenant_id} — and
- * the {@code api-version} query parameter.
+ * auth — the Entra ID credential modes in {@link AzureFoundryAuth}, taken from the request's {@code
+ * credentials} — and the {@code api-version} query parameter.
  *
  * <p>Holds no per-run state. The executionId is the Azure thread id, and the thread is the
  * conversation: the run to act on is always the newest one on it, which Azure names on request.
- * Everything else needed to reach it — endpoint, assistantId, apiVersion, credentialRef, scope — is
+ * Everything else needed to reach it — endpoint, assistantId, apiVersion, credentials, scope — is
  * re-derived from the task input Conductor already persists and hands back on every call. So any
  * replica can serve any poll, respond, or cancel, with nothing shared between them.
  *
@@ -82,7 +83,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(AzureFoundryAgentClient.class);
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
     private static final String DEFAULT_API_VERSION = "2025-01-01-preview";
 
@@ -97,7 +98,6 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     // backstop.
     private static final Duration AUTH_TTL = Duration.ofMinutes(10);
 
-    private final CredentialResolutionService credentialResolutionService;
     private final OkHttpClient httpClient;
     private final AssistantsRunApi api;
     private final Clock clock;
@@ -110,20 +110,23 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private final ConcurrentHashMap<ProviderKey, CachedAuth> resolvedAuth =
             new ConcurrentHashMap<>();
 
+    // Visible for tests: how often auth was actually built. Rebuilding per call would throw away
+    // the token the SDK credential caches inside itself, which is what the cache exists to prevent.
+    private final java.util.concurrent.atomic.AtomicInteger authResolutions =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    int authResolutions() {
+        return authResolutions.get();
+    }
+
     // Explicit, because the Clock-taking test constructor below would make the choice ambiguous.
     @Autowired
-    public AzureFoundryAgentClient(
-            CredentialResolutionService credentialResolutionService,
-            @Qualifier("conductorAiHttpClient") OkHttpClient httpClient) {
-        this(credentialResolutionService, httpClient, Clock.systemUTC());
+    public AzureFoundryAgentClient(@Qualifier("conductorAiHttpClient") OkHttpClient httpClient) {
+        this(httpClient, Clock.systemUTC());
     }
 
     // Test seam: lets a test advance time instead of sleeping through the provider TTL.
-    AzureFoundryAgentClient(
-            CredentialResolutionService credentialResolutionService,
-            OkHttpClient httpClient,
-            Clock clock) {
-        this.credentialResolutionService = credentialResolutionService;
+    AzureFoundryAgentClient(OkHttpClient httpClient, Clock clock) {
         this.httpClient = httpClient;
         this.api = new AssistantsRunApi(httpClient);
         this.clock = clock;
@@ -147,10 +150,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * </ul>
      */
     @Override
+    @SneakyThrows
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
+        log.info("request: {}", MAPPER.writeValueAsString(request));
         Azure azure =
                 azure(
-                        request.getCredentialRef(),
+                        request.getCredentials(),
                         request.getAgentUrl(),
                         request.getRawConfig(),
                         request.isUseCallerIdentity() ? request.getUserAssertion() : null);
@@ -308,7 +313,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String executionId, ConductorAgentRequest request) {
         Azure azure =
                 azure(
-                        request.getCredentialRef(),
+                        request.getCredentials(),
                         request.getAgentUrl(),
                         request.getRawConfig(),
                         request.isUseCallerIdentity() ? request.getUserAssertion() : null);
@@ -328,7 +333,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     @Override
     public void respond(ConductorAgentRespondRequest request) {
         String threadId = request.getExecutionId();
-        Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
+        Azure azure = azure(request.getCredentials(), request.getRawConfig());
         if (surfaceOf(azure.target().baseUrl(), request.getRawConfig()) != Surface.ASSISTANTS) {
             throw new IllegalArgumentException(
                     "This Azure endpoint answers in one shot and has no conversation to continue;"
@@ -359,7 +364,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     @Override
     public void cancelAgent(ConductorAgentCancelRequest request) {
         String threadId = request.getExecutionId();
-        Azure azure = azure(request.getCredentialRef(), request.getRawConfig());
+        Azure azure = azure(request.getCredentials(), request.getRawConfig());
         try {
             withTokenEviction(
                     azure,
@@ -385,11 +390,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * agents defined in Conductor. Best effort: one misconfigured credential returns nothing rather
      * than breaking the whole listing.
      */
-    public List<AgentSummary> listExternalAgents(String credentialRef, String endpoint) {
+    public List<AgentSummary> listExternalAgents(Map<String, String> credentials, String endpoint) {
         String base = trimTrailingSlash(endpoint);
         try {
             List<AgentSummary> agents = new ArrayList<>();
-            for (JsonNode item : discoverAgents(credentialRef, base)) {
+            for (JsonNode item : discoverAgents(credentials, base)) {
                 agents.add(
                         AgentSummary.builder()
                                 .name(item.path("name").asText(item.path("id").asText("unknown")))
@@ -410,10 +415,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     /** One agent's definition by name or id, or null when this endpoint does not have it. */
     public Map<String, Object> getExternalAgentDef(
-            String agentName, String credentialRef, String endpoint) {
+            String agentName, Map<String, String> credentials, String endpoint) {
         String base = trimTrailingSlash(endpoint);
         try {
-            for (JsonNode item : discoverAgents(credentialRef, base)) {
+            for (JsonNode item : discoverAgents(credentials, base)) {
                 if (agentName.equals(item.path("name").asText())
                         || agentName.equals(item.path("id").asText())) {
                     Map<String, Object> definition =
@@ -439,7 +444,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * Lists agents from whichever surface this endpoint is. A Foundry project serves them under
      * {@code /agents}; the classic Assistants endpoint under {@code /openai/assistants}.
      */
-    private JsonNode discoverAgents(String credentialRef, String endpoint) {
+    private JsonNode discoverAgents(Map<String, String> credentials, String endpoint) {
         boolean foundryProject = isFoundryProjectEndpoint(endpoint);
         String url =
                 endpoint
@@ -449,13 +454,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         String scope =
                 StringUtils.defaultIfBlank(
-                        StringUtils.isNotBlank(credentialRef)
-                                ? credentialResolutionService.resolve(credentialRef + ".scope")
-                                : null,
+                        AzureFoundryAuth.credential(credentials, "scope"),
                         AzureFoundryAuth.scopeFor(endpoint));
-        AssistantsAuth auth =
-                AzureFoundryAuth.resolve(
-                        credentialResolutionService, httpClient, credentialRef, null, scope);
+        AssistantsAuth auth = AzureFoundryAuth.resolve(credentials, httpClient, null, scope);
 
         Request request =
                 new Request.Builder()
@@ -615,11 +616,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         ProviderKey key = azure.providerKey();
         if (StringUtils.isNotBlank(azure.userAssertion())) {
             return AzureFoundryAuth.resolve(
-                    credentialResolutionService,
-                    httpClient,
-                    key.credentialRef(),
-                    azure.userAssertion(),
-                    resolveScope(key));
+                    key.credentials(), httpClient, azure.userAssertion(), resolveScope(key));
         }
 
         long now = clock.millis();
@@ -629,13 +626,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
         // Get-then-put rather than computeIfAbsent: resolving reads the secret store, and running
         // that inside a mapping function would hold a map lock across the I/O.
+        authResolutions.incrementAndGet();
         AzureFoundryAuth resolved =
-                AzureFoundryAuth.resolve(
-                        credentialResolutionService,
-                        httpClient,
-                        key.credentialRef(),
-                        null,
-                        resolveScope(key));
+                AzureFoundryAuth.resolve(key.credentials(), httpClient, null, resolveScope(key));
         if (resolved.isReusable()) {
             resolvedAuth.put(key, new CachedAuth(resolved, now + AUTH_TTL.toMillis()));
         }
@@ -644,8 +637,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     // Everything needed to reach an Azure run, rebuilt from the originating task input on every
     // call. This is what replaces holding per-run state in process.
-    private Azure azure(String credentialRef, Map<String, Object> rawConfig) {
-        return azure(credentialRef, null, rawConfig, null);
+    private Azure azure(Map<String, String> credentials, Map<String, Object> rawConfig) {
+        return azure(credentials, null, rawConfig, null);
     }
 
     /**
@@ -654,12 +647,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * its location the same way A2A does.
      */
     private Azure azure(
-            String credentialRef,
+            Map<String, String> credentials,
             String agentUrl,
             Map<String, Object> rawConfig,
             String userAssertion) {
-        // A credential is not required when the caller's own identity or the host's default
-        // credential chain supplies it.
+        // Credentials are optional: the caller's own identity or the host's default credential
+        // chain may supply them.
         String endpoint = resolveEndpoint(endpointFromUrl(agentUrl), rawConfig);
         String apiVersion =
                 StringUtils.defaultIfBlank(rawConfig(rawConfig, "apiVersion"), DEFAULT_API_VERSION);
@@ -671,7 +664,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         Map.of());
         return new Azure(
                 target,
-                new ProviderKey(credentialRef, rawConfig(rawConfig, "scope"), endpoint),
+                new ProviderKey(credentials, rawConfig(rawConfig, "scope"), endpoint),
                 userAssertion);
     }
 
@@ -682,22 +675,22 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * <p>Resolved only when auth is being built, never to look up the cache: the {@code .scope}
      * sub-key is a secret-store read, and doing it per poll is the cost the cache exists to avoid.
      */
-    private String resolveScope(ProviderKey key) {
-        String configured = key.scopeOverride();
-        if (StringUtils.isBlank(configured) && StringUtils.isNotBlank(key.credentialRef())) {
-            configured = credentialResolutionService.resolve(key.credentialRef() + ".scope");
-        }
+    private static String resolveScope(ProviderKey key) {
+        String configured =
+                StringUtils.defaultIfBlank(
+                        key.scopeOverride(),
+                        AzureFoundryAuth.credential(key.credentials(), "scope"));
         return StringUtils.defaultIfBlank(configured, AzureFoundryAuth.scopeFor(key.endpoint()));
     }
 
-    private String resolveEndpoint(String agentUrl, Map<String, Object> rawConfig) {
+    private static String resolveEndpoint(String agentUrl, Map<String, Object> rawConfig) {
         String endpoint = StringUtils.defaultIfBlank(agentUrl, rawConfig(rawConfig, "endpoint"));
         if (StringUtils.isBlank(endpoint)) {
-            endpoint = credentialResolutionService.resolve("AZURE_FOUNDRY_ENDPOINT");
-        }
-        if (StringUtils.isBlank(endpoint)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided via agentUrl, rawConfig.endpoint, or the AZURE_FOUNDRY_ENDPOINT secret");
+                    "Azure Foundry endpoint must be provided via agentUrl or rawConfig.endpoint."
+                            + " An endpoint kept in a secret is written as"
+                            + " ${workflow.secrets.NAME}, which Conductor substitutes before the"
+                            + " task runs.");
         }
         return endpoint.endsWith("/") ? endpoint.substring(0, endpoint.length() - 1) : endpoint;
     }
@@ -777,7 +770,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     // Every part is free to compute: the raw rawConfig.scope override (may be null) and the
     // endpoint. Never the resolved scope, whose .scope sub-key lookup would cost a secret-store
     // read on every cache hit.
-    private record ProviderKey(String credentialRef, String scopeOverride, String endpoint) {}
+    private record ProviderKey(
+            Map<String, String> credentials, String scopeOverride, String endpoint) {}
 
     private record CachedAuth(AzureFoundryAuth auth, long expiresAtMillis) {
 

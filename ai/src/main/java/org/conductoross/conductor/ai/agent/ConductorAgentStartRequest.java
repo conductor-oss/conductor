@@ -52,7 +52,17 @@ public class ConductorAgentStartRequest {
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
 
-    private String credentialRef;
+    /**
+     * Credential values for the agent platform, already resolved.
+     *
+     * <p>Conductor substitutes {@code ${workflow.secrets.NAME.sub_key}} in task input before the
+     * task runs, so a workflow names each field and the engine supplies the value — the same way an
+     * HTTP task takes an {@code Authorization} header. Clients read this map and never reach into
+     * the secret store themselves.
+     *
+     * <p>Which keys are meaningful is per-platform; see each client.
+     */
+    private Map<String, String> credentials;
 
     /**
      * Run the agent as the caller rather than as the deployment's own identity. With {@link

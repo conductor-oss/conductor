@@ -15,9 +15,9 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ import okhttp3.Response;
  *   <li><b>On-behalf-of</b> — the caller's own Entra identity, when the request asks for it and
  *       carries a user assertion and the credential holds service-principal details. The caller's
  *       SSO token is never forwarded; it is exchanged for a Foundry-scoped one.
- *   <li><b>API key</b> — {@code credentialRef.apiKey}, sent as an {@code api-key} header. No SDK.
+ *   <li><b>API key</b> — {@code apiKey}, sent as an {@code api-key} header. No SDK.
  *   <li><b>Service principal</b> — {@code .client_id} + {@code .client_secret} + {@code
  *       .tenant_id}.
  *   <li><b>User-assigned managed identity</b> — {@code .clientId}.
@@ -142,16 +142,16 @@ public final class AzureFoundryAuth implements AssistantsAuth {
      * identity.
      */
     public static AzureFoundryAuth resolve(
-            CredentialResolutionService credentials,
+            Map<String, String> credentials,
             OkHttpClient httpClient,
-            String credentialRef,
             String userAssertion,
             String scope) {
 
-        if (StringUtils.isNotBlank(userAssertion) && StringUtils.isNotBlank(credentialRef)) {
-            String tenantId = credentials.resolve(credentialRef + ".tenant_id");
-            String clientId = credentials.resolve(credentialRef + ".client_id");
-            String clientSecret = credentials.resolve(credentialRef + ".client_secret");
+        String tenantId = credential(credentials, "tenant_id");
+        String clientId = credential(credentials, "client_id");
+        String clientSecret = credential(credentials, "client_secret");
+
+        if (StringUtils.isNotBlank(userAssertion)) {
             if (StringUtils.isNoneBlank(tenantId, clientId, clientSecret)) {
                 return ofBearer(
                         exchangeOnBehalfOf(
@@ -163,40 +163,60 @@ public final class AzureFoundryAuth implements AssistantsAuth {
                                 scope));
             }
             log.warn(
-                    "Caller identity was requested but credential '{}' has no service principal; using credential-based auth instead",
-                    credentialRef);
+                    "Caller identity was requested but no service principal was supplied to exchange"
+                            + " the token with; using the deployment's own credential instead");
         }
 
-        if (StringUtils.isNotBlank(credentialRef)) {
-            String apiKey = credentials.resolve(credentialRef + ".apiKey");
-            if (StringUtils.isNotBlank(apiKey)) {
-                return ofApiKey(apiKey);
-            }
+        String apiKey = credential(credentials, "apiKey");
+        if (StringUtils.isNotBlank(apiKey)) {
+            return ofApiKey(apiKey);
+        }
 
-            String clientId = credentials.resolve(credentialRef + ".client_id");
-            String clientSecret = credentials.resolve(credentialRef + ".client_secret");
-            String tenantId = credentials.resolve(credentialRef + ".tenant_id");
-            if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
-                return ofCredential(
-                        new ClientSecretCredentialBuilder()
-                                .tenantId(tenantId)
-                                .clientId(clientId)
-                                .clientSecret(clientSecret)
-                                .build(),
-                        scope);
-            }
+        if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
+            return ofCredential(
+                    new ClientSecretCredentialBuilder()
+                            .tenantId(tenantId)
+                            .clientId(clientId)
+                            .clientSecret(clientSecret)
+                            .build(),
+                    scope);
+        }
 
-            String managedIdentityClientId = credentials.resolve(credentialRef + ".clientId");
-            if (StringUtils.isNotBlank(managedIdentityClientId)) {
-                return ofCredential(
-                        new ManagedIdentityCredentialBuilder()
-                                .clientId(managedIdentityClientId)
-                                .build(),
-                        scope);
-            }
+        String managedIdentityClientId = credential(credentials, "managedIdentityClientId");
+        if (StringUtils.isNotBlank(managedIdentityClientId)) {
+            return ofCredential(
+                    new ManagedIdentityCredentialBuilder()
+                            .clientId(managedIdentityClientId)
+                            .build(),
+                    scope);
         }
 
         return ofCredential(new DefaultAzureCredentialBuilder().build(), scope);
+    }
+
+    /**
+     * One credential value, rejecting anything the engine did not substitute.
+     *
+     * <p>Conductor resolves {@code ${workflow.secrets.X}} in task input before the task runs, but
+     * not when the input was offloaded to external payload storage. Passing such a value on would
+     * mean sending the literal reference as a credential — and since every lookup would then miss,
+     * auth would fall through to the host's own identity and the agent would silently run as
+     * someone else. Fail instead.
+     */
+    static String credential(Map<String, String> credentials, String key) {
+        if (credentials == null) {
+            return null;
+        }
+        String value = credentials.get(key);
+        if (value != null && value.contains("${workflow.secrets.")) {
+            throw new IllegalArgumentException(
+                    "Credential '"
+                            + key
+                            + "' still holds an unresolved secret reference. Conductor does not"
+                            + " substitute secrets for task input held in external payload storage;"
+                            + " pass the value another way rather than running as the host identity.");
+        }
+        return value;
     }
 
     /**

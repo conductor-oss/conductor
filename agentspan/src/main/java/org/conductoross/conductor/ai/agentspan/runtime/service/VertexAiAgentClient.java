@@ -30,12 +30,12 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
  * agentUrl}. A dedicated client is only worth adding for the parts A2A does not cover.
  *
  * <p>To implement: add {@code @Component}, add a {@code AGENT_TYPE_VERTEX} constant to {@link
- * org.conductoross.conductor.ai.a2a.A2AService} and return it from {@link #agentType()}, inject
- * {@link org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService}
- * for credentials, and replace each method body with real Vertex AI Agent Builder REST calls.
- * Follow the pattern the other clients settled on: keep no per-run state, return the provider's own
- * session id as the executionId, and re-derive everything else from {@code credentialRef} and
- * {@code rawConfig} on each call, so any replica can serve any request.
+ * org.conductoross.conductor.ai.a2a.A2AService} and return it from {@link #agentType()}, inject the
+ * request's already-substituted {@code credentials}, and replace each method body with real Vertex
+ * AI Agent Builder REST calls. Follow the pattern the other clients settled on: keep no per-run
+ * state, return the provider's own session id as the executionId, and re-derive everything else
+ * from {@code credentials} and {@code rawConfig} on each call, so any replica can serve any
+ * request.
  *
  * <p>rawConfig keys to support: {@code projectId}, {@code location}, {@code agentId}, {@code
  * sessionId}. Auth is Workload Identity Federation or a service account key via the Google Auth

@@ -23,7 +23,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,7 @@ class AzureFoundrySurfacesTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private MockWebServer azure;
-    private InMemorySecretsDAO secrets;
+    private Map<String, String> credentials;
     private AzureFoundryAgentClient client;
     private final List<String> paths = new ArrayList<>();
 
@@ -59,12 +58,9 @@ class AzureFoundrySurfacesTest {
         azure.setDispatcher(new SurfaceDispatcher());
         azure.start();
 
-        secrets = new InMemorySecretsDAO();
-        secrets.put(CREDENTIAL_REF, """
-                {"apiKey":"azure-api-key"}""");
+        credentials = Map.of("apiKey", "azure-api-key");
         client =
                 new AzureFoundryAgentClient(
-                        new CredentialResolutionService(secrets),
                         new OkHttpClient.Builder().readTimeout(5, TimeUnit.SECONDS).build(),
                         Clock.systemUTC());
     }
@@ -129,7 +125,7 @@ class AzureFoundrySurfacesTest {
                 client.startAgent(
                         ConductorAgentStartRequest.builder()
                                 .prompt("say hello")
-                                .credentialRef(CREDENTIAL_REF)
+                                .credentials(credentials)
                                 .rawConfig(
                                         Map.of(
                                                 "endpoint", base() + "/models",
@@ -150,7 +146,7 @@ class AzureFoundrySurfacesTest {
                 client.startAgent(
                         ConductorAgentStartRequest.builder()
                                 .prompt("analyse this")
-                                .credentialRef(CREDENTIAL_REF)
+                                .credentials(credentials)
                                 .agentUrl(base() + "/api/projects/p1/agents/analyst")
                                 .rawConfig(Map.of("surface", "responses"))
                                 .build());
@@ -180,7 +176,7 @@ class AzureFoundrySurfacesTest {
     @Test
     void aSynchronousSurfaceReportsTerminalRatherThanBeingPolled() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CREDENTIAL_REF);
+        request.setCredentials(credentials);
         request.setRawConfig(
                 Map.of(
                         "endpoint", base() + "/api/projects/p1",
@@ -202,7 +198,7 @@ class AzureFoundrySurfacesTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId("resp-1")
                         .body(Map.of("result", "more"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(
                                 Map.of(
                                         "endpoint",

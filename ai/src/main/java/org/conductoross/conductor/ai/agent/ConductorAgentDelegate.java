@@ -164,7 +164,7 @@ public class ConductorAgentDelegate {
                             ConductorAgentRespondRequest.builder()
                                     .executionId(executionId)
                                     .body(Map.of("result", request.getPrompt()))
-                                    .credentialRef(request.getCredentialRef())
+                                    .credentials(request.getCredentials())
                                     .rawConfig(request.getRawConfig())
                                     .pendingTool(pendingToolFrom(task))
                                     .pendingTools(pendingToolsFrom(task))
@@ -298,7 +298,7 @@ public class ConductorAgentDelegate {
                             ConductorAgentRespondRequest.builder()
                                     .executionId(executionId)
                                     .toolResults(dispatch.resultsByToolCallId())
-                                    .credentialRef(request.getCredentialRef())
+                                    .credentials(request.getCredentials())
                                     .rawConfig(request.getRawConfig())
                                     .build());
             ConductorAgentExecution execution =
@@ -486,7 +486,7 @@ public class ConductorAgentDelegate {
                     ConductorAgentCancelRequest.builder()
                             .executionId(executionId)
                             .reason(reason)
-                            .credentialRef(request.getCredentialRef())
+                            .credentials(request.getCredentials())
                             .rawConfig(request.getRawConfig())
                             .build());
         } catch (Exception e) {

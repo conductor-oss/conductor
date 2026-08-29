@@ -342,6 +342,21 @@ public class AgentService {
                         + def.getVersion());
     }
 
+    /** The flat string fields of a credential secret, which is what the clients consume. */
+    private static Map<String, String> credentialValues(
+            com.fasterxml.jackson.databind.JsonNode secretJson) {
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        secretJson
+                .fields()
+                .forEachRemaining(
+                        field -> {
+                            if (field.getValue().isValueNode()) {
+                                values.put(field.getKey(), field.getValue().asText());
+                            }
+                        });
+        return values;
+    }
+
     // ── Agent discovery ─────────────────────────────────────────────
 
     /** List all registered agents (workflow defs with agent_sdk metadata). */
@@ -427,17 +442,20 @@ public class AgentService {
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
+                        // Discovery is a control-plane scan with no task behind it, so this is the
+                        // one place that reads secrets directly — the clients are handed values.
+                        Map<String, String> credentials = credentialValues(secretJson);
                         if (endpoint != null
                                 && !endpoint.isBlank()
                                 && azureFoundryAgentClient != null) {
                             agents.addAll(
                                     azureFoundryAgentClient.listExternalAgents(
-                                            secretName, endpoint));
+                                            credentials, endpoint));
                         } else if (region != null
                                 && !region.isBlank()
                                 && bedrockAgentClient != null) {
                             agents.addAll(
-                                    bedrockAgentClient.listExternalAgents(secretName, region));
+                                    bedrockAgentClient.listExternalAgents(credentials, region));
                         }
                     } catch (Exception e) {
                         log.debug(
@@ -916,19 +934,22 @@ public class AgentService {
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
+                        // Discovery is a control-plane scan with no task behind it, so this is the
+                        // one place that reads secrets directly — the clients are handed values.
+                        Map<String, String> credentials = credentialValues(secretJson);
                         if (endpoint != null
                                 && !endpoint.isBlank()
                                 && azureFoundryAgentClient != null) {
                             Map<String, Object> def =
                                     azureFoundryAgentClient.getExternalAgentDef(
-                                            name, secretName, endpoint);
+                                            name, credentials, endpoint);
                             if (def != null) return def;
                         } else if (region != null
                                 && !region.isBlank()
                                 && bedrockAgentClient != null) {
                             Map<String, Object> def =
                                     bedrockAgentClient.getExternalAgentDef(
-                                            name, secretName, region);
+                                            name, credentials, region);
                             if (def != null) return def;
                         }
                     } catch (Exception e) {

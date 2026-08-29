@@ -27,7 +27,7 @@ public interface ConductorAgentClient extends AutoCloseable {
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
     // Polls the current status of a running agent execution.
-    // The request carries the original task input (credentialRef, rawConfig) so stateless
+    // The request carries the original task input (credentials, rawConfig) so stateless
     // implementations can re-authenticate on any replica without relying on in-process memory.
     ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request);
 

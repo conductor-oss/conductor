@@ -21,7 +21,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,17 +41,14 @@ class BedrockAgentClientTest {
 
     private static final String CREDENTIAL_REF = "AWS_CRED";
 
-    private InMemorySecretsDAO secrets;
+    private Map<String, String> credentials;
     private BedrockAgentClient client;
 
     @BeforeEach
     void setUp() {
-        secrets = new InMemorySecretsDAO();
-        secrets.put(
-                CREDENTIAL_REF,
-                """
-                {"accessKeyId":"AKIA_TEST","secretAccessKey":"secret"}""");
-        client = new BedrockAgentClient(new CredentialResolutionService(secrets));
+        // Handed values, as Conductor substitutes them before the task runs.
+        credentials = Map.of("accessKeyId", "AKIA_TEST", "secretAccessKey", "secret");
+        client = new BedrockAgentClient();
     }
 
     @AfterEach
@@ -67,9 +63,9 @@ class BedrockAgentClientTest {
 
     @Test
     void oneSdkClientIsSharedAcrossInvocationsOfTheSameCredentialAndRegion() {
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("us-east-1"));
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("us-east-1"));
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("us-east-1"));
+        client.warmRuntimeClient(credentials, rawConfig("us-east-1"));
+        client.warmRuntimeClient(credentials, rawConfig("us-east-1"));
+        client.warmRuntimeClient(credentials, rawConfig("us-east-1"));
 
         // The leak this replaces: a client per execution, each owning Netty event loops and a
         // connection pool, with nothing ever removing a finished one.
@@ -78,16 +74,16 @@ class BedrockAgentClientTest {
 
     @Test
     void aDifferentRegionGetsItsOwnSdkClient() {
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("us-east-1"));
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("eu-west-1"));
+        client.warmRuntimeClient(credentials, rawConfig("us-east-1"));
+        client.warmRuntimeClient(credentials, rawConfig("eu-west-1"));
 
         assertThat(client.openRuntimeClients()).isEqualTo(2);
     }
 
     @Test
     void closeReleasesEverySdkClient() {
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("us-east-1"));
-        client.warmRuntimeClient(CREDENTIAL_REF, rawConfig("eu-west-1"));
+        client.warmRuntimeClient(credentials, rawConfig("us-east-1"));
+        client.warmRuntimeClient(credentials, rawConfig("eu-west-1"));
 
         client.close();
 
@@ -99,7 +95,7 @@ class BedrockAgentClientTest {
         ConductorAgentStartRequest request =
                 ConductorAgentStartRequest.builder()
                         .prompt("hello")
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(Map.of("agentId", "agent-1"))
                         .build();
 
@@ -114,7 +110,7 @@ class BedrockAgentClientTest {
                 ConductorAgentRespondRequest.builder()
                         .executionId("session-1")
                         .body(Map.of("result", "tool output"))
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig("us-east-1"))
                         .build();
 
@@ -128,7 +124,7 @@ class BedrockAgentClientTest {
     @Test
     void statusIsTerminalBecauseBedrockCannotBePolled() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CREDENTIAL_REF);
+        request.setCredentials(credentials);
         request.setRawConfig(rawConfig("us-east-1"));
 
         ConductorAgentStatusResponse response = client.getAgentStatus("session-1", request);
@@ -146,7 +142,7 @@ class BedrockAgentClientTest {
                 ConductorAgentCancelRequest.builder()
                         .executionId("session-1")
                         .reason("cancelled by parent")
-                        .credentialRef(CREDENTIAL_REF)
+                        .credentials(credentials)
                         .rawConfig(rawConfig("us-east-1"))
                         .build());
 

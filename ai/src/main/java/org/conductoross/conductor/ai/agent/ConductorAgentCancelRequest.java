@@ -30,15 +30,15 @@ public class ConductorAgentCancelRequest {
     private String reason;
 
     /**
-     * Credential reference from the originating task input. Carried so a stateless client can
-     * re-authenticate on any replica — cancelAgent() would otherwise have nothing to build a token
-     * from.
+     * Credential values for the agent platform, already resolved by the engine. Carried here
+     * because respond and cancel receive no task input of their own, so a stateless client would
+     * otherwise have nothing to authenticate with.
      */
-    private String credentialRef;
+    private Map<String, String> credentials;
 
     /**
      * Provider-specific configuration from the originating task input (endpoint, assistant/agent
-     * id, api version, ...). Carried for the same reason as {@code credentialRef}: it lets a client
+     * id, api version, ...). Carried for the same reason as {@code credentials}: it lets a client
      * re-derive where the run lives instead of remembering it in process.
      */
     private Map<String, Object> rawConfig;

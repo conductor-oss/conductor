@@ -279,15 +279,15 @@ class ConductorAgentDelegateTest {
                                 "agentType", "bedrock",
                                 "prompt", "go on",
                                 "executionId", "session-1",
-                                "credentialRef", "AWS_CRED",
+                                "credentials", Map.of("accessKeyId", "AKIA"),
                                 "rawConfig", Map.of("agentId", "agent-1")));
         delegate.execute(resumed);
 
-        assertEquals("AWS_CRED", client.respondedRequest.getCredentialRef());
+        assertEquals(Map.of("accessKeyId", "AKIA"), client.respondedRequest.getCredentials());
         assertEquals(Map.of("agentId", "agent-1"), client.respondedRequest.getRawConfig());
 
         delegate.cancel(resumed, "parent terminated");
-        assertEquals("AWS_CRED", client.canceledRequest.getCredentialRef());
+        assertEquals(Map.of("accessKeyId", "AKIA"), client.canceledRequest.getCredentials());
         assertEquals(Map.of("agentId", "agent-1"), client.canceledRequest.getRawConfig());
     }
 

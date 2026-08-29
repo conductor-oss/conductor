@@ -27,7 +27,6 @@ import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsRunApi;
 import org.slf4j.Logger;
@@ -50,8 +49,8 @@ import okhttp3.OkHttpClient;
  * reach a run is re-derived from the task input Conductor already persists, so any replica can
  * serve any poll, respond, or cancel.
  *
- * <p>Credentials: {@code credentialRef} names a secret holding the API key, either flat or under a
- * {@code .api_key} sub-key.
+ * <p>Credentials: {@code credentials.api_key} holds the API key. Conductor substitutes {@code
+ * ${workflow.secrets.NAME}} into it before the task runs.
  *
  * <p>rawConfig keys: {@code assistantId} (required), {@code baseUrl} (optional override for a
  * compatible endpoint or a proxy).
@@ -69,13 +68,10 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
     private static final Map<String, String> ASSISTANTS_V2_HEADERS =
             Map.of("OpenAI-Beta", "assistants=v2");
 
-    private final CredentialResolutionService credentialResolutionService;
     private final AssistantsRunApi api;
 
     public OpenAiAssistantsAgentClient(
-            CredentialResolutionService credentialResolutionService,
             @Qualifier("conductorAiHttpClient") OkHttpClient httpClient) {
-        this.credentialResolutionService = credentialResolutionService;
         this.api = new AssistantsRunApi(httpClient);
     }
 
@@ -88,8 +84,7 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
         AssistantsRunApi.Target target = target(request.getRawConfig());
         String threadId =
-                api.createThreadAndRun(
-                        target, auth(request.getCredentialRef()), request.getPrompt());
+                api.createThreadAndRun(target, auth(request.getCredentials()), request.getPrompt());
         return ConductorAgentStartResponse.builder()
                 .executionId(threadId)
                 .agentName(target.assistantId())
@@ -101,25 +96,25 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
     public ConductorAgentStatusResponse getAgentStatus(
             String executionId, ConductorAgentRequest request) {
         return api.status(
-                target(request.getRawConfig()), auth(request.getCredentialRef()), executionId);
+                target(request.getRawConfig()), auth(request.getCredentials()), executionId);
     }
 
     @Override
     public void respond(ConductorAgentRespondRequest request) {
         String threadId = request.getExecutionId();
         AssistantsRunApi.Target target = target(request.getRawConfig());
-        AssistantsAuth token = auth(request.getCredentialRef());
+        AssistantsAuth auth = auth(request.getCredentials());
 
-        JsonNode run = api.latestRun(target, token, threadId);
+        JsonNode run = api.latestRun(target, auth, threadId);
         if ("requires_action".equals(run.path("status").asText())) {
             api.submitToolOutputs(
                     target,
-                    token,
+                    auth,
                     threadId,
                     run,
                     AgentBodies.toolResults(request, outstandingToolCallIds(run)));
         } else {
-            api.addMessageAndStartRun(target, token, threadId, AgentBodies.toMessage(request));
+            api.addMessageAndStartRun(target, auth, threadId, AgentBodies.toMessage(request));
         }
     }
 
@@ -128,7 +123,7 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
         try {
             api.cancelLatestRun(
                     target(request.getRawConfig()),
-                    auth(request.getCredentialRef()),
+                    auth(request.getCredentials()),
                     request.getExecutionId());
         } catch (Exception e) {
             log.warn(
@@ -155,26 +150,20 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
 
     // Read per call rather than cached: a static API key needs no token exchange, so this is one
     // secret-store read and no network round trip.
-    private AssistantsAuth auth(String credentialRef) {
-        return AssistantsAuth.bearer(apiKey(credentialRef));
+    private static AssistantsAuth auth(Map<String, String> credentials) {
+        return AssistantsAuth.bearer(apiKey(credentials));
     }
 
-    private String apiKey(String credentialRef) {
-        if (StringUtils.isBlank(credentialRef)) {
+    /**
+     * The API key, from the {@code api_key} credential. Conductor substitutes {@code
+     * ${workflow.secrets.NAME}} into it before the task runs, so this client never reads the secret
+     * store itself.
+     */
+    private static String apiKey(Map<String, String> credentials) {
+        String key = AzureFoundryAuth.credential(credentials, "api_key");
+        if (StringUtils.isBlank(key)) {
             throw new IllegalArgumentException(
-                    "credentialRef is required for OpenAI Assistants agent requests");
-        }
-        // The sub-key first: a secret stored as JSON resolves flat to the whole document, which is
-        // not blank and would otherwise be sent as the key.
-        String key = credentialResolutionService.resolve(credentialRef + ".api_key");
-        if (StringUtils.isBlank(key)) {
-            key = credentialResolutionService.resolve(credentialRef);
-        }
-        if (StringUtils.isBlank(key)) {
-            throw new IllegalStateException(
-                    "OpenAI credential '"
-                            + credentialRef
-                            + "' must hold the API key, either directly or under .api_key");
+                    "credentials.api_key is required for OpenAI Assistants agent requests");
         }
         return key;
     }

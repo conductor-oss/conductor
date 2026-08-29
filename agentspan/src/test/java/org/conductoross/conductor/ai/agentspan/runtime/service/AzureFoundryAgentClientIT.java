@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
@@ -19,18 +20,13 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import okhttp3.OkHttpClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
 
 /**
  * Integration test for {@link AzureFoundryAgentClient} against a real Azure AI Foundry resource.
@@ -45,7 +41,6 @@ import static org.mockito.Mockito.lenient;
  *
  * Uses the classic Assistants API (asst_i0j4OpLtZuzdN4jx5hq4b5cW) on shailesh-ai-foundry.
  */
-@ExtendWith(MockitoExtension.class)
 class AzureFoundryAgentClientIT {
 
     private static final String ENDPOINT =
@@ -54,7 +49,7 @@ class AzureFoundryAgentClientIT {
     private static final String AGENT_URL = ENDPOINT + "/openai/assistants/" + ASSISTANT_ID;
     private static final String CRED_REF = "CONDUCTOR_AZURE_SP";
 
-    @Mock CredentialResolutionService credentials;
+    private Map<String, String> credentials;
 
     private AzureFoundryAgentClient client;
 
@@ -64,24 +59,22 @@ class AzureFoundryAgentClientIT {
                 System.getenv("CONDUCTOR_SECRET_CONDUCTOR_AZURE_SP") != null,
                 "Skipping — CONDUCTOR_SECRET_CONDUCTOR_AZURE_SP not set");
 
+        // Stands in for what Conductor substitutes into task input at hand-off.
         String spJson = System.getenv("CONDUCTOR_SECRET_CONDUCTOR_AZURE_SP");
-        // Parse client_id, client_secret, tenant_id from JSON env var
-        String clientId = extractJsonField(spJson, "client_id");
-        String clientSecret = extractJsonField(spJson, "client_secret");
-        String tenantId = extractJsonField(spJson, "tenant_id");
+        credentials =
+                Map.of(
+                        "client_id", extractJsonField(spJson, "client_id"),
+                        "client_secret", extractJsonField(spJson, "client_secret"),
+                        "tenant_id", extractJsonField(spJson, "tenant_id"));
 
-        lenient().when(credentials.resolve(CRED_REF + ".client_id")).thenReturn(clientId);
-        lenient().when(credentials.resolve(CRED_REF + ".client_secret")).thenReturn(clientSecret);
-        lenient().when(credentials.resolve(CRED_REF + ".tenant_id")).thenReturn(tenantId);
-
-        client = new AzureFoundryAgentClient(credentials, new OkHttpClient());
+        client = new AzureFoundryAgentClient(new OkHttpClient());
     }
 
     @Test
     void serviceAccount_listAndInvokeClassicAssistant() throws Exception {
         ConductorAgentStartRequest request =
                 ConductorAgentStartRequest.builder()
-                        .credentialRef(CRED_REF)
+                        .credentials(credentials)
                         .agentUrl(AGENT_URL)
                         .prompt("Say hello in exactly three words.")
                         .build();
@@ -106,7 +99,7 @@ class AzureFoundryAgentClientIT {
 
         ConductorAgentStartRequest request =
                 ConductorAgentStartRequest.builder()
-                        .credentialRef(CRED_REF)
+                        .credentials(credentials)
                         .agentUrl(AGENT_URL)
                         .userAssertion(userAssertion)
                         .prompt("Who am I? Reply with just my name or email.")
@@ -154,7 +147,7 @@ class AzureFoundryAgentClientIT {
      */
     private ConductorAgentRequest pollRequest() {
         ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setCredentialRef(CRED_REF);
+        request.setCredentials(credentials);
         request.setAgentUrl(AGENT_URL);
         return request;
     }
