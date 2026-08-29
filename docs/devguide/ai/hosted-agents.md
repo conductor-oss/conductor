@@ -62,7 +62,7 @@ None of these clients keep per-run state in memory. The `executionId` returned b
 |---|---|---|
 | Azure AI Foundry | ✅ `apiKey` / `api_key` | Service principal, user-assigned managed identity, default Azure chain, or the caller's own identity |
 | OpenAI Assistants | ✅ `api_key` / `apiKey` — the only mode | — |
-| AWS Bedrock | ❌ *(see below)* | Static keys, `roleArn` to assume, or the default AWS chain |
+| AWS Bedrock | ✅ `apiKey` / `api_key` | Static keys, `roleArn` to assume, or the default AWS chain |
 
 Where an API key is accepted, either spelling works, so one habit carries across providers.
 
@@ -341,12 +341,15 @@ The SDK refreshes the temporary credentials for as long as the agent runs.
 
 Omit `credentials` to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
 
-!!! warning "Bedrock API keys are not supported here"
-    AWS Bedrock API keys are bearer tokens, and the AWS SDK signs Bedrock Agent Runtime calls with
-    SigV4 — its client builder takes no token provider. Supplying `apiKey` fails the task rather
-    than being ignored, because ignoring it would fall through to the host's own AWS credentials and
-    run the agent as a different principal. Use `accessKeyId` and `secretAccessKey`, a `roleArn`, or
-    the host's credential chain.
+**Or use a Bedrock API key**, which takes precedence over everything above:
+
+```json
+"credentials": { "apiKey": "${workflow.secrets.BEDROCK_API_KEY}" }
+```
+
+A Bedrock API key is a bearer token rather than something SigV4 signs, so Conductor switches the
+client to bearer auth for it. The AWS service model declares only SigV4, so left alone the SDK would
+sign the request and ignore the key entirely.
 
 **Or name the agent in one field**, as with Azure:
 

@@ -38,12 +38,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.interceptor.Context;
+import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
+import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
+import software.amazon.awssdk.http.SdkHttpRequest;
+import software.amazon.awssdk.http.auth.scheme.NoAuthAuthScheme;
+import software.amazon.awssdk.http.auth.spi.scheme.AuthSchemeOption;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClientBuilder;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ContentBody;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvocationInputMember;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequest;
@@ -424,10 +432,48 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     private BedrockAgentRuntimeAsyncClient buildClient(ClientKey key) {
-        return BedrockAgentRuntimeAsyncClient.builder()
-                .region(Region.of(key.region()))
-                .credentialsProvider(credentialsFor(key.credentials(), key.region()))
-                .build();
+        var builder = BedrockAgentRuntimeAsyncClient.builder().region(Region.of(key.region()));
+        String apiKey = AgentCredentials.apiKey(key.credentials());
+        return StringUtils.isNotBlank(apiKey)
+                ? bearerAuth(builder, apiKey).build()
+                : builder.credentialsProvider(credentialsFor(key.credentials(), key.region()))
+                        .build();
+    }
+
+    /**
+     * Points the client at a Bedrock API key instead of SigV4.
+     *
+     * <p>A Bedrock API key is a bearer token, and this service's model declares only {@code
+     * aws.auth#sigv4}, so the SDK would otherwise sign the request and ignore the key. Resolving to
+     * {@code smithy.api#noAuth} stops the signer running, anonymous credentials stop the default
+     * credential chain being probed, and the interceptor carries the key — the standard way to
+     * bearer-authenticate a service whose model has no bearer scheme.
+     */
+    static BedrockAgentRuntimeAsyncClientBuilder bearerAuth(
+            BedrockAgentRuntimeAsyncClientBuilder builder, String apiKey) {
+        return builder.credentialsProvider(AnonymousCredentialsProvider.create())
+                .putAuthScheme(NoAuthAuthScheme.create())
+                .authSchemeProvider(
+                        params ->
+                                List.of(
+                                        AuthSchemeOption.builder()
+                                                .schemeId(NoAuthAuthScheme.SCHEME_ID)
+                                                .build()))
+                .overrideConfiguration(
+                        override -> override.addExecutionInterceptor(bearerHeader(apiKey)));
+    }
+
+    /** Adds {@code Authorization: Bearer <key>} to every request the client makes. */
+    static ExecutionInterceptor bearerHeader(String apiKey) {
+        return new ExecutionInterceptor() {
+            @Override
+            public SdkHttpRequest modifyHttpRequest(
+                    Context.ModifyHttpRequest context, ExecutionAttributes attributes) {
+                return context.httpRequest().toBuilder()
+                        .putHeader("Authorization", "Bearer " + apiKey)
+                        .build();
+            }
+        };
     }
 
     /**
@@ -441,18 +487,6 @@ public class BedrockAgentClient implements ConductorAgentClient {
      * </ol>
      */
     AwsCredentialsProvider credentialsFor(Map<String, String> credentials, String region) {
-        // Bedrock API keys are bearer tokens, and the bundled AWS SDK signs Bedrock Agent Runtime
-        // calls with SigV4 only — its client builder exposes no token provider. Silently ignoring
-        // the key would fall through to the host's own credentials and run the agent as someone
-        // else, so say so instead.
-        if (StringUtils.isNotBlank(AgentCredentials.apiKey(credentials))) {
-            throw new IllegalArgumentException(
-                    "Bedrock does not accept an API key here: the AWS SDK signs Bedrock Agent"
-                            + " Runtime calls with SigV4. Use accessKeyId and secretAccessKey, a"
-                            + " roleArn to assume, or omit credentials to use the host's AWS"
-                            + " credential chain.");
-        }
-
         String accessKeyId = AgentCredentials.value(credentials, "accessKeyId");
         String secretAccessKey = AgentCredentials.value(credentials, "secretAccessKey");
         if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {

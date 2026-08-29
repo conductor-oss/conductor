@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
@@ -25,7 +26,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockagentruntime.model.InvocationInputMember;
+import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentRequest;
+import software.amazon.awssdk.services.bedrockagentruntime.model.InvokeAgentResponseHandler;
 import software.amazon.awssdk.services.bedrockagentruntime.model.ReturnControlPayload;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,24 +201,59 @@ class BedrockAgentClientTest {
                 .build();
     }
 
+    /**
+     * The point of the bearer wiring: a Bedrock API key must actually reach the wire as an
+     * Authorization header, and SigV4 must not sign over it. Asserted against a real request rather
+     * than by inspecting the builder, since only the sent request proves the signer stood down.
+     */
     @Test
-    void anApiKeyIsRejectedRatherThanIgnored() {
-        // Bedrock API keys are bearer tokens and the bundled AWS SDK signs these calls with SigV4
-        // only. Ignoring the key would fall through to the host's own credentials and run the
-        // agent as someone else — the failure mode this says out loud.
-        assertThatThrownBy(
-                        () ->
-                                client.credentialsFor(
-                                        Map.of("apiKey", "bedrock-api-key"), "us-east-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not accept an API key");
+    void anApiKeyReachesTheWireAsABearerToken() throws Exception {
+        MockWebServer bedrock = new MockWebServer();
+        bedrock.enqueue(new MockResponse().setResponseCode(500).setBody("{}"));
+        bedrock.start();
+        try (BedrockAgentRuntimeAsyncClient runtime =
+                BedrockAgentClient.bearerAuth(
+                                BedrockAgentRuntimeAsyncClient.builder()
+                                        .region(Region.of("us-east-1"))
+                                        .endpointOverride(bedrock.url("/").uri()),
+                                "bedrock-api-key")
+                        .build()) {
 
-        assertThatThrownBy(
-                        () ->
-                                client.credentialsFor(
-                                        Map.of("api_key", "bedrock-api-key"), "us-east-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not accept an API key");
+            // The call fails — the mock is not Bedrock — but the request still went out.
+            assertThatThrownBy(
+                            () ->
+                                    runtime.invokeAgent(
+                                                    InvokeAgentRequest.builder()
+                                                            .agentId("agent-1")
+                                                            .agentAliasId("alias-1")
+                                                            .sessionId("session-1")
+                                                            .inputText("hello")
+                                                            .build(),
+                                                    InvokeAgentResponseHandler.builder()
+                                                            .onResponse(r -> {})
+                                                            .subscriber(
+                                                                    InvokeAgentResponseHandler
+                                                                            .Visitor.builder()
+                                                                            .build())
+                                                            .build())
+                                            .join())
+                    .isInstanceOf(Exception.class);
+
+            RecordedRequest sent = bedrock.takeRequest(10, TimeUnit.SECONDS);
+            assertThat(sent).isNotNull();
+            assertThat(sent.getHeader("Authorization")).isEqualTo("Bearer bedrock-api-key");
+            // SigV4 would have replaced it with an AWS4-HMAC-SHA256 credential scope.
+            assertThat(sent.getHeader("Authorization")).doesNotContain("AWS4-HMAC-SHA256");
+        } finally {
+            bedrock.shutdown();
+        }
+    }
+
+    @Test
+    void eitherApiKeySpellingSelectsBearerAuth() {
+        // Whichever spelling the provider's own docs use.
+        assertThat(AgentCredentials.apiKey(Map.of("apiKey", "k1"))).isEqualTo("k1");
+        assertThat(AgentCredentials.apiKey(Map.of("api_key", "k2"))).isEqualTo("k2");
     }
 
     @Test
