@@ -38,7 +38,7 @@ export const AGENT_AUTH_METHODS: Record<string, AgentAuthMethod[]> = {
     {
       id: "servicePrincipal",
       label: "Service principal",
-      hint: "An Entra ID app registration. The secret holds client_id, client_secret and tenant_id.",
+      hint: "Sign in as an Entra ID app registration: which app (client ID), its password (client secret), and the directory it belongs to (tenant ID).",
       fields: [
         { key: "client_id", label: "Client ID" },
         { key: "client_secret", label: "Client secret" },
@@ -48,7 +48,7 @@ export const AGENT_AUTH_METHODS: Record<string, AgentAuthMethod[]> = {
     {
       id: "managedIdentity",
       label: "Managed identity",
-      hint: "A user-assigned managed identity, named by its client ID.",
+      hint: "Azure vouches for the host this server runs on — no password to store or rotate. Name the user-assigned identity by its client ID.",
       fields: [
         { key: "managedIdentityClientId", label: "Managed identity client ID" },
       ],
@@ -66,7 +66,7 @@ export const AGENT_AUTH_METHODS: Record<string, AgentAuthMethod[]> = {
     {
       id: "staticKeys",
       label: "Access key",
-      hint: "A long-lived IAM access key pair.",
+      hint: "A long-lived IAM access key pair — an access key ID and its secret.",
       fields: [
         { key: "accessKeyId", label: "Access key ID" },
         { key: "secretAccessKey", label: "Secret access key" },

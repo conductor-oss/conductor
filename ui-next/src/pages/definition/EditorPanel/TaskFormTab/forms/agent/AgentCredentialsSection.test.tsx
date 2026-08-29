@@ -82,7 +82,9 @@ describe("AgentCredentialsSection", () => {
     fireEvent.click(screen.getByLabelText("method:Service principal"));
 
     expect(screen.getByLabelText("Client ID")).toBeInTheDocument();
-    expect(screen.getByLabelText("Use a stored secret")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Fill from Conductor secret store"),
+    ).toBeInTheDocument();
   });
 
   it("writes the secret references so the user never types the syntax", () => {
@@ -92,9 +94,12 @@ describe("AgentCredentialsSection", () => {
       tenant_id: "tid",
     });
 
-    fireEvent.change(screen.getByLabelText("Use a stored secret"), {
-      target: { value: "AZURE_CRED" },
-    });
+    fireEvent.change(
+      screen.getByLabelText("Fill from Conductor secret store"),
+      {
+        target: { value: "AZURE_CRED" },
+      },
+    );
 
     expect(onChange).toHaveBeenCalledWith({
       client_id: "${workflow.secrets.AZURE_CRED.client_id}",
@@ -137,7 +142,7 @@ describe("AgentCredentialsSection", () => {
     renderSection("azure-foundry", {});
 
     expect(
-      screen.queryByLabelText("Use a stored secret"),
+      screen.queryByLabelText("Fill from Conductor secret store"),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(/whatever the server is running as/i),

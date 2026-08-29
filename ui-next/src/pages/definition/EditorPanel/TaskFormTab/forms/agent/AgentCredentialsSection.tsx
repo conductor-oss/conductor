@@ -1,7 +1,7 @@
 import { FormControlLabel, Grid, Switch, Typography } from "@mui/material";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSecretNames } from "utils/query";
 import {
   AGENT_AUTH_METHODS,
@@ -43,8 +43,12 @@ export default function AgentCredentialsSection({
   );
   // The chosen method has to outlive its fields being empty: selecting one clears the others, and
   // detection alone would immediately snap back to "the server's own identity" mid-edit.
-  const [chosenId, setChosenId] = useState<string | undefined>(undefined);
-  useEffect(() => setChosenId(undefined), [runtime]);
+  // Tagged with the runtime it was made under, so switching runtime discards it during render
+  // rather than in an effect that would paint the wrong provider's fields for a frame.
+  const [chosen, setChosen] = useState<
+    { runtime: string; id: string } | undefined
+  >(undefined);
+  const chosenId = chosen?.runtime === runtime ? chosen.id : undefined;
 
   const method =
     methods.find((candidate) => candidate.id === chosenId) ?? detected;
@@ -61,7 +65,7 @@ export default function AgentCredentialsSection({
 
   /** Switching method drops the other methods' keys — they decide which mode the server picks. */
   const selectMethod = (next: AgentAuthMethod) => {
-    setChosenId(next.id);
+    setChosen({ runtime, id: next.id });
     const kept = asStrings();
     allAuthKeys(runtime).forEach((key) => delete kept[key]);
     next.fields.forEach((field) => {
@@ -115,13 +119,13 @@ export default function AgentCredentialsSection({
         <>
           <Grid size={{ xs: 12, md: 6 }}>
             <ConductorAutocompleteVariables
-              label="Use a stored secret"
+              label="Fill from Conductor secret store"
               value=""
               onChange={(v: unknown) => applyStoredSecret(String(v ?? ""))}
               otherOptions={secretNames}
               placeholder={
                 secretNames.length > 0
-                  ? "Pick a secret to fill the fields below"
+                  ? "Choose a stored credential"
                   : "No secrets stored yet"
               }
               openOnFocus
@@ -132,11 +136,13 @@ export default function AgentCredentialsSection({
               display="block"
             >
               {isSingleField
-                ? "Fills the field below with a reference to that secret."
-                : `Fills the fields below with references to that secret's ${method.fields
+                ? "Fills the field below with a reference. Conductor resolves it when the task runs, so the value never lands in the workflow definition."
+                : `Fills the fields below with references to its ${method.fields
                     .filter((f) => !f.optional)
                     .map((f) => f.key)
-                    .join(", ")} keys.`}
+                    .join(
+                      ", ",
+                    )} keys. Conductor resolves them when the task runs, so the values never land in the workflow definition.`}
             </Typography>
           </Grid>
 
