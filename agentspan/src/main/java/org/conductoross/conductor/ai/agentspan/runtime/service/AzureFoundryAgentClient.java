@@ -59,7 +59,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * {@link ConductorAgentClient} backed by Azure AI Foundry Agents.
+ * {@link ConductorAgentClient} backed by Microsoft Foundry Agents.
  *
  * <p>The wire protocol is the OpenAI Assistants thread-and-run API, shared with {@link
  * OpenAiAssistantsAgentClient} through {@link AssistantsRunApi}. What this class adds is Azure's
@@ -134,7 +134,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     @Override
     public String agentType() {
-        return A2AService.AGENT_TYPE_AZURE_FOUNDRY;
+        return A2AService.AGENT_TYPE_MICROSOFT_FOUNDRY;
+    }
+
+    @Override
+    public java.util.Set<String> agentTypeAliases() {
+        return java.util.Set.of(A2AService.AGENT_TYPE_AZURE_FOUNDRY);
     }
 
     /**
@@ -377,7 +382,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                     });
         } catch (Exception e) {
             log.warn(
-                    "Failed to cancel Azure Foundry run on thread {}: {}",
+                    "Failed to cancel Microsoft Foundry run on thread {}: {}",
                     threadId,
                     e.getMessage());
         }
@@ -402,16 +407,16 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         AgentSummary.builder()
                                 .name(item.path("name").asText(item.path("id").asText("unknown")))
                                 .version(1)
-                                .type(A2AService.AGENT_TYPE_AZURE_FOUNDRY)
+                                .type(A2AService.AGENT_TYPE_MICROSOFT_FOUNDRY)
                                 .description(item.path("description").asText(null))
                                 // Azure reports seconds; AgentSummary carries millis.
                                 .createTime(item.path("created_at").asLong(0) * 1000L)
                                 .build());
             }
-            log.debug("Discovered {} Azure Foundry agent(s) at {}", agents.size(), base);
+            log.debug("Discovered {} Microsoft Foundry agent(s) at {}", agents.size(), base);
             return agents;
         } catch (Exception e) {
-            log.warn("Failed to list Azure Foundry agents at {}: {}", base, e.getMessage());
+            log.warn("Failed to list Microsoft Foundry agents at {}: {}", base, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -427,7 +432,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                     Map<String, Object> definition =
                             MAPPER.convertValue(
                                     item, new TypeReference<LinkedHashMap<String, Object>>() {});
-                    definition.put("provider", A2AService.AGENT_TYPE_AZURE_FOUNDRY);
+                    definition.put("provider", A2AService.AGENT_TYPE_MICROSOFT_FOUNDRY);
                     definition.put("endpoint", base);
                     return definition;
                 }
@@ -435,7 +440,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             return null;
         } catch (Exception e) {
             log.warn(
-                    "Failed to fetch Azure Foundry agent '{}' at {}: {}",
+                    "Failed to fetch Microsoft Foundry agent '{}' at {}: {}",
                     agentName,
                     base,
                     e.getMessage());
@@ -471,12 +476,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String body = response.body() != null ? response.body().string() : "{}";
             if (!response.isSuccessful()) {
                 throw new IllegalStateException(
-                        "Azure Foundry agent listing failed: HTTP " + response.code());
+                        "Microsoft Foundry agent listing failed: HTTP " + response.code());
             }
             JsonNode data = MAPPER.readTree(body).path("data");
             return data.isArray() ? data : MAPPER.createArrayNode();
         } catch (IOException e) {
-            throw new IllegalStateException("Azure Foundry agent listing failed", e);
+            throw new IllegalStateException("Microsoft Foundry agent listing failed", e);
         }
     }
 
@@ -570,14 +575,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String body = response.body() != null ? response.body().string() : "{}";
             if (response.code() == 401 || response.code() == 403) {
                 throw new AssistantsRunApi.UnauthorizedException(
-                        "Azure Foundry call to "
+                        "Microsoft Foundry call to "
                                 + label
                                 + " was rejected: HTTP "
                                 + response.code());
             }
             if (!response.isSuccessful()) {
                 throw new IllegalStateException(
-                        "Azure Foundry call to "
+                        "Microsoft Foundry call to "
                                 + label
                                 + " failed: HTTP "
                                 + response.code()
@@ -586,7 +591,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             }
             return MAPPER.readTree(body);
         } catch (IOException e) {
-            throw new IllegalStateException("Azure Foundry call to " + label + " failed", e);
+            throw new IllegalStateException("Microsoft Foundry call to " + label + " failed", e);
         }
     }
 
@@ -689,7 +694,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String endpoint = StringUtils.defaultIfBlank(agentUrl, rawConfig(rawConfig, "endpoint"));
         if (StringUtils.isBlank(endpoint)) {
             throw new IllegalArgumentException(
-                    "Azure Foundry endpoint must be provided via agentUrl or rawConfig.endpoint."
+                    "Microsoft Foundry endpoint must be provided via agentUrl or rawConfig.endpoint."
                             + " An endpoint kept in a secret is written as"
                             + " ${workflow.secrets.NAME}, which Conductor substitutes before the"
                             + " task runs.");

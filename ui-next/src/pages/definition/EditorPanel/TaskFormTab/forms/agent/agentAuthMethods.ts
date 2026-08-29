@@ -33,7 +33,7 @@ const API_KEY = (key: string): AgentAuthMethod => ({
 });
 
 export const AGENT_AUTH_METHODS: Record<string, AgentAuthMethod[]> = {
-  "azure-foundry": [
+  "microsoft-foundry": [
     API_KEY("apiKey"),
     {
       id: "servicePrincipal",

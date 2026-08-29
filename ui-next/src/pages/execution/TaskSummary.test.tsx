@@ -8,7 +8,7 @@ const agentTask = (outputData: Record<string, unknown>) =>
     status: "IN_PROGRESS",
     workflowTask: { type: "AGENT", name: "ask_the_analyst" },
     referenceTaskName: "ask_the_analyst",
-    inputData: { agentType: "azure-foundry" },
+    inputData: { agentType: "microsoft-foundry" },
     outputData,
   }) as unknown as ExecutionTask;
 

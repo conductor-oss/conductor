@@ -35,7 +35,7 @@ import okhttp3.Response;
 
 /**
  * The OpenAI Assistants thread-and-run protocol, shared by every endpoint that speaks it — OpenAI
- * itself and Azure AI Foundry, which differ only in how they authenticate, where they live, and
+ * itself and Microsoft Foundry, which differ only in how they authenticate, where they live, and
  * which extra query parameters and headers they want.
  *
  * <p>Deliberately stateless. A thread id plus a {@link Target} rebuilt from task input is enough to

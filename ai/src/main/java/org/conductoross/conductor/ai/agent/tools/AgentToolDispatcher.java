@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Runs the tools a hosted agent asked for, as real Conductor work.
  *
- * <p>An agent on a platform like Azure AI Foundry can only ask: it holds the tool's schema but has
+ * <p>An agent on a platform like Microsoft Foundry can only ask: it holds the tool's schema but has
  * no way to execute it. Without this, the owning {@code AGENT} task completes carrying the request
  * and the workflow author has to hand-wire a dispatch branch and a resume task for every agent.
  * With it, the tool calls are scheduled as ordinary tasks — workers pick them up, each gets its own

@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Azure AI Foundry is three APIs behind one agentType, and the endpoint decides which. Model
+ * Microsoft Foundry is three APIs behind one agentType, and the endpoint decides which. Model
  * inference and a project's Responses API both answer inside the start call, so they report a
  * terminal state rather than being polled; only the classic Assistants surface has a run to poll.
  */

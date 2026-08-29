@@ -53,7 +53,7 @@ Each task takes an **`agentType`** input that selects the agent runtime. It does
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
 - `agentType: "conductor"` — run a deployed **Conductor Agent** by `name`. See [Conductor Agents](conductor-agents.md).
-- `agentType: "azure-foundry"`, `"openai-assistants"`, `"bedrock"` — drive an agent hosted on Azure AI Foundry, the OpenAI Assistants API, or AWS Bedrock. See [Hosted platform agents](hosted-agents.md).
+- `agentType: "microsoft-foundry"`, `"openai-assistants"`, `"bedrock"` — drive an agent hosted on Microsoft Foundry, the OpenAI Assistants API, or AWS Bedrock. See [Hosted platform agents](hosted-agents.md).
 
 Vertex AI agents speak A2A natively, so they are called with `agentType: "a2a"` rather than a runtime of their own.
 
@@ -102,7 +102,7 @@ sequenceDiagram
 
 | Field | Description |
 |---|---|
-| `agentType` | `"a2a"` (default) calls a remote A2A endpoint; `"conductor"` runs a deployed Conductor Agent; `"azure-foundry"`, `"openai-assistants"` and `"bedrock"` drive a hosted platform agent. It does not select a framework. The fields on this page apply to `"a2a"` only — see [Conductor Agents](conductor-agents.md) and [Hosted platform agents](hosted-agents.md) for the others. |
+| `agentType` | `"a2a"` (default) calls a remote A2A endpoint; `"conductor"` runs a deployed Conductor Agent; `"microsoft-foundry"`, `"openai-assistants"` and `"bedrock"` drive a hosted platform agent. It does not select a framework. The fields on this page apply to `"a2a"` only — see [Conductor Agents](conductor-agents.md) and [Hosted platform agents](hosted-agents.md) for the others. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |

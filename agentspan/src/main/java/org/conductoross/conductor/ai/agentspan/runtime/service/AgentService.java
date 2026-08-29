@@ -429,7 +429,7 @@ public class AgentService {
         }
 
         // Discover external agents by scanning all credential secrets.
-        // Any secret whose JSON value contains an "endpoint" key is treated as an Azure Foundry
+        // Any secret whose JSON value contains an "endpoint" key is treated as an Microsoft Foundry
         // credential; one with a "region" key is treated as an AWS Bedrock credential.
         if (secretsDAO != null) {
             try {

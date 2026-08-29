@@ -37,7 +37,7 @@ export const isDynamicAgentIdentity = (value: unknown): value is string =>
 /** Hosted-platform runtimes, keyed by the platform's own identifier in `rawConfig`. */
 const PROVIDER_RUNTIMES: Record<ProviderAgentRuntimeType, string> = {
   bedrock: "agentId",
-  "azure-foundry": "assistantId",
+  "microsoft-foundry": "assistantId",
   "openai-assistants": "assistantId",
 };
 
@@ -52,7 +52,7 @@ export const AGENT_RUNTIME_LABELS: Record<AgentRuntimeType, string> = {
   a2a: "A2A",
   conductor: "Conductor",
   bedrock: "Bedrock",
-  "azure-foundry": "Azure AI Foundry",
+  "microsoft-foundry": "Microsoft Foundry",
   "openai-assistants": "OpenAI Assistants",
 };
 
@@ -60,11 +60,26 @@ export const isProviderRuntime = (
   type: AgentRuntimeType,
 ): type is ProviderAgentRuntimeType => type in PROVIDER_RUNTIMES;
 
-export const agentRuntimeType = (input: unknown): AgentRuntimeType => {
-  if (!isRecord(input)) return "a2a";
-  const declared = String(input.agentType ?? "")
+/**
+ * Agent types the server still routes under an older name. Workflow definitions saved before a
+ * runtime was renamed keep the old string, so they are normalized here and every lookup downstream
+ * only has to know the current name.
+ */
+const RUNTIME_ALIASES: Record<string, AgentRuntimeType> = {
+  "azure-foundry": "microsoft-foundry",
+};
+
+/** The current name for an agent type string, carrying a renamed runtime's old name forward. */
+export const canonicalAgentType = (type?: string | null): string => {
+  const declared = String(type ?? "")
     .trim()
     .toLowerCase();
+  return RUNTIME_ALIASES[declared] ?? declared;
+};
+
+export const agentRuntimeType = (input: unknown): AgentRuntimeType => {
+  if (!isRecord(input)) return "a2a";
+  const declared = canonicalAgentType(input.agentType as string | undefined);
   return (
     KNOWN_RUNTIMES.find((runtime) => runtime === declared) ??
     // Absent or unrecognized falls back to A2A, matching the server's default.
@@ -356,7 +371,7 @@ export const AGENT_RUNTIME_BADGES: Record<AgentRuntimeType, string> = {
   a2a: "A2A AGENT",
   conductor: "CONDUCTOR AGENT",
   bedrock: "BEDROCK AGENT",
-  "azure-foundry": "AZURE FOUNDRY AGENT",
+  "microsoft-foundry": "MICROSOFT FOUNDRY AGENT",
   "openai-assistants": "OPENAI AGENT",
 };
 

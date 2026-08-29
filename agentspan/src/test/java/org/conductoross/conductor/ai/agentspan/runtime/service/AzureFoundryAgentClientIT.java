@@ -29,7 +29,7 @@ import okhttp3.OkHttpClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration test for {@link AzureFoundryAgentClient} against a real Azure AI Foundry resource.
+ * Integration test for {@link AzureFoundryAgentClient} against a real Microsoft Foundry resource.
  *
  * <p>Skipped automatically when CONDUCTOR_SECRET_CONDUCTOR_AZURE_SP is not set. Run manually:
  *
@@ -88,7 +88,7 @@ class AzureFoundryAgentClientIT {
         assertThat(status.getOutput()).containsKey("result");
         String result = status.getOutput().get("result").toString();
         assertThat(result).isNotBlank();
-        System.out.println("Azure Foundry (service account) response: " + result);
+        System.out.println("Microsoft Foundry (service account) response: " + result);
     }
 
     @Test
@@ -112,7 +112,7 @@ class AzureFoundryAgentClientIT {
 
         assertThat(status.getStatus()).isEqualTo(ConductorAgentState.COMPLETED);
         assertThat(status.getOutput()).containsKey("result");
-        System.out.println("Azure Foundry (OBO) response: " + status.getOutput().get("result"));
+        System.out.println("Microsoft Foundry (OBO) response: " + status.getOutput().get("result"));
     }
 
     private ConductorAgentStatusResponse pollUntilComplete(String executionId) throws Exception {

@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * The OpenAI client shares its protocol with Azure Foundry through {@code AssistantsRunApi}, so
+ * The OpenAI client shares its protocol with Microsoft Foundry through {@code AssistantsRunApi}, so
  * these tests concentrate on what is specific to it: API-key auth, the {@code OpenAI-Beta} header,
  * the absence of Azure's {@code api-version}, and the base-url override — plus the same
  * statelessness property, since holding no per-run state is what makes any of these clients

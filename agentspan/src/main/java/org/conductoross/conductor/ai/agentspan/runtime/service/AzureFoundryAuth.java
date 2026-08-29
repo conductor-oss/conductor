@@ -37,7 +37,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * How a call to Azure AI Foundry authenticates, in one of four ways plus an on-behalf-of mode.
+ * How a call to Microsoft Foundry authenticates, in one of four ways plus an on-behalf-of mode.
  *
  * <p>Resolution order, first match wins:
  *

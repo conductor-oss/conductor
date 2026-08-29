@@ -184,7 +184,7 @@ describe("agent metadata resolution", () => {
 
 describe("hosted provider runtimes", () => {
   const foundry = {
-    agentType: "azure-foundry" as const,
+    agentType: "microsoft-foundry" as const,
     prompt: "what is the answer?",
     credentials: {
       client_id: "${workflow.secrets.AZURE_FOUNDRY_CRED.client_id}",
@@ -199,8 +199,12 @@ describe("hosted provider runtimes", () => {
   };
 
   it("recognizes every runtime the server registers", () => {
+    expect(agentRuntimeType({ agentType: "microsoft-foundry" })).toBe(
+      "microsoft-foundry",
+    );
+    // Microsoft Foundry was Azure AI Foundry, and workflow definitions saved then still say so.
     expect(agentRuntimeType({ agentType: "azure-foundry" })).toBe(
-      "azure-foundry",
+      "microsoft-foundry",
     );
     expect(agentRuntimeType({ agentType: "bedrock" })).toBe("bedrock");
     expect(agentRuntimeType({ agentType: "openai-assistants" })).toBe(
@@ -222,7 +226,7 @@ describe("hosted provider runtimes", () => {
     // Foundry accepts agentId as an alias for assistantId.
     expect(
       agentSourceIdentity({
-        agentType: "azure-foundry",
+        agentType: "microsoft-foundry",
         rawConfig: { agentId: "asst_alias" },
       }),
     ).toBe("asst_alias");
@@ -238,7 +242,7 @@ describe("hosted provider runtimes", () => {
     expect(fetchJson).not.toHaveBeenCalled();
     expect(snapshot).toMatchObject({
       schemaVersion: 1,
-      agentType: "azure-foundry",
+      agentType: "microsoft-foundry",
       displayName: "asst_abc123",
       resolved: true,
       provider: {
@@ -259,7 +263,7 @@ describe("hosted provider runtimes", () => {
     } as Pick<TaskDef, "inputParameters" | "taskReferenceName" | "metadata">;
 
     expect(getAgentTaskPresentation(task)).toEqual({
-      badge: "AZURE FOUNDRY AGENT",
+      badge: "MICROSOFT FOUNDRY AGENT",
       name: "asst_abc123",
       taskReferenceName: "ask_the_analyst",
     });

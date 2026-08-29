@@ -161,7 +161,7 @@ export default function AgentCredentialsSection({
         </>
       )}
 
-      {runtime === "azure-foundry" && (
+      {runtime === "microsoft-foundry" && (
         <Grid size={12}>
           <FormControlLabel
             control={

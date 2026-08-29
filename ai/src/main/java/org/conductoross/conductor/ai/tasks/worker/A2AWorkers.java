@@ -135,7 +135,12 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
      * the built-in client. Keep the first and say so rather than swapping it out invisibly.
      */
     private void register(ConductorAgentClient client) {
-        String agentType = client.agentType().toLowerCase();
+        registerAs(client, client.agentType());
+        client.agentTypeAliases().forEach(alias -> registerAs(client, alias));
+    }
+
+    private void registerAs(ConductorAgentClient client, String type) {
+        String agentType = type.toLowerCase();
         ConductorAgentClient existing = agentClients.putIfAbsent(agentType, client);
         if (existing != null && existing != client) {
             log.warn(
@@ -158,6 +163,11 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             return null;
         }
         return applicationContext.getBeanProvider(AgentToolDispatcher.class).getIfAvailable();
+    }
+
+    // The client serving an agentType, aliases included. Visible for tests.
+    ConductorAgentClient agentClientFor(String agentType) {
+        return clients().get(StringUtils.defaultIfBlank(agentType, "").toLowerCase());
     }
 
     private Map<String, ConductorAgentClient> clients() {
@@ -213,8 +223,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     public A2ACancelResult cancelAgent(A2ACancelRequest request) {
         Task task = TaskContext.get().getTask();
         TaskResult result = resultFor(task);
-        ConductorAgentClient cancelClient =
-                clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
+        ConductorAgentClient cancelClient = agentClientFor(request.getAgentType());
         if (cancelClient != null) {
             String executionId = StringUtils.trimToNull(request.getExecutionId());
             if (executionId == null) {

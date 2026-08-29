@@ -45,7 +45,7 @@ import { detectAuthMethod } from "./agent/agentAuthMethods";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
-  { value: "azure-foundry", label: "Azure AI Foundry" },
+  { value: "microsoft-foundry", label: "Microsoft Foundry" },
   { value: "bedrock", label: "Bedrock" },
   { value: "openai-assistants", label: "OpenAI Assistants" },
 ];
@@ -67,7 +67,7 @@ type ProviderField = {
  * the client reject the task outright.
  */
 const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
-  "azure-foundry": [
+  "microsoft-foundry": [
     {
       key: "endpoint",
       label: "Project endpoint",

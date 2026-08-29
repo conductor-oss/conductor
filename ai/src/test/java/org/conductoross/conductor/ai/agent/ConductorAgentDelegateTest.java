@@ -461,7 +461,7 @@ class ConductorAgentDelegateTest {
     private static Task autoRunToolsTask() {
         return task(
                 Map.of(
-                        "agentType", "azure-foundry",
+                        "agentType", "microsoft-foundry",
                         "prompt", "compare revenue per engineer",
                         "autoRunTools", true));
     }
@@ -477,7 +477,7 @@ class ConductorAgentDelegateTest {
 
         @Override
         public String agentType() {
-            return "azure-foundry";
+            return "microsoft-foundry";
         }
 
         @Override

@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
@@ -23,7 +24,13 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.a2a.model.TaskStatus;
+import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
+import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
+import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.model.A2AAgentCardRequest;
 import org.conductoross.conductor.ai.model.A2AAgentCardResult;
 import org.conductoross.conductor.ai.model.A2ACallRequest;
@@ -49,6 +56,7 @@ import static org.conductoross.conductor.ai.a2a.A2AWorkerTestSupport.unusedAgent
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -65,6 +73,48 @@ class A2AWorkersTest {
     void setUp() {
         a2aService = mock(A2AService.class);
         workers = new A2AWorkers(a2aService, List.of(unusedAgentClient()));
+    }
+
+    @Test
+    void aRenamedRuntimeStillAnswersToItsFormerAgentType() {
+        // Microsoft Foundry was Azure AI Foundry. Workflow definitions saved under the old name are
+        // already out there, so both strings have to reach the same client.
+        ConductorAgentClient renamed =
+                new ConductorAgentClient() {
+                    @Override
+                    public String agentType() {
+                        return "microsoft-foundry";
+                    }
+
+                    @Override
+                    public Set<String> agentTypeAliases() {
+                        return Set.of("azure-foundry");
+                    }
+
+                    @Override
+                    public ConductorAgentStartResponse startAgent(
+                            ConductorAgentStartRequest request) {
+                        return ConductorAgentStartResponse.builder().executionId("run-1").build();
+                    }
+
+                    @Override
+                    public ConductorAgentStatusResponse getAgentStatus(
+                            String executionId, ConductorAgentRequest request) {
+                        return null;
+                    }
+
+                    @Override
+                    public void respond(ConductorAgentRespondRequest request) {}
+
+                    @Override
+                    public void cancelAgent(ConductorAgentCancelRequest request) {}
+                };
+
+        A2AWorkers renamedWorkers = new A2AWorkers(a2aService, List.of(renamed));
+
+        assertSame(renamed, renamedWorkers.agentClientFor("microsoft-foundry"));
+        assertSame(renamed, renamedWorkers.agentClientFor("azure-foundry"));
+        assertSame(renamed, renamedWorkers.agentClientFor("AZURE-FOUNDRY"));
     }
 
     @Test

@@ -1,18 +1,23 @@
 ---
-description: "Hosted platform agents — call an agent you already run on Azure AI Foundry, AWS Bedrock, or the OpenAI Assistants API from an AGENT task. Runtime selection, rawConfig keys, credential shape, and the tool-call resume loop."
+description: "Hosted platform agents — call an agent you already run on Microsoft Foundry, AWS Bedrock, or the OpenAI Assistants API from an AGENT task. Runtime selection, rawConfig keys, credential shape, and the tool-call resume loop."
 ---
 
 # Hosted platform agents
 
-The `AGENT` task can drive an agent that lives on someone else's platform. The agent stays where it is — you keep authoring it in Azure AI Foundry, Bedrock, or the OpenAI dashboard — and Conductor supplies the durability around it: retries, timeouts, cancellation, human-in-the-loop pauses, and a persisted execution history.
+The `AGENT` task can drive an agent that lives on someone else's platform. The agent stays where it is — you keep authoring it in Microsoft Foundry, Bedrock, or the OpenAI dashboard — and Conductor supplies the durability around it: retries, timeouts, cancellation, human-in-the-loop pauses, and a persisted execution history.
 
 Three runtimes ship today:
 
 | `agentType` | Platform | Client |
 |---|---|---|
-| `azure-foundry` | Azure AI Foundry Agents | `AzureFoundryAgentClient` |
+| `microsoft-foundry` | Microsoft Foundry Agents | `AzureFoundryAgentClient` |
 | `openai-assistants` | OpenAI Assistants API | `OpenAiAssistantsAgentClient` |
 | `bedrock` | AWS Bedrock Agent Runtime | `BedrockAgentClient` |
+
+!!! note "Microsoft Foundry was Azure AI Foundry"
+    `agentType: azure-foundry` still routes to the same runtime, so workflows saved under the old
+    name keep working and need no edit. New workflows should use `microsoft-foundry`, which is what
+    the UI writes and what agent discovery reports back.
 
 All three require the AI integration:
 
@@ -91,7 +96,7 @@ None of these clients keep per-run state in memory. The `executionId` returned b
 
 | Provider | API key | Other credentials |
 |---|---|---|
-| Azure AI Foundry | ✅ `apiKey` / `api_key` | Service principal, user-assigned managed identity, default Azure chain, or the caller's own identity |
+| Microsoft Foundry | ✅ `apiKey` / `api_key` | Service principal, user-assigned managed identity, default Azure chain, or the caller's own identity |
 | OpenAI Assistants | ✅ `api_key` / `apiKey` — the only mode | — |
 | AWS Bedrock | ✅ `apiKey` / `api_key` | Static keys, `roleArn` to assume, or the default AWS chain |
 
@@ -126,7 +131,7 @@ Set `autoRunTools: true` and the `AGENT` task **stays `IN_PROGRESS`** while each
   "taskReferenceName": "ask_the_analyst",
   "type": "AGENT",
   "inputParameters": {
-    "agentType": "azure-foundry",
+    "agentType": "microsoft-foundry",
     "prompt": "compare Q3 revenue per engineer against Q2",
     "autoRunTools": true,
     "credentials": {
@@ -169,7 +174,7 @@ Without `autoRunTools`, the `AGENT` task **completes** with `waiting: true` rath
   "taskReferenceName": "return_tool_result",
   "type": "AGENT",
   "inputParameters": {
-    "agentType": "azure-foundry",
+    "agentType": "microsoft-foundry",
     "executionId": "${ask_the_analyst.output.executionId}",
     "prompt": "${lookup_revenue.output.response}",
     "credentials": { "apiKey": "${workflow.secrets.AZURE_CRED.apiKey}" },
@@ -188,7 +193,7 @@ The configuration has to be repeated on the resuming task, because that is where
 
 ---
 
-## Azure AI Foundry
+## Microsoft Foundry
 
 Foundry is three APIs behind one `agentType`, and the endpoint decides which:
 
@@ -211,7 +216,7 @@ For a project agent, its configured instructions and tools are read from the age
   "taskReferenceName": "ask_the_analyst",
   "type": "AGENT",
   "inputParameters": {
-    "agentType": "azure-foundry",
+    "agentType": "microsoft-foundry",
     "prompt": "${workflow.input.question}",
     "credentials": {
       "client_id":     "${workflow.secrets.AZURE_CRED.client_id}",

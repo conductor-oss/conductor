@@ -66,7 +66,7 @@ public class ConductorAgentStartRequest {
 
     /**
      * Run the agent as the caller rather than as the deployment's own identity. With {@link
-     * #userAssertion}, the Azure Foundry client exchanges the caller's Entra SSO token for a
+     * #userAssertion}, the Microsoft Foundry client exchanges the caller's Entra SSO token for a
      * Foundry-scoped one. Enterprise clusters only; without both, credential-based auth is used.
      */
     private boolean useCallerIdentity;
@@ -80,8 +80,8 @@ public class ConductorAgentStartRequest {
 
     /**
      * Where the agent lives, as a top-level field so every agent type names it the same way A2A
-     * does. Azure Foundry takes its endpoint URL; Bedrock takes {@code bedrock://AGENTID/ALIASID},
-     * optionally with {@code ?region=}.
+     * does. Microsoft Foundry takes its endpoint URL; Bedrock takes {@code
+     * bedrock://AGENTID/ALIASID}, optionally with {@code ?region=}.
      */
     @JsonAlias("agentUrl")
     @JsonProperty("agent_url")

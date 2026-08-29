@@ -202,7 +202,7 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     });
   }
 
-  // A hosted agent (azure-foundry, bedrock, openai-assistants) reports the tools it is waiting on.
+  // A hosted agent (microsoft-foundry, bedrock, openai-assistants) reports the tools it is waiting on.
   // Listing them here shows what the agent asked for without leaving the page; the run they execute
   // in is linked separately below.
   if (taskResult.workflowTask.type === TaskType.AGENT) {

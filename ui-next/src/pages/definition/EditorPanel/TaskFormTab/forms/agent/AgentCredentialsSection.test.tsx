@@ -62,7 +62,7 @@ describe("AgentCredentialsSection", () => {
   });
 
   it("shows the fields for the configured method", () => {
-    renderSection("azure-foundry", {
+    renderSection("microsoft-foundry", {
       client_id: "cid",
       client_secret: "cs",
       tenant_id: "tid",
@@ -77,7 +77,7 @@ describe("AgentCredentialsSection", () => {
   it("keeps the chosen method on screen while its fields are still empty", () => {
     // Detection alone would fall back to the server's own identity the moment the fields are
     // cleared, snapping the choice away mid-edit.
-    renderSection("azure-foundry", {});
+    renderSection("microsoft-foundry", {});
 
     fireEvent.click(screen.getByLabelText("method:Service principal"));
 
@@ -88,7 +88,7 @@ describe("AgentCredentialsSection", () => {
   });
 
   it("writes the secret references so the user never types the syntax", () => {
-    const onChange = renderSection("azure-foundry", {
+    const onChange = renderSection("microsoft-foundry", {
       client_id: "cid",
       client_secret: "cs",
       tenant_id: "tid",
@@ -139,7 +139,7 @@ describe("AgentCredentialsSection", () => {
   });
 
   it("has nothing to configure for the server's own identity", () => {
-    renderSection("azure-foundry", {});
+    renderSection("microsoft-foundry", {});
 
     expect(
       screen.queryByLabelText("Fill from Conductor secret store"),
@@ -150,7 +150,7 @@ describe("AgentCredentialsSection", () => {
   });
 
   it("offers caller identity only for Foundry", () => {
-    renderSection("azure-foundry", {});
+    renderSection("microsoft-foundry", {});
     expect(
       screen.getByLabelText("Run as the person who triggered the workflow"),
     ).toBeInTheDocument();

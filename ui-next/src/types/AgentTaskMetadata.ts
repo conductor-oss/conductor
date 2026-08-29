@@ -6,7 +6,7 @@ export type AgentRuntimeType =
   | "a2a"
   | "conductor"
   | "bedrock"
-  | "azure-foundry"
+  | "microsoft-foundry"
   | "openai-assistants";
 
 /**
@@ -105,7 +105,7 @@ export interface A2AAgentTaskInput {
 }
 
 /**
- * Input for a hosted-platform AGENT task (`bedrock`, `azure-foundry`, `openai-assistants`). The
+ * Input for a hosted-platform AGENT task (`bedrock`, `microsoft-foundry`, `openai-assistants`). The
  * provider-specific keys live under `rawConfig`; see each client for which it requires.
  */
 export interface ProviderAgentTaskInput {

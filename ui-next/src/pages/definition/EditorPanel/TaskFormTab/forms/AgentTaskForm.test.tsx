@@ -186,7 +186,7 @@ describe("AgentTaskForm metadata resolution", () => {
     });
   });
 
-  it("shows useCallerIdentity toggle only for azure-foundry and saves the flag", async () => {
+  it("shows useCallerIdentity toggle only for microsoft-foundry and saves the flag", async () => {
     render(
       <Harness
         initialTask={{
@@ -194,7 +194,7 @@ describe("AgentTaskForm metadata resolution", () => {
           taskReferenceName: "agent_ref",
           type: TaskType.AGENT,
           inputParameters: {
-            agentType: "azure-foundry",
+            agentType: "microsoft-foundry",
             agentUrl: "https://foundry.example",
           },
         }}
@@ -229,7 +229,7 @@ describe("AgentTaskForm metadata resolution", () => {
           taskReferenceName: "agent_ref",
           type: TaskType.AGENT,
           inputParameters: {
-            agentType: "azure-foundry",
+            agentType: "microsoft-foundry",
             credentials: { apiKey: "${workflow.secrets.AZURE_KEY}" },
           },
         }}
@@ -249,7 +249,7 @@ describe("AgentTaskForm metadata resolution", () => {
           taskReferenceName: "agent_ref",
           type: TaskType.AGENT,
           inputParameters: {
-            agentType: "azure-foundry",
+            agentType: "microsoft-foundry",
             credentials: {
               client_id: "a",
               client_secret: "b",

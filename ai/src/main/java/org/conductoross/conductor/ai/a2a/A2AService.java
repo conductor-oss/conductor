@@ -80,8 +80,17 @@ public class A2AService {
     /** Selects the AWS Bedrock Agent runtime. */
     public static final String AGENT_TYPE_BEDROCK = "bedrock";
 
-    /** Selects the Azure AI Foundry runtime (Entra ID auth, A2A protocol). */
-    public static final String AGENT_TYPE_AZURE_FOUNDRY = "azure-foundry";
+    /** Selects the Microsoft Foundry runtime (Entra ID auth, A2A protocol). */
+    public static final String AGENT_TYPE_MICROSOFT_FOUNDRY = "microsoft-foundry";
+
+    /**
+     * What Microsoft Foundry was called when this runtime was added. Still routed, because it is
+     * written into workflow definitions people have already saved, and a rename that breaks those
+     * is not a rename.
+     *
+     * @deprecated use {@link #AGENT_TYPE_MICROSOFT_FOUNDRY}
+     */
+    @Deprecated public static final String AGENT_TYPE_AZURE_FOUNDRY = "azure-foundry";
 
     /** Selects the OpenAI Assistants runtime (API-key auth, thread-and-run protocol). */
     public static final String AGENT_TYPE_OPENAI_ASSISTANTS = "openai-assistants";

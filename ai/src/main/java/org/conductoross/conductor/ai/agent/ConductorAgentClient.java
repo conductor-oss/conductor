@@ -24,6 +24,13 @@ public interface ConductorAgentClient extends AutoCloseable {
         return "conductor";
     }
 
+    // Older agent type strings this client also answers to. A runtime that gets renamed keeps
+    // serving the name already written into saved workflow definitions; agentType() is the one
+    // reported back and shown to people.
+    default java.util.Set<String> agentTypeAliases() {
+        return java.util.Set.of();
+    }
+
     ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request);
 
     // Polls the current status of a running agent execution.

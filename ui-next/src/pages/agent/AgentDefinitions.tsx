@@ -33,38 +33,49 @@ import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
 import CloneAgentDialog from "./CloneAgentDialog";
+import { canonicalAgentType } from "utils/agentMetadata";
 import { AgentSummary } from "./types";
 
-const EXTERNAL_TYPES = new Set(["azure-foundry", "bedrock"]);
+// Compared after canonicalAgentType, so a definition saved under a runtime's former name still
+// reads as external.
+const EXTERNAL_TYPES = new Set(["microsoft-foundry", "bedrock"]);
 
-function providerLabel(type?: string | null): string {
-  switch (type) {
-    case "azure-foundry": return "Azure Foundry";
-    case "bedrock": return "Bedrock";
-    default: return "Conductor";
+function providerLabel(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return "Microsoft Foundry";
+    case "bedrock":
+      return "Bedrock";
+    default:
+      return "Conductor";
   }
 }
 
-function providerColor(type?: string | null): string {
-  switch (type) {
-    case "azure-foundry": return "#0078d4";
-    case "bedrock": return "#e07730";
-    default: return "#1565c0";
+function providerColor(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return "#0078d4";
+    case "bedrock":
+      return "#e07730";
+    default:
+      return "#1565c0";
   }
 }
 
-function providerIcon(type?: string | null): string {
-  switch (type) {
-    case "azure-foundry": return AzureIcon;
-    case "bedrock": return BedrockIcon;
-    default: return OrkesIcon;
+function providerIcon(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return AzureIcon;
+    case "bedrock":
+      return BedrockIcon;
+    default:
+      return OrkesIcon;
   }
 }
 
 const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded Conductor Agents runtime.
 
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
-
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
@@ -234,7 +245,8 @@ export default function AgentDefinitions() {
         minWidth: "180px",
         tooltip: "Actions you can perform on the workflow",
         renderer: (_: string, agent: AgentSummary) => {
-          const isExternal = agent.type && EXTERNAL_TYPES.has(agent.type);
+          const isExternal =
+            agent.type && EXTERNAL_TYPES.has(canonicalAgentType(agent.type));
           return (
             <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
               <Tooltip title="Run agent">
@@ -307,7 +319,7 @@ export default function AgentDefinitions() {
     if (selectedType === null) return allAgents;
     return allAgents.filter((a) =>
       selectedType === "conductor"
-        ? !a.type || !EXTERNAL_TYPES.has(a.type)
+        ? !a.type || !EXTERNAL_TYPES.has(canonicalAgentType(a.type))
         : a.type === selectedType,
     );
   }, [allAgents, selectedType]);
@@ -420,33 +432,70 @@ export default function AgentDefinitions() {
                 </Button>
               </Tooltip>,
             ]}
-            customStyles={{ subHeader: { style: { backgroundColor: "transparent", paddingLeft: 8, paddingRight: 8 } } }}
+            customStyles={{
+              subHeader: {
+                style: {
+                  backgroundColor: "transparent",
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                },
+              },
+            }}
             subHeader={providerTypes.length > 1}
             subHeaderComponent={
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", py: 0.5, width: "100%" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  py: 0.5,
+                  width: "100%",
+                }}
+              >
                 <Chip
                   label={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
                       <img src={OrkesIcon} alt="" width={14} height={14} />
                       All ({allAgents.length})
                     </Box>
                   }
                   onClick={() => setSelectedType(null)}
                   variant={selectedType === null ? "filled" : "outlined"}
-                  sx={{ borderColor: selectedType === null ? undefined : "#888", fontWeight: selectedType === null ? 600 : 400 }}
+                  sx={{
+                    borderColor: selectedType === null ? undefined : "#888",
+                    fontWeight: selectedType === null ? 600 : 400,
+                  }}
                   clickable
                 />
                 {providerTypes.map((type) => {
-                  const count = type === "conductor"
-                    ? allAgents.filter((a) => !a.type || !EXTERNAL_TYPES.has(a.type)).length
-                    : allAgents.filter((a) => a.type === type).length;
+                  const count =
+                    type === "conductor"
+                      ? allAgents.filter(
+                          (a) =>
+                            !a.type ||
+                            !EXTERNAL_TYPES.has(canonicalAgentType(a.type)),
+                        ).length
+                      : allAgents.filter((a) => a.type === type).length;
                   const active = selectedType === type;
                   return (
                     <Chip
                       key={type}
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                          <img src={providerIcon(type)} alt="" width={14} height={14} />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <img
+                            src={providerIcon(type)}
+                            alt=""
+                            width={14}
+                            height={14}
+                          />
                           {providerLabel(type)} ({count})
                         </Box>
                       }
@@ -454,7 +503,9 @@ export default function AgentDefinitions() {
                       variant={active ? "filled" : "outlined"}
                       sx={{
                         borderColor: active ? providerColor(type) : "#888",
-                        backgroundColor: active ? providerColor(type) : undefined,
+                        backgroundColor: active
+                          ? providerColor(type)
+                          : undefined,
                         color: active ? "#fff" : providerColor(type),
                         fontWeight: active ? 600 : 400,
                       }}
