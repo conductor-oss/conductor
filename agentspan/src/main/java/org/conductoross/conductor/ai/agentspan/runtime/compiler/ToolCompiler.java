@@ -18,9 +18,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
@@ -151,6 +154,28 @@ public class ToolCompiler {
                     Map.entry("rag_index", "LLM_INDEX_TEXT"),
                     Map.entry("rag_search", "LLM_SEARCH_INDEX"),
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
+
+    /**
+     * Conductor task types a declared tool compiles to, for consumers that have to tell a tool
+     * invocation apart from the rest of a compiled agent workflow.
+     *
+     * <p>Derived from {@link #TYPE_MAP} and from the media types that fall back to their own
+     * upper-cased name, so adding a tool kind to the map extends this set with it.
+     *
+     * <p>It is a floor rather than the closed set of what a tool can compile to. A media or RAG
+     * tool's own config may name its task type, which nothing static can enumerate; those tasks
+     * carry the dispatch script's {@code _agent_tool_name} input instead.
+     *
+     * <p>{@code SIMPLE} is deliberately excluded: a worker tool is not identifiable by task type at
+     * all. {@code SimpleTaskMapper} rewrites an executed SIMPLE task's type to the task's own name,
+     * so a worker tool is recognised by that instead.
+     */
+    public static final Set<String> TOOL_TASK_TYPES =
+            Stream.concat(
+                            TYPE_MAP.values().stream(),
+                            MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
+                    .filter(taskType -> !"SIMPLE".equals(taskType))
+                    .collect(Collectors.toUnmodifiableSet());
 
     // ── Public API ───────────────────────────────────────────────────────
 
