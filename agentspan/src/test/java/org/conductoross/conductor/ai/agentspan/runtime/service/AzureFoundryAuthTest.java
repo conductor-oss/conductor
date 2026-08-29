@@ -254,7 +254,43 @@ class AzureFoundryAuthTest {
                 .hasMessageContaining("client_id")
                 .hasMessageContaining("client_secret")
                 .hasMessageContaining("tenant_id")
-                .hasMessageContaining("none of them resolved");
+                .hasMessageContaining("every one of them is empty");
+    }
+
+    @Test
+    void aPartlyResolvedCredentialSaysWhichKeysArrivedAndWhichDidNot() {
+        // Reporting "none of them resolved" for a credential that partly resolved sends the reader
+        // to the secret when the problem is the task. Both halves have to be named.
+        Map<String, String> partial = new HashMap<>();
+        partial.put("client_id", "cid");
+        partial.put("client_secret", null);
+        partial.put("tenant_id", null);
+
+        assertThatThrownBy(() -> resolve(partial))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("set [client_id], which resolved")
+                .hasMessageContaining("[client_secret, tenant_id], which did not");
+    }
+
+    @Test
+    void aCredentialStoredWithItsQuotesIsRejectedRatherThanSent() {
+        // A flat ${workflow.secrets.NAME} is handed over exactly as stored, so quotes a .env file
+        // kept ride along into the provider and come back as an opaque authentication failure.
+        assertThatThrownBy(() -> resolve(Map.of("apiKey", "'sk-azure'")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("apiKey")
+                .hasMessageContaining("starts and ends with a '");
+
+        assertThatThrownBy(() -> resolve(Map.of("client_secret", "\"shh\"")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("client_secret");
+    }
+
+    @Test
+    void aQuoteInsideACredentialIsLeftAlone() {
+        // Only a value wrapped on both ends is suspect; one that merely contains a quote is a
+        // perfectly ordinary secret and must not be rejected.
+        assertThat(resolve(Map.of("apiKey", "sk-a'b'c")).headerName()).isEqualTo("api-key");
     }
 
     @Test

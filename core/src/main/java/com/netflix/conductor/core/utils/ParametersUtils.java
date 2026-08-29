@@ -459,10 +459,14 @@ public class ParametersUtils {
                 try {
                     Object resolved = JsonPath.parse(unwrapped).read(jsonPath);
                     LOGGER.warn(
-                            "Reference '{}' names a value that is wrapped in quotes; read it by"
-                                    + " unwrapping first. Store it as bare JSON — a .env file read"
-                                    + " verbatim keeps the quotes a shell would have removed.",
-                            ref);
+                            "Reference '{}' names a value that is not JSON on its own but holds a"
+                                    + " JSON document {}; read it by unwrapping first. Store it as"
+                                    + " bare JSON so this is not needed.",
+                            ref,
+                            value.trim().charAt(0) == '\''
+                                    ? "inside literal quote characters, which is what a .env file"
+                                            + " read verbatim leaves behind"
+                                    : "as a JSON-encoded string");
                     return resolved;
                 } catch (Exception ignored) {
                     // Not the wrapping that was wrong; fall through to the original failure.
@@ -478,13 +482,13 @@ public class ParametersUtils {
     }
 
     /**
-     * The JSON document inside a value that carries one but is not itself parseable as JSON,
-     * or null when there is nothing to unwrap.
+     * The JSON document inside a value that carries one but is not itself parseable as JSON, or
+     * null when there is nothing to unwrap.
      *
      * <p>Two ways a correct JSON document arrives unreadable. It picks up literal quote characters
-     * — a {@code .env} file read verbatim keeps the quotes a shell would have stripped, so the
-     * value begins {@code '{} rather than {@code {}. Or it was JSON-encoded on the way in and is a
-     * JSON string holding JSON rather than an object.
+     * - a .env file read verbatim keeps the quotes a shell would have stripped, so the value starts
+     * with a quote rather than a brace. Or it was JSON-encoded on the way in, making it a JSON
+     * string that holds JSON rather than an object.
      *
      * <p>Only consulted after a straight parse has already failed, so a value that reads correctly
      * is never second-guessed.

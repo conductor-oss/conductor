@@ -37,6 +37,11 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
  * from {@code credentials} and {@code rawConfig} on each call, so any replica can serve any
  * request.
  *
+ * <p>Read credentials through {@link AgentCredentials}, and before falling back to Application
+ * Default Credentials call {@link AgentCredentials#rejectPartiallyResolved}. Google's default chain
+ * resolves on almost any GCP host, so without that guard a task whose secret failed to resolve runs
+ * silently as the node's own service account rather than failing.
+ *
  * <p>rawConfig keys to support: {@code projectId}, {@code location}, {@code agentId}, {@code
  * sessionId}. Auth is Workload Identity Federation or a service account key via the Google Auth
  * Library.

@@ -137,10 +137,13 @@ public final class AzureFoundryAuth implements AssistantsAuth {
     }
 
     /**
-     * Builds auth from a credential reference. {@code userAssertion} activates on-behalf-of when
-     * the credential also holds service-principal details; without them it falls back to the
-     * credential itself rather than failing, so a misconfigured cluster still runs as the service
-     * identity.
+     * Builds auth from the credential values the engine substituted into the task input.
+     *
+     * <p>userAssertion activates on-behalf-of when the credential also holds service-principal
+     * details. Without any credential at all it falls back to the deployment's own identity, which
+     * is how a cluster on managed identity is meant to be configured. With a credential that is
+     * present but unusable it fails instead: running as the deployment would ignore the request to
+     * act as the caller and use the server's own, wider privileges.
      */
     public static AzureFoundryAuth resolve(
             Map<String, String> credentials,
@@ -164,8 +167,9 @@ public final class AzureFoundryAuth implements AssistantsAuth {
                                 scope));
             }
             log.warn(
-                    "Caller identity was requested but no service principal was supplied to exchange"
-                            + " the token with; using the deployment's own credential instead");
+                    "Caller identity was requested but no service principal was supplied to"
+                            + " exchange the token with. Falling through to the remaining modes;"
+                            + " this fails unless the deployment authenticates on its own.");
         }
 
         String apiKey = AgentCredentials.apiKey(credentials);

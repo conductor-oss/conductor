@@ -76,7 +76,9 @@ CONDUCTOR_SECRET_AZURE_CRED={"client_id":"…"}
 ```
 
 A single flat value needs no sub-key: write `${workflow.secrets.OPENAI_KEY}` and store the key on
-its own.
+its own. A flat value is handed over exactly as stored, so quotes cannot be unwrapped from it the
+way they can from a JSON document — a credential that arrives wrapped in quotes is rejected, naming
+the field, rather than sent to the provider to come back as an opaque authentication failure.
 
 The clients refuse to authenticate when a task named credential keys and none of them resolved,
 rather than falling back to the identity the server itself runs as — that fallback belongs to

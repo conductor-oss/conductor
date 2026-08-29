@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +44,7 @@ public final class AgentCredentials {
             return null;
         }
         String value = credentials.get(key);
+        rejectQuoteWrapped(key, value);
         if (value != null && value.contains("${workflow.secrets.")) {
             throw new IllegalArgumentException(
                     "Credential '"
@@ -51,6 +54,37 @@ public final class AgentCredentials {
                             + " pass the value another way rather than running as the host identity.");
         }
         return value;
+    }
+
+    /**
+     * Rejects a credential that arrived wrapped in quote characters.
+     *
+     * <p>A reference with a sub-key, ${workflow.secrets.NAME.key}, is extracted from JSON and so
+     * cannot pick up stray quotes. A flat one, ${workflow.secrets.NAME}, is handed over exactly as
+     * stored, and a .env file read verbatim keeps the quotes a shell would have stripped. The
+     * credential then reaches the provider with two extra characters and comes back as a plain
+     * authentication failure, which says nothing about where to look.
+     *
+     * <p>Rejected rather than trimmed: no API key, client secret, or access key is quoted on
+     * purpose, and silently sending a guess produces the same opaque failure this is meant to
+     * prevent.
+     */
+    private static void rejectQuoteWrapped(String key, String value) {
+        if (value == null || value.length() < 2) {
+            return;
+        }
+        char first = value.charAt(0);
+        char last = value.charAt(value.length() - 1);
+        if ((first == '\'' || first == '"') && first == last) {
+            throw new IllegalArgumentException(
+                    "Credential '"
+                            + key
+                            + "' starts and ends with a "
+                            + first
+                            + " character. The stored secret includes the quotes; a .env file read"
+                            + " verbatim keeps the ones a shell would have removed. Store the value"
+                            + " without them.");
+        }
     }
 
     /**
@@ -84,20 +118,43 @@ public final class AgentCredentials {
         if (credentials == null) {
             return;
         }
-        List<String> named =
-                credentials.keySet().stream().filter(authKeys::contains).sorted().toList();
-        if (named.isEmpty()) {
+        List<String> empty = new ArrayList<>();
+        List<String> resolved = new ArrayList<>();
+        credentials.forEach(
+                (key, value) -> {
+                    if (authKeys.contains(key)) {
+                        (StringUtils.isBlank(value) ? empty : resolved).add(key);
+                    }
+                });
+        if (empty.isEmpty() && resolved.isEmpty()) {
             return;
         }
+        Collections.sort(empty);
+        Collections.sort(resolved);
+
+        // Which keys arrived and which did not is the whole diagnosis: an empty set points at the
+        // secret, a mixed one points at the task. Reporting "none resolved" for a partly resolved
+        // credential sends the reader to the wrong place, which is how this class of bug stays
+        // expensive.
+        String detail =
+                resolved.isEmpty()
+                        ? "the task set the credentials "
+                                + empty
+                                + " and every one of them is empty. A ${workflow.secrets.NAME.key}"
+                                + " reference resolves to nothing when the secret does not exist,"
+                                + " or does not hold that key."
+                        : "the task set "
+                                + resolved
+                                + ", which resolved, alongside "
+                                + empty
+                                + ", which did not. That is not a complete way to authenticate.";
+
         throw new IllegalArgumentException(
-                "The task set the "
+                "No "
                         + provider
-                        + " credentials "
-                        + named
-                        + ", but none of them resolved to a usable value, so no authentication"
-                        + " mode could be built. A ${workflow.secrets.NAME.key} reference resolves"
-                        + " to null when the secret does not exist, or is not JSON holding that"
-                        + " key. Refusing to fall back to the identity this server runs as, which"
-                        + " would authenticate as somebody else.");
+                        + " authentication mode could be built: "
+                        + detail
+                        + " Refusing to fall back to the identity this server runs as, which would"
+                        + " authenticate as somebody else.");
     }
 }

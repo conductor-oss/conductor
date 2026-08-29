@@ -489,14 +489,20 @@ public class BedrockAgentClient implements ConductorAgentClient {
     }
 
     /**
-     * AWS credentials for a reference, first match wins:
+     * AWS credentials from the values the engine substituted into the task input, first match wins:
      *
      * <ol>
-     *   <li>static {@code .accessKeyId} + {@code .secretAccessKey}
-     *   <li>{@code .roleArn} — assumed via STS, the SDK refreshing the temporary credentials;
-     *       {@code .roleSessionName} and {@code .externalId} are honored when present
+     *   <li>static {@code accessKeyId} + {@code secretAccessKey}
+     *   <li>{@code roleArn} — assumed via STS, the SDK refreshing the temporary credentials; {@code
+     *       roleSessionName} and {@code externalId} are honored when present
      *   <li>the SDK default chain — environment, instance or task role, {@code ~/.aws/credentials}
+     *       — but only for a task that supplied no credentials at all. A task that supplied some
+     *       and reached this point has a broken secret, and the default chain would run the agent
+     *       under the server's own role instead of failing.
      * </ol>
+     *
+     * <p>An {@code apiKey} does not appear here: a bearer key replaces SigV4 signing rather than
+     * supplying credentials to it, so {@link #buildClient} handles it before this is reached.
      */
     AwsCredentialsProvider credentialsFor(Map<String, String> credentials, String region) {
         String accessKeyId = AgentCredentials.value(credentials, "accessKeyId");
