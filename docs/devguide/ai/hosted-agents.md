@@ -51,6 +51,7 @@ Every hosted runtime takes the same core inputs.
 | `agentType` | Selects the runtime (required). |
 | `prompt` | The message to send. |
 | `credentials` | The platform credential, as values. Reference secrets with `${workflow.secrets.NAME.key}`; Conductor substitutes them before the task runs. Which keys matter differs per platform — see below. |
+| `agentUrl` | Names the endpoint and the agent in one field, the way an A2A task does. Anything set in `rawConfig` wins over what the URL implies. |
 | `rawConfig` | Platform-specific configuration: which agent, where it lives. |
 | `executionId` | Set on a **later** `AGENT` task to resume an existing conversation instead of starting one. |
 | `autoRunTools` | Run the agent's tool calls as tasks in this workflow instead of handing them back (default false). See below. |
@@ -68,29 +69,45 @@ Every hosted runtime takes the same core inputs.
 {"client_id": "…", "client_secret": "…", "tenant_id": "…"}
 ```
 
-If the secret does not exist, or holds anything that is not JSON with that key, the reference
-resolves to **null** — not to an error. A common way to get there is to store the value with its
-shell quotes attached, so the secret literally begins with a `'` and no longer parses:
+If the secret does not exist, or does not hold that key, the reference resolves to **nothing** —
+the credential simply arrives empty.
+
+Two ways a *correct* JSON document arrives unreadable, both of which Conductor recovers from and
+logs a warning about. The document picks up literal quote characters, which is what a `.env` file
+read verbatim leaves behind — the quotes a shell would have stripped stay in the value:
 
 ```bash
-# wrong: the quotes become part of the value in a .env file read verbatim
+# the quotes end up inside the value
 CONDUCTOR_SECRET_AZURE_CRED='{"client_id":"…"}'
 
-# right
+# store it without them
 CONDUCTOR_SECRET_AZURE_CRED={"client_id":"…"}
 ```
 
-A single flat value needs no sub-key: write `${workflow.secrets.OPENAI_KEY}` and store the key on
-its own. A flat value is handed over exactly as stored, so quotes cannot be unwrapped from it the
-way they can from a JSON document — a credential that arrives wrapped in quotes is rejected, naming
-the field, rather than sent to the provider to come back as an opaque authentication failure.
+Or the document was JSON-encoded on the way in, making it a JSON string that holds JSON. Either
+way the reference still resolves, but fix the stored value — the warning is there because the next
+thing to read that secret may not be as forgiving.
 
-The clients refuse to authenticate when a task named credential keys and none of them resolved,
-rather than falling back to the identity the server itself runs as — that fallback belongs to
-tasks that deliberately supply no credentials, and using it for a broken secret would run the
-agent as somebody else with no error at all.
+A single flat value needs no sub-key: write `${workflow.secrets.OPENAI_KEY}` and store the key on
+its own. A flat value has no JSON to unwrap and is handed over exactly as stored, so the same
+mistake cannot be recovered from there. A credential that arrives wrapped in quotes is rejected,
+naming the field, rather than sent to the provider to come back as an opaque authentication
+failure.
+
+**Nothing falls back to the server's own identity.** When a task names credential keys and they do
+not resolve, the task fails and says which ones. Falling through to the identity the server runs as
+belongs to a task that deliberately supplies no credentials; using it for a broken secret would run
+the agent as somebody else, successfully, with no error anywhere.
 
 None of these clients keep per-run state in memory. The `executionId` returned by the start call is the platform's own conversation handle, and Conductor persists it in the task output; everything else needed to reach the run is re-derived from the task input on each call. A status poll, a tool reply, or a cancellation is therefore served correctly by any server replica, including one that never saw the run start.
+
+### Configuring this in the UI
+
+The `AGENT` task form does the above for you. Pick a runtime and it offers the authentication
+methods that runtime actually supports; pick one and it shows only that method's fields, with a
+picker that fills them from a stored secret. You never type the `${workflow.secrets.…}` syntax or
+guess which keys a provider wants, and switching methods clears the previous one's keys — which
+matters, because the server chooses its auth mode by *which keys are present*.
 
 ### Authentication at a glance
 
@@ -258,7 +275,7 @@ Conductor splits the trailing `/assistants/asst_x` (or `/agents/NAME` on a Found
 | `apiKey` (or `api_key`) | Sent as an `api-key` header. No token exchange at all. |
 | `client_id` + `client_secret` + `tenant_id` | Service principal (Entra ID client credentials). |
 | `managedIdentityClientId` | User-assigned managed identity. |
-| *none* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. |
+| *none* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. Reached only when `credentials` is omitted or holds no auth key; a credential that is present but did not resolve fails instead. |
 
 So a service principal, with the values coming from a stored secret:
 
@@ -272,13 +289,15 @@ So a service principal, with the values coming from a stored secret:
 
 and a deployment running on managed identity can omit `credentials` entirely.
 
-Resolved credentials are cached for ten minutes per credential and scope, so a poll performs no secret-store read. A `401` or `403` from Foundry discards the cached credential, so a rotated secret is picked up on the next poll rather than at the end of that window.
+Resolved credentials are cached for ten minutes, keyed by the credential and the scope — so two endpoints that resolve to the same scope share one token rather than exchanging two. A `401` or `403` from Foundry discards the cached credential, so a rotated secret is picked up on the next poll rather than at the end of that window.
 
 **Scope** follows the endpoint — `ai.azure.com` for a Foundry project, `ml.azure.com` for a model-inference endpoint, `cognitiveservices.azure.com` for the classic Assistants surface — unless `rawConfig.scope` or the credential's `.scope` sub-key overrides it.
 
 **Running as the caller.** `useCallerIdentity: true` makes the agent run as the person who triggered the workflow rather than as the deployment: their Entra ID token is exchanged, via the OAuth 2.0 on-behalf-of grant, for one scoped to Foundry, so the agent sees only what that person can. Their own token is never forwarded to Foundry, and the exchanged token is never cached or reused across requests.
 
-This needs the cluster wired to Entra ID SSO — the caller's assertion is supplied by that layer, not by a workflow definition — and a service principal in `credentials` to perform the exchange. Without either, the call falls back to credential-based auth rather than failing, so a partially configured cluster still runs as the service identity.
+This needs the cluster wired to Entra ID SSO — the caller's assertion is supplied by that layer, not by a workflow definition — and a service principal in `credentials` to perform the exchange.
+
+With no assertion, the call is ordinary credential-based auth. With an assertion but only part of a service principal, the task fails: running as the deployment would silently ignore the request to act as the caller and use the server's own, wider privileges.
 
 **`executionId`** is the Azure **thread** id. The run acted on is always the newest one on that thread, so continuing a conversation never invalidates the handle your workflow holds.
 
@@ -375,7 +394,7 @@ Or have Conductor assume a role instead, with `roleArn` — and optionally `role
 
 The SDK refreshes the temporary credentials for as long as the agent runs.
 
-Omit `credentials` to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
+Omit `credentials` to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`. That fall-back is for a task that supplies nothing; a task that supplies credentials which do not resolve fails rather than running under the server's own role.
 
 **Or use a Bedrock API key**, which takes precedence over everything above:
 
@@ -387,7 +406,7 @@ A Bedrock API key is a bearer token rather than something SigV4 signs, so Conduc
 client to bearer auth for it. The AWS service model declares only SigV4, so left alone the SDK would
 sign the request and ignore the key entirely.
 
-**Or name the agent in one field**, as with Azure:
+**Or name the agent in one field**, as with Microsoft Foundry:
 
 ```json
 "agentUrl": "bedrock://AGENT123456/ALIAS1234?region=us-west-2"
@@ -406,7 +425,10 @@ sign the request and ignore the key entirely.
 | Situation | Outcome |
 |---|---|
 | Missing or malformed `rawConfig` / `credentials` | Task fails terminally — no retry, since a retry cannot fix it |
-| Credentials absent or incomplete | Falls through to the next auth mode, ending at the platform's default credential chain |
+| `credentials` omitted entirely | Falls through to the platform's default credential chain — how a deployment on managed identity or an instance role is meant to be configured |
+| `credentials` set, but no key resolved to a value | Task fails, naming the keys. A reference resolves to nothing when the secret is missing or does not hold that key, and running as the server's own identity instead would authenticate as somebody else |
+| `credentials` set, some keys resolved and some not | Task fails, naming both groups — an incomplete credential is not a reason to fall back |
+| A credential wrapped in quote characters | Task fails, naming the field. The quotes are part of the stored value; see [The secret has to be JSON](#the-secret-has-to-be-json) |
 | A credential still holding `${workflow.secrets.…}` | Task fails. Conductor does not substitute secrets for input held in external payload storage, and running as the host's identity instead would be worse than failing |
 | Platform returns `401` / `403` | Cached credential discarded, task retries; a rotated secret is picked up on the next poll |
 | Platform unreachable or `5xx` | Counted as a transient poll failure, up to `maxPollFailures` |
