@@ -67,7 +67,7 @@ public class ExternalPayloadStorageUtils {
     @SuppressWarnings("unchecked")
     public Map<String, Object> downloadPayload(String path) {
         try (InputStream inputStream = externalPayloadStorage.download(path)) {
-            if(inputStream == null) {
+            if (inputStream == null) {
                 return Map.of();
             }
             return objectMapper.readValue(
