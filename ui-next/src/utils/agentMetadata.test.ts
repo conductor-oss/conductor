@@ -186,7 +186,11 @@ describe("hosted provider runtimes", () => {
   const foundry = {
     agentType: "azure-foundry" as const,
     prompt: "what is the answer?",
-    credentialRef: "AZURE_FOUNDRY_CRED",
+    credentials: {
+      client_id: "${workflow.secrets.AZURE_FOUNDRY_CRED.client_id}",
+      client_secret: "${workflow.secrets.AZURE_FOUNDRY_CRED.client_secret}",
+      tenant_id: "${workflow.secrets.AZURE_FOUNDRY_CRED.tenant_id}",
+    },
     rawConfig: {
       endpoint: "https://p.services.ai.azure.com/api/projects/p1",
       assistantId: "asst_abc123",
@@ -239,7 +243,8 @@ describe("hosted provider runtimes", () => {
       resolved: true,
       provider: {
         agentId: "asst_abc123",
-        credentialRef: "AZURE_FOUNDRY_CRED",
+        // The method, never the secret values themselves.
+        authMethod: "Service principal",
         endpoint: "https://p.services.ai.azure.com/api/projects/p1",
         apiVersion: "2025-01-01-preview",
       },

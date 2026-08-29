@@ -629,8 +629,8 @@ export function AgentSnapshotDetails({
               value={snapshot.provider.apiVersion}
             />
             <DetailRow
-              label="Credential"
-              value={snapshot.provider.credentialRef}
+              label="Authentication"
+              value={snapshot.provider.authMethod}
             />
           </>
         )}

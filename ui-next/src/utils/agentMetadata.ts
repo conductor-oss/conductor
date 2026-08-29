@@ -9,6 +9,7 @@ import {
   TaskType,
   WorkflowDef,
 } from "types";
+import { detectAuthMethod } from "pages/definition/EditorPanel/TaskFormTab/forms/agent/agentAuthMethods";
 
 export const AGENT_SNAPSHOT_SCHEMA_VERSION = 1 as const;
 
@@ -98,8 +99,13 @@ const providerSnapshotFrom = (
   identity: string,
 ): ProviderAgentSnapshot => ({
   agentId: identity,
-  credentialRef: isRecord(input)
-    ? String(input.credentialRef ?? "").trim() || undefined
+  // The method, not the credential — a snapshot describes the agent, and the values themselves are
+  // secret references the engine resolves at run time.
+  authMethod: isRecord(input)
+    ? detectAuthMethod(
+        agentRuntimeType(input),
+        input.credentials as Record<string, unknown> | undefined,
+      )?.label
     : undefined,
   endpoint: rawConfigValue(input, "endpoint"),
   region: rawConfigValue(input, "region"),

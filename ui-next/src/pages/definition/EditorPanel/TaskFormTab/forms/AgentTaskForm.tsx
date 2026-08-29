@@ -39,6 +39,7 @@ import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
+import AgentCredentialsSection from "./agent/AgentCredentialsSection";
 
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
@@ -126,15 +127,6 @@ const parseJsonOrRaw = (value: string): unknown => {
   } catch {
     return value;
   }
-};
-
-const CREDENTIAL_HELP: Record<string, string> = {
-  "azure-foundry":
-    "Secret holding the Entra ID application credential, with client_id, client_secret and tenant_id sub-keys.",
-  bedrock:
-    "Secret holding accessKeyId and secretAccessKey sub-keys. Leave blank to use the server's default AWS credential chain.",
-  "openai-assistants":
-    "Secret holding the OpenAI API key, either directly or under an api_key sub-key.",
 };
 
 /**
@@ -392,49 +384,23 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   />
                 </Grid>
               ))}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <ConductorAutocompleteVariables
-                  label="Credential reference"
-                  value={get("inputParameters.credentialRef") as string}
-                  onChange={(v) => set("inputParameters.credentialRef", v)}
-                  placeholder="Name of the stored secret"
-                  inputProps={{
-                    tooltip: {
-                      title: "Credential reference",
-                      content: CREDENTIAL_HELP[runtime] ?? "",
-                    },
-                  }}
+              <Grid size={12}>
+                <AgentCredentialsSection
+                  runtime={runtime}
+                  credentials={
+                    get("inputParameters.credentials") as
+                      | Record<string, unknown>
+                      | undefined
+                  }
+                  onCredentialsChange={(next) =>
+                    set("inputParameters.credentials", next)
+                  }
+                  useCallerIdentity={!!get("inputParameters.useCallerIdentity")}
+                  onUseCallerIdentityChange={(value) =>
+                    set("inputParameters.useCallerIdentity", value)
+                  }
                 />
               </Grid>
-              {runtime === "azure-foundry" && (
-                <Grid size={12}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={!!get("inputParameters.useCallerIdentity")}
-                        onChange={(e) =>
-                          set(
-                            "inputParameters.useCallerIdentity",
-                            e.target.checked,
-                          )
-                        }
-                      />
-                    }
-                    label="Run as the person who triggered the workflow"
-                  />
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                  >
-                    Exchanges the caller&apos;s Entra ID token for a
-                    Foundry-scoped one, so the agent sees only what that person
-                    can. Needs the cluster wired to Entra ID SSO and a service
-                    principal on the credential; otherwise the stored credential
-                    is used.
-                  </Typography>
-                </Grid>
-              )}
               <Grid size={12}>
                 <ConductorInput
                   label="Prompt"

@@ -10,9 +10,9 @@ export type AgentRuntimeType =
   | "openai-assistants";
 
 /**
- * Runtimes that call a hosted agent platform. They share a shape — a `credentialRef` plus a
- * `rawConfig` naming the agent — and, unlike A2A, need no remote discovery: the task input is the
- * whole identity.
+ * Runtimes that call a hosted agent platform. They share a shape — `credentials` plus a `rawConfig`
+ * naming the agent — and, unlike A2A, need no remote discovery: the task input is the whole
+ * identity.
  */
 export type ProviderAgentRuntimeType = Exclude<
   AgentRuntimeType,
@@ -111,8 +111,11 @@ export interface A2AAgentTaskInput {
 export interface ProviderAgentTaskInput {
   agentType: ProviderAgentRuntimeType;
   prompt?: string;
-  /** Names the secret holding the platform credential. */
-  credentialRef?: string;
+  /**
+   * Platform credential values. A workflow references stored secrets as
+   * `${workflow.secrets.NAME.key}`; Conductor substitutes them before the task runs.
+   */
+  credentials?: Record<string, string>;
   /** e.g. assistantId / agentId, endpoint, region, apiVersion. */
   rawConfig?: Record<string, unknown>;
   sessionId?: string;
@@ -165,7 +168,8 @@ export interface A2AAgentSnapshot {
 export interface ProviderAgentSnapshot {
   /** The platform's own agent identifier — Foundry/OpenAI assistantId, Bedrock agentId. */
   agentId: string;
-  credentialRef?: string;
+  /** How this agent authenticates, e.g. "Service principal" — not the credential itself. */
+  authMethod?: string;
   endpoint?: string;
   region?: string;
   apiVersion?: string;

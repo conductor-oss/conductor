@@ -14,6 +14,7 @@ vi.mock("plugins/fetch", () => ({
 vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({ "X-Authorization": "ui-token" }),
   useFetch: () => ({ data: [{ name: "researcher", version: 2 }] }),
+  useSecretNames: () => ["AZURE_CRED", "OPENAI_KEY"],
 }));
 
 vi.mock("components/FlatMapForm/ConductorAutocompleteVariables", () => ({
