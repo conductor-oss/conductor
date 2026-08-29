@@ -454,7 +454,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         String scope =
                 StringUtils.defaultIfBlank(
-                        AzureFoundryAuth.credential(credentials, "scope"),
+                        AgentCredentials.value(credentials, "scope"),
                         AzureFoundryAuth.scopeFor(endpoint));
         AssistantsAuth auth = AzureFoundryAuth.resolve(credentials, httpClient, null, scope);
 
@@ -678,8 +678,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private static String resolveScope(ProviderKey key) {
         String configured =
                 StringUtils.defaultIfBlank(
-                        key.scopeOverride(),
-                        AzureFoundryAuth.credential(key.credentials(), "scope"));
+                        key.scopeOverride(), AgentCredentials.value(key.credentials(), "scope"));
         return StringUtils.defaultIfBlank(configured, AzureFoundryAuth.scopeFor(key.endpoint()));
     }
 

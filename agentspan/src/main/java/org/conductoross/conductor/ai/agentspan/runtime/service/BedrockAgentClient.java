@@ -441,24 +441,35 @@ public class BedrockAgentClient implements ConductorAgentClient {
      * </ol>
      */
     AwsCredentialsProvider credentialsFor(Map<String, String> credentials, String region) {
-        String accessKeyId = AzureFoundryAuth.credential(credentials, "accessKeyId");
-        String secretAccessKey = AzureFoundryAuth.credential(credentials, "secretAccessKey");
+        // Bedrock API keys are bearer tokens, and the bundled AWS SDK signs Bedrock Agent Runtime
+        // calls with SigV4 only — its client builder exposes no token provider. Silently ignoring
+        // the key would fall through to the host's own credentials and run the agent as someone
+        // else, so say so instead.
+        if (StringUtils.isNotBlank(AgentCredentials.apiKey(credentials))) {
+            throw new IllegalArgumentException(
+                    "Bedrock does not accept an API key here: the AWS SDK signs Bedrock Agent"
+                            + " Runtime calls with SigV4. Use accessKeyId and secretAccessKey, a"
+                            + " roleArn to assume, or omit credentials to use the host's AWS"
+                            + " credential chain.");
+        }
+
+        String accessKeyId = AgentCredentials.value(credentials, "accessKeyId");
+        String secretAccessKey = AgentCredentials.value(credentials, "secretAccessKey");
         if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
             return StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(accessKeyId, secretAccessKey));
         }
 
-        String roleArn = AzureFoundryAuth.credential(credentials, "roleArn");
+        String roleArn = AgentCredentials.value(credentials, "roleArn");
         if (StringUtils.isNotBlank(roleArn)) {
             AssumeRoleRequest.Builder assumeRole =
                     AssumeRoleRequest.builder()
                             .roleArn(roleArn)
                             .roleSessionName(
                                     StringUtils.defaultIfBlank(
-                                            AzureFoundryAuth.credential(
-                                                    credentials, "roleSessionName"),
+                                            AgentCredentials.value(credentials, "roleSessionName"),
                                             "conductor-bedrock"));
-            String externalId = AzureFoundryAuth.credential(credentials, "externalId");
+            String externalId = AgentCredentials.value(credentials, "externalId");
             if (StringUtils.isNotBlank(externalId)) {
                 assumeRole.externalId(externalId);
             }

@@ -147,9 +147,9 @@ public final class AzureFoundryAuth implements AssistantsAuth {
             String userAssertion,
             String scope) {
 
-        String tenantId = credential(credentials, "tenant_id");
-        String clientId = credential(credentials, "client_id");
-        String clientSecret = credential(credentials, "client_secret");
+        String tenantId = AgentCredentials.value(credentials, "tenant_id");
+        String clientId = AgentCredentials.value(credentials, "client_id");
+        String clientSecret = AgentCredentials.value(credentials, "client_secret");
 
         if (StringUtils.isNotBlank(userAssertion)) {
             if (StringUtils.isNoneBlank(tenantId, clientId, clientSecret)) {
@@ -167,7 +167,7 @@ public final class AzureFoundryAuth implements AssistantsAuth {
                             + " the token with; using the deployment's own credential instead");
         }
 
-        String apiKey = credential(credentials, "apiKey");
+        String apiKey = AgentCredentials.apiKey(credentials);
         if (StringUtils.isNotBlank(apiKey)) {
             return ofApiKey(apiKey);
         }
@@ -182,7 +182,8 @@ public final class AzureFoundryAuth implements AssistantsAuth {
                     scope);
         }
 
-        String managedIdentityClientId = credential(credentials, "managedIdentityClientId");
+        String managedIdentityClientId =
+                AgentCredentials.value(credentials, "managedIdentityClientId");
         if (StringUtils.isNotBlank(managedIdentityClientId)) {
             return ofCredential(
                     new ManagedIdentityCredentialBuilder()
@@ -192,31 +193,6 @@ public final class AzureFoundryAuth implements AssistantsAuth {
         }
 
         return ofCredential(new DefaultAzureCredentialBuilder().build(), scope);
-    }
-
-    /**
-     * One credential value, rejecting anything the engine did not substitute.
-     *
-     * <p>Conductor resolves {@code ${workflow.secrets.X}} in task input before the task runs, but
-     * not when the input was offloaded to external payload storage. Passing such a value on would
-     * mean sending the literal reference as a credential — and since every lookup would then miss,
-     * auth would fall through to the host's own identity and the agent would silently run as
-     * someone else. Fail instead.
-     */
-    static String credential(Map<String, String> credentials, String key) {
-        if (credentials == null) {
-            return null;
-        }
-        String value = credentials.get(key);
-        if (value != null && value.contains("${workflow.secrets.")) {
-            throw new IllegalArgumentException(
-                    "Credential '"
-                            + key
-                            + "' still holds an unresolved secret reference. Conductor does not"
-                            + " substitute secrets for task input held in external payload storage;"
-                            + " pass the value another way rather than running as the host identity.");
-        }
-        return value;
     }
 
     /**

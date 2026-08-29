@@ -193,6 +193,37 @@ class BedrockAgentClientTest {
                 .build();
     }
 
+    @Test
+    void anApiKeyIsRejectedRatherThanIgnored() {
+        // Bedrock API keys are bearer tokens and the bundled AWS SDK signs these calls with SigV4
+        // only. Ignoring the key would fall through to the host's own credentials and run the
+        // agent as someone else — the failure mode this says out loud.
+        assertThatThrownBy(
+                        () ->
+                                client.credentialsFor(
+                                        Map.of("apiKey", "bedrock-api-key"), "us-east-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not accept an API key");
+
+        assertThatThrownBy(
+                        () ->
+                                client.credentialsFor(
+                                        Map.of("api_key", "bedrock-api-key"), "us-east-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not accept an API key");
+    }
+
+    @Test
+    void staticKeysAndAssumeRoleStillResolve() {
+        assertThat(
+                        client.credentialsFor(
+                                Map.of("accessKeyId", "AKIA", "secretAccessKey", "secret"),
+                                "us-east-1"))
+                .isNotNull();
+        // No credentials at all is a supported mode: the host's own AWS chain.
+        assertThat(client.credentialsFor(Map.of(), "us-east-1")).isNotNull();
+    }
+
     private static Map<String, Object> rawConfig(String region) {
         return Map.of("agentId", "agent-1", "agentAliasId", "alias-1", "region", region);
     }

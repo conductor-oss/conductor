@@ -56,6 +56,16 @@ Every hosted runtime takes the same core inputs.
 
 None of these clients keep per-run state in memory. The `executionId` returned by the start call is the platform's own conversation handle, and Conductor persists it in the task output; everything else needed to reach the run is re-derived from the task input on each call. A status poll, a tool reply, or a cancellation is therefore served correctly by any server replica, including one that never saw the run start.
 
+### Authentication at a glance
+
+| Provider | API key | Other credentials |
+|---|---|---|
+| Azure AI Foundry | ✅ `apiKey` / `api_key` | Service principal, user-assigned managed identity, default Azure chain, or the caller's own identity |
+| OpenAI Assistants | ✅ `api_key` / `apiKey` — the only mode | — |
+| AWS Bedrock | ❌ *(see below)* | Static keys, `roleArn` to assume, or the default AWS chain |
+
+Where an API key is accepted, either spelling works, so one habit carries across providers.
+
 ### Output
 
 | Key | When | Description |
@@ -209,7 +219,7 @@ Conductor splits the trailing `/assistants/asst_x` (or `/agents/NAME` on a Found
 
 | Keys present | Auth used |
 |---|---|
-| `apiKey` | Sent as an `api-key` header. No token exchange at all. |
+| `apiKey` (or `api_key`) | Sent as an `api-key` header. No token exchange at all. |
 | `client_id` + `client_secret` + `tenant_id` | Service principal (Entra ID client credentials). |
 | `managedIdentityClientId` | User-assigned managed identity. |
 | *none* | The default Azure credential chain — environment, workload identity, managed identity, Azure CLI. |
@@ -265,7 +275,7 @@ Same thread-and-run protocol as Foundry — the difference is auth and the base 
 | `assistantId` | Yes | — |
 | `baseUrl` | No | `https://api.openai.com/v1` |
 
-**Credential.** `credentials.api_key` holds the key:
+**Credential.** `credentials.api_key` holds the key — `apiKey` works too:
 
 ```json
 "credentials": { "api_key": "${workflow.secrets.OPENAI_KEY}" }
@@ -330,6 +340,13 @@ Or have Conductor assume a role instead, with `roleArn` — and optionally `role
 The SDK refreshes the temporary credentials for as long as the agent runs.
 
 Omit `credentials` to fall back to the server's default AWS credential chain — instance role, environment variables, or `~/.aws/credentials`.
+
+!!! warning "Bedrock API keys are not supported here"
+    AWS Bedrock API keys are bearer tokens, and the AWS SDK signs Bedrock Agent Runtime calls with
+    SigV4 — its client builder takes no token provider. Supplying `apiKey` fails the task rather
+    than being ignored, because ignoring it would fall through to the host's own AWS credentials and
+    run the agent as a different principal. Use `accessKeyId` and `secretAccessKey`, a `roleArn`, or
+    the host's credential chain.
 
 **Or name the agent in one field**, as with Azure:
 

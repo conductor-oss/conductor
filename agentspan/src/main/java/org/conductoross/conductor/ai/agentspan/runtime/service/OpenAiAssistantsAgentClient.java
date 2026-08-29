@@ -160,7 +160,7 @@ public class OpenAiAssistantsAgentClient implements ConductorAgentClient {
      * store itself.
      */
     private static String apiKey(Map<String, String> credentials) {
-        String key = AzureFoundryAuth.credential(credentials, "api_key");
+        String key = AgentCredentials.apiKey(credentials);
         if (StringUtils.isBlank(key)) {
             throw new IllegalArgumentException(
                     "credentials.api_key is required for OpenAI Assistants agent requests");

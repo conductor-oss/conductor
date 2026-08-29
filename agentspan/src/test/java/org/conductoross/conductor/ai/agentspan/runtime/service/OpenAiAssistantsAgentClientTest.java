@@ -103,6 +103,16 @@ class OpenAiAssistantsAgentClientTest {
     }
 
     @Test
+    void theApiKeyIsAcceptedUnderEitherSpelling() {
+        credentials = Map.of("apiKey", "sk-camel");
+
+        start();
+
+        // Same key, whichever spelling the provider's own docs use.
+        assertThat(received.get(0).authorization()).isEqualTo("Bearer sk-camel");
+    }
+
+    @Test
     void doesNotSendAzuresApiVersionParameter() {
         start();
         runStatus.set("completed");

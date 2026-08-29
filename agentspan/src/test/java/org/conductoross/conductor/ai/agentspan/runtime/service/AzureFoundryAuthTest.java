@@ -64,6 +64,14 @@ class AzureFoundryAuthTest {
     }
 
     @Test
+    void anApiKeyIsAcceptedUnderEitherSpelling() {
+        // Azure writes apiKey and OpenAI writes api_key; a workflow author configuring a second
+        // provider should not have to discover that.
+        assertThat(resolve(Map.of("apiKey", "sk-one")).headerValue()).isEqualTo("sk-one");
+        assertThat(resolve(Map.of("api_key", "sk-two")).headerValue()).isEqualTo("sk-two");
+    }
+
+    @Test
     void anApiKeyWinsOverAServicePrincipalOnTheSameCredential() {
         // First match wins, and the API key needs no token exchange at all.
         assertThat(
