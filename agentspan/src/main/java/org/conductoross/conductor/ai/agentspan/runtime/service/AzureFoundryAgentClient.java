@@ -364,8 +364,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     @Override
     public void cancelAgent(ConductorAgentCancelRequest request) {
         String threadId = request.getExecutionId();
-        Azure azure = azure(request.getCredentials(), request.getRawConfig());
         try {
+            // Inside the try: locating the run resolves credentials, and cancellation is
+            // best-effort, so a credential that no longer resolves should warn like any other
+            // cancel failure rather than propagate.
+            Azure azure = azure(request.getCredentials(), request.getRawConfig());
             withTokenEviction(
                     azure,
                     auth -> {
@@ -616,7 +619,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         ProviderKey key = azure.providerKey();
         if (StringUtils.isNotBlank(azure.userAssertion())) {
             return AzureFoundryAuth.resolve(
-                    key.credentials(), httpClient, azure.userAssertion(), resolveScope(key));
+                    key.credentials(), httpClient, azure.userAssertion(), key.scope());
         }
 
         long now = clock.millis();
@@ -624,11 +627,11 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         if (cached != null && !cached.isExpired(now)) {
             return cached.auth();
         }
-        // Get-then-put rather than computeIfAbsent: resolving reads the secret store, and running
-        // that inside a mapping function would hold a map lock across the I/O.
+        // Get-then-put rather than computeIfAbsent: building a credential is cheap but not free,
+        // and a mapping function would hold a map lock while every other poll waits behind it.
         authResolutions.incrementAndGet();
         AzureFoundryAuth resolved =
-                AzureFoundryAuth.resolve(key.credentials(), httpClient, null, resolveScope(key));
+                AzureFoundryAuth.resolve(key.credentials(), httpClient, null, key.scope());
         if (resolved.isReusable()) {
             resolvedAuth.put(key, new CachedAuth(resolved, now + AUTH_TTL.toMillis()));
         }
@@ -664,22 +667,22 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         Map.of());
         return new Azure(
                 target,
-                new ProviderKey(credentials, rawConfig(rawConfig, "scope"), endpoint),
+                new ProviderKey(credentials, resolveScope(credentials, rawConfig, endpoint)),
                 userAssertion);
     }
 
     /**
-     * The scope for this endpoint. Explicit configuration wins; otherwise it follows the Foundry
-     * surface, whose several APIs do not share one.
-     *
-     * <p>Resolved only when auth is being built, never to look up the cache: the {@code .scope}
-     * sub-key is a secret-store read, and doing it per poll is the cost the cache exists to avoid.
+     * The scope for this endpoint. Explicit configuration wins, from {@code rawConfig.scope} or a
+     * {@code scope} credential; otherwise it follows the Foundry surface, whose several APIs do not
+     * share one.
      */
-    private static String resolveScope(ProviderKey key) {
+    private static String resolveScope(
+            Map<String, String> credentials, Map<String, Object> rawConfig, String endpoint) {
         String configured =
                 StringUtils.defaultIfBlank(
-                        key.scopeOverride(), AgentCredentials.value(key.credentials(), "scope"));
-        return StringUtils.defaultIfBlank(configured, AzureFoundryAuth.scopeFor(key.endpoint()));
+                        rawConfig(rawConfig, "scope"),
+                        AgentCredentials.value(credentials, "scope"));
+        return StringUtils.defaultIfBlank(configured, AzureFoundryAuth.scopeFor(endpoint));
     }
 
     private static String resolveEndpoint(String agentUrl, Map<String, Object> rawConfig) {
@@ -766,11 +769,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private record Azure(
             AssistantsRunApi.Target target, ProviderKey providerKey, String userAssertion) {}
 
-    // Every part is free to compute: the raw rawConfig.scope override (may be null) and the
-    // endpoint. Never the resolved scope, whose .scope sub-key lookup would cost a secret-store
-    // read on every cache hit.
-    private record ProviderKey(
-            Map<String, String> credentials, String scopeOverride, String endpoint) {}
+    // What a token actually depends on: who is asking, and which resource the token is for. Two
+    // endpoints on the same scope share one token provider, which is correct - a token is scoped to
+    // an Azure resource, not to a URL.
+    private record ProviderKey(Map<String, String> credentials, String scope) {}
 
     private record CachedAuth(AzureFoundryAuth auth, long expiresAtMillis) {
 

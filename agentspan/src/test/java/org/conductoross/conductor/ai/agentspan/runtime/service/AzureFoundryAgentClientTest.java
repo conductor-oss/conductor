@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -383,8 +384,8 @@ class AzureFoundryAgentClientTest {
             client.getAgentStatus(executionId, statusRequest());
         }
 
-        // Five polls, and not one read of the secret store. Before the cache, every poll resolved
-        // the credential again — and for a service principal, exchanged a token too.
+        // Five polls, one credential built. Before the cache, every poll built it again — and for
+        // a service principal, exchanged a token too.
         assertThat(client.authResolutions()).isEqualTo(resolutionsAfterStart);
     }
 
@@ -400,6 +401,56 @@ class AzureFoundryAgentClientTest {
         // The TTL is the backstop that picks up a rotated credential even when Azure never rejects
         // what we hold.
         assertThat(client.authResolutions()).isGreaterThan(resolutionsWhileCached);
+    }
+
+    @Test
+    void twoEndpointsOnOneScopeShareATokenProvider() {
+        // A token is scoped to an Azure resource, not to a URL, so the same credential reaching two
+        // endpoints that resolve to the same scope needs one provider, not two.
+        Map<String, Object> otherEndpoint = new HashMap<>(rawConfig());
+        otherEndpoint.put("endpoint", foundry.url("/other").toString());
+
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what is the answer?")
+                        .credentials(credentialsFor(CREDENTIAL_REF))
+                        .rawConfig(rawConfig())
+                        .build());
+        int afterFirst = client.authResolutions();
+
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what is the answer?")
+                        .credentials(credentialsFor(CREDENTIAL_REF))
+                        .rawConfig(otherEndpoint)
+                        .build());
+
+        assertThat(client.authResolutions()).isEqualTo(afterFirst);
+    }
+
+    @Test
+    void aDifferentScopeGetsItsOwnTokenProvider() {
+        // The other half of the same rule: an explicit scope override is a different resource, so
+        // it must not be served the token cached for the default one.
+        Map<String, Object> otherScope = new HashMap<>(rawConfig());
+        otherScope.put("scope", "https://ml.azure.com/.default");
+
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what is the answer?")
+                        .credentials(credentialsFor(CREDENTIAL_REF))
+                        .rawConfig(rawConfig())
+                        .build());
+        int afterFirst = client.authResolutions();
+
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what is the answer?")
+                        .credentials(credentialsFor(CREDENTIAL_REF))
+                        .rawConfig(otherScope)
+                        .build());
+
+        assertThat(client.authResolutions()).isGreaterThan(afterFirst);
     }
 
     @Test
@@ -554,7 +605,7 @@ class AzureFoundryAgentClientTest {
             if (rejectAuth.get()) {
                 return new MockResponse().setResponseCode(401).setBody("{\"error\":\"expired\"}");
             }
-            if (path.startsWith("/threads?")) {
+            if (path.contains("/threads?")) {
                 return json("{\"id\":\"thread-1\"}");
             }
             if (path.contains("/cancel")) {

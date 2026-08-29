@@ -44,7 +44,8 @@ public final class AgentCredentials {
             return null;
         }
         String value = credentials.get(key);
-        rejectQuoteWrapped(key, value);
+        // Checked before the quoting guard: a reference that was never substituted is the more
+        // specific diagnosis, and a quoted one would otherwise be reported as merely quoted.
         if (value != null && value.contains("${workflow.secrets.")) {
             throw new IllegalArgumentException(
                     "Credential '"
@@ -53,6 +54,7 @@ public final class AgentCredentials {
                             + " substitute secrets for task input held in external payload storage;"
                             + " pass the value another way rather than running as the host identity.");
         }
+        rejectQuoteWrapped(key, value);
         return value;
     }
 

@@ -479,7 +479,9 @@ public class ParametersUtilsTest {
         SecretsDAO secrets = mock(SecretsDAO.class);
         // What a .env file read verbatim produces: the quotes a shell would have stripped stay in
         // the value, so the document no longer parses even though the JSON inside it is correct.
-        when(secrets.getSecret("CREDS")).thenReturn("'{\"user\":\"neo\",\"pass\":\"zion\"}'");
+        // Spaced exactly as a hand-written credential blob is, since that is the shape that
+        // actually turns up rather than the compact one a serializer emits.
+        when(secrets.getSecret("CREDS")).thenReturn("'{ \"user\": \"neo\", \"pass\": \"zion\" }'");
         ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
 
         Map<String, Object> input = new HashMap<>();
