@@ -12,7 +12,9 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -61,5 +63,41 @@ public final class AgentCredentials {
     public static String apiKey(Map<String, String> credentials) {
         return StringUtils.defaultIfBlank(
                 value(credentials, "apiKey"), value(credentials, "api_key"));
+    }
+
+    /**
+     * Guards the point where a client would otherwise fall back to the identity the server itself
+     * runs as. That fallback is correct for a task that supplied no credentials — it is how managed
+     * identity and instance roles are meant to work — and wrong for a task that supplied some,
+     * because it silently authenticates as somebody else.
+     *
+     * <p>A task reaches this state without any reference surviving in the input: {@code
+     * ${workflow.secrets.NAME.key}} resolves to null when the secret is missing, or holds something
+     * that is not JSON with that key, so every credential arrives blank and no auth mode matches.
+     * Nothing in the task input then shows what went wrong.
+     *
+     * @param authKeys the credential keys this provider can authenticate with, so unrelated keys
+     *     carried in the same map (a scope override, say) do not read as a broken credential
+     */
+    public static void rejectPartiallyResolved(
+            Map<String, String> credentials, Set<String> authKeys, String provider) {
+        if (credentials == null) {
+            return;
+        }
+        List<String> named =
+                credentials.keySet().stream().filter(authKeys::contains).sorted().toList();
+        if (named.isEmpty()) {
+            return;
+        }
+        throw new IllegalArgumentException(
+                "The task set the "
+                        + provider
+                        + " credentials "
+                        + named
+                        + ", but none of them resolved to a usable value, so no authentication"
+                        + " mode could be built. A ${workflow.secrets.NAME.key} reference resolves"
+                        + " to null when the secret does not exist, or is not JSON holding that"
+                        + " key. Refusing to fall back to the identity this server runs as, which"
+                        + " would authenticate as somebody else.");
     }
 }

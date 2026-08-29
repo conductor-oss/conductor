@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -222,17 +223,46 @@ class AzureFoundryAuthTest {
     }
 
     @Test
-    void anIncompleteServicePrincipalFallsBackInsteadOfFailingTheCall() {
-        AzureFoundryAuth auth =
-                AzureFoundryAuth.resolve(
-                        Map.of("tenant_id", "tid"),
-                        httpClient,
-                        "callers-sso-token",
-                        AzureFoundryAuth.FOUNDRY_SCOPE);
+    void anIncompleteServicePrincipalFailsRatherThanRunningAsTheDeployment() {
+        // Half a service principal cannot be exchanged, and running as the deployment instead
+        // would quietly ignore the request to act as the caller and use the server's own, wider
+        // privileges. That is the silent wrong-identity bug, not a graceful degradation.
+        assertThatThrownBy(
+                        () ->
+                                AzureFoundryAuth.resolve(
+                                        Map.of("tenant_id", "tid"),
+                                        httpClient,
+                                        "callers-sso-token",
+                                        AzureFoundryAuth.FOUNDRY_SCOPE))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tenant_id");
+    }
 
-        // A cluster that asks for caller identity without the credential to exchange it still runs,
-        // as the deployment's own identity, rather than failing every agent call.
-        assertThat(auth.isReusable()).isTrue();
+    @Test
+    void credentialsThatAllResolveToNullFailInsteadOfFallingBack() {
+        // What a missing or malformed secret actually looks like by the time it reaches a client:
+        // ${workflow.secrets.NAME.key} resolves to null, so every value arrives blank and no mode
+        // matches. Falling through to the deployment's own identity here is how a broken secret
+        // turns into an agent silently running as somebody else.
+        Map<String, String> allNull = new HashMap<>();
+        allNull.put("client_id", null);
+        allNull.put("client_secret", null);
+        allNull.put("tenant_id", null);
+
+        assertThatThrownBy(() -> resolve(allNull))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("client_id")
+                .hasMessageContaining("client_secret")
+                .hasMessageContaining("tenant_id")
+                .hasMessageContaining("none of them resolved");
+    }
+
+    @Test
+    void aScopeOverrideAloneIsNotMistakenForABrokenCredential() {
+        // scope rides in the same map but is not something to authenticate with, so a deployment
+        // that only overrides the scope still reaches the default chain.
+        assertThat(resolve(Map.of("scope", AzureFoundryAuth.FOUNDRY_SCOPE)).headerName())
+                .isEqualTo("Authorization");
     }
 
     @Test

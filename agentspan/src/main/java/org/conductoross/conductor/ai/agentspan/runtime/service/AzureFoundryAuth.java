@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
@@ -192,8 +193,19 @@ public final class AzureFoundryAuth implements AssistantsAuth {
                     scope);
         }
 
+        AgentCredentials.rejectPartiallyResolved(credentials, AUTH_KEYS, "Azure");
         return ofCredential(new DefaultAzureCredentialBuilder().build(), scope);
     }
+
+    /** Keys this class can authenticate with; anything else in the map is not a credential. */
+    private static final Set<String> AUTH_KEYS =
+            Set.of(
+                    "apiKey",
+                    "api_key",
+                    "client_id",
+                    "client_secret",
+                    "tenant_id",
+                    "managedIdentityClientId");
 
     /**
      * Exchanges a caller's Entra token for one scoped to Foundry, via the OAuth 2.0 on-behalf-of

@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,6 +86,17 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
+
+    /** Keys this client can authenticate with; anything else in the map is not a credential. */
+    private static final Set<String> AWS_AUTH_KEYS =
+            Set.of(
+                    "apiKey",
+                    "api_key",
+                    "accessKeyId",
+                    "secretAccessKey",
+                    "roleArn",
+                    "roleSessionName",
+                    "externalId");
 
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);
     private static final String DEFAULT_REGION = "us-east-1";
@@ -512,6 +524,7 @@ public class BedrockAgentClient implements ConductorAgentClient {
                     .refreshRequest(assumeRole.build())
                     .build();
         }
+        AgentCredentials.rejectPartiallyResolved(credentials, AWS_AUTH_KEYS, "AWS");
         return DefaultCredentialsProvider.create();
     }
 

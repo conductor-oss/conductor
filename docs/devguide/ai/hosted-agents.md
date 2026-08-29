@@ -54,6 +54,35 @@ Every hosted runtime takes the same core inputs.
 | `maxDurationSeconds` | Absolute deadline before the task fails and the run is cancelled (default 86400). |
 | `maxPollFailures` | Consecutive transient poll failures tolerated before failing (default 30). |
 
+### The secret has to be JSON
+
+`${workflow.secrets.AZURE_CRED.client_id}` reads the secret named `AZURE_CRED` and extracts
+`client_id` from it, so that secret must hold a JSON object:
+
+```json
+{"client_id": "…", "client_secret": "…", "tenant_id": "…"}
+```
+
+If the secret does not exist, or holds anything that is not JSON with that key, the reference
+resolves to **null** — not to an error. A common way to get there is to store the value with its
+shell quotes attached, so the secret literally begins with a `'` and no longer parses:
+
+```bash
+# wrong: the quotes become part of the value in a .env file read verbatim
+CONDUCTOR_SECRET_AZURE_CRED='{"client_id":"…"}'
+
+# right
+CONDUCTOR_SECRET_AZURE_CRED={"client_id":"…"}
+```
+
+A single flat value needs no sub-key: write `${workflow.secrets.OPENAI_KEY}` and store the key on
+its own.
+
+The clients refuse to authenticate when a task named credential keys and none of them resolved,
+rather than falling back to the identity the server itself runs as — that fallback belongs to
+tasks that deliberately supply no credentials, and using it for a broken secret would run the
+agent as somebody else with no error at all.
+
 None of these clients keep per-run state in memory. The `executionId` returned by the start call is the platform's own conversation handle, and Conductor persists it in the task output; everything else needed to reach the run is re-derived from the task input on each call. A status poll, a tool reply, or a cancellation is therefore served correctly by any server replica, including one that never saw the run start.
 
 ### Authentication at a glance
