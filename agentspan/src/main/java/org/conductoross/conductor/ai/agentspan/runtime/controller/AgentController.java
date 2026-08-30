@@ -137,9 +137,18 @@ public class AgentController {
         agentService.pushFrameworkEvent(executionId, event);
     }
 
-    /** List all registered agents. */
+    /**
+     * List agents. When {@code endpoint} is provided, returns agents discovered from that Microsoft
+     * Foundry project URL instead of the local registry. {@code credentialRef} names the secret
+     * holding auth credentials (API key or Service Principal JSON); omit to use ambient identity.
+     */
     @GetMapping("/list")
-    public List<AgentSummary> listAgents() {
+    public List<AgentSummary> listAgents(
+            @RequestParam(name = "endpoint", required = false) String endpoint,
+            @RequestParam(name = "credentialRef", required = false) String credentialRef) {
+        if (endpoint != null && !endpoint.isBlank()) {
+            return agentService.listExternalAgents(credentialRef, endpoint);
+        }
         return agentService.listAgents();
     }
 

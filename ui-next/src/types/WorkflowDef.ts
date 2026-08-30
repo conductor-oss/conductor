@@ -27,10 +27,19 @@ export interface WorkflowMetadataI {
   outputSchema?: Record<string, unknown>;
   enforceSchema?: boolean;
 }
+export interface DelegationRequirement {
+  key: string;
+  provider: string;
+  label?: string;
+  scopes: string[];
+  secretRef: string;
+}
+
 export type WorkflowDef = {
   failureWorkflow: string;
   schemaVersion: number;
   tasks: TaskDef[];
   tags?: TagDto[];
   inputSchema?: Record<string, unknown>;
+  requiredDelegations?: DelegationRequirement[];
 } & WorkflowMetadataI;

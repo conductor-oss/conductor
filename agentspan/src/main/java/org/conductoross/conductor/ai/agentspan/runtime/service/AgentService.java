@@ -344,6 +344,26 @@ public class AgentService {
 
     // ── Agent discovery ─────────────────────────────────────────────
 
+    /**
+     * List agents from a specific Microsoft Foundry project URL. Used by the UI agent picker to
+     * populate the agent dropdown when the user enters a project endpoint.
+     *
+     * @param credentialRef secret name holding auth creds (API key or SP JSON); null = ambient identity
+     * @param endpoint Foundry project URL, e.g. {@code https://x.services.ai.azure.com/api/projects/y}
+     */
+    public List<AgentSummary> listExternalAgents(String credentialRef, String endpoint) {
+        if (azureFoundryAgentClient == null) {
+            log.warn("Microsoft Foundry agent client not available");
+            return List.of();
+        }
+        try {
+            return azureFoundryAgentClient.listExternalAgents(credentialRef, endpoint);
+        } catch (Exception e) {
+            log.warn("Failed to list agents from endpoint '{}': {}", endpoint, e.getMessage());
+            return List.of();
+        }
+    }
+
     /** List all registered agents (workflow defs with agent_sdk metadata). */
     public List<AgentSummary> listAgents() {
         // Use the portable getAllWorkflowDefs() (present across Conductor cores, incl. orkes'
