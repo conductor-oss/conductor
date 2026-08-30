@@ -140,6 +140,16 @@ There are two ways to answer. `autoRunTools` is the recommended one.
 
 #### Let Conductor run the tools (`autoRunTools`)
 
+Three things have to line up, and nothing fails loudly if they do not:
+
+1. **The agent has a function tool.** Only a function tool is handed back to be run. Web search,
+   code interpreter and file search run inside the platform and are reported as `executedTools`,
+   never scheduled — Conductor cannot run them.
+2. **`autoRunTools: true`.** Without it the call is handed back to the workflow instead
+   (see below), and the `AGENT` task completes with `waiting: true`.
+3. **A worker serves the tool's task name.** With none, the task sits `SCHEDULED` and the agent
+   waits on it until `maxDurationSeconds`.
+
 Set `autoRunTools: true` and the `AGENT` task **stays `IN_PROGRESS`** while each tool the agent asked for is scheduled as an ordinary Conductor task — one per call, in parallel — and the agent is resumed with their results automatically:
 
 ```json
