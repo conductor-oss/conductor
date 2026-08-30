@@ -71,6 +71,11 @@ class SubWorkflowAgentToolDispatcherTest {
                 null);
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> firstToolInput() {
+        return (Map<String, Object>) dynamicTasksOf(capturedStart()).get(0).get("inputParameters");
+    }
+
     private StartWorkflowInput capturedStart() {
         ArgumentCaptor<StartWorkflowInput> captor =
                 ArgumentCaptor.forClass(StartWorkflowInput.class);
@@ -195,6 +200,55 @@ class SubWorkflowAgentToolDispatcherTest {
                 (Map<String, Object>) dynamicTasksOf(capturedStart()).get(0).get("inputParameters");
         // Better than failing the turn over a shape we did not expect.
         assertThat(input).containsEntry("arguments", "not json");
+    }
+
+    @Test
+    void aconductorExpressionInToolArgumentsIsPassedThroughAsText() {
+        // The arguments are written by a model, from a prompt that may carry text from anywhere.
+        // Unescaped, this reads the workflow's own input and hands it to the tool as though the
+        // author had asked for that.
+        dispatcher.dispatch(
+                new AgentToolDispatcher.Request(
+                        "wf-1",
+                        "task-1",
+                        "agent_ref",
+                        "exec-1",
+                        List.of(
+                                Map.of(
+                                        "tool_name",
+                                        "lookup",
+                                        "tool_call_id",
+                                        "call-1",
+                                        "arguments",
+                                        "{\"q\":\"${workflow.input.customer_ssn}\","
+                                                + "\"nested\":{\"a\":[\"${x.output.y}\"]}}")),
+                        null));
+
+        Map<String, Object> input = firstToolInput();
+        assertThat(input.get("q")).isEqualTo("$${workflow.input.customer_ssn}");
+        // Nested values are reached too - an escape that only covers the top level is no escape.
+        Map<String, Object> nested = (Map<String, Object>) input.get("nested");
+        assertThat(((List<?>) nested.get("a")).get(0)).isEqualTo("$${x.output.y}");
+    }
+
+    @Test
+    void ordinaryArgumentsAreLeftExactlyAsTheyAre() {
+        dispatcher.dispatch(
+                new AgentToolDispatcher.Request(
+                        "wf-1",
+                        "task-1",
+                        "agent_ref",
+                        "exec-1",
+                        List.of(
+                                Map.of(
+                                        "tool_name", "lookup",
+                                        "tool_call_id", "call-1",
+                                        "arguments", "{\"q\":\"cost is $100\",\"n\":3}")),
+                        null));
+
+        Map<String, Object> input = firstToolInput();
+        assertThat(input.get("q")).isEqualTo("cost is $100");
+        assertThat(input.get("n")).isEqualTo(3);
     }
 
     @Test

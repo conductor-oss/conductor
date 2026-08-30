@@ -155,7 +155,8 @@ public class SubWorkflowAgentToolDispatcher implements AgentToolDispatcher {
         String toolName = String.valueOf(toolCall.get("tool_name"));
         String toolCallId = String.valueOf(toolCall.get("tool_call_id"));
 
-        Map<String, Object> input = new LinkedHashMap<>(parseArguments(toolCall.get("arguments")));
+        Map<String, Object> input =
+                new LinkedHashMap<>(asLiteralText(parseArguments(toolCall.get("arguments"))));
         input.put(TOOL_CALL_ID, toolCallId);
         input.put("_toolName", toolName);
         input.put("_agentExecutionId", request.executionId());
@@ -175,6 +176,40 @@ public class SubWorkflowAgentToolDispatcher implements AgentToolDispatcher {
             return toolName;
         }
         return overrides.getOrDefault(toolName, toolName);
+    }
+
+    /**
+     * Escapes Conductor expressions out of values a model produced.
+     *
+     * <p>Tool arguments become a task's input parameters, and the engine resolves {@code ${...}} in
+     * those against the running workflow. The arguments are written by a model, from a prompt that
+     * may itself carry text from anywhere - so left alone, {@code ${workflow.input.customer_ssn}}
+     * in a tool argument is a request the engine happily fulfils, handing workflow data to the tool
+     * as if the workflow author had asked for it.
+     *
+     * <p>Doubling the dollar is the engine's own escape: it resolves {@code $${} back to a literal
+     * {@code ${}, so the tool receives the text the model actually wrote and nothing more.
+     */
+    @SuppressWarnings("unchecked")
+    static Object asLiteralText(Object value) {
+        if (value instanceof String text) {
+            return text.contains("${") ? text.replace("${", "$${") : text;
+        }
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> copy = new LinkedHashMap<>();
+            map.forEach((key, entry) -> copy.put(String.valueOf(key), asLiteralText(entry)));
+            return copy;
+        }
+        if (value instanceof List<?> list) {
+            List<Object> copy = new ArrayList<>(list.size());
+            list.forEach(entry -> copy.add(asLiteralText(entry)));
+            return copy;
+        }
+        return value;
+    }
+
+    private static Map<String, Object> asLiteralText(Map<String, Object> arguments) {
+        return (Map<String, Object>) asLiteralText((Object) arguments);
     }
 
     private static Map<String, Object> parseArguments(Object arguments) {

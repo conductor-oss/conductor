@@ -165,6 +165,7 @@ curl -X POST "$FOUNDRY_PROJECT_ENDPOINT/agents?api-version=v1" \
           "type": "function",
           "name": "get_revenue",
           "description": "Revenue for one quarter, in USD",
+          "strict": true,
           "parameters": {
             "type": "object",
             "properties": {
@@ -226,7 +227,27 @@ alongside three fields Conductor adds:
 | `_agentExecutionId` | The agent run this call belongs to |
 
 Whatever the worker returns as its output map is sent back to the agent as that call's result. Keep
-it to what the model needs — it becomes tokens in the next turn.
+it to what the model needs — it becomes tokens in the next turn, and Microsoft's guidance is not to
+put secrets in a tool output at all.
+
+`"strict": true` with `"additionalProperties": false` and a `required` list makes the model's
+arguments conform to your schema. Worth setting: the worker is handed those arguments as its input.
+
+!!! danger "A tool has ten minutes, total"
+    Foundry expires a run **10 minutes after it is created**, and that is *total elapsed time* —
+    not per function. A tool task that takes longer means the outputs are submitted to a run that
+    no longer exists, and the agent task fails after exhausting `maxPollFailures`. Conductor's own
+    `maxDurationSeconds` does not help: Azure's clock runs independently of it.
+
+    For work that cannot finish in that window, do what Microsoft recommends and split it: the tool
+    task returns a handle immediately, and the long job runs as separate tasks in the workflow —
+    which is the shape Conductor is good at anyway. The agent gets its answer inside the window,
+    and the workflow carries on afterwards.
+
+**Tool arguments are model-written, so Conductor treats them as text.** A `${...}` in an argument
+would otherwise be resolved against the running workflow, which is a way for anything that reaches
+the prompt to read workflow data. Conductor escapes them so the tool receives what the model
+actually wrote. Validate them in the worker regardless — they are untrusted input.
 
 #### Let Conductor run the tools (`autoRunTools`)
 

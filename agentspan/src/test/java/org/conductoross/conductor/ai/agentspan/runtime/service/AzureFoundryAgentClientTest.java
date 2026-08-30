@@ -39,7 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.azure.identity.CredentialUnavailableException;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.Dispatcher;
@@ -230,17 +229,12 @@ class AzureFoundryAgentClientTest {
         assertThat(bodyOf("/messages")).doesNotContain("result=");
     }
 
-    @Test
-    void aMissingCredentialRefFallsBackToTheHostsOwnIdentity() {
-        ConductorAgentRequest request = new ConductorAgentRequest();
-        request.setRawConfig(rawConfig());
-
-        // Deliberate: a deployment running on managed identity configures no credential at all, so
-        // the default Azure credential chain is a supported mode rather than a bad request. It has
-        // nothing to find in a test JVM, which is what surfaces here.
-        assertThatThrownBy(() -> client.getAgentStatus("thread-1", request))
-                .isInstanceOf(CredentialUnavailableException.class);
-    }
+    // No test here for "no credential falls back to the default Azure chain". It used to assert
+    // that the chain throws CredentialUnavailableException, which holds only on a machine with no
+    // Azure login at all - so it passed in CI and failed for anyone who had run `az login`, which
+    // is everyone working on this integration. The behaviour it meant to pin is mode selection,
+    // and AzureFoundryAuthTest.noCredentialFallsBackToTheDefaultChain asserts that without
+    // resolving a token or consulting the environment.
 
     @Test
     void aThreadWithNoRunsIsReportedClearly() {
