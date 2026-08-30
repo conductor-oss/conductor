@@ -31,6 +31,8 @@ public class AgentSummary {
     private String name;
     private int version;
     private String type;
+    /** Provider-specific connection target: Foundry project URL, Bedrock region, etc. */
+    private String endpoint;
     private List<String> tags;
     private Long createTime;
     private Long updateTime;

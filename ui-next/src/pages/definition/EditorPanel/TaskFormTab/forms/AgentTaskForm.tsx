@@ -298,15 +298,36 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         ? rawMessage
         : JSON.stringify(rawMessage, null, 2);
 
-  const { data: agentDefinitions } = useFetch<AgentSummary[]>("/agent/list", {
-    enabled: isConductor,
+  const isMicrosoftFoundry = runtime === "microsoft-foundry";
+
+  const { data: agentDefinitions, isFetching: agentListFetching } = useFetch<AgentSummary[]>("/agent/list", {
+    enabled: isConductor || isMicrosoftFoundry,
   });
   const agentNameOptions = useMemo(
     () =>
       Array.isArray(agentDefinitions)
-        ? Array.from(new Set(agentDefinitions.map((a) => a.name))).sort()
+        ? Array.from(
+            new Set(
+              agentDefinitions
+                .filter((a) => !a.type || a.type === "conductor")
+                .map((a) => a.name),
+            ),
+          ).sort()
         : [],
     [agentDefinitions],
+  );
+
+  const foundryAgents = useMemo(
+    () =>
+      Array.isArray(agentDefinitions)
+        ? agentDefinitions.filter((a) => a.type === "microsoft-foundry")
+        : [],
+    [agentDefinitions],
+  );
+
+  const foundryAgentOptions = useMemo(
+    () => foundryAgents.map((a) => a.name),
+    [foundryAgents],
   );
 
   return (
@@ -399,6 +420,60 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
             </>
           ) : isProvider ? (
             <>
+              {isMicrosoftFoundry && (
+                <Grid size={12}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box flex={1}>
+                      <ConductorAutocompleteVariables
+                        label="Select agent"
+                        value={
+                          get("inputParameters.rawConfig.assistantId") as
+                            | string
+                            | undefined
+                        }
+                        onChange={(v) => {
+                          const agent = foundryAgents.find((a) => a.name === v);
+                          const raw =
+                            (get("inputParameters.rawConfig") as
+                              | Record<string, unknown>
+                              | undefined) ?? {};
+                          const updated = updateField(
+                            "inputParameters.rawConfig",
+                            {
+                              ...raw,
+                              assistantId: v,
+                              ...(agent?.endpoint
+                                ? { endpoint: agent.endpoint }
+                                : {}),
+                            },
+                            task,
+                          ) as Partial<TaskDef>;
+                          const input =
+                            (updated.inputParameters ?? {}) as AgentTaskInput;
+                          onChange(
+                            withAgentSnapshot(
+                              updated as Partial<TaskDef> & {
+                                metadata?: Record<string, unknown>;
+                              },
+                              createUnresolvedAgentSnapshot(input),
+                            ),
+                          );
+                        }}
+                        otherOptions={foundryAgentOptions}
+                        placeholder={
+                          agentListFetching
+                            ? "Loading agents…"
+                            : foundryAgents.length === 0
+                              ? "No agents found — add a secret with {endpoint:…} key"
+                              : "Pick a discovered agent or type an ID"
+                        }
+                        openOnFocus
+                      />
+                    </Box>
+                    {agentListFetching && <CircularProgress size={18} />}
+                  </Box>
+                </Grid>
+              )}
               {(PROVIDER_FIELDS[runtime] ?? [])
                 .filter((field) => !field.tokenOnly || mintsToken)
                 .map((field) => (

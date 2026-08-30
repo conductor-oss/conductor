@@ -714,6 +714,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                                 .name(item.path("name").asText(item.path("id").asText("unknown")))
                                 .version(1)
                                 .type(A2AService.AGENT_TYPE_MICROSOFT_FOUNDRY)
+                                .endpoint(base)
                                 .description(item.path("description").asText(null))
                                 // Azure reports seconds; AgentSummary carries millis.
                                 .createTime(item.path("created_at").asLong(0) * 1000L)
