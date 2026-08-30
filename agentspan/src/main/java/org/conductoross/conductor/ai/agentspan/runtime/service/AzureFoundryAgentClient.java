@@ -435,23 +435,44 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     // Auth detection order:
-    //   0. useCallerIdentity + callerEntraToken + SP creds → OBO bearer (enterprise only)
-    //   1. apiKey in secret          → API key header (no SDK)
-    //   2. client_id/secret/tenant   → ClientSecretCredential (Service Principal)
-    //   3. clientId only             → ManagedIdentityCredential (user-assigned)
-    //   4. no credentialRef or empty → DefaultAzureCredential (env vars → MI → CLI)
+    //   0. accessToken set directly   → use as bearer (delegated/offline flow)
+    //   1. useCallerIdentity + callerEntraToken + SP creds → OBO bearer (enterprise only)
+    // Resolves a single field from credentialRef, which may be either:
+    //   a) a secret name ("shailesh-ai") → delegates to credentialResolutionService
+    //   b) an already-resolved JSON blob ({"apiKey":"..."}) → parses directly
+    // Case (b) occurs when the task stores ${workflow.secrets.X} and Conductor substitutes the
+    // secret value before the worker receives the request.
+    private String resolveCredField(String credentialRef, String field) {
+        if (credentialRef != null && credentialRef.startsWith("{")) {
+            try {
+                return MAPPER.readTree(credentialRef).path(field).asText(null);
+            } catch (Exception e) {
+                log.debug("credentialRef looks like JSON but could not be parsed: {}", e.getMessage());
+            }
+        }
+        return credentialResolutionService.resolve(credentialRef + "." + field);
+    }
+
+    //   2. apiKey in secret          → API key header (no SDK)
+    //   3. client_id/secret/tenant   → ClientSecretCredential (Service Principal)
+    //   4. clientId only             → ManagedIdentityCredential (user-assigned)
+    //   5. no credentialRef or empty → DefaultAzureCredential (env vars → MI → CLI)
     AuthState buildAuthState(ConductorAgentStartRequest request, String endpoint) {
         String scope = resolveScope(request, endpoint);
         String credentialRef = request.getCredentialRef();
+
+        if (StringUtils.isNotBlank(request.getAccessToken())) {
+            log.debug("Using pre-obtained access_token for delegated access");
+            return AuthState.ofBearer(request.getAccessToken());
+        }
 
         // OBO: exchange caller's Entra SSO token for a Foundry-scoped token.
         // Only activates when all three are present: flag, user assertion, and SP credentials.
         if (request.isUseCallerIdentity() && StringUtils.isNotBlank(request.getUserAssertion())) {
             if (StringUtils.isNotBlank(credentialRef)) {
-                String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
-                String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
-                String clientSecret =
-                        credentialResolutionService.resolve(credentialRef + ".client_secret");
+                String tenantId = resolveCredField(credentialRef, "tenant_id");
+                String clientId = resolveCredField(credentialRef, "client_id");
+                String clientSecret = resolveCredField(credentialRef, "client_secret");
                 if (StringUtils.isNoneBlank(tenantId, clientId, clientSecret)) {
                     String foundryToken =
                             exchangeOboToken(
@@ -470,16 +491,15 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         if (StringUtils.isNotBlank(credentialRef)) {
             // API key
-            String apiKey = credentialResolutionService.resolve(credentialRef + ".apiKey");
+            String apiKey = resolveCredField(credentialRef, "apiKey");
             if (StringUtils.isNotBlank(apiKey)) {
                 return new AuthState(apiKey);
             }
 
             // Service Principal (client credentials)
-            String clientId = credentialResolutionService.resolve(credentialRef + ".client_id");
-            String clientSecret =
-                    credentialResolutionService.resolve(credentialRef + ".client_secret");
-            String tenantId = credentialResolutionService.resolve(credentialRef + ".tenant_id");
+            String clientId = resolveCredField(credentialRef, "client_id");
+            String clientSecret = resolveCredField(credentialRef, "client_secret");
+            String tenantId = resolveCredField(credentialRef, "tenant_id");
             if (StringUtils.isNoneBlank(clientId, clientSecret, tenantId)) {
                 TokenCredential cred =
                         new ClientSecretCredentialBuilder()
@@ -491,7 +511,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             }
 
             // User-assigned managed identity
-            String miClientId = credentialResolutionService.resolve(credentialRef + ".clientId");
+            String miClientId = resolveCredField(credentialRef, "clientId");
             if (StringUtils.isNotBlank(miClientId)) {
                 TokenCredential cred =
                         new ManagedIdentityCredentialBuilder().clientId(miClientId).build();
@@ -509,8 +529,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 StringUtils.defaultIfBlank(
                         rawConfig(request, "scope"),
                         StringUtils.isNotBlank(request.getCredentialRef())
-                                ? credentialResolutionService.resolve(
-                                        request.getCredentialRef() + ".scope")
+                                ? resolveCredField(request.getCredentialRef(), "scope")
                                 : null);
         if (StringUtils.isNotBlank(scope)) return scope;
 
@@ -801,12 +820,14 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         AgentSummary.builder()
                                 .name(name)
                                 .version(1)
-                                .type("azure-foundry")
+                                .type("microsoft-foundry")
+                                .endpoint(endpoint)
+                                .credentialRef(credentialRef)
                                 .description(description)
                                 .createTime(createdAt)
                                 .build());
             }
-            log.debug("Discovered {} Azure agents from {}", result.size(), endpoint);
+            log.debug("Discovered {} Microsoft Foundry agents from {}", result.size(), endpoint);
             return result;
         } catch (Exception e) {
             log.warn("Failed to list Azure agents from {}: {}", endpoint, e.getMessage());

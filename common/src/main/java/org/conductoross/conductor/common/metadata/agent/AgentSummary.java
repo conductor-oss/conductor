@@ -31,6 +31,10 @@ public class AgentSummary {
     private String name;
     private int version;
     private String type;
+    /** Provider-specific connection target: Foundry project URL, Bedrock region, etc. */
+    private String endpoint;
+    /** Conductor secret name used to authenticate with this agent's provider. */
+    private String credentialRef;
     private List<String> tags;
     private Long createTime;
     private Long updateTime;

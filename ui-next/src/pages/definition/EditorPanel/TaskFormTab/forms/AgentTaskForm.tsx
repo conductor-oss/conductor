@@ -40,7 +40,7 @@ import { TaskFormProps } from "./types";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
-  { value: "azure-foundry", label: "Azure Foundry" },
+  { value: "microsoft-foundry", label: "Microsoft Foundry" },
   { value: "bedrock", label: "Bedrock" },
 ];
 
@@ -67,7 +67,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const isConductor = agentType === "conductor";
-  const isAzureFoundry = agentType === "azure-foundry";
+  const isMicrosoftFoundry = agentType === "microsoft-foundry";
   const agentName = get("inputParameters.name") as string | undefined;
   const taskInput = (task.inputParameters ?? {}) as AgentTaskInput;
   const sourceKey = agentSourceKey(taskInput);
@@ -188,15 +188,27 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         ? rawMessage
         : JSON.stringify(rawMessage, null, 2);
 
-  const { data: agentDefinitions } = useFetch<AgentSummary[]>("/agent/list", {
-    enabled: isConductor,
+  const { data: agentDefinitions, isFetching: agentListFetching } = useFetch<AgentSummary[]>("/agent/list", {
+    enabled: isConductor || isMicrosoftFoundry,
   });
   const agentNameOptions = useMemo(
     () =>
       Array.isArray(agentDefinitions)
-        ? Array.from(new Set(agentDefinitions.map((a) => a.name))).sort()
+        ? Array.from(new Set(agentDefinitions.filter(a => !a.type || a.type === "conductor").map((a) => a.name))).sort()
         : [],
     [agentDefinitions],
+  );
+
+  const foundryAgents = useMemo(
+    () => Array.isArray(agentDefinitions)
+      ? agentDefinitions.filter((a) => a.type === "microsoft-foundry")
+      : [],
+    [agentDefinitions],
+  );
+
+  const foundryAgentOptions = useMemo(
+    () => foundryAgents.map((a) => a.name),
+    [foundryAgents],
   );
 
   return (
@@ -280,6 +292,69 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 />
               </Grid>
             </>
+          ) : isMicrosoftFoundry ? (
+            <>
+              <Grid size={12}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Box flex={1}>
+                    <ConductorAutocompleteVariables
+                      label="Agent"
+                      value={
+                        (
+                          get("inputParameters.rawConfig") as
+                            | Record<string, unknown>
+                            | undefined
+                        )?.assistantId as string | undefined
+                      }
+                      onChange={(v) => {
+                        const agent = foundryAgents.find((a) => a.name === v);
+                        const credRef = agent?.credentialRef
+                          ? `\${workflow.secrets.${agent.credentialRef}}`
+                          : undefined;
+                        const raw =
+                          (get("inputParameters.rawConfig") as Record<string, unknown>) ?? {};
+                        const updated = updateField(
+                          "inputParameters.credentialRef", credRef,
+                          updateField(
+                            "inputParameters.agentUrl", agent?.endpoint,
+                            updateField("inputParameters.rawConfig", { ...raw, assistantId: v }, task),
+                          ),
+                        ) as Partial<TaskDef>;
+                        const input = (updated.inputParameters ?? {}) as AgentTaskInput;
+                        onChange(
+                          withAgentSnapshot(
+                            updated as Partial<TaskDef> & { metadata?: Record<string, unknown> },
+                            createUnresolvedAgentSnapshot(input),
+                          ),
+                        );
+                      }}
+                      otherOptions={foundryAgentOptions}
+                      placeholder={
+                        agentListFetching
+                          ? "Loading agents…"
+                          : foundryAgents.length === 0
+                            ? "No agents found — add a secret with {endpoint:…} key"
+                            : "Select agent"
+                      }
+                      openOnFocus
+                    />
+                  </Box>
+                  {agentListFetching && <CircularProgress size={18} />}
+                </Box>
+              </Grid>
+              <Grid size={12}>
+                <ConductorInput
+                  label="Prompt"
+                  name="prompt"
+                  value={(get("inputParameters.prompt") as string) || ""}
+                  onTextInputChange={(v) => set("inputParameters.prompt", v)}
+                  multiline
+                  rows={6}
+                  fullWidth
+                  placeholder="Message to send to the agent"
+                />
+              </Grid>
+            </>
           ) : (
             <>
               <Grid size={12}>
@@ -306,30 +381,34 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
           )}
           <Grid size={12}>
             <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={
-                  isResolving ||
-                  !(isConductor
-                    ? taskInput.agentType === "conductor" && taskInput.name
-                    : taskInput.agentType !== "conductor" && taskInput.agentUrl)
-                }
-                onClick={() => void resolveSnapshot(taskInput)}
-              >
-                Refresh agent details
-              </Button>
-              {isResolving && <CircularProgress size={18} />}
-              {!isResolving && snapshot && (
-                <Typography variant="caption" color="text.secondary">
-                  {isConductor
-                    ? snapshot.resolved
-                      ? "Details loaded"
-                      : "Details unavailable"
-                    : snapshot.resolved
-                      ? "Resolved"
-                      : "Unresolved"}
-                </Typography>
+              {!isMicrosoftFoundry && (
+                <>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    disabled={
+                      isResolving ||
+                      !(isConductor
+                        ? taskInput.agentType === "conductor" && taskInput.name
+                        : taskInput.agentType !== "conductor" && taskInput.agentUrl)
+                    }
+                    onClick={() => void resolveSnapshot(taskInput)}
+                  >
+                    Refresh agent details
+                  </Button>
+                  {isResolving && <CircularProgress size={18} />}
+                  {!isResolving && snapshot && (
+                    <Typography variant="caption" color="text.secondary">
+                      {isConductor
+                        ? snapshot.resolved
+                          ? "Details loaded"
+                          : "Details unavailable"
+                        : snapshot.resolved
+                          ? "Resolved"
+                          : "Unresolved"}
+                    </Typography>
+                  )}
+                </>
               )}
             </Box>
           </Grid>
@@ -364,7 +443,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
       {!isConductor && (
         <TaskFormSection title="Execution mode">
           <Box display="flex" flexDirection="column" mb={3}>
-            {isAzureFoundry && (
+            {isMicrosoftFoundry && (
               <FormControlLabel
                 control={
                   <Switch
@@ -374,7 +453,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                     }
                   />
                 }
-                label="Use caller identity (OBO) — pass the triggering user's Entra token to Azure Foundry"
+                label="Use caller identity (OBO) — pass the triggering user's Entra token to Microsoft Foundry"
               />
             )}
             <FormControlLabel
