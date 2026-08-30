@@ -58,6 +58,13 @@ public class ConductorAgentStatusResponse {
      */
     private List<Map<String, Object>> pendingTools;
 
+    /**
+     * Tool calls the platform ran by itself during this turn - web search, code interpreter, file
+     * search - with the input each was given. Unlike pendingTools these were never handed back to
+     * the workflow, so without recording them the run's only trace is its final answer.
+     */
+    private List<Map<String, Object>> executedTools;
+
     private String pendingToolName;
     private String pendingToolTaskRefName;
     private long startTime;

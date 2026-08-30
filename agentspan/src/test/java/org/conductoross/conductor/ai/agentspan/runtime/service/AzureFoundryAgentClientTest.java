@@ -373,6 +373,21 @@ class AzureFoundryAgentClientTest {
                 .hasMessageContaining("call-2");
     }
 
+    @Test
+    void toolsTheAssistantRanItselfAreReportedOnCompletion() {
+        String executionId = start().getExecutionId();
+        runStatus.set("completed");
+
+        ConductorAgentStatusResponse status = client.getAgentStatus(executionId, statusRequest());
+
+        // A code interpreter runs inside Azure and never sets requires_action, so it is absent from
+        // pendingTools. Only the run's steps carry it.
+        assertThat(status.getExecutedTools()).hasSize(1);
+        assertThat(status.getExecutedTools().get(0)).containsEntry("type", "code_interpreter");
+        assertThat(status.getExecutedTools().get(0).get("input").toString()).contains("print(6*7)");
+        assertThat(requestLog).anyMatch(r -> r.contains("/steps"));
+    }
+
     // --- token provider cache --------------------------------------------------------------
 
     @Test
@@ -613,6 +628,14 @@ class AzureFoundryAgentClientTest {
             }
             if (path.contains("/submit_tool_outputs")) {
                 return json("{\"id\":\"" + latestRunId.get() + "\",\"status\":\"queued\"}");
+            }
+            if (path.contains("/steps")) {
+                return json(
+                        """
+                        {"data":[
+                          {"status":"completed","step_details":{"tool_calls":[
+                             {"id":"call_ci","type":"code_interpreter",
+                              "code_interpreter":{"input":"print(6*7)"}}]}}]}""");
             }
             if (path.contains("/runs")) {
                 if ("POST".equals(request.getMethod())) {

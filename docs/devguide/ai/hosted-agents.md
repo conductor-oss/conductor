@@ -420,6 +420,27 @@ sign the request and ignore the key entirely.
 
 ---
 
+## Observability
+
+**What the agent did shows up in the task output.** Two kinds of tool call, reported differently:
+
+| Kind | Who runs it | Where it appears |
+|---|---|---|
+| Function tools | Your workflow, or a worker | `pendingTools` while the run is paused, then `toolDispatchId` under `autoRunTools` |
+| Built-in tools — web search, code interpreter, file search | The platform, inside the run | `executedTools` on completion |
+
+A built-in tool never pauses the run, so it is invisible to `pendingTools`. On the Responses API
+surface it is read from the reply's own output items; on the classic Assistants surface it is read
+from the run's steps, fetched once when the run reaches a terminal state rather than on every poll.
+Each call carries its type, id, status, and whatever field that tool puts its input in — the shape
+differs per tool and Azure adds new ones, so it is carried across as it comes.
+
+**Conductor emits no OpenTelemetry.** Microsoft Foundry's own Tracing view is fed by GenAI spans
+sent to a connected Application Insights resource, normally by an Azure SDK with telemetry enabled.
+Conductor calls the REST API directly and does not emit spans, so a run driven from an `AGENT` task
+will not appear there. The Conductor execution is the record of the run — including `executedTools`
+above.
+
 ## Failure handling
 
 | Situation | Outcome |

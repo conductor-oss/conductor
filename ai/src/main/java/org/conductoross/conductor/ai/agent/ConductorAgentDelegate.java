@@ -198,6 +198,7 @@ public class ConductorAgentDelegate {
                 .text(response.getOutput() != null ? resultText(response.getOutput()) : null)
                 .pendingTool(response.getPendingTool())
                 .pendingTools(response.getPendingTools())
+                .executedTools(response.getExecutedTools())
                 .reasonForIncompletion(response.getReasonForIncompletion())
                 .build();
     }
@@ -435,6 +436,7 @@ public class ConductorAgentDelegate {
                 .text(output != null ? resultText(output) : null)
                 .pendingTool(status.getPendingTool())
                 .pendingTools(status.getPendingTools())
+                .executedTools(status.getExecutedTools())
                 .reasonForIncompletion(status.getReasonForIncompletion())
                 .startTime(status.getStartTime())
                 .endTime(status.getEndTime())

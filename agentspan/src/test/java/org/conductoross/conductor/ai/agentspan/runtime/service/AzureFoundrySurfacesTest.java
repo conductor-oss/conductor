@@ -160,6 +160,35 @@ class AzureFoundrySurfacesTest {
     }
 
     @Test
+    void theToolsFoundryRanItselfAreReportedWithTheirInput() {
+        ConductorAgentStartResponse start =
+                client.startAgent(
+                        ConductorAgentStartRequest.builder()
+                                .prompt("how did GOOGL do?")
+                                .credentials(credentials)
+                                .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                                .rawConfig(Map.of("surface", "responses"))
+                                .build());
+
+        // A built-in tool never pauses the run, so without this the execution's only record of the
+        // agent's work is its final sentence.
+        assertThat(start.getExecutedTools()).hasSize(2);
+
+        Map<String, Object> search = start.getExecutedTools().get(0);
+        assertThat(search).containsEntry("type", "web_search_call");
+        assertThat(search).containsEntry("tool_call_id", "ws_1");
+        assertThat(search).containsEntry("status", "completed");
+        assertThat(search.get("action").toString()).contains("GOOGL 1 month return");
+
+        Map<String, Object> code = start.getExecutedTools().get(1);
+        assertThat(code).containsEntry("type", "code_interpreter_call");
+        assertThat(code).containsEntry("code", "print(2+2)");
+
+        // Messages and reasoning are the reply, not tool calls.
+        assertThat(start.getExecutedTools()).noneMatch(call -> "message".equals(call.get("type")));
+    }
+
+    @Test
     void codeInterpreterIsWrappedForTheResponsesApi() throws Exception {
         var tools =
                 MAPPER.readTree(
@@ -232,12 +261,17 @@ class AzureFoundrySurfacesTest {
                         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"message\":{\"content\":\"hello there\"}}]}");
             }
             if (path.startsWith("/api/projects/p1/openai/responses")) {
+                // Shaped like a real reply: one item per step, of which only some are messages.
                 return json(
                         """
                         {"id":"resp-1","output":[
-                           {"content":[{"type":"output_text","text":"first part"},
+                           {"type":"web_search_call","id":"ws_1","status":"completed",
+                            "action":{"type":"search","query":"GOOGL 1 month return"}},
+                           {"type":"message","content":[{"type":"output_text","text":"first part"},
                                        {"type":"reasoning","text":"ignored"}]},
-                           {"content":[{"type":"output_text","text":"second part"}]}]}""");
+                           {"type":"code_interpreter_call","id":"ci_1","status":"completed",
+                            "code":"print(2+2)"},
+                           {"type":"message","content":[{"type":"output_text","text":"second part"}]}]}""");
             }
             if (path.startsWith("/api/projects/p1/agents/analyst")) {
                 return json(

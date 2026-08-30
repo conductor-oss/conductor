@@ -76,6 +76,9 @@ public final class ConductorAgentResults {
     public static final String KEY_SUB_WORKFLOW_ID = "subWorkflowId";
 
     /** Latest/final text emitted by the agent. */
+    /** Tool calls the platform ran itself, with the input each was given. */
+    public static final String KEY_EXECUTED_TOOLS = "executedTools";
+
     public static final String KEY_TEXT = "text";
 
     /** Structured output of a completed run. */
@@ -94,6 +97,9 @@ public final class ConductorAgentResults {
         }
         if (execution.getText() != null) {
             outputData.put(KEY_TEXT, execution.getText());
+        }
+        if (execution.getExecutedTools() != null && !execution.getExecutedTools().isEmpty()) {
+            outputData.put(KEY_EXECUTED_TOOLS, execution.getExecutedTools());
         }
     }
 

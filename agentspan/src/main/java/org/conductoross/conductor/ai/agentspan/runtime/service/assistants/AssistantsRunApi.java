@@ -20,6 +20,8 @@ import java.util.Map;
 
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
@@ -47,6 +49,7 @@ import okhttp3.Response;
 public class AssistantsRunApi {
 
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final Logger LOG = LoggerFactory.getLogger(AssistantsRunApi.class);
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
     private final OkHttpClient httpClient;
@@ -115,8 +118,11 @@ public class AssistantsRunApi {
         String pendingToolName = null;
         String reason = null;
 
+        List<Map<String, Object>> executedTools = List.of();
+
         if (state == ConductorAgentState.COMPLETED) {
             output = latestAssistantMessage(target, auth, threadId);
+            executedTools = executedToolCalls(target, auth, threadId, run.path("id").asText());
         } else if (state == ConductorAgentState.WAITING) {
             pendingTools = describeToolCalls(run);
             if (!pendingTools.isEmpty()) {
@@ -137,6 +143,7 @@ public class AssistantsRunApi {
                 .pendingTool(pendingTool)
                 .pendingTools(pendingTools)
                 .pendingToolName(pendingToolName)
+                .executedTools(executedTools)
                 .reasonForIncompletion(reason)
                 .build();
     }
@@ -239,6 +246,55 @@ public class AssistantsRunApi {
         ObjectNode runBody = MAPPER.createObjectNode();
         runBody.put("assistant_id", target.assistantId());
         post(target, auth, "/threads/" + threadId + "/runs", runBody);
+    }
+
+    /**
+     * The tool calls the platform ran itself during this run, from its steps.
+     *
+     * <p>A built-in tool - code interpreter, file search - runs inside the platform and never sets
+     * requires_action, so it never appears in the pendingTools the workflow is asked to run. The
+     * run object does not carry it either; only the run's steps do. Fetched once, when the run
+     * reaches a terminal state, rather than on every poll.
+     *
+     * <p>Best effort: a run that finished correctly is not failed over missing step detail.
+     */
+    private List<Map<String, Object>> executedToolCalls(
+            Target target, AssistantsAuth auth, String threadId, String runId) {
+        if (runId == null || runId.isBlank()) {
+            return List.of();
+        }
+        try {
+            JsonNode steps =
+                    get(
+                            target,
+                            auth,
+                            "/threads/" + threadId + "/runs/" + runId + "/steps",
+                            "order=asc");
+            List<Map<String, Object>> calls = new ArrayList<>();
+            for (JsonNode step : steps.path("data")) {
+                for (JsonNode call : step.path("step_details").path("tool_calls")) {
+                    String type = call.path("type").asText("");
+                    Map<String, Object> described = new LinkedHashMap<>();
+                    described.put("type", type);
+                    described.put("tool_call_id", call.path("id").asText(""));
+                    described.put("status", step.path("status").asText(""));
+                    // Each tool nests its own detail under a key named after itself.
+                    JsonNode detail = call.path(type);
+                    if (!detail.isMissingNode() && !detail.isNull()) {
+                        described.put("input", MAPPER.convertValue(detail, Object.class));
+                    }
+                    calls.add(described);
+                }
+            }
+            return calls;
+        } catch (Exception e) {
+            LOG.warn(
+                    "Could not read run steps for thread {} run {}: {}",
+                    threadId,
+                    runId,
+                    e.getMessage());
+            return List.of();
+        }
     }
 
     private Map<String, Object> latestAssistantMessage(

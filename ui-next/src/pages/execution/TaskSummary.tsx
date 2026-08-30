@@ -2,7 +2,7 @@ import _isFinite from "lodash/isFinite";
 import _get from "lodash/get";
 import { durationRenderer } from "utils/date";
 import { NavLink, KeyValueTable } from "components";
-import { Link, Paper } from "@mui/material";
+import { Box, Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
 import { ReactNode, useMemo } from "react";
 
@@ -202,6 +202,50 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
     });
   }
 
+  type ExecutedTool = {
+    type: string;
+    tool_name?: string;
+    tool_call_id?: string;
+    status?: string;
+    input?: unknown;
+  };
+
+  /**
+   * Tools the platform ran by itself. Keyed by type rather than name because a built-in tool - web
+   * search, code interpreter - has no function name, and its input lives under whichever key that
+   * tool uses, so it is shown as it came rather than reshaped.
+   */
+  const asExecutedTools = (value: unknown): ExecutedTool[] => {
+    if (!Array.isArray(value)) return [];
+    return value.flatMap((entry) => {
+      if (entry == null || typeof entry !== "object") return [];
+      const record = entry as Record<string, unknown>;
+      const type = record.type;
+      if (typeof type !== "string" || type.length === 0) return [];
+      const inputKey = [
+        "input",
+        "action",
+        "arguments",
+        "code",
+        "queries",
+        "query",
+      ].find((key) => record[key] != null);
+      return [
+        {
+          type,
+          tool_name:
+            typeof record.tool_name === "string" ? record.tool_name : undefined,
+          tool_call_id:
+            typeof record.tool_call_id === "string"
+              ? record.tool_call_id
+              : undefined,
+          status: typeof record.status === "string" ? record.status : undefined,
+          input: inputKey ? record[inputKey] : undefined,
+        },
+      ];
+    });
+  };
+
   // A hosted agent (microsoft-foundry, bedrock, openai-assistants) reports the tools it is waiting on.
   // Listing them here shows what the agent asked for without leaving the page; the run they execute
   // in is linked separately below.
@@ -220,6 +264,39 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
               )
               .join(", ")}
           </span>
+        ),
+      });
+    }
+    const executedTools = asExecutedTools(taskResult.outputData?.executedTools);
+    if (executedTools.length > 0) {
+      data.push({
+        label:
+          executedTools.length === 1
+            ? "Tool run by agent"
+            : "Tools run by agent",
+        value: (
+          <Box component="span" sx={{ display: "block" }}>
+            {executedTools.map((tool, index) => (
+              <Box
+                key={tool.tool_call_id ?? `${tool.type}-${index}`}
+                component="span"
+                sx={{ display: "block", wordBreak: "break-word" }}
+              >
+                <strong>{tool.tool_name ?? tool.type}</strong>
+                {tool.status ? ` — ${tool.status}` : ""}
+                {tool.input != null && (
+                  <Box
+                    component="code"
+                    sx={{ display: "block", fontSize: "0.85em", opacity: 0.85 }}
+                  >
+                    {typeof tool.input === "string"
+                      ? tool.input
+                      : JSON.stringify(tool.input)}
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
         ),
       });
     }

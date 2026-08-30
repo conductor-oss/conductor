@@ -46,6 +46,9 @@ public class ConductorAgentStartResponse {
     private Map<String, Object> output;
 
     /** Pending tool call, when {@link #state} is already {@code WAITING}. */
+    /** Tool calls the platform ran by itself during this turn. See ConductorAgentExecution. */
+    private List<Map<String, Object>> executedTools;
+
     private Map<String, Object> pendingTool;
 
     private List<Map<String, Object>> pendingTools;

@@ -75,4 +75,40 @@ describe("TaskSummary — hosted agent tool calls", () => {
 
     expect(screen.queryByText("Tools requested")).not.toBeInTheDocument();
   });
+
+  it("shows the tools the platform ran itself, with what each was given", () => {
+    render(
+      <TaskSummary
+        taskResult={agentTask({
+          executedTools: [
+            {
+              type: "web_search_call",
+              tool_call_id: "ws_1",
+              status: "completed",
+              action: { type: "search", query: "GOOGL 1 month return" },
+            },
+            {
+              type: "code_interpreter",
+              tool_call_id: "ci_1",
+              input: "print(6*7)",
+            },
+          ],
+        })}
+      />,
+    );
+
+    // These never pause the run, so the execution view is the only place they can surface.
+    expect(screen.getByText("Tools run by agent")).toBeInTheDocument();
+    expect(screen.getByText("web_search_call")).toBeInTheDocument();
+    expect(screen.getByText(/GOOGL 1 month return/)).toBeInTheDocument();
+    expect(screen.getByText("code_interpreter")).toBeInTheDocument();
+    expect(screen.getByText("print(6*7)")).toBeInTheDocument();
+  });
+
+  it("ignores an executedTools entry with no type", () => {
+    render(
+      <TaskSummary taskResult={agentTask({ executedTools: [{}, null, 7] })} />,
+    );
+    expect(screen.queryByText(/Tools? run by agent/)).not.toBeInTheDocument();
+  });
 });

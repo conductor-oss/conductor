@@ -262,6 +262,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .requiredWorkers(Collections.emptyList())
                 .state(ConductorAgentState.COMPLETED)
                 .output(Map.of("result", extractResponseText(response)))
+                .executedTools(extractExecutedTools(response))
                 .build();
     }
 
@@ -292,6 +293,55 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             }
         }
         return adapted;
+    }
+
+    /**
+     * The tool calls Foundry ran itself while producing this reply, in order.
+     *
+     * <p>The Responses API returns one output item per step, only some of which are messages. A
+     * built-in tool - web search, code interpreter, file search - appears as its own item and never
+     * pauses the run, so it is invisible to the pendingTools path that reports the function calls a
+     * workflow has to run. Reading them here is what makes an agent's own work show up in the
+     * execution rather than only its final answer.
+     *
+     * <p>The shape differs per tool and Azure adds new ones, so each item's own fields are carried
+     * across as they come rather than mapped onto a fixed schema.
+     */
+    static List<Map<String, Object>> extractExecutedTools(JsonNode response) {
+        List<Map<String, Object>> calls = new ArrayList<>();
+        for (JsonNode output : response.path("output")) {
+            String type = output.path("type").asText("");
+            if (type.isEmpty() || "message".equals(type) || "reasoning".equals(type)) {
+                continue;
+            }
+            Map<String, Object> call = new LinkedHashMap<>();
+            call.put("type", type);
+            putIfPresent(call, output, "id", "tool_call_id");
+            putIfPresent(call, output, "name", "tool_name");
+            putIfPresent(call, output, "status", "status");
+            // Whatever the tool was actually given, under whichever key this tool uses for it.
+            for (String inputKey : TOOL_INPUT_KEYS) {
+                putIfPresent(call, output, inputKey, inputKey);
+            }
+            calls.add(call);
+        }
+        return calls;
+    }
+
+    // The fields Foundry's built-in tools carry their input in. A tool that names it something else
+    // still shows up, with its type and status, which is the part that matters most.
+    private static final List<String> TOOL_INPUT_KEYS =
+            List.of("action", "arguments", "code", "queries", "query", "container_id");
+
+    private static void putIfPresent(
+            Map<String, Object> target, JsonNode source, String field, String as) {
+        JsonNode value = source.get(field);
+        if (value == null || value.isNull()) {
+            return;
+        }
+        target.put(
+                as,
+                value.isValueNode() ? value.asText() : MAPPER.convertValue(value, Object.class));
     }
 
     /** The text parts of a Responses API reply, in order. */
