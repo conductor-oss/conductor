@@ -463,11 +463,32 @@ class ConductorAgentDelegateTest {
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
 
         TaskResult result =
-                delegate.execute(task(Map.of("agentType", "conductor", "prompt", "go")));
+                delegate.execute(
+                        task(
+                                Map.of(
+                                        "agentType", "conductor",
+                                        "prompt", "go",
+                                        "autoRunTools", false)));
 
         assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
         assertEquals(true, result.getOutputData().get("waiting"));
         assertNull(dispatcher.request, "nothing should have been scheduled");
+    }
+
+    @Test
+    void toolsRunAsTasksWithoutBeingAskedTo() {
+        // The default. A workflow that says nothing about tools still gets them run, and stays
+        // running while they do - silently completing with an unanswered question is not a
+        // reasonable thing to do by default.
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        TaskResult result =
+                delegate.execute(task(Map.of("agentType", "conductor", "prompt", "go")));
+
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals("get_revenue", dispatcher.request.toolCalls().get(0).get("tool_name"));
     }
 
     /** An SDK worker has no engine to schedule on, so it must fall back cleanly. */

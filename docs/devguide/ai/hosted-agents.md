@@ -256,12 +256,12 @@ Three things have to line up, and nothing fails loudly if they do not:
 1. **The agent has a function tool.** Only a function tool is handed back to be run. Web search,
    code interpreter and file search run inside the platform and are reported as `executedTools`,
    never scheduled — Conductor cannot run them. See [Who runs which tool](#who-runs-which-tool).
-2. **`autoRunTools: true`.** Without it the call is handed back to the workflow instead
-   (see below), and the `AGENT` task completes with `waiting: true`.
+2. **Tools are run by default.** Set `autoRunTools: false` only if the workflow means to handle
+   the call itself (see below), which completes the `AGENT` task with `waiting: true`.
 3. **A worker serves the tool's task name.** With none, the task sits `SCHEDULED` and the agent
    waits on it until `maxDurationSeconds`.
 
-Set `autoRunTools: true` and the `AGENT` task **stays `IN_PROGRESS`** while each tool the agent asked for is scheduled as an ordinary Conductor task — one per call, in parallel — and the agent is resumed with their results automatically:
+This is the default. The `AGENT` task **stays `IN_PROGRESS`** while each tool the agent asked for is scheduled as an ordinary Conductor task in the same workflow — one per call, in parallel, named `<agentRef>__t<turn>__<callId>` so a second round of tools does not collide with the first — and the agent is resumed with their results automatically. The workflow keeps running until a worker completes them:
 
 ```json
 {
@@ -271,7 +271,6 @@ Set `autoRunTools: true` and the `AGENT` task **stays `IN_PROGRESS`** while each
   "inputParameters": {
     "agentType": "microsoft-foundry",
     "prompt": "compare Q3 revenue per engineer against Q2",
-    "autoRunTools": true,
     "credentials": {
       "client_id":     "${workflow.secrets.AZURE_CRED.client_id}",
       "client_secret": "${workflow.secrets.AZURE_CRED.client_secret}",

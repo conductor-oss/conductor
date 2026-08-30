@@ -118,7 +118,7 @@ class AzureFoundryToolLoopTest {
     }
 
     @Test
-    void withoutAutoRunToolsTheCallIsHandedBackInsteadOfScheduled() {
+    void turningToolExecutionOffHandsTheCallBackInstead() {
         FakeDispatcher dispatcher = new FakeDispatcher();
         ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
         Task task = agentTask();
@@ -142,7 +142,8 @@ class AzureFoundryToolLoopTest {
         Map<String, Object> input = new LinkedHashMap<>();
         input.put("agentType", "microsoft-foundry");
         input.put("prompt", "what was Q3 revenue?");
-        input.put("autoRunTools", true);
+        // Left unset deliberately: running the tool is the default, and this is the path a
+        // workflow takes when its author said nothing about tools at all.
         // Named the way a workflow written against the docs names it: the agent's URL, nothing
         // else.
         input.put("agentUrl", azure.url("/api/projects/p1/agents/analyst").toString());

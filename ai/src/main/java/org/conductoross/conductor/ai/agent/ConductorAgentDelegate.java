@@ -206,8 +206,11 @@ public class ConductorAgentDelegate {
 
     private boolean shouldRunToolsHere(
             ConductorAgentExecution execution, ConductorAgentRequest request) {
+        // Default on. An agent that asks for a tool is asking the workflow to do work, so the
+        // work becomes a task and the run stays open until it is done. Handing the call back
+        // instead is the special case, and has to be asked for.
         return toolDispatcher != null
-                && Boolean.TRUE.equals(request.getAutoRunTools())
+                && !Boolean.FALSE.equals(request.getAutoRunTools())
                 && execution.getState() == ConductorAgentState.WAITING
                 && execution.getPendingTools() != null
                 && !execution.getPendingTools().isEmpty();

@@ -532,7 +532,9 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={!!get("inputParameters.autoRunTools")}
+                    // Unset means on, so the switch has to show on. Turning it off writes false
+                    // explicitly rather than clearing the key, which would read as on again.
+                    checked={get("inputParameters.autoRunTools") !== false}
                     onChange={(e) =>
                       set("inputParameters.autoRunTools", e.target.checked)
                     }
@@ -551,7 +553,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 hand the tool request back to the workflow.
               </Typography>
             </Grid>
-            {!!get("inputParameters.autoRunTools") && (
+            {get("inputParameters.autoRunTools") !== false && (
               <Grid size={12}>
                 <ConductorInput
                   label="Tool to task name overrides (JSON, optional)"

@@ -17,8 +17,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -44,11 +46,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+@ConditionalOnProperty(
+        name = "conductor.integrations.ai.agent.tool-execution",
+        havingValue = "subworkflow")
+@Conditional(AIIntegrationEnabledCondition.class)
 public class SubWorkflowAgentToolDispatcher implements AgentToolDispatcher {
 
     /** Where each tool task's own reference name is recorded, so results can be matched back. */
-    static final String TOOL_CALL_ID = "_toolCallId";
+    static final String TOOL_CALL_ID = AgentToolNaming.TOOL_CALL_ID;
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -156,10 +161,7 @@ public class SubWorkflowAgentToolDispatcher implements AgentToolDispatcher {
         String toolCallId = String.valueOf(toolCall.get("tool_call_id"));
 
         Map<String, Object> input =
-                new LinkedHashMap<>(asLiteralText(parseArguments(toolCall.get("arguments"))));
-        input.put(TOOL_CALL_ID, toolCallId);
-        input.put("_toolName", toolName);
-        input.put("_agentExecutionId", request.executionId());
+                AgentToolNaming.toolInput(toolCall, toolCallId, toolName, request.executionId());
 
         Map<String, Object> task = new LinkedHashMap<>();
         task.put("name", taskNameFor(request, toolName));
