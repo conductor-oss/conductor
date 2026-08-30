@@ -274,6 +274,12 @@ public class AssistantsRunApi {
             for (JsonNode step : steps.path("data")) {
                 for (JsonNode call : step.path("step_details").path("tool_calls")) {
                     String type = call.path("type").asText("");
+                    // A function call is ours: the run paused, the workflow ran it, and it has a
+                    // task of its own. Reporting it here would credit the platform with work
+                    // Conductor did, and once tool calls become tasks would record each one twice.
+                    if ("function".equals(type)) {
+                        continue;
+                    }
                     Map<String, Object> described = new LinkedHashMap<>();
                     described.put("type", type);
                     described.put("tool_call_id", call.path("id").asText(""));

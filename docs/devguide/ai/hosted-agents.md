@@ -216,13 +216,15 @@ Foundry is three APIs behind one `agentType`, and the endpoint decides which:
 
 | Endpoint | API | Behaviour |
 |---|---|---|
-| `…openai.azure.com/openai` | Classic Assistants — threads and runs | Polled; supports tool calls and multi-turn |
-| `…services.ai.azure.com/api/projects/…` | The project's Responses API | Answers in one call |
-| `…inference.ml.azure.com`, or `…services.ai.azure.com/models` | Model inference (chat completions) | Answers in one call |
+| `…openai.azure.com/openai` | Classic Assistants — threads and runs | Polled; tool calls and multi-turn |
+| `…services.ai.azure.com/api/projects/…` | The project's Responses API | Answers inside the call; tool calls and multi-turn |
+| `…inference.ml.azure.com`, or `…services.ai.azure.com/models` | Model inference (chat completions) | Answers inside the call; no tools, no conversation |
 
-The two one-shot surfaces complete the `AGENT` task on its first invocation — there is nothing to poll, so `pollIntervalSeconds` has no effect and the execution cannot be resumed. Only the classic Assistants surface has the tool-call loop described above.
+**Model inference** completes the `AGENT` task on its first invocation. There is nothing to poll, so `pollIntervalSeconds` has no effect, and the execution cannot be resumed.
 
-For a project agent, its configured instructions and tools are read from the agent definition and forwarded, so its web search, code interpreter and file search actually run.
+**The Responses surface** also answers inside the call, but a turn is not always an answer: when the agent wants a function run it comes back asking for it, and the task waits exactly as it does on the Assistants surface. Turns are chained by the response id, so `executionId` names the latest turn rather than staying fixed. Set `rawConfig.conversation` to a Foundry conversation id to group the turns into one thread instead — the two are alternatives, and Conductor sends whichever you configured.
+
+For a project agent, Foundry applies the agent's own model, instructions and tools, because the request names the agent rather than describing it.
 
 !!! note "Endpoints the hostname cannot classify"
     Sovereign clouds (`.azure.us`, `.azure.cn`), private endpoints and proxies do not match the public hostname patterns. Set `rawConfig.surface` to `assistants`, `responses`, or `inference` to say outright which API the endpoint serves.

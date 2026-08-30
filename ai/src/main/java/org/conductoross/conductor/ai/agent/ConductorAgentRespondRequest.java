@@ -28,6 +28,15 @@ import lombok.NoArgsConstructor;
 public class ConductorAgentRespondRequest {
 
     private String executionId;
+
+    /**
+     * Where the agent lives, when the task named it here rather than in rawConfig.
+     *
+     * <p>Without it a stateless client cannot rebuild the target on a later call, and an agent
+     * configured entirely by agentUrl fails the moment its run has to be continued or stopped.
+     */
+    private String agentUrl;
+
     private Map<String, Object> body;
 
     /**

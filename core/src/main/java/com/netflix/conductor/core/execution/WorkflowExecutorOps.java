@@ -2488,6 +2488,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     @Override
     public List<TaskModel> scheduleDynamicTasks(
             WorkflowModel workflow, List<WorkflowTask> workflowTasks) {
+        // Every other entry into this sequence checks first, because the caller runs on a worker
+        // thread without the execution lock: the workflow can reach a terminal state between the
+        // task loading it and this call, and queueing work into a dead run has real side effects.
+        if (workflow.getStatus().isTerminal()) {
+            LOGGER.info(
+                    "Not scheduling {} dynamic task(s): workflow {} is already {}",
+                    workflowTasks.size(),
+                    workflow.getWorkflowId(),
+                    workflow.getStatus());
+            return List.of();
+        }
         // The same sequence scheduleNextIteration and finalizeRerun already use to put
         // runtime-built tasks into a running workflow, without the loop-specific parts.
         List<TaskModel> scheduled = new LinkedList<>();

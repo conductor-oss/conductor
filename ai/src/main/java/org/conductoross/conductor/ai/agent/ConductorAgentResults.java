@@ -98,9 +98,28 @@ public final class ConductorAgentResults {
         if (execution.getText() != null) {
             outputData.put(KEY_TEXT, execution.getText());
         }
-        if (execution.getExecutedTools() != null && !execution.getExecutedTools().isEmpty()) {
-            outputData.put(KEY_EXECUTED_TOOLS, execution.getExecutedTools());
+        writeExecutedTools(outputData, execution);
+    }
+
+    /**
+     * Records the tools the platform ran itself, keeping what earlier turns reported.
+     *
+     * <p>A run reports these per turn, and a turn that pauses for a function has usually run some
+     * getting there. Overwriting rather than accumulating would leave only the last turn's, so the
+     * work an agent did on the way to its answer would disappear as it went.
+     */
+    public static void writeExecutedTools(
+            Map<String, Object> outputData, ConductorAgentExecution execution) {
+        if (execution.getExecutedTools() == null || execution.getExecutedTools().isEmpty()) {
+            return;
         }
+        List<Object> all = new ArrayList<>();
+        Object existing = outputData.get(KEY_EXECUTED_TOOLS);
+        if (existing instanceof List<?> list) {
+            all.addAll(list);
+        }
+        all.addAll(execution.getExecutedTools());
+        outputData.put(KEY_EXECUTED_TOOLS, all);
     }
 
     /**

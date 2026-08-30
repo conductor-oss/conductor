@@ -163,6 +163,7 @@ public class ConductorAgentDelegate {
                     conductorAgentClient.respondWithStatus(
                             ConductorAgentRespondRequest.builder()
                                     .executionId(executionId)
+                                    .agentUrl(request.getAgentUrl())
                                     .body(Map.of("result", request.getPrompt()))
                                     .credentials(request.getCredentials())
                                     .rawConfig(request.getRawConfig())
@@ -241,6 +242,7 @@ public class ConductorAgentDelegate {
                                 execution.getPendingTools(),
                                 request.getToolTaskNames()));
 
+        ConductorAgentResults.writeExecutedTools(output, execution);
         output.put(ConductorAgentResults.KEY_TOOL_DISPATCH_ID, dispatch.dispatchId());
         // Both, matching the SUB_WORKFLOW system task: the field carries the relationship, and the
         // output copy is what the execution view reads to offer a drill-in from the agent to the
@@ -288,20 +290,22 @@ public class ConductorAgentDelegate {
                 break;
         }
 
-        // The batch is done, so this task is no longer waiting on it.
-        result.getOutputData().remove(ConductorAgentResults.KEY_TOOL_DISPATCH_ID);
-        result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOL);
-        result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOLS);
-
         try {
             ConductorAgentStatusResponse afterRespond =
                     conductorAgentClient.respondWithStatus(
                             ConductorAgentRespondRequest.builder()
                                     .executionId(executionId)
+                                    .agentUrl(request.getAgentUrl())
                                     .toolResults(dispatch.resultsByToolCallId())
                                     .credentials(request.getCredentials())
                                     .rawConfig(request.getRawConfig())
                                     .build());
+            // Cleared only once the results are actually in. Clearing before the call would, on a
+            // transient failure, leave a task that looks as if it never dispatched anything - and
+            // the next poll would read the same outstanding tool calls and run every one again.
+            result.getOutputData().remove(ConductorAgentResults.KEY_TOOL_DISPATCH_ID);
+            result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOL);
+            result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOLS);
             ConductorAgentExecution execution =
                     fromStatus(
                             afterRespond != null
@@ -389,6 +393,10 @@ public class ConductorAgentDelegate {
                 if (execution.getText() != null) {
                     output.put(ConductorAgentResults.KEY_TEXT, execution.getText());
                 }
+                // A turn that stops to ask for a function has usually run built-in tools getting
+                // there. writeCompleted is the only other writer of these, so without this they
+                // are lost on every turn that is not the last one.
+                ConductorAgentResults.writeExecutedTools(output, execution);
                 result.setStatus(TaskResult.Status.COMPLETED);
                 break;
             case COMPLETED:
@@ -488,6 +496,7 @@ public class ConductorAgentDelegate {
                     ConductorAgentCancelRequest.builder()
                             .executionId(executionId)
                             .reason(reason)
+                            .agentUrl(request.getAgentUrl())
                             .credentials(request.getCredentials())
                             .rawConfig(request.getRawConfig())
                             .build());

@@ -386,6 +386,10 @@ class AzureFoundryAgentClientTest {
         assertThat(status.getExecutedTools().get(0)).containsEntry("type", "code_interpreter");
         assertThat(status.getExecutedTools().get(0).get("input").toString()).contains("print(6*7)");
         assertThat(requestLog).anyMatch(r -> r.contains("/steps"));
+
+        // The function call is Conductor's own work and has a task of its own. Counting it here
+        // would credit Azure with it, and once tool calls become tasks would record it twice.
+        assertThat(status.getExecutedTools()).noneMatch(t -> "function".equals(t.get("type")));
     }
 
     // --- token provider cache --------------------------------------------------------------
@@ -630,12 +634,15 @@ class AzureFoundryAgentClientTest {
                 return json("{\"id\":\"" + latestRunId.get() + "\",\"status\":\"queued\"}");
             }
             if (path.contains("/steps")) {
+                // A real run mixes both: a tool Azure ran, and a function the workflow ran.
                 return json(
                         """
                         {"data":[
                           {"status":"completed","step_details":{"tool_calls":[
                              {"id":"call_ci","type":"code_interpreter",
-                              "code_interpreter":{"input":"print(6*7)"}}]}}]}""");
+                              "code_interpreter":{"input":"print(6*7)"}},
+                             {"id":"call_fn","type":"function",
+                              "function":{"name":"get_revenue","output":"4.2M"}}]}}]}""");
             }
             if (path.contains("/runs")) {
                 if ("POST".equals(request.getMethod())) {

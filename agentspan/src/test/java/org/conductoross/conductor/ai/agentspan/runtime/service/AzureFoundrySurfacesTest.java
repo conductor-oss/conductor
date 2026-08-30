@@ -56,6 +56,8 @@ class AzureFoundrySurfacesTest {
     private final Map<String, String> bodies = new LinkedHashMap<>();
     private final java.util.concurrent.atomic.AtomicBoolean functionCallTurn =
             new java.util.concurrent.atomic.AtomicBoolean(false);
+    private final java.util.concurrent.atomic.AtomicReference<String> responseBody =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -324,6 +326,130 @@ class AzureFoundrySurfacesTest {
     }
 
     @Test
+    void aConversationalResumeSendsAMessageRatherThanAToolResult() throws Exception {
+        // Resuming with a new prompt is the next thing to say, not an answer to a question. Shaping
+        // it as a tool result fails outright: there is no call to key it on.
+        ConductorAgentRespondRequest request =
+                ConductorAgentRespondRequest.builder()
+                        .executionId("resp-1")
+                        .body(Map.of("result", "and what about GOOG?"))
+                        .credentials(credentials)
+                        .rawConfig(
+                                Map.of(
+                                        "endpoint", base() + "/api/projects/p1",
+                                        "assistantId", "analyst",
+                                        "surface", "responses"))
+                        .build();
+        paths.clear();
+
+        var status = client.respondWithStatus(request);
+
+        assertThat(status).isNotNull();
+        JsonNode body = MAPPER.readTree(bodies.get(responsesPath()));
+        assertThat(body.path("input").get(0).path("role").asText()).isEqualTo("user");
+        assertThat(body.path("input").get(0).path("content").asText())
+                .isEqualTo("and what about GOOG?");
+        assertThat(body.path("input").get(0).has("call_id")).isFalse();
+    }
+
+    @Test
+    void aConfiguredConversationReplacesTheChainRatherThanJoiningIt() throws Exception {
+        // The two are alternative ways to carry turn history and the API takes one of them.
+        ConductorAgentRespondRequest request =
+                ConductorAgentRespondRequest.builder()
+                        .executionId("resp-1")
+                        .toolResults(Map.of("call_1", Map.of("revenue", "4.2M")))
+                        .credentials(credentials)
+                        .rawConfig(
+                                Map.of(
+                                        "endpoint", base() + "/api/projects/p1",
+                                        "assistantId", "analyst",
+                                        "surface", "responses",
+                                        "conversation", "conv_123"))
+                        .build();
+        paths.clear();
+
+        client.respondWithStatus(request);
+
+        JsonNode body = MAPPER.readTree(bodies.get(responsesPath()));
+        assertThat(body.path("conversation").asText()).isEqualTo("conv_123");
+        assertThat(body.has("previous_response_id")).isFalse();
+    }
+
+    @Test
+    void aRejectedTurnFailsRatherThanCompletingWithNothingToSay() {
+        // A content filter or an exhausted token budget still answers 200, with no message. Reading
+        // only the output items would call that a completed agent that happened to say nothing.
+        responseBody.set(
+                """
+                {"id":"resp-9","status":"incomplete","output":[],
+                 "incomplete_details":{"reason":"content_filter"}}""");
+
+        ConductorAgentStartResponse start =
+                client.startAgent(
+                        ConductorAgentStartRequest.builder()
+                                .prompt("something disallowed")
+                                .credentials(credentials)
+                                .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                                .rawConfig(Map.of("surface", "responses"))
+                                .build());
+
+        assertThat(start.getState()).isEqualTo(ConductorAgentState.FAILED);
+        assertThat(start.getReasonForIncompletion()).contains("content_filter");
+    }
+
+    @Test
+    void aTurnThatSpeaksAndAsksKeepsWhatItSaid() {
+        responseBody.set(
+                """
+                {"id":"resp-8","output":[
+                   {"type":"message","content":[{"type":"output_text","text":"Let me look."}]},
+                   {"type":"function_call","id":"fc_2","call_id":"call_2",
+                    "name":"get_revenue","arguments":"{}"}]}""");
+
+        ConductorAgentStartResponse start =
+                client.startAgent(
+                        ConductorAgentStartRequest.builder()
+                                .prompt("revenue?")
+                                .credentials(credentials)
+                                .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                                .rawConfig(Map.of("surface", "responses"))
+                                .build());
+
+        assertThat(start.getState()).isEqualTo(ConductorAgentState.WAITING);
+        assertThat(start.getOutput()).isEqualTo(Map.of("result", "Let me look."));
+    }
+
+    @Test
+    void anAgentNamedOnlyByItsUrlCanStillBeContinued() throws Exception {
+        // The whole tool loop runs on this: start names the agent by agentUrl, and every later call
+        // has to find the same agent. rawConfig carries no endpoint here, so losing agentUrl on the
+        // way to respond fails the turn outright.
+        ConductorAgentRespondRequest request =
+                ConductorAgentRespondRequest.builder()
+                        .executionId("resp-1")
+                        .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                        .toolResults(Map.of("call_1", Map.of("revenue", "4.2M")))
+                        .credentials(credentials)
+                        .rawConfig(Map.of("surface", "responses"))
+                        .build();
+        paths.clear();
+
+        var status = client.respondWithStatus(request);
+
+        assertThat(status).isNotNull();
+        JsonNode body = MAPPER.readTree(bodies.get(responsesPath()));
+        assertThat(body.path("agent_reference").path("name").asText()).isEqualTo("analyst");
+    }
+
+    private String responsesPath() {
+        return paths.stream()
+                .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
     void aResponsesTurnIsContinuedByChainingOffTheTurnBefore() throws Exception {
         ConductorAgentRespondRequest request =
                 ConductorAgentRespondRequest.builder()
@@ -377,6 +503,9 @@ class AzureFoundrySurfacesTest {
                         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"message\":{\"content\":\"hello there\"}}]}");
             }
             if (path.startsWith("/api/projects/p1/openai/v1/responses")) {
+                if (responseBody.get() != null) {
+                    return json(responseBody.get());
+                }
                 if (functionCallTurn.get()) {
                     return json(
                             """

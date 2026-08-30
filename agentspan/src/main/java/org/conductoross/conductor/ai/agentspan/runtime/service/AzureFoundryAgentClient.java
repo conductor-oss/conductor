@@ -272,6 +272,28 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * would report the request as work done and complete the task without ever running it.
      */
     private ConductorAgentStartResponse responsesTurn(JsonNode response, String agentId) {
+        // The reply carries its own verdict, and a rejected turn still comes back 200 with no
+        // message. Reading only the output items would report a content filter or an exhausted
+        // token budget as a completed agent that happened to say nothing.
+        String status = response.path("status").asText("");
+        if ("queued".equals(status) || "in_progress".equals(status)) {
+            return ConductorAgentStartResponse.builder()
+                    .executionId(response.path("id").asText())
+                    .agentName(agentId)
+                    .requiredWorkers(Collections.emptyList())
+                    .state(ConductorAgentState.RUNNING)
+                    .build();
+        }
+        if ("failed".equals(status) || "incomplete".equals(status)) {
+            return ConductorAgentStartResponse.builder()
+                    .executionId(response.path("id").asText())
+                    .agentName(agentId)
+                    .requiredWorkers(Collections.emptyList())
+                    .state(ConductorAgentState.FAILED)
+                    .reasonForIncompletion(whyTheTurnStopped(response, status))
+                    .build();
+        }
+
         List<Map<String, Object>> pendingTools = extractPendingTools(response);
         List<Map<String, Object>> executedTools = extractExecutedTools(response);
         logOutputItems(agentId, response, executedTools, pendingTools);
@@ -285,14 +307,29 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         .executedTools(executedTools);
 
         if (!pendingTools.isEmpty()) {
+            // A turn can both speak and ask. Keeping what it said stops the narration around a
+            // tool call from being dropped just because the turn is not over.
+            String saidSoFar = extractResponseText(response);
             return turn.state(ConductorAgentState.WAITING)
                     .pendingTool(pendingTools.get(0))
                     .pendingTools(pendingTools)
+                    .output(StringUtils.isBlank(saidSoFar) ? null : Map.of("result", saidSoFar))
                     .build();
         }
         return turn.state(ConductorAgentState.COMPLETED)
                 .output(Map.of("result", extractResponseText(response)))
                 .build();
+    }
+
+    /** Whatever the reply says about why it stopped, preferring the most specific. */
+    private static String whyTheTurnStopped(JsonNode response, String status) {
+        String message = response.path("error").path("message").asText("");
+        if (StringUtils.isBlank(message)) {
+            message = response.path("incomplete_details").path("reason").asText("");
+        }
+        return StringUtils.isBlank(message)
+                ? "Microsoft Foundry returned a turn with status '" + status + "'"
+                : "Microsoft Foundry turn " + status + ": " + message;
     }
 
     /** The same turn, as a status - what respond() and a poll return. */
@@ -308,6 +345,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .pendingTool(turn.getPendingTool())
                 .pendingTools(turn.getPendingTools())
                 .executedTools(turn.getExecutedTools())
+                .reasonForIncompletion(turn.getReasonForIncompletion())
                 .build();
     }
 
@@ -485,7 +523,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      */
     @Override
     public ConductorAgentStatusResponse respondWithStatus(ConductorAgentRespondRequest request) {
-        Azure azure = azure(request.getCredentials(), request.getRawConfig());
+        Azure azure =
+                azure(
+                        request.getCredentials(),
+                        request.getAgentUrl(),
+                        request.getRawConfig(),
+                        null);
         Surface surface = surfaceOf(azure.target().baseUrl(), request.getRawConfig());
         if (surface == Surface.RESPONSES) {
             return withTokenEviction(azure, auth -> continueResponse(request, azure, auth));
@@ -521,21 +564,37 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         if (StringUtils.isNotBlank(agentVersion)) {
             agent.put("version", agentVersion);
         }
+        // A conversation and previous_response_id are two ways to say the same thing - where the
+        // turn history lives - and the API takes one or the other, not both. A configured
+        // conversation already holds it; without one the previous turn's id chains them.
         String conversation = rawConfig(request.getRawConfig(), "conversation");
         if (StringUtils.isNotBlank(conversation)) {
             body.put("conversation", conversation);
+        } else {
+            body.put("previous_response_id", request.getExecutionId());
         }
-        body.put("previous_response_id", request.getExecutionId());
 
         ArrayNode input = body.putArray("input");
-        AgentBodies.toolResults(request, outstandingToolCallIds(request))
-                .forEach(
-                        (toolCallId, output) -> {
-                            ObjectNode item = input.addObject();
-                            item.put("type", "function_call_output");
-                            item.put("call_id", toolCallId);
-                            item.put("output", String.valueOf(output));
-                        });
+        List<String> outstanding = outstandingToolCallIds(request);
+        // toolResults present at all means this answers a tool turn, even when empty - an empty
+        // batch is a broken dispatch and has to say so, not quietly become a chat message.
+        boolean answeringTools = request.getToolResults() != null || !outstanding.isEmpty();
+        if (answeringTools) {
+            AgentBodies.toolResults(request, outstanding)
+                    .forEach(
+                            (toolCallId, output) -> {
+                                ObjectNode item = input.addObject();
+                                item.put("type", "function_call_output");
+                                item.put("call_id", toolCallId);
+                                item.put("output", String.valueOf(output));
+                            });
+        } else {
+            // Nothing is waiting on a tool, so this is the next thing to say rather than an answer
+            // to a question. Asking toolResults to shape it would fail: it has no call to key on.
+            ObjectNode message = input.addObject();
+            message.put("role", "user");
+            message.put("content", AgentBodies.toMessage(request));
+        }
 
         JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
         return responsesStatus(response, agentId);
@@ -582,7 +641,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             // Inside the try: locating the run resolves credentials, and cancellation is
             // best-effort, so a credential that no longer resolves should warn like any other
             // cancel failure rather than propagate.
-            Azure azure = azure(request.getCredentials(), request.getRawConfig());
+            Azure azure =
+                    azure(
+                            request.getCredentials(),
+                            request.getAgentUrl(),
+                            request.getRawConfig(),
+                            null);
             withTokenEviction(
                     azure,
                     auth -> {

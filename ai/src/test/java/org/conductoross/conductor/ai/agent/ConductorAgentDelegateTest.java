@@ -378,6 +378,30 @@ class ConductorAgentDelegateTest {
     }
 
     @Test
+    void atransientRespondFailureKeepsTheBatchHandleSoToolsAreNotRerun() {
+        // The tools have run and their results are in flight. If the handle is dropped before the
+        // provider accepts them, the next poll sees a task that never dispatched anything, reads
+        // the same outstanding calls back off the provider, and runs every tool a second time.
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        client.respondFailure = new RuntimeException("connection reset");
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status =
+                AgentToolDispatch.completed(
+                        "dispatch-1", Map.of("call-1", Map.of("revenue", "4.2M")));
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        TaskResult result = delegate.execute(task);
+
+        assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+        assertEquals("dispatch-1", result.getOutputData().get("toolDispatchId"));
+    }
+
+    @Test
     void afailedToolRunFailsTheAgentTask() {
         ToolCallingAgentClient client = new ToolCallingAgentClient();
         RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
@@ -530,6 +554,7 @@ class ConductorAgentDelegateTest {
                 List.of(Map.of("tool_name", "get_revenue", "tool_call_id", "call-1"));
         private ConductorAgentStatusResponse respondStatus;
         private ConductorAgentRespondRequest respondedRequest;
+        private RuntimeException respondFailure;
         private int respondCalls;
 
         @Override
@@ -564,6 +589,9 @@ class ConductorAgentDelegateTest {
         public void respond(ConductorAgentRespondRequest request) {
             respondCalls++;
             respondedRequest = request;
+            if (respondFailure != null) {
+                throw respondFailure;
+            }
         }
 
         @Override
