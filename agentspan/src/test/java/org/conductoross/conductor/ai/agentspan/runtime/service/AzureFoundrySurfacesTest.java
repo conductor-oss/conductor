@@ -165,9 +165,10 @@ class AzureFoundrySurfacesTest {
 
         // Naming the agent is what makes this the agent's own run rather than an anonymous model
         // call that happens to behave like it. Without it Azure records nothing against the agent.
+        // The property is agent_reference; the service rejects "agent" as deprecated.
         JsonNode body = MAPPER.readTree(bodies.get(responsesPath));
-        assertThat(body.path("agent").path("type").asText()).isEqualTo("agent_reference");
-        assertThat(body.path("agent").path("name").asText()).isEqualTo("analyst");
+        assertThat(body.path("agent_reference").path("type").asText()).isEqualTo("agent_reference");
+        assertThat(body.path("agent_reference").path("name").asText()).isEqualTo("analyst");
         assertThat(body.path("input").get(0).path("content").asText()).isEqualTo("analyse this");
 
         // The agent supplies its own model, instructions and tools; sending ours would override
@@ -197,7 +198,7 @@ class AzureFoundrySurfacesTest {
                         .orElseThrow();
         assertThat(
                         MAPPER.readTree(bodies.get(responsesPath))
-                                .path("agent")
+                                .path("agent_reference")
                                 .path("version")
                                 .asText())
                 .isEqualTo("3");

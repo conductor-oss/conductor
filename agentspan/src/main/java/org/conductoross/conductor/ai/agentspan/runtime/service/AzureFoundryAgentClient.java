@@ -242,7 +242,9 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         String agentId = azure.target().assistantId();
 
         ObjectNode body = MAPPER.createObjectNode();
-        ObjectNode agent = body.putObject("agent");
+        // agent_reference, not agent: the service rejects the latter as deprecated, though parts of
+        // the REST documentation still show it.
+        ObjectNode agent = body.putObject("agent_reference");
         agent.put("type", "agent_reference");
         agent.put("name", agentId);
         String agentVersion = rawConfig(request.getRawConfig(), "agentVersion");

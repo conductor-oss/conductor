@@ -444,9 +444,10 @@ from the run's steps, fetched once when the run reaches a terminal state rather 
 Each call carries its type, id, status, and whatever field that tool puts its input in — the shape
 differs per tool and Azure adds new ones, so it is carried across as it comes.
 
-**The run is attributed to your agent.** On the `responses` surface the request names the agent
-(`agent: {type: agent_reference, name: ...}`), so Foundry runs the agent itself and the call shows
-up against it in the project's monitoring. An earlier version read the agent's definition and
+**The run is attributed to your agent.** On the `responses` surface the request names the agent —
+`agent_reference: {type: "agent_reference", name: "..."}` — so Foundry runs the agent itself and the
+call shows up against it in the project's monitoring. (Parts of the Azure REST documentation still
+show an `agent` property for this; the service rejects it as deprecated.) An earlier version read the agent's definition and
 replayed its model, instructions and tools as an anonymous response — the answers looked right, but
 Azure had no record of the agent being called, and anything the definition held that was not copied
 was silently dropped.
