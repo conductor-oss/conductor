@@ -138,6 +138,72 @@ A function tool is one the platform **cannot** run: you registered only its sche
 
 There are two ways to answer. `autoRunTools` is the recommended one.
 
+#### Give a Foundry agent a function tool
+
+A function tool is the only kind Foundry hands back, so this is the prerequisite for Conductor
+running anything. **The Foundry portal cannot add one** — it shows an agent's function tools but has
+no editor for them, so use the REST API or an SDK.
+
+Get a token for the Foundry scope and create the agent with the tool in its definition:
+
+```bash
+export AGENT_TOKEN=$(az account get-access-token \
+  --scope "https://ai.azure.com/.default" --query accessToken -o tsv)
+
+curl -X POST "$FOUNDRY_PROJECT_ENDPOINT/agents?api-version=v1" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AGENT_TOKEN" \
+  -d '{
+    "name": "revenue-analyst",
+    "description": "Answers revenue questions",
+    "definition": {
+      "kind": "prompt",
+      "model": "gpt-4.1-mini",
+      "instructions": "Use get_revenue for any question about revenue. Never guess a number.",
+      "tools": [
+        {
+          "type": "function",
+          "name": "get_revenue",
+          "description": "Revenue for one quarter, in USD",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "quarter": { "type": "string", "description": "e.g. Q3 2026" }
+            },
+            "required": ["quarter"],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  }'
+```
+
+The `name` here — `get_revenue` — is what Conductor schedules a task for. The `description` and
+`parameters` are what the model reasons about, so an agent that never calls the tool usually has a
+vague description rather than a wiring problem. Say plainly what the tool is for and when to use it,
+in the instructions as well as the description.
+
+`$FOUNDRY_PROJECT_ENDPOINT` is the project endpoint, the same value the `AGENT` task uses as
+`rawConfig.endpoint` — `https://<resource>.services.ai.azure.com/api/projects/<project>`.
+
+#### Write the worker
+
+The tool becomes a `SIMPLE` task of the tool's own name, so a worker registered for `get_revenue`
+serves it with no further configuration. **The function's arguments arrive as the task input,
+flattened** — a call with `{"quarter": "Q3 2026"}` gives the worker `quarter` at the top level,
+alongside three fields Conductor adds:
+
+| Input key | What it is |
+|---|---|
+| *the function's own arguments* | Flattened at the top level, one key per argument |
+| `_toolCallId` | The provider's call id, used to route this result back to the right call |
+| `_toolName` | The tool as the agent named it, before any `toolTaskNames` mapping |
+| `_agentExecutionId` | The agent run this call belongs to |
+
+Whatever the worker returns as its output map is sent back to the agent as that call's result. Keep
+it to what the model needs — it becomes tokens in the next turn.
+
 #### Let Conductor run the tools (`autoRunTools`)
 
 Three things have to line up, and nothing fails loudly if they do not:
