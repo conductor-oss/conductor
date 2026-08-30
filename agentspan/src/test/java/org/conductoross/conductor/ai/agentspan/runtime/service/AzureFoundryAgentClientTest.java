@@ -35,6 +35,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -596,6 +597,56 @@ class AzureFoundryAgentClientTest {
         }
     }
 
+    // --- agent discovery / listExternalAgents ------------------------------------------------
+
+    @Test
+    void listExternalAgentsReturnsAgentNamesFromClassicEndpoint() {
+        String endpoint = foundry.url("").toString().replaceAll("/$", "");
+        List<AgentSummary> agents = client.listExternalAgents(credentials, endpoint);
+
+        assertThat(agents)
+                .extracting(AgentSummary::getName)
+                .containsExactlyInAnyOrder("ticket-classifier", "summarizer");
+    }
+
+    @Test
+    void listExternalAgentsCarriesEndpointOnEachSummary() {
+        String endpoint = foundry.url("").toString().replaceAll("/$", "");
+        List<AgentSummary> agents = client.listExternalAgents(credentials, endpoint);
+
+        assertThat(agents)
+                .isNotEmpty()
+                .allSatisfy(a -> assertThat(a.getEndpoint()).isEqualTo(endpoint));
+    }
+
+    @Test
+    void listExternalAgentsSetsTypeMicrosoftFoundry() {
+        String endpoint = foundry.url("").toString().replaceAll("/$", "");
+        List<AgentSummary> agents = client.listExternalAgents(credentials, endpoint);
+
+        assertThat(agents)
+                .isNotEmpty()
+                .allSatisfy(a -> assertThat(a.getType()).isEqualTo("microsoft-foundry"));
+    }
+
+    @Test
+    void listExternalAgentsStripsTrailingSlashFromEndpoint() {
+        String endpointWithSlash = foundry.url("").toString(); // ends with /
+        String endpointClean = endpointWithSlash.replaceAll("/$", "");
+        List<AgentSummary> agents = client.listExternalAgents(credentials, endpointWithSlash);
+
+        assertThat(agents)
+                .isNotEmpty()
+                .allSatisfy(a -> assertThat(a.getEndpoint()).isEqualTo(endpointClean));
+    }
+
+    @Test
+    void listExternalAgentsReturnsEmptyListOnConnectionError() {
+        List<AgentSummary> agents = client.listExternalAgents(credentials, "http://localhost:1");
+
+        assertThat(agents).isEmpty();
+    }
+
     /** Routes by path so a test can poll as many times as it likes without pre-enqueuing. */
     private final class FoundryDispatcher extends Dispatcher {
 
@@ -617,6 +668,16 @@ class AzureFoundryAgentClientTest {
             }
             if (rejectAuth.get()) {
                 return new MockResponse().setResponseCode(401).setBody("{\"error\":\"expired\"}");
+            }
+            // Agent discovery — classic Assistants endpoint and Foundry project /agents surface.
+            if ("GET".equals(request.getMethod())
+                    && (path.startsWith("/openai/assistants") || path.startsWith("/agents"))) {
+                return json(
+                        """
+                        {"data":[
+                          {"id":"asst-1","name":"ticket-classifier","description":"Classifies support tickets","model":"gpt-4","created_at":1700000000},
+                          {"id":"asst-2","name":"summarizer","description":"Summarises content","model":"gpt-4","created_at":1700001000}
+                        ]}""");
             }
             if (path.contains("/threads?")) {
                 return json("{\"id\":\"thread-1\"}");
