@@ -282,9 +282,6 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      */
     private void logOutputItems(
             String agentId, JsonNode response, List<Map<String, Object>> executedTools) {
-        if (!log.isDebugEnabled()) {
-            return;
-        }
         List<String> types = new ArrayList<>();
         for (JsonNode item : response.path("output")) {
             types.add(item.path("type").asText("<no type>"));
