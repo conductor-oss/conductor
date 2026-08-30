@@ -54,6 +54,8 @@ class AzureFoundrySurfacesTest {
     private AzureFoundryAgentClient client;
     private final List<String> paths = new ArrayList<>();
     private final Map<String, String> bodies = new LinkedHashMap<>();
+    private final java.util.concurrent.atomic.AtomicBoolean functionCallTurn =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -246,14 +248,33 @@ class AzureFoundrySurfacesTest {
 
         var status = client.getAgentStatus("resp-1", request);
 
-        // Nothing to poll, and the result is already in the task output.
+        // Re-read rather than assumed: a Responses turn answers inside the call but can still be
+        // waiting on tools, and assuming it finished would drop the tool calls on the floor.
         assertThat(status.getStatus()).isEqualTo(ConductorAgentState.COMPLETED);
         assertThat(status.isComplete()).isTrue();
+        assertThat(paths).anyMatch(p -> p.contains("/openai/v1/responses/resp-1"));
+    }
+
+    @Test
+    void modelInferenceHasNothingToPoll() {
+        ConductorAgentRequest request = new ConductorAgentRequest();
+        request.setCredentials(credentials);
+        request.setRawConfig(
+                Map.of(
+                        "endpoint", base() + "/api/projects/p1",
+                        "assistantId", "analyst",
+                        "surface", "inference"));
+        paths.clear();
+
+        var status = client.getAgentStatus("chatcmpl-1", request);
+
+        // Chat completions hold no run, so there is genuinely nothing to ask about.
+        assertThat(status.getStatus()).isEqualTo(ConductorAgentState.COMPLETED);
         assertThat(paths).isEmpty();
     }
 
     @Test
-    void aSynchronousSurfaceCannotBeResumed() {
+    void modelInferenceCannotBeResumed() {
         ConductorAgentRespondRequest request =
                 ConductorAgentRespondRequest.builder()
                         .executionId("resp-1")
@@ -266,13 +287,76 @@ class AzureFoundrySurfacesTest {
                                         "assistantId",
                                         "analyst",
                                         "surface",
-                                        "responses"))
+                                        "inference"))
                         .build();
 
-        // Better than quietly issuing thread operations against an endpoint that has no threads.
+        // Chat completions hold no conversation at all. The Responses surface does, and is
+        // continued rather than refused - see aResponsesTurnIsContinuedByChainingOffTheTurnBefore.
         assertThatThrownBy(() -> client.respond(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no conversation to continue");
+    }
+
+    @Test
+    void aFunctionCallIsAToolRequestRatherThanWorkAlreadyDone() {
+        functionCallTurn.set(true);
+
+        ConductorAgentStartResponse start =
+                client.startAgent(
+                        ConductorAgentStartRequest.builder()
+                                .prompt("what was Q3 revenue?")
+                                .credentials(credentials)
+                                .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                                .rawConfig(Map.of("surface", "responses"))
+                                .build());
+
+        // The agent asked for a function and stopped. Reading that as a tool the platform had
+        // already run would report the request as work done and complete the task without ever
+        // running it.
+        assertThat(start.getState()).isEqualTo(ConductorAgentState.WAITING);
+        assertThat(start.getExecutedTools()).isEmpty();
+        assertThat(start.getPendingTools()).hasSize(1);
+        assertThat(start.getPendingTools().get(0))
+                .containsEntry("tool_name", "get_revenue")
+                .containsEntry("tool_call_id", "call_1");
+        assertThat(start.getPendingTools().get(0).get("arguments").toString()).contains("Q3");
+        assertThat(start.getPendingTool()).isEqualTo(start.getPendingTools().get(0));
+    }
+
+    @Test
+    void aResponsesTurnIsContinuedByChainingOffTheTurnBefore() throws Exception {
+        ConductorAgentRespondRequest request =
+                ConductorAgentRespondRequest.builder()
+                        .executionId("resp-1")
+                        .toolResults(Map.of("call_1", Map.of("revenue", "4.2M")))
+                        .credentials(credentials)
+                        .rawConfig(
+                                Map.of(
+                                        "endpoint", base() + "/api/projects/p1",
+                                        "assistantId", "analyst",
+                                        "surface", "responses"))
+                        .build();
+        paths.clear();
+
+        var status = client.respondWithStatus(request);
+
+        // Answered inside the call, like Bedrock - there is nothing left to poll.
+        assertThat(status).isNotNull();
+        assertThat(status.getStatus()).isEqualTo(ConductorAgentState.COMPLETED);
+
+        String path =
+                paths.stream()
+                        .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
+                        .findFirst()
+                        .orElseThrow();
+        JsonNode body = MAPPER.readTree(bodies.get(path));
+        // The turn's own id chains the next one, so no second handle has to be carried anywhere.
+        assertThat(body.path("previous_response_id").asText()).isEqualTo("resp-1");
+        assertThat(body.path("agent_reference").path("name").asText()).isEqualTo("analyst");
+        assertThat(body.path("input").get(0).path("type").asText())
+                .isEqualTo("function_call_output");
+        assertThat(body.path("input").get(0).path("call_id").asText()).isEqualTo("call_1");
+        assertThat(body.path("input").get(0).path("output").asText()).contains("4.2M");
     }
 
     private String base() {
@@ -293,6 +377,13 @@ class AzureFoundrySurfacesTest {
                         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"message\":{\"content\":\"hello there\"}}]}");
             }
             if (path.startsWith("/api/projects/p1/openai/v1/responses")) {
+                if (functionCallTurn.get()) {
+                    return json(
+                            """
+                            {"id":"resp-2","output":[
+                               {"type":"function_call","id":"fc_1","call_id":"call_1",
+                                "name":"get_revenue","arguments":"{\\"quarter\\":\\"Q3\\"}"}]}""");
+                }
                 // Shaped like a real reply: one item per step, of which only some are messages.
                 return json(
                         """

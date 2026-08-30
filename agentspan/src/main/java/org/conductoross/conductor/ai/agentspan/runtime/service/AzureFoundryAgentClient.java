@@ -260,15 +260,54 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         // No api-version: the project's Responses API is versioned in the path itself.
         JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
+        return responsesTurn(response, agentId);
+    }
+
+    /**
+     * One Responses turn, as either a finished answer or a request for tools.
+     *
+     * <p>A reply is not always an answer. When the agent wants a function run it comes back with
+     * {@code function_call} items and no final message, and the run only continues once their
+     * outputs are submitted. Reading every non-message item as a tool the platform already ran
+     * would report the request as work done and complete the task without ever running it.
+     */
+    private ConductorAgentStartResponse responsesTurn(JsonNode response, String agentId) {
+        List<Map<String, Object>> pendingTools = extractPendingTools(response);
         List<Map<String, Object>> executedTools = extractExecutedTools(response);
-        logOutputItems(agentId, response, executedTools);
-        return ConductorAgentStartResponse.builder()
-                .executionId(response.path("id").asText())
-                .agentName(agentId)
-                .requiredWorkers(Collections.emptyList())
-                .state(ConductorAgentState.COMPLETED)
+        logOutputItems(agentId, response, executedTools, pendingTools);
+
+        ConductorAgentStartResponse.ConductorAgentStartResponseBuilder turn =
+                ConductorAgentStartResponse.builder()
+                        // Each turn is its own response, and the next one chains off this id.
+                        .executionId(response.path("id").asText())
+                        .agentName(agentId)
+                        .requiredWorkers(Collections.emptyList())
+                        .executedTools(executedTools);
+
+        if (!pendingTools.isEmpty()) {
+            return turn.state(ConductorAgentState.WAITING)
+                    .pendingTool(pendingTools.get(0))
+                    .pendingTools(pendingTools)
+                    .build();
+        }
+        return turn.state(ConductorAgentState.COMPLETED)
                 .output(Map.of("result", extractResponseText(response)))
-                .executedTools(executedTools)
+                .build();
+    }
+
+    /** The same turn, as a status - what respond() and a poll return. */
+    private ConductorAgentStatusResponse responsesStatus(JsonNode response, String agentId) {
+        ConductorAgentStartResponse turn = responsesTurn(response, agentId);
+        boolean waiting = turn.getState() == ConductorAgentState.WAITING;
+        return ConductorAgentStatusResponse.builder()
+                .executionId(turn.getExecutionId())
+                .status(turn.getState())
+                .complete(!waiting)
+                .waiting(waiting)
+                .output(turn.getOutput())
+                .pendingTool(turn.getPendingTool())
+                .pendingTools(turn.getPendingTools())
+                .executedTools(turn.getExecutedTools())
                 .build();
     }
 
@@ -281,18 +320,22 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * user's own data and this is a routine log line.
      */
     private void logOutputItems(
-            String agentId, JsonNode response, List<Map<String, Object>> executedTools) {
+            String agentId,
+            JsonNode response,
+            List<Map<String, Object>> executedTools,
+            List<Map<String, Object>> pendingTools) {
         List<String> types = new ArrayList<>();
         for (JsonNode item : response.path("output")) {
             types.add(item.path("type").asText("<no type>"));
         }
         log.debug(
-                "Foundry response {} for agent {} returned output items {}, of which {} read as"
-                        + " tool calls",
+                "Foundry response {} for agent {} returned output items {}: {} ran on the platform,"
+                        + " {} are waiting on us",
                 response.path("id").asText(""),
                 agentId,
                 types,
-                executedTools.size());
+                executedTools.size(),
+                pendingTools.size());
     }
 
     /**
@@ -311,7 +354,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         List<Map<String, Object>> calls = new ArrayList<>();
         for (JsonNode output : response.path("output")) {
             String type = output.path("type").asText("");
-            if (type.isEmpty() || "message".equals(type) || "reasoning".equals(type)) {
+            if (type.isEmpty()
+                    || "message".equals(type)
+                    || "reasoning".equals(type)
+                    || FUNCTION_CALL.equals(type)) {
                 continue;
             }
             Map<String, Object> call = new LinkedHashMap<>();
@@ -327,6 +373,32 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         }
         return calls;
     }
+
+    /**
+     * The function calls this turn is waiting on, in order.
+     *
+     * <p>These are the agent's half of a tool call: it names a function and its arguments and stops
+     * until an output for every one comes back. Conductor runs them, unlike the built-in tools
+     * {@link #extractExecutedTools} reports, which the platform has already run by the time the
+     * reply arrives.
+     */
+    static List<Map<String, Object>> extractPendingTools(JsonNode response) {
+        List<Map<String, Object>> calls = new ArrayList<>();
+        for (JsonNode output : response.path("output")) {
+            if (!FUNCTION_CALL.equals(output.path("type").asText(""))) {
+                continue;
+            }
+            Map<String, Object> call = new LinkedHashMap<>();
+            call.put("tool_name", output.path("name").asText(""));
+            // call_id is what a function_call_output has to quote back; id names the item itself.
+            call.put("tool_call_id", output.path("call_id").asText(output.path("id").asText("")));
+            call.put("arguments", output.path("arguments").asText(""));
+            calls.add(call);
+        }
+        return calls;
+    }
+
+    private static final String FUNCTION_CALL = "function_call";
 
     // The fields Foundry's built-in tools carry their input in. A tool that names it something else
     // still shows up, with its type and status, which is the part that matters most.
@@ -372,10 +444,24 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                         request.getAgentUrl(),
                         request.getRawConfig(),
                         request.isUseCallerIdentity() ? request.getUserAssertion() : null);
-        if (surfaceOf(azure.target().baseUrl(), request.getRawConfig()) != Surface.ASSISTANTS) {
-            // These surfaces answer inside startAgent and the result is already in the task output.
-            // Reaching here means the task was requeued after that, so the honest answer is the
-            // terminal state that no longer needs polling.
+        Surface surface = surfaceOf(azure.target().baseUrl(), request.getRawConfig());
+        if (surface == Surface.RESPONSES) {
+            // Answered inside the call, but a turn can still be waiting on tools, so the reply is
+            // re-read rather than assumed finished.
+            return withTokenEviction(
+                    azure,
+                    auth ->
+                            responsesStatus(
+                                    getJson(
+                                            azure.target().baseUrl()
+                                                    + "/openai/v1/responses/"
+                                                    + executionId,
+                                            auth,
+                                            null),
+                                    azure.target().assistantId()));
+        }
+        if (surface != Surface.ASSISTANTS) {
+            // Model inference answers inside startAgent and holds nothing to poll.
             return ConductorAgentStatusResponse.builder()
                     .executionId(executionId)
                     .status(ConductorAgentState.COMPLETED)
@@ -387,14 +473,87 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
     @Override
     public void respond(ConductorAgentRespondRequest request) {
-        String threadId = request.getExecutionId();
+        respondWithStatus(request);
+    }
+
+    /**
+     * Continues a turn, returning the outcome where the surface already knows it.
+     *
+     * <p>The Responses surface answers inside the call, like Bedrock, so there is nothing to poll
+     * afterwards and the new state is returned here. The Assistants surface starts work that
+     * carries on server-side, so it returns null and the caller polls.
+     */
+    @Override
+    public ConductorAgentStatusResponse respondWithStatus(ConductorAgentRespondRequest request) {
         Azure azure = azure(request.getCredentials(), request.getRawConfig());
-        if (surfaceOf(azure.target().baseUrl(), request.getRawConfig()) != Surface.ASSISTANTS) {
+        Surface surface = surfaceOf(azure.target().baseUrl(), request.getRawConfig());
+        if (surface == Surface.RESPONSES) {
+            return withTokenEviction(azure, auth -> continueResponse(request, azure, auth));
+        }
+        if (surface != Surface.ASSISTANTS) {
             throw new IllegalArgumentException(
                     "This Azure endpoint answers in one shot and has no conversation to continue;"
                             + " start a new AGENT task instead of resuming "
-                            + threadId);
+                            + request.getExecutionId());
         }
+        respondToAssistantsRun(request, azure);
+        return null;
+    }
+
+    /**
+     * Submits tool outputs and gets the agent's next turn back.
+     *
+     * <p>Chained with {@code previous_response_id} rather than a conversation object: the turn's
+     * own id is already the executionId Conductor persists, so no second handle has to be carried
+     * anywhere. A {@code rawConfig.conversation} still rides along when one is configured, which is
+     * what groups the turns into a single thread in the portal.
+     */
+    private ConductorAgentStatusResponse continueResponse(
+            ConductorAgentRespondRequest request, Azure azure, AssistantsAuth auth) {
+        String endpoint = azure.target().baseUrl();
+        String agentId = azure.target().assistantId();
+
+        ObjectNode body = MAPPER.createObjectNode();
+        ObjectNode agent = body.putObject("agent_reference");
+        agent.put("type", "agent_reference");
+        agent.put("name", agentId);
+        String agentVersion = rawConfig(request.getRawConfig(), "agentVersion");
+        if (StringUtils.isNotBlank(agentVersion)) {
+            agent.put("version", agentVersion);
+        }
+        String conversation = rawConfig(request.getRawConfig(), "conversation");
+        if (StringUtils.isNotBlank(conversation)) {
+            body.put("conversation", conversation);
+        }
+        body.put("previous_response_id", request.getExecutionId());
+
+        ArrayNode input = body.putArray("input");
+        AgentBodies.toolResults(request, outstandingToolCallIds(request))
+                .forEach(
+                        (toolCallId, output) -> {
+                            ObjectNode item = input.addObject();
+                            item.put("type", "function_call_output");
+                            item.put("call_id", toolCallId);
+                            item.put("output", String.valueOf(output));
+                        });
+
+        JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
+        return responsesStatus(response, agentId);
+    }
+
+    /** The tool calls this reply is answering, from what the caller was told was outstanding. */
+    private static List<String> outstandingToolCallIds(ConductorAgentRespondRequest request) {
+        List<String> ids = new ArrayList<>();
+        if (request.getPendingTools() != null) {
+            for (Map<String, Object> pending : request.getPendingTools()) {
+                ids.add(String.valueOf(pending.get("tool_call_id")));
+            }
+        }
+        return ids;
+    }
+
+    private void respondToAssistantsRun(ConductorAgentRespondRequest request, Azure azure) {
+        String threadId = request.getExecutionId();
         withTokenEviction(
                 azure,
                 auth -> {
