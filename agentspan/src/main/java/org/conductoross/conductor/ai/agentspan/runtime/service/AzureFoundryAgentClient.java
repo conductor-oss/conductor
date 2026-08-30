@@ -263,6 +263,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         // No api-version: the project's Responses API is versioned in the path itself.
         JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
+        logOutputItemTypes(agentId, response);
         return ConductorAgentStartResponse.builder()
                 .executionId(response.path("id").asText())
                 .agentName(agentId)
@@ -271,6 +272,29 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .output(Map.of("result", extractResponseText(response)))
                 .executedTools(extractExecutedTools(response))
                 .build();
+    }
+
+    /**
+     * The kinds of item a reply was made of, for diagnosing an empty executedTools.
+     *
+     * <p>A run whose answer cites the web but reports no tool call is either a response that did
+     * not carry its tool items or an extraction that did not recognise them, and the two are
+     * indistinguishable from the task output alone. Types only, never content: the reply is the
+     * user's own data and this is a routine log line.
+     */
+    private void logOutputItemTypes(String agentId, JsonNode response) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        List<String> types = new ArrayList<>();
+        for (JsonNode item : response.path("output")) {
+            types.add(item.path("type").asText("<no type>"));
+        }
+        log.debug(
+                "Foundry response {} for agent {} returned output items {}",
+                response.path("id").asText(""),
+                agentId,
+                types);
     }
 
     /**
