@@ -257,8 +257,17 @@ For a project agent, its configured instructions and tools are read from the age
 | `apiVersion` | No | `2025-01-01-preview` |
 | `scope` | No | `credentials.scope`, else inferred from the endpoint |
 | `surface` | No | Inferred from the endpoint — `assistants`, `responses`, or `inference` |
-| `model` | No (one-shot surfaces) | `gpt-4o` |
-| `instructions` | No (one-shot surfaces) | The agent definition's own instructions |
+| `agentVersion` | No (`responses`) | The agent's latest version |
+| `conversation` | No (`responses`) | None — the turn stands alone |
+| `model` | No (`inference` only) | `gpt-4o` |
+| `instructions` | No (`inference` only) | — |
+
+On the `responses` surface the agent is invoked **by reference**: the request names it and Foundry
+applies that agent's own model, instructions and tools. `model` and `instructions` are not sent
+there — overriding them would detach the run from the definition it is meant to be attributed to.
+Pin a specific version with `agentVersion`, or leave it for the latest. Set `conversation` to a
+Foundry conversation id to make the turn part of an ongoing thread rather than a standalone
+response.
 
 **Or name both at once.** A top-level `agentUrl` can carry the endpoint and the agent together, so every agent type names its location the same field way A2A does:
 
@@ -434,6 +443,13 @@ surface it is read from the reply's own output items; on the classic Assistants 
 from the run's steps, fetched once when the run reaches a terminal state rather than on every poll.
 Each call carries its type, id, status, and whatever field that tool puts its input in — the shape
 differs per tool and Azure adds new ones, so it is carried across as it comes.
+
+**The run is attributed to your agent.** On the `responses` surface the request names the agent
+(`agent: {type: agent_reference, name: ...}`), so Foundry runs the agent itself and the call shows
+up against it in the project's monitoring. An earlier version read the agent's definition and
+replayed its model, instructions and tools as an anonymous response — the answers looked right, but
+Azure had no record of the agent being called, and anything the definition held that was not copied
+was silently dropped.
 
 **Conductor emits no OpenTelemetry.** Microsoft Foundry's own Tracing view is fed by GenAI spans
 sent to a connected Application Insights resource, normally by an Azure SDK with telemetry enabled.

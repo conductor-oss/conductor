@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.Dispatcher;
@@ -51,6 +53,7 @@ class AzureFoundrySurfacesTest {
     private Map<String, String> credentials;
     private AzureFoundryAgentClient client;
     private final List<String> paths = new ArrayList<>();
+    private final Map<String, String> bodies = new LinkedHashMap<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -141,7 +144,7 @@ class AzureFoundrySurfacesTest {
     }
 
     @Test
-    void aProjectAgentRunsThroughTheResponsesApiWithItsOwnToolsAndInstructions() {
+    void aProjectAgentIsInvokedByReferenceRatherThanReplayed() throws Exception {
         ConductorAgentStartResponse start =
                 client.startAgent(
                         ConductorAgentStartRequest.builder()
@@ -154,9 +157,50 @@ class AzureFoundrySurfacesTest {
         assertThat(start.getState()).isEqualTo(ConductorAgentState.COMPLETED);
         assertThat(start.getOutput()).isEqualTo(Map.of("result", "first part\nsecond part"));
         assertThat(start.getAgentName()).isEqualTo("analyst");
-        // The agent's definition was read so its tools and instructions could be forwarded.
-        assertThat(paths).anyMatch(p -> p.startsWith("/api/projects/p1/agents/analyst"));
-        assertThat(paths).anyMatch(p -> p.startsWith("/api/projects/p1/openai/responses"));
+        String responsesPath =
+                paths.stream()
+                        .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
+                        .findFirst()
+                        .orElseThrow();
+
+        // Naming the agent is what makes this the agent's own run rather than an anonymous model
+        // call that happens to behave like it. Without it Azure records nothing against the agent.
+        JsonNode body = MAPPER.readTree(bodies.get(responsesPath));
+        assertThat(body.path("agent").path("type").asText()).isEqualTo("agent_reference");
+        assertThat(body.path("agent").path("name").asText()).isEqualTo("analyst");
+        assertThat(body.path("input").get(0).path("content").asText()).isEqualTo("analyse this");
+
+        // The agent supplies its own model, instructions and tools; sending ours would override
+        // the definition the run is supposed to be attributed to.
+        assertThat(body.has("model")).isFalse();
+        assertThat(body.has("instructions")).isFalse();
+        assertThat(body.has("tools")).isFalse();
+
+        // And its definition is no longer read, because nothing is replayed from it.
+        assertThat(paths).noneMatch(p -> p.startsWith("/api/projects/p1/agents/analyst?"));
+    }
+
+    @Test
+    void anAgentVersionIsPinnedWhenOneIsConfigured() throws Exception {
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("analyse this")
+                        .credentials(credentials)
+                        .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                        .rawConfig(Map.of("surface", "responses", "agentVersion", "3"))
+                        .build());
+
+        String responsesPath =
+                paths.stream()
+                        .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(
+                        MAPPER.readTree(bodies.get(responsesPath))
+                                .path("agent")
+                                .path("version")
+                                .asText())
+                .isEqualTo("3");
     }
 
     @Test
@@ -186,20 +230,6 @@ class AzureFoundrySurfacesTest {
 
         // Messages and reasoning are the reply, not tool calls.
         assertThat(start.getExecutedTools()).noneMatch(call -> "message".equals(call.get("type")));
-    }
-
-    @Test
-    void codeInterpreterIsWrappedForTheResponsesApi() throws Exception {
-        var tools =
-                MAPPER.readTree(
-                        "[{\"type\":\"code_interpreter\"},{\"type\":\"file_search\",\"x\":1}]");
-
-        var adapted = AzureFoundryAgentClient.toResponsesApiTools(tools);
-
-        // The Responses API rejects a bare code_interpreter; other tools pass through untouched.
-        assertThat(adapted.get(0).path("container").path("type").asText()).isEqualTo("auto");
-        assertThat(adapted.get(1).path("type").asText()).isEqualTo("file_search");
-        assertThat(adapted.get(1).path("x").asInt()).isEqualTo(1);
     }
 
     @Test
@@ -255,12 +285,13 @@ class AzureFoundrySurfacesTest {
             String path = request.getPath() == null ? "" : request.getPath();
             synchronized (paths) {
                 paths.add(path);
+                bodies.put(path, request.getBody().readUtf8());
             }
             if (path.startsWith("/models/chat/completions")) {
                 return json(
                         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"message\":{\"content\":\"hello there\"}}]}");
             }
-            if (path.startsWith("/api/projects/p1/openai/responses")) {
+            if (path.startsWith("/api/projects/p1/openai/v1/responses")) {
                 // Shaped like a real reply: one item per step, of which only some are messages.
                 return json(
                         """

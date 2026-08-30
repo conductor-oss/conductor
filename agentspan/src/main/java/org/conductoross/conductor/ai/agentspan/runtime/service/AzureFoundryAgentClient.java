@@ -225,37 +225,42 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     }
 
     /**
-     * A Foundry project agent through the Responses API. The agent's own instructions and tools are
-     * fetched and forwarded, so its web search, code interpreter and file search actually run.
-     * Synchronous, like inference.
+     * A Foundry project agent through the Responses API, invoked by reference.
+     *
+     * <p>The agent is named in the request and Foundry applies its own model, instructions and
+     * tools. This replaced reading the agent's definition and replaying it as an anonymous
+     * response: that produced the right answer but Azure had no idea which agent it belonged to, so
+     * the run appeared in no agent's history and in none of the project's per-agent monitoring.
+     * Anything the definition held that was not copied - model parameters, response format,
+     * attached knowledge, the pinned version - was quietly lost with it.
+     *
+     * <p>Synchronous, like inference.
      */
     private ConductorAgentStartResponse startResponse(
             ConductorAgentStartRequest request, Azure azure, AssistantsAuth auth) {
         String endpoint = azure.target().baseUrl();
         String agentId = azure.target().assistantId();
-        JsonNode definition = fetchAgentDefinition(endpoint, agentId, auth);
 
         ObjectNode body = MAPPER.createObjectNode();
-        body.put(
-                "model",
-                StringUtils.defaultIfBlank(rawConfig(request.getRawConfig(), "model"), "gpt-4o"));
-        String instructions =
-                StringUtils.defaultIfBlank(
-                        rawConfig(request.getRawConfig(), "instructions"),
-                        definition.path("instructions").asText(""));
-        if (StringUtils.isNotBlank(instructions)) {
-            body.put("instructions", instructions);
+        ObjectNode agent = body.putObject("agent");
+        agent.put("type", "agent_reference");
+        agent.put("name", agentId);
+        String agentVersion = rawConfig(request.getRawConfig(), "agentVersion");
+        if (StringUtils.isNotBlank(agentVersion)) {
+            agent.put("version", agentVersion);
         }
-        JsonNode tools = definition.path("tools");
-        if (tools.isArray() && !tools.isEmpty()) {
-            body.set("tools", toResponsesApiTools(tools));
+        // A conversation makes the turn part of an ongoing thread Foundry keeps; without one the
+        // response stands alone, which is what a single AGENT task wants.
+        String conversation = rawConfig(request.getRawConfig(), "conversation");
+        if (StringUtils.isNotBlank(conversation)) {
+            body.put("conversation", conversation);
         }
         ObjectNode message = body.putArray("input").addObject();
         message.put("role", "user");
         message.put("content", request.getPrompt());
 
-        JsonNode response =
-                postJson(endpoint + "/openai/responses", body, auth, FOUNDRY_PROJECT_API_VERSION);
+        // No api-version: the project's Responses API is versioned in the path itself.
+        JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
         return ConductorAgentStartResponse.builder()
                 .executionId(response.path("id").asText())
                 .agentName(agentId)
@@ -264,35 +269,6 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 .output(Map.of("result", extractResponseText(response)))
                 .executedTools(extractExecutedTools(response))
                 .build();
-    }
-
-    /** The agent's latest definition, or an empty object when it cannot be read. */
-    private JsonNode fetchAgentDefinition(String endpoint, String agentId, AssistantsAuth auth) {
-        try {
-            JsonNode agent =
-                    getJson(endpoint + "/agents/" + agentId, auth, FOUNDRY_PROJECT_API_VERSION);
-            return agent.path("versions").path("latest").path("definition");
-        } catch (Exception e) {
-            log.warn("Could not read definition for agent {}: {}", agentId, e.getMessage());
-            return MAPPER.createObjectNode();
-        }
-    }
-
-    /**
-     * The Responses API needs code_interpreter wrapped in a container; other tools pass through.
-     */
-    static JsonNode toResponsesApiTools(JsonNode definitionTools) {
-        ArrayNode adapted = MAPPER.createArrayNode();
-        for (JsonNode tool : definitionTools) {
-            if ("code_interpreter".equals(tool.path("type").asText())) {
-                ObjectNode wrapped = adapted.addObject();
-                wrapped.put("type", "code_interpreter");
-                wrapped.putObject("container").put("type", "auto");
-            } else {
-                adapted.add(tool);
-            }
-        }
-        return adapted;
     }
 
     /**
