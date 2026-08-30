@@ -158,7 +158,7 @@ curl -X POST "$FOUNDRY_PROJECT_ENDPOINT/agents?api-version=v1" \
     "description": "Answers revenue questions",
     "definition": {
       "kind": "prompt",
-      "model": "gpt-4.1-mini",
+      "model": "<your model deployment name>",
       "instructions": "Use get_revenue for any question about revenue. Never guess a number.",
       "tools": [
         {
@@ -178,6 +178,30 @@ curl -X POST "$FOUNDRY_PROJECT_ENDPOINT/agents?api-version=v1" \
     }
   }'
 ```
+
+!!! warning "`model` is a deployment name, not a model name"
+    Azure resolves it against the deployments in your project, not against the model catalogue, so
+    `gpt-4.1-mini` only works if that is also what you called the deployment. Getting it wrong
+    creates the agent happily and fails at the first call with
+    `DeploymentNotFound: The API deployment for this resource does not exist`.
+
+    The quickest way to get it right is to copy it from an agent that already works:
+
+    ```bash
+    curl -s "$FOUNDRY_PROJECT_ENDPOINT/agents/<working-agent>?api-version=v1" \
+      -H "Authorization: Bearer $AGENT_TOKEN" \
+      | jq -r '.versions.latest.definition.model'
+    ```
+
+    Or list the deployments on the resource directly:
+
+    ```bash
+    az cognitiveservices account deployment list \
+      --name <resource> --resource-group <rg> -o table
+    ```
+
+    Agents are versioned, so fixing it is the same POST again with the corrected value — that adds
+    a new version rather than erroring on the existing name.
 
 The `name` here — `get_revenue` — is what Conductor schedules a task for. The `description` and
 `parameters` are what the model reasons about, so an agent that never calls the tool usually has a
