@@ -2473,6 +2473,48 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testScheduleDynamicTasksSchedulesTasksTheDefinitionDoesNotDeclare() {
+        // What an agent needs: run the tools its model just asked for, none of which the author
+        // could have written into the definition.
+        WorkflowModel workflow = generateSampleWorkflow();
+        int before = workflow.getTasks().size();
+
+        WorkflowTask tool = new WorkflowTask();
+        tool.setType(TaskType.TASK_TYPE_SIMPLE);
+        tool.setName("get_revenue");
+        tool.setTaskReferenceName("agent_ref__t1__call_1");
+        tool.setTaskDefinition(new TaskDef());
+
+        List<TaskModel> scheduled = workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+
+        assertEquals(1, scheduled.size());
+        assertEquals("agent_ref__t1__call_1", scheduled.get(0).getReferenceTaskName());
+        // Queued like any other task, and part of the workflow, so it holds the run open.
+        assertFalse(scheduled.get(0).getStatus().isTerminal());
+        assertEquals(before + 1, workflow.getTasks().size());
+        verify(executionDAOFacade).createTasks(anyList());
+    }
+
+    @Test
+    public void testScheduleDynamicTasksIgnoresARepeatedReferenceName() {
+        // dedupAndAddTasks keys on refName + retryCount, so a second round has to use fresh names.
+        // Proving the drop is silent is what makes the naming rule worth following.
+        WorkflowModel workflow = generateSampleWorkflow();
+
+        WorkflowTask tool = new WorkflowTask();
+        tool.setType(TaskType.TASK_TYPE_SIMPLE);
+        tool.setName("get_revenue");
+        tool.setTaskReferenceName("agent_ref__t1__call_1");
+        tool.setTaskDefinition(new TaskDef());
+
+        workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+        int afterFirst = workflow.getTasks().size();
+        workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+
+        assertEquals(afterFirst, workflow.getTasks().size());
+    }
+
+    @Test
     public void testCancelNonTerminalTasks() {
         WorkflowDef def = new WorkflowDef();
         def.setWorkflowStatusListenerEnabled(true);
