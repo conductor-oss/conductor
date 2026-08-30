@@ -163,6 +163,11 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const runtime = agentRuntimeType(task.inputParameters);
+  // A2A takes the message in any of message/parts/text/prompt; every other runtime reads prompt
+  // and nothing else, which is the rule the server enforces at save time.
+  const promptMissing =
+    runtime !== "a2a" && !String(task.inputParameters?.prompt ?? "").trim();
+
   // An API key is sent as a header, so nothing is scoped; every other method mints a token.
   const mintsToken =
     detectAuthMethod(
@@ -381,6 +386,13 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   multiline
                   rows={6}
                   fullWidth
+                  required
+                  error={promptMissing}
+                  helperText={
+                    promptMissing
+                      ? "Required. This runtime reads the message from the prompt and nowhere else, so the workflow cannot be saved without one."
+                      : undefined
+                  }
                   placeholder="Message to send to the agent"
                 />
               </Grid>
@@ -438,6 +450,13 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   multiline
                   rows={6}
                   fullWidth
+                  required
+                  error={promptMissing}
+                  helperText={
+                    promptMissing
+                      ? "Required. This runtime reads the message from the prompt and nowhere else, so the workflow cannot be saved without one."
+                      : undefined
+                  }
                   placeholder="Message to send to the agent"
                 />
               </Grid>

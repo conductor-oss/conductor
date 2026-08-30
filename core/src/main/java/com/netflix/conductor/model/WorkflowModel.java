@@ -105,7 +105,7 @@ public class WorkflowModel {
 
     /**
      * The caller's Entra ID SSO token, set by the enterprise SSO layer at workflow start and never
-     * serialized to the API. Read by the Azure Foundry client when a task asks to run as the
+     * serialized to the API. Read by the Microsoft Foundry client when a task asks to run as the
      * caller.
      */
     @JsonIgnore private String callerEntraToken;

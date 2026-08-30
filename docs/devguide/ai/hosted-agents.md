@@ -49,7 +49,7 @@ Every hosted runtime takes the same core inputs.
 | Field | Description |
 |---|---|
 | `agentType` | Selects the runtime (required). |
-| `prompt` | The message to send. |
+| `prompt` | The message to send. **Required** on every runtime except A2A, and checked when the workflow definition is saved, not just when it runs. Unlike A2A, a hosted runtime does not fall back to `text`, `parts` or `message`. |
 | `credentials` | The platform credential, as values. Reference secrets with `${workflow.secrets.NAME.key}`; Conductor substitutes them before the task runs. Which keys matter differs per platform — see below. |
 | `agentUrl` | Names the endpoint and the agent in one field, the way an A2A task does. Anything set in `rawConfig` wins over what the URL implies. |
 | `rawConfig` | Platform-specific configuration: which agent, where it lives. |
@@ -424,6 +424,7 @@ sign the request and ignore the key entirely.
 
 | Situation | Outcome |
 |---|---|
+| `prompt` missing | The workflow definition is rejected at save, naming the task. Nothing reaches the platform |
 | Missing or malformed `rawConfig` / `credentials` | Task fails terminally — no retry, since a retry cannot fix it |
 | `credentials` omitted entirely | Falls through to the platform's default credential chain — how a deployment on managed identity or an instance role is meant to be configured |
 | `credentials` set, but no key resolved to a value | Task fails, naming the keys. A reference resolves to nothing when the secret is missing or does not hold that key, and running as the server's own identity instead would authenticate as somebody else |

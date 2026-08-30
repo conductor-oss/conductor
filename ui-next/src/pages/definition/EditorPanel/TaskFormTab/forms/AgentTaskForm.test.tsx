@@ -40,13 +40,19 @@ vi.mock("components/ui/inputs/RadioButtonGroup", () => ({
   ),
 }));
 
+// helperText and required are rendered, not dropped: a form telling the author a field is required
+// is behaviour worth asserting, and a mock that swallowed it would hide exactly that.
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ label, value, onTextInputChange }: any) => (
-    <textarea
-      aria-label={label}
-      value={value ?? ""}
-      onChange={(event) => onTextInputChange?.(event.target.value)}
-    />
+  default: ({ label, value, onTextInputChange, required, helperText }: any) => (
+    <>
+      <textarea
+        aria-label={label}
+        aria-required={required ? "true" : undefined}
+        value={value ?? ""}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
+      />
+      {helperText && <span>{helperText}</span>}
+    </>
   ),
 }));
 
@@ -260,6 +266,60 @@ describe("AgentTaskForm metadata resolution", () => {
       />,
     );
     expect(screen.getByLabelText("Token scope (optional)")).toBeInTheDocument();
+  });
+
+  it("flags a missing prompt on a hosted runtime, which the server rejects at save", () => {
+    const { unmount } = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: { agentType: "microsoft-foundry" },
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/Required\. This runtime reads the message/),
+    ).toBeInTheDocument();
+    unmount();
+
+    // With a prompt, no complaint.
+    const withPrompt = render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "microsoft-foundry",
+            prompt: "hi there",
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByText(/Required\. This runtime reads the message/),
+    ).not.toBeInTheDocument();
+    withPrompt.unmount();
+
+    // A2A carries the message in any of four fields, so prompt alone is not the rule there.
+    render(
+      <Harness
+        initialTask={{
+          name: "agent",
+          taskReferenceName: "agent_ref",
+          type: TaskType.AGENT,
+          inputParameters: {
+            agentType: "a2a",
+            agentUrl: "https://agent.example",
+          },
+        }}
+      />,
+    );
+    expect(
+      screen.queryByText(/Required\. This runtime reads the message/),
+    ).not.toBeInTheDocument();
   });
 
   it("invalidates changed sources and never resolves dynamic expressions", async () => {
