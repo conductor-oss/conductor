@@ -876,6 +876,23 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         return url + (url.contains("?") ? "&" : "?") + "api-version=" + apiVersion;
     }
 
+    /**
+     * What to actually go and look at, for the errors whose own wording points elsewhere.
+     *
+     * <p>Invoking an agent by reference means Foundry resolves the model from the agent's own
+     * definition, so a bad deployment name there surfaces as an error about this request - naming
+     * no agent, no model, and nothing that would lead back to the definition that caused it.
+     */
+    private static String hintFor(String body) {
+        if (body == null || !body.contains("DeploymentNotFound")) {
+            return "";
+        }
+        return ". The model comes from the agent's own definition, not from this request, so check"
+                + " that the agent's 'model' is a deployment that exists in this project:"
+                + " GET {endpoint}/agents/{agentId}?api-version=v1 and compare"
+                + " versions.latest.definition.model against the project's deployments";
+    }
+
     private JsonNode execute(Request request, String label) {
         try (Response response = httpClient.newCall(request).execute()) {
             String body = response.body() != null ? response.body().string() : "{}";
@@ -893,7 +910,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                                 + " failed: HTTP "
                                 + response.code()
                                 + " — "
-                                + body);
+                                + body
+                                + hintFor(body));
             }
             return MAPPER.readTree(body);
         } catch (IOException e) {

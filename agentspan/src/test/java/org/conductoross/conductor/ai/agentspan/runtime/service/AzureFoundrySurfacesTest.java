@@ -58,6 +58,8 @@ class AzureFoundrySurfacesTest {
             new java.util.concurrent.atomic.AtomicBoolean(false);
     private final java.util.concurrent.atomic.AtomicReference<String> responseBody =
             new java.util.concurrent.atomic.AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicReference<MockResponse> failure =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -502,6 +504,35 @@ class AzureFoundrySurfacesTest {
                 .hasMessageContaining("must be an array");
     }
 
+    @Test
+    void adeploymentNotFoundSaysWhereTheModelActuallyComesFrom() {
+        // Azure reports it as a fault of this request. With agent_reference the model is resolved
+        // from the agent's own definition, so the request names no model at all and the message
+        // leads nowhere near the thing to fix.
+        failure.set(
+                new MockResponse()
+                        .setResponseCode(404)
+                        .setHeader("Content-Type", "application/json")
+                        .setBody(
+                                "{\"error\":{\"code\":\"DeploymentNotFound\",\"message\":"
+                                        + "\"The API deployment for this resource does not"
+                                        + " exist.\"}}"));
+
+        assertThatThrownBy(
+                        () ->
+                                client.startAgent(
+                                        ConductorAgentStartRequest.builder()
+                                                .prompt("hi")
+                                                .credentials(credentials)
+                                                .agentUrl(
+                                                        base() + "/api/projects/p1/agents/analyst")
+                                                .rawConfig(Map.of("surface", "responses"))
+                                                .build()))
+                .hasMessageContaining("DeploymentNotFound")
+                .hasMessageContaining("comes from the agent's own definition")
+                .hasMessageContaining("versions.latest.definition.model");
+    }
+
     private String responsesPath() {
         return paths.stream()
                 .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
@@ -563,6 +594,9 @@ class AzureFoundrySurfacesTest {
                         "{\"id\":\"chatcmpl-1\",\"choices\":[{\"message\":{\"content\":\"hello there\"}}]}");
             }
             if (path.startsWith("/api/projects/p1/openai/v1/responses")) {
+                if (failure.get() != null) {
+                    return failure.get();
+                }
                 if (responseBody.get() != null) {
                     return json(responseBody.get());
                 }
