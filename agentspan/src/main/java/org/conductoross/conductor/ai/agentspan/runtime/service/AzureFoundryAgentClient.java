@@ -254,6 +254,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         if (StringUtils.isNotBlank(conversation)) {
             body.put("conversation", conversation);
         }
+        putToolOverride(body, request.getRawConfig());
+
         ObjectNode message = body.putArray("input").addObject();
         message.put("role", "user");
         message.put("content", request.getPrompt());
@@ -261,6 +263,35 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         // No api-version: the project's Responses API is versioned in the path itself.
         JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
         return responsesTurn(response, agentId);
+    }
+
+    /**
+     * Sends a tool list with the request, when the task supplies one.
+     *
+     * <p>Who runs a tool is decided by its type, not by a flag: Foundry runs its built-in tools -
+     * web search, code interpreter, file search - inside the service, and hands back only {@code
+     * function} tools for the caller to run. So the way to have Conductor do the work is to declare
+     * the capability as a function tool rather than to ask Foundry to stand down.
+     *
+     * <p>Normally that belongs on the agent itself, where {@code agent_reference} picks it up and
+     * nothing here is needed. This exists for the case where the agent cannot be edited and the
+     * workflow has to say, for this run, that a capability is Conductor's to serve.
+     *
+     * <p>Whether Foundry treats the list as a replacement for the agent's tools or as an addition
+     * is not something the REST documentation settles, so a run that must not use a built-in tool
+     * should have the agent defined that way rather than relying on this.
+     */
+    private static void putToolOverride(ObjectNode body, Map<String, Object> rawConfig) {
+        Object tools = rawConfig == null ? null : rawConfig.get("tools");
+        if (tools == null) {
+            return;
+        }
+        JsonNode asJson = MAPPER.valueToTree(tools);
+        if (!asJson.isArray()) {
+            throw new IllegalArgumentException(
+                    "rawConfig.tools must be an array of tool definitions; got " + asJson);
+        }
+        body.set("tools", asJson);
     }
 
     /**
@@ -573,6 +604,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         } else {
             body.put("previous_response_id", request.getExecutionId());
         }
+
+        putToolOverride(body, request.getRawConfig());
 
         ArrayNode input = body.putArray("input");
         List<String> outstanding = outstandingToolCallIds(request);

@@ -144,7 +144,7 @@ Three things have to line up, and nothing fails loudly if they do not:
 
 1. **The agent has a function tool.** Only a function tool is handed back to be run. Web search,
    code interpreter and file search run inside the platform and are reported as `executedTools`,
-   never scheduled — Conductor cannot run them.
+   never scheduled — Conductor cannot run them. See [Who runs which tool](#who-runs-which-tool).
 2. **`autoRunTools: true`.** Without it the call is handed back to the workflow instead
    (see below), and the `AGENT` task completes with `waiting: true`.
 3. **A worker serves the tool's task name.** With none, the task sits `SCHEDULED` and the agent
@@ -190,6 +190,44 @@ The agent task's output carries `pendingTools` (what was asked for) and `toolDis
 
 !!! note "Needs the embedded runtime"
     Scheduling work requires the server. A remotely-polled SDK worker has no engine to schedule on, so `autoRunTools` is ignored there and the tool request is handed back to the workflow as below.
+
+#### Who runs which tool
+
+There is no switch that makes a platform tool come back to be run instead. **The tool's type
+decides who runs it**, and in Microsoft Foundry's own catalogue `function` is the only client-side
+one — web search, code interpreter, file search, Azure AI Search, OpenAPI, browser automation and
+the rest all execute inside the service.
+
+So the way to have Conductor do the work is to declare the capability as a **function tool** rather
+than to ask the platform to stand down. Normally that belongs on the agent, where `agent_reference`
+picks it up and no workflow change is needed.
+
+When the agent cannot be edited, a task can supply the list for one run:
+
+```json
+"rawConfig": {
+  "tools": [
+    {
+      "type": "function",
+      "name": "search_the_web",
+      "description": "Search the web and return the top results",
+      "parameters": {
+        "type": "object",
+        "properties": { "query": { "type": "string" } },
+        "required": ["query"]
+      }
+    }
+  ]
+}
+```
+
+The agent then asks for `search_the_web`, Conductor schedules it as a task, and your worker decides
+what searching means. Omit `rawConfig.tools` and the agent's own tools apply untouched.
+
+!!! warning "Not a guarantee that a built-in tool stays unused"
+    Whether Foundry treats this list as a replacement for the agent's tools or as an addition is not
+    settled by its REST documentation. A run that must not touch a built-in tool should have the
+    agent defined that way, rather than relying on the override.
 
 #### Hand the tools back to the workflow
 

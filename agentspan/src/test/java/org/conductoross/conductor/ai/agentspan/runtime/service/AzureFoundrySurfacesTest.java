@@ -442,6 +442,66 @@ class AzureFoundrySurfacesTest {
         assertThat(body.path("agent_reference").path("name").asText()).isEqualTo("analyst");
     }
 
+    @Test
+    void afunctionToolSuppliedByTheTaskIsSentWithTheRequest() throws Exception {
+        // Who runs a tool follows from its type: Foundry runs its built-in ones and hands back only
+        // function tools. Declaring one here is how a workflow claims a capability for Conductor
+        // when the agent itself cannot be edited.
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what was Q3 revenue?")
+                        .credentials(credentials)
+                        .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                        .rawConfig(
+                                Map.of(
+                                        "surface",
+                                        "responses",
+                                        "tools",
+                                        List.of(
+                                                Map.of(
+                                                        "type", "function",
+                                                        "name", "get_revenue",
+                                                        "description", "Revenue for a quarter"))))
+                        .build());
+
+        JsonNode body = MAPPER.readTree(bodies.get(responsesPath()));
+        assertThat(body.path("tools").get(0).path("type").asText()).isEqualTo("function");
+        assertThat(body.path("tools").get(0).path("name").asText()).isEqualTo("get_revenue");
+    }
+
+    @Test
+    void withoutAToolOverrideTheAgentsOwnToolsApply() throws Exception {
+        client.startAgent(
+                ConductorAgentStartRequest.builder()
+                        .prompt("what was Q3 revenue?")
+                        .credentials(credentials)
+                        .agentUrl(base() + "/api/projects/p1/agents/analyst")
+                        .rawConfig(Map.of("surface", "responses"))
+                        .build());
+
+        // Sending an empty or partial list would quietly narrow what the agent can do.
+        assertThat(MAPPER.readTree(bodies.get(responsesPath())).has("tools")).isFalse();
+    }
+
+    @Test
+    void anonArrayToolOverrideIsRejected() {
+        assertThatThrownBy(
+                        () ->
+                                client.startAgent(
+                                        ConductorAgentStartRequest.builder()
+                                                .prompt("hi")
+                                                .credentials(credentials)
+                                                .agentUrl(
+                                                        base() + "/api/projects/p1/agents/analyst")
+                                                .rawConfig(
+                                                        Map.of(
+                                                                "surface", "responses",
+                                                                "tools", "get_revenue"))
+                                                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must be an array");
+    }
+
     private String responsesPath() {
         return paths.stream()
                 .filter(p -> p.startsWith("/api/projects/p1/openai/v1/responses"))
