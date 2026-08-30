@@ -51,7 +51,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.SneakyThrows;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -155,9 +154,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * </ul>
      */
     @Override
-    @SneakyThrows
     public ConductorAgentStartResponse startAgent(ConductorAgentStartRequest request) {
-        log.info("request: {}", MAPPER.writeValueAsString(request));
         Azure azure =
                 azure(
                         request.getCredentials(),
@@ -263,14 +260,15 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
 
         // No api-version: the project's Responses API is versioned in the path itself.
         JsonNode response = postJson(endpoint + "/openai/v1/responses", body, auth, null);
-        logOutputItemTypes(agentId, response);
+        List<Map<String, Object>> executedTools = extractExecutedTools(response);
+        logOutputItems(agentId, response, executedTools);
         return ConductorAgentStartResponse.builder()
                 .executionId(response.path("id").asText())
                 .agentName(agentId)
                 .requiredWorkers(Collections.emptyList())
                 .state(ConductorAgentState.COMPLETED)
                 .output(Map.of("result", extractResponseText(response)))
-                .executedTools(extractExecutedTools(response))
+                .executedTools(executedTools)
                 .build();
     }
 
@@ -282,7 +280,8 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
      * indistinguishable from the task output alone. Types only, never content: the reply is the
      * user's own data and this is a routine log line.
      */
-    private void logOutputItemTypes(String agentId, JsonNode response) {
+    private void logOutputItems(
+            String agentId, JsonNode response, List<Map<String, Object>> executedTools) {
         if (!log.isDebugEnabled()) {
             return;
         }
@@ -291,10 +290,12 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             types.add(item.path("type").asText("<no type>"));
         }
         log.debug(
-                "Foundry response {} for agent {} returned output items {}",
+                "Foundry response {} for agent {} returned output items {}, of which {} read as"
+                        + " tool calls",
                 response.path("id").asText(""),
                 agentId,
-                types);
+                types,
+                executedTools.size());
     }
 
     /**

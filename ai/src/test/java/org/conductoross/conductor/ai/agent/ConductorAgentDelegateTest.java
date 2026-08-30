@@ -467,6 +467,63 @@ class ConductorAgentDelegateTest {
     }
 
     /** An agent that always comes back asking for tools. */
+    @Test
+    void toolsTheProviderRanItselfReachTheTaskOutput() {
+        // A synchronous surface answers inside startAgent, so this is the only write the task gets.
+        ConductorAgentClient client =
+                new ConductorAgentClient() {
+                    @Override
+                    public String agentType() {
+                        return "microsoft-foundry";
+                    }
+
+                    @Override
+                    public ConductorAgentStartResponse startAgent(
+                            ConductorAgentStartRequest request) {
+                        return ConductorAgentStartResponse.builder()
+                                .executionId("resp-1")
+                                .agentName("analyst")
+                                .state(ConductorAgentState.COMPLETED)
+                                .output(Map.of("result", "GOOG rose 2.1%"))
+                                .executedTools(
+                                        List.of(
+                                                Map.of(
+                                                        "type",
+                                                        "web_search_call",
+                                                        "tool_call_id",
+                                                        "ws_1")))
+                                .build();
+                    }
+
+                    @Override
+                    public ConductorAgentStatusResponse getAgentStatus(
+                            String executionId, ConductorAgentRequest request) {
+                        return null;
+                    }
+
+                    @Override
+                    public void respond(ConductorAgentRespondRequest request) {}
+
+                    @Override
+                    public void cancelAgent(ConductorAgentCancelRequest request) {}
+                };
+
+        TaskResult result =
+                new ConductorAgentDelegate(client)
+                        .execute(
+                                task(
+                                        Map.of(
+                                                "agentType",
+                                                "microsoft-foundry",
+                                                "prompt",
+                                                "how did GOOG do?")));
+
+        assertEquals(TaskResult.Status.COMPLETED, result.getStatus());
+        assertEquals(
+                List.of(Map.of("type", "web_search_call", "tool_call_id", "ws_1")),
+                result.getOutputData().get("executedTools"));
+    }
+
     private static final class ToolCallingAgentClient implements ConductorAgentClient {
 
         private List<Map<String, Object>> pendingTools =
