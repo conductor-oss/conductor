@@ -111,4 +111,47 @@ describe("TaskSummary — hosted agent tool calls", () => {
     );
     expect(screen.queryByText(/Tools? run by agent/)).not.toBeInTheDocument();
   });
+
+  it("says when a task is scheduled but nothing is polling for it", () => {
+    // The usual reason an agent looks stuck: it asked for a tool no worker serves.
+    render(
+      <TaskSummary
+        taskResult={
+          {
+            taskType: "get_revenue",
+            status: "SCHEDULED",
+            workflowTask: { type: "SIMPLE", name: "get_revenue" },
+            referenceTaskName: "agent_ref__t1__get_revenue",
+            inputData: {},
+            outputData: {},
+          } as unknown as ExecutionTask
+        }
+      />,
+    );
+
+    expect(screen.getByText("Waiting for a worker")).toBeInTheDocument();
+    expect(
+      screen.getByText(/No worker has polled "get_revenue"/),
+    ).toBeInTheDocument();
+  });
+
+  it("says nothing about workers once one has polled", () => {
+    render(
+      <TaskSummary
+        taskResult={
+          {
+            taskType: "get_revenue",
+            status: "SCHEDULED",
+            pollCount: 3,
+            workflowTask: { type: "SIMPLE", name: "get_revenue" },
+            referenceTaskName: "agent_ref__t1__get_revenue",
+            inputData: {},
+            outputData: {},
+          } as unknown as ExecutionTask
+        }
+      />,
+    );
+
+    expect(screen.queryByText("Waiting for a worker")).not.toBeInTheDocument();
+  });
 });

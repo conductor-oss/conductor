@@ -259,7 +259,8 @@ Three things have to line up, and nothing fails loudly if they do not:
 2. **Tools are run by default.** Set `autoRunTools: false` only if the workflow means to handle
    the call itself (see below), which completes the `AGENT` task with `waiting: true`.
 3. **A worker serves the tool's task name.** With none, the task sits `SCHEDULED` and the agent
-   waits on it until `maxDurationSeconds`.
+   waits on it — which is correct, and the execution says so: the task shows *"No worker has polled
+   …"* rather than leaving you to infer it.
 
 This is the default. The `AGENT` task **stays `IN_PROGRESS`** while each tool the agent asked for is scheduled as an ordinary Conductor task in the same workflow — one per call, in parallel, named `<agentRef>__t<turn>__<callId>` so a second round of tools does not collide with the first — and the agent is resumed with their results automatically. The workflow keeps running until a worker completes them:
 
@@ -283,6 +284,20 @@ This is the default. The `AGENT` task **stays `IN_PROGRESS`** while each tool th
   }
 }
 ```
+
+**A failed tool is an answer, not an outage.** A tool task keeps its own retry policy, and when
+that is exhausted the failure is reported back to the agent as that call's result — so it can try
+another tool, ask differently, or say it could not find out. The **workflow is not failed** by it;
+tool tasks are scheduled as `optional` for exactly this reason. If you would rather a failed tool
+stop the run, handle it in the workflow after the agent, where the agent's own answer is visible
+too.
+
+**Turns are bounded** by `maxToolTurns` (default 10). An agent that keeps asking for tools is a
+loop, and `maxDurationSeconds` — a day by default — is not a useful backstop for one.
+
+**Tool tasks appear in the agent's own workflow**, named `<agentRef>__t<turn>__<tool>`, so a second
+round reads as a later step rather than colliding with the first. The execution diagram nests them
+under the agent that asked.
 
 **A tool runs as a task of its own name.** The agent's `get_revenue` tool becomes a `SIMPLE` task named `get_revenue`, so a worker already registered for `get_revenue` serves it with no further configuration. Override the mapping with `toolTaskNames` when the names should differ:
 

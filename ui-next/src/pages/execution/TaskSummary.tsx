@@ -118,6 +118,14 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
       value: taskResult.pollCount,
     });
   }
+  // Scheduled and never polled means nothing is listening for this task name. Common enough on its
+  // own, and the usual reason an agent looks stuck: it asked for a tool nobody serves.
+  if (taskResult.status === "SCHEDULED" && !taskResult.pollCount) {
+    data.push({
+      label: "Waiting for a worker",
+      value: `No worker has polled "${taskResult.taskType}". The task stays scheduled until one starts.`,
+    });
+  }
   if (taskResult.seq) {
     data.push({
       label: "Sequence",
