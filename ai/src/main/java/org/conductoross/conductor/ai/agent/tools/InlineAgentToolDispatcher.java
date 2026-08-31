@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.QueueUtils;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -56,6 +59,8 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
 
     private final ObjectProvider<ExecutionDAOFacade> executionDAO;
 
+    private final ObjectProvider<QueueDAO> queueDAO;
+
     // Resolved on use rather than injected, for the constructor cycle
     // SubWorkflowAgentToolDispatcher
     // documents: WorkflowServiceImpl -> WorkflowExecutorOps -> SystemTaskRegistry ->
@@ -64,8 +69,10 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
 
     public InlineAgentToolDispatcher(
             ObjectProvider<ExecutionDAOFacade> executionDAO,
+            ObjectProvider<QueueDAO> queueDAO,
             ObjectProvider<WorkflowExecutor> workflowExecutor) {
         this.executionDAO = executionDAO;
+        this.queueDAO = queueDAO;
         this.workflowExecutor = workflowExecutor;
     }
 
@@ -73,10 +80,22 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
     public AgentToolDispatch dispatch(Request request) {
         WorkflowModel workflow = load(request.parentWorkflowId());
         int turn = nextTurn(workflow, request.taskRefName());
+        if (request.maxToolTurns() > 0 && turn > request.maxToolTurns()) {
+            return AgentToolDispatch.failed(
+                    dispatchId(request, turn),
+                    "Agent asked for tools "
+                            + turn
+                            + " times, past its maxToolTurns of "
+                            + request.maxToolTurns()
+                            + ". Raise it if the agent legitimately needs more rounds.");
+        }
 
         List<WorkflowTask> tasks = new ArrayList<>();
+        Map<String, Integer> seenPerTool = new LinkedHashMap<>();
         for (Map<String, Object> toolCall : request.toolCalls()) {
-            tasks.add(toolTask(request, toolCall, turn));
+            String toolName = String.valueOf(toolCall.get("tool_name"));
+            int occurrence = seenPerTool.merge(toolName, 1, Integer::sum);
+            tasks.add(toolTask(request, toolCall, turn, occurrence));
         }
 
         List<TaskModel> scheduled =
@@ -117,18 +136,18 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
             if (!task.getStatus().isTerminal()) {
                 return AgentToolDispatch.running(dispatchId);
             }
-            if (!task.getStatus().isSuccessful()) {
-                return AgentToolDispatch.failed(
-                        dispatchId,
-                        "Tool task "
-                                + task.getReferenceTaskName()
-                                + " ended "
-                                + task.getStatus()
-                                + (task.getReasonForIncompletion() == null
-                                        ? ""
-                                        : ": " + task.getReasonForIncompletion()));
-            }
-            results.put(toolCallIdOf(task), task.getOutputData());
+            // A tool that exhausted its retries is something the agent can work with - try another
+            // tool, ask differently, or say it could not find out. Failing the batch would decide
+            // that for it, and lose a run that was otherwise fine.
+            results.put(
+                    toolCallIdOf(task),
+                    task.getStatus().isSuccessful()
+                            ? task.getOutputData()
+                            : Map.of(
+                                    "error",
+                                    StringUtils.defaultIfBlank(
+                                            task.getReasonForIncompletion(),
+                                            "Tool task ended " + task.getStatus())));
         }
         return AgentToolDispatch.completed(dispatchId, results);
     }
@@ -139,10 +158,14 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
             Batch batch = Batch.parse(dispatchId);
             WorkflowModel workflow = load(batch.workflowId());
             for (TaskModel task : toolTasksOf(workflow, batch)) {
-                if (!task.getStatus().isTerminal()) {
-                    task.setStatus(TaskModel.Status.CANCELED);
-                    executionDAO.getObject().updateTask(task);
+                if (task.getStatus().isTerminal()) {
+                    continue;
                 }
+                // Remove first: marking it CANCELED without dequeuing leaves a message a worker
+                // will still poll, so the tool runs after the run it belonged to was abandoned.
+                queueDAO.getObject().remove(QueueUtils.getQueueName(task), task.getTaskId());
+                task.setStatus(TaskModel.Status.CANCELED);
+                executionDAO.getObject().updateTask(task);
             }
         } catch (Exception e) {
             // Best effort, like the sub-workflow dispatcher: a batch that cannot be stopped must
@@ -168,20 +191,39 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
         return highest + 1;
     }
 
+    /**
+     * The workflow, from the execution store only.
+     *
+     * <p>Not {@code getWorkflowModel}, which falls back to the search index when the execution
+     * store misses. Whether a batch of tools has finished is a control-flow decision, and the index
+     * is written asynchronously - reading it could leave the agent waiting on work that finished,
+     * or fail a batch whose tasks were simply not indexed yet.
+     */
     private WorkflowModel load(String workflowId) {
-        return executionDAO.getObject().getWorkflowModel(workflowId, true);
+        return executionDAO.getObject().getWorkflowModelFromExecutionDAO(workflowId, true);
     }
 
+    /**
+     * This turn's tool tasks, one per call, each the attempt that counts.
+     *
+     * <p>A retried task keeps its reference name, so the workflow holds the failed original beside
+     * the new attempt. Taking both would let a tool that failed once be fatal however many retries
+     * it had left - and would cancel the attempt that was still running.
+     */
     private static List<TaskModel> toolTasksOf(WorkflowModel workflow, Batch batch) {
         String prefix = AgentToolNaming.turnPrefix(batch.taskRefName(), batch.turn());
-        List<TaskModel> tasks = new ArrayList<>();
+        Map<String, TaskModel> latestByRef = new LinkedHashMap<>();
         for (TaskModel task : workflow.getTasks()) {
-            if (task.getReferenceTaskName() != null
-                    && task.getReferenceTaskName().startsWith(prefix)) {
-                tasks.add(task);
+            String ref = task.getReferenceTaskName();
+            if (ref == null || !ref.startsWith(prefix)) {
+                continue;
+            }
+            TaskModel seen = latestByRef.get(ref);
+            if (seen == null || task.getRetryCount() >= seen.getRetryCount()) {
+                latestByRef.put(ref, task);
             }
         }
-        return tasks;
+        return new ArrayList<>(latestByRef.values());
     }
 
     private static String toolCallIdOf(TaskModel task) {
@@ -189,10 +231,21 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
                 task.getInputData() == null
                         ? null
                         : task.getInputData().get(AgentToolNaming.TOOL_CALL_ID);
+        if (id == null || String.valueOf(id).isBlank()) {
+            // String.valueOf(null) is "null", which the provider rejects as a call id - and two of
+            // them would silently collapse into one result.
+            throw new IllegalStateException(
+                    "Tool task "
+                            + task.getReferenceTaskName()
+                            + " has no "
+                            + AgentToolNaming.TOOL_CALL_ID
+                            + ", so its result cannot be matched to the call it answers");
+        }
         return String.valueOf(id);
     }
 
-    private static WorkflowTask toolTask(Request request, Map<String, Object> toolCall, int turn) {
+    private static WorkflowTask toolTask(
+            Request request, Map<String, Object> toolCall, int turn, int occurrence) {
         String toolName = String.valueOf(toolCall.get("tool_name"));
         String toolCallId = String.valueOf(toolCall.get("tool_call_id"));
 
@@ -200,9 +253,13 @@ public class InlineAgentToolDispatcher implements AgentToolDispatcher {
         task.setType("SIMPLE");
         task.setName(AgentToolNaming.taskNameFor(request.toolTaskNames(), toolName));
         task.setTaskReferenceName(
-                AgentToolNaming.referenceName(request.taskRefName(), turn, toolCallId));
+                AgentToolNaming.referenceName(request.taskRefName(), turn, toolName, occurrence));
         task.setInputParameters(
                 AgentToolNaming.toolInput(toolCall, toolCallId, toolName, request.executionId()));
+        // The agent hears about a failed tool and decides what to do, so the workflow must survive
+        // it. DeciderService returns empty rather than terminating when an optional task exhausts
+        // its retries, and marks it COMPLETED_WITH_ERRORS.
+        task.setOptional(true);
         return task;
     }
 

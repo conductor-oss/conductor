@@ -65,5 +65,6 @@ public interface AgentToolDispatcher {
             String taskRefName,
             String executionId,
             List<Map<String, Object>> toolCalls,
-            Map<String, String> toolTaskNames) {}
+            Map<String, String> toolTaskNames,
+            int maxToolTurns) {}
 }

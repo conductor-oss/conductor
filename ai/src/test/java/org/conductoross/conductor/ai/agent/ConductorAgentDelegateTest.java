@@ -21,11 +21,14 @@ import org.conductoross.conductor.ai.a2a.model.A2ATask;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
 import org.conductoross.conductor.ai.agent.tools.AgentToolDispatch;
 import org.conductoross.conductor.ai.agent.tools.AgentToolDispatcher;
+import org.conductoross.conductor.ai.model.A2ACallResult;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -372,9 +375,11 @@ class ConductorAgentDelegateTest {
         assertEquals(
                 Map.of("call-1", Map.of("revenue", "4.2M"), "call-2", Map.of("headcount", 37)),
                 client.respondedRequest.getToolResults());
-        // The finished batch is no longer advertised as outstanding work.
-        assertFalse(result.getOutputData().containsKey("toolDispatchId"));
-        assertFalse(result.getOutputData().containsKey("pendingTools"));
+        // The finished batch is no longer advertised as outstanding work. Emptied rather than
+        // removed: the output reaches the store by merging, and a removed key would leave the
+        // stale value behind.
+        assertEquals("", result.getOutputData().get("toolDispatchId"));
+        assertEquals(List.of(), result.getOutputData().get("pendingTools"));
     }
 
     @Test
@@ -399,6 +404,65 @@ class ConductorAgentDelegateTest {
 
         assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
         assertEquals("dispatch-1", result.getOutputData().get("toolDispatchId"));
+    }
+
+    @Test
+    void aturnStillRunningAfterTheResultsWentInIsNotSubmittedTwice() {
+        // The provider often answers a submit with "still working" rather than a finished turn.
+        // The batch must read as finished from that moment, or the next poll sends the same tool
+        // outputs again - which the provider rejects, until the task dies blaming the network.
+        ToolCallingAgentClient client = new ToolCallingAgentClient();
+        client.respondStatus =
+                ConductorAgentStatusResponse.builder()
+                        .executionId("exec-1")
+                        .status(ConductorAgentState.RUNNING)
+                        .build();
+        RecordingToolDispatcher dispatcher = new RecordingToolDispatcher();
+        dispatcher.status =
+                AgentToolDispatch.completed(
+                        "dispatch-1", Map.of("call-1", Map.of("revenue", "4.2M")));
+        ConductorAgentDelegate delegate = new ConductorAgentDelegate(client, dispatcher);
+
+        Task task = autoRunToolsTask();
+        task.setOutputData(
+                new LinkedHashMap<>(
+                        Map.of("executionId", "exec-1", "toolDispatchId", "dispatch-1")));
+
+        TaskResult first = delegate.execute(task);
+        assertEquals(TaskResult.Status.IN_PROGRESS, first.getStatus());
+        assertEquals(1, client.respondCalls);
+
+        // The next poll, with what the store would actually hold.
+        task.setOutputData(new LinkedHashMap<>(first.getOutputData()));
+        delegate.execute(task);
+
+        assertEquals(1, client.respondCalls, "the same tool outputs must not be submitted twice");
+    }
+
+    @Test
+    void thefinishedBatchSurvivesTheMergeBackIntoTheTask() {
+        // An agent task's output reaches the store by merging the returned object over what is
+        // already there, and null fields are omitted from that merge - so a removed key leaves its
+        // old value in place. This is the round trip that assertion has to survive.
+        Map<String, Object> stored = new LinkedHashMap<>();
+        stored.put("toolDispatchId", "dispatch-1");
+        stored.put("pendingTools", List.of(Map.of("tool_name", "get_revenue")));
+
+        Map<String, Object> fromDelegate = new LinkedHashMap<>(stored);
+        ConductorAgentResults.clearToolBatch(fromDelegate);
+
+        A2ACallResult asResult =
+                new ObjectMapperProvider()
+                        .getObjectMapper()
+                        .convertValue(fromDelegate, A2ACallResult.class);
+        Map<String, Object> merged = new LinkedHashMap<>(stored);
+        merged.putAll(
+                new ObjectMapperProvider()
+                        .getObjectMapper()
+                        .convertValue(asResult, new TypeReference<Map<String, Object>>() {}));
+
+        assertEquals("", merged.get("toolDispatchId"));
+        assertEquals(List.of(), merged.get("pendingTools"));
     }
 
     @Test

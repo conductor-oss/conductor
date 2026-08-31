@@ -41,9 +41,22 @@ public final class AgentToolNaming {
     /** Separates the turn from the call within it. */
     public static final String CALL_PREFIX = "__";
 
-    /** {@code agent_ref__t1__call_abc} - the agent, the turn, and the call it belongs to. */
-    public static String referenceName(String taskRefName, int turn, String toolCallId) {
-        return turnPrefix(taskRefName, turn) + sanitize(toolCallId);
+    /**
+     * {@code agent_ref__t1__get_revenue} - the agent, the turn, and what is being done.
+     *
+     * <p>Named for the tool rather than the provider's call id, because this is what shows in the
+     * task list and {@code call_lm5KKvsrUpbKida4LkTiLeKA} tells a reader nothing. A turn that calls
+     * the same tool twice gets {@code _2}, {@code _3} and so on.
+     *
+     * <p>Nothing correctness-bearing hangs off this name: results are matched by the {@code
+     * _toolCallId} carried in each task's input, so a collision here would be untidy rather than
+     * wrong - and {@code occurrence} keeps it from happening anyway.
+     */
+    public static String referenceName(
+            String taskRefName, int turn, String toolName, int occurrence) {
+        return turnPrefix(taskRefName, turn)
+                + sanitize(toolName)
+                + (occurrence > 1 ? "_" + occurrence : "");
     }
 
     /** Everything a turn's tasks share, which is how they are found again. */

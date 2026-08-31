@@ -123,6 +123,21 @@ public final class ConductorAgentResults {
     }
 
     /**
+     * Marks the outstanding tool batch as finished with.
+     *
+     * <p>Empties rather than removes. An agent task's output reaches the store by merging the
+     * worker's returned object over what is already there, and a null field is omitted from that
+     * merge entirely - so removing a key leaves the old value in place. An empty value overwrites
+     * it, and every reader treats blank as absent.
+     */
+    public static void clearToolBatch(Map<String, Object> outputData) {
+        outputData.put(KEY_TOOL_DISPATCH_ID, "");
+        outputData.put(KEY_PENDING_TOOL, Map.of());
+        outputData.put(KEY_PENDING_TOOLS, List.of());
+        outputData.put(KEY_WAITING, false);
+    }
+
+    /**
      * Adds the canonical A2A task representation and convenience fields used by the remote A2A
      * branch. Conductor-specific fields remain alongside it for backward compatibility.
      *

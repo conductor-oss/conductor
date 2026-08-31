@@ -24,13 +24,16 @@ import org.springframework.beans.factory.ObjectProvider;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,6 +45,7 @@ import static org.mockito.Mockito.when;
 class InlineAgentToolDispatcherTest {
 
     private ExecutionDAOFacade executionDAO;
+    private QueueDAO queueDAO;
     private WorkflowExecutor workflowExecutor;
     private WorkflowModel workflow;
     private InlineAgentToolDispatcher dispatcher;
@@ -49,14 +53,17 @@ class InlineAgentToolDispatcherTest {
     @BeforeEach
     void setUp() {
         executionDAO = mock(ExecutionDAOFacade.class);
+        queueDAO = mock(QueueDAO.class);
         workflowExecutor = mock(WorkflowExecutor.class);
         workflow = new WorkflowModel();
         workflow.setWorkflowId("wf-1");
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setTasks(new ArrayList<>());
-        when(executionDAO.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAO.getWorkflowModelFromExecutionDAO(anyString(), anyBoolean()))
+                .thenReturn(workflow);
         dispatcher =
-                new InlineAgentToolDispatcher(provider(executionDAO), provider(workflowExecutor));
+                new InlineAgentToolDispatcher(
+                        provider(executionDAO), provider(queueDAO), provider(workflowExecutor));
     }
 
     @Test
@@ -71,7 +78,7 @@ class InlineAgentToolDispatcherTest {
         // The name is the tool's, so a worker already registered for it needs no configuration.
         assertThat(scheduled.getName()).isEqualTo("get_revenue");
         assertThat(scheduled.getType()).isEqualTo("SIMPLE");
-        assertThat(scheduled.getTaskReferenceName()).isEqualTo("agent_ref__t1__call_1");
+        assertThat(scheduled.getTaskReferenceName()).isEqualTo("agent_ref__t1__get_revenue");
         assertThat(scheduled.getInputParameters())
                 .containsEntry("quarter", "Q3")
                 .containsEntry("_toolCallId", "call-1")
@@ -84,20 +91,26 @@ class InlineAgentToolDispatcherTest {
     void asecondTurnGetsNamesOfItsOwn() {
         // The engine drops a repeated reference name without saying so, so round two must not
         // reuse round one's.
-        workflow.getTasks().add(taskNamed("agent_ref__t1__call_1", TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.COMPLETED));
         scheduleReturns(1);
 
         dispatcher.dispatch(request(call("get_revenue", "call-2")));
 
         assertThat(capturedTasks().get(0).getTaskReferenceName())
-                .isEqualTo("agent_ref__t2__call_2");
+                .isEqualTo("agent_ref__t2__get_revenue");
     }
 
     @Test
     void thebatchIsRunningUntilEveryToolIsDone() {
-        workflow.getTasks().add(taskNamed("agent_ref__t1__call_1", TaskModel.Status.COMPLETED));
         workflow.getTasks()
-                .add(taskNamed("agent_ref__t1__call_2", TaskModel.Status.SCHEDULED, "call-2"));
+                .add(taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(
+                        taskNamed(
+                                "agent_ref__t1__get_revenue_2",
+                                TaskModel.Status.SCHEDULED,
+                                "call-2"));
 
         assertThat(dispatcher.status("inline:wf-1|agent_ref|1").state())
                 .isEqualTo(AgentToolDispatch.State.RUNNING);
@@ -105,7 +118,7 @@ class InlineAgentToolDispatcherTest {
 
     @Test
     void resultsComeBackKeyedByTheCallTheyAnswer() {
-        TaskModel done = taskNamed("agent_ref__t1__call_1", TaskModel.Status.COMPLETED);
+        TaskModel done = taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.COMPLETED);
         done.setOutputData(Map.of("revenue", "4.2M"));
         workflow.getTasks().add(done);
 
@@ -117,26 +130,128 @@ class InlineAgentToolDispatcherTest {
     }
 
     @Test
-    void afailedToolFailsTheBatchWithItsReason() {
-        TaskModel failed = taskNamed("agent_ref__t1__call_1", TaskModel.Status.FAILED);
+    void afailedToolIsReportedToTheAgentRatherThanFailingTheBatch() {
+        TaskModel failed = taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.FAILED);
         failed.setReasonForIncompletion("no such quarter");
         workflow.getTasks().add(failed);
 
         AgentToolDispatch dispatch = dispatcher.status("inline:wf-1|agent_ref|1");
 
+        // A tool that exhausted its retries is something the agent can work with - try another
+        // tool, or say it could not find out. Failing the batch would decide that for it.
+        assertThat(dispatch.state()).isEqualTo(AgentToolDispatch.State.COMPLETED);
+        assertThat(dispatch.resultsByToolCallId())
+                .isEqualTo(Map.of("call-1", Map.of("error", "no such quarter")));
+    }
+
+    @Test
+    void aretriedToolIsJudgedOnItsRetryNotItsFirstAttempt() {
+        // A retry keeps the reference name, so the workflow holds the failed original beside the
+        // new attempt. Reading both would make one failure fatal however many retries remained.
+        TaskModel firstAttempt =
+                taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.FAILED, "call-1");
+        firstAttempt.setRetryCount(0);
+        TaskModel retry =
+                taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.COMPLETED, "call-1");
+        retry.setRetryCount(1);
+        retry.setOutputData(Map.of("revenue", "4.2M"));
+        workflow.getTasks().add(firstAttempt);
+        workflow.getTasks().add(retry);
+
+        AgentToolDispatch dispatch = dispatcher.status("inline:wf-1|agent_ref|1");
+
+        assertThat(dispatch.state()).isEqualTo(AgentToolDispatch.State.COMPLETED);
+        assertThat(dispatch.resultsByToolCallId())
+                .isEqualTo(Map.of("call-1", Map.of("revenue", "4.2M")));
+    }
+
+    @Test
+    void atoolTaskCannotFailTheWorkflow() {
+        scheduleReturns(1);
+
+        dispatcher.dispatch(request(call("get_revenue", "call-1")));
+
+        // The agent is told about a failed tool and decides what to do, so the run has to survive
+        // one. Optional is what stops the decider terminating the workflow on exhausted retries.
+        assertThat(capturedTasks().get(0).isOptional()).isTrue();
+    }
+
+    @Test
+    void thesameToolTwiceInOneTurnGetsDistinctTasks() {
+        scheduleReturns(2);
+
+        dispatcher.dispatch(
+                new AgentToolDispatcher.Request(
+                        "wf-1",
+                        "task-1",
+                        "agent_ref",
+                        "exec-1",
+                        List.of(call("get_revenue", "call-1"), call("get_revenue", "call-2")),
+                        null,
+                        10));
+
+        assertThat(capturedTasks())
+                .extracting(WorkflowTask::getTaskReferenceName)
+                .containsExactly("agent_ref__t1__get_revenue", "agent_ref__t1__get_revenue_2");
+    }
+
+    @Test
+    void anagentThatKeepsAskingForToolsIsStopped() {
+        for (int turn = 1; turn <= 10; turn++) {
+            workflow.getTasks()
+                    .add(
+                            taskNamed(
+                                    "agent_ref__t" + turn + "__get_revenue",
+                                    TaskModel.Status.COMPLETED,
+                                    "call-" + turn));
+        }
+
+        AgentToolDispatch dispatch = dispatcher.dispatch(request(call("get_revenue", "call-11")));
+
         assertThat(dispatch.state()).isEqualTo(AgentToolDispatch.State.FAILED);
-        assertThat(dispatch.reason()).contains("no such quarter");
+        assertThat(dispatch.reason()).contains("maxToolTurns");
+    }
+
+    @Test
+    void atoolTaskWithNoCallIdIsRefusedRatherThanKeyedOnNull() {
+        TaskModel done = new TaskModel();
+        done.setReferenceTaskName("agent_ref__t1__get_revenue");
+        done.setStatus(TaskModel.Status.COMPLETED);
+        done.setInputData(Map.of());
+        workflow.getTasks().add(done);
+
+        // "null" as a key is one the provider rejects, and two of them would collapse into one.
+        assertThatThrownBy(() -> dispatcher.status("inline:wf-1|agent_ref|1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cannot be matched");
+    }
+
+    @Test
+    void cancellingATooldequeuesItSoNoWorkerStillRunsIt() {
+        TaskModel running =
+                taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.SCHEDULED, "call-1");
+        running.setTaskId("t-1");
+        running.setTaskDefName("get_revenue");
+        // The queue name is derived from the task, so it has to look like a real one.
+        running.setTaskType("get_revenue");
+        workflow.getTasks().add(running);
+
+        dispatcher.cancel("inline:wf-1|agent_ref|1");
+
+        verify(queueDAO).remove(eq("get_revenue"), eq("t-1"));
+        assertThat(running.getStatus()).isEqualTo(TaskModel.Status.CANCELED);
     }
 
     @Test
     void statusIsResolvedFromTheIdAloneSoAnyReplicaCanServeIt() {
-        TaskModel done = taskNamed("agent_ref__t1__call_1", TaskModel.Status.COMPLETED);
+        TaskModel done = taskNamed("agent_ref__t1__get_revenue", TaskModel.Status.COMPLETED);
         done.setOutputData(Map.of("revenue", "4.2M"));
         workflow.getTasks().add(done);
 
         // A different instance, holding nothing from the dispatch.
         InlineAgentToolDispatcher elsewhere =
-                new InlineAgentToolDispatcher(provider(executionDAO), provider(workflowExecutor));
+                new InlineAgentToolDispatcher(
+                        provider(executionDAO), provider(queueDAO), provider(workflowExecutor));
 
         assertThat(elsewhere.status("inline:wf-1|agent_ref|1").state())
                 .isEqualTo(AgentToolDispatch.State.COMPLETED);
@@ -196,7 +311,7 @@ class InlineAgentToolDispatcherTest {
 
     private static AgentToolDispatcher.Request request(Map<String, Object> toolCall) {
         return new AgentToolDispatcher.Request(
-                "wf-1", "task-1", "agent_ref", "exec-1", List.of(toolCall), null);
+                "wf-1", "task-1", "agent_ref", "exec-1", List.of(toolCall), null, 10);
     }
 
     private static <T> ObjectProvider<T> provider(T value) {

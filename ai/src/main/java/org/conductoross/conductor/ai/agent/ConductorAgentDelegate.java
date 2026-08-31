@@ -41,6 +41,7 @@ public class ConductorAgentDelegate {
     private static final long DEFAULT_POLL_SECONDS = 5;
     private static final long DEFAULT_MAX_DURATION_SECONDS = 24L * 60 * 60;
     private static final int DEFAULT_MAX_POLL_FAILURES = 30;
+    private static final int DEFAULT_MAX_TOOL_TURNS = 10;
 
     private final ConductorAgentClient conductorAgentClient;
     private final AgentToolDispatcher toolDispatcher;
@@ -90,6 +91,18 @@ public class ConductorAgentDelegate {
         try {
             ConductorAgentExecution execution;
             if (StringUtils.isBlank(executionId)) {
+                // An output that was offloaded to external payload storage comes back blank on this
+                // side, so a running agent would read as one that never started - and every poll
+                // would begin a new provider run, forever, with the deadline reset each time.
+                if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+                    return fail(
+                            result,
+                            "This agent task's output is held in external payload storage, so its"
+                                    + " execution id is not readable here and the run cannot be"
+                                    + " resumed. Reduce what the task outputs, or raise"
+                                    + " conductor.app.taskOutputPayloadSizeThreshold.",
+                            true);
+                }
                 execution = startOrResume(task, request);
             } else {
                 execution =
@@ -243,9 +256,16 @@ public class ConductorAgentDelegate {
                                 taskRefName,
                                 execution.getExecutionId(),
                                 execution.getPendingTools(),
-                                request.getToolTaskNames()));
+                                request.getToolTaskNames(),
+                                maxToolTurns(request)));
 
         ConductorAgentResults.writeExecutedTools(output, execution);
+        if (dispatch.state() == AgentToolDispatch.State.FAILED) {
+            // Waiting on a batch that was never scheduled means waiting out maxDurationSeconds, and
+            // a partly scheduled one would answer the provider with some of its tool calls missing.
+            cancelBestEffort(execution.getExecutionId(), request, "Agent tools could not be run");
+            return fail(result, dispatch.reason(), true);
+        }
         output.put(ConductorAgentResults.KEY_TOOL_DISPATCH_ID, dispatch.dispatchId());
         // Both, matching the SUB_WORKFLOW system task: the field carries the relationship, and the
         // output copy is what the execution view reads to offer a drill-in from the agent to the
@@ -303,12 +323,19 @@ public class ConductorAgentDelegate {
                                     .credentials(request.getCredentials())
                                     .rawConfig(request.getRawConfig())
                                     .build());
-            // Cleared only once the results are actually in. Clearing before the call would, on a
-            // transient failure, leave a task that looks as if it never dispatched anything - and
-            // the next poll would read the same outstanding tool calls and run every one again.
-            result.getOutputData().remove(ConductorAgentResults.KEY_TOOL_DISPATCH_ID);
-            result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOL);
-            result.getOutputData().remove(ConductorAgentResults.KEY_PENDING_TOOLS);
+            // Cleared only once the results are in: clearing before the call would, on a transient
+            // failure, leave a task that looks as if it never dispatched anything, and the next
+            // poll would run every tool again.
+            //
+            // Emptied rather than removed. This task's output reaches the store through
+            // AnnotatedMethodResultMapper, which merges the returned POJO with putAll, and that
+            // mapper omits null fields - so a removed key is simply absent from the merge and the
+            // stale one survives. An empty value is written, and a blank dispatch id reads as "no
+            // batch" everywhere it is checked. Without this the next poll re-submits the same tool
+            // outputs, the provider rejects them, and the task eventually fails claiming the agent
+            // was unreachable.
+            ConductorAgentResults.clearToolBatch(result.getOutputData());
+            result.getOutputData().put(ConductorAgentResults.KEY_POLL_FAILURES, 0);
             ConductorAgentExecution execution =
                     fromStatus(
                             afterRespond != null
@@ -553,19 +580,34 @@ public class ConductorAgentDelegate {
                 : DEFAULT_MAX_DURATION_SECONDS;
     }
 
+    private static int maxToolTurns(ConductorAgentRequest request) {
+        return request.getMaxToolTurns() != null && request.getMaxToolTurns() > 0
+                ? request.getMaxToolTurns()
+                : DEFAULT_MAX_TOOL_TURNS;
+    }
+
     private static int maxPollFailures(ConductorAgentRequest request) {
         return request.getMaxPollFailures() != null
                 ? Math.max(1, request.getMaxPollFailures())
                 : DEFAULT_MAX_POLL_FAILURES;
     }
 
+    /**
+     * Distinguishes one attempt of an agent task from the next.
+     *
+     * <p>A retry clears the task's output, losing the execution id, so the retry starts a fresh
+     * provider run while the first may still be live. Including the retry count at least stops the
+     * two being told they are the same request.
+     */
     private static String idempotencyKey(Task task) {
         return "conductor-agent-"
                 + task.getWorkflowInstanceId()
                 + ":"
                 + task.getReferenceTaskName()
                 + ":"
-                + task.getIteration();
+                + task.getIteration()
+                + ":"
+                + task.getRetryCount();
     }
 
     private static long asLong(Object value, long defaultValue) {

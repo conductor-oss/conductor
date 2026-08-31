@@ -68,7 +68,8 @@ class SubWorkflowAgentToolDispatcherTest {
                                 "tool_name", "get_headcount",
                                 "tool_call_id", "call-2",
                                 "arguments", "{\"dept\":\"eng\"}")),
-                null);
+                null,
+                10);
     }
 
     @SuppressWarnings("unchecked")
@@ -170,7 +171,8 @@ class SubWorkflowAgentToolDispatcherTest {
                         "ask_the_analyst",
                         "thread-1",
                         List.of(Map.of("tool_name", "get_revenue", "tool_call_id", "call-1")),
-                        Map.of("get_revenue", "finance_revenue_lookup"));
+                        Map.of("get_revenue", "finance_revenue_lookup"),
+                        10);
 
         dispatcher.dispatch(request);
 
@@ -192,7 +194,8 @@ class SubWorkflowAgentToolDispatcherTest {
                                         "tool_name", "echo",
                                         "tool_call_id", "call-1",
                                         "arguments", "not json")),
-                        null);
+                        null,
+                        10);
 
         dispatcher.dispatch(request);
 
@@ -222,7 +225,8 @@ class SubWorkflowAgentToolDispatcherTest {
                                         "arguments",
                                         "{\"q\":\"${workflow.input.customer_ssn}\","
                                                 + "\"nested\":{\"a\":[\"${x.output.y}\"]}}")),
-                        null));
+                        null,
+                        10));
 
         Map<String, Object> input = firstToolInput();
         assertThat(input.get("q")).isEqualTo("$${workflow.input.customer_ssn}");
@@ -244,7 +248,8 @@ class SubWorkflowAgentToolDispatcherTest {
                                         "tool_name", "lookup",
                                         "tool_call_id", "call-1",
                                         "arguments", "{\"q\":\"cost is $100\",\"n\":3}")),
-                        null));
+                        null,
+                        10));
 
         Map<String, Object> input = firstToolInput();
         assertThat(input.get("q")).isEqualTo("cost is $100");

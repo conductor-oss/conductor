@@ -61,6 +61,14 @@ public class ConductorAgentRequest extends ConductorAgentStartRequest {
      * tool is scheduled as an ordinary task — one per call, in parallel — and resumes the agent
      * with their results once they finish.
      */
+    /**
+     * How many rounds of tools one agent task may run before it is stopped.
+     *
+     * <p>An agent that keeps asking for tools is a loop, and maxDurationSeconds - a day by default
+     * - is not a useful backstop for one. Default 10.
+     */
+    private Integer maxToolTurns;
+
     private Boolean autoRunTools;
 
     /**
