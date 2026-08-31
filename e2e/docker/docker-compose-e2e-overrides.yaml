@@ -1,0 +1,12 @@
+# Settings the end-to-end suite needs from the server, layered over whichever
+# docker/docker-compose-*.yaml flavour is being run:
+#
+#   docker compose -f docker/docker-compose.yaml -f e2e/docker/docker-compose-e2e-overrides.yaml up -d
+#
+# They live here rather than in the flavour files because those are what a user
+# starts Conductor with. Schema enforcement is off by default and must stay off
+# there; the suite that exercises it turns it on for its own server.
+services:
+  conductor-server:
+    environment:
+      - conductor.app.schema-validation.enabled=true

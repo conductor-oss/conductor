@@ -21,9 +21,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -45,7 +47,14 @@ class SchemaServiceImplTest {
     void setUp() {
         dao = new InMemorySchemaDAO();
         cacheProperties = new SchemaCacheProperties();
-        service = new SchemaServiceImpl(dao, cacheProperties);
+        service = newService();
+    }
+
+    private SchemaServiceImpl newService() {
+        return new SchemaServiceImpl(
+                dao,
+                cacheProperties,
+                new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
     }
 
     private static SchemaDef schema(String name, int version) {
@@ -276,7 +285,7 @@ class SchemaServiceImplTest {
     @Test
     void cachedReadsStillSeeAnUpdateMadeThroughTheService() {
         cacheProperties.setTtl(Duration.ofMinutes(5));
-        service = new SchemaServiceImpl(dao, cacheProperties);
+        service = newService();
 
         service.saveSchema(schema("order", 1), false);
         assertEquals(Map.of("type", "object"), service.getSchema("order", 1).getData());
@@ -292,7 +301,7 @@ class SchemaServiceImplTest {
     @Test
     void cachedLatestIsDroppedWhenANewVersionArrives() {
         cacheProperties.setTtl(Duration.ofMinutes(5));
-        service = new SchemaServiceImpl(dao, cacheProperties);
+        service = newService();
 
         service.saveSchema(schema("order", 1), false);
         assertEquals(1, service.getSchema("order").getVersion());
@@ -305,7 +314,7 @@ class SchemaServiceImplTest {
     @Test
     void cachedEntryIsDroppedOnDelete() {
         cacheProperties.setTtl(Duration.ofMinutes(5));
-        service = new SchemaServiceImpl(dao, cacheProperties);
+        service = newService();
 
         service.saveSchema(schema("order", 1), false);
         assertNotNull(service.getSchema("order", 1));
@@ -318,7 +327,7 @@ class SchemaServiceImplTest {
     @Test
     void aMissingSchemaIsNotCachedAsMissing() {
         cacheProperties.setTtl(Duration.ofMinutes(5));
-        service = new SchemaServiceImpl(dao, cacheProperties);
+        service = newService();
 
         assertThrows(NotFoundException.class, () -> service.getSchema("order", 1));
 

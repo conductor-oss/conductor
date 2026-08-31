@@ -13,6 +13,7 @@
 package org.conductoross.conductor.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
 
@@ -64,4 +65,28 @@ public interface SchemaService {
 
     /** Removes one version, leaving the rest of the name's history in place. */
     void deleteSchema(String name, int version);
+
+    /**
+     * Checks {@code data} against {@code schema}, and does nothing when it conforms.
+     *
+     * <p>This is the only place a payload is checked against a schema. The engine's enforcement
+     * hooks and the AI layer both call it, so the rules below hold identically wherever a schema is
+     * enforced:
+     *
+     * <ul>
+     *   <li>An inline schema — one carrying {@code data} — is used as it stands.
+     *   <li>Otherwise the schema is a reference, and is resolved from the registry by its name and
+     *       version. A version below 1 resolves the latest — note that {@link SchemaDef} defaults
+     *       its version to 1, so a definition wanting the latest has to say {@code 0} outright.
+     *   <li>{@code externalRef} is never dereferenced. A schema that carries only an external
+     *       reference is unresolvable, and is reported as such.
+     * </ul>
+     *
+     * @throws org.conductoross.conductor.core.exception.SchemaValidationException when the data
+     *     does not conform, or when the schema itself cannot be enforced: the reference names a
+     *     version the registry does not hold, the schema carries no type, or its type is one this
+     *     server does not validate. A schema that cannot be enforced fails loudly rather than
+     *     passing the payload through unchecked.
+     */
+    void validate(SchemaDef schema, Map<String, Object> data);
 }

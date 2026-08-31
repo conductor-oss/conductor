@@ -31,7 +31,7 @@ import com.netflix.conductor.common.metadata.SchemaDef;
  * <p>Never registered as a bean — an in-memory registry that accepts writes and loses them on
  * restart is the failure this feature exists to avoid.
  */
-class InMemorySchemaDAO implements SchemaDAO {
+public class InMemorySchemaDAO implements SchemaDAO {
 
     private final Map<String, SchemaDef> stored = new ConcurrentHashMap<>();
 

@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.Collections;
 
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,6 +103,15 @@ public class ApplicationExceptionMapperTest {
         // NotFoundException -> 404).
         assertLoggedAtWarn(new ConflictException("resource already exists"), status().isConflict());
         assertLoggedAtWarn(new NotFoundException("resource not found"), status().isNotFound());
+    }
+
+    @Test
+    public void testSchemaValidationMapsTo400() throws Exception {
+        // A payload that does not match its definition's schema is the caller's to fix; a 500
+        // would tell an SDK to retry something that can never succeed.
+        assertLoggedAtWarn(
+                new SchemaValidationException("Workflow order input: required property 'name'"),
+                status().isBadRequest());
     }
 
     @Test

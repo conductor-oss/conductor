@@ -25,6 +25,8 @@ import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.service.SchemaEnforcement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -97,6 +99,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private long activeWorkerLastPollMs;
     private final ExecutionLockService executionLockService;
     private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
+    private final SchemaEnforcement schemaEnforcement;
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -116,7 +119,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
             IDGenerator idGenerator,
-            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
+            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO,
+            SchemaEnforcement schemaEnforcement) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -131,6 +135,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
+        this.schemaEnforcement = schemaEnforcement;
     }
 
     /**
@@ -706,6 +711,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         deciderService.updateWorkflowOutput(workflow, null);
 
+        try {
+            schemaEnforcement.validateWorkflowOutput(workflow);
+        } catch (SchemaValidationException e) {
+            // The output is assembled; the workflow fails instead of completing, carrying the
+            // validation message as its reason.
+            throw new TerminateWorkflowException(e.getMessage(), WorkflowModel.Status.FAILED);
+        }
+
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
 
         // update the failed reference task names
@@ -990,6 +1003,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (StringUtils.isNotBlank(taskResult.getExternalOutputPayloadStoragePath())) {
             task.setExternalOutputPayloadStoragePath(
                     taskResult.getExternalOutputPayloadStoragePath());
+        }
+
+        // Only a task the worker reports as done has an output worth checking. Validating what a
+        // failing task returned would replace the worker's own reason with a schema complaint.
+        //
+        // An externalized output is skipped rather than fetched: `outputData` is empty in that
+        // case, so validating it would reject every large payload for fields that are in fact
+        // present. Documented in docs/devguide/how-tos/schema-validation.md.
+        if (task.getStatus() == COMPLETED
+                && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
+            try {
+                schemaEnforcement.validateTaskOutput(task, () -> taskDefinitionOrNull(task));
+            } catch (SchemaValidationException e) {
+                task.setStatus(FAILED);
+                task.setReasonForIncompletion(e.getMessage());
+            }
         }
 
         if (task.getStatus().isTerminal()) {
@@ -1978,6 +2007,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     boolean scheduleTask(WorkflowModel workflow, List<TaskModel> tasks) {
         List<TaskModel> tasksToBeQueued;
         boolean startedSystemTasks = false;
+        final Set<String> rejectedIds = new HashSet<>();
 
         try {
             if (tasks == null || tasks.isEmpty()) {
@@ -1998,22 +2028,31 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
 
+            rejectedIds.addAll(rejectTasksFailingInputSchema(tasks));
+
             // metric to track the distribution of number of tasks within a workflow
             Monitors.recordNumTasksInWorkflow(
                     workflow.getTasks().size() + tasks.size(),
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()));
 
-            // Save the tasks in the DAO
+            // Save the tasks in the DAO, rejected ones included: they are persisted in the
+            // terminal state they were given, so the next decide() cycle sees them and fails
+            // the workflow with the validation message.
             executionDAOFacade.createTasks(tasks);
 
-            List<TaskModel> systemTasks =
+            List<TaskModel> acceptedTasks =
                     tasks.stream()
+                            .filter(task -> !rejectedIds.contains(task.getTaskId()))
+                            .collect(Collectors.toList());
+
+            List<TaskModel> systemTasks =
+                    acceptedTasks.stream()
                             .filter(task -> systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
             tasksToBeQueued =
-                    tasks.stream()
+                    acceptedTasks.stream()
                             .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
@@ -2078,7 +2117,49 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.warn(errorMsg, e);
             Monitors.error(CLASS_NAME, "scheduleTask");
         }
-        return startedSystemTasks;
+        // A rejected task is a state change of its own: it is already terminal, and the decide
+        // loop has to run again for the workflow to notice it.
+        return startedSystemTasks || !rejectedIds.isEmpty();
+    }
+
+    /**
+     * Fails any task whose input does not match the input schema on its definition, before it is
+     * queued and so before a worker ever sees it.
+     *
+     * <p>The failure is terminal rather than retriable. A payload that violates a schema violates
+     * it identically on every attempt, so retrying only spends the task's retry budget
+     * re-submitting the same invalid input.
+     *
+     * @return the ids of the tasks that were rejected, which must not be queued or started
+     */
+    private Set<String> rejectTasksFailingInputSchema(List<TaskModel> tasks) {
+        Set<String> rejected = new HashSet<>();
+        for (TaskModel task : tasks) {
+            try {
+                schemaEnforcement.validateTaskInput(task, () -> taskDefinitionOrNull(task));
+            } catch (SchemaValidationException e) {
+                LOGGER.info(
+                        "Task {} rejected before scheduling: {}", task.getTaskId(), e.getMessage());
+                task.setStatus(FAILED_WITH_TERMINAL_ERROR);
+                task.setReasonForIncompletion(e.getMessage());
+                task.setEndTime(System.currentTimeMillis());
+                rejected.add(task.getTaskId());
+            }
+        }
+        return rejected;
+    }
+
+    /**
+     * The task's definition, or null when it has none. Unlike {@link #getTaskDefinition}, an absent
+     * definition is not an error here: it simply means there is no schema to enforce.
+     */
+    private TaskDef taskDefinitionOrNull(TaskModel task) {
+        return task.getTaskDefinition()
+                .orElseGet(
+                        () ->
+                                task.getTaskDefName() == null
+                                        ? null
+                                        : metadataDAO.getTaskDef(task.getTaskDefName()));
     }
 
     /**
@@ -2602,6 +2683,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
         WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
 
+        // Before the try, and so before anything is persisted: an input that does not match the
+        // definition's schema means the execution never starts, and there is nothing to undo.
+        schemaEnforcement.validateWorkflowInput(workflow);
+
         try {
             createAndEvaluate(workflow);
             Monitors.recordWorkflowStartSuccess(
@@ -2653,6 +2738,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+            schemaEnforcement.validateWorkflowInput(workflow);
             createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 

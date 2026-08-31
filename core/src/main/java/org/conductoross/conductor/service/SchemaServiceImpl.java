@@ -14,20 +14,30 @@ package org.conductoross.conductor.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.networknt.schema.JsonSchemaException;
+import com.networknt.schema.ValidationMessage;
 
 /**
  * Default {@link SchemaService}.
@@ -50,6 +60,8 @@ public class SchemaServiceImpl implements SchemaService {
 
     private static final String LATEST = "latest";
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().getObjectMapper();
+
     private final SchemaDAO schemaDAO;
 
     /**
@@ -59,8 +71,14 @@ public class SchemaServiceImpl implements SchemaService {
      */
     private final Cache<String, SchemaDef> cache;
 
-    public SchemaServiceImpl(SchemaDAO schemaDAO, SchemaCacheProperties cacheProperties) {
+    private final JsonSchemaValidator jsonSchemaValidator;
+
+    public SchemaServiceImpl(
+            SchemaDAO schemaDAO,
+            SchemaCacheProperties cacheProperties,
+            JsonSchemaValidator jsonSchemaValidator) {
         this.schemaDAO = schemaDAO;
+        this.jsonSchemaValidator = jsonSchemaValidator;
         this.cache =
                 cacheProperties.isEnabled()
                         ? Caffeine.newBuilder()
@@ -237,5 +255,98 @@ public class SchemaServiceImpl implements SchemaService {
         }
         String prefix = name + "/";
         cache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
+    }
+
+    @Override
+    public void validate(SchemaDef schema, Map<String, Object> data) {
+        if (schema == null) {
+            throw new IllegalArgumentException("Schema cannot be null");
+        }
+
+        SchemaDef resolved = resolve(schema);
+
+        // The schema fields on a Task Definition carry no cascading-validation annotation, so a
+        // schema with no type is accepted at registration and only discovered here. That is a
+        // definition error and is reported as one, rather than passed over.
+        if (resolved.getType() == null) {
+            throw new SchemaValidationException(
+                    "Schema %s version %d has no type, so nothing can be validated against it",
+                    resolved.getName(), resolved.getVersion());
+        }
+        if (resolved.getType() != SchemaDef.Type.JSON) {
+            throw new SchemaValidationException(
+                    "Schema %s version %d is of type %s; this server validates JSON schemas only",
+                    resolved.getName(), resolved.getVersion(), resolved.getType());
+        }
+
+        String schemaContent;
+        try {
+            schemaContent = OBJECT_MAPPER.writeValueAsString(resolved.getData());
+        } catch (JsonProcessingException e) {
+            throw new SchemaValidationException(
+                    "Schema %s version %d could not be read: %s",
+                    resolved.getName(), resolved.getVersion(), e.getMessage());
+        }
+
+        Set<ValidationMessage> failures;
+        try {
+            failures = jsonSchemaValidator.validate(schemaContent, data == null ? Map.of() : data);
+        } catch (JsonSchemaException e) {
+            // networknt reports an unusable schema document through an exception whose own
+            // getMessage() is frequently empty, so the messages it carries are what get reported.
+            throw new SchemaValidationException(
+                    "Schema %s version %d is not a usable JSON schema: %s",
+                    resolved.getName(), resolved.getVersion(), describe(e));
+        }
+
+        if (failures != null && !failures.isEmpty()) {
+            throw new SchemaValidationException(
+                    "Schema validation failed for %s version %d: %s",
+                    resolved.getName(),
+                    resolved.getVersion(),
+                    failures.stream()
+                            .map(ValidationMessage::getMessage)
+                            .collect(Collectors.joining(", ")));
+        }
+    }
+
+    /**
+     * Returns the schema whose {@code data} is the document to validate against: the argument when
+     * it inlines one, otherwise the registered version it names.
+     *
+     * <p>{@code externalRef} is deliberately not a third step. It is stored and returned unchanged,
+     * and nothing dereferences it, so a schema carrying only an external reference is unresolvable
+     * and is reported as a missing registration rather than silently skipped.
+     */
+    private SchemaDef resolve(SchemaDef schema) {
+        // An empty document is a legal JSON Schema that permits anything, so `data` being present
+        // — not being non-empty — is what makes a schema inline.
+        if (schema.getData() != null) {
+            return schema;
+        }
+        if (StringUtils.isBlank(schema.getName())) {
+            throw new SchemaValidationException(
+                    "A schema was attached with neither an inline document nor a name to resolve it by");
+        }
+        String name = schema.getName();
+        int version = schema.getVersion();
+        // Through the cache: under enforcement this runs on every scheduled task, which is the
+        // read the cache exists for.
+        Optional<SchemaDef> registered =
+                version < 1
+                        ? cached(key(name, LATEST), () -> schemaDAO.getLatestSchema(name))
+                        : cached(
+                                key(name, String.valueOf(version)),
+                                () -> schemaDAO.getSchema(name, version));
+        return registered.orElseThrow(
+                () ->
+                        new SchemaValidationException(
+                                "No schema registered as %s version %d, referenced by a definition",
+                                schema.getName(), schema.getVersion()));
+    }
+
+    private static String describe(JsonSchemaException e) {
+        String messages = String.valueOf(e.getValidationMessages());
+        return StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : messages;
     }
 }

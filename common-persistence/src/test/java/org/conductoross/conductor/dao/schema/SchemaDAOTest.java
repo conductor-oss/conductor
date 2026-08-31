@@ -25,11 +25,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.service.SchemaCacheProperties;
 import org.conductoross.conductor.service.SchemaService;
 import org.conductoross.conductor.service.SchemaServiceImpl;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -248,7 +250,11 @@ public abstract class SchemaDAOTest {
     @Test
     public void concurrentVersionCreatingSavesAllSurviveWithDistinctVersions() throws Exception {
         String name = uniqueName();
-        SchemaService service = new SchemaServiceImpl(getSchemaDAO(), new SchemaCacheProperties());
+        SchemaService service =
+                new SchemaServiceImpl(
+                        getSchemaDAO(),
+                        new SchemaCacheProperties(),
+                        new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
 
         int writers = 4;
         ExecutorService pool = Executors.newFixedThreadPool(writers);

@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaEnforcement;
+import org.conductoross.conductor.service.SchemaValidationProperties;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -227,7 +229,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        disabledSchemaEnforcement());
     }
 
     @Test
@@ -3188,5 +3191,13 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
+    }
+
+    /**
+     * Schema enforcement off, which is the default and what every deployment gets until an operator
+     * turns it on. These tests are not about schemas.
+     */
+    private static SchemaEnforcement disabledSchemaEnforcement() {
+        return new SchemaEnforcement(null, new SchemaValidationProperties());
     }
 }

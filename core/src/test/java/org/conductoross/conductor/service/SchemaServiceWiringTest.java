@@ -12,9 +12,12 @@
  */
 package org.conductoross.conductor.service;
 
+import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,7 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SchemaServiceWiringTest {
 
     private final ApplicationContextRunner runner =
-            new ApplicationContextRunner().withUserConfiguration(SchemaServiceImpl.class);
+            new ApplicationContextRunner()
+                    .withBean(
+                            JsonSchemaValidator.class,
+                            () ->
+                                    new JsonSchemaValidator(
+                                            new ObjectMapperProvider().getObjectMapper()))
+                    .withUserConfiguration(SchemaServiceImpl.class);
 
     @Test
     void contextFailsWhenNoBackendProvidesASchemaDao() {

@@ -158,12 +158,13 @@ The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Pr
 
 ## Server properties
 
-The registry itself needs no configuration. Its cache does, and it is off by default.
+The registry itself needs no configuration. Its cache does, and it is off by default; so is engine enforcement of the schemas definitions attach.
 
 | Property | Default | Meaning |
 |---|---|---|
 | `conductor.app.schema-cache.ttl` | `0` | How long a read stays cached. Zero disables the cache; there is no separate on/off flag |
 | `conductor.app.schema-cache.max-size` | `1000` | Maximum cached entries, counting by-version and latest-by-name lookups separately |
+| `conductor.app.schema-validation.enabled` | `false` | Whether the engine validates payloads against the schemas attached to definitions. See [Input/Output Schema Validation](schema-validation.md#turning-enforcement-on) |
 
 A non-zero `ttl` is also your staleness bound. Invalidation on save and delete reaches only the node that served the write, so on a multi-node deployment every other node keeps serving the old schema until the entry expires. Set it to something you would be comfortable waiting out after an edit.
 
