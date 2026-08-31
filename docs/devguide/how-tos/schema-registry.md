@@ -154,7 +154,7 @@ Opening a schema shows its body in a JSON editor, with a version selector for it
 
 The editor writes `JSON` schemas only. A stored `AVRO` or `PROTOBUF` schema opens read-only, with a note saying it is not validated by this server — the screen will not let you edit a schema whose type nothing here enforces. Replace one of those through the API.
 
-The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Properties and Task Definition forms read the same registry. They populate as soon as the server serves `/api/schema`; a picker whose current value names a schema the registry does not hold is flagged, so a dangling reference shows up in the editor rather than at runtime.
+The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Properties and Task Definition forms read the same registry, and populate as soon as the server serves `/api/schema`. On the Simple Task, Yield Task and Workflow Properties forms, a picker naming a schema the registry does not hold is flagged, so a dangling reference shows up in the editor rather than at runtime. The Task Definition form does not flag one.
 
 ## Server properties
 

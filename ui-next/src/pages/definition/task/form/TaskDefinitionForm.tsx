@@ -404,7 +404,6 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
               versionField={{
                 emptyText: "Latest Version",
               }}
-              showErrorIfItemNotInList={true}
               mapOptions={(data: SchemaDefinition[]) =>
                 _.chain(data)
                   .groupBy("name")
@@ -439,7 +438,6 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
               versionField={{
                 emptyText: "Latest Version",
               }}
-              showErrorIfItemNotInList={true}
               mapOptions={(data: SchemaDefinition[]) =>
                 _.chain(data)
                   .groupBy("name")
