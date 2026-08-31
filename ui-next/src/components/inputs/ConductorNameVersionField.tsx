@@ -48,7 +48,7 @@ export const ConductorNameVersionField = forwardRef<
     },
     ref,
   ) => {
-    const { data, refetch } = useFetch(optionsUrl);
+    const { data, refetch, isSuccess } = useFetch(optionsUrl);
 
     // Expose the refetch method to the parent component via the ref
     useImperativeHandle(ref, () => ({
@@ -101,14 +101,14 @@ export const ConductorNameVersionField = forwardRef<
                       : undefined,
                 });
               }}
-              // Only flag a name the option list actually contradicts. An empty
-              // list contradicts nothing: the request may still be in flight,
-              // the endpoint may be unreachable, or the server may simply hold
-              // no options yet. Flagging then paints every field that carries a
-              // reference red.
+              // Flag against a list the server actually answered with, empty or
+              // not: a name absent from an empty listing is still a name this
+              // server does not hold. What must not flag is a list that never
+              // arrived, since a request in flight or an endpoint that answers
+              // 404 would otherwise paint every field carrying a reference red.
               error={
                 showErrorIfItemNotInList &&
-                options.length > 0 &&
+                isSuccess &&
                 value != null &&
                 !options.some(({ name }) => name === value?.name)
               }
