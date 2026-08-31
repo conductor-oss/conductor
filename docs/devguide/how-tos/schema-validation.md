@@ -48,7 +48,7 @@ The schema is a `SchemaDef`, embedded in the definition:
 | `version` | Defaults to `1`. Lets a schema evolve alongside the definition that uses it |
 | `type` | `JSON`, `AVRO`, or `PROTOBUF` |
 | `data` | The schema document itself |
-| `externalRef` | Reference to a schema held outside Conductor, instead of inline `data` |
+| `externalRef` | A name for a schema held outside Conductor. Stored and returned unchanged; **nothing dereferences it**, so it is not an alternative to inline `data` |
 
 ## Attaching it to a workflow
 
@@ -106,6 +106,7 @@ Keep the schema narrow. A schema that restates every optional field becomes some
 
 ## Related pages
 
+- [Schema Registry](schema-registry.md) — storing a schema on the server under a name and version
 - [Task Definition reference](../../documentation/configuration/taskdef.md)
 - [Workflow Definition reference](../../documentation/configuration/workflowdef/index.md)
 - [Task Inputs](Tasks/task-inputs.md)

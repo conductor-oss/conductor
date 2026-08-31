@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
@@ -23,13 +24,22 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 @Configuration
 public class ObjectMapperBuilderConfiguration {
 
-    /** Disable features like {@link ObjectMapperProvider#getObjectMapper()}. */
+    /**
+     * Configure features like {@link ObjectMapperProvider#getObjectMapper()}.
+     *
+     * <p>{@code ACCEPT_SINGLE_VALUE_AS_ARRAY} lets a body declared as a list arrive as a bare
+     * object. Several shipped SDK clients post one — the schema clients for Python, Ruby and Rust
+     * among them — so without this they fail against a server whose contract looks identical to the
+     * one they were written for. It only ever makes a request that would have been rejected
+     * succeed, so no working caller changes behaviour.
+     */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer conductorJackson2ObjectMapperBuilderCustomizer() {
         return builder ->
                 builder.featuresToDisable(
-                        FAIL_ON_UNKNOWN_PROPERTIES,
-                        FAIL_ON_IGNORED_PROPERTIES,
-                        FAIL_ON_NULL_FOR_PRIMITIVES);
+                                FAIL_ON_UNKNOWN_PROPERTIES,
+                                FAIL_ON_IGNORED_PROPERTIES,
+                                FAIL_ON_NULL_FOR_PRIMITIVES)
+                        .featuresToEnable(ACCEPT_SINGLE_VALUE_AS_ARRAY);
     }
 }
