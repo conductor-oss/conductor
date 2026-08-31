@@ -364,7 +364,12 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
           />
         </Grid>
       </Grid>
-      <Grid container sx={{ width: "100%" }} spacing={2}>
+      <Grid
+        container
+        sx={{ width: "100%" }}
+        spacing={2}
+        id="task-schema-section"
+      >
         <Grid size={12}>
           <MuiTypography fontWeight={800} fontSize={16}>
             Schema
@@ -399,6 +404,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
               versionField={{
                 emptyText: "Latest Version",
               }}
+              showErrorIfItemNotInList={true}
               mapOptions={(data: SchemaDefinition[]) =>
                 _.chain(data)
                   .groupBy("name")
@@ -433,6 +439,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
               versionField={{
                 emptyText: "Latest Version",
               }}
+              showErrorIfItemNotInList={true}
               mapOptions={(data: SchemaDefinition[]) =>
                 _.chain(data)
                   .groupBy("name")

@@ -134,6 +134,28 @@ Two simultaneous `newVersion=true` saves cannot silently overwrite each other. T
 
 Deleting is version-aware in the same way. `DELETE /api/schema/{name}/{version}` removes one version and leaves the rest of the history; `DELETE /api/schema/{name}` removes all of it. Both return `200`, including when there was nothing to remove.
 
+## The management screen
+
+The UI has a screen for the registry, so routine work does not need `curl`. Find it under **Definitions → Schemas**, at `/schemas`.
+
+The list holds one row per schema rather than one per version: the name links to the editor, and the row carries the schema's type, its latest version, how many versions exist, and when it was created. Two actions sit on each row — **Clone**, which copies the contract under a new name starting again at version 1, and **Delete**, which removes the schema and every version of it.
+
+Opening a schema shows its body in a JSON editor, with a version selector for its history. From there:
+
+| Action | What it does |
+|---|---|
+| **Save** | Overwrites the version on screen. Anything referencing that version sees the change, so this one asks for confirmation first |
+| **Save as new version** | Stores the edited body at a new version. The server allocates the number, so two people saving at once cannot collide |
+| **Delete version** | Removes the version on screen and keeps the rest of the history |
+| **Reset** | Discards local edits and reloads the stored version |
+| **Download** | Saves the schema on screen as a `.json` file |
+
+**New schema** opens the same editor on a JSON template. Saving it registers version 1.
+
+The editor writes `JSON` schemas only. A stored `AVRO` or `PROTOBUF` schema opens read-only, with a note saying it is not validated by this server — the screen will not let you edit a schema whose type nothing here enforces. Replace one of those through the API.
+
+The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Properties and Task Definition forms read the same registry. They populate as soon as the server serves `/api/schema`; a picker whose current value names a schema the registry does not hold is flagged, so a dangling reference shows up in the editor rather than at runtime.
+
 ## Server properties
 
 The registry itself needs no configuration. Its cache does, and it is off by default.
@@ -155,11 +177,11 @@ There is no Cassandra implementation. A server configured with `conductor.db.typ
 
 Four things you cannot infer from the API:
 
-**All three schema types are stored; only `JSON` is validated.** You can save an `AVRO` or `PROTOBUF` schema and read it back unchanged, but nothing on this server validates a payload against it.
+**All three schema types are stored; only `JSON` is validated.** You can save an `AVRO` or `PROTOBUF` schema and read it back unchanged, but nothing on this server validates a payload against it, and the management screen shows it read-only for that reason.
 
 **`createdBy` and `updatedBy` are never populated.** The OSS API is unauthenticated, so there is no principal to attribute a write to, and the fields are absent from responses rather than empty. `createTime` and `updateTime` are set normally.
 
-**The picker's inline edit and preview buttons are not available.** In the schema pickers on the task, workflow and task-definition forms, the buttons that open a schema for editing or preview without leaving the form are part of the commercial product. Selecting an existing schema works; creating or editing one is done through this API.
+**The picker's inline edit and preview buttons are not available.** In the schema pickers on the task, workflow and task-definition forms, the buttons that open a schema for editing or preview without leaving the form are part of the commercial product. Selecting an existing schema works; creating and editing are done on the management screen or through this API.
 
 **`externalRef` is stored and returned, and nothing resolves it.** If you save a schema carrying only an `externalRef`, you get that field back exactly as you sent it — the server does not fetch what it points at.
 
