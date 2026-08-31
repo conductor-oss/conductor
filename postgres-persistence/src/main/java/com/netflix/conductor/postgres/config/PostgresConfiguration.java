@@ -19,7 +19,10 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
+import org.conductoross.conductor.postgres.config.PostgresSchemaRegistryMigration;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
 import org.flywaydb.core.Flyway;
@@ -168,6 +171,15 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    public SchemaDAO postgresSchemaDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        PostgresSchemaRegistryMigration.migrate(dataSource, properties.getSchema());
+        return new PostgresSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean
