@@ -220,6 +220,10 @@ export default function BasicSearch({
     error?: string;
   } | null>(null);
 
+  // The clause formats for the basic-only filters (workflow name/id,
+  // correlation ids, idempotency key, modified times, exclude sub-executions)
+  // are mirrored in basicFilterQuery.ts, which seeds the SQL box when the
+  // format toggle is switched on. Keep the two in sync.
   const buildQuery = useCallback(() => {
     const clauses = [];
     if (!_isEmpty(workflowType)) {

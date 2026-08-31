@@ -33,6 +33,7 @@ import { dateToEpoch, useLocalStorage } from "utils";
 import { WORKFLOW_SEARCH_QUERY_SUGGESTIONS } from "utils/constants/common";
 import { ERROR_URL } from "utils/constants/route";
 import { useWorkflowNames, useWorkflowSearch } from "utils/query";
+import { basicOnlyFilterQuery } from "./basicFilterQuery";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
@@ -119,7 +120,35 @@ export default function AdvancedSearch({
   classifier = "workflow",
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
-  const [queryText, setQueryText] = useQueryState("query", "");
+  // Filters that only basic search has a control for. Read here so that
+  // switching SQL format on translates them into query text instead of
+  // silently dropping them from the search.
+  const [basicWorkflowType] = useQueryState<string[]>("workflowType", []);
+  const [basicWorkflowId] = useQueryState("workflowId", "");
+  const [basicCorrelationIds] = useQueryState<string[]>("correlationIds", []);
+  const [basicIdempotencyKey] = useQueryState<string[]>("idempotencyKey", []);
+  const [basicModifiedFrom] = useQueryState("modifiedFrom", "");
+  const [basicModifiedTo] = useQueryState("modifiedTo", "");
+  const [basicExcludeSubExecutions] = useQueryState(
+    "excludeSubExecutions",
+    false,
+  );
+
+  // Seeded as the default rather than assigned after mount, so the first search
+  // already carries these clauses. A `query` param in the URL always wins, so
+  // text the user typed (or cleared) is never overwritten.
+  const [seededQuery] = useState(() =>
+    basicOnlyFilterQuery({
+      workflowType: basicWorkflowType,
+      workflowId: basicWorkflowId,
+      correlationIds: basicCorrelationIds,
+      idempotencyKey: basicIdempotencyKey,
+      modifiedFrom: basicModifiedFrom,
+      modifiedTo: basicModifiedTo,
+      excludeSubExecutions: basicExcludeSubExecutions,
+    }),
+  );
+  const [queryText, setQueryText] = useQueryState("query", seededQuery);
   const [page, setPage] = useQueryState("page", 1);
   const [rowsPerPage, setRowsPerPage] = useQueryState(
     "rowsPerPage",
