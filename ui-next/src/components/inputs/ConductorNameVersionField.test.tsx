@@ -8,12 +8,9 @@ vi.mock("utils/query", () => ({
   useFetch: vi.fn(),
 }));
 
-const mockOptions = (
-  result: Partial<{ data: unknown; isSuccess: boolean }>,
-): void => {
+const mockOptions = (data: { name: string; version: number }[] | undefined) => {
   (useFetch as ReturnType<typeof vi.fn>).mockReturnValue({
-    data: result.data,
-    isSuccess: result.isSuccess ?? false,
+    data,
     refetch: vi.fn(),
   });
 };
@@ -39,26 +36,35 @@ const renderField = () =>
 const nameInput = () => screen.getByLabelText(/Input Schema/);
 
 describe("ConductorNameVersionField", () => {
-  it("flags a name the loaded option list does not contain", () => {
-    mockOptions({ data: [{ name: "shipment", version: 1 }], isSuccess: true });
+  it("flags a name the option list contradicts", () => {
+    mockOptions([{ name: "shipment", version: 1 }]);
 
     renderField();
 
     expect(nameInput()).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("does not flag a name while the option list has not loaded", () => {
-    // What an unreachable registry endpoint looks like: no options, no success.
-    // Flagging here would mark every definition that carries a schema as broken.
-    mockOptions({ data: undefined, isSuccess: false });
+  it("does not flag a name the option list contains", () => {
+    mockOptions([{ name: "order", version: 1 }]);
 
     renderField();
 
     expect(nameInput()).toHaveAttribute("aria-invalid", "false");
   });
 
-  it("does not flag a name the loaded option list contains", () => {
-    mockOptions({ data: [{ name: "order", version: 1 }], isSuccess: true });
+  it("does not flag against an empty option list", () => {
+    // What a server holding no schemas looks like, and what an unreachable
+    // endpoint and an in-flight request look like too. Flagging here would mark
+    // every definition that carries a reference as broken.
+    mockOptions([]);
+
+    renderField();
+
+    expect(nameInput()).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("does not flag before the option list has loaded", () => {
+    mockOptions(undefined);
 
     renderField();
 
