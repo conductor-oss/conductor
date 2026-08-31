@@ -105,8 +105,9 @@ class AzureFoundryToolLoopTest {
         assertThat(second.getStatus()).isEqualTo(TaskResult.Status.COMPLETED);
         assertThat(second.getOutputData().get("text")).isEqualTo("Revenue was 4.2M.");
         // The batch is finished, so nothing still advertises outstanding work.
-        assertThat(second.getOutputData()).doesNotContainKey("toolDispatchId");
-        assertThat(second.getOutputData()).doesNotContainKey("pendingTools");
+        // clearToolBatch empties rather than removes so the merge overwrites the stale value.
+        assertThat((String) second.getOutputData().get("toolDispatchId")).isBlank();
+        assertThat((List<?>) second.getOutputData().get("pendingTools")).isEmpty();
 
         JsonNode submitted = MAPPER.readTree(bodies.get(bodies.size() - 1));
         JsonNode item = submitted.path("input").get(0);
