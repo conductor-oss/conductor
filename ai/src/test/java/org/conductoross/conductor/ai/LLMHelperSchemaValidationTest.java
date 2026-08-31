@@ -15,7 +15,7 @@ package org.conductoross.conductor.ai;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
@@ -238,12 +238,12 @@ class LLMHelperSchemaValidationTest {
 
         private final Map<String, SchemaDef> stored = new ConcurrentHashMap<>();
 
-        private static String key(String name, int version) {
+        private static String key(String name, Integer version) {
             return name + "/" + version;
         }
 
         @Override
-        public void saveSchema(SchemaDef schemaDef) {
+        public void save(SchemaDef schemaDef) {
             stored.put(key(schemaDef.getName(), schemaDef.getVersion()), schemaDef);
         }
 
@@ -254,30 +254,40 @@ class LLMHelperSchemaValidationTest {
         }
 
         @Override
-        public Optional<SchemaDef> getSchema(String name, int version) {
-            return Optional.ofNullable(stored.get(key(name, version)));
+        public SchemaDef findByNameAndVersion(String name, Integer version) {
+            Objects.requireNonNull(version, "Schema version cannot be null");
+            return stored.get(key(name, version));
         }
 
         @Override
-        public Optional<SchemaDef> getLatestSchema(String name) {
+        public SchemaDef findLatestVersionByName(String name) {
             return stored.values().stream()
                     .filter(def -> def.getName().equals(name))
-                    .max(java.util.Comparator.comparingInt(SchemaDef::getVersion));
+                    .max(java.util.Comparator.comparingInt(SchemaDef::getVersion))
+                    .orElse(null);
         }
 
         @Override
-        public List<SchemaDef> getAllSchemas() {
+        public List<SchemaDef> getAll() {
             return List.copyOf(stored.values());
         }
 
         @Override
-        public void deleteSchema(String name, int version) {
-            stored.remove(key(name, version));
+        public int deleteByNameAndVersion(String name, Integer version) {
+            Objects.requireNonNull(version, "Schema version cannot be null");
+            return stored.remove(key(name, version)) == null ? 0 : 1;
         }
 
         @Override
-        public void deleteSchemaByName(String name) {
-            stored.values().removeIf(def -> def.getName().equals(name));
+        public int deleteAllByName(String name) {
+            int removed = 0;
+            for (var entries = stored.values().iterator(); entries.hasNext(); ) {
+                if (entries.next().getName().equals(name)) {
+                    entries.remove();
+                    removed++;
+                }
+            }
+            return removed;
         }
     }
 }

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +35,8 @@ import com.netflix.conductor.common.metadata.SchemaDef;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -75,21 +76,25 @@ public abstract class SchemaDAOTest {
     @Test
     public void savedSchemaComesBackByNameAndVersion() {
         String name = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 1));
+        getSchemaDAO().save(schema(name, 1));
 
-        Optional<SchemaDef> found = getSchemaDAO().getSchema(name, 1);
+        SchemaDef found = getSchemaDAO().findByNameAndVersion(name, 1);
 
-        assertTrue(found.isPresent());
-        assertEquals(name, found.get().getName());
-        assertEquals(1, found.get().getVersion());
-        assertEquals(SchemaDef.Type.JSON, found.get().getType());
-        assertEquals(schema(name, 1).getData(), found.get().getData());
+        assertNotNull(found);
+        assertEquals(name, found.getName());
+        assertEquals(1, found.getVersion());
+        assertEquals(SchemaDef.Type.JSON, found.getType());
+        assertEquals(schema(name, 1).getData(), found.getData());
     }
 
+    /**
+     * The compiler stopped checking this half when the finders started returning null, so what each
+     * backend does on a miss is pinned here: null, rather than an exception or an empty schema.
+     */
     @Test
-    public void missingSchemaIsEmpty() {
-        assertTrue(getSchemaDAO().getSchema(uniqueName(), 1).isEmpty());
-        assertTrue(getSchemaDAO().getLatestSchema(uniqueName()).isEmpty());
+    public void missingSchemaIsNull() {
+        assertNull(getSchemaDAO().findByNameAndVersion(uniqueName(), 1));
+        assertNull(getSchemaDAO().findLatestVersionByName(uniqueName()));
     }
 
     @Test
@@ -98,9 +103,9 @@ public abstract class SchemaDAOTest {
             String name = uniqueName();
             SchemaDef def = schema(name, 1);
             def.setType(type);
-            getSchemaDAO().saveSchema(def);
+            getSchemaDAO().save(def);
 
-            assertEquals(type, getSchemaDAO().getSchema(name, 1).orElseThrow().getType());
+            assertEquals(type, getSchemaDAO().findByNameAndVersion(name, 1).getType());
         }
     }
 
@@ -111,9 +116,9 @@ public abstract class SchemaDAOTest {
         def.setType(SchemaDef.Type.AVRO);
         def.setExternalRef("registry://" + name);
         def.setData(null);
-        getSchemaDAO().saveSchema(def);
+        getSchemaDAO().save(def);
 
-        SchemaDef found = getSchemaDAO().getSchema(name, 1).orElseThrow();
+        SchemaDef found = getSchemaDAO().findByNameAndVersion(name, 1);
 
         assertEquals("registry://" + name, found.getExternalRef());
     }
@@ -121,25 +126,25 @@ public abstract class SchemaDAOTest {
     @Test
     public void savingTheSameVersionOverwritesInPlace() {
         String name = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 1));
+        getSchemaDAO().save(schema(name, 1));
 
         SchemaDef corrected = schema(name, 1);
         corrected.setData(Map.of("type", "array"));
-        getSchemaDAO().saveSchema(corrected);
+        getSchemaDAO().save(corrected);
 
         assertEquals(
-                Map.of("type", "array"), getSchemaDAO().getSchema(name, 1).orElseThrow().getData());
+                Map.of("type", "array"), getSchemaDAO().findByNameAndVersion(name, 1).getData());
         assertEquals(1, schemasNamed(name).size());
     }
 
     @Test
     public void latestIsTheHighestVersionRatherThanTheLastWritten() {
         String name = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 1));
-        getSchemaDAO().saveSchema(schema(name, 10));
-        getSchemaDAO().saveSchema(schema(name, 2));
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 10));
+        getSchemaDAO().save(schema(name, 2));
 
-        assertEquals(10, getSchemaDAO().getLatestSchema(name).orElseThrow().getVersion());
+        assertEquals(10, getSchemaDAO().findLatestVersionByName(name).getVersion());
     }
 
     @Test
@@ -154,8 +159,7 @@ public abstract class SchemaDAOTest {
 
         // The refused insert must leave the stored schema untouched, not partially applied.
         assertEquals(
-                schema(name, 1).getData(),
-                getSchemaDAO().getSchema(name, 1).orElseThrow().getData());
+                schema(name, 1).getData(), getSchemaDAO().findByNameAndVersion(name, 1).getData());
     }
 
     /**
@@ -193,9 +197,9 @@ public abstract class SchemaDAOTest {
     @Test
     public void allSchemasCarriesEveryVersionInOrder() {
         String name = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 3));
-        getSchemaDAO().saveSchema(schema(name, 1));
-        getSchemaDAO().saveSchema(schema(name, 2));
+        getSchemaDAO().save(schema(name, 3));
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 2));
 
         assertEquals(
                 List.of(1, 2, 3), schemasNamed(name).stream().map(SchemaDef::getVersion).toList());
@@ -204,39 +208,56 @@ public abstract class SchemaDAOTest {
     @Test
     public void deletingOneVersionLeavesTheRest() {
         String name = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 1));
-        getSchemaDAO().saveSchema(schema(name, 2));
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 2));
 
-        getSchemaDAO().deleteSchema(name, 1);
+        assertEquals(1, getSchemaDAO().deleteByNameAndVersion(name, 1));
 
-        assertTrue(getSchemaDAO().getSchema(name, 1).isEmpty());
-        assertTrue(getSchemaDAO().getSchema(name, 2).isPresent());
-        assertEquals(2, getSchemaDAO().getLatestSchema(name).orElseThrow().getVersion());
+        assertNull(getSchemaDAO().findByNameAndVersion(name, 1));
+        assertNotNull(getSchemaDAO().findByNameAndVersion(name, 2));
+        assertEquals(2, getSchemaDAO().findLatestVersionByName(name).getVersion());
     }
 
     @Test
     public void deletingByNameRemovesEveryVersion() {
         String name = uniqueName();
         String survivor = uniqueName();
-        getSchemaDAO().saveSchema(schema(name, 1));
-        getSchemaDAO().saveSchema(schema(name, 2));
-        getSchemaDAO().saveSchema(schema(survivor, 1));
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 2));
+        getSchemaDAO().save(schema(survivor, 1));
 
-        getSchemaDAO().deleteSchemaByName(name);
+        assertEquals(2, getSchemaDAO().deleteAllByName(name));
 
         assertTrue(schemasNamed(name).isEmpty());
-        assertTrue(getSchemaDAO().getLatestSchema(name).isEmpty());
+        assertNull(getSchemaDAO().findLatestVersionByName(name));
         assertEquals(1, schemasNamed(survivor).size());
     }
 
+    /**
+     * A delete of something that is not there removes nothing and says so. The count is what a
+     * caller would use to tell a missing schema from a deleted one, so a backend reporting a
+     * removal it did not make would be reporting a schema that never existed.
+     */
     @Test
-    public void deletingSomethingAbsentIsANoOp() {
+    public void deletingSomethingAbsentRemovesNothing() {
         String name = uniqueName();
 
-        getSchemaDAO().deleteSchema(name, 1);
-        getSchemaDAO().deleteSchemaByName(name);
+        assertEquals(0, getSchemaDAO().deleteByNameAndVersion(name, 1));
+        assertEquals(0, getSchemaDAO().deleteAllByName(name));
 
         assertTrue(schemasNamed(name).isEmpty());
+    }
+
+    /** A null version reaches the driver as an unhelpful failure, so it is refused at the seam. */
+    @Test
+    public void aNullVersionIsRefused() {
+        String name = uniqueName();
+
+        assertThrows(
+                NullPointerException.class, () -> getSchemaDAO().findByNameAndVersion(name, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> getSchemaDAO().deleteByNameAndVersion(name, null));
     }
 
     /**
@@ -290,9 +311,9 @@ public abstract class SchemaDAOTest {
         String name = uniqueName();
         SchemaDef def = schema(name, 4);
         def.setExternalRef("registry://" + name);
-        getSchemaDAO().saveSchema(def);
+        getSchemaDAO().save(def);
 
-        SchemaDef reread = reopenStore().getSchema(name, 4).orElseThrow();
+        SchemaDef reread = reopenStore().findByNameAndVersion(name, 4);
 
         assertEquals(name, reread.getName());
         assertEquals(4, reread.getVersion());
@@ -302,8 +323,6 @@ public abstract class SchemaDAOTest {
     }
 
     private List<SchemaDef> schemasNamed(String name) {
-        return getSchemaDAO().getAllSchemas().stream()
-                .filter(def -> def.getName().equals(name))
-                .toList();
+        return getSchemaDAO().getAll().stream().filter(def -> def.getName().equals(name)).toList();
     }
 }

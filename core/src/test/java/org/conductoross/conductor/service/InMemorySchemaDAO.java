@@ -15,7 +15,7 @@ package org.conductoross.conductor.service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -47,12 +47,12 @@ public class InMemorySchemaDAO implements SchemaDAO {
         racers.add(def);
     }
 
-    private static String key(String name, int version) {
+    private static String key(String name, Integer version) {
         return name + "/" + version;
     }
 
     @Override
-    public void saveSchema(SchemaDef schemaDef) {
+    public void save(SchemaDef schemaDef) {
         stored.put(key(schemaDef.getName(), schemaDef.getVersion()), schemaDef);
     }
 
@@ -68,19 +68,21 @@ public class InMemorySchemaDAO implements SchemaDAO {
     }
 
     @Override
-    public Optional<SchemaDef> getSchema(String name, int version) {
-        return Optional.ofNullable(stored.get(key(name, version)));
+    public SchemaDef findByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
+        return stored.get(key(name, version));
     }
 
     @Override
-    public Optional<SchemaDef> getLatestSchema(String name) {
+    public SchemaDef findLatestVersionByName(String name) {
         return stored.values().stream()
                 .filter(def -> def.getName().equals(name))
-                .max(Comparator.comparingInt(SchemaDef::getVersion));
+                .max(Comparator.comparingInt(SchemaDef::getVersion))
+                .orElse(null);
     }
 
     @Override
-    public List<SchemaDef> getAllSchemas() {
+    public List<SchemaDef> getAll() {
         return stored.values().stream()
                 .sorted(
                         Comparator.comparing(SchemaDef::getName)
@@ -89,12 +91,22 @@ public class InMemorySchemaDAO implements SchemaDAO {
     }
 
     @Override
-    public void deleteSchema(String name, int version) {
-        stored.remove(key(name, version));
+    public int deleteByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
+        return stored.remove(key(name, version)) == null ? 0 : 1;
     }
 
     @Override
-    public void deleteSchemaByName(String name) {
-        stored.values().removeIf(def -> def.getName().equals(name));
+    public int deleteAllByName(String name) {
+        // Counts what it removed rather than the change in size: this map is written concurrently,
+        // so a size taken before and after would fold in a neighbour's write.
+        int removed = 0;
+        for (var entries = stored.values().iterator(); entries.hasNext(); ) {
+            if (entries.next().getName().equals(name)) {
+                entries.remove();
+                removed++;
+            }
+        }
+        return removed;
     }
 }

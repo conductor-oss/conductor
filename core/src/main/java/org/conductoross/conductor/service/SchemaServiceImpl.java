@@ -129,14 +129,14 @@ public class SchemaServiceImpl implements SchemaService {
         }
         // An in-place save keeps the version's original creation time and stamps the update. The
         // read is what tells the two apart: the same call creates a version or corrects one.
-        Optional<SchemaDef> existing = schemaDAO.getSchema(schema.getName(), schema.getVersion());
+        Optional<SchemaDef> existing = findByNameAndVersion(schema.getName(), schema.getVersion());
         if (existing.isPresent()) {
             schema.setCreateTime(existing.get().getCreateTime());
             schema.setUpdateTime(System.currentTimeMillis());
         } else {
             stampCreation(schema);
         }
-        schemaDAO.saveSchema(schema);
+        schemaDAO.save(schema);
         return schema;
     }
 
@@ -157,10 +157,7 @@ public class SchemaServiceImpl implements SchemaService {
     private SchemaDef insertAtNextVersion(SchemaDef schema) {
         for (int attempt = 0; attempt < MAX_VERSION_ALLOCATION_ATTEMPTS; attempt++) {
             int highest =
-                    schemaDAO
-                            .getLatestSchema(schema.getName())
-                            .map(SchemaDef::getVersion)
-                            .orElse(0);
+                    findLatestVersionByName(schema.getName()).map(SchemaDef::getVersion).orElse(0);
             schema.setVersion(highest + 1);
             stampCreation(schema);
             if (schemaDAO.createSchemaIfAbsent(schema)) {
@@ -175,14 +172,14 @@ public class SchemaServiceImpl implements SchemaService {
     @Override
     public SchemaDef getSchema(String name) {
         requireName(name);
-        return cached(key(name, LATEST), () -> schemaDAO.getLatestSchema(name))
+        return cached(key(name, LATEST), () -> findLatestVersionByName(name))
                 .orElseThrow(() -> new NotFoundException("No such schema found by name %s", name));
     }
 
     @Override
     public SchemaDef getSchema(String name, int version) {
         requireName(name);
-        return cached(key(name, String.valueOf(version)), () -> schemaDAO.getSchema(name, version))
+        return cached(key(name, String.valueOf(version)), () -> findByNameAndVersion(name, version))
                 .orElseThrow(
                         () ->
                                 new NotFoundException(
@@ -196,20 +193,20 @@ public class SchemaServiceImpl implements SchemaService {
      */
     @Override
     public List<SchemaDef> getAllSchemas() {
-        return schemaDAO.getAllSchemas();
+        return schemaDAO.getAll();
     }
 
     @Override
     public void deleteSchema(String name) {
         requireName(name);
-        schemaDAO.deleteSchemaByName(name);
+        schemaDAO.deleteAllByName(name);
         invalidateName(name);
     }
 
     @Override
     public void deleteSchema(String name, int version) {
         requireName(name);
-        schemaDAO.deleteSchema(name, version);
+        schemaDAO.deleteByNameAndVersion(name, version);
         invalidate(name, version);
     }
 
@@ -221,6 +218,19 @@ public class SchemaServiceImpl implements SchemaService {
 
     private static String key(String name, String version) {
         return name + "/" + version;
+    }
+
+    /**
+     * The two nullable reads on {@link SchemaDAO}, wrapped once each. Every lookup in this class
+     * goes through one of them, so an absent schema becomes {@link Optional#empty()} here and null
+     * never travels further in.
+     */
+    private Optional<SchemaDef> findByNameAndVersion(String name, int version) {
+        return Optional.ofNullable(schemaDAO.findByNameAndVersion(name, version));
+    }
+
+    private Optional<SchemaDef> findLatestVersionByName(String name) {
+        return Optional.ofNullable(schemaDAO.findLatestVersionByName(name));
     }
 
     /**
@@ -334,10 +344,10 @@ public class SchemaServiceImpl implements SchemaService {
         // read the cache exists for.
         Optional<SchemaDef> registered =
                 version < 1
-                        ? cached(key(name, LATEST), () -> schemaDAO.getLatestSchema(name))
+                        ? cached(key(name, LATEST), () -> findLatestVersionByName(name))
                         : cached(
                                 key(name, String.valueOf(version)),
-                                () -> schemaDAO.getSchema(name, version));
+                                () -> findByNameAndVersion(name, version));
         return registered.orElseThrow(
                 () ->
                         new SchemaValidationException(

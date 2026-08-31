@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
@@ -55,7 +55,7 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
     }
 
     @Override
-    public void saveSchema(SchemaDef schemaDef) {
+    public void save(SchemaDef schemaDef) {
         jedisProxy.hset(
                 nsKey(SCHEMA_DEF, schemaDef.getName()),
                 String.valueOf(schemaDef.getVersion()),
@@ -80,20 +80,22 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
     }
 
     @Override
-    public Optional<SchemaDef> getSchema(String name, int version) {
+    public SchemaDef findByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
         String json = jedisProxy.hget(nsKey(SCHEMA_DEF, name), String.valueOf(version));
-        return json == null ? Optional.empty() : Optional.of(readValue(json, SchemaDef.class));
+        return json == null ? null : readValue(json, SchemaDef.class);
     }
 
     @Override
-    public Optional<SchemaDef> getLatestSchema(String name) {
+    public SchemaDef findLatestVersionByName(String name) {
         return versionsOf(name).stream()
                 .map(json -> readValue(json, SchemaDef.class))
-                .max(Comparator.comparingInt(SchemaDef::getVersion));
+                .max(Comparator.comparingInt(SchemaDef::getVersion))
+                .orElse(null);
     }
 
     @Override
-    public List<SchemaDef> getAllSchemas() {
+    public List<SchemaDef> getAll() {
         Set<String> names = jedisProxy.smembers(nsKey(SCHEMA_DEF_NAMES));
         List<SchemaDef> schemas = new ArrayList<>();
         for (String name : names) {
@@ -105,18 +107,24 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
     }
 
     @Override
-    public void deleteSchema(String name, int version) {
-        jedisProxy.hdel(nsKey(SCHEMA_DEF, name), String.valueOf(version));
+    public int deleteByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
+        Long removed = jedisProxy.hdel(nsKey(SCHEMA_DEF, name), String.valueOf(version));
         // The name is only listable while some version of it survives.
         if (jedisProxy.hkeys(nsKey(SCHEMA_DEF, name)).isEmpty()) {
             jedisProxy.srem(nsKey(SCHEMA_DEF_NAMES), name);
         }
+        return removed == null ? 0 : removed.intValue();
     }
 
     @Override
-    public void deleteSchemaByName(String name) {
+    public int deleteAllByName(String name) {
+        // DEL reports keys removed, not fields, so the count comes from the hash's own length —
+        // the same number the SQL backends' row count reports.
+        Long fields = jedisProxy.hlen(nsKey(SCHEMA_DEF, name));
         jedisProxy.del(nsKey(SCHEMA_DEF, name));
         jedisProxy.srem(nsKey(SCHEMA_DEF_NAMES), name);
+        return fields == null ? 0 : fields.intValue();
     }
 
     private List<String> versionsOf(String name) {

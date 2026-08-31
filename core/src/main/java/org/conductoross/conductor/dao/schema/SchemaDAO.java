@@ -13,7 +13,6 @@
 package org.conductoross.conductor.dao.schema;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
 
@@ -37,7 +36,7 @@ public interface SchemaDAO {
      * version}. This is the update-in-place path; {@link #createSchemaIfAbsent} is the path that
      * allocates a new version.
      */
-    void saveSchema(SchemaDef schemaDef);
+    void save(SchemaDef schemaDef);
 
     /**
      * Inserts the schema only when nothing is stored at its {@code name} and {@code version},
@@ -50,20 +49,33 @@ public interface SchemaDAO {
      */
     boolean createSchemaIfAbsent(SchemaDef schemaDef);
 
-    /** Returns the schema at {@code name} and {@code version}, or empty when there is none. */
-    Optional<SchemaDef> getSchema(String name, int version);
+    /**
+     * Returns the schema at {@code name} and {@code version}, or {@code null} when there is none.
+     *
+     * @param version must not be null
+     */
+    SchemaDef findByNameAndVersion(String name, Integer version);
 
     /**
-     * Returns the highest-versioned schema stored under {@code name}, or empty when there is none.
+     * Returns the highest-versioned schema stored under {@code name}, or {@code null} when there is
+     * none.
      */
-    Optional<SchemaDef> getLatestSchema(String name);
+    SchemaDef findLatestVersionByName(String name);
 
     /** Returns every version of every schema, ordered by name and then version. */
-    List<SchemaDef> getAllSchemas();
+    List<SchemaDef> getAll();
 
-    /** Removes one version. No-op when absent. */
-    void deleteSchema(String name, int version);
+    /**
+     * Removes one version, returning how many were removed — one, or zero when it was already
+     * absent.
+     *
+     * @param version must not be null
+     */
+    int deleteByNameAndVersion(String name, Integer version);
 
-    /** Removes every version stored under {@code name}. No-op when absent. */
-    void deleteSchemaByName(String name);
+    /**
+     * Removes every version stored under {@code name}, returning how many were removed — zero when
+     * the name is unknown.
+     */
+    int deleteAllByName(String name);
 }

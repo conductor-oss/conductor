@@ -14,7 +14,7 @@ package org.conductoross.conductor.mysql.dao;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 import javax.sql.DataSource;
 
@@ -60,7 +60,7 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     }
 
     @Override
-    public void saveSchema(SchemaDef schemaDef) {
+    public void save(SchemaDef schemaDef) {
         executeWithTransaction(
                 UPSERT,
                 q ->
@@ -112,7 +112,8 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     }
 
     @Override
-    public Optional<SchemaDef> getSchema(String name, int version) {
+    public SchemaDef findByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
         return queryWithTransaction(
                 SELECT_BY_NAME_AND_VERSION,
                 q ->
@@ -123,33 +124,32 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     }
 
     @Override
-    public Optional<SchemaDef> getLatestSchema(String name) {
+    public SchemaDef findLatestVersionByName(String name) {
         return queryWithTransaction(
                 SELECT_LATEST_BY_NAME,
                 q -> toSchema(q.addParameter(name).executeAndFetch(String.class)));
     }
 
     @Override
-    public List<SchemaDef> getAllSchemas() {
+    public List<SchemaDef> getAll() {
         List<String> rows = queryWithTransaction(SELECT_ALL, q -> q.executeAndFetch(String.class));
         return rows.stream().map(json -> readValue(json, SchemaDef.class)).toList();
     }
 
     @Override
-    public void deleteSchema(String name, int version) {
-        executeWithTransaction(
+    public int deleteByNameAndVersion(String name, Integer version) {
+        Objects.requireNonNull(version, "Schema version cannot be null");
+        return queryWithTransaction(
                 DELETE_BY_NAME_AND_VERSION,
                 q -> q.addParameter(name).addParameter(version).executeUpdate());
     }
 
     @Override
-    public void deleteSchemaByName(String name) {
-        executeWithTransaction(DELETE_BY_NAME, q -> q.addParameter(name).executeUpdate());
+    public int deleteAllByName(String name) {
+        return queryWithTransaction(DELETE_BY_NAME, q -> q.addParameter(name).executeUpdate());
     }
 
-    private Optional<SchemaDef> toSchema(List<String> rows) {
-        return rows.isEmpty()
-                ? Optional.empty()
-                : Optional.of(readValue(rows.get(0), SchemaDef.class));
+    private SchemaDef toSchema(List<String> rows) {
+        return rows.isEmpty() ? null : readValue(rows.get(0), SchemaDef.class);
     }
 }
