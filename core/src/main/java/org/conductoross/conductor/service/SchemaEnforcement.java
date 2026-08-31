@@ -56,6 +56,9 @@ public class SchemaEnforcement {
      * execution is created, so a failure means it never starts and there is nothing to compensate.
      */
     public void validateWorkflowInput(WorkflowModel workflow) {
+        if (!properties.isEnabled()) {
+            return;
+        }
         WorkflowDef def = workflow.getWorkflowDefinition();
         if (def == null) {
             return;
@@ -69,6 +72,9 @@ public class SchemaEnforcement {
 
     /** Validates a workflow's output against its definition's output schema, at completion. */
     public void validateWorkflowOutput(WorkflowModel workflow) {
+        if (!properties.isEnabled()) {
+            return;
+        }
         WorkflowDef def = workflow.getWorkflowDefinition();
         if (def == null) {
             return;

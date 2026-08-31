@@ -28,6 +28,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -115,6 +116,69 @@ class SchemaEnforcementTest {
                 () ->
                         enforcement.validateTaskOutput(
                                 task(Map.of()), () -> taskDef(requiresName(), true)));
+    }
+
+    /**
+     * A disabled server must not so much as read the payload. {@link WorkflowModel#getInput()} and
+     * {@link WorkflowModel#getOutput()} are not plain getters: when both the inline map and the
+     * external-storage map hold entries they merge the two and reset the payload field. Passing
+     * either to {@code validate} evaluates it before the gate inside {@code validate} is reached,
+     * so the guard has to sit at the top of the hook instead.
+     *
+     * <p>This asserts on the call rather than on state because the merge is idempotent, so its
+     * effect cannot be seen from outside the model. {@code WorkflowModel.equals} calls {@code
+     * getInput()} too, which is why comparing two models cannot pin this down either.
+     */
+    @Test
+    void aDisabledServerDoesNotReadAWorkflowPayload() {
+        PayloadReadRecordingWorkflow workflow =
+                new PayloadReadRecordingWorkflow(workflowDef(requiresName(), true));
+
+        enforcement.validateWorkflowInput(workflow);
+        enforcement.validateWorkflowOutput(workflow);
+
+        assertFalse(workflow.inputWasRead, "a disabled server read the workflow input");
+        assertFalse(workflow.outputWasRead, "a disabled server read the workflow output");
+    }
+
+    /** The control: with enforcement on, the same hooks do read it, so the test above can fail. */
+    @Test
+    void anEnabledServerDoesReadAWorkflowPayload() {
+        properties.setEnabled(true);
+        PayloadReadRecordingWorkflow workflow =
+                new PayloadReadRecordingWorkflow(workflowDef(requiresName(), true));
+
+        assertThrows(
+                SchemaValidationException.class, () -> enforcement.validateWorkflowInput(workflow));
+        assertThrows(
+                SchemaValidationException.class,
+                () -> enforcement.validateWorkflowOutput(workflow));
+
+        assertTrue(workflow.inputWasRead);
+        assertTrue(workflow.outputWasRead);
+    }
+
+    /** Hand-written rather than mocked: the subject owns both sides of this call. */
+    private static final class PayloadReadRecordingWorkflow extends WorkflowModel {
+
+        private boolean inputWasRead;
+        private boolean outputWasRead;
+
+        PayloadReadRecordingWorkflow(WorkflowDef def) {
+            setWorkflowDefinition(def);
+        }
+
+        @Override
+        public Map<String, Object> getInput() {
+            inputWasRead = true;
+            return super.getInput();
+        }
+
+        @Override
+        public Map<String, Object> getOutput() {
+            outputWasRead = true;
+            return super.getOutput();
+        }
     }
 
     @Test
