@@ -6,7 +6,13 @@
 # They live here rather than in the flavour files because those are what a user
 # starts Conductor with. Schema enforcement is off by default and must stay off
 # there; the suite that exercises it turns it on for its own server.
+#
+# The name is Spring Boot's environment-variable form of
+# `conductor.app.schema-validation.enabled`, not the property name itself. The
+# server image runs `ENTRYPOINT ["/bin/sh"]`, and /bin/sh is dash, which drops
+# environment variables whose names are not valid shell identifiers — so a
+# variable named with dots is gone before the JVM starts, silently.
 services:
   conductor-server:
     environment:
-      - conductor.app.schema-validation.enabled=true
+      - CONDUCTOR_APP_SCHEMA_VALIDATION_ENABLED=true
