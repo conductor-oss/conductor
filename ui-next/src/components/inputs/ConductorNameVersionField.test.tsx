@@ -15,15 +15,27 @@ const served = (data: Options) => {
   (useFetch as ReturnType<typeof vi.fn>).mockReturnValue({
     data,
     isSuccess: true,
+    isError: false,
     refetch: vi.fn(),
   });
 };
 
-/** A listing that never arrived: in flight, or an endpoint answering 404. */
-const notServed = () => {
+/** The listing request failed: 404, 403, 5xx. */
+const failed = () => {
   (useFetch as ReturnType<typeof vi.fn>).mockReturnValue({
     data: undefined,
     isSuccess: false,
+    isError: true,
+    refetch: vi.fn(),
+  });
+};
+
+/** Still in flight, or idle because the query is disabled. */
+const pending = () => {
+  (useFetch as ReturnType<typeof vi.fn>).mockReturnValue({
+    data: undefined,
+    isSuccess: false,
+    isError: false,
     refetch: vi.fn(),
   });
 };
@@ -76,10 +88,21 @@ describe("ConductorNameVersionField", () => {
     expect(nameInput()).toHaveAttribute("aria-invalid", "false");
   });
 
-  it("does not flag when no listing arrived", () => {
-    // What an unreachable endpoint looks like, and an in-flight request too.
-    // Flagging here marks every definition carrying a reference as broken.
-    notServed();
+  it("flags when the listing request failed", () => {
+    // The reference cannot be verified, which is worth showing rather than
+    // rendering a field that looks checked and was not.
+    failed();
+
+    renderField();
+
+    expect(nameInput()).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("does not flag while the request is in flight or idle", () => {
+    // react-query leaves a disabled query idle rather than loading, so neither
+    // state may flag: both would mark every definition carrying a reference as
+    // broken on the way to an answer.
+    pending();
 
     renderField();
 
