@@ -15,6 +15,7 @@ package org.conductoross.conductor.rest.controllers;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.RequestBodyCoercionConfiguration;
 import org.conductoross.conductor.controllers.SchemaResource;
 import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
@@ -319,7 +320,8 @@ public class SchemaResourceTest {
         SchemaResource.class,
         ApplicationExceptionMapper.class,
         ObjectMapperBuilderConfiguration.class,
-        ObjectMapperConfiguration.class
+        ObjectMapperConfiguration.class,
+        RequestBodyCoercionConfiguration.class
     })
     static class TestConfig {
 
