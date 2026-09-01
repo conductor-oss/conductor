@@ -64,9 +64,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * spring.jackson.deserialization.accept-single-value-as-array} in the server module's {@code
  * application.properties}, which is not on this module's classpath, so the property is restated
  * here. That means this class proves the contract holds <em>given</em> the setting, not that the
- * setting ships: deleting it from {@code application.properties} would leave these tests green. The
- * guard for that is {@code SchemaRegistryE2ETest.acceptsABareObjectWhereTheContractDeclaresAList},
- * which runs against a real server image.
+ * setting ships: deleting it from {@code application.properties} would leave these tests green.
+ * {@code ShippedJacksonPropertiesTest} in the server module is what fails in that case, and {@code
+ * SchemaRegistryE2ETest.acceptsABareObjectWhereTheContractDeclaresAList} covers the whole path
+ * against a real server image.
  *
  * <p>The context is a real one rather than {@code MockMvcBuilders.standaloneSetup} because the
  * request body is the subject. Standalone setup builds its own plain {@link

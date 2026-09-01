@@ -49,10 +49,6 @@ public class SchemaEnforcement {
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaEnforcement.class);
 
     /**
-     * What is being validated: the phrase that fronts a recorded failure reason, and the label the
-     * metric is tagged with. The two travel together and are written once per validation point.
-     */
-    /**
      * Which validation point rejected a payload, and the execution it happened on. {@code
      * description} goes in front of the schema's own complaint on the recorded reason; {@code
      * metric} is the stable tag value; {@code executionId} is logged rather than recorded, since
@@ -167,9 +163,7 @@ public class SchemaEnforcement {
      * produce one are not free of side effects.
      *
      * <p>{@code boundary} names which payload was rejected and goes in front of the schema's own
-     * complaint, so a reason recorded on an execution says more than which rule was broken. {@code
-     * executionId} is logged rather than recorded, since the record it would go on is the execution
-     * it identifies.
+     * complaint, so a reason recorded on an execution says more than which rule was broken.
      */
     private void validate(
             SchemaDef schema,
