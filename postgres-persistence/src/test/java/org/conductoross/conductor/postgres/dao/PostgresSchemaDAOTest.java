@@ -61,7 +61,7 @@ public class PostgresSchemaDAOTest extends SchemaDAOTest {
      */
     @BeforeEach
     public void migrateSchemaRegistry() {
-        PostgresSchemaRegistryMigration.migrate(dataSource, "public");
+        new PostgresSchemaRegistryMigration(dataSource, "public").migrate();
     }
 
     @Override

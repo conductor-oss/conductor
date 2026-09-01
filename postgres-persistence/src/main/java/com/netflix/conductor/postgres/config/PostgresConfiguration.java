@@ -173,12 +173,17 @@ public class PostgresConfiguration {
         return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean
+    @Bean(initMethod = "migrate")
     @DependsOn({"flywayForPrimaryDb"})
+    public PostgresSchemaRegistryMigration postgresSchemaRegistryMigration() {
+        return new PostgresSchemaRegistryMigration(dataSource, properties.getSchema());
+    }
+
+    @Bean
+    @DependsOn("postgresSchemaRegistryMigration")
     public SchemaDAO postgresSchemaDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
-        PostgresSchemaRegistryMigration.migrate(dataSource, properties.getSchema());
         return new PostgresSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 

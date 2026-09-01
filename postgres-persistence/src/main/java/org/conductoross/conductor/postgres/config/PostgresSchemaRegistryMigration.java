@@ -22,24 +22,33 @@ import org.flywaydb.core.Flyway;
  * Creates the schema registry's tables on PostgreSQL.
  *
  * <p>The registry migrates from a location of its own, tracked in a history table of its own, so
- * its version numbering cannot contend with the main Conductor migrations — a merge that takes the
+ * its version numbering cannot contend with the main Conductor migrations: a merge that takes the
  * next free number in {@code db/migration_postgres} cannot break an upgrade here.
  *
- * <p>Deliberately not a {@link Flyway} Spring bean. A second bean of that type makes an injected
- * {@code Flyway} ambiguous, and in modules that rely on Spring Boot's Flyway auto-configuration it
- * makes that auto-configuration back off, taking the main migrations with it.
+ * <p>A bean of its own with an {@code initMethod}, rather than a migration run from inside the
+ * DAO's factory method, so the migration is visible to anyone reading the bean definitions instead
+ * of hiding behind a constructor call.
  *
- * <p>Called from the bean method that builds the DAO, so the tables exist before anything can reach
- * them. A DAO bean later made conditional or lazy would take this with it.
+ * <p>Deliberately not typed as {@link Flyway}. Boot's {@code FlywayConfiguration} is
+ * {@code @ConditionalOnMissingBean(Flyway.class)}, so on MySQL a second Flyway bean would take the
+ * main migrations with it; on PostgreSQL and SQLite, which already declare {@code
+ * flywayForPrimaryDb}, it would instead make an {@code @Autowired Flyway} ambiguous.
  */
-public final class PostgresSchemaRegistryMigration {
+public class PostgresSchemaRegistryMigration {
 
     private static final String LOCATION = "classpath:db/migration_postgres_schema_registry";
     private static final String HISTORY_TABLE = "flyway_schema_history_schema_registry";
 
-    private PostgresSchemaRegistryMigration() {}
+    private final DataSource dataSource;
 
-    public static void migrate(DataSource dataSource, String schema) {
+    private final String schema;
+
+    public PostgresSchemaRegistryMigration(DataSource dataSource, String schema) {
+        this.dataSource = dataSource;
+        this.schema = schema;
+    }
+
+    public void migrate() {
         Flyway.configure()
                 .configuration(Map.of("flyway.postgresql.transactional.lock", "false"))
                 .locations(LOCATION)

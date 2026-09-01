@@ -61,7 +61,7 @@ public class MySQLSchemaDAOTest extends SchemaDAOTest {
      */
     @BeforeEach
     public void migrateSchemaRegistry() {
-        MySQLSchemaRegistryMigration.migrate(dataSource);
+        new MySQLSchemaRegistryMigration(dataSource).migrate();
     }
 
     @Override

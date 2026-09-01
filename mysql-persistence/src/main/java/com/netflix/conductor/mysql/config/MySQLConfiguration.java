@@ -122,13 +122,18 @@ public class MySQLConfiguration {
         return new MySQLSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean
+    @Bean(initMethod = "migrate")
     @DependsOn({"flyway", "flywayInitializer"})
+    public MySQLSchemaRegistryMigration mySqlSchemaRegistryMigration(DataSource dataSource) {
+        return new MySQLSchemaRegistryMigration(dataSource);
+    }
+
+    @Bean
+    @DependsOn("mySqlSchemaRegistryMigration")
     public SchemaDAO mySqlSchemaDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource) {
-        MySQLSchemaRegistryMigration.migrate(dataSource);
         return new MySQLSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 

@@ -20,24 +20,30 @@ import org.flywaydb.core.Flyway;
  * Creates the schema registry's tables on MySQL.
  *
  * <p>The registry migrates from a location of its own, tracked in a history table of its own, so
- * its version numbering cannot contend with the main Conductor migrations — a merge that takes the
+ * its version numbering cannot contend with the main Conductor migrations: a merge that takes the
  * next free number in {@code db/migration} cannot break an upgrade here.
  *
- * <p>Deliberately not a {@link Flyway} Spring bean: this module relies on Spring Boot's Flyway
- * auto-configuration, which backs off as soon as any {@code Flyway} bean is defined, taking the
- * main migrations with it.
+ * <p>A bean of its own with an {@code initMethod}, rather than a migration run from inside the
+ * DAO's factory method, so the migration is visible to anyone reading the bean definitions instead
+ * of hiding behind a constructor call.
  *
- * <p>Called from the bean method that builds the DAO, so the tables exist before anything can reach
- * them. A DAO bean later made conditional or lazy would take this with it.
+ * <p>Deliberately not typed as {@link Flyway}. Boot's {@code FlywayConfiguration} is
+ * {@code @ConditionalOnMissingBean(Flyway.class)}, so on MySQL a second Flyway bean would take the
+ * main migrations with it; on PostgreSQL and SQLite, which already declare {@code
+ * flywayForPrimaryDb}, it would instead make an {@code @Autowired Flyway} ambiguous.
  */
-public final class MySQLSchemaRegistryMigration {
+public class MySQLSchemaRegistryMigration {
 
     private static final String LOCATION = "classpath:db/migration_mysql_schema_registry";
     private static final String HISTORY_TABLE = "flyway_schema_history_schema_registry";
 
-    private MySQLSchemaRegistryMigration() {}
+    private final DataSource dataSource;
 
-    public static void migrate(DataSource dataSource) {
+    public MySQLSchemaRegistryMigration(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
+    public void migrate() {
         Flyway.configure()
                 .locations(LOCATION)
                 .dataSource(dataSource)

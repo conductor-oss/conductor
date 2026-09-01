@@ -61,7 +61,7 @@ public class SqliteSchemaDAOTest extends SchemaDAOTest {
      */
     @BeforeEach
     public void migrateSchemaRegistry() {
-        SqliteSchemaRegistryMigration.migrate(dataSource);
+        new SqliteSchemaRegistryMigration(dataSource).migrate();
     }
 
     @Override

@@ -234,12 +234,17 @@ public class SqliteConfiguration {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean
+    @Bean(initMethod = "migrate")
     @DependsOn({"flywayForPrimaryDb"})
+    public SqliteSchemaRegistryMigration sqliteSchemaRegistryMigration() {
+        return new SqliteSchemaRegistryMigration(dataSource);
+    }
+
+    @Bean
+    @DependsOn("sqliteSchemaRegistryMigration")
     public SchemaDAO sqliteSchemaDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
-        SqliteSchemaRegistryMigration.migrate(dataSource);
         return new SqliteSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
