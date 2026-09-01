@@ -1,0 +1,126 @@
+name: size-based-reviewers
+
+# Require an extra approval for large pull requests.
+#
+# GitHub branch protection can only enforce a *fixed* minimum number of
+# approvals; it can't vary that number by diff size. This check computes the
+# effective diff size (excluding generated/vendored files) and fails until the
+# PR has enough approvals for its tier. Mark it a required status check in
+# branch protection to enforce it.
+#
+# Tiers:
+#   < 2000 changed lines  -> 1 approval  (the branch-protection default)
+#   >= 2000 changed lines -> 2 approvals
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const LARGE_PR_THRESHOLD = 2000;   // changed lines (adds + dels)
+            const APPROVALS_FOR_LARGE = 2;
+            const APPROVALS_DEFAULT = 1;
+
+            // Files excluded from the line count: generated, vendored, binary,
+            // and lockfiles. Changes to these shouldn't push a PR into a
+            // higher review tier.
+            const EXCLUDE_EXACT = new Set([
+              'ui-next/pnpm-lock.yaml',
+              'ui/package-lock.json',
+              'ui/yarn.lock',
+            ]);
+            const EXCLUDE_PREFIX = [
+              'server/src/main/resources/swagger-ui/',
+            ];
+            const EXCLUDE_SUBSTR = [
+              '/vendor/',
+              '/generated/',
+              '/__snapshots__/',
+            ];
+            const EXCLUDE_SUFFIX = [
+              '.lock',
+              '.min.js', '.min.css',
+              '.snap',
+              // binary assets
+              '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp',
+              '.woff', '.woff2', '.ttf', '.eot', '.pdf',
+            ];
+
+            const isExcluded = (f) =>
+              EXCLUDE_EXACT.has(f) ||
+              EXCLUDE_PREFIX.some((p) => f.startsWith(p)) ||
+              EXCLUDE_SUBSTR.some((s) => f.includes(s)) ||
+              EXCLUDE_SUFFIX.some((s) => f.endsWith(s));
+
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull_request in payload; nothing to check.');
+              return;
+            }
+            if (pr.draft) {
+              core.info('PR is a draft; skipping size-based review check.');
+              return;
+            }
+
+            // Sum additions + deletions over non-excluded files.
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            let changed = 0;
+            const excluded = [];
+            for (const f of files) {
+              if (isExcluded(f.filename)) {
+                excluded.push(f.filename);
+                continue;
+              }
+              changed += f.additions + f.deletions;
+            }
+
+            const required =
+              changed >= LARGE_PR_THRESHOLD ? APPROVALS_FOR_LARGE : APPROVALS_DEFAULT;
+
+            // Count current approvals: latest non-comment review per user.
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              ...context.repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+            const latestByUser = new Map();
+            for (const r of reviews) {
+              if (r.state === 'COMMENTED') continue; // comments don't change standing
+              latestByUser.set(r.user.id, r.state);
+            }
+            const approvals = [...latestByUser.values()].filter(
+              (s) => s === 'APPROVED'
+            ).length;
+
+            core.info(`Changed lines (excluding generated/vendored): ${changed}`);
+            if (excluded.length) {
+              core.info(`Excluded ${excluded.length} file(s): ${excluded.join(', ')}`);
+            }
+            core.info(`Tier requires ${required} approval(s); PR has ${approvals}.`);
+
+            if (approvals < required) {
+              core.setFailed(
+                `This PR changes ${changed} lines and needs ${required} approval(s), ` +
+                  `but has ${approvals}. Large PRs (>= ${LARGE_PR_THRESHOLD} lines) ` +
+                  `require ${APPROVALS_FOR_LARGE} approvals.`
+              );
+            } else {
+              core.info('Approval requirement satisfied.');
+            }
