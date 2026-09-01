@@ -82,6 +82,14 @@ public class InMemorySchemaDAO implements SchemaDAO {
     }
 
     @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        return stored.values().stream()
+                .filter(def -> def.getName().equals(name))
+                .sorted(Comparator.comparingInt(SchemaDef::getVersion).reversed())
+                .toList();
+    }
+
+    @Override
     public List<SchemaDef> getAll() {
         return stored.values().stream()
                 .sorted(
@@ -106,6 +114,31 @@ public class InMemorySchemaDAO implements SchemaDAO {
                 entries.remove();
                 removed++;
             }
+        }
+        return removed;
+    }
+
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return getAll().stream()
+                .map(
+                        schema -> {
+                            SchemaDef summary = new SchemaDef();
+                            summary.setName(schema.getName());
+                            summary.setVersion(schema.getVersion());
+                            return summary;
+                        })
+                .toList();
+    }
+
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        int removed = 0;
+        for (String name : names) {
+            removed += deleteAllByName(name);
         }
         return removed;
     }

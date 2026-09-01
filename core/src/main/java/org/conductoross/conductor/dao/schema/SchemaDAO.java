@@ -62,6 +62,23 @@ public interface SchemaDAO {
      */
     SchemaDef findLatestVersionByName(String name);
 
+    /**
+     * Returns every version stored under {@code name}, highest version first, or an empty list when
+     * there is none.
+     *
+     * <p>Descending, unlike {@link #getAll()}: the first element is the latest version.
+     */
+    List<SchemaDef> findAllVersionsByName(String name);
+
+    /**
+     * Returns every stored schema carrying only its name and version, so a caller that needs to
+     * know what exists does not transfer every schema document to find out.
+     *
+     * <p>The returned definitions are deliberately partial: no type, no data, no external
+     * reference. Ordered by name and then version, as {@link #getAll()} is.
+     */
+    List<SchemaDef> getAllShortenedSchemas();
+
     /** Returns every version of every schema, ordered by name and then version. */
     List<SchemaDef> getAll();
 
@@ -78,4 +95,10 @@ public interface SchemaDAO {
      * the name is unknown.
      */
     int deleteAllByName(String name);
+
+    /**
+     * Removes every version of every name given, returning how many were removed. An empty or null
+     * list removes nothing and returns zero.
+     */
+    int deleteAllByNames(List<String> names);
 }

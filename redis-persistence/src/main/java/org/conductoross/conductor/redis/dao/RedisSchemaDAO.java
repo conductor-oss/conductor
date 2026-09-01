@@ -95,6 +95,31 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
     }
 
     @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        return versionsOf(name).stream()
+                .map(json -> readValue(json, SchemaDef.class))
+                .sorted(Comparator.comparingInt(SchemaDef::getVersion).reversed())
+                .toList();
+    }
+
+    /**
+     * Redis stores each schema as one opaque value, so there is nothing to project: the bodies are
+     * read and dropped. The saving is on the wire to the caller, not on the read from the store.
+     */
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return getAll().stream()
+                .map(
+                        schema -> {
+                            SchemaDef summary = new SchemaDef();
+                            summary.setName(schema.getName());
+                            summary.setVersion(schema.getVersion());
+                            return summary;
+                        })
+                .toList();
+    }
+
+    @Override
     public List<SchemaDef> getAll() {
         Set<String> names = jedisProxy.smembers(nsKey(SCHEMA_DEF_NAMES));
         List<SchemaDef> schemas = new ArrayList<>();
@@ -125,6 +150,18 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
         jedisProxy.del(nsKey(SCHEMA_DEF, name));
         jedisProxy.srem(nsKey(SCHEMA_DEF_NAMES), name);
         return fields == null ? 0 : fields.intValue();
+    }
+
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        int removed = 0;
+        for (String name : names) {
+            removed += deleteAllByName(name);
+        }
+        return removed;
     }
 
     private List<String> versionsOf(String name) {

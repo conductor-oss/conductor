@@ -13,8 +13,10 @@
 package org.conductoross.conductor.mysql.dao;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -45,6 +47,12 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
 
     private static final String SELECT_LATEST_BY_NAME =
             "SELECT json_data FROM meta_schema_def WHERE name = ? ORDER BY version DESC LIMIT 1";
+
+    private static final String SELECT_ALL_VERSIONS_BY_NAME =
+            "SELECT json_data FROM meta_schema_def WHERE name = ? ORDER BY version DESC";
+
+    private static final String SELECT_ALL_SHORTENED =
+            "SELECT name, version FROM meta_schema_def ORDER BY name, version";
 
     private static final String SELECT_ALL =
             "SELECT json_data FROM meta_schema_def ORDER BY name, version";
@@ -131,6 +139,34 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     }
 
     @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        List<String> rows =
+                queryWithTransaction(
+                        SELECT_ALL_VERSIONS_BY_NAME,
+                        q -> q.addParameter(name).executeAndFetch(String.class));
+        return rows.stream().map(json -> readValue(json, SchemaDef.class)).toList();
+    }
+
+    /** A projection rather than a read-and-discard: the payload column is never fetched. */
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return queryWithTransaction(
+                SELECT_ALL_SHORTENED,
+                q ->
+                        q.executeAndFetch(
+                                rs -> {
+                                    List<SchemaDef> shortened = new ArrayList<>();
+                                    while (rs.next()) {
+                                        SchemaDef summary = new SchemaDef();
+                                        summary.setName(rs.getString(1));
+                                        summary.setVersion(rs.getInt(2));
+                                        shortened.add(summary);
+                                    }
+                                    return shortened;
+                                }));
+    }
+
+    @Override
     public List<SchemaDef> getAll() {
         List<String> rows = queryWithTransaction(SELECT_ALL, q -> q.executeAndFetch(String.class));
         return rows.stream().map(json -> readValue(json, SchemaDef.class)).toList();
@@ -147,6 +183,16 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     @Override
     public int deleteAllByName(String name) {
         return queryWithTransaction(DELETE_BY_NAME, q -> q.addParameter(name).executeUpdate());
+    }
+
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        String placeholders = names.stream().map(n -> "?").collect(Collectors.joining(","));
+        String sql = "DELETE FROM meta_schema_def WHERE name IN (" + placeholders + ")";
+        return queryWithTransaction(sql, q -> q.addParameters(names.toArray()).executeUpdate());
     }
 
     private SchemaDef toSchema(List<String> rows) {

@@ -194,6 +194,30 @@ public abstract class SchemaDAOTest {
         assertEquals(2, schemasNamed(name).size());
     }
 
+    /**
+     * Highest version first, which is the opposite of {@link SchemaDAO#getAll()}. The first element
+     * being the latest is the part a caller is most likely to rely on.
+     */
+    @Test
+    public void everyVersionOfOneNameComesBackNewestFirst() {
+        String name = uniqueName();
+        String neighbour = uniqueName();
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 10));
+        getSchemaDAO().save(schema(name, 2));
+        getSchemaDAO().save(schema(neighbour, 5));
+
+        List<SchemaDef> versions = getSchemaDAO().findAllVersionsByName(name);
+
+        assertEquals(List.of(10, 2, 1), versions.stream().map(SchemaDef::getVersion).toList());
+        assertTrue(versions.stream().allMatch(def -> def.getName().equals(name)));
+    }
+
+    @Test
+    public void anUnknownNameHasNoVersions() {
+        assertTrue(getSchemaDAO().findAllVersionsByName(uniqueName()).isEmpty());
+    }
+
     @Test
     public void allSchemasCarriesEveryVersionInOrder() {
         String name = uniqueName();
@@ -203,6 +227,47 @@ public abstract class SchemaDAOTest {
 
         assertEquals(
                 List.of(1, 2, 3), schemasNamed(name).stream().map(SchemaDef::getVersion).toList());
+    }
+
+    /** Name and version only: enough to identify a schema, none of its body. */
+    @Test
+    public void theShortenedListingCarriesNoSchemaBody() {
+        String name = uniqueName();
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 2));
+
+        List<SchemaDef> shortened =
+                getSchemaDAO().getAllShortenedSchemas().stream()
+                        .filter(def -> name.equals(def.getName()))
+                        .toList();
+
+        assertEquals(List.of(1, 2), shortened.stream().map(SchemaDef::getVersion).toList());
+        assertTrue(shortened.stream().allMatch(def -> def.getData() == null));
+        assertTrue(shortened.stream().allMatch(def -> def.getType() == null));
+        assertTrue(shortened.stream().allMatch(def -> def.getExternalRef() == null));
+    }
+
+    @Test
+    public void deletingSeveralNamesRemovesEveryVersionOfEach() {
+        String first = uniqueName();
+        String second = uniqueName();
+        String survivor = uniqueName();
+        getSchemaDAO().save(schema(first, 1));
+        getSchemaDAO().save(schema(first, 2));
+        getSchemaDAO().save(schema(second, 1));
+        getSchemaDAO().save(schema(survivor, 1));
+
+        assertEquals(3, getSchemaDAO().deleteAllByNames(List.of(first, second)));
+
+        assertTrue(schemasNamed(first).isEmpty());
+        assertTrue(schemasNamed(second).isEmpty());
+        assertEquals(1, schemasNamed(survivor).size());
+    }
+
+    @Test
+    public void deletingNoNamesRemovesNothing() {
+        assertEquals(0, getSchemaDAO().deleteAllByNames(List.of()));
+        assertEquals(0, getSchemaDAO().deleteAllByNames(null));
     }
 
     @Test
