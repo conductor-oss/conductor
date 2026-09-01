@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 
@@ -35,18 +34,6 @@ public class InMemorySchemaDAO implements SchemaDAO {
 
     private final Map<String, SchemaDef> stored = new ConcurrentHashMap<>();
 
-    /**
-     * Counts every attempted conditional insert, so a test can see how often allocation retried.
-     */
-    final AtomicInteger createAttempts = new AtomicInteger();
-
-    /** Rows to insert behind the service's back, one per conditional insert, simulating a race. */
-    private final java.util.Deque<SchemaDef> racers = new java.util.ArrayDeque<>();
-
-    void queueRacer(SchemaDef def) {
-        racers.add(def);
-    }
-
     private static String key(String name, Integer version) {
         return name + "/" + version;
     }
@@ -54,17 +41,6 @@ public class InMemorySchemaDAO implements SchemaDAO {
     @Override
     public void save(SchemaDef schemaDef) {
         stored.put(key(schemaDef.getName(), schemaDef.getVersion()), schemaDef);
-    }
-
-    @Override
-    public boolean createSchemaIfAbsent(SchemaDef schemaDef) {
-        createAttempts.incrementAndGet();
-        SchemaDef racer = racers.poll();
-        if (racer != null) {
-            stored.put(key(racer.getName(), racer.getVersion()), racer);
-        }
-        return stored.putIfAbsent(key(schemaDef.getName(), schemaDef.getVersion()), schemaDef)
-                == null;
     }
 
     @Override
@@ -108,5 +84,39 @@ public class InMemorySchemaDAO implements SchemaDAO {
             }
         }
         return removed;
+    }
+
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        int removed = 0;
+        for (String name : names) {
+            removed += deleteAllByName(name);
+        }
+        return removed;
+    }
+
+    @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        return stored.values().stream()
+                .filter(def -> def.getName().equals(name))
+                .sorted(Comparator.comparingInt(SchemaDef::getVersion).reversed())
+                .toList();
+    }
+
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return getAll().stream()
+                .map(def -> nameAndVersion(def.getName(), def.getVersion()))
+                .toList();
+    }
+
+    private static SchemaDef nameAndVersion(String name, int version) {
+        SchemaDef schema = new SchemaDef();
+        schema.setName(name);
+        schema.setVersion(version);
+        return schema;
     }
 }

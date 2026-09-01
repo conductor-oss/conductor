@@ -584,14 +584,6 @@ public class Monitors {
                 StringUtils.defaultIfBlank(schemaName, "unknown"));
     }
 
-    /** A new schema version could not be allocated because writers kept claiming it. */
-    public static void recordSchemaVersionAllocationConflict(String schemaName) {
-        counter(
-                "schema_version_allocation_conflict",
-                "schemaName",
-                StringUtils.defaultIfBlank(schemaName, "unknown"));
-    }
-
     /**
      * How long validating one payload took. Under enforcement this runs on every scheduled task, so
      * it is what answers whether enforcement costs anything.

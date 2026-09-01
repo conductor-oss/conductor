@@ -161,6 +161,20 @@ class SchemaRegistryE2ETest {
         assertEquals(1, schemaClient.getSchema(name, 1).getVersion(), "version 1 is left alone");
     }
 
+    /**
+     * Deleting something that is not registered is a 404, not a quiet 200 — so a caller that
+     * scripts cleanup can tell a delete that removed something from one that found nothing.
+     */
+    @Test
+    void deletingSomethingUnregisteredIs404() {
+        assertNotFound(() -> schemaClient.deleteSchema("never-registered-" + UUID.randomUUID()));
+
+        schemaClient.saveSchema(schema(1));
+        assertNotFound(() -> schemaClient.deleteSchema(name, 7));
+        assertEquals(
+                1, schemaClient.getSchema(name).getVersion(), "the refused delete removed nothing");
+    }
+
     @Test
     void unknownSchemaIs404() {
         assertNotFound(() -> schemaClient.getSchema("never-registered-" + UUID.randomUUID()));

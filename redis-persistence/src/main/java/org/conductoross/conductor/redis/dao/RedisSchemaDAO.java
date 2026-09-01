@@ -64,22 +64,6 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
     }
 
     @Override
-    public boolean createSchemaIfAbsent(SchemaDef schemaDef) {
-        // HSETNX sets the field only when it is absent, so the server decides the race between
-        // two writers allocating the same version rather than a read-then-write in this process.
-        Long set =
-                jedisProxy.hsetnx(
-                        nsKey(SCHEMA_DEF, schemaDef.getName()),
-                        String.valueOf(schemaDef.getVersion()),
-                        toJson(schemaDef));
-        if (set == null || set == 0L) {
-            return false;
-        }
-        jedisProxy.sadd(nsKey(SCHEMA_DEF_NAMES), schemaDef.getName());
-        return true;
-    }
-
-    @Override
     public SchemaDef findByNameAndVersion(String name, Integer version) {
         Objects.requireNonNull(version, "Schema version cannot be null");
         String json = jedisProxy.hget(nsKey(SCHEMA_DEF, name), String.valueOf(version));
@@ -125,6 +109,59 @@ public class RedisSchemaDAO extends BaseDynoDAO implements SchemaDAO {
         jedisProxy.del(nsKey(SCHEMA_DEF, name));
         jedisProxy.srem(nsKey(SCHEMA_DEF_NAMES), name);
         return fields == null ? 0 : fields.intValue();
+    }
+
+    /**
+     * One hash deleted per name. Redis has no multi-key delete that reports fields removed, so this
+     * is not atomic across the batch: a failure part-way leaves the names already deleted gone.
+     */
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        int removed = 0;
+        for (String name : names) {
+            removed += deleteAllByName(name);
+        }
+        return removed;
+    }
+
+    @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        return versionsOf(name).stream()
+                .map(json -> readValue(json, SchemaDef.class))
+                .sorted(Comparator.comparingInt(SchemaDef::getVersion).reversed())
+                .toList();
+    }
+
+    /**
+     * Read from the version fields' names, so no payload is deserialized. The keyspace still has to
+     * be walked hash by hash — there is no cheaper listing here, unlike the SQL backends where the
+     * name and version are indexed columns.
+     */
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        List<SchemaDef> schemas = new ArrayList<>();
+        for (String name : jedisProxy.smembers(nsKey(SCHEMA_DEF_NAMES))) {
+            for (String version : jedisProxy.hkeys(nsKey(SCHEMA_DEF, name))) {
+                schemas.add(nameAndVersion(name, Integer.parseInt(version)));
+            }
+        }
+        schemas.sort(
+                Comparator.comparing(SchemaDef::getName).thenComparingInt(SchemaDef::getVersion));
+        return schemas;
+    }
+
+    /**
+     * A name and a version and nothing else — no type and no document, so the result identifies a
+     * registered schema but cannot be validated against.
+     */
+    private static SchemaDef nameAndVersion(String name, int version) {
+        SchemaDef schema = new SchemaDef();
+        schema.setName(name);
+        schema.setVersion(version);
+        return schema;
     }
 
     private List<String> versionsOf(String name) {

@@ -130,9 +130,9 @@ curl "$CONDUCTOR_SERVER_URL/schema/customerInput/1" # still the original
 
 Use the default to correct a version in place — a typo in a description, a field you meant to make optional. Anything referencing that version sees the correction, which is the point and also the risk.
 
-Two simultaneous `newVersion=true` saves cannot silently overwrite each other. The server allocates the version against a uniqueness constraint in the database and re-reads when it loses the race, so concurrent saves land at different versions; under sustained contention a save that keeps losing eventually returns `409` rather than retrying forever.
+Two simultaneous `newVersion=true` saves of the same name can overwrite each other. The server reads the highest version and saves one past it, with nothing between the two steps, so both writers can read the same maximum, land on the same version and leave only the later one stored. Concurrent registration under one name is last-writer-wins; serialize those saves if losing one would matter.
 
-Deleting is version-aware in the same way. `DELETE /api/schema/{name}/{version}` removes one version and leaves the rest of the history; `DELETE /api/schema/{name}` removes all of it. Both return `200`, including when there was nothing to remove.
+Deleting is version-aware in the same way. `DELETE /api/schema/{name}/{version}` removes one version and leaves the rest of the history; `DELETE /api/schema/{name}` removes all of it. Both return `404` when there was nothing to remove, so a delete that answers `200` has actually deleted something — worth knowing if you script cleanup that runs whether or not the schema is there.
 
 ## The management screen
 
@@ -164,7 +164,6 @@ The registry itself needs no configuration. Its cache does, and it is off by def
 |---|---|---|
 | `conductor.app.schema-cache.ttl` | `0` | How long a read stays cached. Zero disables the cache; there is no separate on/off flag |
 | `conductor.app.schema-cache.max-size` | `1000` | Maximum cached entries, counting by-version and latest-by-name lookups separately |
-| `conductor.app.schema-validation.enabled` | `false` | Whether the engine validates payloads against the schemas attached to definitions. See [Input/Output Schema Validation](schema-validation.md#turning-enforcement-on) |
 
 A non-zero `ttl` is also your staleness bound. Invalidation on save and delete reaches only the node that served the write, so on a multi-node deployment every other node keeps serving the old schema until the entry expires. Set it to something you would be comfortable waiting out after an edit.
 
@@ -180,9 +179,9 @@ Four things you cannot infer from the API:
 
 **All three schema types are stored; only `JSON` is validated.** You can save an `AVRO` or `PROTOBUF` schema and read it back unchanged, but nothing on this server validates a payload against it, and the management screen shows it read-only for that reason.
 
-**`createdBy` and `updatedBy` are never populated.** The OSS API is unauthenticated, so there is no principal to attribute a write to, and the fields are absent from responses rather than empty. `createTime` and `updateTime` are set normally.
+**`createdBy` and `updatedBy` are never populated.** The API is unauthenticated, so there is no principal to attribute a write to, and the fields are absent from responses rather than empty. `createTime` and `updateTime` are set normally.
 
-**The picker's inline edit and preview buttons are not available.** In the schema pickers on the task, workflow and task-definition forms, the buttons that open a schema for editing or preview without leaving the form are part of the commercial product. Selecting an existing schema works; creating and editing are done on the management screen or through this API.
+**The picker's inline edit and preview buttons are not shown.** In the schema pickers on the task, workflow and task-definition forms, the buttons that open a schema for editing or preview without leaving the form come from a UI plugin, and this build registers none. Selecting an existing schema works; creating and editing are done on the management screen or through this API.
 
 **`externalRef` is stored and returned, and nothing resolves it.** If you save a schema carrying only an `externalRef`, you get that field back exactly as you sent it — the server does not fetch what it points at.
 

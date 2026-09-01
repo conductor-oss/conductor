@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.conductoross.conductor.service.SchemaEnforcement;
-import org.conductoross.conductor.service.SchemaValidationProperties;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -3198,6 +3197,6 @@ public class TestWorkflowExecutor {
      * turns it on. These tests are not about schemas.
      */
     private static SchemaEnforcement disabledSchemaEnforcement() {
-        return new SchemaEnforcement(null, new SchemaValidationProperties());
+        return new SchemaEnforcement(null);
     }
 }

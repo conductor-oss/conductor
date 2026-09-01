@@ -75,11 +75,6 @@ public class RedisSchemaDAOTest extends SchemaDAOTest {
     }
 
     @Override
-    protected boolean rejectsMalformedRows() {
-        return false;
-    }
-
-    @Override
     protected SchemaDAO getSchemaDAO() {
         return schemaDAO;
     }

@@ -82,19 +82,14 @@ curl -X PUT "$CONDUCTOR_SERVER_URL/metadata/workflow" \
 
 ## Turning enforcement on
 
-**Validation is off until you turn it on**, and a server upgrade does not turn it on for you. Attaching a schema to a definition therefore changes nothing about how that definition executes — the schema is documentation, and the pickers in the UI read it — until an operator sets:
+Enforcement is decided entirely by the definition. There is no server property to set and nothing to restart. A payload is checked when both of these hold:
 
-| Property | Default | Meaning |
-|---|---|---|
-| `conductor.app.schema-validation.enabled` | `false` | Whether the engine validates payloads against the schemas attached to definitions |
+1. the definition's own `enforceSchema` is `true`;
+2. a schema is actually attached at that point.
 
-That switch is necessary but not sufficient. A payload is checked only when all three of these hold:
+`enforceSchema` defaults to `false`, which is what keeps a schema attached for documentation from rejecting work. Attaching a schema changes nothing about how a definition executes until you also set that flag on the same definition — so enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
 
-1. `conductor.app.schema-validation.enabled` is `true` on the server;
-2. the definition's own `enforceSchema` is `true`;
-3. a schema is actually attached at that point.
-
-Enable it deliberately, and on a deployment where you already know which definitions carry schemas: turning it on makes every one of those definitions start rejecting payloads that do not match.
+The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
 
 ## When validation runs
 
@@ -102,12 +97,12 @@ Enable it deliberately, and on a deployment where you already know which definit
 |---|---|
 | Workflow input | The workflow does not start, and nothing is created |
 | Task input | The task fails terminally, before the worker sees it |
-| Task output | The task fails after the worker returns |
+| Task output | The task fails terminally after the worker returns |
 | Workflow output | The workflow fails at completion instead of completing |
 
 A workflow-input failure is reported to the caller: the start request is rejected with `400` and the validation message in the body, and no execution is created. The other three happen inside a running execution, so the validation message becomes the `reasonForIncompletion` on the task or the workflow — visible in the UI and the API, without reading server logs.
 
-Task-input failure is the one that differs: it is a **terminal** failure, not a retriable one. A payload that violates a schema violates it identically on the next attempt, so retrying would only spend the task's retry budget re-submitting the same input. The other three fail normally.
+Both task failures are **terminal**, not retriable. An input that violates a schema violates it identically on the next attempt, and an output the definition refuses is the same shape whenever the task is run again — so in neither case does a retry do anything but spend the task's retry budget on the same outcome. The workflow-level failures end the execution, so retrying does not arise.
 
 Input validation is the valuable one: it rejects the execution before any task has run, so there is nothing to compensate for. Output validation catches a worker returning the wrong shape, which otherwise surfaces as a downstream failure far from its cause.
 
@@ -115,11 +110,13 @@ Input validation is the valuable one: it rejects the execution before any task h
 
 **An externalized output is not checked.** A worker that returns its output through external payload storage hands the server a storage path rather than the payload, so there is nothing in hand to validate and the check is skipped. Task input, workflow input and workflow output are unaffected; so is a task whose output is small enough to travel inline.
 
-**System task output is not checked — silently.** Only a task completed by a worker reporting through the task-update API is validated on output. A system task the server runs itself — `HTTP`, `SUB_WORKFLOW`, `EVENT`, `INLINE` and the rest — completes through a path that has no output-validation point, so an `outputSchema` on one of those task definitions is stored and never enforced. That and the externalized output above are the two gaps that pass quietly; the two below do not. A system task's *input* is validated at scheduling like any other task's, and workflow input and workflow output are unaffected.
+**Some system task output is checked, and some is not.** A synchronous system task that finishes inside its `execute(...)` step — `INLINE`, `SET_VARIABLE` and the like — has its output validated in the decider, and fails terminally like any other task. Two kinds are not covered: an asynchronous system task such as `HTTP` or `SUB_WORKFLOW`, and a synchronous one that completes during scheduling instead. For those, an `outputSchema` on the task definition is stored and never enforced. That and the externalized output above pass quietly, and so does the unresolvable reference described below; the non-`JSON` and typeless schemas below are the ones that fail loudly instead. Every system task's *input* is validated at scheduling like any other task's, and workflow input and workflow output are unaffected.
 
 **A schema that is not `JSON` is refused, not skipped.** An `AVRO` or `PROTOBUF` schema is accepted at registration and returned unchanged, but this server has no validator for it — so rather than let the payload through unchecked, it fails the execution and says why. A definition that both attaches one and opts into enforcement will start failing when you turn enforcement on.
 
-**A schema this server cannot resolve is also refused.** A schema attached by name and version is looked up in the [Schema Registry](schema-registry.md); if nothing is registered under that name and version, the execution fails naming the schema it could not find. The same goes for a schema carrying no `type`, and for one carrying only an `externalRef` — nothing dereferences that field.
+**A schema carrying no `type`, or only an `externalRef`, is refused too.** Neither names a document this server can check against — nothing dereferences `externalRef` — so both fail the execution and say so.
+
+**A reference the registry does not hold stops enforcing, quietly.** A schema attached by name and version is looked up in the [Schema Registry](schema-registry.md); if nothing is registered under that name and version there is no document to validate against, so the payload goes through unchecked rather than failing. The miss increments the `schema_registry_miss` counter, tagged with the schema name — that counter is the only signal, so watch it if you rely on enforcement. A registered document the validator cannot read or use behaves the same way and is logged. Both are errors in the definition rather than in the payload, which is why neither is charged to the caller; the cost is that a reference pointing at nothing enforces nothing.
 
 ## Writing schemas that age well
 

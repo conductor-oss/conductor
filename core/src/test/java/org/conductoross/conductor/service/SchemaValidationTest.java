@@ -29,7 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The registry's one validation entry point. Both the engine's enforcement hooks and the AI layer
  * come through here, so resolution, the null-type check, the registry miss and the non-JSON refusal
- * are asserted once, against the thing that owns them.
+ * are asserted once, against the thing that owns them — including which of them refuse a payload
+ * and which leave it unvalidated.
  */
 class SchemaValidationTest {
 
@@ -101,6 +102,10 @@ class SchemaValidationTest {
                 () -> service.validate(reference("person", 1), Map.of()));
     }
 
+    /**
+     * A reference carrying no version asks for the latest, and gets it: version 2 is the one that
+     * requires {@code name}, and resolving version 1 instead would let this payload through.
+     */
     @Test
     void aReferenceWithoutAVersionResolvesTheLatest() {
         SchemaDef v1 = inline();
@@ -108,10 +113,11 @@ class SchemaValidationTest {
         service.saveSchema(v1, false);
         service.saveSchema(inline(), true);
 
-        // Version 2 is the one that requires `name`; resolving v1 instead would pass.
         assertThrows(
                 SchemaValidationException.class,
                 () -> service.validate(reference("person", 0), Map.of()));
+        // And a payload the latest version accepts still passes.
+        assertDoesNotThrow(() -> service.validate(reference("person", 0), Map.of("name", "ada")));
     }
 
     @Test
@@ -123,15 +129,15 @@ class SchemaValidationTest {
         assertDoesNotThrow(() -> service.validate(inline(), Map.of("name", "ada")));
     }
 
+    /**
+     * A reference the registry does not hold names no document, so there is nothing to check the
+     * payload against and it goes through. The miss is counted instead — see {@link
+     * SchemaMetricsTest} — so an operator sees the unregistered reference.
+     */
     @Test
-    void anUnresolvableReferenceFailsLoudlyNamingTheSchemaAndVersion() {
-        SchemaValidationException thrown =
-                assertThrows(
-                        SchemaValidationException.class,
-                        () -> service.validate(reference("person", 7), Map.of("name", "ada")));
-
-        assertTrue(thrown.getMessage().contains("person"), thrown.getMessage());
-        assertTrue(thrown.getMessage().contains("7"), thrown.getMessage());
+    void anUnresolvableReferenceLeavesThePayloadUnvalidated() {
+        // Data that the registered `person` schema would reject, to show nothing checked it.
+        assertDoesNotThrow(() -> service.validate(reference("person", 7), Map.of()));
     }
 
     @Test
@@ -173,7 +179,8 @@ class SchemaValidationTest {
                         SchemaValidationException.class,
                         () -> service.validate(external, Map.of("name", "ada")));
 
-        assertTrue(thrown.getMessage().contains("person"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("not yet supported"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("registry://person"), thrown.getMessage());
     }
 
     /** A document that constrains nothing is still a document: it permits anything. */
@@ -187,9 +194,9 @@ class SchemaValidationTest {
 
     /**
      * Carrying {@code data} is what makes a schema inline, not carrying a non-empty one. An empty
-     * document is unusable on this server — the validator needs a {@code $schema} tag — but it must
-     * fail as the unusable document it is, rather than quietly resolving to whatever the registry
-     * happens to hold under the same name.
+     * document is unusable on this server — the validator needs a {@code $schema} tag — so the
+     * payload is left unvalidated. What must not happen is the registry quietly standing in for it:
+     * the registered `person` schema would reject this payload, and nothing does.
      */
     @Test
     void anEmptyInlineDocumentIsNotSilentlyReplacedByTheRegistry() {
@@ -197,15 +204,7 @@ class SchemaValidationTest {
         SchemaDef empty = inline();
         empty.setData(Map.of());
 
-        SchemaValidationException thrown =
-                assertThrows(
-                        SchemaValidationException.class,
-                        () -> service.validate(empty, Map.of("name", "ada")));
-
-        assertTrue(
-                thrown.getMessage().contains("not a usable JSON schema"),
-                "the empty document is what failed, not the registered schema: "
-                        + thrown.getMessage());
+        assertDoesNotThrow(() -> service.validate(empty, Map.of()));
     }
 
     /**
@@ -223,18 +222,15 @@ class SchemaValidationTest {
                 () -> service.validate(nameless, Map.of("name", "ada")));
     }
 
+    /**
+     * A document the validator cannot use is a definition error, not a bad payload: it is logged
+     * for whoever registered it, and the payload it could not check goes through.
+     */
     @Test
-    void aMalformedSchemaDocumentFailsWithAMessage() {
+    void aMalformedSchemaDocumentLeavesThePayloadUnvalidated() {
         SchemaDef malformed = inline();
         malformed.setData(Map.of("type", 7));
 
-        SchemaValidationException thrown =
-                assertThrows(
-                        SchemaValidationException.class,
-                        () -> service.validate(malformed, Map.of("name", "ada")));
-
-        assertTrue(
-                thrown.getMessage() != null && !thrown.getMessage().isBlank(),
-                "a bad schema must not fail with an empty message");
+        assertDoesNotThrow(() -> service.validate(malformed, Map.of()));
     }
 }

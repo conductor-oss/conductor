@@ -45,9 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Schema enforcement as a caller sees it: a status, a reason, and whether an execution exists at
  * all. Nothing here asserts on which class ran.
  *
- * <p>The server under test has {@code conductor.app.schema-validation.enabled=true}, set by {@code
- * e2e/docker/docker-compose-e2e-overrides.yaml}. The property is off by default, so without that
- * override this suite would pass while testing nothing.
+ * <p>Enforcement needs no server-side switch: a definition that sets {@code enforceSchema} and
+ * attaches a schema is enforced, so the servers these tests run against need no special
+ * configuration.
  *
  * <p>Run via any of the {@code e2e/run_tests-*.sh} flavors.
  */
@@ -238,9 +238,11 @@ class SchemaEnforcementE2ETest {
                             assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
                             Task task = workflow.getTasks().get(0);
                             assertEquals(
-                                    Task.Status.FAILED,
+                                    Task.Status.FAILED_WITH_TERMINAL_ERROR,
                                     task.getStatus(),
-                                    "an output failure is retriable, unlike an input failure");
+                                    "the worker returned a shape its definition refuses, so "
+                                            + "re-running it would spend the retry budget on the "
+                                            + "same outcome");
                             assertTrue(
                                     task.getReasonForIncompletion().contains("name"),
                                     task.getReasonForIncompletion());
@@ -281,6 +283,72 @@ class SchemaEnforcementE2ETest {
                             assertTrue(
                                     workflow.getReasonForIncompletion().contains("name"),
                                     workflow.getReasonForIncompletion());
+                        });
+    }
+
+    // ── system task output, in the decider ────────────────────────────────────
+
+    /**
+     * An {@code INLINE} task completes inside the decider rather than by a worker reporting through
+     * the task-update API, so its output passes through a different point entirely. Its {@code
+     * outputSchema} used to be stored and never enforced.
+     */
+    @Test
+    void aSystemTaskWhoseOutputBreaksItsSchemaFailsTerminally() {
+        String taskName = "e2e_schema_task_sysout_" + suffix;
+        String workflowName = "e2e_schema_sysout_" + suffix;
+
+        // The definition carrying the schema, registered under the name the INLINE task uses.
+        TaskDef taskDef = taskDef(taskName, 3, null, requiresName("e2e_sysout_" + suffix));
+
+        WorkflowTask inline = new WorkflowTask();
+        inline.setName(taskName);
+        inline.setTaskReferenceName("step");
+        inline.setWorkflowTaskType(TaskType.INLINE);
+        // Evaluates to a number, so the output is {"result": 3} — no `name`, which its schema
+        // requires.
+        inline.setInputParameters(
+                Map.of(
+                        "evaluatorType",
+                        "graaljs",
+                        "expression",
+                        "(function () { return $.value1 + $.value2; })();",
+                        "value1",
+                        1,
+                        "value2",
+                        2));
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(workflowName);
+        workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail("test@conductor.io");
+        workflowDef.setTimeoutSeconds(120);
+        workflowDef.setTasks(List.of(inline));
+
+        metadataClient.registerTaskDefs(List.of(taskDef));
+        metadataClient.updateWorkflowDefs(List.of(workflowDef));
+
+        String workflowId = start(workflowName, Map.of());
+
+        await().atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(Workflow.WorkflowStatus.FAILED, workflow.getStatus());
+
+                            Task task = workflow.getTasks().get(0);
+                            assertEquals(
+                                    Task.Status.FAILED_WITH_TERMINAL_ERROR,
+                                    task.getStatus(),
+                                    "the server produced this output itself, so re-running the "
+                                            + "task produces the same shape");
+                            assertEquals(
+                                    1,
+                                    workflow.getTasks().size(),
+                                    "a terminal failure schedules no retry");
+                            assertTrue(
+                                    task.getReasonForIncompletion().contains("name"),
+                                    task.getReasonForIncompletion());
                         });
     }
 

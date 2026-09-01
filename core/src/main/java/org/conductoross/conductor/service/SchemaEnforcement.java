@@ -13,12 +13,10 @@
 package org.conductoross.conductor.service;
 
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
@@ -29,21 +27,20 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 /**
- * The engine's four validation points — workflow input at start, task input at scheduling, task
- * output at update, workflow output at completion — and the gate in front of each.
+ * The engine's validation points — workflow input at start, task input at scheduling, task output
+ * at update and in the decider, workflow output at completion — and the gate in front of each.
  *
- * <p>A payload is validated only when three things hold at once: the server property is on, the
- * definition's own {@code enforceSchema} flag is set, and a schema is actually attached. All three
- * matter. Without the property an upgrade would change how running deployments behave; without the
- * per-definition flag a schema attached for documentation would start rejecting work; without the
- * schema there is nothing to check against.
+ * <p>A payload is validated when two things hold at once: the definition's own {@code
+ * enforceSchema} flag is set, and a schema is actually attached. Both matter. Without the flag a
+ * schema attached for documentation would start rejecting work; without a schema there is nothing
+ * to check against. There is no server-wide switch in front of these: a definition that asks for
+ * enforcement and carries a schema gets it.
  *
  * <p>The rules for what a schema means — resolving a reference against the registry, refusing a
  * type this server cannot validate, refusing one with no type at all — live on {@link
  * SchemaService#validate}, so they read the same here and in the AI layer.
  */
 @Component
-@EnableConfigurationProperties(SchemaValidationProperties.class)
 public class SchemaEnforcement {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaEnforcement.class);
@@ -58,11 +55,9 @@ public class SchemaEnforcement {
             String description, String metric, String executionId, String workflowType) {}
 
     private final SchemaService schemaService;
-    private final SchemaValidationProperties properties;
 
-    public SchemaEnforcement(SchemaService schemaService, SchemaValidationProperties properties) {
+    public SchemaEnforcement(SchemaService schemaService) {
         this.schemaService = schemaService;
-        this.properties = properties;
     }
 
     /**
@@ -70,16 +65,12 @@ public class SchemaEnforcement {
      * execution is created, so a failure means it never starts and there is nothing to compensate.
      */
     public void validateWorkflowInput(WorkflowModel workflow) {
-        if (!properties.isEnabled()) {
-            return;
-        }
         WorkflowDef def = workflow.getWorkflowDefinition();
-        if (def == null) {
+        if (def == null || !def.isEnforceSchema() || def.getInputSchema() == null) {
             return;
         }
         validate(
                 def.getInputSchema(),
-                def.isEnforceSchema(),
                 workflow.getInput(),
                 new Boundary(
                         "Workflow " + def.getName() + " input",
@@ -90,16 +81,12 @@ public class SchemaEnforcement {
 
     /** Validates a workflow's output against its definition's output schema, at completion. */
     public void validateWorkflowOutput(WorkflowModel workflow) {
-        if (!properties.isEnabled()) {
-            return;
-        }
         WorkflowDef def = workflow.getWorkflowDefinition();
-        if (def == null) {
+        if (def == null || !def.isEnforceSchema() || def.getOutputSchema() == null) {
             return;
         }
         validate(
                 def.getOutputSchema(),
-                def.isEnforceSchema(),
                 workflow.getOutput(),
                 new Boundary(
                         "Workflow " + def.getName() + " output",
@@ -112,20 +99,14 @@ public class SchemaEnforcement {
      * Validates a task's input against its definition's input schema, before the task is queued and
      * so before any worker sees it.
      *
-     * <p>The definition is supplied lazily because resolving it can cost a metadata read, and this
-     * runs for every task the engine schedules whether or not enforcement is on.
+     * <p>A task with no definition has no schema to enforce, and is passed over.
      */
-    public void validateTaskInput(TaskModel task, Supplier<TaskDef> taskDefinition) {
-        if (!properties.isEnabled()) {
-            return;
-        }
-        TaskDef taskDef = taskDefinition.get();
-        if (taskDef == null) {
+    public void validateTaskInput(TaskModel task, TaskDef taskDef) {
+        if (taskDef == null || !taskDef.isEnforceSchema() || taskDef.getInputSchema() == null) {
             return;
         }
         validate(
                 taskDef.getInputSchema(),
-                taskDef.isEnforceSchema(),
                 task.getInputData(),
                 new Boundary(
                         "Task " + task.getReferenceTaskName() + " input",
@@ -135,20 +116,15 @@ public class SchemaEnforcement {
     }
 
     /**
-     * Validates a task's output against its definition's output schema, as the worker reports it.
-     * The definition is supplied lazily, for the reason given on {@link #validateTaskInput}.
+     * Validates a task's output against its definition's output schema — as a worker reports it, or
+     * as the decider produces it for a system task the server runs itself.
      */
-    public void validateTaskOutput(TaskModel task, Supplier<TaskDef> taskDefinition) {
-        if (!properties.isEnabled()) {
-            return;
-        }
-        TaskDef taskDef = taskDefinition.get();
-        if (taskDef == null) {
+    public void validateTaskOutput(TaskModel task, TaskDef taskDef) {
+        if (taskDef == null || !taskDef.isEnforceSchema() || taskDef.getOutputSchema() == null) {
             return;
         }
         validate(
                 taskDef.getOutputSchema(),
-                taskDef.isEnforceSchema(),
                 task.getOutputData(),
                 new Boundary(
                         "Task " + task.getReferenceTaskName() + " output",
@@ -158,21 +134,17 @@ public class SchemaEnforcement {
     }
 
     /**
-     * The rest of the three-part gate: the definition's own flag and a schema to check against. The
-     * server property is checked by each hook before it reads a payload, because the getters that
-     * produce one are not free of side effects.
+     * Runs the check and reports it. The gate — a definition that opts in, and a schema on the side
+     * being checked — is applied by each hook above rather than here, because it has to come before
+     * the payload is read. {@link WorkflowModel#getInput()} and {@link WorkflowModel#getOutput()}
+     * are not plain getters: when both the inline map and the external-storage map hold entries
+     * they merge the two and reset the payload field, so passing one as an argument here would
+     * evaluate it for every execution, including the ones that never opted in.
      *
      * <p>{@code boundary} names which payload was rejected and goes in front of the schema's own
      * complaint, so a reason recorded on an execution says more than which rule was broken.
      */
-    private void validate(
-            SchemaDef schema,
-            boolean enforceSchema,
-            Map<String, Object> payload,
-            Boundary boundary) {
-        if (!enforceSchema || schema == null) {
-            return;
-        }
+    private void validate(SchemaDef schema, Map<String, Object> payload, Boundary boundary) {
         long start = System.currentTimeMillis();
         try {
             schemaService.validate(schema, payload);

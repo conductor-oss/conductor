@@ -39,18 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class SchemaEnforcementTest {
 
-    private SchemaValidationProperties properties;
     private SchemaEnforcement enforcement;
 
     @BeforeEach
     void setUp() {
-        properties = new SchemaValidationProperties();
         SchemaService schemaService =
                 new SchemaServiceImpl(
                         new InMemorySchemaDAO(),
                         new SchemaCacheProperties(),
                         new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
-        enforcement = new SchemaEnforcement(schemaService, properties);
+        enforcement = new SchemaEnforcement(schemaService);
     }
 
     private static SchemaDef requiresName() {
@@ -102,49 +100,45 @@ class SchemaEnforcementTest {
         return def;
     }
 
-    @Test
-    void nothingIsValidatedWhileThePropertyIsOff() {
-        WorkflowModel workflow = workflow(workflowDef(requiresName(), true), Map.of());
-
-        assertDoesNotThrow(() -> enforcement.validateWorkflowInput(workflow));
-        assertDoesNotThrow(() -> enforcement.validateWorkflowOutput(workflow));
-        assertDoesNotThrow(
-                () ->
-                        enforcement.validateTaskInput(
-                                task(Map.of()), () -> taskDef(requiresName(), true)));
-        assertDoesNotThrow(
-                () ->
-                        enforcement.validateTaskOutput(
-                                task(Map.of()), () -> taskDef(requiresName(), true)));
-    }
-
     /**
-     * A disabled server must not so much as read the payload. {@link WorkflowModel#getInput()} and
-     * {@link WorkflowModel#getOutput()} are not plain getters: when both the inline map and the
-     * external-storage map hold entries they merge the two and reset the payload field. Passing
-     * either to {@code validate} evaluates it before the gate inside {@code validate} is reached,
-     * so the guard has to sit at the top of the hook instead.
+     * A definition that has not opted in must not so much as have its payload read. {@link
+     * WorkflowModel#getInput()} and {@link WorkflowModel#getOutput()} are not plain getters: when
+     * both the inline map and the external-storage map hold entries they merge the two and reset
+     * the payload field. Passing either to {@code validate} would evaluate it before any gate
+     * inside {@code validate} is reached, so the guard has to sit at the top of the hook instead.
      *
      * <p>This asserts on the call rather than on state because the merge is idempotent, so its
      * effect cannot be seen from outside the model. {@code WorkflowModel.equals} calls {@code
      * getInput()} too, which is why comparing two models cannot pin this down either.
      */
     @Test
-    void aDisabledServerDoesNotReadAWorkflowPayload() {
+    void aDefinitionThatDoesNotEnforceHasItsPayloadLeftUnread() {
         PayloadReadRecordingWorkflow workflow =
-                new PayloadReadRecordingWorkflow(workflowDef(requiresName(), true));
+                new PayloadReadRecordingWorkflow(workflowDef(requiresName(), false));
 
         enforcement.validateWorkflowInput(workflow);
         enforcement.validateWorkflowOutput(workflow);
 
-        assertFalse(workflow.inputWasRead, "a disabled server read the workflow input");
-        assertFalse(workflow.outputWasRead, "a disabled server read the workflow output");
+        assertFalse(workflow.inputWasRead, "the workflow input was read without opting in");
+        assertFalse(workflow.outputWasRead, "the workflow output was read without opting in");
     }
 
-    /** The control: with enforcement on, the same hooks do read it, so the test above can fail. */
+    /** The same, for a definition that opts in but attaches no schema. */
     @Test
-    void anEnabledServerDoesReadAWorkflowPayload() {
-        properties.setEnabled(true);
+    void aDefinitionWithNoSchemaHasItsPayloadLeftUnread() {
+        PayloadReadRecordingWorkflow workflow =
+                new PayloadReadRecordingWorkflow(workflowDef(null, true));
+
+        enforcement.validateWorkflowInput(workflow);
+        enforcement.validateWorkflowOutput(workflow);
+
+        assertFalse(workflow.inputWasRead);
+        assertFalse(workflow.outputWasRead);
+    }
+
+    /** The control: once both gates are open the same hooks do read it, so the tests above bite. */
+    @Test
+    void anEnforcingDefinitionDoesHaveItsPayloadRead() {
         PayloadReadRecordingWorkflow workflow =
                 new PayloadReadRecordingWorkflow(workflowDef(requiresName(), true));
 
@@ -182,46 +176,37 @@ class SchemaEnforcementTest {
     }
 
     @Test
-    void thePropertyDefaultsToOff() {
-        assertTrue(!new SchemaValidationProperties().isEnabled());
-    }
-
-    @Test
     void aDefinitionThatOptsOutIsNotValidated() {
-        properties.setEnabled(true);
         WorkflowModel workflow = workflow(workflowDef(requiresName(), false), Map.of());
 
         assertDoesNotThrow(() -> enforcement.validateWorkflowInput(workflow));
         assertDoesNotThrow(
                 () ->
                         enforcement.validateTaskInput(
-                                task(Map.of()), () -> taskDef(requiresName(), false)));
+                                task(Map.of()), taskDef(requiresName(), false)));
     }
 
     @Test
     void aDefinitionWithNoSchemaIsNotValidated() {
-        properties.setEnabled(true);
         WorkflowModel workflow = workflow(workflowDef(null, true), Map.of());
 
         assertDoesNotThrow(() -> enforcement.validateWorkflowInput(workflow));
         assertDoesNotThrow(() -> enforcement.validateWorkflowOutput(workflow));
         assertDoesNotThrow(
-                () -> enforcement.validateTaskInput(task(Map.of()), () -> taskDef(null, true)));
+                () -> enforcement.validateTaskInput(task(Map.of()), taskDef(null, true)));
         assertDoesNotThrow(
-                () -> enforcement.validateTaskOutput(task(Map.of()), () -> taskDef(null, true)));
+                () -> enforcement.validateTaskOutput(task(Map.of()), taskDef(null, true)));
     }
 
     @Test
     void aTaskWithNoDefinitionIsNotValidated() {
-        properties.setEnabled(true);
 
-        assertDoesNotThrow(() -> enforcement.validateTaskInput(task(Map.of()), () -> null));
-        assertDoesNotThrow(() -> enforcement.validateTaskOutput(task(Map.of()), () -> null));
+        assertDoesNotThrow(() -> enforcement.validateTaskInput(task(Map.of()), null));
+        assertDoesNotThrow(() -> enforcement.validateTaskOutput(task(Map.of()), null));
     }
 
     @Test
     void allThreeGatesOpenMeansTheWorkflowInputIsValidated() {
-        properties.setEnabled(true);
         WorkflowDef def = workflowDef(requiresName(), true);
 
         assertDoesNotThrow(
@@ -238,7 +223,6 @@ class SchemaEnforcementTest {
 
     @Test
     void allThreeGatesOpenMeansTheWorkflowOutputIsValidated() {
-        properties.setEnabled(true);
         WorkflowDef def = workflowDef(requiresName(), true);
 
         SchemaValidationException thrown =
@@ -251,16 +235,14 @@ class SchemaEnforcementTest {
 
     @Test
     void allThreeGatesOpenMeansTheTaskInputIsValidated() {
-        properties.setEnabled(true);
         TaskDef def = taskDef(requiresName(), true);
 
-        assertDoesNotThrow(
-                () -> enforcement.validateTaskInput(task(Map.of("name", "ada")), () -> def));
+        assertDoesNotThrow(() -> enforcement.validateTaskInput(task(Map.of("name", "ada")), def));
 
         SchemaValidationException thrown =
                 assertThrows(
                         SchemaValidationException.class,
-                        () -> enforcement.validateTaskInput(task(Map.of()), () -> def));
+                        () -> enforcement.validateTaskInput(task(Map.of()), def));
 
         assertTrue(thrown.getMessage().contains("input"), thrown.getMessage());
         assertTrue(thrown.getMessage().contains("charge_ref"), thrown.getMessage());
@@ -268,13 +250,12 @@ class SchemaEnforcementTest {
 
     @Test
     void allThreeGatesOpenMeansTheTaskOutputIsValidated() {
-        properties.setEnabled(true);
         TaskDef def = taskDef(requiresName(), true);
 
         SchemaValidationException thrown =
                 assertThrows(
                         SchemaValidationException.class,
-                        () -> enforcement.validateTaskOutput(task(Map.of()), () -> def));
+                        () -> enforcement.validateTaskOutput(task(Map.of()), def));
 
         assertTrue(thrown.getMessage().contains("output"), thrown.getMessage());
     }

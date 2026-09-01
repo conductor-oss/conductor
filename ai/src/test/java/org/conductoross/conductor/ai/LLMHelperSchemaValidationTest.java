@@ -39,7 +39,6 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -178,25 +177,24 @@ class LLMHelperSchemaValidationTest {
         assertTrue(thrown.getMessage().contains("name"), thrown.getMessage());
     }
 
+    /** A reference carrying no version resolves the latest registered one, and is enforced. */
     @Test
     void aSchemaNamedWithoutAVersionResolvesTheLatest() {
         schemaService.saveSchema(inlineRequiringName(), false);
         ChatCompletion in = completion(reference("person", 0));
 
         assertDoesNotThrow(() -> run(in, "{\"name\": \"ada\"}"));
+        assertThrows(RuntimeException.class, () -> run(in, "{\"nickname\": \"ada\"}"));
     }
 
+    /**
+     * A reference the registry does not hold names no document, so the generation is not checked.
+     */
     @Test
-    void anUnregisteredReferenceFailsWithARealMessage() {
+    void anUnregisteredReferenceLeavesTheGenerationUnvalidated() {
         ChatCompletion in = completion(reference("person", 3));
 
-        RuntimeException thrown =
-                assertThrows(RuntimeException.class, () -> run(in, "{\"name\": \"ada\"}"));
-
-        assertFalse(
-                thrown.getMessage() == null || thrown.getMessage().isBlank(),
-                "an unresolvable reference used to fail with an empty message");
-        assertTrue(thrown.getMessage().contains("person"), thrown.getMessage());
+        assertDoesNotThrow(() -> run(in, "{\"nickname\": \"ada\"}"));
     }
 
     @Test
@@ -248,12 +246,6 @@ class LLMHelperSchemaValidationTest {
         }
 
         @Override
-        public boolean createSchemaIfAbsent(SchemaDef schemaDef) {
-            return stored.putIfAbsent(key(schemaDef.getName(), schemaDef.getVersion()), schemaDef)
-                    == null;
-        }
-
-        @Override
         public SchemaDef findByNameAndVersion(String name, Integer version) {
             Objects.requireNonNull(version, "Schema version cannot be null");
             return stored.get(key(name, version));
@@ -288,6 +280,28 @@ class LLMHelperSchemaValidationTest {
                 }
             }
             return removed;
+        }
+
+        @Override
+        public int deleteAllByNames(List<String> names) {
+            if (names == null) {
+                return 0;
+            }
+            int removed = 0;
+            for (String name : names) {
+                removed += deleteAllByName(name);
+            }
+            return removed;
+        }
+
+        @Override
+        public List<SchemaDef> findAllVersionsByName(String name) {
+            return stored.values().stream().filter(def -> def.getName().equals(name)).toList();
+        }
+
+        @Override
+        public List<SchemaDef> getAllShortenedSchemas() {
+            return getAll();
         }
     }
 }

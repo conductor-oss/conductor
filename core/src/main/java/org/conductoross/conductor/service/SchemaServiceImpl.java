@@ -12,9 +12,9 @@
  */
 package org.conductoross.conductor.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
-import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -54,14 +53,6 @@ import com.networknt.schema.ValidationMessage;
 public class SchemaServiceImpl implements SchemaService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaServiceImpl.class);
-
-    /**
-     * How many times version allocation re-reads the current maximum after losing the insert. Each
-     * failure means some other writer took the version this caller was aiming for, so a caller can
-     * only lose once per concurrent writer; the bound exists to turn a pathological write storm
-     * into a reported conflict rather than an unbounded loop.
-     */
-    private static final int MAX_VERSION_ALLOCATION_ATTEMPTS = 10;
 
     private static final String LATEST = "latest";
 
@@ -100,36 +91,20 @@ public class SchemaServiceImpl implements SchemaService {
     }
 
     /**
-     * Saves each schema in turn. Not atomic across the list: a failure part-way leaves the schemas
-     * already saved in place, and reports which one failed.
-     */
-    @Override
-    public List<SchemaDef> saveSchemas(List<SchemaDef> schemas, boolean newVersion) {
-        if (schemas == null || schemas.isEmpty()) {
-            return List.of();
-        }
-        List<SchemaDef> saved = new ArrayList<>(schemas.size());
-        for (SchemaDef schema : schemas) {
-            saved.add(saveSchema(schema, newVersion));
-        }
-        return saved;
-    }
-
-    /**
      * Mutates and returns the schema it was given — the version it landed at and its audit
      * timestamps are stamped onto that instance, as the metadata services do. Callers that need
      * their argument left alone should pass a copy.
      */
     @Override
-    public SchemaDef saveSchema(SchemaDef schema, boolean newVersion) {
-        if (schema == null) {
+    public SchemaDef saveSchema(SchemaDef dto, boolean incrementVersion) {
+        if (dto == null) {
             throw new IllegalArgumentException("Schema cannot be null");
         }
-        if (StringUtils.isBlank(schema.getName())) {
+        if (StringUtils.isBlank(dto.getName())) {
             throw new IllegalArgumentException("Schema name cannot be blank");
         }
 
-        SchemaDef stored = newVersion ? insertAtNextVersion(schema) : upsert(schema);
+        SchemaDef stored = incrementVersion ? insertAtNextVersion(dto) : upsert(dto);
         invalidate(stored.getName(), stored.getVersion());
         return stored;
     }
@@ -161,50 +136,33 @@ public class SchemaServiceImpl implements SchemaService {
     }
 
     /**
-     * Allocates the next version by reading the current maximum and letting the unique constraint
-     * on (name, version) decide the race. A rejected insert means another writer took the version
-     * first, so the maximum is re-read and the insert retried; nothing is overwritten either way.
+     * Allocates the next version by reading the current maximum and saving one past it.
+     *
+     * <p>The read and the write are separate calls with no conditional insert between them, so two
+     * writers registering the same name at once can read the same maximum, land on the same version
+     * and have the later save overwrite the earlier one. Concurrent registration of one name is
+     * last-writer-wins.
      */
     private SchemaDef insertAtNextVersion(SchemaDef schema) {
-        for (int attempt = 0; attempt < MAX_VERSION_ALLOCATION_ATTEMPTS; attempt++) {
-            int highest = lookupLatest(schema.getName()).map(SchemaDef::getVersion).orElse(0);
-            schema.setVersion(highest + 1);
-            stampCreation(schema);
-            if (schemaDAO.createSchemaIfAbsent(schema)) {
-                return schema;
-            }
-            LOGGER.debug(
-                    "Lost the race for schema {} version {}, re-reading the current maximum",
-                    schema.getName(),
-                    schema.getVersion());
-        }
-        LOGGER.warn(
-                "Gave up allocating a new version for schema {} after {} attempts; writes to this"
-                        + " name are contending",
-                schema.getName(),
-                MAX_VERSION_ALLOCATION_ATTEMPTS);
-        Monitors.recordSchemaVersionAllocationConflict(schema.getName());
-        throw new ConflictException(
-                "Unable to allocate a new version for schema %s after %d attempts; another writer keeps claiming it",
-                schema.getName(), MAX_VERSION_ALLOCATION_ATTEMPTS);
+        int highest = lookupLatest(schema.getName()).map(SchemaDef::getVersion).orElse(0);
+        schema.setVersion(highest + 1);
+        stampCreation(schema);
+        schemaDAO.save(schema);
+        return schema;
     }
 
+    /** {@code null} rather than an exception when absent; see {@link SchemaService}. */
     @Override
-    public SchemaDef getSchema(String name) {
+    public SchemaDef getSchemaByNameWithLatestVersion(String name) {
         requireName(name);
-        return cached(key(name, LATEST), () -> lookupLatest(name))
-                .orElseThrow(() -> new NotFoundException("No such schema found by name %s", name));
+        return cached(key(name, LATEST), () -> lookupLatest(name)).orElse(null);
     }
 
+    /** {@code null} rather than an exception when absent; see {@link SchemaService}. */
     @Override
-    public SchemaDef getSchema(String name, int version) {
+    public SchemaDef getSchemaByNameAndVersion(String name, int version) {
         requireName(name);
-        return cached(key(name, String.valueOf(version)), () -> lookup(name, version))
-                .orElseThrow(
-                        () ->
-                                new NotFoundException(
-                                        "No such schema found by name %s and version %d",
-                                        name, version));
+        return cached(key(name, String.valueOf(version)), () -> lookup(name, version)).orElse(null);
     }
 
     /**
@@ -216,16 +174,68 @@ public class SchemaServiceImpl implements SchemaService {
         return schemaDAO.getAll();
     }
 
+    /** Straight through to the backend's projection, which reads no schema bodies. */
     @Override
-    public void deleteSchema(String name) {
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return schemaDAO.getAllShortenedSchemas();
+    }
+
+    @Override
+    public List<SchemaDef> getSchemas(String name, Integer version) {
+        if (name == null) {
+            return getAllSchemas();
+        }
+        if (version == null) {
+            return getSchemasByName(name);
+        }
+        SchemaDef schema = getSchemaByNameAndVersion(name, version);
+        if (schema == null) {
+            throw new NotFoundException(
+                    "No such schema found by name %s and version %d", name, version);
+        }
+        return List.of(schema);
+    }
+
+    @Override
+    public List<SchemaDef> getSchemasByName(String name) {
         requireName(name);
+        return schemaDAO.findAllVersionsByName(name);
+    }
+
+    /** Removing a name that is not registered is reported rather than passed over as a no-op. */
+    @Override
+    public void deleteSchemaByName(String name) {
+        requireName(name);
+        if (getSchemasByName(name).isEmpty()) {
+            throw new NotFoundException("No schema found by name %s", name);
+        }
         schemaDAO.deleteAllByName(name);
         invalidateName(name);
     }
 
+    /**
+     * One backend call for the whole batch. The cache is dropped per name afterwards rather than
+     * per version, because the versions removed are not read back to enumerate them.
+     */
     @Override
-    public void deleteSchema(String name, int version) {
+    public void deleteSchemasByNamesBatch(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            LOGGER.debug("No schema names provided for batch delete");
+            return;
+        }
+        int deleted = schemaDAO.deleteAllByNames(names);
+        names.forEach(this::invalidateName);
+        LOGGER.info("Batch deleted {} schema versions across {} names", deleted, names.size());
+    }
+
+    /** Removing a version that is not registered is reported, as removing a whole name is. */
+    @Override
+    public void deleteSchemaByNameAndVersion(String name, Integer version) {
         requireName(name);
+        Objects.requireNonNull(version, "Schema version cannot be null");
+        if (getSchemaByNameAndVersion(name, version) == null) {
+            throw new NotFoundException("No schema found by name %s and version %d", name, version);
+        }
         schemaDAO.deleteByNameAndVersion(name, version);
         invalidate(name, version);
     }
@@ -294,7 +304,14 @@ public class SchemaServiceImpl implements SchemaService {
             throw new IllegalArgumentException("Schema cannot be null");
         }
 
-        SchemaDef resolved = resolve(schema);
+        Optional<SchemaDef> registered = resolve(schema);
+        if (registered.isEmpty()) {
+            // A reference the registry does not hold is not enforced. The miss is counted where it
+            // is discovered, so an unregistered reference reaches an operator as a signal rather
+            // than reaching a caller as a failed execution.
+            return;
+        }
+        SchemaDef resolved = registered.get();
 
         // The schema fields on a Task Definition carry no cascading-validation annotation, so a
         // schema with no type is accepted at registration and only discovered here. That is a
@@ -305,36 +322,44 @@ public class SchemaServiceImpl implements SchemaService {
                     resolved.getName(), resolved.getVersion());
         }
         if (resolved.getType() != SchemaDef.Type.JSON) {
-            throw new SchemaValidationException(
-                    "Schema %s version %d is of type %s; this server validates JSON schemas only",
-                    resolved.getName(), resolved.getVersion(), resolved.getType());
+            throw new SchemaValidationException("Unsupported schema type %s", resolved.getType());
         }
 
         String schemaContent;
         try {
             schemaContent = OBJECT_MAPPER.writeValueAsString(resolved.getData());
         } catch (JsonProcessingException e) {
-            throw new SchemaValidationException(
-                    "Schema %s version %d could not be read: %s",
-                    resolved.getName(), resolved.getVersion(), e.getMessage());
+            // Same reading as an unusable document below: the schema is at fault, not the payload,
+            // so it is logged for whoever registered it and nothing is checked.
+            LOGGER.error(
+                    "Error parsing the json schema {} version {}: {}",
+                    resolved.getName(),
+                    resolved.getVersion(),
+                    e.getMessage(),
+                    e);
+            return;
         }
 
         Set<ValidationMessage> failures;
         try {
             failures = jsonSchemaValidator.validate(schemaContent, data == null ? Map.of() : data);
         } catch (JsonSchemaException e) {
-            // networknt reports an unusable schema document through an exception whose own
-            // getMessage() is frequently empty, so the messages it carries are what get reported.
-            throw new SchemaValidationException(
-                    "Schema %s version %d is not a usable JSON schema: %s",
-                    resolved.getName(), resolved.getVersion(), describe(e));
+            // An unusable schema document is a definition error, and no payload can be checked
+            // against it: it is logged for whoever registered it and the payload is let through.
+            // networknt's own getMessage() is frequently empty here, so the messages it carries
+            // are what get logged.
+            LOGGER.error(
+                    "Bad or unsupported schema {} version {}: {}",
+                    resolved.getName(),
+                    resolved.getVersion(),
+                    describe(e),
+                    e);
+            return;
         }
 
         if (failures != null && !failures.isEmpty()) {
             throw new SchemaValidationException(
-                    "Schema validation failed for %s version %d: %s",
-                    resolved.getName(),
-                    resolved.getVersion(),
+                    "Schema validation failed %s",
                     failures.stream()
                             .map(ValidationMessage::getMessage)
                             .collect(Collectors.joining(", ")));
@@ -343,17 +368,26 @@ public class SchemaServiceImpl implements SchemaService {
 
     /**
      * Returns the schema whose {@code data} is the document to validate against: the argument when
-     * it inlines one, otherwise the registered version it names.
+     * it inlines one, otherwise the registered version it names. Empty when the reference names a
+     * version the registry does not hold, which leaves the payload unvalidated.
      *
-     * <p>{@code externalRef} is deliberately not a third step. It is stored and returned unchanged,
-     * and nothing dereferences it, so a schema carrying only an external reference is unresolvable
-     * and is reported as a missing registration rather than silently skipped.
+     * <p>A version below 1 means no version was asked for, and resolves the highest registered
+     * version under the name. {@link SchemaDef} defaults its version to 1, so a definition that
+     * wants to track the latest has to say {@code 0} outright.
+     *
+     * <p>{@code externalRef} is checked before the registry, and refused: it is stored and returned
+     * unchanged and nothing dereferences it, so a schema carrying one instead of a document says
+     * outright that it cannot be enforced rather than being looked up under its name.
      */
-    private SchemaDef resolve(SchemaDef schema) {
+    private Optional<SchemaDef> resolve(SchemaDef schema) {
         // An empty document is a legal JSON Schema that permits anything, so `data` being present
         // — not being non-empty — is what makes a schema inline.
         if (schema.getData() != null) {
-            return schema;
+            return Optional.of(schema);
+        }
+        if (schema.getExternalRef() != null) {
+            throw new SchemaValidationException(
+                    "external schema references are not yet supported %s", schema.getExternalRef());
         }
         if (StringUtils.isBlank(schema.getName())) {
             throw new SchemaValidationException(
@@ -369,19 +403,15 @@ public class SchemaServiceImpl implements SchemaService {
                         : cached(key(name, String.valueOf(version)), () -> lookup(name, version));
         if (registered.isEmpty()) {
             // Under enforcement this runs for every scheduled task, so one unregistered reference
-            // would warn on every execution of it. The counter is the operator's signal; the
-            // exception below carries the name and version to the caller and onto the execution.
+            // would warn on every execution of it. The counter is the operator's signal that a
+            // definition points at nothing, since the payload itself goes through unchecked.
             LOGGER.debug(
                     "A definition references schema {} version {}, which is not registered",
                     name,
                     version);
             Monitors.recordSchemaRegistryMiss(name);
         }
-        return registered.orElseThrow(
-                () ->
-                        new SchemaValidationException(
-                                "No schema registered as %s version %d, referenced by a definition",
-                                schema.getName(), schema.getVersion()));
+        return registered;
     }
 
     private static String describe(JsonSchemaException e) {

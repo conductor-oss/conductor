@@ -14,7 +14,6 @@ package com.netflix.conductor.test.integration
 
 import org.conductoross.conductor.core.exception.SchemaValidationException
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.SchemaDef
 import com.netflix.conductor.common.metadata.tasks.Task
@@ -29,12 +28,9 @@ import com.netflix.conductor.test.utils.MockExternalPayloadStorage
 /**
  * Schema enforcement driven through the real engine.
  *
- * <p>The property is set here explicitly. It is off by default, so a spec that forgot it would pass
- * while exercising nothing.
+ * <p>Nothing is configured to switch enforcement on: every definition below opts in with its own
+ * {@code enforceSchema} flag, which is the only gate there is.
  */
-@TestPropertySource(properties = [
-        "conductor.app.schema-validation.enabled=true"
-])
 class SchemaEnforcementSpec extends AbstractSpecification {
 
     @Autowired
@@ -144,7 +140,7 @@ class SchemaEnforcementSpec extends AbstractSpecification {
         workflowExecutionService.getExecutionStatus(workflowId, true).tasks.size() == 1
     }
 
-    def "a task whose output breaks its schema fails, and is retriable"() {
+    def "a task whose output breaks its schema fails terminally"() {
         given:
         def taskName = uniqueTaskName('tout')
         def workflowDef = register('tout', taskDef(taskName, 0, null, requiresName('tout_schema')),
@@ -154,10 +150,10 @@ class SchemaEnforcementSpec extends AbstractSpecification {
         when: "a worker completes it with an output that does not match"
         workflowTestUtil.pollAndCompleteTask(taskName, 'schema.worker', ['nickname': 'ada'])
 
-        then: "the task is FAILED rather than terminally failed, and the workflow fails"
+        then: "the task fails terminally, as a bad input does, and the workflow fails"
         with(workflowExecutionService.getExecutionStatus(workflowId, true)) {
             status == Workflow.WorkflowStatus.FAILED
-            tasks[0].status == Task.Status.FAILED
+            tasks[0].status == Task.Status.FAILED_WITH_TERMINAL_ERROR
             tasks[0].reasonForIncompletion.contains('name')
         }
     }
@@ -235,23 +231,28 @@ class SchemaEnforcementSpec extends AbstractSpecification {
         }
     }
 
-    def "a schema the registry does not hold fails loudly rather than passing the payload"() {
+    /**
+     * A reference the registry does not hold names no document, so there is nothing to check the
+     * payload against and it goes through. The miss is counted on {@code schema_registry_miss}
+     * instead — the definition is at fault, not the payload.
+     */
+    def "a schema the registry does not hold leaves the payload unvalidated"() {
         given: "a task whose input schema is a reference to nothing"
         def dangling = new SchemaDef()
         dangling.name = 'never_registered_' + UUID.randomUUID().toString().replace('-', '')
         dangling.version = 4
         def taskName = uniqueTaskName('dangling')
+        // A payload that would be refused if the reference did resolve, to show nothing checked it.
         def workflowDef = register('dangling', taskDef(taskName, 0, dangling, null),
-                ['name': '${workflow.input.name}'], null, null)
+                ['nickname': '${workflow.input.nickname}'], null, null)
 
         when:
-        def workflowId = startWorkflow(workflowDef.name, 1, '', ['name': 'ada'], null)
+        def workflowId = startWorkflow(workflowDef.name, 1, '', ['nickname': 'ada'], null)
 
-        then: "the execution fails naming the schema it could not find"
+        then: "the task is scheduled as though no schema were attached"
         with(workflowExecutionService.getExecutionStatus(workflowId, true)) {
-            status == Workflow.WorkflowStatus.FAILED
-            tasks[0].status == Task.Status.FAILED_WITH_TERMINAL_ERROR
-            tasks[0].reasonForIncompletion.contains(dangling.name)
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks[0].status == Task.Status.SCHEDULED
         }
     }
 }

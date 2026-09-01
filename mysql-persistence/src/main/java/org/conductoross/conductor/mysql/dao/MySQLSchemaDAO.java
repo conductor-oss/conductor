@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.mysql.dao;
 
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,6 +23,7 @@ import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
+import com.netflix.conductor.mysql.util.Query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,12 +34,6 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
             "INSERT INTO meta_schema_def (name, version, json_data) VALUES (?, ?, ?) "
                     + "ON DUPLICATE KEY UPDATE json_data = VALUES(json_data), "
                     + "modified_on = CURRENT_TIMESTAMP";
-
-    private static final String INSERT =
-            "INSERT INTO meta_schema_def (name, version, json_data) VALUES (?, ?, ?)";
-
-    /** MySQL's duplicate-key error. The one failure that means "another writer got here first". */
-    private static final int ER_DUP_ENTRY = 1062;
 
     private static final String SELECT_BY_NAME_AND_VERSION =
             "SELECT json_data FROM meta_schema_def WHERE name = ? AND version = ?";
@@ -54,6 +49,15 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
 
     private static final String DELETE_BY_NAME = "DELETE FROM meta_schema_def WHERE name = ?";
 
+    private static final String SELECT_ALL_VERSIONS_BY_NAME =
+            "SELECT json_data FROM meta_schema_def WHERE name = ? ORDER BY version DESC";
+
+    // Only the two indexed columns, so listing what is registered does not read every payload.
+    private static final String SELECT_ALL_NAMES_AND_VERSIONS =
+            "SELECT name, version FROM meta_schema_def ORDER BY name, version";
+
+    private static final String DELETE_BY_NAMES = "DELETE FROM meta_schema_def WHERE name IN (%s)";
+
     public MySQLSchemaDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
@@ -68,47 +72,6 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
                                 .addParameter(schemaDef.getVersion())
                                 .addJsonParameter(schemaDef)
                                 .executeUpdate());
-    }
-
-    /**
-     * Plain insert, with the duplicate-key error caught by its code and reported as a lost race.
-     *
-     * <p>MySQL offers no exact equivalent of {@code ON CONFLICT (...) DO NOTHING}. {@code INSERT
-     * IGNORE} downgrades every error to a warning, so a NOT NULL or oversized-payload failure would
-     * look like a lost race and be retried; and a no-op {@code ON DUPLICATE KEY UPDATE} cannot be
-     * told apart from a successful insert, because Connector/J reports matched rather than affected
-     * rows by default. Reading the error code is what distinguishes the two.
-     */
-    @Override
-    public boolean createSchemaIfAbsent(SchemaDef schemaDef) {
-        try {
-            executeWithTransaction(
-                    INSERT,
-                    q ->
-                            q.addParameter(schemaDef.getName())
-                                    .addParameter(schemaDef.getVersion())
-                                    .addJsonParameter(schemaDef)
-                                    .executeUpdate());
-            return true;
-        } catch (RuntimeException e) {
-            if (isDuplicateKey(e)) {
-                return false;
-            }
-            throw e;
-        }
-    }
-
-    private static boolean isDuplicateKey(Throwable throwable) {
-        for (Throwable cause = throwable; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sqlException
-                    && sqlException.getErrorCode() == ER_DUP_ENTRY) {
-                return true;
-            }
-            if (cause.getCause() == cause) {
-                break;
-            }
-        }
-        return false;
     }
 
     @Override
@@ -151,5 +114,53 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
 
     private SchemaDef toSchema(List<String> rows) {
         return rows.isEmpty() ? null : readValue(rows.get(0), SchemaDef.class);
+    }
+
+    /**
+     * One statement with a binding per name, so the whole batch is a single round trip and a single
+     * transaction. A null or empty list never reaches the database.
+     */
+    @Override
+    public int deleteAllByNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return 0;
+        }
+        String query = String.format(DELETE_BY_NAMES, Query.generateInBindings(names.size()));
+        return queryWithTransaction(query, q -> q.addParameters(names).executeUpdate());
+    }
+
+    @Override
+    public List<SchemaDef> findAllVersionsByName(String name) {
+        List<String> rows =
+                queryWithTransaction(
+                        SELECT_ALL_VERSIONS_BY_NAME,
+                        q -> q.addParameter(name).executeAndFetch(String.class));
+        return rows.stream().map(json -> readValue(json, SchemaDef.class)).toList();
+    }
+
+    @Override
+    public List<SchemaDef> getAllShortenedSchemas() {
+        return queryWithTransaction(
+                SELECT_ALL_NAMES_AND_VERSIONS,
+                q ->
+                        q.executeAndFetch(
+                                rs -> {
+                                    List<SchemaDef> schemas = new ArrayList<>();
+                                    while (rs.next()) {
+                                        schemas.add(nameAndVersion(rs.getString(1), rs.getInt(2)));
+                                    }
+                                    return schemas;
+                                }));
+    }
+
+    /**
+     * A name and a version and nothing else — no type and no document, so the result identifies a
+     * registered schema but cannot be validated against.
+     */
+    private static SchemaDef nameAndVersion(String name, int version) {
+        SchemaDef schema = new SchemaDef();
+        schema.setName(name);
+        schema.setVersion(version);
+        return schema;
     }
 }

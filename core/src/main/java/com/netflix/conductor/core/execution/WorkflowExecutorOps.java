@@ -1014,9 +1014,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (task.getStatus() == COMPLETED
                 && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
             try {
-                schemaEnforcement.validateTaskOutput(task, () -> taskDefinitionOrNull(task));
+                schemaEnforcement.validateTaskOutput(task, taskDefinitionOrNull(task));
             } catch (SchemaValidationException e) {
-                task.setStatus(FAILED);
+                // Terminal, as an input failure is: the worker has already run and returned a
+                // shape its own definition refuses, so re-running it spends the retry budget on
+                // an outcome nothing has changed.
+                task.setStatus(FAILED_WITH_TERMINAL_ERROR);
                 task.setReasonForIncompletion(e.getMessage());
             }
         }
@@ -1372,6 +1375,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         if (!workflowSystemTask.isAsync()
                                 && executeSyncSystemTaskWithSecrets(
                                         workflowSystemTask, workflow, task)) {
+                            // A system task the server runs itself never reports through the
+                            // task-update API, so this is the only point its output passes
+                            // through. Without the check an outputSchema on an INLINE or
+                            // SET_VARIABLE definition would be stored and never enforced.
+                            validateSystemTaskOutput(task);
                             tasksToBeUpdated.add(task);
                             stateChanged = true;
                         }
@@ -2136,7 +2144,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         Set<String> rejected = new HashSet<>();
         for (TaskModel task : tasks) {
             try {
-                schemaEnforcement.validateTaskInput(task, () -> taskDefinitionOrNull(task));
+                schemaEnforcement.validateTaskInput(task, taskDefinitionOrNull(task));
             } catch (SchemaValidationException e) {
                 LOGGER.info(
                         "Task {} rejected before scheduling: {}", task.getTaskId(), e.getMessage());
@@ -2200,6 +2208,28 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return systemTask.execute(workflow, task, this);
         } finally {
             task.setInputData(literalInput);
+        }
+    }
+
+    /**
+     * Checks a synchronous system task's output against its definition's output schema, at the one
+     * point such a task has an output and has not yet been persisted.
+     *
+     * <p>Fails the task terminally, as the worker-reported path does: the server produced this
+     * output itself, so running it again produces the same shape.
+     *
+     * <p>Only the tasks that complete inside {@code execute(...)} reach here. One that completes in
+     * {@code start(...)} is persisted by {@link #scheduleTask} and is not covered.
+     */
+    private void validateSystemTaskOutput(TaskModel task) {
+        if (task.getStatus() != COMPLETED) {
+            return;
+        }
+        try {
+            schemaEnforcement.validateTaskOutput(task, taskDefinitionOrNull(task));
+        } catch (SchemaValidationException e) {
+            task.setStatus(FAILED_WITH_TERMINAL_ERROR);
+            task.setReasonForIncompletion(e.getMessage());
         }
     }
 

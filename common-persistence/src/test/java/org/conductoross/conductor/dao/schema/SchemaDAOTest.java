@@ -12,34 +12,19 @@
  */
 package org.conductoross.conductor.dao.schema;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
-import org.conductoross.conductor.common.JsonSchemaValidator;
-import org.conductoross.conductor.service.SchemaCacheProperties;
-import org.conductoross.conductor.service.SchemaService;
-import org.conductoross.conductor.service.SchemaServiceImpl;
 import org.junit.jupiter.api.Test;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * The behaviour every {@link SchemaDAO} implementation owes its callers, run once per backend.
@@ -148,53 +133,6 @@ public abstract class SchemaDAOTest {
     }
 
     @Test
-    public void conditionalInsertSucceedsOnceAndRefusesTheSecondTime() {
-        String name = uniqueName();
-
-        assertTrue(getSchemaDAO().createSchemaIfAbsent(schema(name, 1)));
-
-        SchemaDef loser = schema(name, 1);
-        loser.setData(Map.of("type", "array"));
-        assertFalse(getSchemaDAO().createSchemaIfAbsent(loser));
-
-        // The refused insert must leave the stored schema untouched, not partially applied.
-        assertEquals(
-                schema(name, 1).getData(), getSchemaDAO().findByNameAndVersion(name, 1).getData());
-    }
-
-    /**
-     * Redis stores an opaque value under a field and has no column constraints to violate, so it
-     * has no way to reject a malformed row and this expectation does not apply to it.
-     */
-    protected boolean rejectsMalformedRows() {
-        return true;
-    }
-
-    @Test
-    public void conditionalInsertReportsARealFailureRatherThanALostRace() {
-        assumeTrue(rejectsMalformedRows());
-        // A null name violates NOT NULL. Returning false would tell the caller some other writer
-        // took the version, sending it round the allocation loop and reporting a conflict that
-        // never happened; the underlying error has to reach the caller instead.
-        SchemaDef malformed = schema(null, 1);
-
-        assertThrows(
-                RuntimeException.class,
-                () -> getSchemaDAO().createSchemaIfAbsent(malformed),
-                "a constraint violation must surface as an error, not as a lost version race");
-    }
-
-    @Test
-    public void conditionalInsertAcceptsANewVersionOfAKnownName() {
-        String name = uniqueName();
-        assertTrue(getSchemaDAO().createSchemaIfAbsent(schema(name, 1)));
-
-        assertTrue(getSchemaDAO().createSchemaIfAbsent(schema(name, 2)));
-
-        assertEquals(2, schemasNamed(name).size());
-    }
-
-    @Test
     public void allSchemasCarriesEveryVersionInOrder() {
         String name = uniqueName();
         getSchemaDAO().save(schema(name, 3));
@@ -260,49 +198,78 @@ public abstract class SchemaDAOTest {
                 () -> getSchemaDAO().deleteByNameAndVersion(name, null));
     }
 
+    @Test
+    public void everyVersionOfANameComesBackNewestFirst() {
+        String name = uniqueName();
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 3));
+        getSchemaDAO().save(schema(name, 2));
+        getSchemaDAO().save(schema(uniqueName(), 1));
+
+        List<SchemaDef> versions = getSchemaDAO().findAllVersionsByName(name);
+
+        assertEquals(List.of(3, 2, 1), versions.stream().map(SchemaDef::getVersion).toList());
+        assertEquals(name, versions.get(0).getName());
+    }
+
+    /** An unknown name has no versions, and says so with an empty list rather than a null. */
+    @Test
+    public void aNameWithNoVersionsHasNone() {
+        assertEquals(List.of(), getSchemaDAO().findAllVersionsByName(uniqueName()));
+    }
+
+    @Test
+    public void deletingManyNamesRemovesEveryVersionOfEach() {
+        String first = uniqueName();
+        String second = uniqueName();
+        String survivor = uniqueName();
+        getSchemaDAO().save(schema(first, 1));
+        getSchemaDAO().save(schema(first, 2));
+        getSchemaDAO().save(schema(second, 1));
+        getSchemaDAO().save(schema(survivor, 1));
+
+        // The count is versions removed rather than names matched, and a name that is not there
+        // contributes nothing to it.
+        assertEquals(3, getSchemaDAO().deleteAllByNames(List.of(first, second, uniqueName())));
+
+        assertTrue(schemasNamed(first).isEmpty());
+        assertTrue(schemasNamed(second).isEmpty());
+        assertEquals(1, schemasNamed(survivor).size());
+    }
+
+    /** Nothing to delete is not an error, and must not be read as "delete everything". */
+    @Test
+    public void deletingNoNamesRemovesNothing() {
+        String name = uniqueName();
+        getSchemaDAO().save(schema(name, 1));
+
+        assertEquals(0, getSchemaDAO().deleteAllByNames(List.of()));
+        assertEquals(0, getSchemaDAO().deleteAllByNames(null));
+
+        assertEquals(1, schemasNamed(name).size());
+    }
+
     /**
-     * The versioning race, run against the real store rather than asserted about it.
-     *
-     * <p>Driven through {@link SchemaServiceImpl} because allocation is split across the two: the
-     * service reads the current maximum and retries, the DAO decides the race in the database.
-     * Testing either half alone would miss the seam between them. The end-to-end versioning journey
-     * that would otherwise cover this arrives with the HTTP surface, so it is caught here.
+     * The shortened listing is a projection, not a cheaper way to read schemas: it names every
+     * registered version and carries nothing else, so a caller cannot mistake an entry for a
+     * document it could validate against.
      */
     @Test
-    public void concurrentVersionCreatingSavesAllSurviveWithDistinctVersions() throws Exception {
+    public void shortenedSchemasCarryNameAndVersionOnly() {
         String name = uniqueName();
-        SchemaService service =
-                new SchemaServiceImpl(
-                        getSchemaDAO(),
-                        new SchemaCacheProperties(),
-                        new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
+        getSchemaDAO().save(schema(name, 1));
+        getSchemaDAO().save(schema(name, 2));
 
-        int writers = 4;
-        ExecutorService pool = Executors.newFixedThreadPool(writers);
-        CountDownLatch start = new CountDownLatch(1);
-        try {
-            List<Future<SchemaDef>> saves = new ArrayList<>();
-            for (int i = 0; i < writers; i++) {
-                saves.add(
-                        pool.submit(
-                                () -> {
-                                    start.await();
-                                    return service.saveSchema(schema(name, 0), true);
-                                }));
-            }
-            start.countDown();
+        List<SchemaDef> shortened =
+                getSchemaDAO().getAllShortenedSchemas().stream()
+                        .filter(def -> name.equals(def.getName()))
+                        .toList();
 
-            Set<Integer> allocated = new HashSet<>();
-            for (Future<SchemaDef> save : saves) {
-                allocated.add(save.get(60, TimeUnit.SECONDS).getVersion());
-            }
-
-            assertEquals(writers, allocated.size(), "every writer must get a version of its own");
-            // And every one of them is actually in the store, so none was overwritten by a later
-            // winner after being reported as saved.
-            assertEquals(writers, schemasNamed(name).size());
-        } finally {
-            pool.shutdownNow();
+        assertEquals(List.of(1, 2), shortened.stream().map(SchemaDef::getVersion).toList());
+        for (SchemaDef def : shortened) {
+            assertNull(def.getType());
+            assertNull(def.getData());
+            assertNull(def.getExternalRef());
         }
     }
 

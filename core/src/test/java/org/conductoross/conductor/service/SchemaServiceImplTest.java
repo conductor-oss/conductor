@@ -15,11 +15,6 @@ package org.conductoross.conductor.service;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
-import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +64,7 @@ class SchemaServiceImplTest {
     void savedSchemaIsReadableByNameAndVersion() {
         service.saveSchema(schema("order", 1), false);
 
-        SchemaDef found = service.getSchema("order", 1);
+        SchemaDef found = service.getSchemaByNameAndVersion("order", 1);
 
         assertEquals("order", found.getName());
         assertEquals(1, found.getVersion());
@@ -84,7 +78,7 @@ class SchemaServiceImplTest {
         SchemaDef saved = service.saveSchema(def, false);
 
         assertEquals(1, saved.getVersion());
-        assertNotNull(service.getSchema("order", 1));
+        assertNotNull(service.getSchemaByNameAndVersion("order", 1));
     }
 
     @Test
@@ -95,7 +89,7 @@ class SchemaServiceImplTest {
 
         service.saveSchema(def, false);
 
-        SchemaDef found = service.getSchema("order", 1);
+        SchemaDef found = service.getSchemaByNameAndVersion("order", 1);
         assertEquals("registry://orders/v1", found.getExternalRef());
         assertEquals(SchemaDef.Type.AVRO, found.getType());
     }
@@ -108,7 +102,8 @@ class SchemaServiceImplTest {
         corrected.setData(Map.of("type", "array"));
         service.saveSchema(corrected, false);
 
-        assertEquals(Map.of("type", "array"), service.getSchema("order", 1).getData());
+        assertEquals(
+                Map.of("type", "array"), service.getSchemaByNameAndVersion("order", 1).getData());
         assertEquals(1, service.getAllSchemas().size());
     }
 
@@ -120,7 +115,7 @@ class SchemaServiceImplTest {
         SchemaDef saved = service.saveSchema(schema("order", 1), true);
 
         assertEquals(6, saved.getVersion());
-        assertEquals(6, service.getSchema("order").getVersion());
+        assertEquals(6, service.getSchemaByNameWithLatestVersion("order").getVersion());
     }
 
     @Test
@@ -130,60 +125,26 @@ class SchemaServiceImplTest {
         assertEquals(1, saved.getVersion());
     }
 
+    /**
+     * Allocation reads the maximum and saves one past it, with nothing between the two calls, so a
+     * version another writer took in that window is overwritten rather than skipped. Pinned here
+     * because it is the registry's behaviour, not an oversight in this test.
+     */
     @Test
-    void newVersionRetriesPastAVersionClaimedByAnotherWriter() {
+    void newVersionOverwritesAVersionClaimedBetweenTheReadAndTheSave() {
         service.saveSchema(schema("order", 1), false);
-        // Another writer takes version 2 between this caller's read of the maximum and its insert.
-        dao.queueRacer(schema("order", 2));
 
         SchemaDef saved = service.saveSchema(schema("order", 0), true);
 
-        assertEquals(3, saved.getVersion());
-        assertEquals(2, dao.createAttempts.get());
+        assertEquals(2, saved.getVersion());
+        assertEquals(2, service.getAllSchemas().size());
     }
 
     @Test
-    void newVersionGivesUpWithAConflictWhenItKeepsLosing() {
+    void savingDistinctNamesStoresEach() {
         service.saveSchema(schema("order", 1), false);
-        IntStream.rangeClosed(2, 20).forEach(v -> dao.queueRacer(schema("order", v)));
+        service.saveSchema(schema("payment", 1), false);
 
-        assertThrows(ConflictException.class, () -> service.saveSchema(schema("order", 0), true));
-    }
-
-    @Test
-    void concurrentNewVersionSavesEachGetTheirOwnVersion() throws Exception {
-        int writers = 8;
-        ExecutorService pool = Executors.newFixedThreadPool(writers);
-        CountDownLatch start = new CountDownLatch(1);
-        try {
-            List<java.util.concurrent.Future<SchemaDef>> futures =
-                    IntStream.range(0, writers)
-                            .mapToObj(
-                                    i ->
-                                            pool.submit(
-                                                    () -> {
-                                                        start.await();
-                                                        return service.saveSchema(
-                                                                schema("order", 0), true);
-                                                    }))
-                            .toList();
-            start.countDown();
-            List<Integer> versions = new java.util.ArrayList<>();
-            for (java.util.concurrent.Future<SchemaDef> future : futures) {
-                versions.add(future.get(30, TimeUnit.SECONDS).getVersion());
-            }
-            assertEquals(writers, versions.stream().distinct().count());
-        } finally {
-            pool.shutdownNow();
-        }
-    }
-
-    @Test
-    void saveSchemasStoresEveryEntry() {
-        List<SchemaDef> saved =
-                service.saveSchemas(List.of(schema("order", 1), schema("payment", 1)), false);
-
-        assertEquals(2, saved.size());
         assertEquals(2, service.getAllSchemas().size());
     }
 
@@ -193,19 +154,119 @@ class SchemaServiceImplTest {
         service.saveSchema(schema("order", 3), false);
         service.saveSchema(schema("order", 2), false);
 
-        assertEquals(3, service.getSchema("order").getVersion());
+        assertEquals(3, service.getSchemaByNameWithLatestVersion("order").getVersion());
+    }
+
+    /**
+     * An absent schema is reported as {@code null}, not by throwing. {@link
+     * org.conductoross.conductor.controllers.SchemaResource} is what turns that into a 404, and its
+     * own tests cover it.
+     */
+    @Test
+    void missingSchemaIsNull() {
+        assertNull(service.getSchemaByNameWithLatestVersion("absent"));
+        assertNull(service.getSchemaByNameAndVersion("absent", 4));
+
+        service.saveSchema(schema("order", 1), false);
+        assertNull(service.getSchemaByNameAndVersion("order", 9));
+    }
+
+    /** The dispatcher is the one lookup that still refuses an unregistered version outright. */
+    @Test
+    void getSchemasDispatchesOnWhatWasAskedFor() {
+        service.saveSchema(schema("order", 1), false);
+        service.saveSchema(schema("order", 2), false);
+        service.saveSchema(schema("payment", 1), false);
+
+        assertEquals(3, service.getSchemas(null, null).size());
+        assertEquals(2, service.getSchemas("order", null).size());
+        assertEquals(2, service.getSchemas("order", 2).get(0).getVersion());
+
+        NotFoundException notFound =
+                assertThrows(NotFoundException.class, () -> service.getSchemas("order", 9));
+        assertTrue(notFound.getMessage().contains("order"));
+        assertTrue(notFound.getMessage().contains("9"));
     }
 
     @Test
-    void missingSchemaIsNotFoundRatherThanNull() {
-        assertThrows(NotFoundException.class, () -> service.getSchema("absent"));
-        assertThrows(NotFoundException.class, () -> service.getSchema("absent", 4));
+    void versionsOfANameComeBackNewestFirst() {
+        service.saveSchema(schema("order", 1), false);
+        service.saveSchema(schema("order", 3), false);
+        service.saveSchema(schema("order", 2), false);
+
+        assertEquals(
+                List.of(3, 2, 1),
+                service.getSchemasByName("order").stream().map(SchemaDef::getVersion).toList());
+        assertEquals(List.of(), service.getSchemasByName("absent"));
+    }
+
+    /** The shortened listing names what is registered and carries no document. */
+    @Test
+    void shortenedSchemasCarryNameAndVersionOnly() {
+        service.saveSchema(schema("order", 1), false);
+
+        List<SchemaDef> shortened = service.getAllShortenedSchemas();
+
+        assertEquals(1, shortened.size());
+        assertEquals("order", shortened.get(0).getName());
+        assertEquals(1, shortened.get(0).getVersion());
+        assertNull(shortened.get(0).getData());
+        assertNull(shortened.get(0).getType());
+    }
+
+    @Test
+    void batchDeleteRemovesEveryVersionOfEveryNameGiven() {
+        service.saveSchema(schema("order", 1), false);
+        service.saveSchema(schema("order", 2), false);
+        service.saveSchema(schema("payment", 1), false);
+        service.saveSchema(schema("refund", 1), false);
+
+        service.deleteSchemasByNamesBatch(List.of("order", "payment", "never-registered"));
+
+        assertEquals(1, service.getAllSchemas().size());
+        assertEquals("refund", service.getAllSchemas().get(0).getName());
+    }
+
+    /**
+     * A delete that names one schema reports when there is nothing to remove, rather than answering
+     * as though it had removed something.
+     */
+    @Test
+    void deletingSomethingUnregisteredIsNotFound() {
+        assertThrows(NotFoundException.class, () -> service.deleteSchemaByName("absent"));
+        assertThrows(
+                NotFoundException.class, () -> service.deleteSchemaByNameAndVersion("absent", 1));
 
         service.saveSchema(schema("order", 1), false);
-        NotFoundException notFound =
-                assertThrows(NotFoundException.class, () -> service.getSchema("order", 9));
-        assertTrue(notFound.getMessage().contains("order"));
-        assertTrue(notFound.getMessage().contains("9"));
+
+        assertThrows(
+                NotFoundException.class, () -> service.deleteSchemaByNameAndVersion("order", 9));
+        // The version that does exist is untouched by the refused delete.
+        assertNotNull(service.getSchemaByNameAndVersion("order", 1));
+    }
+
+    /**
+     * The batch is the exception: it takes a list, so an unregistered name in it contributes
+     * nothing instead of failing every other delete alongside it.
+     */
+    @Test
+    void batchDeleteToleratesANameThatIsNotRegistered() {
+        service.saveSchema(schema("order", 1), false);
+
+        service.deleteSchemasByNamesBatch(List.of("order", "never-registered"));
+
+        assertEquals(0, service.getAllSchemas().size());
+    }
+
+    /** Nothing to delete is not an error, and must not be read as "delete everything". */
+    @Test
+    void batchDeleteOfNoNamesRemovesNothing() {
+        service.saveSchema(schema("order", 1), false);
+
+        service.deleteSchemasByNamesBatch(List.of());
+        service.deleteSchemasByNamesBatch(null);
+
+        assertEquals(1, service.getAllSchemas().size());
     }
 
     @Test
@@ -213,10 +274,10 @@ class SchemaServiceImplTest {
         service.saveSchema(schema("order", 1), false);
         service.saveSchema(schema("order", 2), false);
 
-        service.deleteSchema("order", 2);
+        service.deleteSchemaByNameAndVersion("order", 2);
 
-        assertEquals(1, service.getSchema("order").getVersion());
-        assertThrows(NotFoundException.class, () -> service.getSchema("order", 2));
+        assertEquals(1, service.getSchemaByNameWithLatestVersion("order").getVersion());
+        assertNull(service.getSchemaByNameAndVersion("order", 2));
     }
 
     @Test
@@ -225,7 +286,7 @@ class SchemaServiceImplTest {
         service.saveSchema(schema("order", 2), false);
         service.saveSchema(schema("payment", 1), false);
 
-        service.deleteSchema("order");
+        service.deleteSchemaByName("order");
 
         assertEquals(1, service.getAllSchemas().size());
         assertEquals("payment", service.getAllSchemas().get(0).getName());
@@ -288,14 +349,18 @@ class SchemaServiceImplTest {
         service = newService();
 
         service.saveSchema(schema("order", 1), false);
-        assertEquals(Map.of("type", "object"), service.getSchema("order", 1).getData());
+        assertEquals(
+                Map.of("type", "object"), service.getSchemaByNameAndVersion("order", 1).getData());
 
         SchemaDef corrected = schema("order", 1);
         corrected.setData(Map.of("type", "array"));
         service.saveSchema(corrected, false);
 
-        assertEquals(Map.of("type", "array"), service.getSchema("order", 1).getData());
-        assertEquals(Map.of("type", "array"), service.getSchema("order").getData());
+        assertEquals(
+                Map.of("type", "array"), service.getSchemaByNameAndVersion("order", 1).getData());
+        assertEquals(
+                Map.of("type", "array"),
+                service.getSchemaByNameWithLatestVersion("order").getData());
     }
 
     @Test
@@ -304,11 +369,11 @@ class SchemaServiceImplTest {
         service = newService();
 
         service.saveSchema(schema("order", 1), false);
-        assertEquals(1, service.getSchema("order").getVersion());
+        assertEquals(1, service.getSchemaByNameWithLatestVersion("order").getVersion());
 
         service.saveSchema(schema("order", 0), true);
 
-        assertEquals(2, service.getSchema("order").getVersion());
+        assertEquals(2, service.getSchemaByNameWithLatestVersion("order").getVersion());
     }
 
     @Test
@@ -317,11 +382,11 @@ class SchemaServiceImplTest {
         service = newService();
 
         service.saveSchema(schema("order", 1), false);
-        assertNotNull(service.getSchema("order", 1));
+        assertNotNull(service.getSchemaByNameAndVersion("order", 1));
 
-        service.deleteSchema("order", 1);
+        service.deleteSchemaByNameAndVersion("order", 1);
 
-        assertThrows(NotFoundException.class, () -> service.getSchema("order", 1));
+        assertNull(service.getSchemaByNameAndVersion("order", 1));
     }
 
     @Test
@@ -329,10 +394,10 @@ class SchemaServiceImplTest {
         cacheProperties.setTtl(Duration.ofMinutes(5));
         service = newService();
 
-        assertThrows(NotFoundException.class, () -> service.getSchema("order", 1));
+        assertNull(service.getSchemaByNameAndVersion("order", 1));
 
         service.saveSchema(schema("order", 1), false);
 
-        assertNotNull(service.getSchema("order", 1));
+        assertNotNull(service.getSchemaByNameAndVersion("order", 1));
     }
 }

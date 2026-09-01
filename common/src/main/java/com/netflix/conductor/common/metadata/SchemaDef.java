@@ -56,7 +56,8 @@ public class SchemaDef extends Auditable {
     // Schema definition stored here
     private Map<String, Object> data;
 
-    // Externalized schema definition (eg. via AVRO, Protobuf registry)
-    // If using Orkes Schema registry, this points to the name of the schema in the registry
+    // Externalized schema definition (eg. via AVRO, Protobuf registry). Where a schema registry
+    // resolves this, it points to the name of the schema in that registry. Nothing in this server
+    // dereferences it: see SchemaService#validate, which refuses a schema carrying one.
     private String externalRef;
 }

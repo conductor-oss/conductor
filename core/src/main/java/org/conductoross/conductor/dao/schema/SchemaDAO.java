@@ -12,9 +12,9 @@
  */
 package org.conductoross.conductor.dao.schema;
 
-import com.netflix.conductor.common.metadata.SchemaDef;
-
 import java.util.List;
+
+import com.netflix.conductor.common.metadata.SchemaDef;
 
 /**
  * Persistence for {@link SchemaDef}, the schema registry's storage seam. Implemented per supported
@@ -69,20 +69,19 @@ public interface SchemaDAO {
 
     /**
      * Bulk delete operation
+     *
      * @param names names of the schemas to delete
      * @return no. of schemas deleted
      */
     int deleteAllByNames(List<String> names);
 
     /**
-     *
      * @param name name of the schema
      * @return returns all the versions
      */
     List<SchemaDef> findAllVersionsByName(String name);
 
     /**
-     *
      * @return List of schema name and versions without entire schema definitions
      */
     List<SchemaDef> getAllShortenedSchemas();

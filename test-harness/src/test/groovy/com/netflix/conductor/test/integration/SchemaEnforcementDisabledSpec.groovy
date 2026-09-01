@@ -22,16 +22,17 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.test.base.AbstractSpecification
 
 /**
- * The default configuration — no {@code conductor.app.schema-validation} property at all, which is
- * what an upgraded deployment gets.
+ * A definition that attaches schemas but leaves {@code enforceSchema} at its default.
  *
- * <p>This is the guarantee the feature is built around: attaching a schema changes nothing until an
- * operator turns enforcement on. {@link SchemaEnforcementSpec} is the same shape with the property
- * set; the pair is what makes the default load-bearing rather than incidental.
+ * <p>This is the guarantee the feature is built around: attaching a schema changes nothing about
+ * how a definition executes until that definition also opts in. With no server-wide switch, this
+ * flag is the only thing standing between a schema attached for documentation and rejected work,
+ * so the default has to be load-bearing rather than incidental. {@link SchemaEnforcementSpec} is
+ * the same shape with the flag set.
  */
 class SchemaEnforcementDisabledSpec extends AbstractSpecification {
 
-    def "schemas attached to definitions are inert until enforcement is turned on"() {
+    def "schemas attached to definitions are inert until the definition opts in"() {
         given: "definitions carrying schemas that the payloads below all violate"
         def schema = new SchemaDef()
         schema.name = 'requires_name'
@@ -49,8 +50,9 @@ class SchemaEnforcementDisabledSpec extends AbstractSpecification {
         taskDef.retryCount = 0
         taskDef.inputSchema = schema
         taskDef.outputSchema = schema
-        // Opted in at the definition, which is the point: only the server property is missing.
-        taskDef.enforceSchema = true
+        // Left at its default, which is the point: the schemas above are attached and complete,
+        // and nothing but this flag keeps them from rejecting every payload below.
+        taskDef.enforceSchema = false
         metadataService.registerTaskDef([taskDef])
 
         def workflowTask = new WorkflowTask()
@@ -66,6 +68,7 @@ class SchemaEnforcementDisabledSpec extends AbstractSpecification {
         workflowDef.schemaVersion = 2
         workflowDef.inputSchema = schema
         workflowDef.outputSchema = schema
+        workflowDef.enforceSchema = false
         workflowDef.tasks = [workflowTask]
         metadataService.registerWorkflowDef(workflowDef)
 

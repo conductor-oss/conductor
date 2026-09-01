@@ -40,9 +40,14 @@ import com.netflix.conductor.rest.controllers.ApplicationExceptionMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -85,6 +90,7 @@ public class SchemaResourceTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private SchemaService schemaService;
+    @Autowired private SchemaResource schemaResource;
 
     @Before
     public void setUp() {
@@ -112,10 +118,9 @@ public class SchemaResourceTest {
     }
 
     /**
-     * The Python, Ruby and Rust clients post a bare object, not a list. They work against the
-     * commercial server only because it enables {@code ACCEPT_SINGLE_VALUE_AS_ARRAY}; without the
-     * same setting here, half the shipped client estate breaks against OSS while the contract looks
-     * identical.
+     * The Python, Ruby and Rust clients post a bare object, not a list. They only work where {@code
+     * ACCEPT_SINGLE_VALUE_AS_ARRAY} is enabled; without that setting, half the shipped client
+     * estate breaks against this server while the contract looks identical.
      */
     @Test
     public void savesABareObjectAsASingleElementList() throws Exception {
@@ -155,8 +160,8 @@ public class SchemaResourceTest {
      */
     @Test
     public void saveReturnsNoBody() throws Exception {
-        when(schemaService.saveSchemas(anyList(), eq(false)))
-                .thenReturn(List.of(schema("order", 1)));
+        when(schemaService.saveSchema(any(SchemaDef.class), eq(false)))
+                .thenReturn(schema("order", 1));
 
         String body =
                 mockMvc.perform(
@@ -173,7 +178,7 @@ public class SchemaResourceTest {
 
     @Test
     public void blankNameIsRejected() throws Exception {
-        when(schemaService.saveSchemas(anyList(), eq(false)))
+        when(schemaService.saveSchema(any(SchemaDef.class), eq(false)))
                 .thenThrow(new IllegalArgumentException("Schema name cannot be blank"));
 
         mockMvc.perform(
@@ -184,10 +189,18 @@ public class SchemaResourceTest {
     }
 
     /**
-     * A schema with no type is accepted at registration. The definitions that reference one are not
-     * cascade-validated either, so refusing it here would reject a payload the rest of the server
-     * takes; whether a null type is usable is a question for the validation gate, not this
-     * resource.
+     * A schema with no type is stored, despite {@link SchemaDef} declaring {@code @NotNull} on
+     * {@code type} and the body carrying {@code @Valid}.
+     *
+     * <p>{@code @Valid} on a {@code List} parameter validates the list itself, which has no
+     * constraints; cascading into the elements would need {@code List<@Valid SchemaDef>}. So the
+     * annotation is inert here, and this test is what says so — without it, someone reading the
+     * signature would reasonably assume this request is rejected.
+     *
+     * <p>The behaviour is right either way: task and workflow definitions carry schemas with no
+     * cascading validation of their own, so a type-less schema is registrable through those paths,
+     * and refusing it only here would make the two disagree. {@code SchemaService.validate} reports
+     * it when such a schema is actually used.
      */
     @Test
     public void schemaWithNoTypeIsStored() throws Exception {
@@ -204,7 +217,8 @@ public class SchemaResourceTest {
 
     @Test
     public void getsLatestVersionByName() throws Exception {
-        when(schemaService.getSchema("order")).thenReturn(schema("order", 3));
+        when(schemaService.getSchemaByNameWithLatestVersion("order"))
+                .thenReturn(schema("order", 3));
 
         mockMvc.perform(get("/api/schema/order"))
                 .andExpect(status().isOk())
@@ -215,7 +229,7 @@ public class SchemaResourceTest {
 
     @Test
     public void getsOneVersion() throws Exception {
-        when(schemaService.getSchema("order", 2)).thenReturn(schema("order", 2));
+        when(schemaService.getSchemaByNameAndVersion("order", 2)).thenReturn(schema("order", 2));
 
         mockMvc.perform(get("/api/schema/order/2"))
                 .andExpect(status().isOk())
@@ -235,10 +249,14 @@ public class SchemaResourceTest {
                 .andExpect(jsonPath("$[1].name").value("payment"));
     }
 
+    /**
+     * {@code short=true} reads the backend's name-and-version projection rather than listing every
+     * schema and blanking it here, so the bodies are never fetched at all.
+     */
     @Test
     public void shortListingCarriesOnlyNamesAndVersions() throws Exception {
-        when(schemaService.getAllSchemas())
-                .thenReturn(List.of(schema("order", 1), schema("payment", 4)));
+        when(schemaService.getAllShortenedSchemas())
+                .thenReturn(List.of(nameAndVersion("order", 1), nameAndVersion("payment", 4)));
 
         mockMvc.perform(get("/api/schema?short=true"))
                 .andExpect(status().isOk())
@@ -249,6 +267,8 @@ public class SchemaResourceTest {
                 .andExpect(jsonPath("$[0].type").doesNotExist())
                 .andExpect(jsonPath("$[1].name").value("payment"))
                 .andExpect(jsonPath("$[1].version").value(4));
+
+        verify(schemaService, never()).getAllSchemas();
     }
 
     /**
@@ -256,7 +276,8 @@ public class SchemaResourceTest {
      */
     @Test
     public void responsesCarryNoAuditFields() throws Exception {
-        when(schemaService.getSchema("order")).thenReturn(schema("order", 1));
+        when(schemaService.getSchemaByNameWithLatestVersion("order"))
+                .thenReturn(schema("order", 1));
 
         mockMvc.perform(get("/api/schema/order"))
                 .andExpect(status().isOk())
@@ -267,11 +288,14 @@ public class SchemaResourceTest {
                 .andExpect(jsonPath("$.updateTime").value(2000L));
     }
 
+    /**
+     * The service reports an unregistered schema as {@code null}; turning that into a 404 is this
+     * resource's job, and this is where that is pinned.
+     */
     @Test
     public void missingSchemaIsNotFoundRatherThanEmpty() throws Exception {
-        when(schemaService.getSchema("absent")).thenThrow(new NotFoundException("no such schema"));
-        when(schemaService.getSchema("absent", 7))
-                .thenThrow(new NotFoundException("no such schema"));
+        when(schemaService.getSchemaByNameWithLatestVersion("absent")).thenReturn(null);
+        when(schemaService.getSchemaByNameAndVersion("absent", 7)).thenReturn(null);
 
         mockMvc.perform(get("/api/schema/absent")).andExpect(status().isNotFound());
         mockMvc.perform(get("/api/schema/absent/7")).andExpect(status().isNotFound());
@@ -286,29 +310,89 @@ public class SchemaResourceTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    /**
+     * A null version means none was asked for, and reads the latest. The routes always supply the
+     * path variable, so this is reachable only by calling the method — which is what a caller
+     * inside the server does, and why the branch exists.
+     */
+    @Test
+    public void aNullVersionReadsTheLatest() {
+        when(schemaService.getSchemaByNameWithLatestVersion("order"))
+                .thenReturn(schema("order", 9));
+
+        assertEquals(9, schemaResource.getSchemaByNameAndVersion("order", null).getVersion());
+        verify(schemaService, never()).getSchemaByNameAndVersion(eq("order"), anyInt());
+    }
+
+    /** The same rule on delete: the latest version goes, not the whole history. */
+    @Test
+    public void aNullVersionDeletesTheLatest() {
+        when(schemaService.getSchemaByNameWithLatestVersion("order"))
+                .thenReturn(schema("order", 9));
+
+        schemaResource.deleteSchemaByNameAndVersion("order", null);
+
+        verify(schemaService).deleteSchemaByNameAndVersion("order", 9);
+        verify(schemaService, never()).deleteSchemaByName("order");
+    }
+
+    /** A null version on a name with nothing registered is still a 404, not a silent no-op. */
+    @Test
+    public void aNullVersionOnAnUnknownNameIsNotFound() {
+        when(schemaService.getSchemaByNameWithLatestVersion("absent")).thenReturn(null);
+
+        assertThrows(
+                NotFoundException.class,
+                () -> schemaResource.deleteSchemaByNameAndVersion("absent", null));
+    }
+
     // ── delete ────────────────────────────────────────────────────────────────
 
     @Test
     public void deletesEveryVersionByName() throws Exception {
         mockMvc.perform(delete("/api/schema/order")).andExpect(status().isOk());
 
-        verify(schemaService).deleteSchema("order");
+        verify(schemaService).deleteSchemaByName("order");
     }
 
     @Test
     public void deletesOneVersion() throws Exception {
         mockMvc.perform(delete("/api/schema/order/2")).andExpect(status().isOk());
 
-        verify(schemaService).deleteSchema("order", 2);
+        verify(schemaService).deleteSchemaByNameAndVersion("order", 2);
+    }
+
+    /**
+     * Deleting something that is not registered is a 404, not a quiet 200. The service reports it
+     * by throwing, unlike the read path, so this only checks the status survives the trip out.
+     */
+    @Test
+    public void deletingSomethingUnregisteredIsNotFound() throws Exception {
+        doThrow(new NotFoundException("No schema found by name absent"))
+                .when(schemaService)
+                .deleteSchemaByName("absent");
+        doThrow(new NotFoundException("No schema found by name absent and version 7"))
+                .when(schemaService)
+                .deleteSchemaByNameAndVersion("absent", 7);
+
+        mockMvc.perform(delete("/api/schema/absent")).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/schema/absent/7")).andExpect(status().isNotFound());
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    @SuppressWarnings("unchecked")
+    /** A registry entry as the shortened listing returns it: identity, no document. */
+    private static SchemaDef nameAndVersion(String name, int version) {
+        SchemaDef schema = new SchemaDef();
+        schema.setName(name);
+        schema.setVersion(version);
+        return schema;
+    }
+
     private List<SchemaDef> captureSave(boolean newVersion) {
-        ArgumentCaptor<List<SchemaDef>> captor = ArgumentCaptor.forClass(List.class);
-        verify(schemaService).saveSchemas(captor.capture(), eq(newVersion));
-        return captor.getValue();
+        ArgumentCaptor<SchemaDef> captor = ArgumentCaptor.forClass(SchemaDef.class);
+        verify(schemaService, atLeastOnce()).saveSchema(captor.capture(), eq(newVersion));
+        return captor.getAllValues();
     }
 
     private static SchemaDef schema(String name, int version) {

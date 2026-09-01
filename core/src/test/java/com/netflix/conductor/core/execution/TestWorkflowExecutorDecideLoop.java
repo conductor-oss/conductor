@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.conductoross.conductor.service.SchemaEnforcement;
-import org.conductoross.conductor.service.SchemaValidationProperties;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -245,6 +244,6 @@ public class TestWorkflowExecutorDecideLoop {
      * turns it on. These tests are not about schemas.
      */
     private static SchemaEnforcement disabledSchemaEnforcement() {
-        return new SchemaEnforcement(null, new SchemaValidationProperties());
+        return new SchemaEnforcement(null);
     }
 }

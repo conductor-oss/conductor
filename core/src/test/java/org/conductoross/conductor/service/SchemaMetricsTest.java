@@ -30,6 +30,7 @@ import com.netflix.conductor.model.WorkflowModel;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,9 +59,7 @@ class SchemaMetricsTest {
                         new InMemorySchemaDAO(),
                         new SchemaCacheProperties(),
                         new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
-        SchemaValidationProperties properties = new SchemaValidationProperties();
-        properties.setEnabled(true);
-        enforcement = new SchemaEnforcement(schemaService, properties);
+        enforcement = new SchemaEnforcement(schemaService);
     }
 
     private static SchemaDef requiresName() {
@@ -122,7 +121,7 @@ class SchemaMetricsTest {
 
         assertThrows(
                 SchemaValidationException.class,
-                () -> enforcement.validateTaskInput(task, () -> taskDef));
+                () -> enforcement.validateTaskInput(task, taskDef));
 
         assertEquals(
                 1.0,
@@ -142,9 +141,7 @@ class SchemaMetricsTest {
         reference.setVersion(3);
         reference.setType(SchemaDef.Type.JSON);
 
-        assertThrows(
-                SchemaValidationException.class,
-                () -> schemaService.validate(reference, Map.of("name", "ada")));
+        assertDoesNotThrow(() -> schemaService.validate(reference, Map.of("name", "ada")));
 
         assertEquals(
                 1.0,
