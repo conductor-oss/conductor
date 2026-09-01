@@ -59,9 +59,9 @@ public class SchemaResource {
 
     /**
      * The body is a list. Three of the six shipped schema clients post a bare object instead, which
-     * is accepted because {@code ACCEPT_SINGLE_VALUE_AS_ARRAY} is enabled server-wide — see {@code
-     * ObjectMapperBuilderConfiguration}. Taking a bare {@code SchemaDef} here instead would reject
-     * the other three.
+     * is accepted because the server sets {@code
+     * spring.jackson.deserialization.accept-single-value-as-array}. Taking a bare {@code SchemaDef}
+     * here instead would reject the other three.
      *
      * <p>Deliberately not {@code @Valid}. {@link SchemaDef} declares {@code @NotNull} on its type,
      * but a definition may already carry a schema with no type — the schema fields on task and

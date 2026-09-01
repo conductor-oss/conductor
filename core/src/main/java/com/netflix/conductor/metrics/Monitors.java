@@ -573,14 +573,15 @@ public class Monitors {
     /**
      * A definition referenced a schema no version of which is registered. Distinct from a payload
      * failing validation: nothing was checked, and the fix is a registration rather than a payload.
+     *
+     * <p>Not tagged by version. The name is what an operator acts on, and a series per version
+     * would multiply the miss counter by a number that only ever grows.
      */
-    public static void recordSchemaRegistryMiss(String schemaName, int schemaVersion) {
+    public static void recordSchemaRegistryMiss(String schemaName) {
         counter(
                 "schema_registry_miss",
                 "schemaName",
-                StringUtils.defaultIfBlank(schemaName, "unknown"),
-                "schemaVersion",
-                String.valueOf(schemaVersion));
+                StringUtils.defaultIfBlank(schemaName, "unknown"));
     }
 
     /** A new schema version could not be allocated because writers kept claiming it. */

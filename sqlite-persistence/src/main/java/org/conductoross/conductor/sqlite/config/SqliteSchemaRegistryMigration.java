@@ -27,12 +27,11 @@ import org.flywaydb.core.Flyway;
  * DAO's factory method, so the migration is visible to anyone reading the bean definitions instead
  * of hiding behind a constructor call.
  *
- * <p>Deliberately not typed as {@link Flyway}. Boot's {@code FlywayConfiguration} is
- * {@code @ConditionalOnMissingBean(Flyway.class)}, so on MySQL a second Flyway bean would take the
- * main migrations with it; on PostgreSQL and SQLite, which already declare {@code
- * flywayForPrimaryDb}, it would instead make an {@code @Autowired Flyway} ambiguous.
+ * <p>Deliberately not typed as {@link Flyway}: this module already declares {@code
+ * flywayForPrimaryDb}, and a second bean of that type would make the {@code Flyway} injected by
+ * this module's DAO tests ambiguous.
  */
-public class SqliteSchemaRegistryMigration {
+public final class SqliteSchemaRegistryMigration {
 
     private static final String LOCATION = "classpath:db/migration_sqlite_schema_registry";
     private static final String HISTORY_TABLE = "flyway_schema_history_schema_registry";

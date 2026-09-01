@@ -52,7 +52,14 @@ public class SchemaEnforcement {
      * What is being validated: the phrase that fronts a recorded failure reason, and the label the
      * metric is tagged with. The two travel together and are written once per validation point.
      */
-    private record Boundary(String description, String metric) {}
+    /**
+     * Which validation point rejected a payload, and the execution it happened on. {@code
+     * description} goes in front of the schema's own complaint on the recorded reason; {@code
+     * metric} is the stable tag value; {@code executionId} is logged rather than recorded, since
+     * the record it would go on is the execution it identifies.
+     */
+    private record Boundary(
+            String description, String metric, String executionId, String workflowType) {}
 
     private final SchemaService schemaService;
     private final SchemaValidationProperties properties;
@@ -78,9 +85,11 @@ public class SchemaEnforcement {
                 def.getInputSchema(),
                 def.isEnforceSchema(),
                 workflow.getInput(),
-                new Boundary("Workflow " + def.getName() + " input", "workflowInput"),
-                workflow.getWorkflowId(),
-                def.getName());
+                new Boundary(
+                        "Workflow " + def.getName() + " input",
+                        "workflowInput",
+                        workflow.getWorkflowId(),
+                        def.getName()));
     }
 
     /** Validates a workflow's output against its definition's output schema, at completion. */
@@ -96,9 +105,11 @@ public class SchemaEnforcement {
                 def.getOutputSchema(),
                 def.isEnforceSchema(),
                 workflow.getOutput(),
-                new Boundary("Workflow " + def.getName() + " output", "workflowOutput"),
-                workflow.getWorkflowId(),
-                def.getName());
+                new Boundary(
+                        "Workflow " + def.getName() + " output",
+                        "workflowOutput",
+                        workflow.getWorkflowId(),
+                        def.getName()));
     }
 
     /**
@@ -120,9 +131,11 @@ public class SchemaEnforcement {
                 taskDef.getInputSchema(),
                 taskDef.isEnforceSchema(),
                 task.getInputData(),
-                new Boundary("Task " + task.getReferenceTaskName() + " input", "taskInput"),
-                task.getTaskId(),
-                task.getWorkflowType());
+                new Boundary(
+                        "Task " + task.getReferenceTaskName() + " input",
+                        "taskInput",
+                        task.getTaskId(),
+                        task.getWorkflowType()));
     }
 
     /**
@@ -141,14 +154,17 @@ public class SchemaEnforcement {
                 taskDef.getOutputSchema(),
                 taskDef.isEnforceSchema(),
                 task.getOutputData(),
-                new Boundary("Task " + task.getReferenceTaskName() + " output", "taskOutput"),
-                task.getTaskId(),
-                task.getWorkflowType());
+                new Boundary(
+                        "Task " + task.getReferenceTaskName() + " output",
+                        "taskOutput",
+                        task.getTaskId(),
+                        task.getWorkflowType()));
     }
 
     /**
-     * The three-part gate, and the one place it is written: the server property, the definition's
-     * own flag, and a schema to check against.
+     * The rest of the three-part gate: the definition's own flag and a schema to check against. The
+     * server property is checked by each hook before it reads a payload, because the getters that
+     * produce one are not free of side effects.
      *
      * <p>{@code boundary} names which payload was rejected and goes in front of the schema's own
      * complaint, so a reason recorded on an execution says more than which rule was broken. {@code
@@ -159,10 +175,8 @@ public class SchemaEnforcement {
             SchemaDef schema,
             boolean enforceSchema,
             Map<String, Object> payload,
-            Boundary boundary,
-            String executionId,
-            String workflowType) {
-        if (!properties.isEnabled() || !enforceSchema || schema == null) {
+            Boundary boundary) {
+        if (!enforceSchema || schema == null) {
             return;
         }
         long start = System.currentTimeMillis();
@@ -174,10 +188,10 @@ public class SchemaEnforcement {
             LOGGER.warn(
                     "Schema enforcement rejected {} [{}]: {}",
                     boundary.description(),
-                    executionId,
+                    boundary.executionId(),
                     e.getMessage());
             Monitors.recordSchemaValidationFailure(
-                    boundary.metric(), schema.getName(), workflowType);
+                    boundary.metric(), schema.getName(), boundary.workflowType());
             throw new SchemaValidationException(boundary.description() + ": " + e.getMessage());
         } finally {
             // Recorded for rejections too: a run that rejects every payload is still doing the

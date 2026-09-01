@@ -148,11 +148,7 @@ class SchemaMetricsTest {
 
         assertEquals(
                 1.0,
-                registry.get("schema_registry_miss")
-                        .tag("schemaName", "absent")
-                        .tag("schemaVersion", "3")
-                        .counter()
-                        .count(),
+                registry.get("schema_registry_miss").tag("schemaName", "absent").counter().count(),
                 0.001);
         assertNotNull(registry.find("schema_registry_miss").counter());
     }

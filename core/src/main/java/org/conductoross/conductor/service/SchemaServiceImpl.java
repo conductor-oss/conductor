@@ -140,7 +140,7 @@ public class SchemaServiceImpl implements SchemaService {
         }
         // An in-place save keeps the version's original creation time and stamps the update. The
         // read is what tells the two apart: the same call creates a version or corrects one.
-        Optional<SchemaDef> existing = findByNameAndVersion(schema.getName(), schema.getVersion());
+        Optional<SchemaDef> existing = lookup(schema.getName(), schema.getVersion());
         if (existing.isPresent()) {
             schema.setCreateTime(existing.get().getCreateTime());
             schema.setUpdateTime(System.currentTimeMillis());
@@ -167,8 +167,7 @@ public class SchemaServiceImpl implements SchemaService {
      */
     private SchemaDef insertAtNextVersion(SchemaDef schema) {
         for (int attempt = 0; attempt < MAX_VERSION_ALLOCATION_ATTEMPTS; attempt++) {
-            int highest =
-                    findLatestVersionByName(schema.getName()).map(SchemaDef::getVersion).orElse(0);
+            int highest = lookupLatest(schema.getName()).map(SchemaDef::getVersion).orElse(0);
             schema.setVersion(highest + 1);
             stampCreation(schema);
             if (schemaDAO.createSchemaIfAbsent(schema)) {
@@ -193,14 +192,14 @@ public class SchemaServiceImpl implements SchemaService {
     @Override
     public SchemaDef getSchema(String name) {
         requireName(name);
-        return cached(key(name, LATEST), () -> findLatestVersionByName(name))
+        return cached(key(name, LATEST), () -> lookupLatest(name))
                 .orElseThrow(() -> new NotFoundException("No such schema found by name %s", name));
     }
 
     @Override
     public SchemaDef getSchema(String name, int version) {
         requireName(name);
-        return cached(key(name, String.valueOf(version)), () -> findByNameAndVersion(name, version))
+        return cached(key(name, String.valueOf(version)), () -> lookup(name, version))
                 .orElseThrow(
                         () ->
                                 new NotFoundException(
@@ -244,13 +243,14 @@ public class SchemaServiceImpl implements SchemaService {
     /**
      * The two nullable reads on {@link SchemaDAO}, wrapped once each. Every lookup in this class
      * goes through one of them, so an absent schema becomes {@link Optional#empty()} here and null
-     * never travels further in.
+     * never travels further in. Named apart from the DAO methods they wrap, so a reader can see at
+     * the call site which of the two they are looking at.
      */
-    private Optional<SchemaDef> findByNameAndVersion(String name, int version) {
+    private Optional<SchemaDef> lookup(String name, int version) {
         return Optional.ofNullable(schemaDAO.findByNameAndVersion(name, version));
     }
 
-    private Optional<SchemaDef> findLatestVersionByName(String name) {
+    private Optional<SchemaDef> lookupLatest(String name) {
         return Optional.ofNullable(schemaDAO.findLatestVersionByName(name));
     }
 
@@ -365,18 +365,17 @@ public class SchemaServiceImpl implements SchemaService {
         // read the cache exists for.
         Optional<SchemaDef> registered =
                 version < 1
-                        ? cached(key(name, LATEST), () -> findLatestVersionByName(name))
-                        : cached(
-                                key(name, String.valueOf(version)),
-                                () -> findByNameAndVersion(name, version));
+                        ? cached(key(name, LATEST), () -> lookupLatest(name))
+                        : cached(key(name, String.valueOf(version)), () -> lookup(name, version));
         if (registered.isEmpty()) {
-            // A definition references a schema this server does not hold. The caller is told, but
-            // the operator who has to register it never sees that response.
-            LOGGER.warn(
+            // Under enforcement this runs for every scheduled task, so one unregistered reference
+            // would warn on every execution of it. The counter is the operator's signal; the
+            // exception below carries the name and version to the caller and onto the execution.
+            LOGGER.debug(
                     "A definition references schema {} version {}, which is not registered",
                     name,
                     version);
-            Monitors.recordSchemaRegistryMiss(name, version);
+            Monitors.recordSchemaRegistryMiss(name);
         }
         return registered.orElseThrow(
                 () ->
