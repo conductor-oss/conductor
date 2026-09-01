@@ -22,9 +22,12 @@ _Describe alternative implementation you have considered_
 
 Enterprise UI Playwright Tests
 ----
-Every PR automatically triggers the enterprise UI Playwright E2E test suite.
-Tests run against conductor-ui `main` by default. To test against a different
-conductor-ui branch, add this line anywhere in the PR description:
+PRs that touch `ui-next/` trigger the enterprise UI Playwright suite in
+[orkes-io/conductor-ui](https://github.com/orkes-io/conductor-ui/actions).
+Pass/fail is posted as a comment on this PR (not a commit status) and
+does not gate merge. Fork PRs skip dispatch (no secret). Tests run against
+conductor-ui `main` by default. To use a different conductor-ui branch,
+add this line anywhere in the PR description:
 
 ```
 conductor-ui-branch: my-feature-branch

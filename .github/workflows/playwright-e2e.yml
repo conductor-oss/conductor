@@ -13,16 +13,14 @@ on:
         required: false
         default: "main"
 
-# The commit status key used both here (to set pending) and in conductor-ui
-# (to post the final result). Must be identical in both places.
-env:
-  STATUS_CONTEXT: "playwright-e2e / conductor-ui"
-
+# Fire-and-forget: kick off Orkes Playwright in conductor-ui. Do not write
+# commit statuses back onto this repo — a conductor-ui failure must not
+# make OSS CI red. Results live only in conductor-ui Actions.
 jobs:
   dispatch:
     runs-on: ubuntu-latest
     permissions:
-      statuses: write
+      contents: read
     steps:
       - name: Resolve conductor-ui branch from PR body
         id: resolve
@@ -42,24 +40,34 @@ jobs:
             echo "branch=main" >> $GITHUB_OUTPUT
           fi
 
-      # Own-repo statuses: use GITHUB_TOKEN. The cross-repo PAT lacks write access here.
-      - name: Set commit status → pending
-        run: |
-          gh api "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha || github.sha }}" \
-            -f state=pending \
-            -f context="${{ env.STATUS_CONTEXT }}" \
-            -f description="Waiting for Playwright E2E tests…" \
-            -f target_url="https://github.com/orkes-io/conductor-ui/actions"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Trigger Playwright tests in conductor-ui
+        env:
+          GH_TOKEN: ${{ secrets.ORKES_INTERNAL_RUNNER_SECRET }}
         run: |
-          gh api repos/orkes-io/conductor-ui/dispatches \
+          RESULTS_URL="https://github.com/orkes-io/conductor-ui/actions"
+          echo "Playwright E2E results (if dispatched) appear only at: ${RESULTS_URL}"
+
+          if [ "${{ github.event_name }}" = "pull_request" ] && \
+             [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "Skipping dispatch for fork PRs (no access to conductor-ui dispatch secret)."
+            exit 0
+          fi
+
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "Skipping dispatch: ORKES_INTERNAL_RUNNER_SECRET is not available."
+            echo "This is expected on fork PRs and must not fail OSS CI."
+            exit 0
+          fi
+
+          if ! gh api repos/orkes-io/conductor-ui/dispatches \
             -f event_type=oss-pr-playwright \
             -f "client_payload[oss_ref]=${{ github.event.pull_request.head.sha || github.sha }}" \
             -f "client_payload[oss_pr_number]=${{ github.event.pull_request.number || '' }}" \
             -f "client_payload[oss_pr_title]=${{ github.event.pull_request.title || 'manual dispatch' }}" \
-            -f "client_payload[conductor_ui_branch]=${{ steps.resolve.outputs.branch }}"
-        env:
-          GH_TOKEN: ${{ secrets.ORKES_INTERNAL_RUNNER_SECRET }}
+            -f "client_payload[conductor_ui_branch]=${{ steps.resolve.outputs.branch }}"; then
+            echo "conductor-ui dispatch failed; not failing OSS CI."
+            echo "Inspect ${RESULTS_URL} if a run was created."
+            exit 0
+          fi
+
+          echo "Dispatched oss-pr-playwright to orkes-io/conductor-ui (branch ${{ steps.resolve.outputs.branch }})."
