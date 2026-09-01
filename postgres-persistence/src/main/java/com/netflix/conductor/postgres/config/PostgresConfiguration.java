@@ -20,7 +20,6 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
-import org.conductoross.conductor.postgres.config.PostgresSchemaRegistryMigration;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
@@ -173,14 +172,8 @@ public class PostgresConfiguration {
         return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean(initMethod = "migrate")
-    @DependsOn({"flywayForPrimaryDb"})
-    public PostgresSchemaRegistryMigration postgresSchemaRegistryMigration() {
-        return new PostgresSchemaRegistryMigration(dataSource, properties.getSchema());
-    }
-
     @Bean
-    @DependsOn("postgresSchemaRegistryMigration")
+    @DependsOn("flywayForPrimaryDb")
     public SchemaDAO postgresSchemaDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {

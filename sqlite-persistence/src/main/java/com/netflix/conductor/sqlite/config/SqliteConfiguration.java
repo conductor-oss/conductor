@@ -20,7 +20,6 @@ import java.util.Optional;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
-import org.conductoross.conductor.sqlite.config.SqliteSchemaRegistryMigration;
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSchemaDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
@@ -234,14 +233,8 @@ public class SqliteConfiguration {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
     }
 
-    @Bean(initMethod = "migrate")
-    @DependsOn({"flywayForPrimaryDb"})
-    public SqliteSchemaRegistryMigration sqliteSchemaRegistryMigration() {
-        return new SqliteSchemaRegistryMigration(dataSource);
-    }
-
     @Bean
-    @DependsOn("sqliteSchemaRegistryMigration")
+    @DependsOn("flywayForPrimaryDb")
     public SchemaDAO sqliteSchemaDAO(
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {

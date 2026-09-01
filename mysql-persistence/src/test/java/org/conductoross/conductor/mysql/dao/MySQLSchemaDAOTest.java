@@ -16,7 +16,7 @@ import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.dao.schema.SchemaDAOTest;
-import org.conductoross.conductor.mysql.config.MySQLSchemaRegistryMigration;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,6 +46,8 @@ public class MySQLSchemaDAOTest extends SchemaDAOTest {
 
     @Autowired private DataSource dataSource;
 
+    @Autowired private Flyway flyway;
+
     @Autowired private ObjectMapper objectMapper;
 
     @Autowired private Environment environment;
@@ -56,12 +58,12 @@ public class MySQLSchemaDAOTest extends SchemaDAOTest {
 
     /**
      * Other tests in this module clean the database between their own cases, which drops the
-     * registry's tables along with everything else. Re-running the migration here keeps this class
+     * registry's table along with everything else. Re-running the migrations here keeps this class
      * independent of the order Gradle happens to run test classes in.
      */
     @BeforeEach
     public void migrateSchemaRegistry() {
-        new MySQLSchemaRegistryMigration(dataSource).migrate();
+        flyway.migrate();
     }
 
     @Override
