@@ -73,6 +73,21 @@ export const ConductorNameVersionField = forwardRef<
       return selectedOption.versions;
     }, [options, value?.name]);
 
+    // A value the listing contradicts: it answered, and the name is not in it. Gated on
+    // showErrorIfItemNotInList because only a field that opted in claims to check its
+    // references. Nothing flags while the request is in flight, or when react-query has
+    // not started it (a disabled query is idle, not loading), since either would paint
+    // every field carrying a reference red on the way to the answer.
+    const hasInvalidValue =
+      showErrorIfItemNotInList &&
+      isSuccess &&
+      value != null &&
+      !options.some(({ name }) => name === value?.name);
+
+    // A failed listing leaves the reference unverifiable, which is shown whether or not
+    // the field opted in: the field cannot stand behind a value it was unable to check.
+    const hasError = isError || hasInvalidValue;
+
     return (
       <>
         <Stack direction="row" spacing={2}>
@@ -101,19 +116,7 @@ export const ConductorNameVersionField = forwardRef<
                       : undefined,
                 });
               }}
-              // Flag once the listing request has settled, whether it answered
-              // or failed. An empty listing still contradicts the name, and a
-              // failed one leaves the reference unverifiable, which is worth
-              // showing. What must not flag is a request still in flight or one
-              // react-query has not started (a disabled query is idle, not
-              // loading), since either would paint every field that carries a
-              // reference red on the way to the answer.
-              error={
-                showErrorIfItemNotInList &&
-                (isSuccess || isError) &&
-                value != null &&
-                !options.some(({ name }) => name === value?.name)
-              }
+              error={hasError}
               value={value?.name || null}
               slotProps={
                 nameField?.clearIndicator
