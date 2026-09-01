@@ -73,6 +73,23 @@ export const ConductorNameVersionField = forwardRef<
       return selectedOption.versions;
     }, [options, value?.name]);
 
+    // Flag once the listing request has settled, whether it answered or failed. An
+    // empty listing still contradicts the name, and a failed one leaves the
+    // reference unverifiable, which is worth showing. What must not flag is a
+    // request still in flight or one react-query has not started (a disabled query
+    // is idle, not loading), since either would paint every field that carries a
+    // reference red on the way to the answer.
+    //
+    // Kept behind showErrorIfItemNotInList, including for a failed request: the
+    // Task Definition form and the react-hook-form wrapper do not opt in, and
+    // flagging them on a listing failure would put a red field on a form that has
+    // never claimed to check its references.
+    const hasUnverifiableReference =
+      showErrorIfItemNotInList &&
+      (isSuccess || isError) &&
+      value != null &&
+      !options.some(({ name }) => name === value?.name);
+
     return (
       <>
         <Stack direction="row" spacing={2}>
@@ -101,19 +118,7 @@ export const ConductorNameVersionField = forwardRef<
                       : undefined,
                 });
               }}
-              // Flag once the listing request has settled, whether it answered
-              // or failed. An empty listing still contradicts the name, and a
-              // failed one leaves the reference unverifiable, which is worth
-              // showing. What must not flag is a request still in flight or one
-              // react-query has not started (a disabled query is idle, not
-              // loading), since either would paint every field that carries a
-              // reference red on the way to the answer.
-              error={
-                showErrorIfItemNotInList &&
-                (isSuccess || isError) &&
-                value != null &&
-                !options.some(({ name }) => name === value?.name)
-              }
+              error={hasUnverifiableReference}
               value={value?.name || null}
               slotProps={
                 nameField?.clearIndicator
