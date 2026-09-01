@@ -156,6 +156,8 @@ The editor writes `JSON` schemas only. A stored `AVRO` or `PROTOBUF` schema open
 
 The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Properties and Task Definition forms read the same registry, and populate as soon as the server serves `/api/schema`. On the Simple Task, Yield Task and Workflow Properties forms, a picker naming a schema the registry does not hold is flagged, so a dangling reference shows up in the editor rather than at runtime. The Task Definition form does not flag one.
 
+Give every JSON schema a `$schema` line, as the examples above do. Without one the server cannot tell which JSON Schema version to apply, and a definition enforcing that schema silently validates nothing. See [Input/Output Schema Validation](schema-validation.md).
+
 ## Server properties
 
 The registry itself needs no configuration, and neither does enforcement: whether a definition's schema is enforced is decided by that definition's own `enforceSchema` flag, not by a server setting. See [Input/Output Schema Validation](schema-validation.md). The cache is the one thing configurable here, and it is off by default.
