@@ -16,12 +16,15 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -42,6 +45,14 @@ import com.netflix.conductor.model.WorkflowModel;
 @Component
 @EnableConfigurationProperties(SchemaValidationProperties.class)
 public class SchemaEnforcement {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaEnforcement.class);
+
+    /**
+     * What is being validated: the phrase that fronts a recorded failure reason, and the label the
+     * metric is tagged with. The two travel together and are written once per validation point.
+     */
+    private record Boundary(String description, String metric) {}
 
     private final SchemaService schemaService;
     private final SchemaValidationProperties properties;
@@ -67,7 +78,9 @@ public class SchemaEnforcement {
                 def.getInputSchema(),
                 def.isEnforceSchema(),
                 workflow.getInput(),
-                "Workflow " + def.getName() + " input");
+                new Boundary("Workflow " + def.getName() + " input", "workflowInput"),
+                workflow.getWorkflowId(),
+                def.getName());
     }
 
     /** Validates a workflow's output against its definition's output schema, at completion. */
@@ -83,7 +96,9 @@ public class SchemaEnforcement {
                 def.getOutputSchema(),
                 def.isEnforceSchema(),
                 workflow.getOutput(),
-                "Workflow " + def.getName() + " output");
+                new Boundary("Workflow " + def.getName() + " output", "workflowOutput"),
+                workflow.getWorkflowId(),
+                def.getName());
     }
 
     /**
@@ -105,7 +120,9 @@ public class SchemaEnforcement {
                 taskDef.getInputSchema(),
                 taskDef.isEnforceSchema(),
                 task.getInputData(),
-                "Task " + task.getReferenceTaskName() + " input");
+                new Boundary("Task " + task.getReferenceTaskName() + " input", "taskInput"),
+                task.getTaskId(),
+                task.getWorkflowType());
     }
 
     /**
@@ -124,7 +141,9 @@ public class SchemaEnforcement {
                 taskDef.getOutputSchema(),
                 taskDef.isEnforceSchema(),
                 task.getOutputData(),
-                "Task " + task.getReferenceTaskName() + " output");
+                new Boundary("Task " + task.getReferenceTaskName() + " output", "taskOutput"),
+                task.getTaskId(),
+                task.getWorkflowType());
     }
 
     /**
@@ -132,17 +151,39 @@ public class SchemaEnforcement {
      * own flag, and a schema to check against.
      *
      * <p>{@code boundary} names which payload was rejected and goes in front of the schema's own
-     * complaint, so a reason recorded on an execution says more than which rule was broken.
+     * complaint, so a reason recorded on an execution says more than which rule was broken. {@code
+     * executionId} is logged rather than recorded, since the record it would go on is the execution
+     * it identifies.
      */
     private void validate(
-            SchemaDef schema, boolean enforceSchema, Map<String, Object> payload, String boundary) {
+            SchemaDef schema,
+            boolean enforceSchema,
+            Map<String, Object> payload,
+            Boundary boundary,
+            String executionId,
+            String workflowType) {
         if (!properties.isEnabled() || !enforceSchema || schema == null) {
             return;
         }
+        long start = System.currentTimeMillis();
         try {
             schemaService.validate(schema, payload);
         } catch (SchemaValidationException e) {
-            throw new SchemaValidationException(boundary + ": " + e.getMessage());
+            // The reason recorded on the execution names what broke; this names which execution
+            // it was, so a rise in rejections is traceable without querying every failure.
+            LOGGER.warn(
+                    "Schema enforcement rejected {} [{}]: {}",
+                    boundary.description(),
+                    executionId,
+                    e.getMessage());
+            Monitors.recordSchemaValidationFailure(
+                    boundary.metric(), schema.getName(), workflowType);
+            throw new SchemaValidationException(boundary.description() + ": " + e.getMessage());
+        } finally {
+            // Recorded for rejections too: a run that rejects every payload is still doing the
+            // work.
+            Monitors.recordSchemaValidationTime(
+                    boundary.metric(), System.currentTimeMillis() - start);
         }
     }
 }

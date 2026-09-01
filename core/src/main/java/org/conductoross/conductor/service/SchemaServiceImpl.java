@@ -24,6 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,7 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +52,8 @@ import com.networknt.schema.ValidationMessage;
 @Service
 @EnableConfigurationProperties(SchemaCacheProperties.class)
 public class SchemaServiceImpl implements SchemaService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaServiceImpl.class);
 
     /**
      * How many times version allocation re-reads the current maximum after losing the insert. Each
@@ -86,6 +91,12 @@ public class SchemaServiceImpl implements SchemaService {
                                 .expireAfterWrite(cacheProperties.getTtl())
                                 .build()
                         : null;
+        // Which backend the registry bound to, and whether reads are cached: the two facts that
+        // decide where a schema went and how stale a read can be, answered without a request.
+        LOGGER.info(
+                "Schema registry storing through {}, read cache {}",
+                schemaDAO.getClass().getSimpleName(),
+                cache == null ? "disabled" : "enabled, ttl " + cacheProperties.getTtl());
     }
 
     /**
@@ -163,7 +174,17 @@ public class SchemaServiceImpl implements SchemaService {
             if (schemaDAO.createSchemaIfAbsent(schema)) {
                 return schema;
             }
+            LOGGER.debug(
+                    "Lost the race for schema {} version {}, re-reading the current maximum",
+                    schema.getName(),
+                    schema.getVersion());
         }
+        LOGGER.warn(
+                "Gave up allocating a new version for schema {} after {} attempts; writes to this"
+                        + " name are contending",
+                schema.getName(),
+                MAX_VERSION_ALLOCATION_ATTEMPTS);
+        Monitors.recordSchemaVersionAllocationConflict(schema.getName());
         throw new ConflictException(
                 "Unable to allocate a new version for schema %s after %d attempts; another writer keeps claiming it",
                 schema.getName(), MAX_VERSION_ALLOCATION_ATTEMPTS);
@@ -348,6 +369,15 @@ public class SchemaServiceImpl implements SchemaService {
                         : cached(
                                 key(name, String.valueOf(version)),
                                 () -> findByNameAndVersion(name, version));
+        if (registered.isEmpty()) {
+            // A definition references a schema this server does not hold. The caller is told, but
+            // the operator who has to register it never sees that response.
+            LOGGER.warn(
+                    "A definition references schema {} version {}, which is not registered",
+                    name,
+                    version);
+            Monitors.recordSchemaRegistryMiss(name, version);
+        }
         return registered.orElseThrow(
                 () ->
                         new SchemaValidationException(

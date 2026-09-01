@@ -552,4 +552,50 @@ public class Monitors {
     public static void recordTaskExecLogSize(int val) {
         gauge("task_exec_log_size", val);
     }
+
+    /**
+     * A payload was rejected by the schema attached to its definition. {@code boundary} says which
+     * payload (workflow or task, input or output), so the rate can be read per validation point
+     * rather than only in aggregate.
+     */
+    public static void recordSchemaValidationFailure(
+            String boundary, String schemaName, String workflowType) {
+        counter(
+                "schema_validation_failure",
+                "boundary",
+                boundary,
+                "schemaName",
+                StringUtils.defaultIfBlank(schemaName, "unknown"),
+                "workflowName",
+                StringUtils.defaultIfBlank(workflowType, "unknown"));
+    }
+
+    /**
+     * A definition referenced a schema no version of which is registered. Distinct from a payload
+     * failing validation: nothing was checked, and the fix is a registration rather than a payload.
+     */
+    public static void recordSchemaRegistryMiss(String schemaName, int schemaVersion) {
+        counter(
+                "schema_registry_miss",
+                "schemaName",
+                StringUtils.defaultIfBlank(schemaName, "unknown"),
+                "schemaVersion",
+                String.valueOf(schemaVersion));
+    }
+
+    /** A new schema version could not be allocated because writers kept claiming it. */
+    public static void recordSchemaVersionAllocationConflict(String schemaName) {
+        counter(
+                "schema_version_allocation_conflict",
+                "schemaName",
+                StringUtils.defaultIfBlank(schemaName, "unknown"));
+    }
+
+    /**
+     * How long validating one payload took. Under enforcement this runs on every scheduled task, so
+     * it is what answers whether enforcement costs anything.
+     */
+    public static void recordSchemaValidationTime(String boundary, long duration) {
+        getTimer("schema_validation", "boundary", boundary).record(duration, TimeUnit.MILLISECONDS);
+    }
 }
