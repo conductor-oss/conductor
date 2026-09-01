@@ -6,6 +6,7 @@ import {
   roleMetaManager,
   roleReadOnly,
   roleScheduleManager,
+  roleQueueMonitorViewer,
   roleUser,
   roleWfManager,
 } from "theme/tokens/colors";
@@ -20,6 +21,7 @@ export const roleLabel: { [key: string]: string } = {
   [Role.HUMAN_TASK_MANAGER]: "Human task manager",
   [Role.EVENT_HANDLER_MANAGER]: "Event handler manager",
   [Role.SCHEDULE_MANAGER]: "Schedule manager",
+  [Role.QUEUE_MONITOR_VIEWER]: "Queue monitor viewer",
   [Role.USER_READ_ONLY]: "Read only user",
 };
 
@@ -34,6 +36,7 @@ const roleColor: { [key: string]: string } = {
   [Role.HUMAN_TASK_MANAGER]: roleHumanTaskManager,
   [Role.EVENT_HANDLER_MANAGER]: roleEventHandlerManager,
   [Role.SCHEDULE_MANAGER]: roleScheduleManager,
+  [Role.QUEUE_MONITOR_VIEWER]: roleQueueMonitorViewer,
 };
 
 export const userRoleColorGenerator = (role: string) => ({
