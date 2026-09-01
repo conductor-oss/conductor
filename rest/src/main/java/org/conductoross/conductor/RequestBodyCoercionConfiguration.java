@@ -25,14 +25,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Lets a request body declared as a list arrive as a bare object.
  *
- * <p>Several shipped SDK clients post one — the schema clients for Python, Ruby and Rust among them
- * — so without this they fail against a server whose contract looks identical to the one they were
- * written for. It only ever makes a request that would have been rejected succeed, so no working
- * caller changes behaviour.
+ * <p>Three of the six shipped SDK clients with a schema implementation post one. The Python client
+ * hands a single {@code SchemaDef} to its generated {@code save}, and the Ruby and Rust clients
+ * declare a single definition too, where {@code POST /api/schema} declares a list; without this
+ * they get a 500 from a server whose contract looks identical to the one they were written for.
+ * That is the only endpoint on the resource carrying a body, so it is schema registration, on both
+ * a first save and every later version, that needs this. The coercion only ever makes a request
+ * that would have been rejected succeed, so no working caller changes behaviour.
  *
  * <p>Applied to the HTTP message converter rather than to the application's {@link ObjectMapper}
- * bean. That bean is injected into every persistence DAO and read back stored rows with, and
- * loosening it there would accept a malformed row as readily as a lenient client. Inbound HTTP is
+ * bean, which is injected into every persistence DAO and is what stored rows are read back with.
+ * Loosening it there would accept a malformed row as readily as a lenient client. Inbound HTTP is
  * where clients vary; a row this server wrote itself does not.
  *
  * <p>The mapper is copied inside {@code extendMessageConverters}, which runs after the application
