@@ -158,7 +158,7 @@ The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Pr
 
 ## Server properties
 
-The registry itself needs no configuration. Its cache does, and it is off by default; so is engine enforcement of the schemas definitions attach.
+The registry itself needs no configuration, and neither does enforcement: whether a definition's schema is enforced is decided by that definition's own `enforceSchema` flag, not by a server setting. See [Input/Output Schema Validation](schema-validation.md). The cache is the one thing configurable here, and it is off by default.
 
 | Property | Default | Meaning |
 |---|---|---|

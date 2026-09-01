@@ -70,7 +70,7 @@ The schema is a `SchemaDef`, embedded in the definition:
 }
 ```
 
-Two fields are easy to confuse. `schemaVersion` is unrelated to any of this — it is the workflow definition *format* version and should be `2`. `enforceSchema` is the per-definition switch; on `WorkflowDef` it defaults to `true`, so once enforcement is turned on at the server (see below) a definition that declares an `inputSchema` is validated unless you explicitly set it to `false`. On `TaskDef` it defaults to `false`, so a task opts in.
+Two fields are easy to confuse. `schemaVersion` is unrelated to any of this — it is the workflow definition *format* version and should be `2`. `enforceSchema` is the per-definition switch, and it is the whole of the decision: there is no server-level setting. On `WorkflowDef` it defaults to `true`, so a workflow definition that declares an `inputSchema` is validated unless you explicitly set it to `false`. On `TaskDef` it defaults to `false`, so a task opts in.
 
 Register it the usual way — schemas travel inside the definition, so there is no separate step:
 
@@ -87,7 +87,12 @@ Enforcement is decided entirely by the definition. There is no server property t
 1. the definition's own `enforceSchema` is `true`;
 2. a schema is actually attached at that point.
 
-`enforceSchema` defaults to `false`, which is what keeps a schema attached for documentation from rejecting work. Attaching a schema changes nothing about how a definition executes until you also set that flag on the same definition — so enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
+The two defaults differ, and the difference matters when you attach a schema:
+
+- On a **`TaskDef`**, `enforceSchema` defaults to `false`. Attaching a schema changes nothing about how the task executes until you set the flag on the same definition, so a schema can be attached for documentation without rejecting work.
+- On a **`WorkflowDef`**, it defaults to `true`. Attaching an `inputSchema` or `outputSchema` is therefore enough on its own: that definition starts being validated on its next execution. Set `enforceSchema` to `false` explicitly if you want the schema recorded but not enforced.
+
+Either way enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
 
 The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
 
