@@ -12,9 +12,9 @@
  */
 package org.conductoross.conductor.dao.schema;
 
-import java.util.List;
-
 import com.netflix.conductor.common.metadata.SchemaDef;
+
+import java.util.List;
 
 /**
  * Persistence for {@link SchemaDef}, the schema registry's storage seam. Implemented per supported
@@ -32,22 +32,10 @@ import com.netflix.conductor.common.metadata.SchemaDef;
 public interface SchemaDAO {
 
     /**
-     * Inserts the schema, or overwrites the one already stored at the same {@code name} and {@code
-     * version}. This is the update-in-place path; {@link #createSchemaIfAbsent} is the path that
-     * allocates a new version.
+     * Upserts the schema, or overwrites the one already stored at the same {@code name} and {@code
+     * version}.
      */
     void save(SchemaDef schemaDef);
-
-    /**
-     * Inserts the schema only when nothing is stored at its {@code name} and {@code version},
-     * returning {@code false} when the unique constraint rejects it.
-     *
-     * <p>This is the concurrency-safe half of version allocation: two callers that read the same
-     * current maximum version both attempt the same insert, and exactly one of them is told it
-     * lost. Implementations must decide this in the database rather than by reading first, so the
-     * check and the insert cannot be interleaved.
-     */
-    boolean createSchemaIfAbsent(SchemaDef schemaDef);
 
     /**
      * Returns the schema at {@code name} and {@code version}, or {@code null} when there is none.
@@ -78,4 +66,24 @@ public interface SchemaDAO {
      * the name is unknown.
      */
     int deleteAllByName(String name);
+
+    /**
+     * Bulk delete operation
+     * @param names names of the schemas to delete
+     * @return no. of schemas deleted
+     */
+    int deleteAllByNames(List<String> names);
+
+    /**
+     *
+     * @param name name of the schema
+     * @return returns all the versions
+     */
+    List<SchemaDef> findAllVersionsByName(String name);
+
+    /**
+     *
+     * @return List of schema name and versions without entire schema definitions
+     */
+    List<SchemaDef> getAllShortenedSchemas();
 }
