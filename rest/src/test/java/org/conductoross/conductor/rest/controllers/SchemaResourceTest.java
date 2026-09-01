@@ -15,7 +15,6 @@ package org.conductoross.conductor.rest.controllers;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.RequestBodyCoercionConfiguration;
 import org.conductoross.conductor.controllers.SchemaResource;
 import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
@@ -61,6 +60,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * shape is the single most likely thing in this feature to be got wrong — a bare object where the
  * server wants a list reaches a live 500 while every unit test below the controller passes.
  *
+ * <p>The coercion this relies on is configured on the shipped server by {@code
+ * spring.jackson.deserialization.accept-single-value-as-array} in the server module's {@code
+ * application.properties}, which is not on this module's classpath, so the property is restated
+ * here. That means this class proves the contract holds <em>given</em> the setting, not that the
+ * setting ships: deleting it from {@code application.properties} would leave these tests green. The
+ * guard for that is {@code SchemaRegistryE2ETest.acceptsABareObjectWhereTheContractDeclaresAList},
+ * which runs against a real server image.
+ *
  * <p>The context is a real one rather than {@code MockMvcBuilders.standaloneSetup} because the
  * request body is the subject. Standalone setup builds its own plain {@link
  * com.fasterxml.jackson.databind.ObjectMapper}, so a body-shape assertion made against it says
@@ -69,7 +76,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Importing the two mapper configurations is what puts the production mapper under test.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = SchemaResourceTest.TestConfig.class)
+@SpringBootTest(
+        classes = SchemaResourceTest.TestConfig.class,
+        properties = "spring.jackson.deserialization.accept-single-value-as-array=true")
 @AutoConfigureMockMvc
 public class SchemaResourceTest {
 
@@ -320,8 +329,7 @@ public class SchemaResourceTest {
         SchemaResource.class,
         ApplicationExceptionMapper.class,
         ObjectMapperBuilderConfiguration.class,
-        ObjectMapperConfiguration.class,
-        RequestBodyCoercionConfiguration.class
+        ObjectMapperConfiguration.class
     })
     static class TestConfig {
 
