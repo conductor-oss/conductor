@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.conductoross.conductor.service.SchemaEnforcement;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -103,7 +103,7 @@ public class TestWorkflowExecutorDecideLoop {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        disabledSchemaEnforcement());
+                        disabledSchemaService());
     }
 
     /**
@@ -243,7 +243,7 @@ public class TestWorkflowExecutorDecideLoop {
      * Schema enforcement off, which is the default and what every deployment gets until an operator
      * turns it on. These tests are not about schemas.
      */
-    private static SchemaEnforcement disabledSchemaEnforcement() {
-        return new SchemaEnforcement(null);
+    private static SchemaService disabledSchemaService() {
+        return (SchemaService) null;
     }
 }

@@ -22,30 +22,29 @@ import org.junit.jupiter.api.Test;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * What an operator sees after turning enforcement on. The tag values are the point: a counter whose
- * boundary or schema name is wrong reads as a different event, and nothing else in the build would
+ * What an operator sees when enforcement rejects a payload. The tag values are the point: a counter
+ * whose schema name is wrong reads as a different event, and nothing else in the build would
  * notice.
+ *
+ * <p>Recorded by {@link SchemaService#validate}, which is the single point every caller passes
+ * through — the engine's enforcement points and the AI layer alike.
  */
 class SchemaMetricsTest {
 
     private SimpleMeterRegistry registry;
     private SchemaService schemaService;
-    private SchemaEnforcement enforcement;
 
     @BeforeEach
     void setUp() {
@@ -55,11 +54,10 @@ class SchemaMetricsTest {
         Monitors.addMeterRegistry(registry);
 
         schemaService =
-                new SchemaServiceImpl(
+                new SchemaService(
                         new InMemorySchemaDAO(),
                         new SchemaCacheProperties(),
                         new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
-        enforcement = new SchemaEnforcement(schemaService);
     }
 
     private static SchemaDef requiresName() {
@@ -76,62 +74,41 @@ class SchemaMetricsTest {
     }
 
     @Test
-    void aRejectedWorkflowInputIsCountedAgainstItsBoundaryAndSchema() {
-        WorkflowDef def = new WorkflowDef();
-        def.setName("order");
-        def.setVersion(1);
-        def.setInputSchema(requiresName());
-        def.setEnforceSchema(true);
-
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowDefinition(def);
-        workflow.setWorkflowId("wf-1");
-        workflow.setInput(Map.of());
-
+    void aRejectedPayloadIsCountedAgainstItsSchema() {
         assertThrows(
-                SchemaValidationException.class, () -> enforcement.validateWorkflowInput(workflow));
+                SchemaValidationException.class,
+                () -> schemaService.validate(requiresName(), Map.of()));
 
         assertEquals(
                 1.0,
                 registry.get("schema_validation_failure")
-                        .tag("boundary", "workflowInput")
                         .tag("schemaName", "person")
-                        .tag("workflowName", "order")
                         .counter()
                         .count(),
                 0.001);
         assertTrue(
-                registry.get("schema_validation").tag("boundary", "workflowInput").timer().count()
-                        >= 1,
+                registry.get("schema_validation").timer().count() >= 1,
                 "validating a payload is timed even when it is rejected");
     }
 
+    /**
+     * A payload that conforms is timed too, and counted against nothing.
+     *
+     * <p>Under its own schema name: {@code Monitors} keeps one global composite, so a counter any
+     * other test created is visible here with a count of zero. Asserting on a name only this test
+     * uses is what makes the assertion independent of what else ran.
+     */
     @Test
-    void aRejectedTaskInputIsCountedAgainstItsOwnBoundary() {
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("charge");
-        taskDef.setInputSchema(requiresName());
-        taskDef.setEnforceSchema(true);
+    void anAcceptedPayloadIsTimedButNotCounted() {
+        SchemaDef schema = requiresName();
+        schema.setName("greeting");
 
-        TaskModel task = new TaskModel();
-        task.setTaskId("task-1");
-        task.setReferenceTaskName("charge_ref");
-        task.setWorkflowType("order");
-        task.setInputData(Map.of());
+        assertDoesNotThrow(() -> schemaService.validate(schema, Map.of("name", "ada")));
 
-        assertThrows(
-                SchemaValidationException.class,
-                () -> enforcement.validateTaskInput(task, taskDef));
-
-        assertEquals(
-                1.0,
-                registry.get("schema_validation_failure")
-                        .tag("boundary", "taskInput")
-                        .tag("schemaName", "person")
-                        .tag("workflowName", "order")
-                        .counter()
-                        .count(),
-                0.001);
+        assertTrue(registry.get("schema_validation").timer().count() >= 1);
+        assertNull(
+                registry.find("schema_validation_failure").tag("schemaName", "greeting").counter(),
+                "a payload that conforms must not be counted as a failure");
     }
 
     @Test

@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +27,7 @@ import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
-import org.conductoross.conductor.service.SchemaEnforcement;
+import org.conductoross.conductor.service.SchemaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.*;
 import com.netflix.conductor.common.metadata.workflow.*;
 import com.netflix.conductor.common.run.Workflow;
@@ -99,7 +101,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private long activeWorkerLastPollMs;
     private final ExecutionLockService executionLockService;
     private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
-    private final SchemaEnforcement schemaEnforcement;
+    private final SchemaService schemaService;
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -120,7 +122,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             ParametersUtils parametersUtils,
             IDGenerator idGenerator,
             Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO,
-            SchemaEnforcement schemaEnforcement) {
+            SchemaService schemaService) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -135,7 +137,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
-        this.schemaEnforcement = schemaEnforcement;
+        this.schemaService = schemaService;
     }
 
     /**
@@ -712,7 +714,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         deciderService.updateWorkflowOutput(workflow, null);
 
         try {
-            schemaEnforcement.validateWorkflowOutput(workflow);
+            validateAgainst(outputSchemaOf(workflow.getWorkflowDefinition()), workflow::getOutput);
         } catch (SchemaValidationException e) {
             // The output is assembled; the workflow fails instead of completing, carrying the
             // validation message as its reason.
@@ -1014,7 +1016,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (task.getStatus() == COMPLETED
                 && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
             try {
-                schemaEnforcement.validateTaskOutput(task, taskDefinitionOrNull(task));
+                validateAgainst(outputSchemaOf(taskDefinitionOrNull(task)), task::getOutputData);
             } catch (SchemaValidationException e) {
                 // Terminal, as an input failure is: the worker has already run and returned a
                 // shape its own definition refuses, so re-running it spends the retry budget on
@@ -2144,7 +2146,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         Set<String> rejected = new HashSet<>();
         for (TaskModel task : tasks) {
             try {
-                schemaEnforcement.validateTaskInput(task, taskDefinitionOrNull(task));
+                validateAgainst(inputSchemaOf(taskDefinitionOrNull(task)), task::getInputData);
             } catch (SchemaValidationException e) {
                 LOGGER.info(
                         "Task {} rejected before scheduling: {}", task.getTaskId(), e.getMessage());
@@ -2226,11 +2228,47 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             return;
         }
         try {
-            schemaEnforcement.validateTaskOutput(task, taskDefinitionOrNull(task));
+            validateAgainst(outputSchemaOf(taskDefinitionOrNull(task)), task::getOutputData);
         } catch (SchemaValidationException e) {
             task.setStatus(FAILED_WITH_TERMINAL_ERROR);
             task.setReasonForIncompletion(e.getMessage());
         }
+    }
+
+    /**
+     * The schema on a definition's input side, or {@code null} when nothing is to be enforced —
+     * there is no definition, it has not opted in, or it attaches no schema.
+     */
+    private static SchemaDef inputSchemaOf(WorkflowDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getInputSchema();
+    }
+
+    private static SchemaDef inputSchemaOf(TaskDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getInputSchema();
+    }
+
+    private static SchemaDef outputSchemaOf(WorkflowDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getOutputSchema();
+    }
+
+    private static SchemaDef outputSchemaOf(TaskDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getOutputSchema();
+    }
+
+    /**
+     * Validates a payload against a schema, doing nothing when there is no schema to enforce.
+     *
+     * <p>The payload is supplied lazily and read only once a schema is in hand. {@link
+     * WorkflowModel#getInput()} and {@link WorkflowModel#getOutput()} are not plain getters — when
+     * both the inline map and the external-storage map hold entries they merge the two and reset
+     * the payload field — so evaluating one for an execution that never opted in would do that work
+     * on every execution.
+     */
+    private void validateAgainst(SchemaDef schema, Supplier<Map<String, Object>> payload) {
+        if (schema == null) {
+            return;
+        }
+        schemaService.validate(schema, payload.get());
     }
 
     private void addTaskToQueue(final List<TaskModel> tasks) {
@@ -2715,7 +2753,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
         // Before the try, and so before anything is persisted: an input that does not match the
         // definition's schema means the execution never starts, and there is nothing to undo.
-        schemaEnforcement.validateWorkflowInput(workflow);
+        validateAgainst(inputSchemaOf(workflow.getWorkflowDefinition()), workflow::getInput);
 
         try {
             createAndEvaluate(workflow);
@@ -2768,7 +2806,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
-            schemaEnforcement.validateWorkflowInput(workflow);
+            validateAgainst(inputSchemaOf(workflow.getWorkflowDefinition()), workflow::getInput);
             createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 

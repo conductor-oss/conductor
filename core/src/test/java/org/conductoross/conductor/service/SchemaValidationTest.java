@@ -46,13 +46,13 @@ class SchemaValidationTest {
                     java.util.List.of("name"));
 
     private InMemorySchemaDAO dao;
-    private SchemaServiceImpl service;
+    private SchemaService service;
 
     @BeforeEach
     void setUp() {
         dao = new InMemorySchemaDAO();
         service =
-                new SchemaServiceImpl(
+                new SchemaService(
                         dao,
                         new SchemaCacheProperties(),
                         new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));

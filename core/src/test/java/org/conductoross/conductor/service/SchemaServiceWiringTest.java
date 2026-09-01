@@ -37,7 +37,7 @@ class SchemaServiceWiringTest {
                             () ->
                                     new JsonSchemaValidator(
                                             new ObjectMapperProvider().getObjectMapper()))
-                    .withUserConfiguration(SchemaServiceImpl.class);
+                    .withUserConfiguration(SchemaService.class);
 
     @Test
     void contextFailsWhenNoBackendProvidesASchemaDao() {

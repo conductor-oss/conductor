@@ -553,21 +553,12 @@ public class Monitors {
         gauge("task_exec_log_size", val);
     }
 
-    /**
-     * A payload was rejected by the schema attached to its definition. {@code boundary} says which
-     * payload (workflow or task, input or output), so the rate can be read per validation point
-     * rather than only in aggregate.
-     */
-    public static void recordSchemaValidationFailure(
-            String boundary, String schemaName, String workflowType) {
+    /** A payload was rejected by the schema attached to its definition. */
+    public static void recordSchemaValidationFailure(String schemaName) {
         counter(
                 "schema_validation_failure",
-                "boundary",
-                boundary,
                 "schemaName",
-                StringUtils.defaultIfBlank(schemaName, "unknown"),
-                "workflowName",
-                StringUtils.defaultIfBlank(workflowType, "unknown"));
+                StringUtils.defaultIfBlank(schemaName, "unknown"));
     }
 
     /**
@@ -588,7 +579,7 @@ public class Monitors {
      * How long validating one payload took. Under enforcement this runs on every scheduled task, so
      * it is what answers whether enforcement costs anything.
      */
-    public static void recordSchemaValidationTime(String boundary, long duration) {
-        getTimer("schema_validation", "boundary", boundary).record(duration, TimeUnit.MILLISECONDS);
+    public static void recordSchemaValidationTime(long duration) {
+        getTimer("schema_validation").record(duration, TimeUnit.MILLISECONDS);
     }
 }

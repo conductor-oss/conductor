@@ -25,7 +25,6 @@ import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.service.SchemaCacheProperties;
 import org.conductoross.conductor.service.SchemaService;
-import org.conductoross.conductor.service.SchemaServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -70,7 +69,7 @@ class LLMHelperSchemaValidationTest {
     void setUp() {
         dao = new InMemoryDAO();
         schemaService =
-                new SchemaServiceImpl(
+                new SchemaService(
                         dao,
                         new SchemaCacheProperties(),
                         new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));

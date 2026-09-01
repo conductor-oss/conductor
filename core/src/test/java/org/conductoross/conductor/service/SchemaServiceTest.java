@@ -31,11 +31,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class SchemaServiceImplTest {
+class SchemaServiceTest {
 
     private InMemorySchemaDAO dao;
     private SchemaCacheProperties cacheProperties;
-    private SchemaServiceImpl service;
+    private SchemaService service;
 
     @BeforeEach
     void setUp() {
@@ -44,8 +44,8 @@ class SchemaServiceImplTest {
         service = newService();
     }
 
-    private SchemaServiceImpl newService() {
-        return new SchemaServiceImpl(
+    private SchemaService newService() {
+        return new SchemaService(
                 dao,
                 cacheProperties,
                 new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()));
