@@ -521,6 +521,9 @@ export const workflowDefinitionMachine = createMachine<
                         workflowDefaultRunParam: ({
                           workflowDefaultRunParam,
                         }: DefinitionMachineContext) => workflowDefaultRunParam,
+                        focusInput: ({
+                          runWithInputs,
+                        }: DefinitionMachineContext) => Boolean(runWithInputs),
                         correlationId: ({
                           runTabFormState,
                         }: DefinitionMachineContext) =>
@@ -751,7 +754,7 @@ export const workflowDefinitionMachine = createMachine<
                               "persistWorkflowNameAndVersion",
                               "cleanLocalCopyMessage", // Note push to history has a callback event since the url will change.
                               "cleanInitialSelectedTaskReferenceName",
-                              "justExecute",
+                              "runOrOpenRunTab",
                             ],
                           },
                         },
@@ -859,10 +862,15 @@ export const workflowDefinitionMachine = createMachine<
                       actions: ["fireChangeToWorkflowTab"],
                     },
                     {
+                      // Internal transition: staying in the run state keeps the run
+                      // actor, and the inputs the user just edited, alive.
+                      cond: "isSaveAndRunFromRunTab",
+                      actions: ["justExecute"],
+                    },
+                    {
                       cond: "isSaveAndRunWithNoChanges",
                       target: ".runWorkflow",
                       actions: ["justExecute"],
-                      // actions: ["fireChangeToRunTab"],
                     },
                     {
                       cond: "isSaveAndRunRequest",
@@ -879,8 +887,24 @@ export const workflowDefinitionMachine = createMachine<
                     },
                   ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {
-                    actions: ["fireSaveEvent"],
+                    actions: ["clearRunWithInputs", "fireSaveEvent"],
                   },
+                  [DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS]: [
+                    {
+                      // Already looking at the inputs, so leave the form untouched.
+                      cond: "isRunTab",
+                      actions: ["setRunWithInputs"],
+                    },
+                    {
+                      cond: "hasNoChanges",
+                      target: ".runWorkflow",
+                      actions: ["setRunWithInputs", "changeToRunTab"],
+                    },
+                    {
+                      // Unsaved edits: save first, then land on the run tab.
+                      actions: ["setRunWithInputs", "fireSaveEvent"],
+                    },
+                  ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_CREATE_NEW]: {
                     actions: [
                       "setSaveSourceEventType",
@@ -947,6 +971,10 @@ export const workflowDefinitionMachine = createMachine<
                   },
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {
                     actions: ["raiseSaveAndRunEvent"],
+                    target: "opened",
+                  },
+                  [DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS]: {
+                    actions: ["raiseRunWithInputsEvent"],
                     target: "opened",
                   },
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_CREATE_NEW]: {

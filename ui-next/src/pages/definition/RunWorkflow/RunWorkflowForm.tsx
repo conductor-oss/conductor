@@ -51,6 +51,7 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
       popoverMessage,
       idempotencyKey,
       idempotencyStrategy,
+      focusInput,
     },
     {
       handleChangeInputParams,
@@ -100,6 +101,7 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
               label="Input params"
               value={input}
               onChange={handleChangeInputParams}
+              autoFocus={focusInput}
               options={{
                 ...SMALL_EDITOR_DEFAULT_OPTIONS,
                 ...additionalEditorOptions,

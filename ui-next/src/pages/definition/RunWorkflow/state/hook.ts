@@ -38,6 +38,11 @@ export const useRunTabActor = (actor: ActorRef<RunMachineEvents>) => {
     (state: State<RunMachineContext>) => state.context.taskToDomain,
   );
 
+  const focusInput = useSelector(
+    actor,
+    (state: State<RunMachineContext>) => state.context.focusInput,
+  );
+
   const isRunning = useSelector(actor, (state) =>
     state.matches(RunMachineStates.RUN_WORKFLOW),
   );
@@ -119,6 +124,7 @@ export const useRunTabActor = (actor: ActorRef<RunMachineEvents>) => {
       popoverMessage,
       idempotencyKey,
       idempotencyStrategy,
+      focusInput,
     },
     {
       handleChangeInputParams,

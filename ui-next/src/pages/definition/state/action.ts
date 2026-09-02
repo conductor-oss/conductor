@@ -45,6 +45,7 @@ import {
   DeleteRequestEvent,
   DONT_SHOW_IMPORT_SUCCESSFUL_DIALOG_TUTORIAL_AGAIN,
   HandleLeftPanelExpandedEvent,
+  HandleRunWithInputsEvent,
   HandleSaveAndCreateNewEvent,
   HandleSaveAndRunEvent,
   LeftPaneTabs,
@@ -277,10 +278,18 @@ export const changeTab = assign<
   previousTab: ({ openedTab }, _) => openedTab,
   // Collapse assistant on any tab click (Workflow, Task, Code, Run, Dependencies, …)
   isAgentExpanded: false,
+  // Reaching the run tab by hand shouldn't steal focus into the input editor.
+  runWithInputs: false,
 });
 
 export const changeToCodeTab = assign({
   openedTab: CODE_TAB,
+  previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
+  isAgentExpanded: false,
+});
+
+export const changeToRunTab = assign({
+  openedTab: RUN_TAB,
   previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
   isAgentExpanded: false,
 });
@@ -958,6 +967,16 @@ export const raiseSaveAndRunEvent = raise<
   { delay: 200 },
 );
 
+export const raiseRunWithInputsEvent = raise<
+  DefinitionMachineContext,
+  HandleRunWithInputsEvent
+>(
+  {
+    type: DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS,
+  },
+  { delay: 200 },
+);
+
 export const justExecute = sendTo<
   DefinitionMachineContext,
   any,
@@ -971,6 +990,26 @@ export const justExecute = sendTo<
   },
   { delay: 200 },
 );
+
+export const setRunWithInputs = assign<DefinitionMachineContext>({
+  runWithInputs: true,
+});
+
+export const clearRunWithInputs = assign<DefinitionMachineContext>({
+  runWithInputs: false,
+});
+
+// After a save triggered from either Execute action, honour whichever one the user
+// picked: run straight away, or hand them the run tab to fill in inputs first.
+export const runOrOpenRunTab = choose<DefinitionMachineContext, any>([
+  {
+    cond: ({ runWithInputs }) => Boolean(runWithInputs),
+    actions: ["changeToRunTab"],
+  },
+  {
+    actions: ["justExecute"],
+  },
+]);
 
 export const raiseSaveAndCreateNewEvent = raise<
   DefinitionMachineContext,

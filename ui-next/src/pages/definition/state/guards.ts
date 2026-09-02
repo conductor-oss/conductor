@@ -175,6 +175,15 @@ export const isSaveAndRunWithNoChanges = (
   return isSaveAndRunRequest(context, event) && hasNoChanges(context);
 };
 
+// Executing from the run tab has to run the config the user is looking at, which
+// means the run actor must not be torn down and re-created first.
+export const isSaveAndRunFromRunTab = (
+  context: DefinitionMachineContext,
+  event: SaveAndRunRequestEvent,
+) => {
+  return isSaveAndRunWithNoChanges(context, event) && isRunTab(context);
+};
+
 export const isFirstTimeFlow = (context: DefinitionMachineContext) => {
   const workflowDefinitionUrl = WORKFLOW_METADATA_BASE_URL_SHORT;
   const key = [fetchContext.stack, workflowDefinitionUrl];

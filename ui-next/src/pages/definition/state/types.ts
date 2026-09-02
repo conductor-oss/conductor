@@ -73,6 +73,7 @@ export enum DefinitionMachineEventTypes {
   MOVE_TASK_EVT = "MOVE_TASK_EVT",
   HANDLE_LEFT_PANEL_EXPANDED = "HANDLE_LEFT_PANEL_EXPANDED",
   HANDLE_SAVE_AND_RUN = "HANDLE_SAVE_AND_RUN",
+  HANDLE_RUN_WITH_INPUTS = "HANDLE_RUN_WITH_INPUTS",
   REDIRECT_TO_EXECUTION_PAGE = "REDIRECT_TO_EXECUTION_PAGE",
   HANDLE_SAVE_AND_CREATE_NEW = "HANDLE_SAVE_AND_CREATE_NEW",
   EXECUTE_WF = "EXECUTE_WF",
@@ -177,6 +178,10 @@ export type SaveAndCreateNewRequestEvent = {
 
 export type HandleSaveAndRunEvent = {
   type: DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN;
+};
+
+export type HandleRunWithInputsEvent = {
+  type: DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS;
 };
 
 export type HandleSaveAndCreateNewEvent = {
@@ -309,6 +314,7 @@ export type WorkflowDefinitionEvents =
   | HandleLeftPanelExpandedEvent
   | MessageResetEvent
   | HandleSaveAndRunEvent
+  | HandleRunWithInputsEvent
   | HandleSaveAndCreateNewEvent
   | SaveAndRunRequestEvent
   | RedirectToExecutionPageEvent
@@ -355,4 +361,7 @@ export interface DefinitionMachineContext {
   importSummary?: ImportSummary;
   runTabFormState?: RunWorkflowFields;
   isAgentExpanded?: boolean;
+  // Set while the user is heading to the run tab to edit inputs before executing,
+  // so the run tab knows to focus its input editor.
+  runWithInputs?: boolean;
 }

@@ -4,8 +4,8 @@ import {
   DefinitionMachineEventTypes,
   WorkflowDefinitionEvents,
 } from "../state/types";
-import { ButtonTooltip } from "components/ui/buttons/ButtonTooltip";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
+import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import { UnderlinedText } from "components/ui/UnderlinedText";
 
 export interface RunWorkflowButtonProps {
@@ -20,15 +20,30 @@ export const RunWorkflowButton: FunctionComponent<RunWorkflowButtonProps> = ({
   const executeWorkflow = () => {
     service.send({ type: DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN });
   };
+
+  const executeWorkflowWithInputs = () => {
+    service.send({ type: DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS });
+  };
+
+  const options = [
+    {
+      label: "Execute with inputs…",
+      id: "run-with-inputs-btn",
+      onClick: executeWorkflowWithInputs,
+    },
+  ];
+
   return (
-    <ButtonTooltip
+    <SplitButton
       id="head-action-run-btn"
-      variant="contained"
-      tooltip="Run workflow (Ctrl E)"
-      onClick={executeWorkflow}
       startIcon={<RocketLaunchIcon />}
-      children={<UnderlinedText text="Execute" underlinedIndexes={[0]} />}
+      tooltip="Run workflow (Ctrl E)"
+      options={options}
+      primaryOnClick={executeWorkflow}
       disabled={disabled}
-    />
+      data-testid="workflow-definition-run-button"
+    >
+      <UnderlinedText text="Execute" underlinedIndexes={[0]} />
+    </SplitButton>
   );
 };
