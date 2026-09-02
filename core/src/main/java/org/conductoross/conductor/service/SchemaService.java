@@ -294,14 +294,8 @@ public class SchemaService {
         try {
             schemaContent = OBJECT_MAPPER.writeValueAsString(resolved.getData());
         } catch (JsonProcessingException e) {
-<<<<<<< HEAD
-            // Same reading as an unusable document below: the schema is at fault, not the payload,
-            // so it is logged for whoever registered it and nothing is checked.
-            log.error(
-=======
             // Bad schema data — log it and skip validation rather than failing the payload.
-            LOGGER.error(
->>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
+            log.error(
                     "Error parsing the json schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -314,17 +308,9 @@ public class SchemaService {
         try {
             failures = jsonSchemaValidator.validate(schemaContent, data == null ? Map.of() : data);
         } catch (JsonSchemaException e) {
-<<<<<<< HEAD
-            // An unusable schema document is a definition error, and no payload can be checked
-            // against it: it is logged for whoever registered it and the payload is let through.
-            // networknt's own getMessage() is frequently empty here, so the messages it carries
-            // are what get logged.
-            log.error(
-=======
             // Bad schema document — skip validation. networknt getMessage() is often empty,
             // so log the validation messages instead.
-            LOGGER.error(
->>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
+            log.error(
                     "Bad or unsupported schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -368,14 +354,7 @@ public class SchemaService {
                         ? cached(key(name, LATEST), () -> lookupLatest(name))
                         : cached(key(name, String.valueOf(version)), () -> lookup(name, version));
         if (registered.isEmpty()) {
-<<<<<<< HEAD
-            // Under enforcement this runs for every scheduled task, so one unregistered reference
-            // would warn on every execution of it. The counter is the operator's signal that a
-            // definition points at nothing, since the payload itself goes through unchecked.
             log.debug(
-=======
-            LOGGER.debug(
->>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
                     "A definition references schema {} version {}, which is not registered",
                     name,
                     version);
