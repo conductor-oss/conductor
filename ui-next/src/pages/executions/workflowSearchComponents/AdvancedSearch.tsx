@@ -33,7 +33,7 @@ import { dateToEpoch, useLocalStorage } from "utils";
 import { WORKFLOW_SEARCH_QUERY_SUGGESTIONS } from "utils/constants/common";
 import { ERROR_URL } from "utils/constants/route";
 import { useWorkflowNames, useWorkflowSearch } from "utils/query";
-import { basicOnlyFilterQuery } from "./basicFilterQuery";
+import { useWorkflowSearchFilters } from "../useWorkflowSearchFilters";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
 import { DateControlComponent } from "../DateControlComponent";
@@ -66,10 +66,8 @@ export interface AdvancedSearchProps {
   setStartTimeTo: (val: string) => void;
   onStartToChange: (val: string) => void;
   endTimeFrom: string;
-  setEndTimeFrom: (val: string) => void;
   onEndFromChange: (val: string) => void;
   endTimeTo: string;
-  setEndTimeTo: (val: string) => void;
   onEndToChange: (val: string) => void;
   fromDisplayTime: string;
   setFromDisplayTime: (val: string) => void;
@@ -101,10 +99,8 @@ export default function AdvancedSearch({
   setStartTimeTo,
   onStartToChange,
   endTimeFrom,
-  setEndTimeFrom,
   onEndFromChange,
   endTimeTo,
-  setEndTimeTo,
   onEndToChange,
   fromDisplayTime,
   setFromDisplayTime,
@@ -120,35 +116,14 @@ export default function AdvancedSearch({
   classifier = "workflow",
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
-  // Filters that only basic search has a control for. Read here so that
-  // switching SQL format on translates them into query text instead of
-  // silently dropping them from the search.
-  const [basicWorkflowType] = useQueryState<string[]>("workflowType", []);
-  const [basicWorkflowId] = useQueryState("workflowId", "");
-  const [basicCorrelationIds] = useQueryState<string[]>("correlationIds", []);
-  const [basicIdempotencyKey] = useQueryState<string[]>("idempotencyKey", []);
-  const [basicModifiedFrom] = useQueryState("modifiedFrom", "");
-  const [basicModifiedTo] = useQueryState("modifiedTo", "");
-  const [basicExcludeSubExecutions] = useQueryState(
-    "excludeSubExecutions",
-    false,
-  );
-
-  // Seeded as the default rather than assigned after mount, so the first search
-  // already carries these clauses. A `query` param in the URL always wins, so
-  // text the user typed (or cleared) is never overwritten.
-  const [seededQuery] = useState(() =>
-    basicOnlyFilterQuery({
-      workflowType: basicWorkflowType,
-      workflowId: basicWorkflowId,
-      correlationIds: basicCorrelationIds,
-      idempotencyKey: basicIdempotencyKey,
-      modifiedFrom: basicModifiedFrom,
-      modifiedTo: basicModifiedTo,
-      excludeSubExecutions: basicExcludeSubExecutions,
-    }),
-  );
-  const [queryText, setQueryText] = useQueryState("query", seededQuery);
+  // Every url-backed filter is declared once in useWorkflowSearchFilters,
+  // including the seeding of the query box from the filters that only basic
+  // search has a control for.
+  const {
+    effectiveQuery: queryText,
+    setQuery: setQueryText,
+    resetFilters,
+  } = useWorkflowSearchFilters();
   const [page, setPage] = useQueryState("page", 1);
   const [rowsPerPage, setRowsPerPage] = useQueryState(
     "rowsPerPage",
@@ -342,15 +317,11 @@ export default function AdvancedSearch({
   };
 
   const clearAllFields = () => {
-    setStatus([]);
-    setStartTimeFrom("");
-    setStartTimeTo("");
-    setEndTimeFrom("");
-    setEndTimeTo("");
+    // Clears every filter, not just the ones this mode renders, so the
+    // basic-only filters do not survive a reset done here.
+    resetFilters();
     setToDisplayTime("");
     setFromDisplayTime("Last 72 Hours");
-    setFreeText("");
-    setQueryText("");
   };
 
   const handleReset = () => {

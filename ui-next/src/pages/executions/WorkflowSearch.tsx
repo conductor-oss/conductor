@@ -6,7 +6,6 @@ import _isEqual from "lodash/isEqual";
 import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { ReactNode, useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useQueryState } from "react-router-use-location-state";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
@@ -16,7 +15,7 @@ import { DoSearchProps } from "types/WorkflowExecution";
 import { RUN_WORKFLOW_URL } from "utils/constants/route";
 import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
-import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
+import { getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
@@ -29,6 +28,7 @@ import {
   basicFieldsAfterQueryFormat,
   parseQueryToBasicFilters,
 } from "./workflowSearchComponents/basicFilterQuery";
+import { useWorkflowSearchFilters } from "./useWorkflowSearchFilters";
 
 const SwitchComponent = ({
   asQuery,
@@ -82,35 +82,35 @@ export default function WorkflowPanel({
   headerActions,
   excludeSubLabel,
 }: WorkflowSearchProps = {}) {
-  const [asQuery, setAsQuery] = useQueryState("asQuery", false);
-  const [freeText, setFreeText] = useQueryState("freeText", "");
-  // Read with an empty default so an untouched SQL box (where advanced search
-  // shows the seeded text without writing it to the URL) reads as empty here.
-  const [queryText, setQueryText] = useQueryState("query", "");
-  // Only the setters are needed here: switching out of SQL format writes these
-  // fields from the parsed query. Basic search owns reading them.
-  const [, setWorkflowType] = useQueryState<string[]>("workflowType", []);
-  const [, setWorkflowId] = useQueryState("workflowId", "");
-  const [, setCorrelationIds] = useQueryState<string[]>("correlationIds", []);
-  const [, setIdempotencyKey] = useQueryState<string[]>("idempotencyKey", []);
-  const [, setModifiedFrom] = useQueryState("modifiedFrom", "");
-  const [, setModifiedTo] = useQueryState("modifiedTo", "");
-  const [, setExcludeSubExecutions] = useQueryState(
-    "excludeSubExecutions",
-    false,
-  );
+  const {
+    asQuery,
+    setAsQuery,
+    freeText,
+    setFreeText,
+    status,
+    setStatus,
+    setWorkflowType,
+    setWorkflowId,
+    setCorrelationIds,
+    setIdempotencyKey,
+    setModifiedFrom,
+    setModifiedTo,
+    setExcludeSubExecutions,
+    startTimeFrom,
+    setStartTimeFrom,
+    startTimeTo,
+    setStartTimeTo,
+    endTimeFrom,
+    setEndTimeFrom,
+    endTimeTo,
+    setEndTimeTo,
+    authoredQuery,
+    clearQuery,
+  } = useWorkflowSearchFilters();
   const [discardQueryOpen, setDiscardQueryOpen] = useState(false);
-  const [status, setStatus] = useQueryState<string[]>("status", []);
   const [openDateSelect, setOpenDateSelect] = useState(false);
   const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
   const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
-  const [startTimeFrom, setStartTimeFrom] = useQueryState(
-    "startFrom",
-    commonlyUsedDateTime("last72Hours").rangeStart,
-  );
-  const [startTimeTo, setStartTimeTo] = useQueryState("startTo", "");
-  const [endTimeFrom, setEndTimeFrom] = useQueryState("endTimeFrom", "");
-  const [endTimeTo, setEndTimeTo] = useQueryState("endTimeTo", "");
   const [fromDisplayTime, setFromDisplayTime] = useState(
     startTimeFrom
       ? getSearchDateTime(startTimeFrom, startTimeTo)
@@ -123,7 +123,7 @@ export default function WorkflowPanel({
   const leaveQueryFormat = () => {
     // Drop the param too, so a discarded query cannot reappear the next time
     // SQL format is switched on.
-    setQueryText("");
+    clearQuery();
     setAsQuery(false);
   };
 
@@ -167,11 +167,11 @@ export default function WorkflowPanel({
     }
     // An empty box means nothing was authored here — the seeded text is shown
     // without being written to the URL — so leave the fields as they were.
-    if (_isEmpty(queryText)) {
+    if (_isEmpty(authoredQuery)) {
       leaveQueryFormat();
       return;
     }
-    const parsed = parseQueryToBasicFilters(queryText);
+    const parsed = parseQueryToBasicFilters(authoredQuery);
     if (parsed) {
       applyParsedFilters(parsed);
       leaveQueryFormat();
@@ -313,10 +313,8 @@ export default function WorkflowPanel({
             setStartTimeTo={setStartTimeTo}
             onStartToChange={onStartToChange}
             endTimeFrom={endTimeFrom}
-            setEndTimeFrom={setEndTimeFrom}
             onEndFromChange={onEndFromChange}
             endTimeTo={endTimeTo}
-            setEndTimeTo={setEndTimeTo}
             onEndToChange={onEndToChange}
             fromDisplayTime={fromDisplayTime}
             setFromDisplayTime={setFromDisplayTime}
@@ -354,10 +352,8 @@ export default function WorkflowPanel({
             setStartTimeTo={setStartTimeTo}
             onStartToChange={onStartToChange}
             endTimeFrom={endTimeFrom}
-            setEndTimeFrom={setEndTimeFrom}
             onEndFromChange={onEndFromChange}
             endTimeTo={endTimeTo}
-            setEndTimeTo={setEndTimeTo}
             onEndToChange={onEndToChange}
             fromDisplayTime={fromDisplayTime}
             setFromDisplayTime={setFromDisplayTime}

@@ -146,6 +146,49 @@ test.describe("Workflow execution search - SQL format toggle", () => {
     ).toContainText("idem-1");
   });
 
+  test("Reset clears the SQL box", async ({ page }) => {
+    await gotoSearch(page, `?asQuery=true&workflowType=${WORKFLOW_NAME}`);
+    await expect(sqlEditor(page)).toContainText(WORKFLOW_NAME);
+
+    await page.locator("#reset-workflow-btn").click();
+
+    // Clearing has to stick: falling back to the seeded text here would make
+    // the box impossible to empty while any basic filter is set.
+    await expect(sqlEditor(page)).not.toContainText(WORKFLOW_NAME);
+  });
+
+  test("an explicitly cleared SQL box is not re-seeded", async ({ page }) => {
+    // An empty `query` param means the box was cleared on purpose, which has
+    // to outrank the seed — otherwise the box cannot be emptied while any
+    // basic filter is set.
+    await gotoSearch(
+      page,
+      `?asQuery=true&workflowType=${WORKFLOW_NAME}&query=`,
+    );
+
+    await expect(sqlEditor(page)).toBeVisible();
+    await expect(sqlEditor(page)).not.toContainText(WORKFLOW_NAME);
+  });
+
+  test("Reset in SQL format also clears the basic-only filters", async ({
+    page,
+  }) => {
+    await gotoSearch(page, `?asQuery=true&workflowType=${WORKFLOW_NAME}`);
+    await expect(sqlEditor(page)).toContainText(WORKFLOW_NAME);
+
+    await page.locator("#reset-workflow-btn").click();
+    await expect(sqlEditor(page)).not.toContainText(WORKFLOW_NAME);
+
+    // Reset means "clear the search", not "clear the fields I can see": the
+    // filter must not reappear on switching back.
+    await sqlToggle(page).click();
+    await expect(basicNameField(page)).toBeVisible();
+    expect(decodeURIComponent(page.url())).not.toContain(WORKFLOW_NAME);
+    await expect(basicNameField(page).locator("xpath=..")).not.toContainText(
+      WORKFLOW_NAME,
+    );
+  });
+
   test("asks before discarding a query basic search cannot express", async ({
     page,
   }) => {

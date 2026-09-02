@@ -70,10 +70,8 @@ const renderAdvanced = async (search: string) => {
           setStartTimeTo={vi.fn()}
           onStartToChange={vi.fn()}
           endTimeFrom=""
-          setEndTimeFrom={vi.fn()}
           onEndFromChange={vi.fn()}
           endTimeTo=""
-          setEndTimeTo={vi.fn()}
           onEndToChange={vi.fn()}
           fromDisplayTime=""
           setFromDisplayTime={vi.fn()}
