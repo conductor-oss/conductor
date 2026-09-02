@@ -41,27 +41,11 @@ import com.networknt.schema.ValidationMessage;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The schema registry. Owns versioning, lookup and removal of {@link SchemaDef}s on top of {@link
+ * Schema registry: versioning, lookup, and removal of {@link SchemaDef}s backed by {@link
  * SchemaDAO}.
  *
- * <p>This is a service of its own rather than a set of methods on {@code MetadataService} because
- * the callers that resolve a schema need only this, and should not take a dependency on the whole
- * metadata surface to perform one lookup.
- *
- * <p>A class rather than an interface with one implementation: there is only ever one registry, and
- * the seam that matters — the one worth substituting per backend — is {@link SchemaDAO} below it.
- * The method set is a fixed contract; adding, removing or renaming one is a breaking change for
- * every caller, so put new behaviour behind an existing method or in {@link
- * org.conductoross.conductor.controllers.SchemaResource}, which adapts this surface to the
- * published endpoints.
- *
- * <p>The lookups report a schema that is not registered as {@code null} rather than by throwing.
- * Turning an absent schema into a {@code 404} belongs to the controller, so that this class decides
- * what exists and the transport decides what a caller sees.
- *
- * <p>{@link SchemaDAO} is a required constructor dependency and no implementation is registered by
- * default, so a server on a backend without one fails at startup instead of accepting schema writes
- * it cannot store.
+ * <p>Lookups return {@code null} for absent schemas rather than throwing; turning a miss into a
+ * {@code 404} is the controller's job.
  */
 @Slf4j
 @Service
@@ -74,11 +58,7 @@ public class SchemaService {
 
     private final SchemaDAO schemaDAO;
 
-    /**
-     * Null unless a time-to-live is configured, which it is not by default. Entries are the
-     * instances the DAO deserialized, shared between readers rather than copied — as the metadata
-     * DAOs' definition caches are — so a caller must treat a schema it reads as read-only.
-     */
+    /** Null when caching is not configured (the default). */
     private final Cache<String, SchemaDef> cache;
 
     private final JsonSchemaValidator jsonSchemaValidator;
@@ -96,19 +76,13 @@ public class SchemaService {
                                 .expireAfterWrite(cacheProperties.getTtl())
                                 .build()
                         : null;
-        // Which backend the registry bound to, and whether reads are cached: the two facts that
-        // decide where a schema went and how stale a read can be, answered without a request.
         log.info(
                 "Schema registry storing through {}, read cache {}",
                 schemaDAO.getClass().getSimpleName(),
                 cache == null ? "disabled" : "enabled, ttl " + cacheProperties.getTtl());
     }
 
-    /**
-     * Mutates and returns the schema it was given — the version it landed at and its audit
-     * timestamps are stamped onto that instance, as the metadata services do. Callers that need
-     * their argument left alone should pass a copy.
-     */
+    /** Mutates and returns the given schema, stamping the version and audit timestamps onto it. */
     public SchemaDef saveSchema(SchemaDef dto, boolean incrementVersion) {
         if (dto == null) {
             throw new IllegalArgumentException("Schema cannot be null");
@@ -126,8 +100,6 @@ public class SchemaService {
         if (schema.getVersion() < 1) {
             schema.setVersion(1);
         }
-        // An in-place save keeps the version's original creation time and stamps the update. The
-        // read is what tells the two apart: the same call creates a version or corrects one.
         Optional<SchemaDef> existing = lookup(schema.getName(), schema.getVersion());
         if (existing.isPresent()) {
             schema.setCreateTime(existing.get().getCreateTime());
@@ -139,22 +111,15 @@ public class SchemaService {
         return schema;
     }
 
-    /**
-     * OSS Conductor has no authenticated principal, so the created-by and updated-by fields stay
-     * unset; the object mapper omits null properties, so they simply do not appear.
-     */
+    /** OSS Conductor has no authenticated principal, so created-by/updated-by stay null. */
     private static void stampCreation(SchemaDef schema) {
         schema.setCreateTime(System.currentTimeMillis());
         schema.setUpdateTime(null);
     }
 
     /**
-     * Allocates the next version by reading the current maximum and saving one past it.
-     *
-     * <p>The read and the write are separate calls with no conditional insert between them, so two
-     * writers registering the same name at once can read the same maximum, land on the same version
-     * and have the later save overwrite the earlier one. Concurrent registration of one name is
-     * last-writer-wins.
+     * Allocates the next version. Two concurrent saves for the same name can land on the same
+     * version number; the later write wins.
      */
     private SchemaDef insertAtNextVersion(SchemaDef schema) {
         int highest = lookupLatest(schema.getName()).map(SchemaDef::getVersion).orElse(0);
@@ -176,10 +141,6 @@ public class SchemaService {
         return cached(key(name, String.valueOf(version)), () -> lookup(name, version)).orElse(null);
     }
 
-    /**
-     * Always read from the backend. Caching a whole listing under one key would go stale on every
-     * write to any schema, and the per-key entries cannot answer "what exists".
-     */
     public List<SchemaDef> getAllSchemas() {
         return schemaDAO.getAll();
     }
@@ -189,14 +150,6 @@ public class SchemaService {
         return schemaDAO.getAllShortenedSchemas();
     }
 
-    /**
-     * Dispatches on what was asked for: every schema when {@code name} is null, every version under
-     * that name when only {@code version} is null, otherwise the single version as a one-element
-     * list.
-     *
-     * @throws com.netflix.conductor.core.exception.NotFoundException when both are given and that
-     *     version is not registered.
-     */
     public List<SchemaDef> getSchemas(String name, Integer version) {
         if (name == null) {
             return getAllSchemas();
@@ -228,10 +181,6 @@ public class SchemaService {
         invalidateName(name);
     }
 
-    /**
-     * One backend call for the whole batch. The cache is dropped per name afterwards rather than
-     * per version, because the versions removed are not read back to enumerate them.
-     */
     public void deleteSchemasByNamesBatch(List<String> names) {
         if (names == null || names.isEmpty()) {
             log.debug("No schema names provided for batch delete");
@@ -263,12 +212,6 @@ public class SchemaService {
         return name + "/" + version;
     }
 
-    /**
-     * The two nullable reads on {@link SchemaDAO}, wrapped once each. Every lookup in this class
-     * goes through one of them, so an absent schema becomes {@link Optional#empty()} here and null
-     * never travels further in. Named apart from the DAO methods they wrap, so a reader can see at
-     * the call site which of the two they are looking at.
-     */
     private Optional<SchemaDef> lookup(String name, int version) {
         return Optional.ofNullable(schemaDAO.findByNameAndVersion(name, version));
     }
@@ -297,12 +240,6 @@ public class SchemaService {
         cache.invalidate(key(name, LATEST));
     }
 
-    /**
-     * Drops every entry for a name by prefix. The separator keeps {@code order} from matching
-     * {@code orders}, but a name containing a slash can still match a neighbour's keys — which
-     * costs a cache miss and nothing else, so the match is deliberately left broad rather than
-     * exact.
-     */
     private void invalidateName(String name) {
         if (cache == null) {
             return;
@@ -312,46 +249,22 @@ public class SchemaService {
     }
 
     /**
-     * Checks {@code data} against {@code schema}, and does nothing when it conforms.
+     * Checks {@code data} against {@code schema}. Inline schemas are used directly; named schemas
+     * are resolved from the registry. An unresolvable reference leaves the payload unchecked (a
+     * miss is counted); a bad schema document is logged and also left unchecked.
      *
-     * <p>This is the only place a payload is checked against a schema. The engine's enforcement
-     * hooks and the AI layer both call it, so the rules below hold identically wherever a schema is
-     * enforced:
-     *
-     * <ul>
-     *   <li>An inline schema — one carrying {@code data} — is used as it stands.
-     *   <li>Otherwise the schema is a reference, and is resolved from the registry by its name and
-     *       version. A version below 1 means no version was asked for and resolves the latest —
-     *       note that {@link SchemaDef} defaults its version to 1, so a definition wanting the
-     *       latest has to say {@code 0} outright.
-     *   <li>{@code externalRef} is never dereferenced. A schema that carries one instead of a
-     *       document is refused outright rather than looked up by its name.
-     * </ul>
-     *
-     * <p>Two cases leave the payload unvalidated rather than failing it, because in neither is
-     * there a document to check against: a reference the registry does not hold — counted as a
-     * registry miss — and a registered document that cannot be read or that the validator cannot
-     * use, which is logged. Both are definition errors, and neither is the payload's fault.
-     *
-     * @throws org.conductoross.conductor.core.exception.SchemaValidationException when the data
-     *     does not conform, or when the schema cannot be enforced and saying so is the only honest
-     *     answer: it carries an external reference, it carries no type, or its type is one this
-     *     server does not validate.
+     * @throws SchemaValidationException when data does not conform, or when the schema carries an
+     *     external reference, has no type, or has an unsupported type.
      */
     public void validate(SchemaDef schema, Map<String, Object> data) {
         long start = System.currentTimeMillis();
         try {
             doValidate(schema, data);
         } catch (SchemaValidationException e) {
-            // Recorded here rather than at the call sites, because this is the one point every
-            // caller — the engine's five enforcement points and the AI layer — passes through.
-            // Tagged by schema name only: this method is not told which boundary it was called
-            // for, and inventing one would be a tag the caller cannot rely on.
+            // Central point for all callers, so metrics are recorded here rather than at each site.
             Monitors.recordSchemaValidationFailure(schema.getName());
             throw e;
         } finally {
-            // Recorded for rejections too: a run that rejects every payload is still doing the
-            // work.
             Monitors.recordSchemaValidationTime(System.currentTimeMillis() - start);
         }
     }
@@ -363,16 +276,11 @@ public class SchemaService {
 
         Optional<SchemaDef> registered = resolve(schema);
         if (registered.isEmpty()) {
-            // A reference the registry does not hold is not enforced. The miss is counted where it
-            // is discovered, so an unregistered reference reaches an operator as a signal rather
-            // than reaching a caller as a failed execution.
-            return;
+            return; // unresolvable reference — miss already counted in resolve()
         }
         SchemaDef resolved = registered.get();
 
-        // The schema fields on a Task Definition carry no cascading-validation annotation, so a
-        // schema with no type is accepted at registration and only discovered here. That is a
-        // definition error and is reported as one, rather than passed over.
+        // TaskDef schema fields have no cascading validation, so a typeless schema reaches here.
         if (resolved.getType() == null) {
             throw new SchemaValidationException(
                     "Schema %s version %d has no type, so nothing can be validated against it",
@@ -386,9 +294,14 @@ public class SchemaService {
         try {
             schemaContent = OBJECT_MAPPER.writeValueAsString(resolved.getData());
         } catch (JsonProcessingException e) {
+<<<<<<< HEAD
             // Same reading as an unusable document below: the schema is at fault, not the payload,
             // so it is logged for whoever registered it and nothing is checked.
             log.error(
+=======
+            // Bad schema data — log it and skip validation rather than failing the payload.
+            LOGGER.error(
+>>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
                     "Error parsing the json schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -401,11 +314,17 @@ public class SchemaService {
         try {
             failures = jsonSchemaValidator.validate(schemaContent, data == null ? Map.of() : data);
         } catch (JsonSchemaException e) {
+<<<<<<< HEAD
             // An unusable schema document is a definition error, and no payload can be checked
             // against it: it is logged for whoever registered it and the payload is let through.
             // networknt's own getMessage() is frequently empty here, so the messages it carries
             // are what get logged.
             log.error(
+=======
+            // Bad schema document — skip validation. networknt getMessage() is often empty,
+            // so log the validation messages instead.
+            LOGGER.error(
+>>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
                     "Bad or unsupported schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -424,21 +343,13 @@ public class SchemaService {
     }
 
     /**
-     * Returns the schema whose {@code data} is the document to validate against: the argument when
-     * it inlines one, otherwise the registered version it names. Empty when the reference names a
-     * version the registry does not hold, which leaves the payload unvalidated.
-     *
-     * <p>A version below 1 means no version was asked for, and resolves the highest registered
-     * version under the name. {@link SchemaDef} defaults its version to 1, so a definition that
-     * wants to track the latest has to say {@code 0} outright.
-     *
-     * <p>{@code externalRef} is checked before the registry, and refused: it is stored and returned
-     * unchanged and nothing dereferences it, so a schema carrying one instead of a document says
-     * outright that it cannot be enforced rather than being looked up under its name.
+     * Returns the schema to validate against. Inline schemas (carrying {@code data}) are returned
+     * as-is; others are looked up by name and version. Version {@code < 1} resolves the latest.
+     * Returns empty when the registry has no matching entry. {@code externalRef} is refused.
      */
     private Optional<SchemaDef> resolve(SchemaDef schema) {
-        // An empty document is a legal JSON Schema that permits anything, so `data` being present
-        // — not being non-empty — is what makes a schema inline.
+        // An empty map is a valid JSON Schema (permits everything), so presence of data — not
+        // non-emptiness — is what makes a schema inline.
         if (schema.getData() != null) {
             return Optional.of(schema);
         }
@@ -452,17 +363,19 @@ public class SchemaService {
         }
         String name = schema.getName();
         int version = schema.getVersion();
-        // Through the cache: under enforcement this runs on every scheduled task, which is the
-        // read the cache exists for.
         Optional<SchemaDef> registered =
                 version < 1
                         ? cached(key(name, LATEST), () -> lookupLatest(name))
                         : cached(key(name, String.valueOf(version)), () -> lookup(name, version));
         if (registered.isEmpty()) {
+<<<<<<< HEAD
             // Under enforcement this runs for every scheduled task, so one unregistered reference
             // would warn on every execution of it. The counter is the operator's signal that a
             // definition points at nothing, since the payload itself goes through unchecked.
             log.debug(
+=======
+            LOGGER.debug(
+>>>>>>> e626f9b08 (refactor(comments): trim AI-verbose comments to short, clear ones)
                     "A definition references schema {} version {}, which is not registered",
                     name,
                     version);

@@ -25,12 +25,7 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.test.base.AbstractSpecification
 import com.netflix.conductor.test.utils.MockExternalPayloadStorage
 
-/**
- * Schema enforcement driven through the real engine.
- *
- * <p>Nothing is configured to switch enforcement on: every definition below opts in with its own
- * {@code enforceSchema} flag, which is the only gate there is.
- */
+/** Schema enforcement integration tests. Each definition opts in via its own {@code enforceSchema} flag. */
 class SchemaEnforcementSpec extends AbstractSpecification {
 
     @Autowired
@@ -231,18 +226,12 @@ class SchemaEnforcementSpec extends AbstractSpecification {
         }
     }
 
-    /**
-     * A reference the registry does not hold names no document, so there is nothing to check the
-     * payload against and it goes through. The miss is counted on {@code schema_registry_miss}
-     * instead — the definition is at fault, not the payload.
-     */
     def "a schema the registry does not hold leaves the payload unvalidated"() {
         given: "a task whose input schema is a reference to nothing"
         def dangling = new SchemaDef()
         dangling.name = 'never_registered_' + UUID.randomUUID().toString().replace('-', '')
         dangling.version = 4
         def taskName = uniqueTaskName('dangling')
-        // A payload that would be refused if the reference did resolve, to show nothing checked it.
         def workflowDef = register('dangling', taskDef(taskName, 0, dangling, null),
                 ['nickname': '${workflow.input.nickname}'], null, null)
 

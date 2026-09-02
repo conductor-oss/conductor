@@ -251,9 +251,7 @@ public class LLMHelper {
                     String responseText = o.toString();
                     var responseObj = tryToConvertToJSON(responseText, input);
                     hasJsonOutput = true;
-                    // A generation that did parse as JSON has already been validated by
-                    // tryToConvertToJSON, which throws on a mismatch. What is left to catch here
-                    // is a generation that never parsed at all.
+                    // tryToConvertToJSON already validated JSON content; this catches non-JSON.
                     if (input.getOutputSchema() != null && !(responseObj instanceof Map)) {
                         errors.add(
                                 "Output does not confirm to the schema.  errors: %s"
@@ -308,15 +306,7 @@ public class LLMHelper {
         }
     }
 
-    /**
-     * Validates {@code data} against {@code schema}, returning what failed or {@code null} when it
-     * conforms.
-     *
-     * <p>The registry owns what a schema means: an inline schema is used as it stands, and one
-     * carrying only a name and version is resolved against the registry. {@code externalRef} is
-     * stored and returned unchanged and nothing dereferences it, so a schema carrying only an
-     * external reference is reported as unresolvable rather than passed over.
-     */
+    /** Validates data against schema; returns the error message or null on success. */
     private String validateJsonSchema(final SchemaDef schema, Map<String, Object> data) {
         try {
             schemaService.validate(schema, data);

@@ -27,10 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The behaviour every {@link SchemaDAO} implementation owes its callers, run once per backend.
- *
- * <p>Each test names its own schemas, so the suite makes no assumption about the store being empty
- * and two backends' suites cannot interfere when they share a container.
+ * Contract tests for {@link SchemaDAO} implementations. Each test generates its own schema names
+ * so the suite is safe to run against a shared container.
  */
 public abstract class SchemaDAOTest {
 
@@ -38,10 +36,8 @@ public abstract class SchemaDAOTest {
     protected abstract SchemaDAO getSchemaDAO();
 
     /**
-     * A DAO over a <em>newly opened</em> connection to the same store, standing in for the server
-     * coming back up. Implementations must open a fresh connection or pool rather than hand back
-     * the one the DAO under test already holds — otherwise the test proves only that the row
-     * outlived a Java object.
+     * A DAO over a freshly opened connection to the same store. Must not reuse the connection from
+     * {@link #getSchemaDAO()} — the test verifies persistence across a connection boundary.
      */
     protected abstract SchemaDAO reopenStore();
 
@@ -72,10 +68,6 @@ public abstract class SchemaDAOTest {
         assertEquals(schema(name, 1).getData(), found.getData());
     }
 
-    /**
-     * The compiler stopped checking this half when the finders started returning null, so what each
-     * backend does on a miss is pinned here: null, rather than an exception or an empty schema.
-     */
     @Test
     public void missingSchemaIsNull() {
         assertNull(getSchemaDAO().findByNameAndVersion(uniqueName(), 1));
@@ -171,11 +163,7 @@ public abstract class SchemaDAOTest {
         assertEquals(1, schemasNamed(survivor).size());
     }
 
-    /**
-     * A delete of something that is not there removes nothing and says so. The count is what a
-     * caller would use to tell a missing schema from a deleted one, so a backend reporting a
-     * removal it did not make would be reporting a schema that never existed.
-     */
+    /** Delete of a missing schema returns 0, not an exception. */
     @Test
     public void deletingSomethingAbsentRemovesNothing() {
         String name = uniqueName();
@@ -228,8 +216,7 @@ public abstract class SchemaDAOTest {
         getSchemaDAO().save(schema(second, 1));
         getSchemaDAO().save(schema(survivor, 1));
 
-        // The count is versions removed rather than names matched, and a name that is not there
-        // contributes nothing to it.
+        // Count is versions removed; an unknown name contributes 0.
         assertEquals(3, getSchemaDAO().deleteAllByNames(List.of(first, second, uniqueName())));
 
         assertTrue(schemasNamed(first).isEmpty());
@@ -249,11 +236,7 @@ public abstract class SchemaDAOTest {
         assertEquals(1, schemasNamed(name).size());
     }
 
-    /**
-     * The shortened listing is a projection, not a cheaper way to read schemas: it names every
-     * registered version and carries nothing else, so a caller cannot mistake an entry for a
-     * document it could validate against.
-     */
+    /** The shortened listing returns name and version only — no type, data, or externalRef. */
     @Test
     public void shortenedSchemasCarryNameAndVersionOnly() {
         String name = uniqueName();

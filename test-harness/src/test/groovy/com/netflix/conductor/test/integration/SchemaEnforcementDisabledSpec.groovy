@@ -22,13 +22,8 @@ import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.test.base.AbstractSpecification
 
 /**
- * A definition that attaches schemas but leaves {@code enforceSchema} at its default.
- *
- * <p>This is the guarantee the feature is built around: attaching a schema changes nothing about
- * how a definition executes until that definition also opts in. With no server-wide switch, this
- * flag is the only thing standing between a schema attached for documentation and rejected work,
- * so the default has to be load-bearing rather than incidental. {@link SchemaEnforcementSpec} is
- * the same shape with the flag set.
+ * Attaching a schema has no effect until the definition opts in via {@code enforceSchema}.
+ * This is the same shape as {@link SchemaEnforcementSpec} but with enforcement off.
  */
 class SchemaEnforcementDisabledSpec extends AbstractSpecification {
 
@@ -50,8 +45,6 @@ class SchemaEnforcementDisabledSpec extends AbstractSpecification {
         taskDef.retryCount = 0
         taskDef.inputSchema = schema
         taskDef.outputSchema = schema
-        // Left at its default, which is the point: the schemas above are attached and complete,
-        // and nothing but this flag keeps them from rejecting every payload below.
         taskDef.enforceSchema = false
         metadataService.registerTaskDef([taskDef])
 

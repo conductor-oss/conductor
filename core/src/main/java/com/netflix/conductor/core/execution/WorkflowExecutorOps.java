@@ -716,8 +716,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         try {
             validateAgainst(outputSchemaOf(workflow.getWorkflowDefinition()), workflow::getOutput);
         } catch (SchemaValidationException e) {
-            // The output is assembled; the workflow fails instead of completing, carrying the
-            // validation message as its reason.
             throw new TerminateWorkflowException(e.getMessage(), WorkflowModel.Status.FAILED);
         }
 
@@ -1007,20 +1005,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     taskResult.getExternalOutputPayloadStoragePath());
         }
 
-        // Only a task the worker reports as done has an output worth checking. Validating what a
-        // failing task returned would replace the worker's own reason with a schema complaint.
-        //
-        // An externalized output is skipped rather than fetched: `outputData` is empty in that
-        // case, so validating it would reject every large payload for fields that are in fact
-        // present. Documented in docs/devguide/how-tos/schema-validation.md.
+        // Only check output for COMPLETED tasks. Externalized outputs are skipped: outputData is
+        // empty in that case, so validating it would reject valid large payloads.
         if (task.getStatus() == COMPLETED
                 && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
             try {
                 validateAgainst(outputSchemaOf(taskDefinitionOrNull(task)), task::getOutputData);
             } catch (SchemaValidationException e) {
-                // Terminal, as an input failure is: the worker has already run and returned a
-                // shape its own definition refuses, so re-running it spends the retry budget on
-                // an outcome nothing has changed.
+                // Terminal: re-running won't fix an invalid output shape.
                 task.setStatus(FAILED_WITH_TERMINAL_ERROR);
                 task.setReasonForIncompletion(e.getMessage());
             }
@@ -1377,10 +1369,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         if (!workflowSystemTask.isAsync()
                                 && executeSyncSystemTaskWithSecrets(
                                         workflowSystemTask, workflow, task)) {
-                            // A system task the server runs itself never reports through the
-                            // task-update API, so this is the only point its output passes
-                            // through. Without the check an outputSchema on an INLINE or
-                            // SET_VARIABLE definition would be stored and never enforced.
+                            // Sync system tasks skip the task-update API path, so check here.
                             validateSystemTaskOutput(task);
                             tasksToBeUpdated.add(task);
                             stateChanged = true;
@@ -2046,9 +2035,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()));
 
-            // Save the tasks in the DAO, rejected ones included: they are persisted in the
-            // terminal state they were given, so the next decide() cycle sees them and fails
-            // the workflow with the validation message.
+            // Persist rejected tasks too so the next decide() cycle sees their terminal state.
             executionDAOFacade.createTasks(tasks);
 
             List<TaskModel> acceptedTasks =
@@ -2127,20 +2114,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.warn(errorMsg, e);
             Monitors.error(CLASS_NAME, "scheduleTask");
         }
-        // A rejected task is a state change of its own: it is already terminal, and the decide
-        // loop has to run again for the workflow to notice it.
         return startedSystemTasks || !rejectedIds.isEmpty();
     }
 
     /**
-     * Fails any task whose input does not match the input schema on its definition, before it is
-     * queued and so before a worker ever sees it.
+     * Fails tasks whose input violates their definition's schema, before they are queued. Failures
+     * are terminal — retrying the same payload against the same schema achieves nothing.
      *
-     * <p>The failure is terminal rather than retriable. A payload that violates a schema violates
-     * it identically on every attempt, so retrying only spends the task's retry budget
-     * re-submitting the same invalid input.
-     *
-     * @return the ids of the tasks that were rejected, which must not be queued or started
+     * @return ids of rejected tasks, which must not be queued or started
      */
     private Set<String> rejectTasksFailingInputSchema(List<TaskModel> tasks) {
         Set<String> rejected = new HashSet<>();
@@ -2159,10 +2140,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         return rejected;
     }
 
-    /**
-     * The task's definition, or null when it has none. Unlike {@link #getTaskDefinition}, an absent
-     * definition is not an error here: it simply means there is no schema to enforce.
-     */
+    /** Returns the task's definition, or null if absent (no schema to enforce). */
     private TaskDef taskDefinitionOrNull(TaskModel task) {
         return task.getTaskDefinition()
                 .orElseGet(
@@ -2214,14 +2192,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     /**
-     * Checks a synchronous system task's output against its definition's output schema, at the one
-     * point such a task has an output and has not yet been persisted.
-     *
-     * <p>Fails the task terminally, as the worker-reported path does: the server produced this
-     * output itself, so running it again produces the same shape.
-     *
-     * <p>Only the tasks that complete inside {@code execute(...)} reach here. One that completes in
-     * {@code start(...)} is persisted by {@link #scheduleTask} and is not covered.
+     * Validates a synchronous system task's output schema after execute(), before persistence.
+     * Tasks completing in start() are handled by scheduleTask and are not covered here.
      */
     private void validateSystemTaskOutput(TaskModel task) {
         if (task.getStatus() != COMPLETED) {
@@ -2235,10 +2207,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
     }
 
-    /**
-     * The schema on a definition's input side, or {@code null} when nothing is to be enforced —
-     * there is no definition, it has not opted in, or it attaches no schema.
-     */
+    /** Returns the input schema only when enforcement is on, null otherwise. */
     private static SchemaDef inputSchemaOf(WorkflowDef def) {
         return def == null || !def.isEnforceSchema() ? null : def.getInputSchema();
     }
@@ -2256,13 +2225,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     }
 
     /**
-     * Validates a payload against a schema, doing nothing when there is no schema to enforce.
-     *
-     * <p>The payload is supplied lazily and read only once a schema is in hand. {@link
-     * WorkflowModel#getInput()} and {@link WorkflowModel#getOutput()} are not plain getters — when
-     * both the inline map and the external-storage map hold entries they merge the two and reset
-     * the payload field — so evaluating one for an execution that never opted in would do that work
-     * on every execution.
+     * Validates a payload against a schema; does nothing when schema is null. The payload is
+     * supplied lazily because WorkflowModel getInput/getOutput merge inline and external-storage
+     * maps on access, which is wasted work when enforcement is off.
      */
     private void validateAgainst(SchemaDef schema, Supplier<Map<String, Object>> payload) {
         if (schema == null) {
@@ -2751,8 +2716,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
         WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
 
-        // Before the try, and so before anything is persisted: an input that does not match the
-        // definition's schema means the execution never starts, and there is nothing to undo.
         validateAgainst(inputSchemaOf(workflow.getWorkflowDefinition()), workflow::getInput);
 
         try {
