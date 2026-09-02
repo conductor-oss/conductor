@@ -24,8 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +38,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.networknt.schema.JsonSchemaException;
 import com.networknt.schema.ValidationMessage;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The schema registry. Owns versioning, lookup and removal of {@link SchemaDef}s on top of {@link
@@ -64,11 +63,10 @@ import com.networknt.schema.ValidationMessage;
  * default, so a server on a backend without one fails at startup instead of accepting schema writes
  * it cannot store.
  */
+@Slf4j
 @Service
 @EnableConfigurationProperties(SchemaCacheProperties.class)
 public class SchemaService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaService.class);
 
     private static final String LATEST = "latest";
 
@@ -100,7 +98,7 @@ public class SchemaService {
                         : null;
         // Which backend the registry bound to, and whether reads are cached: the two facts that
         // decide where a schema went and how stale a read can be, answered without a request.
-        LOGGER.info(
+        log.info(
                 "Schema registry storing through {}, read cache {}",
                 schemaDAO.getClass().getSimpleName(),
                 cache == null ? "disabled" : "enabled, ttl " + cacheProperties.getTtl());
@@ -236,12 +234,12 @@ public class SchemaService {
      */
     public void deleteSchemasByNamesBatch(List<String> names) {
         if (names == null || names.isEmpty()) {
-            LOGGER.debug("No schema names provided for batch delete");
+            log.debug("No schema names provided for batch delete");
             return;
         }
         int deleted = schemaDAO.deleteAllByNames(names);
         names.forEach(this::invalidateName);
-        LOGGER.info("Batch deleted {} schema versions across {} names", deleted, names.size());
+        log.info("Batch deleted {} schema versions across {} names", deleted, names.size());
     }
 
     /** Removing a version that is not registered is reported, as removing a whole name is. */
@@ -390,7 +388,7 @@ public class SchemaService {
         } catch (JsonProcessingException e) {
             // Same reading as an unusable document below: the schema is at fault, not the payload,
             // so it is logged for whoever registered it and nothing is checked.
-            LOGGER.error(
+            log.error(
                     "Error parsing the json schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -407,7 +405,7 @@ public class SchemaService {
             // against it: it is logged for whoever registered it and the payload is let through.
             // networknt's own getMessage() is frequently empty here, so the messages it carries
             // are what get logged.
-            LOGGER.error(
+            log.error(
                     "Bad or unsupported schema {} version {}: {}",
                     resolved.getName(),
                     resolved.getVersion(),
@@ -464,7 +462,7 @@ public class SchemaService {
             // Under enforcement this runs for every scheduled task, so one unregistered reference
             // would warn on every execution of it. The counter is the operator's signal that a
             // definition points at nothing, since the payload itself goes through unchecked.
-            LOGGER.debug(
+            log.debug(
                     "A definition references schema {} version {}, which is not registered",
                     name,
                     version);
