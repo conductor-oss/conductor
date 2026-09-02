@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Contract tests for {@link SchemaDAO} implementations. Each test generates its own schema names
- * so the suite is safe to run against a shared container.
+ * Contract tests for {@link SchemaDAO} implementations. Each test generates its own schema names so
+ * the suite is safe to run against a shared container.
  */
 public abstract class SchemaDAOTest {
 
