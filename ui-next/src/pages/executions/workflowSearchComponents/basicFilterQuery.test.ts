@@ -145,10 +145,24 @@ describe("parseQueryToBasicFilters", () => {
     ).toEqual({ status: ["FAILED", "TIMED_OUT"] });
   });
 
-  it("is case-insensitive about AND and IN", () => {
+  it("accepts a lower case IN, as the UI's own example query uses", () => {
+    expect(parseQueryToBasicFilters("workflowType in (a)")).toEqual({
+      workflowType: ["a"],
+    });
+  });
+
+  it("does not treat a lower case and as a separator", () => {
+    // Postgres splits on the literal " AND " only, so to it this is a single
+    // clause whose value happens to contain "and". Splitting here would apply
+    // filters the query never asked for.
     expect(
       parseQueryToBasicFilters("workflowType in (a) and workflowId='b'"),
-    ).toEqual({ workflowType: ["a"], workflowId: "b" });
+    ).toBeNull();
+  });
+
+  it("refuses an IN list whose quoting leaves the values ambiguous", () => {
+    // Previously produced ["'a", "b'"] — stray quotes, silently wrong.
+    expect(parseQueryToBasicFilters("correlationId IN ('a,b')")).toBeNull();
   });
 
   it("refuses OR, which basic search cannot express", () => {

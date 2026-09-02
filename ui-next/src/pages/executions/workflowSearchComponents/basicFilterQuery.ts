@@ -1,4 +1,5 @@
 import _isEmpty from "lodash/isEmpty";
+import { parseClause, splitClauses } from "../queryClauses";
 
 /**
  * The execution filters that only basic search renders a control for. Advanced
@@ -81,103 +82,83 @@ export type ParsedBasicFilters = {
   endTimeTo?: string;
 };
 
-const unquote = (value: string) => value.trim().replace(/^(['"])(.*)\1$/, "$2");
-
-const toList = (value: string) =>
-  value
-    .split(",")
-    .map(unquote)
-    .filter((item) => item !== "");
-
 /**
  * Reads query text back into basic search's fields — the inverse of
  * basicOnlyFilterQuery, extended to the fields advanced search also has
  * controls for so their text values win over the controls when switching back.
  *
+ * Clause parsing itself lives in queryClauses.ts; this only maps a recognised
+ * field and operator onto the form.
+ *
  * Returns null when the query uses anything basic search cannot express (OR,
- * grouping, an unknown field, an operator a field does not support), which is
- * the caller's signal to ask before discarding it. Parsing is all-or-nothing:
- * applying only the clauses we understood would silently drop the rest.
+ * grouping, an unknown field, an operator a field does not support, ambiguous
+ * quoting), which is the caller's signal to ask before discarding it. Parsing
+ * is all-or-nothing: applying only the clauses we understood would silently
+ * drop the rest.
  */
 export const parseQueryToBasicFilters = (
   queryText: string,
 ): ParsedBasicFilters | null => {
-  const trimmed = queryText.trim();
-  if (trimmed === "") {
+  const clauses = splitClauses(queryText);
+  if (clauses.length === 0) {
     return {};
   }
   // Basic search joins every field with AND and has no way to group clauses.
-  if (/\bOR\b/i.test(trimmed)) {
+  if (/\bOR\b/i.test(queryText)) {
     return null;
   }
 
   const filters: ParsedBasicFilters = {};
 
-  for (const rawClause of trimmed.split(/\s+AND\s+/i)) {
-    const clause = rawClause.trim();
-    if (clause === "") {
-      continue;
-    }
-
-    const inMatch = clause.match(/^(\w+)\s+IN\s*\(([^()]*)\)$/i);
-    const opMatch = clause.match(/^(\w+)\s*(=|>|<)\s*(.*)$/);
-
-    const field = inMatch?.[1] ?? opMatch?.[1];
-    if (!field) {
+  for (const rawClause of clauses) {
+    const parsed = parseClause(rawClause);
+    if (!parsed) {
       return null;
     }
-    const op = inMatch ? "IN" : opMatch![2];
-    const value = inMatch ? inMatch[2] : opMatch![3];
+    const { field, operator, values } = parsed;
+    const single = values[0];
 
-    switch (`${field}:${op}`) {
+    switch (`${field}:${operator}`) {
       case "workflowType:IN":
-        filters.workflowType = toList(value);
-        break;
       case "workflowType:=":
-        filters.workflowType = [unquote(value)];
+        filters.workflowType = values;
         break;
       case "status:IN":
-        filters.status = toList(value);
-        break;
       case "status:=":
-        filters.status = [unquote(value)];
+        filters.status = values;
         break;
       case "workflowId:=":
-        filters.workflowId = unquote(value);
+        filters.workflowId = single;
         break;
       case "correlationId:IN":
-        filters.correlationIds = toList(value);
-        break;
       case "correlationId:=":
-        filters.correlationIds = [unquote(value)];
+        filters.correlationIds = values;
         break;
       case "idempotencyKey:IN":
-        filters.idempotencyKey = toList(value);
-        break;
       case "idempotencyKey:=":
-        filters.idempotencyKey = [unquote(value)];
+        filters.idempotencyKey = values;
         break;
       case "startTime:>":
-        filters.startTimeFrom = unquote(value);
+        filters.startTimeFrom = single;
         break;
       case "startTime:<":
-        filters.startTimeTo = unquote(value);
+        filters.startTimeTo = single;
         break;
       case "endTime:>":
-        filters.endTimeFrom = unquote(value);
+        filters.endTimeFrom = single;
         break;
       case "endTime:<":
-        filters.endTimeTo = unquote(value);
+        filters.endTimeTo = single;
         break;
       case "modifiedTime:>":
-        filters.modifiedFrom = unquote(value);
+        filters.modifiedFrom = single;
         break;
       case "modifiedTime:<":
-        filters.modifiedTo = unquote(value);
+        filters.modifiedTo = single;
         break;
       case "parentWorkflowId:=":
         // The only value basic search can express is "no parent".
-        if (unquote(value) !== "") {
+        if (single !== "") {
           return null;
         }
         filters.excludeSubExecutions = true;
