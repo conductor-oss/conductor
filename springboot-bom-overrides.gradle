@@ -19,7 +19,8 @@
 ext['spring-framework.version'] = '6.2.19'
 ext['spring-security.version'] = '6.5.11'
 ext['log4j2.version'] = '2.25.4'
-ext['netty.version'] = '4.1.135.Final'
+ext['netty.version'] = '4.1.136.Final'
+ext['micrometer.version'] = revMicrometer
 ext['kafka.version'] = '3.9.1'
 
 // Conductor's default is ES6, but SB brings in ES7

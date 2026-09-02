@@ -76,7 +76,7 @@ ext {
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
     revKafka = '3.9.1'
-    revMicrometer = '1.14.6'
+    revMicrometer = '1.15.12'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.29'
     revElasticSearch8 = '8.19.11'
