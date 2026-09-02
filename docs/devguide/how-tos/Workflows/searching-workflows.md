@@ -43,7 +43,7 @@ For structured/free-text or task-based searches beyond CLI flags, use `GET /api/
 
 ## Search with the UI
 
-Go to **[Executions > Workflow](http://localhost:8080/executions)** in the Conductor UI. Fill in one or more filters and select **Search**. Results can be sorted by column, and **Show as code** displays the equivalent `GET /api/workflow/search` call for the current filters.
+Go to **Executions > Workflow** in the Conductor UI. Fill in one or more filters and select **Search**. Results can be sorted by column, and **Show as code** displays the equivalent `GET /api/workflow/search` call for the current filters.
 
 ### Filters
 
