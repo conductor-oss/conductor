@@ -1,0 +1,1 @@
+{"version":3,"file":"releaseVersion.js","sources":["../../src/utils/releaseVersion.ts"],"sourcesContent":["export const releaseVersion =\n  process.env?.VITE_CONDUCTOR_UI_VERSION == null\n    ? \"latest\"\n    : process.env.VITE_CONDUCTOR_UI_VERSION;\n"],"names":["releaseVersion","define_process_env_default"],"mappings":"SAAO,MAAMA,EACXC,GAAa,2BAA6B,KACtC,SACAA,EAAY"}

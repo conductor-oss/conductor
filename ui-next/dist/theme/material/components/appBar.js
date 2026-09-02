@@ -1,0 +1,2 @@
+import{colors as o}from"../../tokens/variables.js";const n=r=>({MuiAppBar:{styleOverrides:{root:{...r==="light"?{backgroundColor:o.white,color:o.primary,fontSize:"11pt !important",fontWeight:400}:{backgroundColor:o.gray01,color:o.primary,fontSize:"11pt !important",fontWeight:400},boxShadow:"none !important","& .MuiLink-underlineHover:hover":{textDecoration:"none !important"}}}}});export{n as appBar,n as default};
+//# sourceMappingURL=appBar.js.map

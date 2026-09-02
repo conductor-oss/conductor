@@ -1,0 +1,2 @@
+import{useFetchContext as o,fetchWithContext as u}from"../plugins/fetch.js";import{useAuthHeaders as n,STALE_TIME_SEARCH as c}from"./query.js";import{useQuery as h}from"react-query";const r="/users",p=()=>{const t=o(),a={headers:n()};return h([t.stack,r,{}],()=>u(r,t,a),{enabled:t.ready,keepPreviousData:!0,staleTime:c,retry:(e,s)=>s?.status>=400&&s.status<500?!1:e>3})};export{p as useGetUsers};
+//# sourceMappingURL=useGetUsers.js.map

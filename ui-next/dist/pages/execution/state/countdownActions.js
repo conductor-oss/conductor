@@ -1,0 +1,2 @@
+import{assign as n,sendParent as e}from"xstate";import{ExecutionActionTypes as d}from"./types.js";const p=n({duration:(t,o)=>o?.duration||30}),r=n({elapsed:0}),s=t=>n({countdownType:t}),i=e((t,o)=>({type:d.UPDATE_DURATION,duration:o?.duration,countdownType:o?.countdownType})),c=(t=!1)=>e(o=>({type:d.UPDATE_DURATION,duration:o?.duration,countdownType:o?.countdownType,isDisabled:t}));export{r as resetCountdownElapsed,p as updateCountdownDuration,s as updateCountdownType,i as updateParentDuration,c as updateParentIsDisabled};
+//# sourceMappingURL=countdownActions.js.map

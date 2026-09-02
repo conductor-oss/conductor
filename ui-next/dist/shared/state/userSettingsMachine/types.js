@@ -1,0 +1,2 @@
+var S=(E=>(E.INIT="init",E.LOADING_FROM_STORAGE="loadingFromStorage",E.READY="ready",E.SHOWING_CONFETTI="showingConfetti",E.CONFETTI_VISIBLE="confettiVisible",E.SAVING_TO_STORAGE="savingToStorage",E))(S||{}),_=(E=>(E.SET_FIRST_WORKFLOW_EXECUTED="SET_FIRST_WORKFLOW_EXECUTED",E.ADD_DISMISSED_MESSAGE="ADD_DISMISSED_MESSAGE",E.SET_DISMISS_ALL_MESSAGES="SET_DISMISS_ALL_MESSAGES",E))(_||{});export{_ as UserSettingsEventTypes,S as UserSettingsStates};
+//# sourceMappingURL=types.js.map

@@ -1,0 +1,2 @@
+import{assign as n,sendParent as a}from"xstate";import{cancel as o}from"xstate/lib/actions";import{WorkflowMetadataMachineEventTypes as c}from"../../state/types.js";const m=n({value:(t,{value:e})=>e}),p=a((t,{value:e})=>({type:c.UPDATE_METADATA,metadataChanges:{[t.fieldName]:e}})),h=o("sync_with_parent");export{h as cancelSyncWithParent,p as debounceSyncWithParent,m as persistChanges};
+//# sourceMappingURL=actions.js.map

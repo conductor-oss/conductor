@@ -1,0 +1,1 @@
+{"version":3,"file":"regex.js","sources":["../../src/utils/regex.ts"],"sourcesContent":["export const OBJECT_PROPERTY_NAME_REGEX = /^[!#$%&'*+\\-.^_`|~0-9A-Za-z]+$/;\n"],"names":["OBJECT_PROPERTY_NAME_REGEX"],"mappings":"AAAO,MAAMA,EAA6B"}

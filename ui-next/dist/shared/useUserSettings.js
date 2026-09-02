@@ -1,0 +1,2 @@
+import{useSelector as n}from"@xstate/react";import{useContext as i}from"react";import{UserSettingsContext as c}from"./UserSettingsContext.js";const m=()=>{const s=i(c);if(!s)throw new Error("useUserSettings must be used within UserSettingsProvider");const{userSettingsService:t}=s,o=n(t,e=>e.context),r=n(t,e=>e.context.isShowingConfettiThisSession);return{userSettings:o,isShowingConfetti:r,send:t.send,service:t}};export{m as useUserSettings};
+//# sourceMappingURL=useUserSettings.js.map

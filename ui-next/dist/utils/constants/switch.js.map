@@ -1,0 +1,1 @@
+{"version":3,"file":"switch.js","sources":["../../../src/utils/constants/switch.ts"],"sourcesContent":["export const SWITCH_CASE_PREFIX = \"switch_case\";\n"],"names":["SWITCH_CASE_PREFIX"],"mappings":"AAAO,MAAMA,EAAqB"}

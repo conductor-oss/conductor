@@ -1,0 +1,2 @@
+import n from"lodash/first";const s=/\$\{[^}]*$/,l=(r,i)=>{const e=i.toString().toLowerCase();if(e.endsWith("$"))return r?.filter(t=>t?.toString().toLowerCase().startsWith("$"));if(s.test(e)){const t=n(e.match(s));return t?r?.filter(o=>o?.toString().toLowerCase().startsWith(t)):[]}else return r?.filter(t=>t?.toString().toLowerCase().startsWith(e))};export{s as VARIABLE_REGEX,l as customFilterOptions};
+//# sourceMappingURL=formOptions.js.map

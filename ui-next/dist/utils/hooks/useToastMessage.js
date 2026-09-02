@@ -1,0 +1,2 @@
+import{MessageContext as o}from"../../components/providers/messageContext/MessageContext.js";import"react/jsx-runtime";import"@mui/material";import"../../components/ui/MuiAlert.js";import"@phosphor-icons/react";import{useContext as r,useCallback as a}from"react";const u=()=>{const{setMessage:t}=r(o);return{toastMessage:a(({text:s,severity:e})=>{t({text:s,severity:e})},[t])}};export{u as useToastMessage};
+//# sourceMappingURL=useToastMessage.js.map

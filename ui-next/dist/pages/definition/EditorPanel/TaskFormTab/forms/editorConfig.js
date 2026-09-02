@@ -1,0 +1,2 @@
+import{editor as e}from"monaco-editor";const r={tabSize:2,minimap:{enabled:!1},lightbulb:{enabled:e.ShowLightbulbIconMode.Off},quickSuggestions:!0,lineNumbers:"off",glyphMargin:!1,folding:!1,lineDecorationsWidth:0,lineNumbersMinChars:0,renderLineHighlight:"none",overviewRulerLanes:0,hideCursorInOverviewRuler:!0,scrollbar:{vertical:"hidden",alwaysConsumeMouseWheel:!1},overviewRulerBorder:!1,automaticLayout:!0};export{r as smallEditorDefaultOptions};
+//# sourceMappingURL=editorConfig.js.map

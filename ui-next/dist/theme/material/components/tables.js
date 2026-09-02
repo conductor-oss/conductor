@@ -1,0 +1,2 @@
+import{colors as e,fontWeights as o,fontSizes as t}from"../../tokens/variables.js";const i={MuiTablePagination:{styleOverrides:{select:{paddingRight:"32px !important"},selectRoot:{top:1}}},MuiTableCell:{styleOverrides:{root:{fontSize:t.fontSize2},head:{fontWeight:o.fontWeight1,color:e.gray05}}},MuiTableRow:{styleOverrides:{root:{"&.Mui-selected:hover":{backgroundColor:e.gray12},"&.Mui-selected":{backgroundColor:`${e.gray12} !important`}}}}};export{i as default};
+//# sourceMappingURL=tables.js.map

@@ -1,0 +1,34 @@
+import { ChangeEvent } from "react";
+import { HttpInputParameters } from "types";
+import { GrpcTaskFormProps } from "../GRPCTaskForm/types";
+import { HttpTaskFormProps } from "./types";
+export declare const useCreateHttpRequestHandlers: ({ onChange, task, }: HttpTaskFormProps | GrpcTaskFormProps) => readonly [{
+    readonly onChangeHttpRequest: (request: string | HttpInputParameters) => any;
+    readonly onChangeMethod: (method: string) => any;
+    readonly onChangeAccept: (accept: string) => any;
+    readonly onChangeService: (value: string) => any;
+    readonly onChangeContentType: (contentType: string) => any;
+    readonly onChangeHeaders: (modHttpHeaders: any) => any;
+    readonly onChangePollingStrategy: (pollingStrategy: string) => any;
+    readonly onChangeUri: (uri: string) => void;
+    readonly onChangeAsyncComplete: (event: ChangeEvent<HTMLInputElement>) => void;
+    readonly onChangeOptional: (event: ChangeEvent<HTMLInputElement>) => void;
+    readonly onChangeHttpRequestBody: (maybeEventOrValue: string | any) => void;
+    readonly onChangeEncode: (value: boolean) => void;
+    readonly generatePath: (path: any) => string;
+    readonly onChangeHttpRequestBodyParameter: (maybeEventOrValue: any) => void;
+    readonly onChangeHedgingConfig: (hedgingConfig: Record<string, unknown>) => void;
+}, {
+    readonly httpHeaders: {};
+    readonly accept: any;
+    readonly contentType: any;
+    readonly method: any;
+    readonly pollingStrategy: any;
+    readonly uri: any;
+    readonly httpRequestBody: any;
+    readonly HTTP_REQUEST_PATH: "inputParameters" | "inputParameters.http_request";
+    readonly httpRequestEncode: any;
+    readonly errorInJsonField: boolean;
+    readonly hedgingConfig: any;
+    readonly service: any;
+}];

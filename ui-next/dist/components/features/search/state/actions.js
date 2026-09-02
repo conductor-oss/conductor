@@ -1,0 +1,2 @@
+import{assign as r}from"xstate";const o=r({searchTerm:(e,{searchTerm:s})=>s,maxSearchResults:(e,{count:s})=>s}),i=r({taskDefinitions:(e,{data:s})=>s}),n=r({workflowDefinitions:(e,{data:s})=>s}),a=r({schedulers:(e,{data:s})=>s}),c=r({events:(e,{data:s})=>s}),m=r({error:(e,{data:s})=>({...s,severity:"error"})});export{m as persistErrorMessage,c as persistEventNames,a as persistScheduleNames,o as persistSearchTerm,i as persistTaskNames,n as persistWorkflowNames};
+//# sourceMappingURL=actions.js.map

@@ -1,0 +1,2 @@
+import{jsx as i}from"react/jsx-runtime";import{integrationIconMap as c}from"./integrationIconMap.js";const p=({integrationName:o,size:s=24})=>{const t=o!=null&&o in c?c[o]:o,n=t?.match(/^https?:\/\//i);return i("img",{alt:o,src:n?t:`/integrations-icons/${t}.svg`,style:{width:s,height:s,objectFit:"contain"},onError:({currentTarget:r})=>{n||(r.onerror=null,r.src="/integrations-icons/default.svg")}})};export{p as IntegrationIcon};
+//# sourceMappingURL=IntegrationIcon.js.map

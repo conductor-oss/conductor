@@ -1,0 +1,2 @@
+import{tryToJson as t}from"../../../utils/utils.js";const r="menuItems",o=["executionsSubMenu","definitionsSubMenu","adminSubMenu"],u=async()=>{try{const n=localStorage.getItem(r);if(typeof n=="string"){const e=t(n);if(Array.isArray(e)&&e.length>0)return e}return o}catch{return Promise.reject("Error while getting opened menus ")}};export{r as MENU_ITEMS_LOCAL_STORAGE_KEY,u as getOpenedMenusFromLocalStorage};
+//# sourceMappingURL=services.js.map

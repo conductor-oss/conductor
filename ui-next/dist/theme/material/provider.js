@@ -1,0 +1,2 @@
+import{jsx as e}from"react/jsx-runtime";import{ThemeProvider as h}from"@mui/material/styles";import{useState as n,useMemo as r}from"react";import s from"../theme.js";import{ColorModeContext as p}from"./ColorModeContext/ColorModeContext.js";const M=({children:t,...m})=>{const[o,i]=n("light"),l=r(()=>({toggleColorMode:()=>{i(g=>g==="light"?"dark":"light")}}),[]),d=r(()=>s(o),[o]);return e(p.Provider,{value:{toggler:l,mode:o},children:e(h,{theme:d,...m,children:t})})};export{M as Provider};
+//# sourceMappingURL=provider.js.map

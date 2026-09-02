@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.js","sources":["../../../../../src/components/features/flow/nodes/constants.js"],"sourcesContent":["export const MAX_EXPAND_TASKS = 2;\n"],"names":["MAX_EXPAND_TASKS"],"mappings":"AAAY,MAACA,EAAmB"}

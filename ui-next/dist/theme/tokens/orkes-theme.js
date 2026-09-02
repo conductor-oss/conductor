@@ -1,0 +1,2 @@
+const r={background:"#AAAAAA",backgroundDarkest:"#444444",backgroundDarker:"#666666",backgroundDark:"#888888",backgroundLight:"#CCCCCC",backgroundLighter:"#EEEEEE",backgroundLightest:"#FFFFFF",primary:"#1976d2",primaryDarkest:"#0A2F54",primaryDarker:"#0F477E",primaryDark:"#145EA8",primaryLight:"#338DE7",primaryLighter:"#5DA5EC",primaryLightest:"#87BCF1"};export{r as orkesTheme};
+//# sourceMappingURL=orkes-theme.js.map

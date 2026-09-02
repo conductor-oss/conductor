@@ -1,0 +1,2 @@
+import{assign as s,sendParent as r}from"xstate";import{RefreshMachineEventTypes as n}from"./types.js";const i=s({duration:(e,t)=>t.value,durationSet:(e,t)=>t.value}),p=s({elapsed:e=>e.elapsed+1}),d=r(()=>({type:n.REFRESH})),c=r((e,t)=>t),l=s({duration:({durationSet:e})=>e,elapsed:0});export{c as forwardToParent,i as persistDuration,p as persistElapsed,l as restartTimer,d as sendRefresh};
+//# sourceMappingURL=actions.js.map

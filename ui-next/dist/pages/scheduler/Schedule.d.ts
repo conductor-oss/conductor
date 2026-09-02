@@ -1,0 +1,24 @@
+import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
+export type ScheduleType = {
+    name: string;
+    description?: string;
+    cronExpression: string;
+    paused: boolean;
+    runCatchupScheduleInstances: boolean;
+    workflowType: string | null;
+    workflowVersion: string | null;
+    workflowVersions: string[];
+    workflowInputTemplate: string;
+    taskToDomain: string;
+    workflowCorrelationId: string;
+    workflowIdempotencyKey?: string;
+    workflowIdempotencyStrategy?: IdempotencyStrategyEnum;
+    workflowDef: string | null;
+    externalInputPayloadStoragePath?: string;
+    scheduleStartTime: string | number;
+    scheduleEndTime: string | number;
+    priority: string;
+    zoneId?: string;
+    startWorkflowRequest?: Record<string, unknown>;
+};
+export declare function Schedule(): import("react").JSX.Element;

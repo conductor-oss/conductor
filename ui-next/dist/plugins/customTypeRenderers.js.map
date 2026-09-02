@@ -1,0 +1,1 @@
+{"version":3,"file":"customTypeRenderers.js","sources":["../../src/plugins/customTypeRenderers.jsx"],"sourcesContent":["export const customTypeRenderers = {};\n"],"names":["customTypeRenderers"],"mappings":"AAAO,MAAMA,EAAsB,CAAA"}

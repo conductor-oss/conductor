@@ -1,0 +1,2 @@
+import s from"cron-validate";const u=r=>{try{const e=s(r,{preset:"default",override:{useSeconds:!0,useBlankDay:!0,useAliases:!0,useLastDayOfMonth:!0,useLastDayOfWeek:!0,useNearestWeekday:!0,useNthWeekdayOfMonth:!0}});return e.isValid()?{isValid:!0,errors:null}:{isValid:!1,errors:e.getError()}}catch(e){return{isValid:!1,errors:[e.message]}}};export{u as cronExpressionIsValid};
+//# sourceMappingURL=cronHelpers.js.map

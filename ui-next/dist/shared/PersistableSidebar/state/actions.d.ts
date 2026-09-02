@@ -1,0 +1,10 @@
+import { DoneInvokeEvent } from "xstate";
+import { AddMenuEventType, AddMenusEventType, RemoveMenuEventType, SidebarMachineContext, ToggleBannerEventType, ToggleSearchModalEventType } from "./types";
+export declare const persistOpenedMenus: import("xstate").AssignAction<unknown, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistBannerStateInContext: import("xstate").AssignAction<SidebarMachineContext, ToggleBannerEventType, ToggleBannerEventType>;
+export declare const persistSearchModalStateInContext: import("xstate").AssignAction<SidebarMachineContext, ToggleSearchModalEventType, ToggleSearchModalEventType>;
+export declare const clearMenuState: import("xstate").AssignAction<SidebarMachineContext, import("xstate").EventObject, import("xstate").EventObject>;
+export declare const restoreMenuState: import("xstate").AssignAction<SidebarMachineContext, import("xstate").EventObject, import("xstate").EventObject>;
+export declare const addInOpenedMenus: import("xstate").AssignAction<SidebarMachineContext, AddMenuEventType, AddMenuEventType>;
+export declare const removeFromOpenedMenus: import("xstate").AssignAction<SidebarMachineContext, RemoveMenuEventType, RemoveMenuEventType>;
+export declare const setOpenedMenus: import("xstate").AssignAction<SidebarMachineContext, AddMenusEventType, AddMenusEventType>;

@@ -1,0 +1,2 @@
+import{jsx as n}from"react/jsx-runtime";import{Box as i}from"@mui/material";import u from"./TagChip.js";const f=({tags:r,name:e,sx:l={mr:2,mt:1},style:a})=>r?.length?n(i,{children:r.map(t=>{if(!t)return null;const{key:m,value:o}=t;return n(u,{style:a,sx:l,label:`${m}:${o}`},`${e}-${m}-${o}`)})}):null,c=(r,e)=>n(f,{tags:r,name:e?.name});export{f as TagList,c as TagsRenderer,f as default};
+//# sourceMappingURL=TagList.js.map

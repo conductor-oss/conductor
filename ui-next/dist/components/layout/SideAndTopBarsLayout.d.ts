@@ -1,0 +1,13 @@
+/**
+ * SideAndTopBarsLayout
+ *
+ * Selects the layout component from the plugin registry.
+ * - Enterprise build: uses AgentLayout (registered by the `additional` plugin)
+ * - OSS build: falls back to BaseLayout (no AI agent dependencies)
+ */
+import { ReactNode } from "react";
+type Props = {
+    children: ReactNode;
+};
+declare const SideAndTopBarsLayout: ({ children }: Props) => import("react").JSX.Element;
+export default SideAndTopBarsLayout;

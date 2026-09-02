@@ -1,0 +1,1 @@
+{"version":3,"file":"emailContentTypeSuggestions.js","sources":["../../../src/utils/constants/emailContentTypeSuggestions.ts"],"sourcesContent":["export const EMAIL_CONTENT_TYPE_SUGGESTIONS = [\"text/plain\", \"text/html\"];\n"],"names":["EMAIL_CONTENT_TYPE_SUGGESTIONS"],"mappings":"AAAO,MAAMA,EAAiC,CAAC,aAAc,WAAW"}

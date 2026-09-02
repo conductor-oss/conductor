@@ -1,0 +1,2 @@
+import{useSelector as t}from"@xstate/react";import{CodeMachineEventTypes as n}from"./types.js";const d=r=>{const o=e=>{r.send({type:n.EDIT_EVT,changes:e})};return[{editorChanges:t(r,e=>e.context.editorChanges),referenceText:t(r,e=>e.context.referenceText),shouldTakeToFirstError:t(r,e=>e.hasTag("showFirstError"))},{handleEditChanges:o}]};export{d as useCodeTabActor};
+//# sourceMappingURL=hook.js.map

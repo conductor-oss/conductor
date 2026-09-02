@@ -1,0 +1,2 @@
+import{useCallback as o}from"react";import{useQueryState as t}from"react-router-use-location-state";import{FILTER_QUERY_PARAM as A,PAGE_QUERY_PARAM as R,SEARCH_QUERY_PARAM as g}from"../constants/common.js";const E=()=>{const[s,m]=t(A,""),[n,a]=t(R,""),[P,e]=t(g,""),c=o(r=>{e(r)},[e]),i=o(r=>{a(r.toString())},[a]);return[{filterParam:s,pageParam:n,searchParam:P},{handlePageChange:i,handleSearchTermChange:c,setFilterParam:m,setPageParam:a,setSearchParam:e}]};export{E as default};
+//# sourceMappingURL=useCustomPagination.js.map

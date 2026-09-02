@@ -1,0 +1,2 @@
+import{jsxs as p,jsx as n}from"react/jsx-runtime";import m from"./MuiTypography.js";import{colors as c}from"../../theme/tokens/variables.js";import{openInNewTab as l}from"../../utils/helpers.js";import s from"../icons/DocsIcon.js";const b=({url:o,label:r,position:t="absolute",right:e="20px",top:i="5px"})=>p(m,{position:t,right:e,top:i,display:"flex",alignItems:"center",gap:1,fontSize:14,color:c.blueLightMode,fontWeight:"bold",cursor:"pointer",onClick:()=>l(o),children:[n(s,{})," ",r]});export{b as DocLink};
+//# sourceMappingURL=DocLink.js.map

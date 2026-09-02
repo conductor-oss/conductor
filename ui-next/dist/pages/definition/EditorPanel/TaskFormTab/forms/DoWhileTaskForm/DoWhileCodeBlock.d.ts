@@ -1,0 +1,23 @@
+import { EditorProps } from "@monaco-editor/react";
+import { BoxProps } from "@mui/material";
+import { Theme } from "@mui/material/styles";
+import { SxProps } from "@mui/system";
+import { CSSProperties, FunctionComponent, ReactNode } from "react";
+import { DoWhileTaskDef } from "types";
+type DoWhileCodeBlockProps = {
+    label?: ReactNode;
+    language?: string;
+    onChange?: (taskChanges: Partial<DoWhileTaskDef>) => void;
+    containerProps?: BoxProps;
+    error?: boolean;
+    height?: number | "auto";
+    minHeight?: number;
+    autoformat?: boolean;
+    labelStyle?: SxProps<Theme>;
+    languageLabel?: string;
+    containerStyles?: CSSProperties;
+    autoSizeBox?: boolean;
+    task: Partial<DoWhileTaskDef>;
+} & Partial<Omit<EditorProps, "onChange">>;
+export declare const DoWhileCodeBlock: FunctionComponent<DoWhileCodeBlockProps>;
+export {};

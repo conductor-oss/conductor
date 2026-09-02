@@ -1,0 +1,2 @@
+import{jsx as i}from"react/jsx-runtime";import{DiffEditor as t}from"@monaco-editor/react";/* empty css               */const o={useInlineViewWhenSpaceIsLimited:!1,renderGutterMenu:!1,scrollbar:{vertical:"visible",horizontal:"hidden"}},l=({options:e={},...r})=>i(t,{keepCurrentOriginalModel:!0,keepCurrentModifiedModel:!0,options:{...o,...e},...r});export{l as DiffEditor};
+//# sourceMappingURL=DiffEditor.js.map

@@ -1,0 +1,2 @@
+import{jsxs as m,jsx as o}from"react/jsx-runtime";import{FormControl as c,InputLabel as p}from"@mui/material";import a from"@mui/material/Button";import d from"@mui/material/ButtonGroup";const B=({options:n,label:r,style:i,classes:l,...u})=>m(c,{style:i,classes:l,children:[r&&o(p,{children:r}),o(d,{color:"secondary",variant:"outlined",...u,children:n.map((t,e)=>o(a,{onClick:t.onClick,children:t.label},e))})]});export{B as default};
+//# sourceMappingURL=ButtonGroup.js.map

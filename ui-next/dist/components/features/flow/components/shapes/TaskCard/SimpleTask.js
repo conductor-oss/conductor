@@ -1,0 +1,2 @@
+import{jsx as r}from"react/jsx-runtime";import{Box as e,Chip as a}from"@mui/material";import i from"./icons/Buildings.js";import n from"lodash/isNil";const s=o=>{switch(o){case"COMPLETED":return"secondary";case"FAILED":return"error";default:return}},d=({nodeData:o})=>{const{task:t}=o;return n(t?.executionData?.domain)?null:r(e,{mt:1,children:r(a,{label:t.executionData.domain,color:s(t.executionData.status),style:{padding:2},avatar:r(i,{size:14,color:"white"})})})};export{d as SimpleTask};
+//# sourceMappingURL=SimpleTask.js.map

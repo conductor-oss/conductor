@@ -1,0 +1,10 @@
+import { CancelConfirmSaveEvent, HandleChangeTaskDefinitionEvent, HandleDefineNewConfirmationEvent, HandleDeleteTaskDefConfirmationEvent, HandleResetConfirmationEvent, SaveTaskDefinitionEvent, SetResetConfirmationOpenEvent, TaskDefinitionMachineContext } from "pages/definition/task/state/types";
+import { DoneInvokeEvent, GuardMeta } from "xstate";
+export declare const isChanged: (context: TaskDefinitionMachineContext, event: HandleChangeTaskDefinitionEvent | SetResetConfirmationOpenEvent) => boolean;
+export declare const isNewTaskDef: (context: TaskDefinitionMachineContext) => boolean;
+export declare const isEditTaskDefinition: (context: TaskDefinitionMachineContext) => boolean;
+export declare const isConfirm: (_: TaskDefinitionMachineContext, event: HandleDefineNewConfirmationEvent | HandleDeleteTaskDefConfirmationEvent | HandleResetConfirmationEvent) => boolean;
+export declare const isSaveConfirmationOpen: (context: TaskDefinitionMachineContext, event: HandleDefineNewConfirmationEvent, { state, }: GuardMeta<TaskDefinitionMachineContext, HandleDefineNewConfirmationEvent>) => boolean;
+export declare const lastTabWasForm: (context: TaskDefinitionMachineContext) => boolean;
+export declare const isFormModeHist: (context: TaskDefinitionMachineContext, event: CancelConfirmSaveEvent | SaveTaskDefinitionEvent, { state, }: GuardMeta<TaskDefinitionMachineContext, HandleDefineNewConfirmationEvent | SaveTaskDefinitionEvent | DoneInvokeEvent<any>>) => boolean;
+export declare const isContinueCreate: (context: TaskDefinitionMachineContext) => boolean | undefined;

@@ -1,0 +1,2 @@
+import{SupportedProviders as t}from"../../../shared/state/types.js";const e=()=>{},n=o=>{},i=o=>{},r=(o,s)=>{},c={user:void 0,isAuthenticated:!1,isTrialExpired:!1,trialExpiryDate:void 0,isAnnouncementBannerDismissed:!1,provider:t.NO_USER,conductorUser:void 0,oidcConfig:void 0,authService:void 0,fetchingUserInformation:!1,logOut:e,solveExpireToken:e,setToken:n,redirectToAuthorizationEndpoint:i,fetchOidcTokenWithCode:r,dismissAnnouncementBanner:e};export{c as defaultAuthState};
+//# sourceMappingURL=types.js.map

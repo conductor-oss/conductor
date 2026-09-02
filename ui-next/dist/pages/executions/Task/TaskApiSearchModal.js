@@ -1,0 +1,4 @@
+import{jsx as i}from"react/jsx-runtime";import{ApiSearchModal as d}from"../../../components/ApiSearchModal.js";import{curlHeaders as l}from"../../../shared/CodeModal/curlHeader.js";import{useParamsToSdk as m}from"../../../shared/CodeModal/hook.js";import{buildTaskSearchCli as u}from"../cliSearch.js";const p=({start:e,size:o,sort:r,freeText:a,query:t})=>`${window.location.origin}/api/tasks/search?${new URLSearchParams({start:String(e),size:String(o),sort:r,freeText:a,query:t}).toString()}`,g=(e,o)=>{const r=p(e),a=l(o);return`curl '${r}' \\${Object.entries(a).map(([n,c])=>`
+-H '${n}: ${c}' \\`).join("")}
+--compressed`},s={curl:g,cli:u},f=({onClose:e,buildQueryOutput:o})=>{const{selectedLanguage:r,setSelectedLanguage:a,code:t}=m(o,s);return i(d,{displayLanguage:r,handleClose:e,code:t,onTabChange:n=>{a(n)},languages:Object.keys(s)})};export{f as TaskApiSearchModal};
+//# sourceMappingURL=TaskApiSearchModal.js.map

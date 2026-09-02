@@ -1,0 +1,2 @@
+import{jsx as s}from"react/jsx-runtime";import r from"../../../images/svg/orkes-icon.svg.js";import{featureFlags as e,FEATURES as n}from"../../../utils/flags.js";const c="https://assets.conductor-oss.org/logo.png",o=e.isEnabled(n.ACCESS_MANAGEMENT),g=o?r:c,i=o?"Orkes logo":"Conductor OSS logo",d=({customLogo:t})=>s("img",{src:t||g,alt:i,style:{width:"32px",height:"32px",objectFit:"contain"}});export{d as ClosedLogo};
+//# sourceMappingURL=ClosedLogo.js.map

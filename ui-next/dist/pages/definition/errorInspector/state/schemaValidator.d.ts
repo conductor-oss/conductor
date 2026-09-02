@@ -1,0 +1,12 @@
+import type { ErrorObject } from "ajv";
+import { TaskDef, WorkflowDef } from "types";
+import { SchemaStringValidationResponse, SchemaValidationResponse, ValidationError } from "./types";
+export declare const identifyErrorLocation: (validateInstance: any) => import("lodash").Dictionary<any[]>;
+export declare const extractTaskReferenceNameFromTaskErrors: (taskErrrors: ErrorObject[], workflow: Partial<WorkflowDef>) => TaskDef[];
+export declare const truncateToLastNumber: (str: string) => string;
+export declare const convertToPropertyPath: (str: string) => string;
+export declare const taskErrorToValidationError: (errorObj: ErrorObject, originalTask: TaskDef) => ValidationError;
+export declare const findTaskError: (task: TaskDef) => ValidationError[];
+export declare const createMainValidator: (workflow: Partial<WorkflowDef>) => any;
+export declare const computeWorkflowStringErrors: (workflowString: string) => SchemaStringValidationResponse;
+export declare const computeWorkflowErrors: (workflow: Partial<WorkflowDef>) => SchemaValidationResponse;

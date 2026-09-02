@@ -1,0 +1,2 @@
+import{jsxs as e,jsx as n}from"react/jsx-runtime";function i({size:o=24,color:t="#000"}){return e("svg",{xmlns:"http://www.w3.org/2000/svg",width:o,height:o,viewBox:"0 0 256 256",children:[n("path",{fill:"none",d:"M0 0H256V256H0z"}),n("path",{fill:"none",stroke:t,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"16",d:"M40 128L216 128"}),n("path",{fill:"none",stroke:t,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"16",d:"M128 40L128 216"})]})}export{i as default};
+//# sourceMappingURL=PlusIcon.js.map

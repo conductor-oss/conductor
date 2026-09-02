@@ -1,0 +1,2 @@
+import{assign as e,sendParent as s}from"xstate";import{LocalCopyMachineEventTypes as n}from"./types.js";const c=e({lastStoredVersion:(o,t)=>t.data}),i=s(o=>({type:n.USE_LOCAL_COPY_WORKFLOW,workflow:o.lastStoredVersion})),l=e((o,{workflow:t})=>({lastStoredVersion:t})),d=e({lastStoredVersion:o=>{}});export{d as cleanLocalChanges,l as persistLastStoredVersion,i as sendLocalChanges,c as storeLocalCopy};
+//# sourceMappingURL=actions.js.map

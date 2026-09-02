@@ -1,0 +1,46 @@
+import { Dispatch } from "react";
+import { QueryDispatch, SetStateAction } from "react-router-use-location-state";
+interface BasicSearchComponentProps {
+    taskDefName: string;
+    taskExecutionId: string;
+    taskRefName: string;
+    workflowName: string;
+    freeText: string;
+    startTime: string;
+    startTimeEnd: string;
+    fromDisplayTime: string;
+    endTimeStart: string;
+    endTime: string;
+    status: string[];
+    toDisplayTime: string;
+    openDateSelect: boolean;
+    openStartDatePicker: boolean;
+    setStartOpenDatePicker: Dispatch<SetStateAction<boolean>>;
+    setOpenDateSelect: Dispatch<SetStateAction<boolean>>;
+    setToDisplayTime: Dispatch<SetStateAction<string>>;
+    taskType: string[];
+    openEndDatePicker: boolean;
+    setTaskDefName: QueryDispatch<SetStateAction<string>>;
+    setTaskExecutionId: QueryDispatch<SetStateAction<string>>;
+    setTaskRefName: QueryDispatch<SetStateAction<string>>;
+    setWorkflowName: QueryDispatch<SetStateAction<string>>;
+    setFreeText: QueryDispatch<SetStateAction<string>>;
+    setStatus: QueryDispatch<SetStateAction<string[]>>;
+    setTaskType: QueryDispatch<SetStateAction<string[]>>;
+    setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
+    setFromDisplayTime: Dispatch<SetStateAction<string>>;
+    setEndOpenDatePicker: Dispatch<SetStateAction<boolean>>;
+    handleReset: () => void;
+    doSearch: () => void;
+    onStartFromChange: (val: string) => void;
+    onStartToChange: (val: string) => void;
+    onEndFromChange: (val: string) => void;
+    onEndToChange: (val: string) => void;
+    queryText: string;
+    recentSearches: {
+        start: string;
+        end: string;
+    };
+}
+export declare const BasicSearch: ({ taskDefName, taskExecutionId, taskRefName, workflowName, freeText, startTime, toDisplayTime, setToDisplayTime, setOpenDateSelect, setStartOpenDatePicker, startTimeEnd, openDateSelect, endTime, endTimeStart, status, queryText, openEndDatePicker, taskType, fromDisplayTime, openStartDatePicker, setTaskDefName, setFromDisplayTime, setTaskExecutionId, setEndOpenDatePicker, setTaskRefName, setWorkflowName, setFreeText, setStatus, setTaskType, setShowCodeDialog, handleReset, doSearch, onStartFromChange, onEndFromChange, onEndToChange, onStartToChange, recentSearches, }: BasicSearchComponentProps) => import("react").JSX.Element;
+export {};

@@ -1,0 +1,2 @@
+import{jsxs as o,Fragment as m,jsx as r}from"react/jsx-runtime";import{SnackbarMessage as i}from"../../ui/SnackbarMessage.js";import{useState as n}from"react";import{MessageContext as g}from"./MessageContext.js";const t=null,f=({children:a})=>{const[e,s]=n(t);return o(m,{children:[e?r(i,{id:"global-snackbar-message",message:e.text,severity:e.severity,onDismiss:()=>s(t)}):null,r(g.Provider,{value:{setMessage:s},children:a})]})};export{f as MessageProvider};
+//# sourceMappingURL=MessageProvider.js.map

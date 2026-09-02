@@ -1,0 +1,2 @@
+import{jsx as c}from"react/jsx-runtime";import h from"./ConductorSliderStateless.js";function x({label:l,min:d,max:s,textBox:i,value:t,onChangeValue:e,sliderColor:m,...u}){const r=d||0,n=s||100;return c(h,{label:l,min:r,max:n,handleInputChange:a=>{e(a.target.value===""?r:Number(a.target.value))},handleBlur:()=>{Number(t)<r?e(r):Number(t)>n&&e(n)},textBox:i,value:t||r,onChange:(a,o)=>{e(Array.isArray(o)?o[0]:o)},sliderColor:m,...u})}export{x as default};
+//# sourceMappingURL=ConductorSlider.js.map

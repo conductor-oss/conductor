@@ -1,0 +1,2 @@
+import{jsxs as n,jsx as t}from"react/jsx-runtime";function o({size:i,color:e="#000000"}){return n("svg",{xmlns:"http://www.w3.org/2000/svg",width:i,height:i,fill:e,viewBox:"0 0 256 256",children:[t("rect",{width:"256",height:"256",fill:"none"}),t("rect",{x:"16",y:"64",width:"224",height:"128",rx:"64",fill:"none",stroke:e,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"16"}),t("circle",{cx:"176",cy:"128",r:"32",fill:"none",stroke:e,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"16"})]})}export{o as default};
+//# sourceMappingURL=Switch.js.map

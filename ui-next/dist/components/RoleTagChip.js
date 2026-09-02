@@ -1,0 +1,2 @@
+import{jsx as i}from"react/jsx-runtime";import{userRoleColorGenerator as m,displayRoleName as p}from"../utils/roles.js";import{forwardRef as s}from"react";import a from"./ui/TagChip.js";const y=s(({style:t={},label:r="",...e},f)=>{let o;return typeof r=="string"?o={...m(r),...t}:o={...t},i(a,{ref:f,style:o,label:typeof r=="string"?p(r):r,...e})});export{y as default};
+//# sourceMappingURL=RoleTagChip.js.map

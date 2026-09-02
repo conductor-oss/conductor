@@ -1,0 +1,10 @@
+import { DoneInvokeEvent } from "xstate";
+import { PersistEventNameAndDuration, RefreshMachineContext, UpdateDurationEvent } from "./types";
+export declare const LOCAL_STORAGE_KEY = "eventMonitorRefreshSeconds";
+export declare const persistLocalStorageDuration: import("xstate").AssignAction<unknown, import("xstate").EventObject, import("xstate").EventObject>;
+export declare const persistDuration: import("xstate").AssignAction<RefreshMachineContext, UpdateDurationEvent, UpdateDurationEvent>;
+export declare const persistElapsed: import("xstate").AssignAction<RefreshMachineContext, import("xstate").EventObject, import("xstate").EventObject>;
+export declare const restartTimer: import("xstate").AssignAction<RefreshMachineContext, import("xstate").EventObject, import("xstate").EventObject>;
+export declare const persistEventData: import("xstate").AssignAction<RefreshMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistEventListData: import("xstate").AssignAction<RefreshMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistEventNameAndTimer: import("xstate").AssignAction<RefreshMachineContext, PersistEventNameAndDuration, PersistEventNameAndDuration>;

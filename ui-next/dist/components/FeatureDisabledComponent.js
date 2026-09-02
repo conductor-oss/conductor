@@ -1,0 +1,2 @@
+import{jsx as t}from"react/jsx-runtime";import r from"./EmptyPageIntro.js";import{openInNewTab as n}from"../utils/helpers.js";import i from"./icons/UnlockIcon.js";const s="https://orkes.io/talk-to-an-expert",f=({image:e,title:o,message:a})=>t(r,{image:e,title:o||"",variant:"featureDisabled",message:a||"This feature is only available as an Add-On.",primaryAction:{text:"Talk to an expert",onClick:()=>n(s),startIcon:t(i,{size:20})}});export{f as default};
+//# sourceMappingURL=FeatureDisabledComponent.js.map

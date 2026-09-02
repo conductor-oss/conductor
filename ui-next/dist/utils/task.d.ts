@@ -1,0 +1,11 @@
+import { CommonTaskDef, ForkJoinDynamicDef, JDBCTaskDef, LLMTaskTypes, SetVariableTaskDef } from "types/TaskType";
+import { TaskType } from "types/common";
+import { HumanTaskDef } from "types/HumanTaskTypes";
+export declare const taskStatusCompareFn: (a: string, b: string) => 1 | -1 | 0;
+export declare const TaskTypesStrings: TaskType[];
+export declare const isTask: (value: any) => value is CommonTaskDef;
+export declare const isLLMTask: (task: CommonTaskDef) => task is LLMTaskTypes;
+export declare const isHumanTask: (task: CommonTaskDef) => task is HumanTaskDef;
+export declare const isSetVariable: (task: CommonTaskDef) => task is SetVariableTaskDef;
+export declare const isDynamicForkTask: (task: CommonTaskDef) => task is ForkJoinDynamicDef;
+export declare const isJDBCTask: (task: CommonTaskDef) => task is JDBCTaskDef;

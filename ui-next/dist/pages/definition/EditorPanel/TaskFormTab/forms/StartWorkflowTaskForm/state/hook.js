@@ -1,0 +1,2 @@
+import{useSelector as o}from"@xstate/react";import{StartSubWfNameVersionStates as s,StartSubWfNameVersionTypes as i}from"./types.js";const l=t=>{const n=o(t,e=>e.context.wfNameOptions),a=o(t,e=>e.context.availableVersions),r=o(t,e=>e.matches(s.HANDLE_SELECT_WORKFLOW_NAME)||e.matches(s.GO_BACK_TO_IDLE));return[{wfNameOptions:n,availableVersions:a,isFetching:r},{handleSelectWorkflowName:e=>{t.send({type:i.SELECT_WORKFLOW_NAME,name:e})}}]};export{l as useStartSubWfNameVersionMachine};
+//# sourceMappingURL=hook.js.map

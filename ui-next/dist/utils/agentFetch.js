@@ -1,0 +1,2 @@
+import{pluginRegistry as c}from"../plugins/registry/registry.js";import{getAccessToken as r}from"../components/features/auth/tokenManagerJotai.js";const s="X-Authorization";function i(){const e=c.getAccessToken();return e||r()}function A(e,n={}){const o=i(),t=new Headers(n.headers);return o&&!t.has(s)&&t.set(s,o),fetch(e,{...n,headers:t})}export{s as AUTH_HEADER_NAME,A as agentFetch};
+//# sourceMappingURL=agentFetch.js.map

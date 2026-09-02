@@ -1,0 +1,2 @@
+import{jsx as a}from"react/jsx-runtime";import{useController as g}from"react-hook-form";import{Editor as p}from"@monaco-editor/react";function l({control:n,name:i,rules:f,shouldUnregister:e,defaultValue:m,...r}){const{field:{onChange:d,...s}}=g({control:n,name:i,rules:f,shouldUnregister:e,defaultValue:m});return a(p,{...s,...r,onChange:(o,t)=>{typeof o=="string"&&(d(o,t),r?.onChange?.(o,t))}})}export{l as default};
+//# sourceMappingURL=ReactHookFormEditor.js.map

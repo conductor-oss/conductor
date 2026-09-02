@@ -1,0 +1,2 @@
+import{useFetchContext as o,fetchWithContext as u}from"../../plugins/fetch.js";import{useQuery as n}from"react-query";import{useAuthHeaders as c,DEFAULT_STALE_TIME as h}from"../query.js";const r="/schema",p=()=>{const t=o(),a={headers:c()};return n([t.stack,r,{}],()=>u(r,t,a),{enabled:t.ready,keepPreviousData:!0,staleTime:h,retry:(e,s)=>s?.status>=400&&s.status<500?!1:e>3})};export{p as useGetSchemas};
+//# sourceMappingURL=useGetSchemas.js.map

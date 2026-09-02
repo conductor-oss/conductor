@@ -1,0 +1,2 @@
+import{useEffect as i}from"react";import{logger as e}from"../utils/logger.js";import{growthbook as t}from"./growthbookInstance.js";function r(){const o=document.cookie.match(/_ga=GA1\.\d\.(\d+)/);return o?o[1]:void 0}const c=()=>{i(()=>{t&&(e.info("Initializing Growthbook"),t?.setAttributes({id:r()}))},[])};export{c as useMaybeIdentifyGrowthbook};
+//# sourceMappingURL=useMaybeIdentifyGrowthbook.js.map

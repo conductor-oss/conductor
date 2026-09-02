@@ -1,0 +1,2 @@
+import{jsx as t}from"react/jsx-runtime";import{Grid as o}from"@mui/material";import{colors as r,fontSizes as e,fontWeights as n}from"../../../theme/tokens/variables.js";const a=({title:i})=>t(o,{container:!0,sx:{width:"100%"},alignItems:"flex-start",spacing:4,marginBottom:1,children:t(o,{sx:{fontWeight:n.fontWeight3,fontSize:e.fontSize2,paddingLeft:0,marginBottom:".3em",marginTop:0,color:r.black,opacity:.6},size:{sm:12},children:i})});export{a as ConductorGroupFieldTitle};
+//# sourceMappingURL=ConductorGroupFieldTitle.js.map

@@ -1,0 +1,2 @@
+import{jsxs as o,jsx as e}from"react/jsx-runtime";function i({size:t=24,color:n="#000"}){return o("svg",{xmlns:"http://www.w3.org/2000/svg",width:t,height:t,viewBox:"0 0 256 256",children:[e("path",{fill:"none",d:"M0 0H256V256H0z"}),e("path",{fill:"none",stroke:n,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"24",d:"M200 56L56 200"}),e("path",{fill:"none",stroke:n,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"24",d:"M200 200L56 56"})]})}export{i as default};
+//# sourceMappingURL=DeleteIcon.js.map

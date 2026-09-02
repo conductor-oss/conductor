@@ -1,0 +1,2 @@
+import{jsx as l}from"react/jsx-runtime";import{ConductorAutoComplete as m}from"../../components/ui/inputs/ConductorAutoComplete.js";import n from"./timezones.json.js";const s=({timezone:e,onChange:o,error:t,helperText:r})=>l(m,{id:"scheduler-timezone-picker",label:"Select Timezone",required:!0,fullWidth:!0,error:t,helperText:r,value:e,options:n||[],placeholder:"Select which timezone to use for this schedule.",onChange:(u,i)=>o(i)});export{s as TimezonePicker};
+//# sourceMappingURL=TimezonePicker.js.map

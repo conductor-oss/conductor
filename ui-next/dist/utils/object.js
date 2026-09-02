@@ -1,0 +1,2 @@
+import c from"lodash/isPlainObject";import f from"lodash/isArray";const p=(t,e,n)=>{const o=r=>typeof r=="string"||typeof r=="number"?r===e?n:r:c(r)?p(r,e,n):f(r)?r.map(o):r;return Object.fromEntries(Object.entries(t).map(([r,s])=>c(s)?[r,p(s,e,n)]:f(s)?[r,s.map(o)]:s===e?[r,n]:[r,s]))},m=t=>Object.fromEntries(Object.entries(t).map(e=>e.reverse())),j=t=>typeof t=="object"&&t!==null||Array.isArray(t),y=t=>typeof t=="object"&&t!==null&&!Array.isArray(t);export{m as flipObject,y as isObjectOnlyNotArray,j as isObjectOrArray,p as replaceValues};
+//# sourceMappingURL=object.js.map

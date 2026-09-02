@@ -1,0 +1,23 @@
+import { EditorProps } from "@monaco-editor/react";
+import { BoxProps } from "@mui/material";
+import { Theme } from "@mui/material/styles";
+import { SxProps } from "@mui/system";
+import { CSSProperties, FunctionComponent, ReactNode } from "react";
+import { SwitchTaskDef } from "types";
+type SwitchCodeBlockProps = {
+    label?: ReactNode;
+    language?: string;
+    onChange?: (taskChanges: Partial<SwitchTaskDef>) => void;
+    containerProps?: BoxProps;
+    error?: boolean;
+    height?: number | "auto";
+    minHeight?: number;
+    autoformat?: boolean;
+    labelStyle?: SxProps<Theme>;
+    languageLabel?: string;
+    containerStyles?: CSSProperties;
+    autoSizeBox?: boolean;
+    task: Partial<SwitchTaskDef>;
+} & Partial<Omit<EditorProps, "onChange">>;
+declare const SwitchCodeBlock: FunctionComponent<SwitchCodeBlockProps>;
+export default SwitchCodeBlock;

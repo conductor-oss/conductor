@@ -1,0 +1,2 @@
+import{fontSizes as t,colors as r}from"../../tokens/variables.js";const i=e=>{const o=e==="dark";return{MuiTabs:{styleOverrides:{indicator:{height:2},scroller:{backgroundColor:o?r.black:r.white}}},MuiTab:{defaultProps:{disableRipple:!0},styleOverrides:{root:{textTransform:"none",color:o?r.gray08:void 0,"&.Mui-selected":{color:o?r.gray14:r.gray00},fontSize:t.fontSize2}}}}};export{i as default};
+//# sourceMappingURL=tabs.js.map

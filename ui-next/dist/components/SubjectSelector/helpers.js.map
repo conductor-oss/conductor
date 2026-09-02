@@ -1,0 +1,1 @@
+{"version":3,"file":"helpers.js","sources":["../../../src/components/SubjectSelector/helpers.ts"],"sourcesContent":["import { User } from \"types\";\n\nexport const displayUserSubject = (user: User): string =>\n  `${user.id} (${user.name})`;\n"],"names":["displayUserSubject","user"],"mappings":"AAEO,MAAMA,EAAsBC,GACjC,GAAGA,EAAK,EAAE,KAAKA,EAAK,IAAI"}

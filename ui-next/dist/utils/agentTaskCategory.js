@@ -1,0 +1,2 @@
+function o(r){const t=(r??"").toLowerCase();return t==="agent_tool"||t==="agent"?"agent_tool":t==="guardrail"?"guardrail":t==="http"?"http":t==="mcp"?"mcp":t==="rag"?"rag":"tool"}function e(r){const t=o(r.toolType);return t==="agent_tool"?"agent":t==="guardrail"||t==="http"||t==="mcp"||t==="rag"?t:"tool"}export{o as toolCategory,e as toolCategoryForPanel};
+//# sourceMappingURL=agentTaskCategory.js.map

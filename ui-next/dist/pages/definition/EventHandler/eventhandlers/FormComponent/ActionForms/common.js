@@ -1,0 +1,2 @@
+const t={marginTop:5,marginBottom:5,display:"flex",flexWrap:"wrap",width:"100%",gap:"20px"},e={display:"flex",alignItems:"center"},o={">div":{width:220}},i={width:"calc(100% - 180px)","@media screen and (max-width: 860px)":{width:"100%"}},n={maxWidth:"100%"},a={height:"fit-content",position:"relative",bottom:"0px",right:"40px",background:"#e3e3e3"};export{e as boxStyle,n as flatMapStyle,i as formBoxStyle,t as formContainerStyle,a as removeButtonStyle,o as textFieldStyle};
+//# sourceMappingURL=common.js.map

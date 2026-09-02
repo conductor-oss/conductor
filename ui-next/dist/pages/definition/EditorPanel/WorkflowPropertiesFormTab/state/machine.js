@@ -1,0 +1,2 @@
+import{createMachine as t}from"xstate";import*as a from"./actions.js";import{MetadataFieldMachineEventTypes as e}from"./types.js";const n=t({id:"workflowMetadataField",initial:"focused",predictableActionArguments:!0,context:{value:"",fieldName:"",someKey:""},on:{[e.VALUE_UPDATED]:{actions:["persistChanges","addSomeKey"]}},states:{focused:{on:{[e.CHANGE_VALUE]:{actions:["persistChanges","debounceSyncWithParent"]}}}}},{actions:a});export{n as metadataFieldMachine};
+//# sourceMappingURL=machine.js.map

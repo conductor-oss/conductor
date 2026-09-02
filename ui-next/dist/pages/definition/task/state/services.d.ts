@@ -1,0 +1,10 @@
+import { TaskDefinitionMachineContext } from "pages/definition/task/state/types";
+import { TaskDefinitionDto } from "types/TaskDefinition";
+export declare const fetchTaskDefinitionsService: ({ authHeaders: headers, }: TaskDefinitionMachineContext) => Promise<any>;
+export declare const fetchTaskDefinitionByNameService: ({ authHeaders: headers, originTaskDefinition, }: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const createTaskDefinitionService: ({ authHeaders, modifiedTaskDefinition, }: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const updateTaskDefinitionService: ({ authHeaders, modifiedTaskDefinition, }: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const createOrUpdateTaskDefinitionService: (context: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const deleteTaskDefinitionService: ({ authHeaders, originTaskDefinition, }: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const runTestTaskService: ({ authHeaders, modifiedTaskDefinition, user, testTaskDomain, testInputParameters, }: TaskDefinitionMachineContext) => Promise<TaskDefinitionDto>;
+export declare const handleDownloadFile: ({ modifiedTaskDefinition, }: TaskDefinitionMachineContext) => Promise<undefined>;

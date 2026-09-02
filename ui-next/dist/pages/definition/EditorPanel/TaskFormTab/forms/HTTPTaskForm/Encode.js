@@ -1,0 +1,2 @@
+import{jsx as e,Fragment as a,jsxs as n}from"react/jsx-runtime";import{Box as r,Switch as i}from"@mui/material";const m=({onChange:o,value:t,title:c="Encode"})=>e(a,{children:n(r,{children:[n(r,{sx:{fontWeight:600,color:"#767676",ml:-2.2},children:[e(i,{color:"primary",checked:t,onChange:h=>{o(h.target.checked)}}),c]}),e(r,{sx:{opacity:.5},children:"Automatically encodes query parameters in the URI before sending the HTTP request."})]})});export{m as Encode};
+//# sourceMappingURL=Encode.js.map

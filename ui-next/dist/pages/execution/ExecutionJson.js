@@ -1,0 +1,2 @@
+import{jsx as r}from"react/jsx-runtime";import{Box as e}from"@mui/material";import t from"../../components/ReactJson.js";function m({execution:o}){return r(e,{sx:{display:"flex",flexDirection:"column",overflow:"auto",height:"100%",padding:3,pb:0},children:r(t,{src:o,title:"Complete Workflow JSON",workflowName:o.workflowName,editorHeight:"100%"})})}export{m as default};
+//# sourceMappingURL=ExecutionJson.js.map

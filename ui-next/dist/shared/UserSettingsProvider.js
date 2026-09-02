@@ -1,0 +1,2 @@
+import{jsx as o}from"react/jsx-runtime";import{useInterpret as s}from"@xstate/react";import{useMemo as i}from"react";import{userSettingsMachine as m}from"./state/userSettingsMachine/machine.js";import{UserSettingsContext as n}from"./UserSettingsContext.js";const S=({children:e})=>{const r=s(m),t=i(()=>({userSettingsService:r}),[r]);return o(n.Provider,{value:t,children:e})};export{S as UserSettingsProvider};
+//# sourceMappingURL=UserSettingsProvider.js.map

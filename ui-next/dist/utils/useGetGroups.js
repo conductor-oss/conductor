@@ -1,0 +1,2 @@
+import{useFetchContext as u,fetchWithContext as a}from"../plugins/fetch.js";import{useQuery as n}from"react-query";import{useAuthHeaders as c,STALE_TIME_SEARCH as h}from"./query.js";const s="/groups",i=()=>{const t=u(),o={headers:c()};return n([t.stack,s,{}],()=>a(s,t,o),{enabled:t.ready,keepPreviousData:!0,staleTime:h,retry:(e,r)=>r?.status>=400&&r.status<500?!1:e>3})};export{i as useGetGroups};
+//# sourceMappingURL=useGetGroups.js.map

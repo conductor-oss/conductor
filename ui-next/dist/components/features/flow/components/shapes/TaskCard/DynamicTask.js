@@ -1,0 +1,2 @@
+import{jsxs as n,jsx as t}from"react/jsx-runtime";import{Link as s}from"@phosphor-icons/react";import{Box as i,Link as a}from"@mui/material";import{cyan as l}from"../../../../../../theme/tokens/colors.js";const u=({nodeData:o})=>{const e=o.task.inputParameters.taskToExecute==="SUB_WORKFLOW",r=o.outputData?.subWorkflowId;return e&&r?n(i,{sx:{mt:2,display:"flex",alignItems:"center",gap:2},children:[t(s,{}),t(a,{sx:{color:l},href:`/execution/${r}`,target:"_blank",rel:"noreferrer",children:r})]}):null};export{u as DynamicTask};
+//# sourceMappingURL=DynamicTask.js.map

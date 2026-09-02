@@ -1,0 +1,1 @@
+{"version":3,"file":"curlHeader.js","sources":["../../../src/shared/CodeModal/curlHeader.ts"],"sourcesContent":["export const curlHeaders = (accessToken: string) => ({\n  Accept: \"*/*\",\n  \"X-Authorization\": accessToken,\n});\n"],"names":["curlHeaders","accessToken"],"mappings":"AAAO,MAAMA,EAAeC,IAAyB,CACnD,OAAQ,MACR,kBAAmBA,CACrB"}

@@ -1,0 +1,2 @@
+import{jsx as o}from"react/jsx-runtime";import l from"../../components/ui/ClipboardCopy.js";import{Link as t}from"@mui/material";import f from"lodash/isEmpty";function h(n){return(r,i)=>{let e=r;return r&&(e=`${r.substring(0,4)}..${r.substring(r.length-4)}`),o(l,{value:r,children:o(t,{href:"#",onClick:()=>{n(i)},children:e})})}}function s(n){return function(i){f(i)||n?.(i)}}export{s as clickHandler,h as taskIdRenderer};
+//# sourceMappingURL=componentHelpers.js.map

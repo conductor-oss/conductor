@@ -1,0 +1,2 @@
+import{cloneElement as n}from"react";import{castToBooleanIfIsBooleanString as c}from"../../../../../utils/utils.js";import{clone as s,path as g}from"lodash/fp";import{updateField as m}from"../../../../../utils/fieldHelpers.js";const S=({path:f,onChange:r,taskJson:e,checked:l,children:p,enableCastToBoolean:d=!0})=>n(p,{value:s(g(f,e)),checked:l,onChange:(t,i)=>{let o;t?.target&&i!==void 0?o=i:t?.nativeEvent&&i===void 0?o=t.target.value:t&&(o=t),d&&(o=c(o)),r&&r(m(f,o,e))}});export{S as default};
+//# sourceMappingURL=JSONField.js.map

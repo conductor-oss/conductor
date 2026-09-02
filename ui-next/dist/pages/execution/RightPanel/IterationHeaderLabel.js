@@ -1,0 +1,2 @@
+import{jsxs as t,jsx as e}from"react/jsx-runtime";import{Box as o}from"@mui/material";import{IterationStatusIcon as i}from"./IterationStatusIcon.js";function m({status:n,text:r}){return t(o,{component:"span",sx:{display:"inline-flex",alignItems:"center",gap:.75},children:[e(i,{status:n,size:13}),e("span",{children:r})]})}export{m as IterationHeaderLabel};
+//# sourceMappingURL=IterationHeaderLabel.js.map

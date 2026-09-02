@@ -1,0 +1,1 @@
+{"version":3,"file":"router.js","sources":["../../src/routes/router.tsx"],"sourcesContent":["import { createBrowserRouter } from \"react-router\";\nimport { getRoutes } from \"./routes\";\n\nexport const router = createBrowserRouter(getRoutes());\n"],"names":["router","createBrowserRouter","getRoutes"],"mappings":"2FAGO,MAAMA,EAASC,EAAoBC,EAAA,CAAW"}

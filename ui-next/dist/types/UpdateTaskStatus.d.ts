@@ -1,0 +1,5 @@
+export declare enum UpdateTaskStatus {
+    COMPLETED = "COMPLETED",
+    FAILED = "FAILED",
+    FAILED_WITH_TERMINAL_ERROR = "FAILED_WITH_TERMINAL_ERROR"
+}

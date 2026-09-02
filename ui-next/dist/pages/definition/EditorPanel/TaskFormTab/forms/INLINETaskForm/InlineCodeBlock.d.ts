@@ -1,0 +1,23 @@
+import { EditorProps } from "@monaco-editor/react";
+import { BoxProps } from "@mui/material";
+import { Theme } from "@mui/material/styles";
+import { SxProps } from "@mui/system";
+import { CSSProperties, FunctionComponent, ReactNode } from "react";
+import { InlineTaskDef } from "types";
+type InlineCodeBlockProps = {
+    label?: ReactNode;
+    language?: string;
+    onChange?: (taskChanges: Partial<InlineTaskDef>) => void;
+    containerProps?: BoxProps;
+    error?: boolean;
+    height?: number | "auto";
+    minHeight?: number;
+    autoformat?: boolean;
+    labelStyle?: SxProps<Theme>;
+    languageLabel?: string;
+    containerStyles?: CSSProperties;
+    autoSizeBox?: boolean;
+    task: Partial<InlineTaskDef>;
+} & Partial<Omit<EditorProps, "onChange">>;
+declare const InlineCodeBlock: FunctionComponent<InlineCodeBlockProps>;
+export default InlineCodeBlock;

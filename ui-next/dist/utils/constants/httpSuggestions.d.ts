@@ -1,0 +1,16 @@
+export declare const HEADER_SUGGESTIONS: string[];
+export declare const CONTENT_TYPE_SUGGESTIONS: string[];
+export declare const MEDIA_TYPE_SUGGESTIONS: string[];
+export declare const ACCEPT_PATH = "accept";
+export declare const HEADERS_PATH = "headers";
+export declare const CONTENT_TYPE_PATH = "contentType";
+export declare const METHOD_PATH = "method";
+export declare const HEDGING_CONFIG_PATH = "hedgingConfig";
+export declare const SERVICE_PATH = "service";
+export declare const HTTP_REQUEST_PATH = "inputParameters.http_request";
+export declare const POLLING_STRATEGY_PATH = "pollingStrategy";
+export declare const WAIT_UNTIL_PATH = "inputParameters.wait.inputParameters.until";
+export declare const WAIT_DURATION_PATH = "inputParameters.wait.inputParameters.duration";
+export declare const URI_PATH = "uri";
+export declare const HTTP_REQUEST_BODY = "body";
+export declare const HTTP_REQUEST_ENCODE = "encode";

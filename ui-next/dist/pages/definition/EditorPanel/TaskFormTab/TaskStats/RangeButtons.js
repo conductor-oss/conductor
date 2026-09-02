@@ -1,0 +1,2 @@
+import{jsxs as s,jsx as i}from"react/jsx-runtime";import l from"@mui/material/Button";import d from"@mui/material/Stack";const o=24,n=3*o,t=7*o,m=({onChangeRange:r,selected:c})=>s(d,{flexDirection:"row",gap:2,flexWrap:"wrap",children:[i(l,{color:"secondary",onClick:()=>r(o),disabled:c===o,children:"24h"}),i(l,{color:"secondary",disabled:c===n,onClick:()=>r(n),children:"3D"}),i(l,{color:"secondary",disabled:c===t,onClick:()=>r(t),children:"7D"})]});export{m as RangeButtons};
+//# sourceMappingURL=RangeButtons.js.map

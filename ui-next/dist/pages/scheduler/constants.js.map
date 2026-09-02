@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.js","sources":["../../../src/pages/scheduler/constants.ts"],"sourcesContent":["export const CRON_COLORS_BY_POSITION = [\n  \"#4FAAD1\",\n  \"#6569AC\",\n  \"#45AC59\",\n  \"#C99E00\",\n  \"#EE6B31\",\n  \"#CE2836\",\n];\n"],"names":["CRON_COLORS_BY_POSITION"],"mappings":"AAAO,MAAMA,EAA0B,CACrC,UACA,UACA,UACA,UACA,UACA,SACF"}

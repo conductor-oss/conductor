@@ -1,0 +1,2 @@
+import{GrowthBook as r}from"@growthbook/growthbook";import{featureFlags as t,FEATURES as o}from"../utils/flags.js";import{autoAttributesPlugin as i,thirdPartyTrackingPlugin as n}from"./plugins.js";const e=t.isEnabled(o.PLAYGROUND),g=t.getValue(o.GROWTHBOOK_CLIENT_KEY),a=e?new r({apiHost:"https://cdn.growthbook.io",clientKey:g,plugins:[i(),n({trackers:["gtm","gtag"]})]}):null;a?.init({streaming:!0});export{a as growthbook,e as isPlayground};
+//# sourceMappingURL=growthbookInstance.js.map

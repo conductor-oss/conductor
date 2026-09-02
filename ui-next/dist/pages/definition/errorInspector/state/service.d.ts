@@ -1,0 +1,30 @@
+import { TaskDef } from "types";
+import { WorkflowDef } from "types/WorkflowDef";
+import { ErrorIds, ErrorInspectorMachineContext, ErrorSeverity, ErrorTypes, ReferenceProblems, RefractorObject, TaskErrors, TaskReferenceReportingParameters, TaskWithUnknownReference, ValidationError } from "./types";
+export declare const valueContainsTaskReference: (value: any, taskReferences: string[], path?: string) => string[];
+export declare const valueContainsVariableTaskReference: (value: any, taskReferences: string[], path?: string) => string[];
+export declare const findTaskReferencesInInputParameters: (existingTaskReferences: string[], task: Partial<TaskDef>) => string[];
+export declare const findMissingJoinOnReferences: (task: TaskDef, existingTaskReferences: string[]) => string[];
+export declare const findUnMatchedTaskReferences: (existingTaskReferences: string[], possiblyAffectedTasks: TaskDef[]) => TaskWithUnknownReference[];
+export declare const findUnMatchedWorkflowReferences: (existingTaskReferences: string[], workflow: Partial<WorkflowDef>) => RefractorObject[];
+export declare const findVariableReferencesInInputParameters: (variableTaskReferences: Record<string, string[]>, task: Partial<TaskDef>) => string[];
+export declare const findUnMatchedVariableReferencesTaks: (variableTaskReferences: Record<string, string[]>, tasks: TaskDef[]) => TaskWithUnknownReference[];
+export declare const buildInputParameterNotationTree: (inputParameters: Record<string, unknown>, path: string) => string[];
+export declare const removedTasksToUnmatchedReferences: ({ existingTaskReferences, lastTaskRoute, }: TaskReferenceReportingParameters) => Array<TaskWithUnknownReference>;
+export declare const workflowParameterToValidationError: (obj: RefractorObject) => ValidationError;
+export declare const createJoinOnReferenceError: (task: TaskDef, missingRef: string) => {
+    id: ErrorIds;
+    taskReferenceName: string;
+    message: string;
+    type: ErrorTypes;
+    severity: ErrorSeverity;
+};
+export declare const taskReferenceProblemToTaskErrors: (tp: TaskWithUnknownReference) => TaskErrors;
+export declare const expressionReferenceProblemToInputParametersErrors: (tp: TaskWithUnknownReference) => TaskErrors;
+export declare const testForRemovedTaskReferencesService: (context: ErrorInspectorMachineContext) => Promise<ReferenceProblems>;
+export declare const fetchSecrets: ({ authHeaders: headers, }: ErrorInspectorMachineContext) => Promise<any>;
+export declare const fetchSecretsEndEnvironmentsList: (context: ErrorInspectorMachineContext) => Promise<{
+    secrets: any;
+    envs: Record<string, string> | never[];
+}>;
+export declare function isValidNestedVariable(arrayOfStrings: string[], valueString: string, variables?: string[]): boolean;

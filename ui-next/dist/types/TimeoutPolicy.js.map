@@ -1,0 +1,1 @@
+{"version":3,"file":"TimeoutPolicy.js","sources":["../../src/types/TimeoutPolicy.ts"],"sourcesContent":["export enum TimeoutPolicy {\n  TIME_OUT_WF = \"TIME_OUT_WF\",\n  ALERT_ONLY = \"ALERT_ONLY\",\n}\n"],"names":["TimeoutPolicy"],"mappings":"AAAO,IAAKA,GAAAA,IACVA,EAAA,YAAc,cACdA,EAAA,WAAa,aAFHA,IAAAA,GAAA,CAAA,CAAA"}

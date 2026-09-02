@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.js","sources":["../../../../src/components/providers/sidebar/constants.ts"],"sourcesContent":["export const drawerWidthOpen = 240;\nexport const drawerWidthClose = 52;\n"],"names":["drawerWidthOpen","drawerWidthClose"],"mappings":"AAAO,MAAMA,EAAkB,IAClBC,EAAmB"}

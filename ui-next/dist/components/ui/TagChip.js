@@ -1,0 +1,2 @@
+import{jsx as f}from"react/jsx-runtime";import{Chip as n}from"@mui/material";import{forwardRef as a}from"react";import{colors as d}from"../../theme/tokens/variables.js";const o={background:d.otherTag,color:"black",fontWeight:400,borderRadius:"100px",fontSize:"12px"},m={fontWeight:o.fontWeight,borderRadius:o.borderRadius,fontSize:o.fontSize},b=a(({style:t={},color:r,...e},i)=>{const s=r?{...m,...t}:{...o,...t};return f(n,{ref:i,style:s,color:r,...e})});export{b as default};
+//# sourceMappingURL=TagChip.js.map

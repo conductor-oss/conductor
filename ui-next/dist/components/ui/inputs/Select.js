@@ -1,0 +1,2 @@
+import{jsxs as s,jsx as o}from"react/jsx-runtime";import{FormControl as p,InputLabel as a,Select as c}from"@mui/material";import l from"lodash/isNil";const x=({label:r,fullWidth:e,nullable:i=!0,style:n,...m})=>s(p,{variant:"outlined",fullWidth:e,style:n,children:[r&&o(a,{children:r}),o(c,{fullWidth:e,label:r,displayEmpty:i,renderValue:t=>l(t)?"":t,...m})]});export{x as default};
+//# sourceMappingURL=Select.js.map

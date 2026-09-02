@@ -1,0 +1,2 @@
+import{useSelector as o}from"@xstate/react";import{MetadataFieldMachineEventTypes as s}from"./state/types.js";import"./state/machine.js";import"../../WorkflowMetadata/state/machine.js";import"../../WorkflowMetadata/state/WorkflowMetadataContext/WorkflowMetadataContext.js";import"react/jsx-runtime";const v=({actor:t,children:n})=>{const a=t.send,r=o(t,e=>e.context.value),l=o(t,e=>e.context.someKey);return n({onChange:e=>{a({type:s.CHANGE_VALUE,value:e})},value:r,someKey:l})};export{v as ActorToHandlerValue};
+//# sourceMappingURL=ActorToHandlerValue.js.map

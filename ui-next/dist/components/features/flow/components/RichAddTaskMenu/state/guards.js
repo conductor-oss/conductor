@@ -1,0 +1,2 @@
+import{RichAddMenuTabs as o}from"./types.js";const n=(t,{tab:s})=>s===o.WORKERS_TAB,c=(t,{tab:s})=>s===o.SUB_WORKFLOWS_TAB,i=({isTaskDefFetched:t})=>!t,r=({isSubWfFetched:t})=>!t,T=({isIntegrationsFetched:t})=>!t,a=(t,{tab:s})=>s===o.INTEGRATIONS_TAB;export{T as isIntegrationsNotFetched,r as isSubWfNotFetched,a as isTabIsIntegrations,c as isTabIsSubWorkflows,n as isTabIsWorkers,i as isTaskDefNotFetched};
+//# sourceMappingURL=guards.js.map

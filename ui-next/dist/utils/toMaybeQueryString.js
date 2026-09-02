@@ -1,0 +1,2 @@
+import m from"lodash/isEmpty";import n from"lodash/pickBy";import o from"lodash/isNil";const a=(r,t="?")=>{const e=n(r,c=>!o(c));return m(r)?"":`${t}${new URLSearchParams(e).toString()}`},y=(r,t)=>{try{const e=[...new URL(r).searchParams].length;return r+a(t,e?"&":"?")}catch{return r+a(t,"?")}};export{a as toMaybeQueryString,y as urlWithQueryParameters};
+//# sourceMappingURL=toMaybeQueryString.js.map

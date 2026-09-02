@@ -1,0 +1,2 @@
+import{jsx as o}from"react/jsx-runtime";const f=({size:t=21,color:e="#ffffff"})=>o("svg",{xmlns:"http://www.w3.org/2000/svg",width:t,height:t,viewBox:"0 0 17 16",fill:"none",children:o("path",{d:"M16.1601 1.05998V9.84748H0.620117M0.620117 9.84748L5.80012 4.57498M0.620117 9.84748L5.80012 15.12",stroke:e,strokeWidth:"0.74",strokeLinecap:"round"})});export{f as default};
+//# sourceMappingURL=EnterIcon.js.map

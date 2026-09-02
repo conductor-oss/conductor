@@ -1,0 +1,2 @@
+import{jsxs as t,jsx as o}from"react/jsx-runtime";import{Box as i,Typography as a,Switch as m}from"@mui/material";function p({checked:n,onChange:r}){return t(i,{component:"span",onClick:e=>e.stopPropagation(),sx:{display:"inline-flex",alignItems:"center",ml:.5,gap:2},children:[o(a,{component:"span",sx:{fontSize:11,color:"text.secondary"},children:"Summarize"}),o(m,{size:"small",checked:n,onChange:e=>r(e.target.checked),sx:{ml:-.25}})]})}export{p as SummarizeToggle};
+//# sourceMappingURL=SummarizeToggle.js.map

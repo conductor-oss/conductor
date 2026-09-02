@@ -1,0 +1,11 @@
+import { DoneInvokeEvent } from "xstate";
+import { HandleChangeTaskConfigEvent, SelectHostEvent, SelectTaskEvent, ServiceMethodsMachineContext } from "./types";
+export declare const persistSelectedService: import("xstate").AssignAction<ServiceMethodsMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistSelectedHost: import("xstate").AssignAction<ServiceMethodsMachineContext, SelectHostEvent, SelectHostEvent>;
+export declare const persistServices: import("xstate").AssignAction<ServiceMethodsMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistSelectedMethod: import("xstate").AssignAction<ServiceMethodsMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistSelectedSchema: import("xstate").AssignAction<ServiceMethodsMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistCurrentTaskDefName: import("xstate").AssignAction<ServiceMethodsMachineContext, SelectTaskEvent, SelectTaskEvent>;
+export declare const persistTaskDefinition: import("xstate").AssignAction<ServiceMethodsMachineContext, DoneInvokeEvent<any>, DoneInvokeEvent<any>>;
+export declare const persistModifiedTaskDef: import("xstate").AssignAction<ServiceMethodsMachineContext, HandleChangeTaskConfigEvent, HandleChangeTaskConfigEvent>;
+export declare const resetModifiedTaskDef: import("xstate").AssignAction<ServiceMethodsMachineContext, HandleChangeTaskConfigEvent, HandleChangeTaskConfigEvent>;

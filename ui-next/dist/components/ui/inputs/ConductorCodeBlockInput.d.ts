@@ -1,0 +1,28 @@
+import { EditorProps } from "@monaco-editor/react";
+import { BoxProps } from "@mui/material";
+import { Theme } from "@mui/material/styles";
+import { SxProps } from "@mui/system";
+import { FunctionComponent, ReactNode } from "react";
+import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
+export type ConductorCodeBlockInputProps = {
+    label?: ReactNode;
+    helperText?: string;
+    language?: string;
+    onChange?: (value: string) => void;
+    value?: string;
+    containerProps?: BoxProps;
+    error?: boolean;
+    height?: number | "auto";
+    minHeight?: number;
+    autoformat?: boolean;
+    labelStyle?: SxProps<Theme>;
+    languageLabel?: string;
+    containerStyles?: SxProps<Theme>;
+    required?: boolean;
+    disabled?: boolean;
+    tooltip?: Omit<ConductorTooltipProps, "children">;
+    enableCopy?: boolean;
+    autoFocus?: boolean;
+    showLangLabel?: boolean;
+} & Partial<Omit<EditorProps, "onChange">>;
+export declare const ConductorCodeBlockInput: FunctionComponent<ConductorCodeBlockInputProps>;

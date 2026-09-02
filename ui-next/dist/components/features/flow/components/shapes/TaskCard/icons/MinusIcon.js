@@ -1,0 +1,2 @@
+import{jsxs as e,jsx as o}from"react/jsx-runtime";function i({size:n=24,color:t="#000"}){return e("svg",{xmlns:"http://www.w3.org/2000/svg",width:n,height:n,viewBox:"0 0 256 256",children:[o("path",{fill:"none",d:"M0 0H256V256H0z"}),o("path",{fill:"none",stroke:t,strokeLinecap:"round",strokeLinejoin:"round",strokeWidth:"16",d:"M40 128L216 128"})]})}export{i as default};
+//# sourceMappingURL=MinusIcon.js.map

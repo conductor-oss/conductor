@@ -1,0 +1,2 @@
+import{AuthProviderStates as t}from"./types.js";const i=e=>e.matches(t.LOGGED_USER),r=e=>e.matches([t.UNLOGGED,t.NO_USER_MANAGEMENT]),E=e=>e.children.userPersistableProfileMachine,a=e=>e.matches([t.LOGGED_USER,t.SIDEBAR_INIT])||e.matches([t.UNLOGGED,t.NO_USER_MANAGEMENT]);export{E as getUserPersistableProfileActor,i as isAuthenticated,a as isSidebarInitialized,r as noUserManagement};
+//# sourceMappingURL=selectors.js.map

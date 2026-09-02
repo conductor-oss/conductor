@@ -1,0 +1,2 @@
+import{useState as i}from"react";import{logger as l}from"./logger.js";const S={parse:JSON.parse,code:JSON.stringify};function d(o,e,r=S){const c=JSON.stringify(e),[n,g]=i(()=>{try{if(o){const t=window.localStorage.getItem(o);return t?r.parse(t):e}else return e}catch{return l.error("Cant read value from local storage"),e}});return[n,t=>{const s=t instanceof Function?t(n):t;if(g(s),o){const a=r.code(s);a===c?window.localStorage.removeItem(o):window.localStorage.setItem(o,a)}}]}export{d as useLocalStorage};
+//# sourceMappingURL=localstorage.js.map

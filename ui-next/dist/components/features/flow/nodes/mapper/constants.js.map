@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.js","sources":["../../../../../../src/components/features/flow/nodes/mapper/constants.ts"],"sourcesContent":["export const TERMINAL_END_NAME = \"end\";\n"],"names":["TERMINAL_END_NAME"],"mappings":"AAAO,MAAMA,EAAoB"}

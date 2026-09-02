@@ -1,0 +1,33 @@
+import { GridProps } from "@mui/material";
+import { FunctionComponent, ReactNode } from "react";
+import { TableProps } from "react-data-table-component";
+import { QuickSearchProps } from "./QuickSearch";
+import { FilterObjectItem } from "./state/types";
+import { LegacyColumn } from "./types";
+export declare const DEFAULT_ROWS_PER_PAGE = 15;
+export interface DataTableProps extends TableProps<any> {
+    columns: LegacyColumn[];
+    localStorageKey?: string;
+    customActions?: ReactNode[];
+    defaultShowColumns?: string[];
+    showColumnSelector?: boolean;
+    hideSearch?: boolean;
+    titleComponent?: ReactNode;
+    onFilterChange?: (filterObj?: FilterObjectItem) => void;
+    initialFilterObj?: FilterObjectItem;
+    quickSearchEnabled?: boolean;
+    quickSearchPlaceholder?: string;
+    quickSearchComponent?: FunctionComponent<QuickSearchProps>;
+    createButton?: ReactNode;
+    sortByDefault?: boolean;
+    onSearchTermChange?: (searchTerm: string) => void;
+    description?: ReactNode;
+    searchTerm?: string;
+    autoFocus?: boolean;
+    useGlobalRowsPerPage?: boolean;
+    searchModalContainerProps?: GridProps;
+    onRowMouseEnter?: (row: any) => void;
+    filterByTags?: boolean;
+}
+export declare const DataTable: FunctionComponent<DataTableProps>;
+export default DataTable;

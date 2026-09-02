@@ -1,0 +1,2 @@
+import{useFetchContext as o,fetchWithContext as u}from"../../plugins/fetch.js";import{useQuery as n}from"react-query";import{useAuthHeaders as c,STALE_TIME_SEARCH as h}from"../query.js";const s="/secrets-v2",p=()=>{const t=o(),a={headers:c()};return n([t.stack,s],()=>u(s,t,a),{enabled:t.ready,keepPreviousData:!0,staleTime:h,retry:(e,r)=>r?.status>=400&&r.status<500?!1:e>3})};export{p as useGetSecrets};
+//# sourceMappingURL=useGetSecrets.js.map

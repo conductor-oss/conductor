@@ -1,0 +1,1 @@
+{"version":3,"file":"tagUtils.js","sources":["../../../../src/components/features/tags/tagUtils.ts"],"sourcesContent":["export const isValidTag = (value: string) => /^[^:]+:[^:]+$/.test(value.trim());\n"],"names":["isValidTag","value"],"mappings":"AAAO,MAAMA,EAAcC,GAAkB,gBAAgB,KAAKA,EAAM,MAAM"}
