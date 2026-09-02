@@ -81,6 +81,19 @@ curl 'http://localhost:8080/api/workflow/3a5b8c2d-1234-5678-9abc-def012345678'
 }
 ```
 
+**Status and failure fields**
+
+| Field | Description |
+|---|---|
+| `status` | `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`, `TIMED_OUT`, or `TERMINATED`. |
+| `reasonForIncompletion` | Why the workflow stopped without completing: the failing task's reason, a timeout message, or the reason passed to terminate. Empty while running; cleared by retry, restart, and rerun. See [Understanding reasonForIncompletion](../../devguide/how-tos/Workflows/debugging-workflows.md#understanding-reasonforincompletion). |
+| `failedReferenceTaskNames` | Reference names of the tasks that failed. |
+| `failedTaskNames` | Definition names of the tasks that failed. |
+| `lastRetriedTime` | Epoch milliseconds of the most recent retry; `0` if never retried. |
+| `reRunFromWorkflowId` | Set when this execution was rerun from another execution. |
+| `parentWorkflowId`, `parentWorkflowTaskId` | Present on sub-workflows: the parent execution and its `SUB_WORKFLOW` task. |
+| `event` | Name of the event that started the workflow, when started by an event handler. |
+
 ### Get Workflow Status Summary
 
 ```http
