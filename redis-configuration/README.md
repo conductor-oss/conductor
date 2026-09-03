@@ -36,6 +36,8 @@ conductor.redis.hosts=node1:6379:us-east-1a;node2:6379:us-east-1b;node3:6379:us-
 conductor.db.type=redis_sentinel
 conductor.redis.hosts=sentinel1:26379:us-east-1a;sentinel2:26379:us-east-1b;sentinel3:26379:us-east-1c
 conductor.redis.sentinel-master-name=mymaster
+# Only if your sentinels require AUTH (independent of the master password in conductor.redis.hosts):
+# conductor.redis.sentinel-password=<sentinel-password>
 ```
 
 ## Host Format
@@ -68,9 +70,10 @@ All properties are prefixed with `conductor.redis.`.
 | `hosts` | Host definitions (see format above) | *required* |
 | `user` | Redis ACL username | none |
 | `ssl` | Enable TLS | `false` |
-| `ignore-ssl` | Trust all certificates (cluster mode only, for dev/test) | `false` |
+| `ignore-ssl` | Trust all certificates (cluster and sentinel modes, for dev/test) | `false` |
 | `database` | Redis database number (0-15, standalone/sentinel only) | `0` |
 | `sentinel-master-name` | Sentinel master name (sentinel mode only) | `mymaster` |
+| `sentinel-password` | Password for the Sentinel nodes themselves (sentinel mode only). When unset, no AUTH is sent to sentinels; the data-node password stays in `hosts` | none |
 
 ### Connection Pool
 
@@ -98,7 +101,7 @@ All properties are prefixed with `conductor.redis.`.
 - **`RedisConfiguration`** - Abstract base. Creates the `UnifiedJedis` bean and runs a pool monitor thread that publishes connection metrics every 10 seconds.
 - **`RedisStandaloneConfiguration`** - Creates a `JedisPooled` instance.
 - **`RedisClusterConfiguration`** - Creates a `JedisCluster` instance. Supports `ignore-ssl` for trust-all TLS in dev environments.
-- **`RedisSentinelConfiguration`** - Creates a `JedisSentineled` instance. Sentinel nodes reuse the configured auth and SSL settings so existing secured Sentinel deployments continue to work.
+- **`RedisSentinelConfiguration`** - Creates a `JedisSentineled` instance. Sentinel nodes reuse the configured SSL settings, but not the data-node password: AUTH is sent to the sentinels only when `sentinel-password` is set.
 - **`RedisProperties`** - Spring Boot `@ConfigurationProperties` binding for all `conductor.redis.*` properties.
 - **`ConfigurationHostSupplier`** - Parses the `hosts` string into `Host` objects.
 - **`AnyRedisCondition`** - Spring condition that matches when `conductor.db.type` is any Redis variant.
