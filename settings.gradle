@@ -21,6 +21,7 @@ include 'annotations-processor'
 include 'server'
 include 'common'
 include 'core'
+include 'webhooks'
 
 include 'cassandra-persistence'
 include 'redis-configuration'
