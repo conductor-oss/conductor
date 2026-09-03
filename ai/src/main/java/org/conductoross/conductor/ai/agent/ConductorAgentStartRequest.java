@@ -17,6 +17,7 @@ import java.util.Map;
 
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
@@ -47,8 +48,26 @@ public class ConductorAgentStartRequest {
     private Integer timeoutSeconds;
     private String runId;
 
+    @JsonAlias("staticPlan")
     @JsonProperty("static_plan")
     private Map<String, Object> staticPlan;
 
     private String credentialRef;
+
+    // When true and userAssertion is set, the Azure Foundry client exchanges the caller's
+    // Entra SSO token for a Foundry-scoped token via OBO (enterprise clusters only).
+    private boolean useCallerIdentity;
+
+    // The caller's Entra ID assertion (SSO token) for OBO exchange.
+    // Named "userAssertion" to match the OAuth2 OBO spec parameter name.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String userAssertion;
+
+    // Remote agent URL — same field name as A2A so all agent types use a consistent top-level
+    // field.
+    // Azure Foundry: https://my-resource.openai.azure.com/openai
+    // Bedrock: bedrock://AGENTID/ALIASID  (optional ?region=us-west-2 query param)
+    @JsonAlias("agentUrl")
+    @JsonProperty("agent_url")
+    private String agentUrl;
 }

@@ -1,4 +1,5 @@
-import { Box, Tooltip } from "@mui/material";
+import React, { useCallback, useContext, useMemo, useState } from "react";
+import { Box, Chip, Tooltip } from "@mui/material";
 import {
   CopySimple as CopyIcon,
   Trash as DeleteIcon,
@@ -16,45 +17,64 @@ import SectionContainer from "components/ui/layout/SectionContainer";
 import PlayIcon from "components/icons/PlayIcon";
 import { useAuth } from "components/features/auth";
 import { MessageContext } from "components/providers/messageContext";
-import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
+import AzureIcon from "images/svg/azure-icon.svg";
+import BedrockIcon from "images/svg/bedrock-icon.svg";
+import OrkesIcon from "images/svg/orkes-icon.svg";
 import { PopoverMessage } from "types/Messages";
-import { TagDto } from "types/Tag";
 import {
   AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   RUN_AGENT_URL,
 } from "utils/constants/route";
-import { featureFlags, FEATURES } from "utils/flags";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
-import TagList from "components/ui/TagList";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
+
+const EXTERNAL_TYPES = new Set(["azure-foundry", "bedrock"]);
+
+function providerLabel(type?: string | null): string {
+  switch (type) {
+    case "azure-foundry": return "Azure Foundry";
+    case "bedrock": return "Bedrock";
+    default: return "Conductor";
+  }
+}
+
+function providerColor(type?: string | null): string {
+  switch (type) {
+    case "azure-foundry": return "#0078d4";
+    case "bedrock": return "#e07730";
+    default: return "#1565c0";
+  }
+}
+
+function providerIcon(type?: string | null): string {
+  switch (type) {
+    case "azure-foundry": return AzureIcon;
+    case "bedrock": return BedrockIcon;
+    default: return OrkesIcon;
+  }
+}
 
 const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded Conductor Agents runtime.
 
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
-const toTagDtos = (tags?: string[]): TagDto[] =>
-  (tags || []).map((tag) => ({
-    key: "capability",
-    value: tag,
-    type: "METADATA",
-  }));
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
   const { isTrialExpired } = useAuth();
-  const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");
   const { setMessage } = useContext(MessageContext);
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AgentSummary | null>(null);
   const [agentToClone, setAgentToClone] = useState<AgentSummary | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [
     { filterParam, pageParam, searchParam },
     { setFilterParam, setSearchParam, handlePageChange },
@@ -83,13 +103,22 @@ export default function AgentDefinitions() {
         name: "name",
         label: "Workflow name",
         renderer: (name: string, agent: AgentSummary) => (
-          <NavLink
-            data-cy="workflow-link"
-            path={`${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(name.trim())}/${agent.version}`}
-            id={`${name.trim()}-link-btn`}
-          >
-            {name.trim()}
-          </NavLink>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <img
+              src={providerIcon(agent.type)}
+              alt={providerLabel(agent.type)}
+              width={18}
+              height={18}
+              style={{ flexShrink: 0 }}
+            />
+            <NavLink
+              data-cy="workflow-link"
+              path={`${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(name.trim())}/${agent.version}`}
+              id={`${name.trim()}-link-btn`}
+            >
+              {name.trim()}
+            </NavLink>
+          </Box>
         ),
         tooltip: "The name of the workflow",
       },
@@ -100,22 +129,6 @@ export default function AgentDefinitions() {
         grow: 2,
         tooltip: "The description of the workflow",
       },
-      ...(tagsEnabled
-        ? ([
-            {
-              id: "workflow_tags",
-              name: "tags",
-              label: "Tags",
-              searchable: true,
-              searchableFunc: (tags: string[]) => (tags || []).join(", "),
-              renderer: (tags: string[], row: AgentSummary) => (
-                <TagList tags={toTagDtos(tags)} name={row.name} />
-              ),
-              grow: 2,
-              tooltip: "The tags associated with the workflow",
-            },
-          ] as LegacyColumn[])
-        : []),
       {
         id: "create_time",
         name: "createTime",
@@ -220,50 +233,55 @@ export default function AgentDefinitions() {
         grow: 0.5,
         minWidth: "180px",
         tooltip: "Actions you can perform on the workflow",
-        renderer: (_: string, agent: AgentSummary) => (
-          <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
-            <Tooltip title="Run agent">
-              <IconButton
-                id={`run-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() =>
-                  navigate(RUN_AGENT_URL, {
-                    state: {
-                      agentName: agent.name,
-                      agentVersion: agent.version,
-                    },
-                  })
-                }
-                size="small"
-              >
-                <PlayIcon size={22} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Clone Agent">
-              <IconButton
-                id={`clone-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() => setAgentToClone(agent)}
-                size="small"
-              >
-                <CopyIcon size={20} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete workflow">
-              <IconButton
-                id={`delete-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() => setConfirmDelete(agent)}
-                size="small"
-              >
-                <DeleteIcon size={20} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
+        renderer: (_: string, agent: AgentSummary) => {
+          const isExternal = agent.type && EXTERNAL_TYPES.has(agent.type);
+          return (
+            <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
+              <Tooltip title="Run agent">
+                <IconButton
+                  id={`run-${agent.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() =>
+                    navigate(RUN_AGENT_URL, {
+                      state: {
+                        agentName: agent.name,
+                        agentVersion: agent.version,
+                      },
+                    })
+                  }
+                  size="small"
+                >
+                  <PlayIcon size={22} />
+                </IconButton>
+              </Tooltip>
+              {!isExternal && (
+                <Tooltip title="Clone Agent">
+                  <IconButton
+                    id={`clone-${agent.name}-btn`}
+                    disabled={isTrialExpired}
+                    onClick={() => setAgentToClone(agent)}
+                    size="small"
+                  >
+                    <CopyIcon size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip title="Delete workflow">
+                <IconButton
+                  id={`delete-${agent.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() => setConfirmDelete(agent)}
+                  size="small"
+                >
+                  <DeleteIcon size={20} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          );
+        },
       },
     ],
-    [isTrialExpired, navigate, tagsEnabled],
+    [isTrialExpired, navigate],
   );
 
   const handleFilterChange = useCallback(
@@ -272,10 +290,27 @@ export default function AgentDefinitions() {
     [setFilterParam],
   );
 
-  const tableData = useMemo<AgentSummary[]>(
+  const allAgents = useMemo<AgentSummary[]>(
     () => (Array.isArray(data) ? data : []),
     [data],
   );
+
+  // Unique provider types present in the data
+  const providerTypes = useMemo<string[]>(() => {
+    const types = new Set<string>();
+    allAgents.forEach((a) => types.add(a.type ?? "conductor"));
+    return [...types].sort();
+  }, [allAgents]);
+
+  // Agents filtered to selected provider chip
+  const tableData = useMemo<AgentSummary[]>(() => {
+    if (selectedType === null) return allAgents;
+    return allAgents.filter((a) =>
+      selectedType === "conductor"
+        ? !a.type || !EXTERNAL_TYPES.has(a.type)
+        : a.type === selectedType,
+    );
+  }, [allAgents, selectedType]);
 
   return (
     <>
@@ -359,7 +394,6 @@ export default function AgentDefinitions() {
             defaultShowColumns={[
               "workflow_name",
               "workflow_description",
-              ...(tagsEnabled ? ["workflow_tags"] : []),
               "latest_version",
               "create_time",
               "owner_email",
@@ -386,6 +420,50 @@ export default function AgentDefinitions() {
                 </Button>
               </Tooltip>,
             ]}
+            customStyles={{ subHeader: { style: { backgroundColor: "transparent", paddingLeft: 8, paddingRight: 8 } } }}
+            subHeader={providerTypes.length > 1}
+            subHeaderComponent={
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", py: 0.5, width: "100%" }}>
+                <Chip
+                  label={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <img src={OrkesIcon} alt="" width={14} height={14} />
+                      All ({allAgents.length})
+                    </Box>
+                  }
+                  onClick={() => setSelectedType(null)}
+                  variant={selectedType === null ? "filled" : "outlined"}
+                  sx={{ borderColor: selectedType === null ? undefined : "#888", fontWeight: selectedType === null ? 600 : 400 }}
+                  clickable
+                />
+                {providerTypes.map((type) => {
+                  const count = type === "conductor"
+                    ? allAgents.filter((a) => !a.type || !EXTERNAL_TYPES.has(a.type)).length
+                    : allAgents.filter((a) => a.type === type).length;
+                  const active = selectedType === type;
+                  return (
+                    <Chip
+                      key={type}
+                      label={
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <img src={providerIcon(type)} alt="" width={14} height={14} />
+                          {providerLabel(type)} ({count})
+                        </Box>
+                      }
+                      onClick={() => setSelectedType(active ? null : type)}
+                      variant={active ? "filled" : "outlined"}
+                      sx={{
+                        borderColor: active ? providerColor(type) : "#888",
+                        backgroundColor: active ? providerColor(type) : undefined,
+                        color: active ? "#fff" : providerColor(type),
+                        fontWeight: active ? 600 : 400,
+                      }}
+                      clickable
+                    />
+                  );
+                })}
+              </Box>
+            }
             onChangePage={handlePageChange}
             paginationDefaultPage={pageParam ? Number(pageParam) : 1}
             noDataComponent={
