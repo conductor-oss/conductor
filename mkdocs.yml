@@ -40,6 +40,7 @@ nav:
       - Creating Tasks: devguide/how-tos/Tasks/creating-tasks.md
       - Task Inputs: devguide/how-tos/Tasks/task-inputs.md
       - Schema Validation: devguide/how-tos/schema-validation.md
+      - Schema Registry: devguide/how-tos/schema-registry.md
       - Managing Workflow Versions: devguide/how-tos/Workflows/versioning-workflows.md
       - Testing Workflows: devguide/how-tos/Workflows/testing-workflows.md
     - Run:
