@@ -42,6 +42,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.tasks.http.config.HttpTaskProperties;
 import com.netflix.conductor.tasks.http.providers.DefaultRestTemplateProvider;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -117,7 +118,7 @@ public class HttpTaskTest {
         workflowExecutor = mock(WorkflowExecutor.class);
         DefaultRestTemplateProvider defaultRestTemplateProvider =
                 new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100));
-        httpTask = new HttpTask(defaultRestTemplateProvider, objectMapper);
+        httpTask = new HttpTask(defaultRestTemplateProvider, objectMapper, mock(HttpTaskProperties.class));
     }
 
     @Test
