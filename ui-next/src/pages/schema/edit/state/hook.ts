@@ -109,12 +109,24 @@ export const useSchemaEdit = ({
     },
   );
 
-  const schema: EditableSchema = useMemo(() => {
+  /**
+   * The template belongs to a new schema only. Handing it back for an existing one that
+   * failed to load would let Reset overwrite the editor with an unrelated random schema,
+   * and would have the dirty check diff a real schema against a template.
+   */
+  const schema: EditableSchema | undefined = useMemo(() => {
     if (isNewSchema) {
       return newSchemaTemplate;
     }
-    return data ?? newSchemaTemplate;
+    return data;
   }, [data, isNewSchema, newSchemaTemplate]);
+
+  /**
+   * A name with no versions registered under it. The body fetch is keyed on a version, so
+   * without one it never runs and neither isFetching nor isFetchError would say anything.
+   */
+  const isNotFound =
+    !isNewSchema && !isFetchingAvailableVersions && !currentVersion;
 
   /**
    * A stored schema of a type this server cannot validate is shown as it is and
@@ -140,7 +152,7 @@ export const useSchemaEdit = ({
   );
 
   const saveSchemaAction = useActionWithPath({
-    onSuccess: (_result: unknown, request: { body: string }) => {
+    onSuccess: (_result: unknown, request: { body: string; path: string }) => {
       toastMessage({
         text: isNewSchema
           ? "Schema created successfully"
@@ -148,11 +160,27 @@ export const useSchemaEdit = ({
         severity: "success",
       });
       const [saved] = JSON.parse(request.body);
+
+      // The editor now matches what the server holds, so it is no longer dirty and the
+      // unsaved-changes guard re-arms on the next keystroke. Done here rather than left to
+      // the refetch below, which does not run when the name or version was edited.
+      formMethods.reset({ editor: JSON.stringify(saved, null, 2) });
+
       refetchAvailableVersions();
-      if (isSameNameAndVersion(saved.name, saved.version)) {
+
+      // POST returns no body and the server allocates the next version itself, so on a
+      // new-version save the version in the request body is the one we came from, not the
+      // one just written. Navigating to the name with no version segment means
+      // currentVersion follows availableVersions to the latest once the refetch lands —
+      // no client-side version arithmetic, and no race to await.
+      const savedAsNewVersion = request.path.includes("newVersion=true");
+      if (
+        !savedAsNewVersion &&
+        isSameNameAndVersion(saved.name, saved.version)
+      ) {
         refetch();
       }
-      onSuccess?.(saved.name, saved.version);
+      onSuccess?.(saved.name, savedAsNewVersion ? undefined : saved.version);
       setSuccessfulSave(true);
     },
     onError: async (response: Response) => {
@@ -181,7 +209,7 @@ export const useSchemaEdit = ({
       formMethods.handleSubmit(
         (fieldValues) => {
           const edited = {
-            ...schema,
+            ...(schema ?? {}),
             ...JSON.parse(fieldValues.editor),
           };
           saveSchemaAction.mutate({
@@ -205,6 +233,9 @@ export const useSchemaEdit = ({
   );
 
   const handleResetSchema = useCallback(() => {
+    if (!schema) {
+      return;
+    }
     formMethods.reset({ editor: JSON.stringify(schema, null, 2) });
   }, [formMethods, schema]);
 
@@ -302,6 +333,7 @@ export const useSchemaEdit = ({
       schema,
       isFetching: isFetching || isFetchingAvailableVersions,
       isFetchError,
+      isNotFound,
       isSaving,
       isReadOnly,
       readOnlyReason,

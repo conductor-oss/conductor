@@ -552,34 +552,4 @@ public class Monitors {
     public static void recordTaskExecLogSize(int val) {
         gauge("task_exec_log_size", val);
     }
-
-    /** A payload was rejected by the schema attached to its definition. */
-    public static void recordSchemaValidationFailure(String schemaName) {
-        counter(
-                "schema_validation_failure",
-                "schemaName",
-                StringUtils.defaultIfBlank(schemaName, "unknown"));
-    }
-
-    /**
-     * A definition referenced a schema no version of which is registered. Distinct from a payload
-     * failing validation: nothing was checked, and the fix is a registration rather than a payload.
-     *
-     * <p>Not tagged by version. The name is what an operator acts on, and a series per version
-     * would multiply the miss counter by a number that only ever grows.
-     */
-    public static void recordSchemaRegistryMiss(String schemaName) {
-        counter(
-                "schema_registry_miss",
-                "schemaName",
-                StringUtils.defaultIfBlank(schemaName, "unknown"));
-    }
-
-    /**
-     * How long validating one payload took. Under enforcement this runs on every scheduled task, so
-     * it is what answers whether enforcement costs anything.
-     */
-    public static void recordSchemaValidationTime(long duration) {
-        getTimer("schema_validation").record(duration, TimeUnit.MILLISECONDS);
-    }
 }

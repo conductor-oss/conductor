@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.conductoross.conductor.dao.schema.InMemorySchemaDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -292,12 +293,17 @@ class SchemaServiceTest {
         assertEquals("payment", service.getAllSchemas().get(0).getName());
     }
 
+    /**
+     * Both timestamps are stamped on creation, matching Conductor's commercial build so this
+     * service can stand in for it. A newly registered schema therefore reports an update time equal
+     * to its create time rather than none at all.
+     */
     @Test
-    void creatingStampsACreateTimeAndNoUpdateTime() {
+    void creatingStampsBothTimestamps() {
         SchemaDef saved = service.saveSchema(schema("order", 1), false);
 
         assertTrue(saved.getCreateTime() > 0);
-        assertEquals(0L, saved.getUpdateTime());
+        assertTrue(saved.getUpdateTime() > 0);
         // OSS has no authenticated principal, so nothing claims authorship.
         assertNull(saved.getCreatedBy());
         assertNull(saved.getUpdatedBy());
@@ -315,17 +321,78 @@ class SchemaServiceTest {
         assertTrue(updated.getUpdateTime() > 0);
     }
 
+    /** A new version is a fresh row: it does not inherit the previous version's timestamps. */
     @Test
-    void aNewVersionIsACreationRatherThanAnUpdate() {
+    void aNewVersionGetsItsOwnTimestamps() {
         SchemaDef first = schema("order", 1);
+        first.setCreateTime(1L);
         first.setUpdateTime(1L);
         service.saveSchema(first, false);
 
         SchemaDef second = service.saveSchema(schema("order", 0), true);
 
         assertEquals(2, second.getVersion());
-        assertTrue(second.getCreateTime() > 0);
-        assertEquals(0L, second.getUpdateTime());
+        assertTrue(second.getCreateTime() > 1L);
+        assertTrue(second.getUpdateTime() > 1L);
+    }
+
+    /**
+     * Naming a version nothing occupies registers that version, rather than allocating the next one
+     * — {@code newVersion=true} only increments when the named version is already taken. This is
+     * the commercial build's behaviour, kept so the two agree.
+     */
+    @Test
+    void newVersionTrueOnAnUnoccupiedVersionRegistersThatVersion() {
+        service.saveSchema(schema("order", 1), false);
+        service.saveSchema(schema("order", 2), false);
+
+        SchemaDef saved = service.saveSchema(schema("order", 9), true);
+
+        assertEquals(9, saved.getVersion());
+        assertNotNull(service.getSchemaByNameAndVersion("order", 9));
+        assertNull(service.getSchemaByNameAndVersion("order", 3));
+    }
+
+    /**
+     * An in-place save replaces the document and leaves the registered type alone, as the
+     * commercial build does. Changing a schema's type needs a new version.
+     */
+    @Test
+    void anInPlaceSaveDoesNotChangeTheRegisteredType() {
+        service.saveSchema(schema("order", 1), false);
+
+        SchemaDef retyped = schema("order", 1);
+        retyped.setType(SchemaDef.Type.AVRO);
+        retyped.setData(Map.of("type", "array"));
+        service.saveSchema(retyped, false);
+
+        SchemaDef stored = service.getSchemaByNameAndVersion("order", 1);
+        assertEquals(SchemaDef.Type.JSON, stored.getType());
+        assertEquals(Map.of("type", "array"), stored.getData());
+    }
+
+    /** A save naming no version registers version 1, not version 0. */
+    @Test
+    void aSaveWithNoVersionRegistersVersion1() {
+        SchemaDef noVersion = new SchemaDef();
+        noVersion.setName("order");
+        noVersion.setType(SchemaDef.Type.JSON);
+        noVersion.setData(Map.of("type", "object"));
+
+        assertEquals(0, noVersion.getVersion());
+        assertEquals(1, service.saveSchema(noVersion, false).getVersion());
+    }
+
+    /** Every field the caller sent survives a save, externalRef included. */
+    @Test
+    void externalRefSurvivesASave() {
+        SchemaDef withRef = schema("order", 1);
+        withRef.setExternalRef("registry://order");
+
+        service.saveSchema(withRef, false);
+
+        assertEquals(
+                "registry://order", service.getSchemaByNameAndVersion("order", 1).getExternalRef());
     }
 
     @Test

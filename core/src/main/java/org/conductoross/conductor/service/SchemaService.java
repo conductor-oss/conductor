@@ -12,10 +12,10 @@
  */
 package org.conductoross.conductor.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.dao.schema.InMemorySchemaDAO;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,6 @@ import org.springframework.stereotype.Service;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.NotFoundException;
-import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +46,11 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>Lookups return {@code null} for absent schemas rather than throwing; turning a miss into a
  * {@code 404} is the controller's job.
+ *
+ * <p>Not every metadata backend implements a {@link SchemaDAO}. One that does not falls back to
+ * {@link InMemorySchemaDAO}, so the registry works everywhere — but its contents are lost on
+ * restart and not shared between servers, so a deployment relying on the registry belongs on a
+ * backend that implements storage.
  */
 @Slf4j
 @Service
@@ -53,6 +58,16 @@ import lombok.extern.slf4j.Slf4j;
 public class SchemaService {
 
     private static final String LATEST = "latest";
+
+    /**
+     * Server-injected keys removed from a payload before it is checked.
+     *
+     * <p>These are not part of any caller's contract, so a schema declaring {@code
+     * additionalProperties: false} must not fail on them. Nothing in this server injects one today;
+     * the set exists so that a deployment which does — Conductor's commercial build puts {@code
+     * _createdBy} on an event task's input — validates the same payload the caller sent.
+     */
+    private static final Set<String> INTERNAL_FIELDS = Set.of("_createdBy");
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().getObjectMapper();
 
@@ -78,11 +93,41 @@ public class SchemaService {
                         : null;
         log.info(
                 "Schema registry storing through {}, read cache {}",
-                schemaDAO.getClass().getSimpleName(),
+                schemaDAO,
                 cache == null ? "disabled" : "enabled, ttl " + cacheProperties.getTtl());
     }
 
-    /** Mutates and returns the given schema, stamping the version and audit timestamps onto it. */
+    /**
+     * Registers {@code dto} and returns what was stored.
+     *
+     * <p>The branching mirrors Conductor's commercial build so this service can stand in for it:
+     * the store is probed at the name and version given, and what happens next depends on whether
+     * something is already there.
+     *
+     * <ul>
+     *   <li>Nothing there — stored at the version given, verbatim. Note this ignores {@code
+     *       incrementVersion}: naming a version nothing occupies registers that version, it does
+     *       not allocate the next one.
+     *   <li>Something there, {@code incrementVersion} false — the registered entry's document is
+     *       replaced in place. Its {@code type} is left as registered, so an in-place save cannot
+     *       change a schema's type.
+     *   <li>Something there, {@code incrementVersion} true — stored one past the highest version
+     *       registered under the name.
+     * </ul>
+     *
+     * <p>Two deviations from that build, both deliberate:
+     *
+     * <ul>
+     *   <li>A version below 1 is raised to 1. That build has no such coercion because it relies on
+     *       {@link SchemaDef}'s version field having defaulted to 1; it defaults to 0 here, where 0
+     *       on a reference means "latest", so without this a save naming no version would register
+     *       version 0 — a version no reference can pin and the docs say is 1.
+     *   <li>{@code externalRef} is carried through. That build's save drops it, which loses a field
+     *       the caller sent and contradicts {@link SchemaDAO}'s round-trip contract.
+     * </ul>
+     *
+     * <p>Created-by and updated-by stay null: there is no authenticated principal here.
+     */
     public SchemaDef saveSchema(SchemaDef dto, boolean incrementVersion) {
         if (dto == null) {
             throw new IllegalArgumentException("Schema cannot be null");
@@ -91,54 +136,56 @@ public class SchemaService {
             throw new IllegalArgumentException("Schema name cannot be blank");
         }
 
-        SchemaDef stored = incrementVersion ? insertAtNextVersion(dto) : upsert(dto);
+        if (dto.getVersion() < 1) {
+            dto.setVersion(1);
+        }
+
+        long now = System.currentTimeMillis();
+        SchemaDef registered = schemaDAO.findByNameAndVersion(dto.getName(), dto.getVersion());
+        SchemaDef stored;
+
+        if (registered == null) {
+            stored = copyOf(dto, dto.getVersion());
+            stored.setCreateTime(now);
+            stored.setUpdateTime(now);
+        } else if (!incrementVersion) {
+            stored = registered;
+            stored.setData(dto.getData());
+            stored.setUpdateTime(now);
+        } else {
+            // findAllVersionsByName is documented highest-first, so its head is the highest
+            // version; findLatestVersionByName answers the same question in one round trip.
+            stored = copyOf(dto, lookupLatest(dto.getName()).getVersion() + 1);
+            stored.setCreateTime(now);
+            stored.setUpdateTime(now);
+        }
+
+        schemaDAO.save(stored);
         invalidate(stored.getName(), stored.getVersion());
         return stored;
     }
 
-    private SchemaDef upsert(SchemaDef schema) {
-        if (schema.getVersion() < 1) {
-            schema.setVersion(1);
-        }
-        Optional<SchemaDef> existing = lookup(schema.getName(), schema.getVersion());
-        if (existing.isPresent()) {
-            schema.setCreateTime(existing.get().getCreateTime());
-            schema.setUpdateTime(System.currentTimeMillis());
-        } else {
-            stampCreation(schema);
-        }
-        schemaDAO.save(schema);
-        return schema;
-    }
-
-    /** OSS Conductor has no authenticated principal, so created-by/updated-by stay null. */
-    private static void stampCreation(SchemaDef schema) {
-        schema.setCreateTime(System.currentTimeMillis());
-        schema.setUpdateTime(null);
-    }
-
-    /**
-     * Allocates the next version. Two concurrent saves for the same name can land on the same
-     * version number; the later write wins.
-     */
-    private SchemaDef insertAtNextVersion(SchemaDef schema) {
-        int highest = lookupLatest(schema.getName()).map(SchemaDef::getVersion).orElse(0);
-        schema.setVersion(highest + 1);
-        stampCreation(schema);
-        schemaDAO.save(schema);
-        return schema;
+    /** A fresh definition at {@code version}, carrying every field the caller sent. */
+    private static SchemaDef copyOf(SchemaDef dto, int version) {
+        SchemaDef copy = new SchemaDef();
+        copy.setName(dto.getName());
+        copy.setVersion(version);
+        copy.setType(dto.getType());
+        copy.setData(dto.getData());
+        copy.setExternalRef(dto.getExternalRef());
+        return copy;
     }
 
     /** {@code null} rather than an exception when absent; see {@link SchemaService}. */
     public SchemaDef getSchemaByNameWithLatestVersion(String name) {
         requireName(name);
-        return cached(key(name, LATEST), () -> lookupLatest(name)).orElse(null);
+        return cached(key(name, LATEST), () -> lookupLatest(name));
     }
 
     /** {@code null} rather than an exception when absent; see {@link SchemaService}. */
     public SchemaDef getSchemaByNameAndVersion(String name, int version) {
         requireName(name);
-        return cached(key(name, String.valueOf(version)), () -> lookup(name, version)).orElse(null);
+        return cached(key(name, String.valueOf(version)), () -> lookup(name, version));
     }
 
     public List<SchemaDef> getAllSchemas() {
@@ -212,23 +259,23 @@ public class SchemaService {
         return name + "/" + version;
     }
 
-    private Optional<SchemaDef> lookup(String name, int version) {
-        return Optional.ofNullable(schemaDAO.findByNameAndVersion(name, version));
+    private SchemaDef lookup(String name, int version) {
+        return schemaDAO.findByNameAndVersion(name, version);
     }
 
-    private Optional<SchemaDef> lookupLatest(String name) {
-        return Optional.ofNullable(schemaDAO.findLatestVersionByName(name));
+    private SchemaDef lookupLatest(String name) {
+        return schemaDAO.findLatestVersionByName(name);
     }
 
     /**
      * Reads through the cache when one is configured. A miss is never cached: a schema that does
      * not exist yet is the one most likely to be created moments later.
      */
-    private Optional<SchemaDef> cached(String key, Supplier<Optional<SchemaDef>> loader) {
+    private SchemaDef cached(String key, Supplier<SchemaDef> loader) {
         if (cache == null) {
             return loader.get();
         }
-        return Optional.ofNullable(cache.get(key, ignored -> loader.get().orElse(null)));
+        return cache.get(key, ignored -> loader.get());
     }
 
     /** Drops one version and the name's latest pointer, which that version may have been. */
@@ -257,28 +304,13 @@ public class SchemaService {
      *     external reference, has no type, or has an unsupported type.
      */
     public void validate(SchemaDef schema, Map<String, Object> data) {
-        long start = System.currentTimeMillis();
-        try {
-            doValidate(schema, data);
-        } catch (SchemaValidationException e) {
-            // Central point for all callers, so metrics are recorded here rather than at each site.
-            Monitors.recordSchemaValidationFailure(schema.getName());
-            throw e;
-        } finally {
-            Monitors.recordSchemaValidationTime(System.currentTimeMillis() - start);
-        }
-    }
-
-    private void doValidate(SchemaDef schema, Map<String, Object> data) {
         if (schema == null) {
-            throw new IllegalArgumentException("Schema cannot be null");
+            return; // nothing attached, nothing to check
         }
-
-        Optional<SchemaDef> registered = resolve(schema);
-        if (registered.isEmpty()) {
+        SchemaDef resolved = resolve(schema);
+        if (resolved == null) {
             return; // unresolvable reference — miss already counted in resolve()
         }
-        SchemaDef resolved = registered.get();
 
         // TaskDef schema fields have no cascading validation, so a typeless schema reaches here.
         if (resolved.getType() == null) {
@@ -306,7 +338,7 @@ public class SchemaService {
 
         Set<ValidationMessage> failures;
         try {
-            failures = jsonSchemaValidator.validate(schemaContent, data == null ? Map.of() : data);
+            failures = jsonSchemaValidator.validate(schemaContent, withoutInternalFields(data));
         } catch (JsonSchemaException e) {
             // Bad schema document — skip validation. networknt getMessage() is often empty,
             // so log the validation messages instead.
@@ -321,7 +353,11 @@ public class SchemaService {
 
         if (failures != null && !failures.isEmpty()) {
             throw new SchemaValidationException(
-                    "Schema validation failed %s",
+                    // The resolved version, not the requested one: a reference asking for the
+                    // latest carries version 0, and naming that in the failure would tell the
+                    // reader nothing about which document rejected their payload.
+                    "Schema %s validation failed %s",
+                    resolved.getName() + ":" + resolved.getVersion(),
                     failures.stream()
                             .map(ValidationMessage::getMessage)
                             .collect(Collectors.joining(", ")));
@@ -333,11 +369,11 @@ public class SchemaService {
      * as-is; others are looked up by name and version. Version {@code < 1} resolves the latest.
      * Returns empty when the registry has no matching entry. {@code externalRef} is refused.
      */
-    private Optional<SchemaDef> resolve(SchemaDef schema) {
+    private SchemaDef resolve(SchemaDef schema) {
         // An empty map is a valid JSON Schema (permits everything), so presence of data — not
         // non-emptiness — is what makes a schema inline.
         if (schema.getData() != null) {
-            return Optional.of(schema);
+            return schema;
         }
         if (schema.getExternalRef() != null) {
             throw new SchemaValidationException(
@@ -349,18 +385,27 @@ public class SchemaService {
         }
         String name = schema.getName();
         int version = schema.getVersion();
-        Optional<SchemaDef> registered =
+        SchemaDef registered =
                 version < 1
                         ? cached(key(name, LATEST), () -> lookupLatest(name))
                         : cached(key(name, String.valueOf(version)), () -> lookup(name, version));
-        if (registered.isEmpty()) {
-            log.debug(
-                    "A definition references schema {} version {}, which is not registered",
-                    name,
-                    version);
-            Monitors.recordSchemaRegistryMiss(name);
-        }
         return registered;
+    }
+
+    /**
+     * The payload as its caller sent it. Copies only when there is something to remove, so the
+     * common case does not allocate, and never mutates the map it was handed.
+     */
+    private static Map<String, Object> withoutInternalFields(Map<String, Object> data) {
+        if (data == null) {
+            return Map.of();
+        }
+        if (INTERNAL_FIELDS.stream().noneMatch(data::containsKey)) {
+            return data;
+        }
+        Map<String, Object> stripped = new HashMap<>(data);
+        stripped.keySet().removeAll(INTERNAL_FIELDS);
+        return stripped;
     }
 
     private static String describe(JsonSchemaException e) {

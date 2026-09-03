@@ -8,6 +8,7 @@ import { SchemaEditPage } from "../edit/SchemaEditPage";
 const mutate = vi.fn();
 const refetch = vi.fn();
 const toastMessage = vi.fn();
+const replaceHistory = vi.fn();
 
 const JSON_SCHEMA = {
   name: "order",
@@ -46,12 +47,23 @@ vi.mock("utils/query", () => ({
     }, [data]);
     return { data, isFetching: false, refetch, isError: false };
   },
-  useActionWithPath: () => ({ mutate, isLoading: false }),
+  // Each call closes over its own options, so the save and delete actions do not
+  // trigger each other's handlers. Invoking onSuccess is what lets a test see where
+  // the page navigates after a save, not just what it requested.
+  useActionWithPath: (options: any) => ({
+    mutate: (params: any) => {
+      mutate(params);
+      options?.onSuccess?.(undefined, params);
+    },
+    isLoading: false,
+  }),
 }));
+
+let availableVersions: number[] = [1, 2];
 
 vi.mock("utils/hooks/useEntityAvailableVersions", () => ({
   useEntityAvailableVersions: () => ({
-    availableVersions: [1, 2],
+    availableVersions,
     refetchAvailableVersions: vi.fn(),
     isFetchingAvailableVersions: false,
   }),
@@ -64,7 +76,7 @@ vi.mock("utils/hooks/usePushHistory", () => ({
   usePushHistory: () => vi.fn(),
 }));
 vi.mock("utils/hooks/useReplaceHistory", () => ({
-  useReplaceHistory: () => vi.fn(),
+  useReplaceHistory: () => replaceHistory,
 }));
 
 vi.mock("components", () => ({ ProgressHeading: () => null }));
@@ -145,6 +157,8 @@ describe("SchemaEditPage", () => {
   beforeEach(() => {
     mutate.mockClear();
     toastMessage.mockClear();
+    replaceHistory.mockClear();
+    availableVersions = [1, 2];
   });
 
   /** Type an edit into the editor and wait for the form to register it. */
@@ -176,6 +190,9 @@ describe("SchemaEditPage", () => {
         body: JSON.stringify([EDITED_SCHEMA]),
       }),
     );
+
+    // An in-place save wrote the version in the request, so that is where to stay.
+    expect(replaceHistory).toHaveBeenCalledWith("/schemas/order/2");
   });
 
   it("lets the server allocate the number when saving as a new version", async () => {
@@ -195,6 +212,13 @@ describe("SchemaEditPage", () => {
         body: JSON.stringify([EDITED_SCHEMA]),
       }),
     );
+
+    // The version in the request body is the one we came from, and POST returns no
+    // body, so the only correct destination is the name with no version segment —
+    // which resolves to whatever the server just allocated. Landing back on
+    // /schemas/order/2 would leave the new version invisible.
+    expect(replaceHistory).toHaveBeenCalledWith("/schemas/order");
+    expect(replaceHistory).not.toHaveBeenCalledWith("/schemas/order/2");
   });
 
   it("deletes only the version being viewed", () => {
@@ -232,5 +256,33 @@ describe("SchemaEditPage", () => {
       "data-readonly",
       "false",
     );
+  });
+
+  /**
+   * The body fetch is keyed on a version, so a name with none registered never issues a
+   * request: neither the loading nor the error flag says anything, and the page would
+   * otherwise render an empty panel with no explanation surviving a reload.
+   */
+  it("says so when nothing is registered under the name", () => {
+    availableVersions = [];
+    renderAt("/schemas/nosuchschema");
+
+    expect(
+      screen.getByText(/No schema is registered under the name/i),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  /**
+   * The new-schema template must not stand in for a schema that did not load. It carries a
+   * randomly generated name, so showing it here would offer to save an unrelated schema
+   * under a name the user only asked to view.
+   */
+  it("does not fall back to the new-schema template for an existing name", () => {
+    availableVersions = [];
+    renderAt("/schemas/nosuchschema");
+
+    expect(screen.queryByTestId("editor")).toBeNull();
+    expect(screen.queryByText(/schema-/)).toBeNull();
   });
 });

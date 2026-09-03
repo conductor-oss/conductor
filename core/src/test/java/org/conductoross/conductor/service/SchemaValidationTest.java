@@ -16,6 +16,7 @@ import java.util.Map;
 
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.dao.schema.InMemorySchemaDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -104,7 +105,10 @@ class SchemaValidationTest {
 
     /**
      * A reference carrying no version asks for the latest, and gets it: version 2 is the one that
-     * requires {@code name}, and resolving version 1 instead would let this payload through.
+     * requires {@code name}, and resolving version 1 instead would let this payload through. The
+     * version is genuinely left alone here rather than set to 0, so this covers the default a
+     * caller actually gets. {@code SchemaVersionResolutionTest} pins the pin-versus-follow
+     * behaviour across every version.
      */
     @Test
     void aReferenceWithoutAVersionResolvesTheLatest() {
@@ -113,11 +117,12 @@ class SchemaValidationTest {
         service.saveSchema(v1, false);
         service.saveSchema(inline(), true);
 
-        assertThrows(
-                SchemaValidationException.class,
-                () -> service.validate(reference("person", 0), Map.of()));
+        SchemaDef noVersion = new SchemaDef();
+        noVersion.setName("person");
+
+        assertThrows(SchemaValidationException.class, () -> service.validate(noVersion, Map.of()));
         // And a payload the latest version accepts still passes.
-        assertDoesNotThrow(() -> service.validate(reference("person", 0), Map.of("name", "ada")));
+        assertDoesNotThrow(() -> service.validate(noVersion, Map.of("name", "ada")));
     }
 
     @Test
@@ -132,7 +137,6 @@ class SchemaValidationTest {
     /**
      * A reference the registry does not hold names no document, so there is nothing to check the
      * payload against and it goes through. The miss is counted instead — see {@link
-     * SchemaMetricsTest} — so an operator sees the unregistered reference.
      */
     @Test
     void anUnresolvableReferenceLeavesThePayloadUnvalidated() {
@@ -232,5 +236,54 @@ class SchemaValidationTest {
         malformed.setData(Map.of("type", 7));
 
         assertDoesNotThrow(() -> service.validate(malformed, Map.of()));
+    }
+
+    /**
+     * A server-injected key is not part of the caller's contract, so a schema that forbids
+     * unexpected properties must not fail on one. Nothing in this server injects {@code
+     * _createdBy}; the commercial build puts it on an event task's input, and this service is meant
+     * to be able to stand in for that one.
+     */
+    @Test
+    void serverInjectedFieldsAreStrippedBeforeValidation() {
+        SchemaDef closed = inline();
+        closed.setData(
+                Map.of(
+                        "$schema",
+                        "https://json-schema.org/draft/2020-12/schema",
+                        "type",
+                        "object",
+                        "properties",
+                        Map.of("name", Map.of("type", "string")),
+                        "required",
+                        java.util.List.of("name"),
+                        "additionalProperties",
+                        false));
+
+        Map<String, Object> withInternal = new java.util.HashMap<>();
+        withInternal.put("name", "ada");
+        withInternal.put("_createdBy", "someUser");
+
+        assertDoesNotThrow(() -> service.validate(closed, withInternal));
+
+        // The caller's map is left as it was: stripping copies rather than mutates.
+        assertTrue(withInternal.containsKey("_createdBy"));
+
+        // A field that is genuinely the caller's is still rejected by the same schema.
+        assertThrows(
+                SchemaValidationException.class,
+                () -> service.validate(closed, Map.of("name", "ada", "nickname", "ada")));
+    }
+
+    /** Nothing attached is nothing to check, not a programming error. */
+    @Test
+    void aNullSchemaIsANoOp() {
+        assertDoesNotThrow(() -> service.validate(null, Map.of("anything", 1)));
+    }
+
+    /** A null payload is checked as an empty object, so a required field still fails. */
+    @Test
+    void aNullPayloadIsCheckedAsEmpty() {
+        assertThrows(SchemaValidationException.class, () -> service.validate(inline(), null));
     }
 }

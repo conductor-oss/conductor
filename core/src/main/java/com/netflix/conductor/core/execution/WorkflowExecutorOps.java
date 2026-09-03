@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -714,7 +713,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         deciderService.updateWorkflowOutput(workflow, null);
 
         try {
-            validateAgainst(outputSchemaOf(workflow.getWorkflowDefinition()), workflow::getOutput);
+            validateSchema(outputSchemaOf(workflow.getWorkflowDefinition()), workflow.getOutput());
         } catch (SchemaValidationException e) {
             throw new TerminateWorkflowException(e.getMessage(), WorkflowModel.Status.FAILED);
         }
@@ -1010,7 +1009,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (task.getStatus() == COMPLETED
                 && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
             try {
-                validateAgainst(outputSchemaOf(taskDefinitionOrNull(task)), task::getOutputData);
+                validateSchema(outputSchemaOf(taskDefinitionOrNull(task)), task.getOutputData());
             } catch (SchemaValidationException e) {
                 // Terminal: re-running won't fix an invalid output shape.
                 task.setStatus(FAILED_WITH_TERMINAL_ERROR);
@@ -2127,7 +2126,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         Set<String> rejected = new HashSet<>();
         for (TaskModel task : tasks) {
             try {
-                validateAgainst(inputSchemaOf(taskDefinitionOrNull(task)), task::getInputData);
+                validateSchema(inputSchemaOf(taskDefinitionOrNull(task)), task.getInputData());
             } catch (SchemaValidationException e) {
                 LOGGER.info(
                         "Task {} rejected before scheduling: {}", task.getTaskId(), e.getMessage());
@@ -2193,14 +2192,17 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     /**
      * Validates a synchronous system task's output schema after execute(), before persistence.
-     * Tasks completing in start() are handled by scheduleTask and are not covered here.
+     *
+     * <p>A task that completes during scheduling, in start(), never reaches here, and scheduleTask
+     * checks input only — so its output schema is stored and never enforced. Same for an async
+     * system task. Documented in docs/devguide/how-tos/schema-validation.md.
      */
     private void validateSystemTaskOutput(TaskModel task) {
         if (task.getStatus() != COMPLETED) {
             return;
         }
         try {
-            validateAgainst(outputSchemaOf(taskDefinitionOrNull(task)), task::getOutputData);
+            validateSchema(outputSchemaOf(taskDefinitionOrNull(task)), task.getOutputData());
         } catch (SchemaValidationException e) {
             task.setStatus(FAILED_WITH_TERMINAL_ERROR);
             task.setReasonForIncompletion(e.getMessage());
@@ -2229,11 +2231,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * supplied lazily because WorkflowModel getInput/getOutput merge inline and external-storage
      * maps on access, which is wasted work when enforcement is off.
      */
-    private void validateAgainst(SchemaDef schema, Supplier<Map<String, Object>> payload) {
-        if (schema == null) {
-            return;
-        }
-        schemaService.validate(schema, payload.get());
+    private void validateSchema(SchemaDef schema, Map<String, Object> payload) {
+        schemaService.validate(schema, payload);
     }
 
     private void addTaskToQueue(final List<TaskModel> tasks) {
@@ -2716,7 +2715,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
         WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
 
-        validateAgainst(inputSchemaOf(workflow.getWorkflowDefinition()), workflow::getInput);
+        validateSchema(inputSchemaOf(workflow.getWorkflowDefinition()), workflow.getInput());
 
         try {
             createAndEvaluate(workflow);
@@ -2769,7 +2768,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
-            validateAgainst(inputSchemaOf(workflow.getWorkflowDefinition()), workflow::getInput);
+            validateSchema(inputSchemaOf(workflow.getWorkflowDefinition()), workflow.getInput());
             createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 

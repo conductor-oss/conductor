@@ -103,7 +103,7 @@ public class TestWorkflowExecutorDecideLoop {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        disabledSchemaService());
+                        mock(SchemaService.class));
     }
 
     /**
@@ -237,13 +237,5 @@ public class TestWorkflowExecutorDecideLoop {
         Field f = obj.getClass().getDeclaredField(name);
         f.setAccessible(true);
         return f.get(obj);
-    }
-
-    /**
-     * Schema enforcement off, which is the default and what every deployment gets until an operator
-     * turns it on. These tests are not about schemas.
-     */
-    private static SchemaService disabledSchemaService() {
-        return (SchemaService) null;
     }
 }

@@ -40,6 +40,26 @@ const pending = () => {
   });
 };
 
+/**
+ * How the Task Definition form uses this field: no reference selected yet, and no opt-in
+ * to reference checking.
+ */
+const renderEmptyUncheckedField = () =>
+  render(
+    <ThemeProvider>
+      <ConductorNameVersionField
+        label="Input Schema"
+        optionsUrl="/schema"
+        mapOptions={(data: { name: string; version: number }[] | undefined) =>
+          (data ?? []).map(({ name, version }) => ({
+            name,
+            versions: [version],
+          }))
+        }
+      />
+    </ThemeProvider>,
+  );
+
 const renderField = () =>
   render(
     <ThemeProvider>
@@ -70,9 +90,9 @@ describe("ConductorNameVersionField", () => {
   });
 
   it("flags a name against a served listing that is empty", () => {
-    // A server that holds no schemas still contradicts the reference, and the
-    // commercial UI asserts this: its "non-existing schema" test expects the
-    // field to render red on a server with an empty registry.
+    // An empty listing is still an answer. A reference to a name the server
+    // does not list is contradicted whether the listing has other names in it
+    // or none at all, so an empty registry is not a reason to withhold the flag.
     served([]);
 
     renderField();
@@ -107,5 +127,26 @@ describe("ConductorNameVersionField", () => {
     renderField();
 
     expect(nameInput()).toHaveAttribute("aria-invalid", "false");
+  });
+
+  /**
+   * A picker with nothing selected has no reference to be wrong about. Flagging it would
+   * paint every schema picker red on a server that does not serve /schema at all, with no
+   * value on screen to explain the colour.
+   */
+  it("does not flag an empty picker when the listing request failed", () => {
+    failed();
+
+    renderEmptyUncheckedField();
+
+    expect(nameInput()).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("says why, rather than only turning red", () => {
+    served([{ name: "somethingElse", version: 1 }]);
+
+    renderField();
+
+    expect(screen.getByText(/"order" is not in the list/i)).toBeVisible();
   });
 });

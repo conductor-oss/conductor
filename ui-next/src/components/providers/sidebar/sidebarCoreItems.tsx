@@ -261,9 +261,9 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hidden: hideScheduler,
           position: D.schedulerDefItem,
         },
-        // Keyed "schemas" deliberately: plugin items are merged by id, so a
-        // plugin registering its own schema screen under that id replaces this
-        // entry instead of adding a second "Schemas" item beside it.
+        // Sidebar items are merged by id, so a plugin registering its own schema
+        // screen under this id replaces this entry rather than adding a second
+        // "Schemas" item beside it.
         {
           id: "schemas",
           title: "Schemas",

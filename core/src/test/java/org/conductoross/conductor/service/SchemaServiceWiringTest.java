@@ -12,21 +12,30 @@
  */
 package org.conductoross.conductor.service;
 
+import java.util.List;
+import java.util.Map;
+
 import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.dao.schema.InMemorySchemaDAO;
 import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.SchemaDef;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The registry has no default storage on purpose. A backend with no {@link SchemaDAO} must stop the
- * server at startup rather than let it accept schema writes it cannot store — an in-memory fallback
- * would accept them, report success, and lose them on restart.
+ * Not every metadata backend implements a {@link SchemaDAO} — Cassandra does not. {@link
+ * InMemorySchemaDAO} stands in for those, so the registry works everywhere; these tests exercise
+ * the service over it.
  */
 class SchemaServiceWiringTest {
 
@@ -37,32 +46,96 @@ class SchemaServiceWiringTest {
                             () ->
                                     new JsonSchemaValidator(
                                             new ObjectMapperProvider().getObjectMapper()))
+                    .withBean(SchemaDAO.class, InMemorySchemaDAO::new)
                     .withUserConfiguration(SchemaService.class);
 
     @Test
-    void contextFailsWhenNoBackendProvidesASchemaDao() {
+    void contextStartsOverInMemoryStorage() {
         runner.run(
                 context -> {
-                    assertNotNull(
-                            context.getStartupFailure(),
-                            "the context must refuse to start without a SchemaDAO");
-                    assertTrue(
-                            context.getStartupFailure()
-                                    .getMessage()
-                                    .contains(SchemaDAO.class.getName()),
-                            "the failure must name the missing SchemaDAO, so an operator can tell "
-                                    + "the backend is unsupported: "
-                                    + context.getStartupFailure().getMessage());
+                    assertNull(context.getStartupFailure());
+                    assertNotNull(context.getBean(SchemaService.class));
                 });
     }
 
     @Test
-    void contextStartsWhenABackendProvidesOne() {
-        runner.withBean(SchemaDAO.class, InMemorySchemaDAO::new)
+    void theRegistryReadsAsEmptyBeforeAnythingIsRegistered() {
+        runner.run(
+                context -> {
+                    SchemaService service = context.getBean(SchemaService.class);
+                    assertTrue(service.getAllSchemas().isEmpty());
+                    assertTrue(service.getAllShortenedSchemas().isEmpty());
+                    assertTrue(service.getSchemasByName("absent").isEmpty());
+                    assertNull(service.getSchemaByNameWithLatestVersion("absent"));
+                    assertNull(service.getSchemaByNameAndVersion("absent", 1));
+                });
+    }
+
+    /** Writes are accepted on the fallback, and read back — for this server's lifetime. */
+    @Test
+    void writesAreServedFromInMemoryStorage() {
+        runner.run(
+                context -> {
+                    SchemaService service = context.getBean(SchemaService.class);
+                    service.saveSchema(requiresName(), false);
+
+                    SchemaDef stored = service.getSchemaByNameAndVersion("requires_name", 1);
+                    assertNotNull(stored);
+                    assertEquals(1, service.getAllSchemas().size());
+
+                    service.deleteSchemaByNameAndVersion("requires_name", 1);
+                    assertTrue(service.getAllSchemas().isEmpty());
+                });
+    }
+
+    /** Validation against an inline schema needs no registry at all. */
+    @Test
+    void inlineSchemasAreEnforcedWithoutTouchingStorage() {
+        runner.run(
+                context -> {
+                    SchemaService service = context.getBean(SchemaService.class);
+                    assertThrows(
+                            SchemaValidationException.class,
+                            () -> service.validate(requiresName(), Map.of("age", 42)));
+                    service.validate(requiresName(), Map.of("name", "ada"));
+                });
+    }
+
+    /** The service reads whatever DAO the backend contributed, not one of its own making. */
+    @Test
+    void theServiceReadsThroughTheContributedDao() {
+        InMemorySchemaDAO backendDao = new InMemorySchemaDAO();
+        backendDao.save(requiresName());
+
+        new ApplicationContextRunner()
+                .withBean(
+                        JsonSchemaValidator.class,
+                        () -> new JsonSchemaValidator(new ObjectMapperProvider().getObjectMapper()))
+                .withBean(SchemaDAO.class, () -> backendDao)
+                .withUserConfiguration(SchemaService.class)
                 .run(
                         context -> {
                             assertNull(context.getStartupFailure());
-                            assertNotNull(context.getBean(SchemaService.class));
+                            SchemaService service = context.getBean(SchemaService.class);
+                            assertSame(backendDao, context.getBean(SchemaDAO.class));
+                            assertEquals(1, service.getAllSchemas().size());
                         });
+    }
+
+    /** An inline JSON schema that demands a {@code name}. */
+    private static SchemaDef requiresName() {
+        SchemaDef schema = new SchemaDef();
+        schema.setName("requires_name");
+        schema.setVersion(1);
+        schema.setType(SchemaDef.Type.JSON);
+        schema.setData(
+                Map.of(
+                        "$schema",
+                        "https://json-schema.org/draft/2020-12/schema",
+                        "type",
+                        "object",
+                        "required",
+                        List.of("name")));
+        return schema;
     }
 }

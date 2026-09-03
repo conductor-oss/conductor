@@ -40,7 +40,7 @@ The schema is a `SchemaDef`, embedded in the definition:
 | Field | Meaning |
 |---|---|
 | `name` | Identifier for the schema |
-| `version` | Defaults to `1`. Lets a schema evolve alongside the definition that uses it |
+| `version` | Which registered version to validate against. Omit it to follow the registry's latest; name one to pin it. Ignored for an inline `data` schema, which is the document |
 | `type` | `JSON`, `AVRO`, or `PROTOBUF` |
 | `data` | The schema document itself |
 | `externalRef` | A name for a schema held outside Conductor. Stored and returned unchanged; **nothing dereferences it**, so it is not an alternative to inline `data` |
@@ -80,6 +80,24 @@ curl -X PUT "$CONDUCTOR_SERVER_URL/metadata/workflow" \
   -d '[ ... definition above ... ]'
 ```
 
+## Referring to a registered schema
+
+Instead of inlining `data`, a definition can name a schema held in the [Schema Registry](schema-registry.md). Whether you also name a `version` decides whether the definition follows the registry or is pinned to one document:
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON" }
+```
+
+Omitting `version` **follows the registry's latest**. Register a new version and this definition validates against it on its next execution, with no edit to the definition. That is what you want for a contract you evolve, and what you do not want if a new version must not change how existing workflows behave.
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON", "version": 2 }
+```
+
+Naming a `version` **pins that document**. Later versions are ignored; the definition keeps validating against version 2 until you change the definition. Pin when a definition has been checked against real traffic and should not move underneath you.
+
+Failure messages name the version that was actually applied, not the one requested, so a pinned and a following reference are distinguishable when one rejects a payload.
+
 ## Turning enforcement on
 
 Enforcement is decided entirely by the definition. There is no server property to set and nothing to restart. A payload is checked when both of these hold:
@@ -93,6 +111,19 @@ The two defaults differ, and the difference matters when you attach a schema:
 - On a **`WorkflowDef`**, it defaults to `true`. Attaching an `inputSchema` or `outputSchema` is therefore enough on its own: that definition starts being validated on its next execution. Set `enforceSchema` to `false` explicitly if you want the schema recorded but not enforced.
 
 Either way enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
+
+!!! warning "Upgrading a server that already has schemas attached"
+    Because `enforceSchema` defaults to `true` on `WorkflowDef`, a workflow definition that already carries an `inputSchema` or `outputSchema` — attached before this server could enforce anything — starts being validated on its next execution after the upgrade, with no edit to the definition. A schema written as documentation, never checked against real traffic, becomes a gate.
+
+    Before upgrading, list the definitions that would be affected and decide about each one:
+
+    ```shell
+    curl -s "$CONDUCTOR_SERVER_URL/metadata/workflow" \
+      | jq -r '.[] | select((.inputSchema != null or .outputSchema != null) and .enforceSchema != false)
+               | "\(.name) v\(.version)"'
+    ```
+
+    Set `enforceSchema` to `false` explicitly on any of those you are not ready to enforce; the schema stays recorded either way. `TaskDef` needs no such review — it defaults to `false`, so attached task schemas stay inert until you opt in.
 
 The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
 

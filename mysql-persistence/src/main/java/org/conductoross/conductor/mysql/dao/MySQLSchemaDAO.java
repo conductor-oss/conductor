@@ -52,7 +52,9 @@ public class MySQLSchemaDAO extends MySQLBaseDAO implements SchemaDAO {
     private static final String SELECT_ALL_VERSIONS_BY_NAME =
             "SELECT json_data FROM meta_schema_def WHERE name = ? ORDER BY version DESC";
 
-    // Only the two indexed columns, so listing what is registered does not read every payload.
+    // Only name and version, so nothing deserializes a schema body to list what is registered.
+    // (name, version) is InnoDB's clustered key, so the scan still walks the rows themselves —
+    // this saves the JSON parsing, not the I/O.
     private static final String SELECT_ALL_NAMES_AND_VERSIONS =
             "SELECT name, version FROM meta_schema_def ORDER BY name, version";
 

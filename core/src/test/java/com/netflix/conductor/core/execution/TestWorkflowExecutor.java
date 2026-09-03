@@ -229,7 +229,7 @@ public class TestWorkflowExecutor {
                         parametersUtils,
                         idGenerator,
                         Optional.empty(),
-                        disabledSchemaService());
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -3190,13 +3190,5 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
-    }
-
-    /**
-     * Schema enforcement off, which is the default and what every deployment gets until an operator
-     * turns it on. These tests are not about schemas.
-     */
-    private static SchemaService disabledSchemaService() {
-        return (SchemaService) null;
     }
 }

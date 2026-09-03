@@ -84,9 +84,21 @@ export const ConductorNameVersionField = forwardRef<
       value != null &&
       !options.some(({ name }) => name === value?.name);
 
-    // A failed listing leaves the reference unverifiable, which is shown whether or not
-    // the field opted in: the field cannot stand behind a value it was unable to check.
-    const hasError = isError || hasInvalidValue;
+    // A failed listing leaves an existing reference unverifiable, which is shown whether or
+    // not the field opted in: the field cannot stand behind a value it was unable to check.
+    // Requires a value, though — an empty picker has no reference to be wrong about, and
+    // reddening every one of them on a server that does not serve the listing at all says
+    // nothing the user can act on.
+    const unverifiableValue = isError && value != null;
+
+    const hasError = unverifiableValue || hasInvalidValue;
+
+    // Border colour alone does not say which of the two happened, or what to do about it.
+    const errorText = hasInvalidValue
+      ? `"${value?.name}" is not in the list served by this server.`
+      : unverifiableValue
+        ? "Could not load the list, so this reference could not be checked."
+        : undefined;
 
     return (
       <>
@@ -117,6 +129,7 @@ export const ConductorNameVersionField = forwardRef<
                 });
               }}
               error={hasError}
+              helperText={errorText}
               value={value?.name || null}
               slotProps={
                 nameField?.clearIndicator

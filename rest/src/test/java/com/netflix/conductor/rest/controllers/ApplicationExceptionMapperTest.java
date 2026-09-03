@@ -114,6 +114,38 @@ public class ApplicationExceptionMapperTest {
                 status().isBadRequest());
     }
 
+    /**
+     * The same, with both advices registered as the server registers them.
+     * SchemaValidationException is a {@code jakarta.validation.ValidationException}, so
+     * ValidationExceptionMapper — at HIGHEST_PRECEDENCE — handles it, not the status map above. Its
+     * non-constraint-violation branch answers 500, so without an explicit case for this type a bad
+     * payload would come back as a server fault. The test above registers only one advice and would
+     * not notice.
+     */
+    @Test
+    public void testSchemaValidationMapsTo400WithBothAdvicesRegistered() throws Exception {
+        MockMvc withBothAdvices =
+                MockMvcBuilders.standaloneSetup(this.queueAdminResource)
+                        .setControllerAdvice(
+                                new ValidationExceptionMapper(), new ApplicationExceptionMapper())
+                        .build();
+
+        doThrow(new SchemaValidationException("Workflow order input: required property 'name'"))
+                .when(this.queueAdminResource)
+                .update(any(), any(), any(), any());
+
+        withBothAdvices
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andExpect(status().isBadRequest());
+    }
+
     @Test
     public void testMethodNotSupportedMapsTo405() throws Exception {
         // an unsupported HTTP method on an existing path must map to 405 (RFC 7231),

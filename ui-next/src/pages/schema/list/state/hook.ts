@@ -81,7 +81,8 @@ export const useSchemaList = () => {
     [tableData],
   );
 
-  // Either action leaves the table showing data the server has moved on from.
+  // True while a delete or clone is in flight, so the table can show it is busy.
+  // Each action's onSuccess refetches, which is what reconciles the rows afterwards.
   const isMutating =
     deleteSchemaAction.isLoading || cloneSchemaAction.isLoading;
 

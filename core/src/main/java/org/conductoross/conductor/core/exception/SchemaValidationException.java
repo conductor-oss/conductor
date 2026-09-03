@@ -12,18 +12,29 @@
  */
 package org.conductoross.conductor.core.exception;
 
-import com.netflix.conductor.core.exception.NonTransientException;
+import jakarta.validation.ValidationException;
 
 /**
  * A payload did not conform to the schema attached to its definition, or the schema itself could
- * not be enforced — it names a version the registry does not hold, carries no type, or carries a
- * type this server does not validate.
+ * not be enforced — it carries no type, carries a type this server does not validate, or names only
+ * an external reference. A reference the registry does not hold is <em>not</em> one of these: that
+ * leaves the payload unchecked and increments a counter, rather than failing anything.
  *
  * <p>The two are one exception because they have one consequence: the execution fails and the
  * message says why. Neither is fixed by retrying, which is why a task whose input fails validation
  * fails terminally.
+ *
+ * <p>Extends {@link ValidationException} rather than {@code NonTransientException} so that a
+ * deployment catching the standard Bean Validation exception around a schema check keeps working —
+ * Conductor's commercial build does exactly that in its executor. Nothing here classifies retries
+ * off {@code NonTransientException}; that type only steers transaction retries in the persistence
+ * DAOs, which this never reaches.
+ *
+ * <p>{@code ValidationExceptionMapper} takes {@link jakarta.validation.ValidationException} at
+ * highest precedence and answers {@code 500} for anything that is not a constraint violation, so it
+ * names this type explicitly to keep the {@code 400} a bad payload deserves.
  */
-public class SchemaValidationException extends NonTransientException {
+public class SchemaValidationException extends ValidationException {
 
     public SchemaValidationException(String message) {
         super(message);

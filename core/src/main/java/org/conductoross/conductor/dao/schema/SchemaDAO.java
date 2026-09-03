@@ -26,8 +26,9 @@ import com.netflix.conductor.common.metadata.SchemaDef;
  *
  * <p>No method takes a tenant identifier: OSS Conductor is single-tenant.
  *
- * <p>Nothing satisfies this dependency by default. A server on a backend with no implementation
- * fails to start rather than accepting schema writes it cannot store.
+ * <p>A backend that implements none of this still gets a registry: {@link InMemorySchemaDAO} is
+ * wired in as the default, so the server starts and the registry works, at the cost of losing its
+ * contents on restart.
  */
 public interface SchemaDAO {
 

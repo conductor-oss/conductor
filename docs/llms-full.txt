@@ -2423,53 +2423,30 @@ For structured/free-text or task-based searches beyond CLI flags, use `GET /api/
 
 ## Search with the UI
 
-The UI has two modes:
+Go to **Executions > Workflow** in the Conductor UI. Fill in one or more filters and select **Search**. Results can be sorted by column, and **Show as code** displays the equivalent `GET /api/workflow/search` call for the current filters.
 
-* **Workflows** tab — Search using workflow parameters.
-* **Tasks** tab — Search workflows by tasks.
+### Filters
 
-**To search workflow executions:**
+| Filter | Description |
+|---|---|
+| Workflow name | One or more workflow definition names. |
+| Workflow id | A specific workflow execution ID. |
+| Correlation id | One or more correlation IDs. Press Enter after each value. |
+| Idempotency key | One or more idempotency keys. Press Enter after each value. |
+| Status | One or more of `RUNNING`, `COMPLETED`, `FAILED`, `TIMED_OUT`, `TERMINATED`, `PAUSED`. |
+| Start / End | Only executions that started within the selected time range. |
+| Free text search | Full-text query over indexed workflow data such as input and output values. Requires indexing to be enabled on the server. |
 
-1. Go to **[Executions](http://localhost:8080/executions)** in the Conductor UI.
-2. Configure the [search parameters](#search-parameters).
-3. Select **Search**.
+### SQL format
 
-Once the search results are displayed, you can sort the results by different column values and select additional columns to display.
+Turn on **SQL format** to replace the filter form with a query box that accepts the same SQL-like expressions as the `query` parameter of the search API, for example `workflowType = 'order_processing' AND status = 'FAILED'`. See [Query syntax](../../../documentation/api/workflow.md#query-syntax).
 
+### Searching by task
 
-## Search parameters
+The open-source UI searches workflow executions only. To find workflows by the tasks they contain, or to search task executions directly, use the API:
 
-Here are the search parameters for each search mode.
-
-### Search by workflows
-The following fields are available for searching workflows in the **Workflows** tab.
-
-| Search Field Name | Description                                                                                             |
-|-------------------|---------------------------------------------------------------------------------------------------------|
-| Workflow Name     | Filters workflow executions by its name.                                   |
-| Workflow ID       | Filters to a specific workflow execution by its execution ID.                                               |
-| Status            | Filters workflow executions by its status (RUNNING, COMPLETED, FAILED, TIMED_OUT, TERMINATED, PAUSED).      |
-| Start Time - From | Filters workflow executions that started on or after the specified time.                          |
-| Start Time - To   | Filters workflow executions that started on or before the specified time.                         |
-| Lookback (days)   | Filters workflow executions that ran in the last given number of days.                            |
-| Lucene-syntax Query (Double-quote strings for Free Text)  | (If indexing is enabled) Filters workflow executions by querying workflow input and output values. |
-
-
-### Search workflows by tasks
-
-The following fields are available for searching workflows by its tasks in the **Tasks** tab.
-
-| Search Field Name  | Description                                                                                                  |
-|--------------------|--------------------------------------------------------------------------------------------------------------|
-| Task Name  | Filters workflow executions by its task name.                                        |
-| Task ID    | Filters to a specific workflow execution that contains this task execution ID.                                |
-| Task Status | Filters workflow executions by its task status (IN_PROGRESS, CANCELED, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, COMPLETED_WITH_ERRORS, SCHEDULED, TIMED_OUT, SKIPPED).  |
-| Task Type  | Filters workflow executions by its task type. |
-| Workflow Name | Filters workflow executions by its workflow name.       |
-| Update Time - From   | Filters workflow executions by tasks that started on or after the specified time.                         |
-| Update Time - To   | Filters workflow executions by tasks that started on or before the specified time.                         |
-| Lookback (days)   | Filters workflow executions by tasks that ran in the last given number of days.                          |
-| Lucene-syntax Query (Double-quote strings for Free Text) | (If indexing is enabled) Filters workflow executions by querying task input and output values. |
+* `GET /api/workflow/search-by-tasks` — workflows filtered by task attributes. See [Search by Tasks](../../../documentation/api/workflow.md#search-by-tasks).
+* `GET /api/tasks/search` — task executions. See [Search Tasks](../../../documentation/api/task.md#search-tasks).
 
 ## Limitations and next step
 
@@ -2497,7 +2474,7 @@ The following tab views or fields in the task details are useful for debugging:
 
 | Field or Tab Name                                      | Description                                                                                                                   |
 |-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| _Reason for Incompletion_ in **Task Detail** > **Summary**  | Contains the exception message thrown by the task worker.                    |
+| _Reason for Incompletion_ in **Task Detail** > **Summary**  | The worker's error message, or the engine's message when the task timed out or was terminated. See [Understanding reasonForIncompletion](#understanding-reasonforincompletion). |
 | _Worker_ in **Task Detail** > **Summary**                   | Contains the worker instance ID where the failure occurred. Useful for digging up detailed logs, if it has not already captured by Conductor.                    |
 | **Task Detail** > **Input**                           | Useful for verifying if the task inputs were correctly computed and provided to the task.                       |
 | **Task Detail** > **Output**                        | Useful for verifying what the task produced as output.                         |
@@ -2506,6 +2483,42 @@ The following tab views or fields in the task details are useful for debugging:
 
 
 ![Debugging Workflow Execution](workflow_debugging.png)
+
+## Understanding reasonForIncompletion
+
+`reasonForIncompletion` is a free-text field on both task and workflow executions. It is empty while an execution is healthy and is filled in when the execution stops without succeeding. The UI shows it as **Reason for Incompletion** in the task summary and at the top of the workflow execution view, and search results (`WorkflowSummary`, `TaskSummary`) include it.
+
+### Who writes it
+
+| Writer | What it contains |
+|---|---|
+| Your worker | Whatever the worker sets in `TaskResult.reasonForIncompletion` when it returns `FAILED` or `FAILED_WITH_TERMINAL_ERROR`. The SDKs set it to the exception message when a worker throws. |
+| Event handler `fail_task` action | The action's `reasonForIncompletion` value; empty if the action does not set one. |
+| System tasks | Their own error text. For example the HTTP task records the response body on a non-2xx response, `No response from the remote service`, `Missing HTTP URI.  See documentation for HttpTask for required input parameters`, or `Failed to invoke HTTP task due to: <exception>`. |
+| The engine | Timeouts, terminations, and definition errors, using the templates below. |
+
+### Engine-generated messages
+
+| Situation | Message |
+|---|---|
+| Task exceeded `timeoutSeconds` | `Task timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Task not polled within `pollTimeoutSeconds` | `Task poll timed out after {elapsed} seconds. Poll timeout configured as {pollTimeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Worker stopped updating the task (`responseTimeoutSeconds`) | `responseTimeout: {responseTimeoutSeconds} exceeded for the taskId: {taskId} with Task Definition: {taskDefName}` |
+| Retries exhausted the total budget (`totalTimeoutSeconds`) | `Task {taskDefName}/{taskId} exceeded total timeout of {totalTimeoutSeconds} seconds (elapsed {elapsed} seconds across all attempts including retry delays). Timeout policy: {timeoutPolicy}` |
+| Workflow exceeded its `timeoutSeconds` | `Workflow timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| A task failure fails the workflow | On the workflow: `Task {taskId} failed with status: {status} and reason: '{task reasonForIncompletion}'`. A failed `JOIN` carries the concatenated reasons of its failed forked tasks. |
+| Sub-workflow ended unsuccessfully | On the `SUB_WORKFLOW` task: `Sub workflow {subWorkflowId} failure reason: {sub-workflow reasonForIncompletion}` |
+| `TERMINATE` task | The task's `terminationReason` input, or `Workflow is {terminationStatus} by TERMINATE task: {taskId}` when none is given. Set even when `terminationStatus` is `COMPLETED`. |
+| Terminate API | The `reason` query parameter of `DELETE /api/workflow/{workflowId}`. |
+| Task definition missing | `Invalid task specified. Cannot find task by name {name} in the task definitions` |
+
+Timeout fields are described in [Task Lifecycle](../../architecture/tasklifecycle.md#timeout-scenarios).
+
+### Lifecycle and limits
+
+* Retry, restart, and rerun clear the workflow's reason and start the new task attempt with an empty reason. The original attempt keeps its reason; open it from **Retried Task** in the task details.
+* On tasks the value is capped at 500 characters; longer messages are cut. Workflow-level reasons are not capped.
+* The field is stored with the execution and returned by `GET /api/workflow/{workflowId}`, `GET /api/tasks/{taskId}`, and the search APIs.
 
 ## Recovering from failure
 
@@ -2876,7 +2889,7 @@ The schema is a `SchemaDef`, embedded in the definition:
 | Field | Meaning |
 |---|---|
 | `name` | Identifier for the schema |
-| `version` | Defaults to `1`. Lets a schema evolve alongside the definition that uses it |
+| `version` | Which registered version to validate against. Omit it to follow the registry's latest; name one to pin it. Ignored for an inline `data` schema, which is the document |
 | `type` | `JSON`, `AVRO`, or `PROTOBUF` |
 | `data` | The schema document itself |
 | `externalRef` | A name for a schema held outside Conductor. Stored and returned unchanged; **nothing dereferences it**, so it is not an alternative to inline `data` |
@@ -2916,6 +2929,24 @@ curl -X PUT "$CONDUCTOR_SERVER_URL/metadata/workflow" \
   -d '[ ... definition above ... ]'
 ```
 
+## Referring to a registered schema
+
+Instead of inlining `data`, a definition can name a schema held in the [Schema Registry](schema-registry.md). Whether you also name a `version` decides whether the definition follows the registry or is pinned to one document:
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON" }
+```
+
+Omitting `version` **follows the registry's latest**. Register a new version and this definition validates against it on its next execution, with no edit to the definition. That is what you want for a contract you evolve, and what you do not want if a new version must not change how existing workflows behave.
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON", "version": 2 }
+```
+
+Naming a `version` **pins that document**. Later versions are ignored; the definition keeps validating against version 2 until you change the definition. Pin when a definition has been checked against real traffic and should not move underneath you.
+
+Failure messages name the version that was actually applied, not the one requested, so a pinned and a following reference are distinguishable when one rejects a payload.
+
 ## Turning enforcement on
 
 Enforcement is decided entirely by the definition. There is no server property to set and nothing to restart. A payload is checked when both of these hold:
@@ -2929,6 +2960,19 @@ The two defaults differ, and the difference matters when you attach a schema:
 - On a **`WorkflowDef`**, it defaults to `true`. Attaching an `inputSchema` or `outputSchema` is therefore enough on its own: that definition starts being validated on its next execution. Set `enforceSchema` to `false` explicitly if you want the schema recorded but not enforced.
 
 Either way enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
+
+!!! warning "Upgrading a server that already has schemas attached"
+    Because `enforceSchema` defaults to `true` on `WorkflowDef`, a workflow definition that already carries an `inputSchema` or `outputSchema` — attached before this server could enforce anything — starts being validated on its next execution after the upgrade, with no edit to the definition. A schema written as documentation, never checked against real traffic, becomes a gate.
+
+    Before upgrading, list the definitions that would be affected and decide about each one:
+
+    ```shell
+    curl -s "$CONDUCTOR_SERVER_URL/metadata/workflow" \
+      | jq -r '.[] | select((.inputSchema != null or .outputSchema != null) and .enforceSchema != false)
+               | "\(.name) v\(.version)"'
+    ```
+
+    Set `enforceSchema` to `false` explicitly on any of those you are not ready to enforce; the schema stays recorded either way. `TaskDef` needs no such review — it defaults to `false`, so attached task schemas stay inert until you opt in.
 
 The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
 
@@ -3082,7 +3126,7 @@ The zeroed timestamps are a placeholder, not a real creation date — the short 
 
 ## Versioning
 
-A schema is addressed by name **and** version; the pair is unique. `version` defaults to `1`.
+A schema is addressed by name **and** version; the pair is unique. A save that names no version is stored at version `1`.
 
 There are two ways to save, and the difference matters:
 
@@ -3091,7 +3135,7 @@ There are two ways to save, and the difference matters:
 | `false` (default) | Overwrites whatever is stored at the version in the payload |
 | `true` | Stores at one past the highest version currently registered under that name |
 
-Use `newVersion=true` to evolve a contract. Definitions pinned to an older version keep resolving to the schema they were written against:
+Use `newVersion=true` to evolve a contract. Definitions that name an older version keep resolving to the schema they were written against; ones that omit the version move to the new one — see [Referring to a registered schema](schema-validation.md#referring-to-a-registered-schema):
 
 ```shell
 curl -X POST "$CONDUCTOR_SERVER_URL/schema?newVersion=true" \

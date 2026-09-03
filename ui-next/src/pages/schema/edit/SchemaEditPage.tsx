@@ -86,6 +86,7 @@ export const SchemaEditPage = () => {
       schema,
       isFetching,
       isFetchError,
+      isNotFound,
       isSaving,
       isReadOnly,
       readOnlyReason,
@@ -125,10 +126,11 @@ export const SchemaEditPage = () => {
     defaultValue: "",
   });
 
+  // Deliberately does not consult successfulSave. The form is reset to the saved body on
+  // save, so isDirty already answers this, and it re-arms when the user edits again —
+  // where a successfulSave short-circuit would latch true and disable the guard for good.
+  // successfulSave stays what BlockNavigationWithConfirmation wants of it: an edge trigger.
   const noFormChanges = useMemo(() => {
-    if (successfulSave === true) {
-      return true;
-    }
     if (!formMethods.formState.isDirty) {
       return true;
     }
@@ -138,16 +140,13 @@ export const SchemaEditPage = () => {
       // Unparseable text is a change: it is not what was loaded.
       return false;
     }
-  }, [
-    currentEditorValue,
-    schema,
-    formMethods.formState.isDirty,
-    successfulSave,
-  ]);
+  }, [currentEditorValue, schema, formMethods.formState.isDirty]);
 
   const saveDisabled =
     isReadOnly ||
     isFetchError ||
+    isNotFound ||
+    isSaving ||
     (!formMethods.formState.isDirty && !isNewSchema);
 
   return (
@@ -200,7 +199,7 @@ export const SchemaEditPage = () => {
                     <Button
                       id="delete-schema-version-btn"
                       onClick={handleOpenConfirmDeleteVersion}
-                      disabled={isFetchError || !currentVersion}
+                      disabled={isFetchError || isSaving || !currentVersion}
                       variant="text"
                       color="inherit"
                       startIcon={<DeleteIcon size={20} />}
@@ -210,7 +209,9 @@ export const SchemaEditPage = () => {
                   )}
 
                   <Button
-                    disabled={!formMethods.formState.isDirty || isFetchError}
+                    disabled={
+                      !formMethods.formState.isDirty || isFetchError || isSaving
+                    }
                     onClick={handleResetSchema}
                     variant="text"
                     startIcon={<ResetIcon />}
@@ -264,7 +265,15 @@ export const SchemaEditPage = () => {
               >
                 <CircularProgress size={20} />
               </Box>
-            ) : isFetchError ? null : (
+            ) : isFetchError || isNotFound ? (
+              // Not null: the toast raised at fetch time is gone after a reload, and an
+              // empty panel gives the reader nothing to act on.
+              <Alert severity="error" id="schema-load-error">
+                {isNotFound
+                  ? `No schema is registered under the name "${schemaDisplayName}".`
+                  : "This schema could not be loaded. Check that the server is reachable and try again."}
+              </Alert>
+            ) : (
               <Box
                 sx={{
                   maxWidth: "820px",

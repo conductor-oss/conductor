@@ -217,7 +217,7 @@ const getCoreAuthenticatedRoutes = () => [
  *
  * Withheld when a plugin has already claimed the same paths. Core routes are
  * matched ahead of plugin routes, so registering these unconditionally would
- * displace a plugin-provided schema screen rather than sit beside it.
+ * displace a plugin-provided schema screen rather than defer to it.
  */
 export const getSchemaRoutes = (pluginRoutes: RouteObject[]): RouteObject[] => {
   const routes = [

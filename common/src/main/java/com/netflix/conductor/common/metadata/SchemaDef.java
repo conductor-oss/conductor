@@ -44,10 +44,18 @@ public class SchemaDef extends Auditable {
     @NotNull
     private String name;
 
+    /**
+     * The registry stores every schema at a version of 1 or more; a save that names none is stored
+     * at 1.
+     *
+     * <p>Zero — the default, and what an omitted version deserialises to — means "whichever is
+     * newest" when this object is a reference from a workflow or task definition. Such a reference
+     * follows the registry forward as new versions are registered; name a version explicitly to pin
+     * one.
+     */
     @ProtoField(id = 2)
     @NotNull
-    @Builder.Default
-    private int version = 1;
+    private int version;
 
     @ProtoField(id = 3)
     @NotNull
