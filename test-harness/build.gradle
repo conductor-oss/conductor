@@ -2,6 +2,9 @@ apply plugin: 'groovy'
 
 dependencies {
     testImplementation project(':conductor-server')
+    // SchemaValidationException is a jakarta.validation.ValidationException, and the Groovy
+    // compiler needs its supertype on the classpath to compile the specs that catch it.
+    testImplementation 'jakarta.validation:jakarta.validation-api'
     testImplementation project(':conductor-common')
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-core')
