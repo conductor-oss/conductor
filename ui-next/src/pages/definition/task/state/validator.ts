@@ -74,6 +74,21 @@ const taskSchema = {
     backoffScaleFactor: {
       type: "integer",
     },
+    maxRetryDelaySeconds: {
+      type: "integer",
+    },
+    backoffJitterMs: {
+      type: "integer",
+    },
+    totalTimeoutSeconds: {
+      type: "integer",
+    },
+    taskStatusListenerEnabled: {
+      type: "boolean",
+      errorMessage: {
+        type: "must be boolean.",
+      },
+    },
     inputKeys: {
       type: "array",
       items: {

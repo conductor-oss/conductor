@@ -111,6 +111,28 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                 }}
               />
             </Grid>
+            <Grid size={12}>
+              <FormControlLabel
+                id="task-taskStatusListenerEnabled-field"
+                // The server defaults this on, so an absent value reads as on.
+                checked={
+                  modifiedTaskDefinition.taskStatusListenerEnabled ?? true
+                }
+                control={
+                  <Switch
+                    color="primary"
+                    style={{ marginRight: 8 }}
+                    onChange={({ target: { checked } }) =>
+                      handleChangeInputForm(
+                        "taskStatusListenerEnabled",
+                        checked,
+                      )
+                    }
+                  />
+                }
+                label="Enable task status listener"
+              />
+            </Grid>
           </Grid>
         </Grid>
       </Grid>
@@ -273,6 +295,48 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
             placeholder="0"
           />
         </Grid>
+        <Grid size={12}>
+          <ConductorInputNumber
+            id="task-maxRetryDelaySeconds-field"
+            label="Max retry delay seconds"
+            fullWidth
+            name="maxRetryDelaySeconds"
+            onChange={handleChangeTaskForm}
+            value={modifiedTaskDefinition.maxRetryDelaySeconds}
+            error={!!error?.maxRetryDelaySeconds}
+            helperText={error?.maxRetryDelaySeconds?.message}
+            inputProps={{
+              allowNegative: false,
+            }}
+            tooltip={{
+              title: "Max retry delay seconds",
+              content:
+                "Upper limit (in seconds) on the delay between retries, capping whatever the retry policy computes. Applies to every retry policy. No cap if set to 0.",
+            }}
+            placeholder="0"
+          />
+        </Grid>
+        <Grid size={12}>
+          <ConductorInputNumber
+            id="task-backoffJitterMs-field"
+            label="Backoff jitter ms"
+            fullWidth
+            name="backoffJitterMs"
+            onChange={handleChangeTaskForm}
+            value={modifiedTaskDefinition.backoffJitterMs}
+            error={!!error?.backoffJitterMs}
+            helperText={error?.backoffJitterMs?.message}
+            inputProps={{
+              allowNegative: false,
+            }}
+            tooltip={{
+              title: "Backoff jitter ms",
+              content:
+                "A random delay between 0 and this value (in milliseconds) is added to each retry, spreading out retries that would otherwise fire together. No jitter if set to 0.",
+            }}
+            placeholder="0"
+          />
+        </Grid>
       </Grid>
       <Grid {...gridContainerItemProps}>
         <Grid size={12}>
@@ -320,6 +384,27 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                 "Time (in seconds) for the task to reach a terminal state before it gets marked as TIMED_OUT. No timeout if set to 0.",
             }}
             placeholder="3600"
+          />
+        </Grid>
+        <Grid size={12}>
+          <ConductorInputNumber
+            id="task-totalTimeoutSeconds-field"
+            fullWidth
+            label="Total Timeout Seconds"
+            name="totalTimeoutSeconds"
+            onChange={handleChangeTaskForm}
+            value={modifiedTaskDefinition.totalTimeoutSeconds}
+            error={!!error?.totalTimeoutSeconds}
+            helperText={error?.totalTimeoutSeconds?.message}
+            inputProps={{
+              allowNegative: false,
+            }}
+            tooltip={{
+              title: "Total timeout seconds",
+              content:
+                "Total time (in seconds) the task may take across every attempt, including the delays between retries, before it gets marked as TIMED_OUT. The timeout policy still applies. No limit if set to 0.",
+            }}
+            placeholder="0"
           />
         </Grid>
         <Grid size={12}>
