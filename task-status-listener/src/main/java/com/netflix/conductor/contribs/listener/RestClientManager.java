@@ -30,6 +30,7 @@ import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -37,6 +38,8 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.annotations.VisibleForTesting;
 
 public class RestClientManager {
     private static final Logger logger = LoggerFactory.getLogger(RestClientManager.class);
@@ -229,13 +232,16 @@ public class RestClientManager {
         return url + "/" + urlEndPoint;
     }
 
-    private HttpPost createPostRequest(String url, String data, Map<String, String> headers)
+    @VisibleForTesting
+    HttpPost createPostRequest(String url, String data, Map<String, String> headers)
             throws IOException {
         HttpPost httpPost = new HttpPost(url);
-        StringEntity entity = new StringEntity(data);
+        // The single-argument StringEntity constructor encodes with ISO-8859-1, which
+        // desyncs Content-Length from the UTF-8 payload as soon as the summary contains a
+        // multibyte character. Declare the JSON content type with an explicit UTF-8 charset.
+        StringEntity entity = new StringEntity(data, ContentType.APPLICATION_JSON);
         httpPost.setEntity(entity);
         httpPost.setHeader("Accept", "application/json");
-        httpPost.setHeader("Content-type", "application/json");
         headers.forEach(httpPost::setHeader);
         return httpPost;
     }
