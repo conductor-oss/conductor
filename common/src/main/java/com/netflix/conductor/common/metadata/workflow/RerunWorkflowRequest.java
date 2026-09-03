@@ -35,6 +35,14 @@ public class RerunWorkflowRequest {
     @ProtoField(id = 5)
     private String correlationId;
 
+    /**
+     * When rerunning from a task inside a sub-workflow, also re-run the downstream tasks of each
+     * ancestor workflow. Off by default: only the workflow named in the request is re-run, and
+     * already-completed tasks in its ancestors are left as they are.
+     */
+    @ProtoField(id = 6)
+    private boolean rerunParentDownstreamTasks;
+
     public String getReRunFromWorkflowId() {
         return reRunFromWorkflowId;
     }
@@ -65,6 +73,14 @@ public class RerunWorkflowRequest {
 
     public void setTaskInput(Map<String, Object> taskInput) {
         this.taskInput = taskInput;
+    }
+
+    public boolean isRerunParentDownstreamTasks() {
+        return rerunParentDownstreamTasks;
+    }
+
+    public void setRerunParentDownstreamTasks(boolean rerunParentDownstreamTasks) {
+        this.rerunParentDownstreamTasks = rerunParentDownstreamTasks;
     }
 
     public String getCorrelationId() {

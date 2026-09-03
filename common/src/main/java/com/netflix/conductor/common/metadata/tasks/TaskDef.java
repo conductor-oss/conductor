@@ -151,6 +151,15 @@ public class TaskDef extends Auditable {
     private SchemaDef outputSchema;
     private boolean enforceSchema;
 
+    /**
+     * When true, updates to tasks of this type are replicated region-durably in an active-active
+     * deployment: the update is committed locally and synchronously confirmed to the peer region(s)
+     * before the caller is acked (falling back to asynchronous convergence if the sync quorum is
+     * missed). Defaults to false (locally durable only).
+     */
+    @ProtoField(id = 26)
+    private boolean regionDurable;
+
     public TaskDef() {}
 
     public TaskDef(String name) {
@@ -527,6 +536,14 @@ public class TaskDef extends Auditable {
 
     public void setEnforceSchema(boolean enforceSchema) {
         this.enforceSchema = enforceSchema;
+    }
+
+    public boolean isRegionDurable() {
+        return regionDurable;
+    }
+
+    public void setRegionDurable(boolean regionDurable) {
+        this.regionDurable = regionDurable;
     }
 
     public long getTotalTimeoutSeconds() {

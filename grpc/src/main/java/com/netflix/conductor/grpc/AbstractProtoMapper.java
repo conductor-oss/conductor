@@ -605,6 +605,7 @@ public abstract class AbstractProtoMapper {
         if (from.getCorrelationId() != null) {
             to.setCorrelationId( from.getCorrelationId() );
         }
+        to.setRerunParentDownstreamTasks( from.isRerunParentDownstreamTasks() );
         return to.build();
     }
 
@@ -623,6 +624,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setTaskInput(taskInputMap);
         to.setCorrelationId( from.getCorrelationId() );
+        to.setRerunParentDownstreamTasks( from.getRerunParentDownstreamTasks() );
         return to;
     }
 
@@ -1037,6 +1039,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.isTaskStatusListenerEnabled() );
+        to.setRegionDurable( from.isRegionDurable() );
         return to.build();
     }
 
@@ -1070,6 +1073,7 @@ public abstract class AbstractProtoMapper {
         to.setBaseType( from.getBaseType() );
         to.setTotalTimeoutSeconds( from.getTotalTimeoutSeconds() );
         to.setTaskStatusListenerEnabled( from.getTaskStatusListenerEnabled() );
+        to.setRegionDurable( from.getRegionDurable() );
         return to;
     }
 
