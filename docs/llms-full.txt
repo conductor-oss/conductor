@@ -2423,53 +2423,30 @@ For structured/free-text or task-based searches beyond CLI flags, use `GET /api/
 
 ## Search with the UI
 
-The UI has two modes:
+Go to **Executions > Workflow** in the Conductor UI. Fill in one or more filters and select **Search**. Results can be sorted by column, and **Show as code** displays the equivalent `GET /api/workflow/search` call for the current filters.
 
-* **Workflows** tab — Search using workflow parameters.
-* **Tasks** tab — Search workflows by tasks.
+### Filters
 
-**To search workflow executions:**
+| Filter | Description |
+|---|---|
+| Workflow name | One or more workflow definition names. |
+| Workflow id | A specific workflow execution ID. |
+| Correlation id | One or more correlation IDs. Press Enter after each value. |
+| Idempotency key | One or more idempotency keys. Press Enter after each value. |
+| Status | One or more of `RUNNING`, `COMPLETED`, `FAILED`, `TIMED_OUT`, `TERMINATED`, `PAUSED`. |
+| Start / End | Only executions that started within the selected time range. |
+| Free text search | Full-text query over indexed workflow data such as input and output values. Requires indexing to be enabled on the server. |
 
-1. Go to **[Executions](http://localhost:8080/executions)** in the Conductor UI.
-2. Configure the [search parameters](#search-parameters).
-3. Select **Search**.
+### SQL format
 
-Once the search results are displayed, you can sort the results by different column values and select additional columns to display.
+Turn on **SQL format** to replace the filter form with a query box that accepts the same SQL-like expressions as the `query` parameter of the search API, for example `workflowType = 'order_processing' AND status = 'FAILED'`. See [Query syntax](../../../documentation/api/workflow.md#query-syntax).
 
+### Searching by task
 
-## Search parameters
+The open-source UI searches workflow executions only. To find workflows by the tasks they contain, or to search task executions directly, use the API:
 
-Here are the search parameters for each search mode.
-
-### Search by workflows
-The following fields are available for searching workflows in the **Workflows** tab.
-
-| Search Field Name | Description                                                                                             |
-|-------------------|---------------------------------------------------------------------------------------------------------|
-| Workflow Name     | Filters workflow executions by its name.                                   |
-| Workflow ID       | Filters to a specific workflow execution by its execution ID.                                               |
-| Status            | Filters workflow executions by its status (RUNNING, COMPLETED, FAILED, TIMED_OUT, TERMINATED, PAUSED).      |
-| Start Time - From | Filters workflow executions that started on or after the specified time.                          |
-| Start Time - To   | Filters workflow executions that started on or before the specified time.                         |
-| Lookback (days)   | Filters workflow executions that ran in the last given number of days.                            |
-| Lucene-syntax Query (Double-quote strings for Free Text)  | (If indexing is enabled) Filters workflow executions by querying workflow input and output values. |
-
-
-### Search workflows by tasks
-
-The following fields are available for searching workflows by its tasks in the **Tasks** tab.
-
-| Search Field Name  | Description                                                                                                  |
-|--------------------|--------------------------------------------------------------------------------------------------------------|
-| Task Name  | Filters workflow executions by its task name.                                        |
-| Task ID    | Filters to a specific workflow execution that contains this task execution ID.                                |
-| Task Status | Filters workflow executions by its task status (IN_PROGRESS, CANCELED, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, COMPLETED_WITH_ERRORS, SCHEDULED, TIMED_OUT, SKIPPED).  |
-| Task Type  | Filters workflow executions by its task type. |
-| Workflow Name | Filters workflow executions by its workflow name.       |
-| Update Time - From   | Filters workflow executions by tasks that started on or after the specified time.                         |
-| Update Time - To   | Filters workflow executions by tasks that started on or before the specified time.                         |
-| Lookback (days)   | Filters workflow executions by tasks that ran in the last given number of days.                          |
-| Lucene-syntax Query (Double-quote strings for Free Text) | (If indexing is enabled) Filters workflow executions by querying task input and output values. |
+* `GET /api/workflow/search-by-tasks` — workflows filtered by task attributes. See [Search by Tasks](../../../documentation/api/workflow.md#search-by-tasks).
+* `GET /api/tasks/search` — task executions. See [Search Tasks](../../../documentation/api/task.md#search-tasks).
 
 ## Limitations and next step
 
@@ -2497,7 +2474,7 @@ The following tab views or fields in the task details are useful for debugging:
 
 | Field or Tab Name                                      | Description                                                                                                                   |
 |-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| _Reason for Incompletion_ in **Task Detail** > **Summary**  | Contains the exception message thrown by the task worker.                    |
+| _Reason for Incompletion_ in **Task Detail** > **Summary**  | The worker's error message, or the engine's message when the task timed out or was terminated. See [Understanding reasonForIncompletion](#understanding-reasonforincompletion). |
 | _Worker_ in **Task Detail** > **Summary**                   | Contains the worker instance ID where the failure occurred. Useful for digging up detailed logs, if it has not already captured by Conductor.                    |
 | **Task Detail** > **Input**                           | Useful for verifying if the task inputs were correctly computed and provided to the task.                       |
 | **Task Detail** > **Output**                        | Useful for verifying what the task produced as output.                         |
@@ -2506,6 +2483,42 @@ The following tab views or fields in the task details are useful for debugging:
 
 
 ![Debugging Workflow Execution](workflow_debugging.png)
+
+## Understanding reasonForIncompletion
+
+`reasonForIncompletion` is a free-text field on both task and workflow executions. It is empty while an execution is healthy and is filled in when the execution stops without succeeding. The UI shows it as **Reason for Incompletion** in the task summary and at the top of the workflow execution view, and search results (`WorkflowSummary`, `TaskSummary`) include it.
+
+### Who writes it
+
+| Writer | What it contains |
+|---|---|
+| Your worker | Whatever the worker sets in `TaskResult.reasonForIncompletion` when it returns `FAILED` or `FAILED_WITH_TERMINAL_ERROR`. The SDKs set it to the exception message when a worker throws. |
+| Event handler `fail_task` action | The action's `reasonForIncompletion` value; empty if the action does not set one. |
+| System tasks | Their own error text. For example the HTTP task records the response body on a non-2xx response, `No response from the remote service`, `Missing HTTP URI.  See documentation for HttpTask for required input parameters`, or `Failed to invoke HTTP task due to: <exception>`. |
+| The engine | Timeouts, terminations, and definition errors, using the templates below. |
+
+### Engine-generated messages
+
+| Situation | Message |
+|---|---|
+| Task exceeded `timeoutSeconds` | `Task timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Task not polled within `pollTimeoutSeconds` | `Task poll timed out after {elapsed} seconds. Poll timeout configured as {pollTimeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Worker stopped updating the task (`responseTimeoutSeconds`) | `responseTimeout: {responseTimeoutSeconds} exceeded for the taskId: {taskId} with Task Definition: {taskDefName}` |
+| Retries exhausted the total budget (`totalTimeoutSeconds`) | `Task {taskDefName}/{taskId} exceeded total timeout of {totalTimeoutSeconds} seconds (elapsed {elapsed} seconds across all attempts including retry delays). Timeout policy: {timeoutPolicy}` |
+| Workflow exceeded its `timeoutSeconds` | `Workflow timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| A task failure fails the workflow | On the workflow: `Task {taskId} failed with status: {status} and reason: '{task reasonForIncompletion}'`. A failed `JOIN` carries the concatenated reasons of its failed forked tasks. |
+| Sub-workflow ended unsuccessfully | On the `SUB_WORKFLOW` task: `Sub workflow {subWorkflowId} failure reason: {sub-workflow reasonForIncompletion}` |
+| `TERMINATE` task | The task's `terminationReason` input, or `Workflow is {terminationStatus} by TERMINATE task: {taskId}` when none is given. Set even when `terminationStatus` is `COMPLETED`. |
+| Terminate API | The `reason` query parameter of `DELETE /api/workflow/{workflowId}`. |
+| Task definition missing | `Invalid task specified. Cannot find task by name {name} in the task definitions` |
+
+Timeout fields are described in [Task Lifecycle](../../architecture/tasklifecycle.md#timeout-scenarios).
+
+### Lifecycle and limits
+
+* Retry, restart, and rerun clear the workflow's reason and start the new task attempt with an empty reason. The original attempt keeps its reason; open it from **Retried Task** in the task details.
+* On tasks the value is capped at 500 characters; longer messages are cut. Workflow-level reasons are not capped.
+* The field is stored with the execution and returned by `GET /api/workflow/{workflowId}`, `GET /api/tasks/{taskId}`, and the search APIs.
 
 ## Recovering from failure
 
@@ -2835,6 +2848,370 @@ Without `useLatestDefinitions=true`, a restart uses each execution's original de
 ## Limitations and next step
 
 Omitting a version at start time selects the latest registered version, which trades rollout control for convenience. Pin versions in schedules and parent workflows when deterministic deployment matters. Next, rehearse [debugging and recovery](debugging-workflows.md) for both the current and previous version.
+
+
+<!-- Source: devguide/how-tos/schema-validation.md -->
+# Input/Output Schema Validation
+
+A schema is a contract on the shape of data crossing a boundary. Without one, a missing field is discovered by whatever task first dereferences it — usually several tasks in, as a `NullPointerException` in a worker or a silently-null `${...}` expression. With one, and with [enforcement turned on](#turning-enforcement-on), the execution is rejected at the boundary, before any side effect.
+
+## Where a schema attaches
+
+| Attachment point | Scope | Fields |
+|---|---|---|
+| Workflow definition | The workflow's own input and output | `WorkflowDef.inputSchema` / `outputSchema` |
+| Task definition | Every use of that task, in every workflow | `TaskDef.inputSchema` / `outputSchema` |
+
+Put a schema on the task definition when the contract belongs to the task — every workflow calling `charge_payment` should agree on what a payment request looks like. Put it on the workflow definition when the contract belongs to the entry point, which is the case for anything triggered by an external caller.
+
+## Schema shape
+
+The schema is a `SchemaDef`, embedded in the definition:
+
+```json
+{
+  "name": "customerInput",
+  "version": 1,
+  "type": "JSON",
+  "data": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "customerId": { "type": "string" },
+      "tier": { "type": "string", "enum": ["standard", "premium"] }
+    },
+    "required": ["customerId"],
+    "additionalProperties": false
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `name` | Identifier for the schema |
+| `version` | Which registered version to validate against. Omit it to follow the registry's latest; name one to pin it. Ignored for an inline `data` schema, which is the document |
+| `type` | `JSON`, `AVRO`, or `PROTOBUF` |
+| `data` | The schema document itself |
+| `externalRef` | A name for a schema held outside Conductor. Stored and returned unchanged; **nothing dereferences it**, so it is not an alternative to inline `data` |
+
+## Attaching it to a workflow
+
+```json
+{
+  "name": "order_fulfillment",
+  "version": 1,
+  "ownerEmail": "team@example.com",
+  "schemaVersion": 2,
+  "enforceSchema": true,
+  "inputSchema": {
+    "name": "customerInput",
+    "version": 1,
+    "type": "JSON",
+    "data": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": { "customerId": { "type": "string" } },
+      "required": ["customerId"],
+      "additionalProperties": false
+    }
+  },
+  "tasks": []
+}
+```
+
+Two fields are easy to confuse. `schemaVersion` is unrelated to any of this — it is the workflow definition *format* version and should be `2`. `enforceSchema` is the per-definition switch, and it is the whole of the decision: there is no server-level setting. On `WorkflowDef` it defaults to `true`, so a workflow definition that declares an `inputSchema` is validated unless you explicitly set it to `false`. On `TaskDef` it defaults to `false`, so a task opts in.
+
+Register it the usual way — schemas travel inside the definition, so there is no separate step:
+
+```shell
+curl -X PUT "$CONDUCTOR_SERVER_URL/metadata/workflow" \
+  -H 'Content-Type: application/json' \
+  -d '[ ... definition above ... ]'
+```
+
+## Referring to a registered schema
+
+Instead of inlining `data`, a definition can name a schema held in the [Schema Registry](schema-registry.md). Whether you also name a `version` decides whether the definition follows the registry or is pinned to one document:
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON" }
+```
+
+Omitting `version` **follows the registry's latest**. Register a new version and this definition validates against it on its next execution, with no edit to the definition. That is what you want for a contract you evolve, and what you do not want if a new version must not change how existing workflows behave.
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON", "version": 2 }
+```
+
+Naming a `version` **pins that document**. Later versions are ignored; the definition keeps validating against version 2 until you change the definition. Pin when a definition has been checked against real traffic and should not move underneath you.
+
+Failure messages name the version that was actually applied, not the one requested, so a pinned and a following reference are distinguishable when one rejects a payload.
+
+## Turning enforcement on
+
+Enforcement is decided entirely by the definition. There is no server property to set and nothing to restart. A payload is checked when both of these hold:
+
+1. the definition's own `enforceSchema` is `true`;
+2. a schema is actually attached at that point.
+
+The two defaults differ, and the difference matters when you attach a schema:
+
+- On a **`TaskDef`**, `enforceSchema` defaults to `false`. Attaching a schema changes nothing about how the task executes until you set the flag on the same definition, so a schema can be attached for documentation without rejecting work.
+- On a **`WorkflowDef`**, it defaults to `true`. Attaching an `inputSchema` or `outputSchema` is therefore enough on its own: that definition starts being validated on its next execution. Set `enforceSchema` to `false` explicitly if you want the schema recorded but not enforced.
+
+Either way enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
+
+!!! warning "Upgrading a server that already has schemas attached"
+    Because `enforceSchema` defaults to `true` on `WorkflowDef`, a workflow definition that already carries an `inputSchema` or `outputSchema` — attached before this server could enforce anything — starts being validated on its next execution after the upgrade, with no edit to the definition. A schema written as documentation, never checked against real traffic, becomes a gate.
+
+    Before upgrading, list the definitions that would be affected and decide about each one:
+
+    ```shell
+    curl -s "$CONDUCTOR_SERVER_URL/metadata/workflow" \
+      | jq -r '.[] | select((.inputSchema != null or .outputSchema != null) and .enforceSchema != false)
+               | "\(.name) v\(.version)"'
+    ```
+
+    Set `enforceSchema` to `false` explicitly on any of those you are not ready to enforce; the schema stays recorded either way. `TaskDef` needs no such review — it defaults to `false`, so attached task schemas stay inert until you opt in.
+
+The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
+
+## When validation runs
+
+| Point | Effect on failure |
+|---|---|
+| Workflow input | The workflow does not start, and nothing is created |
+| Task input | The task fails terminally, before the worker sees it |
+| Task output | The task fails terminally after the worker returns |
+| Workflow output | The workflow fails at completion instead of completing |
+
+A workflow-input failure is reported to the caller: the start request is rejected with `400` and the validation message in the body, and no execution is created. The other three happen inside a running execution, so the validation message becomes the `reasonForIncompletion` on the task or the workflow — visible in the UI and the API, without reading server logs.
+
+Both task failures are **terminal**, not retriable. An input that violates a schema violates it identically on the next attempt, and an output the definition refuses is the same shape whenever the task is run again — so in neither case does a retry do anything but spend the task's retry budget on the same outcome. The workflow-level failures end the execution, so retrying does not arise.
+
+Input validation is the valuable one: it rejects the execution before any task has run, so there is nothing to compensate for. Output validation catches a worker returning the wrong shape, which otherwise surfaces as a downstream failure far from its cause.
+
+## Limits, and what happens at them
+
+**An externalized output is not checked.** A worker that returns its output through external payload storage hands the server a storage path rather than the payload, so there is nothing in hand to validate and the check is skipped. Task input, workflow input and workflow output are unaffected; so is a task whose output is small enough to travel inline.
+
+**Some system task output is checked, and some is not.** A synchronous system task that finishes inside its `execute(...)` step — `INLINE`, `SET_VARIABLE` and the like — has its output validated in the decider, and fails terminally like any other task. Two kinds are not covered: an asynchronous system task such as `HTTP` or `SUB_WORKFLOW`, and a synchronous one that completes during scheduling instead. For those, an `outputSchema` on the task definition is stored and never enforced. That and the externalized output above pass quietly, and so does the unresolvable reference described below; the non-`JSON` and typeless schemas below are the ones that fail loudly instead. Every system task's *input* is validated at scheduling like any other task's, and workflow input and workflow output are unaffected.
+
+**A schema that is not `JSON` is refused, not skipped.** An `AVRO` or `PROTOBUF` schema is accepted at registration and returned unchanged, but this server has no validator for it — so rather than let the payload through unchecked, it fails the execution and says why. A definition that both attaches one and opts into enforcement will start failing when you turn enforcement on.
+
+**A schema carrying no `type`, or only an `externalRef`, is refused too.** Neither names a document this server can check against — nothing dereferences `externalRef` — so both fail the execution and say so.
+
+**A reference the registry does not hold stops enforcing, quietly.** A schema attached by name and version is looked up in the [Schema Registry](schema-registry.md); if nothing is registered under that name and version there is no document to validate against, so the payload goes through unchecked rather than failing. The miss increments the `schema_registry_miss` counter, tagged with the schema name — that counter is the only signal, so watch it if you rely on enforcement. A registered document the validator cannot read or use behaves the same way and is logged. The common cause is a missing `$schema` line: without it the validator cannot tell which JSON Schema version to apply, so a document that otherwise looks correct enforces nothing. Both are errors in the definition rather than in the payload, which is why neither is charged to the caller; the cost is that a reference pointing at nothing enforces nothing.
+
+## Writing schemas that age well
+
+`additionalProperties: false` deserves a moment's thought. It turns an unexpected field into a hard failure — right for a contract you own end to end, a nuisance for one where callers legitimately pass extra context. Leave it out unless you mean it.
+
+Adding a field to `required` is a breaking change for every existing caller. Because a running execution keeps the definition version it started with, the safe path is the same as any other definition change: register a new version rather than editing the current one. See [Managing Workflow Versions](Workflows/versioning-workflows.md).
+
+Keep the schema narrow. A schema that restates every optional field becomes something nobody updates, and a stale contract is worse than none. Validate the fields whose absence would actually break the workflow.
+
+## Related pages
+
+- [Schema Registry](schema-registry.md) — storing a schema on the server under a name and version
+- [Task Definition reference](../../documentation/configuration/taskdef.md)
+- [Workflow Definition reference](../../documentation/configuration/workflowdef/index.md)
+- [Task Inputs](Tasks/task-inputs.md)
+- [Managing Workflow Versions](Workflows/versioning-workflows.md)
+- [CI/CD Integration](cicd-integration.md) — validating definitions before they reach production
+
+
+<!-- Source: devguide/how-tos/schema-registry.md -->
+# Schema Registry
+
+A schema attached to a definition travels inside that definition — see [Input/Output Schema Validation](schema-validation.md). That works, and it stops working the moment two definitions need the same contract: you now have two copies that drift.
+
+The schema registry is the server-side store that fixes this. A schema is saved once under a name and a version, and definitions reference it. It is also what populates the input- and output-schema pickers in the UI.
+
+## The API
+
+Six endpoints under `/api/schema`. The path, method and parameters match the contract the Conductor SDKs were written against, so an existing schema client needs no change to talk to this server.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/schema?newVersion=false` | Save one or more schemas |
+| `GET` | `/api/schema?short=false` | List every version of every schema |
+| `GET` | `/api/schema/{name}` | Read the highest version registered under a name |
+| `GET` | `/api/schema/{name}/{version}` | Read one version |
+| `DELETE` | `/api/schema/{name}` | Remove every version under a name |
+| `DELETE` | `/api/schema/{name}/{version}` | Remove one version |
+
+### Saving
+
+The body is a **list**, and `POST` returns `200` with no body.
+
+```shell
+curl -X POST "$CONDUCTOR_SERVER_URL/schema" \
+  -H 'Content-Type: application/json' \
+  -d '[{
+    "name": "customerInput",
+    "version": 1,
+    "type": "JSON",
+    "data": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": { "customerId": { "type": "string" } },
+      "required": ["customerId"]
+    }
+  }]'
+```
+
+A bare object is accepted too, and treated as a one-element list. Several SDK clients post one, so this is not a shorthand you need to avoid.
+
+### Reading
+
+```shell
+curl "$CONDUCTOR_SERVER_URL/schema/customerInput"
+```
+
+```json
+{
+    "createTime": 1788197572423,
+    "updateTime": 0,
+    "name": "customerInput",
+    "version": 1,
+    "type": "JSON",
+    "data": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+            "customerId": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "customerId"
+        ]
+    }
+}
+```
+
+`GET /api/schema/{name}/{version}` reads one version instead of the latest. Both return `404` when nothing is registered, which is how you tell a missing schema from an empty one:
+
+```json
+{"status":404,"message":"No such schema found by name customerInput","instance":"5f0694ae4d22","retryable":false}
+```
+
+### Listing
+
+`GET /api/schema` returns every version of every schema, bodies included. `?short=true` returns names and versions only — this is what a picker asks for, so that opening a dropdown does not transfer every schema document on the server:
+
+```shell
+curl "$CONDUCTOR_SERVER_URL/schema?short=true"
+```
+
+```json
+[
+    {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "customerInput",
+        "version": 1
+    },
+    {
+        "createTime": 0,
+        "updateTime": 0,
+        "name": "customerInput",
+        "version": 2
+    }
+]
+```
+
+The zeroed timestamps are a placeholder, not a real creation date — the short listing omits them along with the schema body. Read the full record if you need them.
+
+## Versioning
+
+A schema is addressed by name **and** version; the pair is unique. A save that names no version is stored at version `1`.
+
+There are two ways to save, and the difference matters:
+
+| `newVersion` | Effect |
+|---|---|
+| `false` (default) | Overwrites whatever is stored at the version in the payload |
+| `true` | Stores at one past the highest version currently registered under that name |
+
+Use `newVersion=true` to evolve a contract. Definitions that name an older version keep resolving to the schema they were written against; ones that omit the version move to the new one — see [Referring to a registered schema](schema-validation.md#referring-to-a-registered-schema):
+
+```shell
+curl -X POST "$CONDUCTOR_SERVER_URL/schema?newVersion=true" \
+  -H 'Content-Type: application/json' \
+  -d '[{ "name": "customerInput", "type": "JSON", "data": { "...": "..." } }]'
+```
+
+```shell
+curl "$CONDUCTOR_SERVER_URL/schema/customerInput"   # now version 2
+curl "$CONDUCTOR_SERVER_URL/schema/customerInput/1" # still the original
+```
+
+Use the default to correct a version in place — a typo in a description, a field you meant to make optional. Anything referencing that version sees the correction, which is the point and also the risk.
+
+Two simultaneous `newVersion=true` saves of the same name can overwrite each other. The server reads the highest version and saves one past it, with nothing between the two steps, so both writers can read the same maximum, land on the same version and leave only the later one stored. Concurrent registration under one name is last-writer-wins; serialize those saves if losing one would matter.
+
+Deleting is version-aware in the same way. `DELETE /api/schema/{name}/{version}` removes one version and leaves the rest of the history; `DELETE /api/schema/{name}` removes all of it. Both return `404` when there was nothing to remove, so a delete that answers `200` has actually deleted something — worth knowing if you script cleanup that runs whether or not the schema is there.
+
+## The management screen
+
+The UI has a screen for the registry, so routine work does not need `curl`. Find it under **Definitions → Schemas**, at `/schemas`.
+
+The list holds one row per schema rather than one per version: the name links to the editor, and the row carries the schema's type, its latest version, how many versions exist, and when it was created. Two actions sit on each row — **Clone**, which copies the contract under a new name starting again at version 1, and **Delete**, which removes the schema and every version of it.
+
+Opening a schema shows its body in a JSON editor, with a version selector for its history. From there:
+
+| Action | What it does |
+|---|---|
+| **Save** | Overwrites the version on screen. Anything referencing that version sees the change, so this one asks for confirmation first |
+| **Save as new version** | Stores the edited body at a new version. The server allocates the number, so two people saving at once cannot collide |
+| **Delete version** | Removes the version on screen and keeps the rest of the history |
+| **Reset** | Discards local edits and reloads the stored version |
+| **Download** | Saves the schema on screen as a `.json` file |
+
+**New schema** opens the same editor on a JSON template. Saving it registers version 1.
+
+The editor writes `JSON` schemas only. A stored `AVRO` or `PROTOBUF` schema opens read-only, with a note saying it is not validated by this server — the screen will not let you edit a schema whose type nothing here enforces. Replace one of those through the API.
+
+The input- and output-schema pickers on the Simple Task, Yield Task, Workflow Properties and Task Definition forms read the same registry, and populate as soon as the server serves `/api/schema`. On the Simple Task, Yield Task and Workflow Properties forms, a picker naming a schema the registry does not hold is flagged, so a dangling reference shows up in the editor rather than at runtime. The Task Definition form does not flag one.
+
+Give every JSON schema a `$schema` line, as the examples above do. Without one the server cannot tell which JSON Schema version to apply, and a definition enforcing that schema silently validates nothing. See [Input/Output Schema Validation](schema-validation.md).
+
+## Server properties
+
+The registry itself needs no configuration, and neither does enforcement: whether a definition's schema is enforced is decided by that definition's own `enforceSchema` flag, not by a server setting. See [Input/Output Schema Validation](schema-validation.md). The cache is the one thing configurable here, and it is off by default.
+
+| Property | Default | Meaning |
+|---|---|---|
+| `conductor.app.schema-cache.ttl` | `0` | How long a read stays cached. Zero disables the cache; there is no separate on/off flag |
+| `conductor.app.schema-cache.max-size` | `1000` | Maximum cached entries, counting by-version and latest-by-name lookups separately |
+
+A non-zero `ttl` is also your staleness bound. Invalidation on save and delete reaches only the node that served the write, so on a multi-node deployment every other node keeps serving the old schema until the entry expires. Set it to something you would be comfortable waiting out after an edit.
+
+## Storage
+
+Schemas persist on MySQL, PostgreSQL, SQLite and Redis, in a `meta_schema_def` table (or, on Redis, a hash per schema name). The SQL backends create it through a migration of the registry's own, separate from the main Conductor migrations.
+
+There is no Cassandra implementation. A server configured with `conductor.db.type=cassandra` fails at startup rather than accepting schema writes it cannot store.
+
+## Limitations
+
+Four things you cannot infer from the API:
+
+**All three schema types are stored; only `JSON` is validated.** You can save an `AVRO` or `PROTOBUF` schema and read it back unchanged, but nothing on this server validates a payload against it, and the management screen shows it read-only for that reason.
+
+**`createdBy` and `updatedBy` are never populated.** The API is unauthenticated, so there is no principal to attribute a write to, and the fields are absent from responses rather than empty. `createTime` and `updateTime` are set normally.
+
+**The picker's inline edit and preview buttons are not shown.** In the schema pickers on the task, workflow and task-definition forms, the buttons that open a schema for editing or preview without leaving the form come from a UI plugin, and this build registers none. Selecting an existing schema works; creating and editing are done on the management screen or through this API.
+
+**`externalRef` is stored and returned, and nothing resolves it.** If you save a schema carrying only an `externalRef`, you get that field back exactly as you sent it — the server does not fetch what it points at.
+
+## Related pages
+
+- [Input/Output Schema Validation](schema-validation.md) — attaching a schema to a definition
+- [Task Definition reference](../../documentation/configuration/taskdef.md)
+- [Workflow Definition reference](../../documentation/configuration/workflowdef/index.md)
 
 
 <!-- Source: devguide/how-tos/Workers/scaling-workers.md -->
@@ -5891,8 +6268,8 @@ Starts a workflow and **waits for completion** (or a specified condition) before
 | `requestId` | Query | Idempotency key | No (auto-generated) |
 | `waitUntilTaskRef` | Query | Comma-separated task reference names to wait for | No |
 | `waitForSeconds` | Query | Maximum wait time in seconds | No (default: 10) |
-| `consistency` | Query | `DURABLE` or `EVENTUAL` | No (default: `DURABLE`) |
-| `returnStrategy` | Query | Controls which workflow state is returned | No (default: `TARGET_WORKFLOW`) |
+| `consistency` | Query | Accepted for compatibility; has no effect in open-source Conductor - executions are always durable | No (default: `DURABLE`) |
+| `returnStrategy` | Query | Which state to return when execution blocks on a Yield task: `TARGET_WORKFLOW` (the originally started workflow), `BLOCKING_WORKFLOW` (the workflow currently blocking, possibly a subworkflow), `BLOCKING_TASK` (the blocking task's state), or `BLOCKING_TASK_INPUT` (the blocking task's input) | No (default: `TARGET_WORKFLOW`) |
 
 Request body: a StartWorkflowRequest object (same format as the [async start](#start-a-workflow-asynchronous)).
 
