@@ -156,4 +156,48 @@ public class AMQPSettingsTest {
         AMQPSettings settings = new AMQPSettings(properties);
         settings.fromURI(exchangestring);
     }
+
+    @Test
+    public void testAMQPSettings_queue_with_dead_letter_exchange() {
+        String queuestring =
+                "amqp_queue:myQueueName?deadLetterExchange=myDLX&deadLetterRoutingKey=failed";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("myQueueName", settings.getQueueOrExchangeName());
+        assertEquals("myDLX", settings.getArguments().get("x-dead-letter-exchange"));
+        assertEquals("failed", settings.getArguments().get("x-dead-letter-routing-key"));
+    }
+
+    @Test
+    public void testAMQPSettings_queue_with_message_ttl() {
+        String queuestring = "amqp_queue:myQueueName?messageTtl=60000";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("myQueueName", settings.getQueueOrExchangeName());
+        assertEquals(60000, settings.getArguments().get("x-message-ttl"));
+    }
+
+    @Test
+    public void testAMQPSettings_queue_with_max_length() {
+        String queuestring = "amqp_queue:myQueueName?maxLength=1000";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("myQueueName", settings.getQueueOrExchangeName());
+        assertEquals(1000, settings.getArguments().get("x-max-length"));
+    }
+
+    @Test
+    public void testAMQPSettings_queue_with_all_arguments() {
+        String queuestring =
+                "amqp_queue:myQueueName?durable=true&deadLetterExchange=myDLX&deadLetterRoutingKey=failed&messageTtl=60000&maxLength=1000&maxPriority=10";
+        AMQPSettings settings = new AMQPSettings(properties);
+        settings.fromURI(queuestring);
+        assertEquals("myQueueName", settings.getQueueOrExchangeName());
+        assertTrue(settings.isDurable());
+        assertEquals("myDLX", settings.getArguments().get("x-dead-letter-exchange"));
+        assertEquals("failed", settings.getArguments().get("x-dead-letter-routing-key"));
+        assertEquals(60000, settings.getArguments().get("x-message-ttl"));
+        assertEquals(1000, settings.getArguments().get("x-max-length"));
+        assertEquals(10, settings.getArguments().get("x-max-priority"));
+    }
 }
