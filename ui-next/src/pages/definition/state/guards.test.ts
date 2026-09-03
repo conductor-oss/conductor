@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isSaveAndRunFromRunTab, isWorkflowNotFound } from "./guards";
+import {
+  hasWorkflowInputParams,
+  isSaveAndRunFromRunTab,
+  isSaveAndRunWithInputParams,
+  isWorkflowNotFound,
+} from "./guards";
 import { CODE_TAB, RUN_TAB } from "./constants";
 import { DefinitionMachineEventTypes } from "./types";
 
@@ -75,6 +80,81 @@ describe("isSaveAndRunFromRunTab", () => {
       isSaveAndRunFromRunTab(context({ openedTab: RUN_TAB }), {
         type: DefinitionMachineEventTypes.SAVE_EVT,
       } as any),
+    ).toBe(false);
+  });
+});
+
+describe("hasWorkflowInputParams", () => {
+  it("is true when the current definition lists input parameters", () => {
+    expect(
+      hasWorkflowInputParams({
+        workflowChanges: { inputParameters: ["orderId"] },
+      } as any),
+    ).toBe(true);
+  });
+
+  it("falls back to the saved definition when editor changes are missing", () => {
+    expect(
+      hasWorkflowInputParams({
+        currentWf: { inputParameters: ["orderId"] },
+      } as any),
+    ).toBe(true);
+  });
+
+  it("is false when inputParameters is missing or empty", () => {
+    expect(hasWorkflowInputParams({ workflowChanges: {} } as any)).toBe(false);
+    expect(
+      hasWorkflowInputParams({
+        workflowChanges: { inputParameters: [] },
+      } as any),
+    ).toBe(false);
+  });
+});
+
+describe("isSaveAndRunWithInputParams", () => {
+  const workflow = { name: "wf", inputParameters: ["orderId"] };
+  const saveAndRun = {
+    type: DefinitionMachineEventTypes.SAVE_EVT,
+    isSaveAndRun: true,
+  } as any;
+
+  it("is true off the run tab when the workflow declares input parameters", () => {
+    expect(
+      isSaveAndRunWithInputParams(
+        {
+          openedTab: CODE_TAB,
+          currentWf: workflow,
+          workflowChanges: workflow,
+        } as any,
+        saveAndRun,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false on the run tab, where Execute should start the workflow", () => {
+    expect(
+      isSaveAndRunWithInputParams(
+        {
+          openedTab: RUN_TAB,
+          currentWf: workflow,
+          workflowChanges: workflow,
+        } as any,
+        saveAndRun,
+      ),
+    ).toBe(false);
+  });
+
+  it("is false when the workflow has no input parameters", () => {
+    const noInputs = { name: "wf", inputParameters: [] };
+    expect(
+      isSaveAndRunWithInputParams(
+        {
+          openedTab: CODE_TAB,
+          currentWf: noInputs,
+          workflowChanges: noInputs,
+        } as any,
+        saveAndRun,
+      ),
     ).toBe(false);
   });
 });

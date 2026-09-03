@@ -71,6 +71,7 @@ import _isEmpty from "lodash/isEmpty";
 import { CommonTaskDef } from "types/TaskType";
 import { ImportSummary } from "utils/cloudTemplates";
 import { SWITCH_CASE_PREFIX } from "utils/constants/switch";
+import { hasWorkflowInputParams } from "./guards";
 import {
   LocalCopyMachineEventTypes,
   UseLocalCopyChangesEvent,
@@ -999,12 +1000,17 @@ export const clearRunWithInputs = assign<DefinitionMachineContext>({
   runWithInputs: false,
 });
 
-// After a save triggered from either Execute action, honour whichever one the user
-// picked: run straight away, or hand them the run tab to fill in inputs first.
+// After a save triggered from either Execute action, honour whichever one the
+// user picked: run straight away, or hand them the run tab to fill in inputs
+// first. Workflows that declare inputParameters also land on the run tab.
 export const runOrOpenRunTab = choose<DefinitionMachineContext, any>([
   {
     cond: ({ runWithInputs }) => Boolean(runWithInputs),
     actions: ["changeToRunTab"],
+  },
+  {
+    cond: (context) => hasWorkflowInputParams(context),
+    actions: ["setRunWithInputs", "changeToRunTab"],
   },
   {
     actions: ["justExecute"],

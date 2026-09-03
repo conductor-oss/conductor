@@ -868,6 +868,11 @@ export const workflowDefinitionMachine = createMachine<
                       actions: ["justExecute"],
                     },
                     {
+                      cond: "isSaveAndRunWithInputParams",
+                      target: ".runWorkflow",
+                      actions: ["setRunWithInputs", "changeToRunTab"],
+                    },
+                    {
                       cond: "isSaveAndRunWithNoChanges",
                       target: ".runWorkflow",
                       actions: ["justExecute"],
