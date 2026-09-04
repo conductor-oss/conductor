@@ -521,6 +521,9 @@ export const workflowDefinitionMachine = createMachine<
                         workflowDefaultRunParam: ({
                           workflowDefaultRunParam,
                         }: DefinitionMachineContext) => workflowDefaultRunParam,
+                        focusInput: ({
+                          runWithInputs,
+                        }: DefinitionMachineContext) => Boolean(runWithInputs),
                         correlationId: ({
                           runTabFormState,
                         }: DefinitionMachineContext) =>
@@ -751,7 +754,7 @@ export const workflowDefinitionMachine = createMachine<
                               "persistWorkflowNameAndVersion",
                               "cleanLocalCopyMessage", // Note push to history has a callback event since the url will change.
                               "cleanInitialSelectedTaskReferenceName",
-                              "justExecute",
+                              "runOrOpenRunTab",
                             ],
                           },
                         },
@@ -859,10 +862,20 @@ export const workflowDefinitionMachine = createMachine<
                       actions: ["fireChangeToWorkflowTab"],
                     },
                     {
+                      // Internal transition: staying in the run state keeps the run
+                      // actor, and the inputs the user just edited, alive.
+                      cond: "isSaveAndRunFromRunTab",
+                      actions: ["justExecute"],
+                    },
+                    {
+                      cond: "isSaveAndRunWithInputParams",
+                      target: ".runWorkflow",
+                      actions: ["setRunWithInputs", "changeToRunTab"],
+                    },
+                    {
                       cond: "isSaveAndRunWithNoChanges",
                       target: ".runWorkflow",
                       actions: ["justExecute"],
-                      // actions: ["fireChangeToRunTab"],
                     },
                     {
                       cond: "isSaveAndRunRequest",

@@ -5,12 +5,16 @@ import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import ResetIcon from "components/icons/ResetIcon";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
 import { editor, type EditorOptions } from "shared/editor";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 import { useLocalStorage } from "utils/localstorage";
 import { ActorRef } from "xstate";
-import { WorkflowDefinitionEvents } from "../state";
+import {
+  DefinitionMachineEventTypes,
+  WorkflowDefinitionEvents,
+} from "../state";
 import { RunWorkflowHistoryTable } from "./RunWorkflowHistoryTable";
 import {
   RunMachineEvents,
@@ -40,17 +44,21 @@ const additionalEditorOptions: EditorOptions = {
   automaticLayout: true, // Important
 };
 
-export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
+export const RunWorkFlowForm = ({
+  runTabActor,
+  workflowDefinitionActor,
+}: RunWorkFlowFormProps) => {
   const [
     {
       currentWf,
       input,
       correlationId,
       taskToDomain,
-
+      isRunning,
       popoverMessage,
       idempotencyKey,
       idempotencyStrategy,
+      focusInput,
     },
     {
       handleChangeInputParams,
@@ -79,6 +87,15 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
     handleFillAllFields(payload);
   };
 
+  // Routed through the definition machine so this behaves exactly like the
+  // toolbar Execute: unsaved edits are saved first, and running from this tab
+  // keeps the run actor alive so it uses the values on screen.
+  const handleExecute = () => {
+    workflowDefinitionActor.send({
+      type: DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN,
+    });
+  };
+
   return (
     <Box sx={{ minHeight: "100%", p: 6 }}>
       <Paper
@@ -100,6 +117,7 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
               label="Input params"
               value={input}
               onChange={handleChangeInputParams}
+              autoFocus={focusInput}
               options={{
                 ...SMALL_EDITOR_DEFAULT_OPTIONS,
                 ...additionalEditorOptions,
@@ -133,7 +151,7 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
               }}
             />
           </Grid>
-          <Grid display="flex" justifyContent="flex-end" size={12}>
+          <Grid display="flex" justifyContent="flex-end" gap={2} size={12}>
             <Button
               id="clear-info-btn"
               variant="text"
@@ -141,6 +159,16 @@ export const RunWorkFlowForm = ({ runTabActor }: RunWorkFlowFormProps) => {
               startIcon={<ResetIcon />}
             >
               Reset
+            </Button>
+            <Button
+              id="run-tab-execute-btn"
+              data-testid="run-tab-execute-button"
+              variant="contained"
+              onClick={handleExecute}
+              disabled={isRunning}
+              startIcon={<RocketLaunchIcon />}
+            >
+              Execute
             </Button>
           </Grid>
           <Grid mt={5} size={12}>
