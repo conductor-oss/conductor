@@ -199,7 +199,7 @@ curl -X POST 'http://localhost:8080/api/workflow/mcp_ai_agent_workflow' \
 
 ### Image generation
 
-Generate images from a text prompt using DALL-E or another supported provider.
+Generate images from a text prompt using gpt-image-1 or another supported provider.
 
 ```json
 {
@@ -214,7 +214,7 @@ Generate images from a text prompt using DALL-E or another supported provider.
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "${workflow.input.prompt}",
         "width": 1024,
         "height": 1024,
