@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.Collections;
 
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,6 +103,47 @@ public class ApplicationExceptionMapperTest {
         // NotFoundException -> 404).
         assertLoggedAtWarn(new ConflictException("resource already exists"), status().isConflict());
         assertLoggedAtWarn(new NotFoundException("resource not found"), status().isNotFound());
+    }
+
+    @Test
+    public void testSchemaValidationMapsTo400() throws Exception {
+        // A payload that does not match its definition's schema is the caller's to fix; a 500
+        // would tell an SDK to retry something that can never succeed.
+        assertLoggedAtWarn(
+                new SchemaValidationException("Workflow order input: required property 'name'"),
+                status().isBadRequest());
+    }
+
+    /**
+     * The same, with both advices registered as the server registers them.
+     * SchemaValidationException is a {@code jakarta.validation.ValidationException}, so
+     * ValidationExceptionMapper — at HIGHEST_PRECEDENCE — handles it, not the status map above. Its
+     * non-constraint-violation branch answers 500, so without an explicit case for this type a bad
+     * payload would come back as a server fault. The test above registers only one advice and would
+     * not notice.
+     */
+    @Test
+    public void testSchemaValidationMapsTo400WithBothAdvicesRegistered() throws Exception {
+        MockMvc withBothAdvices =
+                MockMvcBuilders.standaloneSetup(this.queueAdminResource)
+                        .setControllerAdvice(
+                                new ValidationExceptionMapper(), new ApplicationExceptionMapper())
+                        .build();
+
+        doThrow(new SchemaValidationException("Workflow order input: required property 'name'"))
+                .when(this.queueAdminResource)
+                .update(any(), any(), any(), any());
+
+        withBothAdvices
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
