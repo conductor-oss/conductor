@@ -1,7 +1,6 @@
 import { ChipProps } from "@mui/material";
-import { userRoleColorGenerator } from "utils/roles";
+import { displayRoleName, userRoleColorGenerator } from "utils/roles";
 import { forwardRef } from "react";
-import { toUpperFirst } from "utils";
 import TagChip from "./ui/TagChip";
 
 const RoleTagChip = forwardRef<HTMLDivElement, ChipProps>(
@@ -17,7 +16,7 @@ const RoleTagChip = forwardRef<HTMLDivElement, ChipProps>(
     }
     const formattedLabel = () => {
       if (typeof label === "string") {
-        return toUpperFirst(label);
+        return displayRoleName(label);
       }
 
       return label;

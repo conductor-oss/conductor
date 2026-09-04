@@ -64,7 +64,7 @@ The server will be available at `http://localhost:3001/mcp`.
 |------|-------------|--------------|
 | `01-chat-completion.json` | Basic chat with GPT-4o-mini | OpenAI |
 | `02-generate-embeddings.json` | Generate text embeddings | OpenAI |
-| `03-image-generation.json` | Generate images with DALL-E 3 | OpenAI |
+| `03-image-generation.json` | Generate images with gpt-image-1 | OpenAI |
 | `04-audio-generation.json` | Text-to-speech with OpenAI TTS | OpenAI |
 | `05-semantic-search.json` | Index and search documents | OpenAI, PostgreSQL |
 | `06-rag-basic.json` | Basic RAG with search + answer | OpenAI/Anthropic, PostgreSQL |
@@ -342,7 +342,7 @@ curl -X POST 'http://localhost:8080/api/metadata/workflow' \
   -H 'Content-Type: application/json' \
   -d @13-image-to-video-pipeline.json
 
-# Execute (generates a DALL-E image first, then a Sora video)
+# Execute (generates a gpt-image-1 image first, then a Sora video)
 curl -X POST 'http://localhost:8080/api/workflow/image_to_video_pipeline' \
   -H 'Content-Type: application/json' \
   -d '{}'
