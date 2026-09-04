@@ -74,6 +74,24 @@ jobs:
             const num = pr.number;
 
             // ---- helpers for the human-facing signal (label + sticky comment) ----
+            //
+            // The label + comment are a best-effort convenience layer. They need a
+            // GITHUB_TOKEN with write access, which isn't available when the repo's
+            // default workflow permission is read-only (Settings -> Actions ->
+            // Workflow permissions). The actual merge gate below is enforced purely
+            // by the check's pass/fail status, which needs NO write access -- so if
+            // a write is denied we log a warning and carry on rather than failing
+            // the whole job (and with it, unrelated PRs).
+            const warnSignal = (action, e) => {
+              const code = e && e.status ? `${e.status} ` : '';
+              core.warning(
+                `review-policy: skipped ${action} (${code}${(e && e.message) || e}). ` +
+                  `The merge gate still works via the "review-policy / approvals" ` +
+                  `check; the label/comment signal needs the workflow token to have ` +
+                  `write access (repo Settings -> Actions -> Workflow permissions -> ` +
+                  `"Read and write permissions").`
+              );
+            };
             const ensureLabel = async (name, color, description) => {
               try {
                 await github.rest.issues.createLabel({ ...repo, name, color, description });
@@ -82,26 +100,35 @@ jobs:
               }
             };
             const addLabel = async (name) => {
-              await ensureLabel(name, 'D93F0B', 'Applied by the review-policy workflow');
-              await github.rest.issues.addLabels({ ...repo, issue_number: num, labels: [name] });
+              try {
+                await ensureLabel(name, 'D93F0B', 'Applied by the review-policy workflow');
+                await github.rest.issues.addLabels({ ...repo, issue_number: num, labels: [name] });
+              } catch (e) {
+                warnSignal(`adding label "${name}"`, e);
+              }
             };
             const removeLabel = async (name) => {
               try {
                 await github.rest.issues.removeLabel({ ...repo, issue_number: num, name });
               } catch (e) {
-                if (e.status !== 404) throw e; // 404 == label wasn't applied
+                if (e.status === 404) return; // 404 == label wasn't applied
+                warnSignal(`removing label "${name}"`, e);
               }
             };
             const upsertComment = async (body) => {
-              const marked = `${COMMENT_MARKER}\n${body}`;
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                ...repo, issue_number: num, per_page: 100,
-              });
-              const existing = comments.find((c) => c.body?.includes(COMMENT_MARKER));
-              if (existing) {
-                await github.rest.issues.updateComment({ ...repo, comment_id: existing.id, body: marked });
-              } else {
-                await github.rest.issues.createComment({ ...repo, issue_number: num, body: marked });
+              try {
+                const marked = `${COMMENT_MARKER}\n${body}`;
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  ...repo, issue_number: num, per_page: 100,
+                });
+                const existing = comments.find((c) => c.body?.includes(COMMENT_MARKER));
+                if (existing) {
+                  await github.rest.issues.updateComment({ ...repo, comment_id: existing.id, body: marked });
+                } else {
+                  await github.rest.issues.createComment({ ...repo, issue_number: num, body: marked });
+                }
+              } catch (e) {
+                warnSignal('updating the status comment', e);
               }
             };
 
