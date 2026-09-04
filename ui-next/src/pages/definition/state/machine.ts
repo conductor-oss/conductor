@@ -892,24 +892,8 @@ export const workflowDefinitionMachine = createMachine<
                     },
                   ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {
-                    actions: ["clearRunWithInputs", "fireSaveEvent"],
+                    actions: ["fireSaveEvent"],
                   },
-                  [DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS]: [
-                    {
-                      // Already looking at the inputs, so leave the form untouched.
-                      cond: "isRunTab",
-                      actions: ["setRunWithInputs"],
-                    },
-                    {
-                      cond: "hasNoChanges",
-                      target: ".runWorkflow",
-                      actions: ["setRunWithInputs", "changeToRunTab"],
-                    },
-                    {
-                      // Unsaved edits: save first, then land on the run tab.
-                      actions: ["setRunWithInputs", "fireSaveEvent"],
-                    },
-                  ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_CREATE_NEW]: {
                     actions: [
                       "setSaveSourceEventType",
@@ -976,10 +960,6 @@ export const workflowDefinitionMachine = createMachine<
                   },
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {
                     actions: ["raiseSaveAndRunEvent"],
-                    target: "opened",
-                  },
-                  [DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS]: {
-                    actions: ["raiseRunWithInputsEvent"],
                     target: "opened",
                   },
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_CREATE_NEW]: {

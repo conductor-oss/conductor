@@ -45,7 +45,6 @@ import {
   DeleteRequestEvent,
   DONT_SHOW_IMPORT_SUCCESSFUL_DIALOG_TUTORIAL_AGAIN,
   HandleLeftPanelExpandedEvent,
-  HandleRunWithInputsEvent,
   HandleSaveAndCreateNewEvent,
   HandleSaveAndRunEvent,
   LeftPaneTabs,
@@ -968,16 +967,6 @@ export const raiseSaveAndRunEvent = raise<
   { delay: 200 },
 );
 
-export const raiseRunWithInputsEvent = raise<
-  DefinitionMachineContext,
-  HandleRunWithInputsEvent
->(
-  {
-    type: DefinitionMachineEventTypes.HANDLE_RUN_WITH_INPUTS,
-  },
-  { delay: 200 },
-);
-
 export const justExecute = sendTo<
   DefinitionMachineContext,
   any,
@@ -996,18 +985,9 @@ export const setRunWithInputs = assign<DefinitionMachineContext>({
   runWithInputs: true,
 });
 
-export const clearRunWithInputs = assign<DefinitionMachineContext>({
-  runWithInputs: false,
-});
-
-// After a save triggered from either Execute action, honour whichever one the
-// user picked: run straight away, or hand them the run tab to fill in inputs
-// first. Workflows that declare inputParameters also land on the run tab.
+// After a save triggered from Execute, open the run tab when the workflow
+// declares inputParameters; otherwise start the run immediately.
 export const runOrOpenRunTab = choose<DefinitionMachineContext, any>([
-  {
-    cond: ({ runWithInputs }) => Boolean(runWithInputs),
-    actions: ["changeToRunTab"],
-  },
   {
     cond: (context) => hasWorkflowInputParams(context),
     actions: ["setRunWithInputs", "changeToRunTab"],
