@@ -475,7 +475,8 @@ class AgentSpanDeploymentContractEndToEndTest {
                 persisted.getWorkflowDefinition().getTasks().get(0).getTaskReferenceName());
 
         agentDagService.completeTrackingWorkflow(executionId, Map.of("result", "durably complete"));
-        ConductorAgentStatusResponse status = conductorAgentClient.getAgentStatus(executionId);
+        ConductorAgentStatusResponse status =
+                conductorAgentClient.getAgentStatus(executionId, null);
         assertEquals(ConductorAgentState.COMPLETED, status.getStatus());
         assertTrue(status.isComplete());
         assertEquals(Map.of("result", "durably complete"), status.getOutput());

@@ -133,6 +133,41 @@ const entireCollapsedStatus = (
   }
 };
 
+/** `agent_ref__t<turn>__<tool>` — what the agent scheduled, in the order it asked. */
+const AGENT_TOOL_REF = /^(.+)__t(\d+)__(.+)$/;
+
+/**
+ * The tool tasks an agent ran, as child task definitions.
+ *
+ * Read from the execution rather than the workflow definition, because nobody could have written
+ * them there: which tools run, and how many rounds of them, is the model's decision. Ordered by
+ * turn so a later round reads as a later step rather than sorting alphabetically among the first.
+ */
+const agentToolTasks = (
+  agentRef: string,
+  statusMap: StatusMap,
+): TaskDef[] => {
+  const matches = Object.keys(statusMap)
+    .map((ref) => ({ ref, parts: AGENT_TOOL_REF.exec(ref) }))
+    .filter(({ parts }) => parts !== null && parts[1] === agentRef)
+    .map(({ ref, parts }) => ({
+      ref,
+      turn: Number(parts![2]),
+      tool: parts![3],
+    }));
+
+  matches.sort((a, b) => a.turn - b.turn || a.tool.localeCompare(b.tool));
+
+  return matches.map(
+    ({ ref, tool }) =>
+      ({
+        name: statusMap[ref]?.loopOver?.[0]?.taskType ?? tool,
+        taskReferenceName: ref,
+        type: TaskType.SIMPLE,
+      }) as unknown as TaskDef,
+  );
+};
+
 export const taskStatusUpdater = (
   tasks: TaskDef[] = [],
   statusMap: StatusMap,
@@ -180,6 +215,19 @@ export const taskStatusUpdater = (
           statusMap,
           expandDynamic,
         ),
+        executionData,
+      } as TaskDefExecutionContext;
+    } else if (type === TaskType.AGENT) {
+      // An agent decides its tools at run time, so its children are not in the definition. They
+      // are in the execution though, named after the agent that asked for them, which is enough
+      // to nest them under it — the same trick the dynamic fork plays with forkedTaskDefs.
+      const toolTasks = agentToolTasks(taskReferenceName, statusMap);
+      if (toolTasks.length === 0) {
+        return { ...task, executionData } as TaskDefExecutionContext;
+      }
+      return {
+        ...task,
+        loopOver: taskStatusUpdater(toolTasks, statusMap, expandDynamic),
         executionData,
       } as TaskDefExecutionContext;
     } else if (type === TaskType.DO_WHILE) {

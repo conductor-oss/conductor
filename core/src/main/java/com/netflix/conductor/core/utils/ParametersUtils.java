@@ -454,6 +454,24 @@ public class ParametersUtils {
         try {
             return JsonPath.parse(value).read(jsonPath);
         } catch (Exception e) {
+            String unwrapped = unwrapJsonDocument(value);
+            if (unwrapped != null) {
+                try {
+                    Object resolved = JsonPath.parse(unwrapped).read(jsonPath);
+                    LOGGER.warn(
+                            "Reference '{}' names a value that is not JSON on its own but holds a"
+                                    + " JSON document {}; read it by unwrapping first. Store it as"
+                                    + " bare JSON so this is not needed.",
+                            ref,
+                            value.trim().charAt(0) == '\''
+                                    ? "inside literal quote characters, which is what a .env file"
+                                            + " read verbatim leaves behind"
+                                    : "as a JSON-encoded string");
+                    return resolved;
+                } catch (Exception ignored) {
+                    // Not the wrapping that was wrong; fall through to the original failure.
+                }
+            }
             LOGGER.warn(
                     "Failed to extract JSON path '{}' from reference '{}': {}",
                     jsonPath,
@@ -461,6 +479,39 @@ public class ParametersUtils {
                     e.toString());
             return null;
         }
+    }
+
+    /**
+     * The JSON document inside a value that carries one but is not itself parseable as JSON, or
+     * null when there is nothing to unwrap.
+     *
+     * <p>Two ways a correct JSON document arrives unreadable. It picks up literal quote characters
+     * - a .env file read verbatim keeps the quotes a shell would have stripped, so the value starts
+     * with a quote rather than a brace. Or it was JSON-encoded on the way in, making it a JSON
+     * string that holds JSON rather than an object.
+     *
+     * <p>Only consulted after a straight parse has already failed, so a value that reads correctly
+     * is never second-guessed.
+     */
+    private String unwrapJsonDocument(String value) {
+        String trimmed = value.trim();
+        if (trimmed.length() < 2) {
+            return null;
+        }
+        char first = trimmed.charAt(0);
+        char last = trimmed.charAt(trimmed.length() - 1);
+        if (first == '\'' && last == '\'') {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        if (first == '"' && last == '"') {
+            try {
+                // Decoded rather than sliced: a JSON string's contents are escaped.
+                return objectMapper.readValue(trimmed, String.class);
+            } catch (Exception e) {
+                return trimmed.substring(1, trimmed.length() - 1);
+            }
+        }
+        return null;
     }
 
     private static class Replacement implements Comparable<Replacement> {

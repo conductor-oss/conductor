@@ -94,9 +94,19 @@ export const Shape = forwardRef<HTMLDivElement, ShapeProps>((props, ref) => {
     };
   }, [dimTask, nodeWidth, nodeHeight, type, portsVisible, style]);
 
+  // An agent that ran tools is drawn as a container of them, like a loop. One that ran none is an
+  // ordinary card - a container with nothing to nest is just an empty box round a leaf, so this
+  // turns on the node rather than on its type.
+  const agentRanTools =
+    type === TaskType.AGENT &&
+    !!(nodeData?.task as { loopOver?: unknown[] } | undefined)?.loopOver?.length;
+
   const ShapeComponent: ShapePropsToShape = useMemo(
-    () => SHAPES_FOR_TYPE[type] ?? TaskCard,
-    [type],
+    () =>
+      agentRanTools
+        ? (shapeProps: ShapeProps) => <DoWhileTask {...shapeProps} />
+        : (SHAPES_FOR_TYPE[type] ?? TaskCard),
+    [type, agentRanTools],
   );
 
   const handleStyles = useMemo(() => {

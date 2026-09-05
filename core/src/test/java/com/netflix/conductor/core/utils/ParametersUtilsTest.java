@@ -474,6 +474,37 @@ public class ParametersUtilsTest {
     }
 
     @Test
+    public void testSubstituteSecretsReadsAQuoteWrappedJsonDocument() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        // What a .env file read verbatim produces: the quotes a shell would have stripped stay in
+        // the value, so the document no longer parses even though the JSON inside it is correct.
+        // Spaced exactly as a hand-written credential blob is, since that is the shape that
+        // actually turns up rather than the compact one a serializer emits.
+        when(secrets.getSecret("CREDS")).thenReturn("'{ \"user\": \"neo\", \"pass\": \"zion\" }'");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("user", "${workflow.secrets.CREDS.user}");
+
+        assertEquals("neo", pu.substituteSecrets(input).get("user"));
+    }
+
+    @Test
+    public void testSubstituteSecretsReadsAJsonEncodedJsonDocument() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        // A secret that was JSON-encoded on the way in: a JSON string whose contents are JSON.
+        when(secrets.getSecret("CREDS")).thenReturn("\"{\\\"user\\\":\\\"neo\\\"}\"");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("user", "${workflow.secrets.CREDS.user}");
+
+        assertEquals("neo", pu.substituteSecrets(input).get("user"));
+    }
+
+    @Test
     public void testSubstituteSecretsMalformedJsonResolvesToNull() {
         EnvironmentDAO env = mock(EnvironmentDAO.class);
         SecretsDAO secrets = mock(SecretsDAO.class);

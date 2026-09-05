@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -63,7 +64,10 @@ class AgentServiceOpenStreamTest {
                         mock(WorkflowExecutor.class),
                         streamRegistry,
                         mock(SkillRegistryService.class),
-                        mock(MetadataService.class));
+                        mock(MetadataService.class),
+                        mock(AzureFoundryAgentClient.class),
+                        mock(BedrockAgentClient.class),
+                        mock(SecretsDAO.class));
     }
 
     @Test
