@@ -1,5 +1,6 @@
 ---
-description: "LLM orchestration cookbook — AI agent orchestration recipes for chat completion, RAG pipelines, MCP agents with function calling, web search, code execution, coding agents, extended thinking, image generation, LLM-to-PDF, and provider configuration."
+description: AI Cookbook moved to the dedicated recipe library.
+redirect_to: devguide/ai/cookbook/index.html
 ---
 
 # AI & LLM orchestration recipes
@@ -198,7 +199,7 @@ curl -X POST 'http://localhost:8080/api/workflow/mcp_ai_agent_workflow' \
 
 ### Image generation
 
-Generate images from a text prompt using DALL-E or another supported provider.
+Generate images from a text prompt using gpt-image-1 or another supported provider.
 
 ```json
 {
@@ -213,7 +214,7 @@ Generate images from a text prompt using DALL-E or another supported provider.
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "${workflow.input.prompt}",
         "width": 1024,
         "height": 1024,

@@ -1026,7 +1026,7 @@ describe("filterServerErrorsNotPresentInNodes", () => {
     ]);
   });
 
-  it("should handle empty validation errors array", () => {
+  it("should keep workflow level errors with an empty validation errors array", () => {
     const serverErrors = [
       createValidationError({
         validationErrors: [],
@@ -1035,15 +1035,15 @@ describe("filterServerErrorsNotPresentInNodes", () => {
     const nodes: NodeData<NodeTaskData<TaskDef>>[] = [createNode(mockTask1)];
 
     const result = filterServerErrorsNotPresentInNodes(serverErrors, nodes);
-    expect(result).toBeUndefined();
+    expect(result).toEqual(serverErrors);
   });
 
-  it("should handle undefined validation errors", () => {
+  it("should keep workflow level errors with undefined validation errors", () => {
     const serverErrors = [createValidationError()];
     const nodes: NodeData<NodeTaskData<TaskDef>>[] = [createNode(mockTask1)];
 
     const result = filterServerErrorsNotPresentInNodes(serverErrors, nodes);
-    expect(result).toBeUndefined();
+    expect(result).toEqual(serverErrors);
   });
 
   it("should handle empty server errors array", () => {

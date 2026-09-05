@@ -12,7 +12,19 @@
  */
 
 // Contains overrides for Spring Boot Dependency Management plugin
-// Dependency version override properties can be found at https://docs.spring.io/spring-boot/docs/3.3.11/reference/htmlsingle/#appendix.dependency-versions.properties
+// Spring Boot documents supported dependency version override properties at
+// https://docs.spring.io/spring-boot/3.3/appendix/dependency-versions/properties.html.
+
+// Keep server runtime dependencies on patched versions until the Spring Boot BOM includes them.
+ext['spring-framework.version'] = '6.2.19'
+ext['spring-security.version'] = '6.5.11'
+ext['log4j2.version'] = '2.25.4'
+ext['netty.version'] = '4.1.136.Final'
+// Bumps the BOM-managed micrometer family (micrometer-core et al.) to the CVE-patched
+// revMicrometer. The registry artifacts are pinned separately to revMicrometerRegistry in
+// server/build.gradle and must NOT be bumped through this property — see dependencies.gradle.
+ext['micrometer.version'] = revMicrometer
+ext['kafka.version'] = '3.9.1'
 
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch7

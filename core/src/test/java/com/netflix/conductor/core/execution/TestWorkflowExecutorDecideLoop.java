@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -102,7 +103,8 @@ public class TestWorkflowExecutorDecideLoop {
                         systemTaskRegistry,
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     /**

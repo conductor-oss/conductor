@@ -1,0 +1,16 @@
+{
+  "name": "wait_for_order_approval",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId"],
+  "tasks": [
+    {
+      "name": "wait_for_approval",
+      "taskReferenceName": "approval",
+      "type": "WAIT"
+    }
+  ],
+  "outputParameters": {
+    "approval": "${approval.output}"
+  }
+}

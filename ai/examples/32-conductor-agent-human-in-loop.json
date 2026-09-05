@@ -2,7 +2,7 @@
   "name": "conductor_agent_human_in_loop",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Human-in-the-loop resume: an AGENT (conductor) task pauses (WAITING -> COMPLETED with waiting=true and a pendingTool question). A SWITCH on that waiting flag routes to a HUMAN task that collects the answer, then a second AGENT (conductor) task resumes the same run by carrying its executionId.",
+  "description": "Framework-agnostic Conductor Agents recipe: an AGENT task pauses (WAITING -> COMPLETED with waiting=true and a pendingTool question), a HUMAN task collects the answer, and a second AGENT task resumes the same run with its executionId.",
   "tasks": [
     {
       "name": "run_agent",
