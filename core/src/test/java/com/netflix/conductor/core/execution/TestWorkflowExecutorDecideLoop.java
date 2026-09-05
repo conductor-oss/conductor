@@ -185,13 +185,19 @@ public class TestWorkflowExecutorDecideLoop {
     /**
      * Regression test for the decider-queue postpone write-skip bug.
      *
-     * <p>Before the fix, {@code setUnackTimeout} was only called when {@code computePostpone}
-     * returned a value different from {@code workflowOffsetTimeout}. A workflow whose only active
-     * task is a WAIT with no explicit timeout always computes exactly {@code workflowOffsetTimeout}
-     * — so the write was skipped on every single decide() call, leaving {@code deliver_on} frozen
+     * <p>Before the fix, the postpone write was only made when {@code computePostpone} returned a
+     * value different from {@code workflowOffsetTimeout}. A workflow whose only active task is a
+     * WAIT with no explicit timeout always computes exactly {@code workflowOffsetTimeout} — so the
+     * write was skipped on every single decide() call, leaving {@code deliver_on} frozen
      * indefinitely and causing the workflow to be re-swept roughly every 60 seconds forever (via
      * the unrelated queue-unack recovery cycle) instead of once per {@code workflowOffsetTimeout}
      * as intended.
+     *
+     * <p>The write now goes through {@code setUnackTimeoutIfDueOrShorter} rather than an
+     * unconditional {@code setUnackTimeout} — see {@link
+     * com.netflix.conductor.dao.QueueDAO#setUnackTimeoutIfDueOrShorter} for why an unconditional
+     * write is unsafe here (it can race with and silently undo a concurrent expedited wake-up from
+     * a sibling workflow's {@code completeWorkflow}/{@code expediteLazyWorkflowEvaluation}).
      */
     @Test
     public void testDecidePostponesEvenWhenOffsetEqualsWorkflowOffsetTimeout() throws Exception {
@@ -215,10 +221,14 @@ public class TestWorkflowExecutorDecideLoop {
         // Act
         workflowExecutor.decide(workflow.getWorkflowId());
 
-        // Assert: setUnackTimeout must still be called, at exactly workflowOffsetTimeout
-        // (30s, per the mocked property), even though that value equals the default.
+        // Assert: the postpone write must still happen, at exactly workflowOffsetTimeout
+        // (30s, per the mocked property), even though that value equals the default — and via
+        // the race-safe method, not the unconditional one.
         verify(queueDAO)
-                .setUnackTimeout(eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), eq(30_000L));
+                .setUnackTimeoutIfDueOrShorter(
+                        eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), eq(30_000L));
+        verify(queueDAO, never())
+                .setUnackTimeout(eq(DECIDER_QUEUE), eq(workflow.getWorkflowId()), anyLong());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

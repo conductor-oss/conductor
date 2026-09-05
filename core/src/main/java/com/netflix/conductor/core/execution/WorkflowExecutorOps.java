@@ -1421,17 +1421,29 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                         properties.getMaxPostponeDurationSeconds());
                         // Always write the postpone, even when updatedOffset equals the default
                         // workflowOffsetTimeout — e.g. a workflow whose only active task is a
-                        // WAIT with no explicit timeout computes exactly this value on every
-                        // decide(). Skipping the write here left deliver_on frozen at whatever
-                        // value preceded it (often the workflow's original decider-queue push),
-                        // which is always "due" and gets re-swept roughly every 60s forever via
-                        // the unrelated queue-unack recovery cycle instead of the intended
-                        // workflowOffsetTimeout cadence.
+                        // WAIT with no explicit timeout, an in-progress HUMAN task, or an active
+                        // SUB_WORKFLOW computes exactly this value on every decide(). Skipping
+                        // the write here left deliver_on frozen at whatever value preceded it
+                        // (often the workflow's original decider-queue push), which is always
+                        // "due" and gets re-swept roughly every 60s forever via the unrelated
+                        // queue-unack recovery cycle instead of the intended workflowOffsetTimeout
+                        // cadence.
+                        //
+                        // setUnackTimeoutIfDueOrShorter (not the unconditional setUnackTimeout)
+                        // is required here: this decide() may be running concurrently with a
+                        // sibling workflow's expediteLazyWorkflowEvaluation() for this same
+                        // workflow (e.g. a child sub-workflow completing while this decide() was
+                        // already in flight, reading the pre-completion state). An unconditional
+                        // write can land after that expedite's postpone() and overwrite its
+                        // immediate deliver_on with this decide()'s much-later offset, silently
+                        // erasing the wake-up. setUnackTimeoutIfDueOrShorter only advances a
+                        // deliver_on that is already due (unsticking the frozen case above) or
+                        // shortens a future one — it never pushes back a pending sooner wake-up.
                         LOGGER.debug(
                                 "Pushing the workflow {} into decider queue by {} millis",
                                 workflow.getWorkflowId(),
                                 updatedOffset.getSeconds() * 1000);
-                        queueDAO.setUnackTimeout(
+                        queueDAO.setUnackTimeoutIfDueOrShorter(
                                 DECIDER_QUEUE,
                                 workflow.getWorkflowId(),
                                 updatedOffset.getSeconds() * 1000);
