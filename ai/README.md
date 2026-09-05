@@ -18,10 +18,10 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 
 | Provider | Chat | Embeddings | Image Gen | Audio Gen | Video Gen | Models |
 |----------|:----:|:----------:|:---------:|:---------:|:---------:|--------|
-| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, DALL-E-3, Sora-2, text-embedding-3-small/large |
+| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, gpt-image-1, Sora-2, text-embedding-3-small/large |
 | **Anthropic** | ✅ | ❌ | ❌ | ❌ | ❌ | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku, Claude 4 Sonnet |
 | **Google Gemini** | ✅ | ✅ | ✅ | ✅ | ✅ | Gemini 2.5 Flash/Pro, Veo 2/3, Imagen, text-embedding-004 |
-| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, DALL-E-3 |
+| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, gpt-image-1 |
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
 | **Cohere** | ✅ | ✅ | ❌ | ❌ | ❌ | Command, Command-R, Command-R+, embed-english-v3.0 |
@@ -154,7 +154,7 @@ Generate images from text prompts.
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
 | `llmProvider` | String | ✅ | Provider name (e.g., `openai`) |
-| `model` | String | ✅ | Image model (e.g., `dall-e-3`) |
+| `model` | String | ✅ | Image model (e.g., `gpt-image-1`) |
 | `prompt` | String | ✅ | Image description |
 | `width` | Integer | ❌ | Image width in pixels |
 | `height` | Integer | ❌ | Image height in pixels |
@@ -231,7 +231,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 **Provider-Specific Notes:**
 
-- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
+- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1536x1024`, `1024x1792`. Returns video + webp thumbnail.
 - **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
@@ -894,7 +894,7 @@ docker run -d \
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A futuristic cityscape at sunset",
         "width": 1024,
         "height": 1024,
@@ -1437,9 +1437,9 @@ A workflow that generates an image and a video in sequence:
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water",
-        "width": 1792,
+        "width": 1536,
         "height": 1024,
         "n": 1
       }
