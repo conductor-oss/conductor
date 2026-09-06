@@ -398,6 +398,7 @@ export default function Execution() {
                 <FlowExecutionContextProvider
                   onExpandDynamic={expandDynamic}
                   onCollapseDynamic={collapseDynamic}
+                  onSelectTask={selectTask}
                 >
                   <Flow
                     flowActor={flowActor}
