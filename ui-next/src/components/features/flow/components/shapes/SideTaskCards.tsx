@@ -4,6 +4,14 @@ import { colors } from "theme/tokens/variables";
 import { TaskStatus } from "types";
 import { ExecutionTask } from "types/Execution";
 import { getFlowTheme } from "components/features/flow/theme";
+import {
+  SIDE_TASK_CARD_GAP as CARD_GAP,
+  SIDE_TASK_CARD_HEIGHT as CARD_HEIGHT,
+  SIDE_TASK_CARD_WIDTH as CARD_WIDTH,
+  SIDE_TASK_GUTTER as GUTTER,
+  SIDE_TASK_MAX_STACK_CARDS as MAX_STACK_CARDS,
+  SIDE_TASK_STACK_OFFSET as STACK_OFFSET,
+} from "./sideTaskLane";
 
 /**
  * Tasks that ran inside this workflow for this task without being steps of the definition — a
@@ -13,14 +21,11 @@ import { getFlowTheme } from "components/features/flow/theme";
  * and putting them in the graph would push the DAG around. Everything here lives inside the node's
  * existing `<foreignObject>`, which is already `overflow: visible`, so the node keeps the size ELK
  * measured and nothing below it moves — collapsed or expanded.
+ *
+ * Escaping the node is only half of it: the canvas clips too, so Flow lays the graph out with
+ * SIDE_TASK_LANE_WIDTH of room on the right whenever any node has these. Both sides read the sizes
+ * from ./sideTaskLane so the reserved lane and the drawn cards cannot drift apart.
  */
-
-const CARD_WIDTH = 190;
-const CARD_HEIGHT = 34;
-const CARD_GAP = 6;
-const STACK_OFFSET = 5;
-const MAX_STACK_CARDS = 3;
-const GUTTER = 14;
 
 const statusGlyph = (status?: TaskStatus | string): string => {
   switch (status) {
@@ -83,9 +88,11 @@ const SideTaskCards = ({
     boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
   });
 
+  // Centred on the node rather than pinned to its top, where CardStatusBadge already sits.
   const shell: CSSProperties = {
     position: "absolute",
-    top: 0,
+    top: "50%",
+    transform: "translateY(-50%)",
     left: `calc(100% + ${GUTTER}px)`,
     cursor: "pointer",
   };

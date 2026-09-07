@@ -3,6 +3,7 @@ import { TaskType } from "types";
 import {
   detachedTasksByParent,
   isDetached,
+  isSideTaskOf,
   declaredReferenceNames,
 } from "./detachedTasks";
 
@@ -104,12 +105,36 @@ describe("detached tasks", () => {
     ]);
   });
 
-  it("leaves a dynamic fork's children alone, even though they name a parent", () => {
-    // They are real nodes of the graph: the definition declares them once expanded, and the
-    // workflow's join waits on them. Only the definition check keeps them out.
+  it("leaves a static fork's branch alone, because the definition declares it", () => {
     const grouped = detachedTasksByParent([task("branch", "fork")], definition);
 
     expect(grouped).toEqual({});
+  });
+
+  /**
+   * The case the definition check alone does NOT catch, and the reason the parent's type matters.
+   * A FORK_JOIN_DYNAMIC has no static children, so a branch's reference is never in the definition,
+   * and the server stamps the fork's reference onto every branch as its parent — exactly the shape
+   * of a guardrail detector. Branches are the workflow's own work and belong in the graph, drawn by
+   * the diagram's dynamic-fork handling, so only the parent's type separates the two.
+   */
+  it("leaves a dynamic fork's branches alone, though they match on both other counts", () => {
+    const withDynamicFork = {
+      tasks: [
+        {
+          taskReferenceName: "dyn_fork",
+          name: "dyn_fork",
+          type: TaskType.FORK_JOIN_DYNAMIC,
+        },
+        { taskReferenceName: "join", name: "join", type: TaskType.JOIN },
+      ],
+    } as any;
+    const branch = task("_dyn_fork_0", "dyn_fork");
+
+    expect(isDetached(declaredReferenceNames(withDynamicFork), branch)).toBe(
+      true,
+    );
+    expect(detachedTasksByParent([branch], withDynamicFork)).toEqual({});
   });
 
   it("ignores a detached task whose parent the diagram does not draw", () => {
@@ -119,5 +144,46 @@ describe("detached tasks", () => {
     );
 
     expect(grouped).toEqual({});
+  });
+});
+
+/**
+ * The predicate the right panel uses to decide whether "Re-Run from Task" applies. Same rule as the
+ * grouping above, asked of one task, so the button and the diagram can never disagree about what a
+ * side task is.
+ */
+describe("isSideTaskOf", () => {
+  const definition = {
+    tasks: [
+      { taskReferenceName: "llm", name: "llm", type: TaskType.SIMPLE },
+      {
+        taskReferenceName: "dyn_fork",
+        name: "dyn_fork",
+        type: TaskType.FORK_JOIN_DYNAMIC,
+      },
+    ],
+  } as any;
+
+  const executionTask = (referenceTaskName: string, parent?: string) =>
+    ({ referenceTaskName, parentTaskReferenceName: parent }) as any;
+
+  it("is true for a task attached to a step of the workflow", () => {
+    expect(
+      isSideTaskOf(executionTask("_guardrail_pii_0", "llm"), definition),
+    ).toBe(true);
+  });
+
+  it("is false for a dynamic fork's branch", () => {
+    expect(
+      isSideTaskOf(executionTask("_dyn_fork_0", "dyn_fork"), definition),
+    ).toBe(false);
+  });
+
+  it("is false for a step of the workflow, and for nothing selected", () => {
+    expect(isSideTaskOf(executionTask("llm"), definition)).toBe(false);
+    expect(isSideTaskOf(undefined, definition)).toBe(false);
+    expect(
+      isSideTaskOf(executionTask("_guardrail_pii_0", "llm"), undefined),
+    ).toBe(false);
   });
 });

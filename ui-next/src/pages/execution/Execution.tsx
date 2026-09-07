@@ -548,6 +548,7 @@ export default function Execution() {
               workflowName={execution?.workflowName ?? ""}
               workflowStatus={execution?.status as string}
               doWhileSelection={doWhileSelection}
+              workflowDefinition={execution?.workflowDefinition}
             />
           </Box>
         )
