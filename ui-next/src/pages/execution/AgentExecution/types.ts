@@ -160,6 +160,18 @@ export interface AgentRunData {
   failureReason?: string;
   /** Agent definition from workflow.definition.metadata.agentDef */
   agentDef?: Record<string, unknown>;
+  /**
+   * Number of this agent's own direct sub-agents, known from its definition
+   * even before its execution has been fetched. Drives the "Expand" control
+   * on collapsed sub-agent nodes in the Execution tab (issue #1452).
+   */
+  subAgentCount?: number;
+  /** True once this sub-agent's own execution has been fetched and its real turns/subAgents are populated in place. */
+  expanded?: boolean;
+  /** True while a fetch for this sub-agent's own execution is in flight. */
+  expanding?: boolean;
+  /** True if the last attempt to fetch this sub-agent's own execution failed. */
+  expandError?: boolean;
 }
 
 export interface ExecutionMetrics {

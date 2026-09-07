@@ -277,8 +277,7 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                     get(ctx.endpoint + "/threads/" + threadId + "/messages", token, ctx.apiVersion);
             for (JsonNode msg : messages.path("data")) {
                 if ("assistant".equals(msg.path("role").asText())) {
-                    String text = msg.path("content").path(0).path("text").path("value").asText("");
-                    output = Map.of("result", text);
+                    output = Map.of("result", extractText(msg.path("content")));
                     break;
                 }
             }
@@ -422,6 +421,18 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private String resolveApiVersion(ConductorAgentStartRequest request) {
         String v = rawConfig(request, "apiVersion");
         return StringUtils.isBlank(v) ? DEFAULT_API_VERSION : v;
+    }
+
+    // Returns the text value from the first content part with "type": "text".
+    // Assistants with code interpreter may return an image_file part before the text part,
+    // so content[0] is not always text.
+    private static String extractText(JsonNode contentArray) {
+        for (JsonNode part : contentArray) {
+            if ("text".equals(part.path("type").asText())) {
+                return part.path("text").path("value").asText("");
+            }
+        }
+        return "";
     }
 
     private static String rawConfig(ConductorAgentStartRequest request, String key) {

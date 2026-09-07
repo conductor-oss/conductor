@@ -1,7 +1,7 @@
 ## 1. Add the SDK
 
 ```bash
-dotnet add package conductor-ai --version 3.0.0-rc3
+dotnet add package conductor-ai
 ```
 
 ## 2. Configure

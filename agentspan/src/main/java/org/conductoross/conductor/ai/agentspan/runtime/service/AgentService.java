@@ -24,6 +24,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -68,6 +70,7 @@ public class AgentService {
     private final MetadataDAO metadataDAO;
 
     private final WorkflowService workflowService;
+    private final AgentExecutionTokenUsageAggregator executionTokenUsageAggregator;
     private final TaskService taskService;
     private final WorkflowExecutor workflowExecutor;
 
@@ -558,7 +561,11 @@ public class AgentService {
 
     /** Resume a paused agent execution. */
     public void resumeAgent(String executionId) {
-        workflowService.resumeWorkflow(executionId);
+        try {
+            workflowService.resumeWorkflow(executionId);
+        } catch (IllegalStateException e) {
+            throw new ConflictException(e.getMessage());
+        }
     }
 
     /** Cancel a running agent execution. */
@@ -674,6 +681,9 @@ public class AgentService {
         // Set the stop flag — the DoWhile loop condition checks this variable.
         // Get the workflow model, update its variables map, and persist.
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_stop_requested", true);
         executionDAO.updateWorkflow(workflow);
         // Note: the SDK also sends a WMQ unblock message via the Conductor client
@@ -689,6 +699,9 @@ public class AgentService {
      */
     public void signalAgent(String executionId, String message) {
         WorkflowModel workflow = executionDAO.getWorkflow(executionId, false);
+        if (workflow == null) {
+            throw new NotFoundException("No agent execution found: " + executionId);
+        }
         workflow.getVariables().put("_signal_injection", message != null ? message : "");
         executionDAO.updateWorkflow(workflow);
     }
@@ -1210,6 +1223,10 @@ public class AgentService {
             }
             return normalizerRegistry.normalize(request.getFramework(), request.getRawConfig());
         }
+        if (request.getAgentConfig() == null) {
+            throw new IllegalArgumentException(
+                    "agentConfig is required when framework is not specified");
+        }
         return request.getAgentConfig();
     }
 
@@ -1218,6 +1235,7 @@ public class AgentService {
     /** Open an SSE stream for an agent execution. Replays missed events on reconnect. */
     public SseEmitter openStream(String executionId, Long lastEventId) {
         log.info("Opening SSE stream for execution {} (lastEventId={})", executionId, lastEventId);
+        workflowService.getExecutionStatus(executionId, false);
         return streamRegistry.register(executionId, lastEventId);
     }
 
@@ -1435,6 +1453,17 @@ public class AgentService {
 
     public Workflow getFullExecution(String executionId) {
         return workflowService.getExecutionStatus(executionId, true);
+    }
+
+    /**
+     * Returns the normal full execution payload with token usage aggregated across the complete
+     * sub-workflow tree. Descendants are loaded inside the server, avoiding one large HTTP response
+     * per child in the UI.
+     */
+    public Workflow getFullExecutionWithAggregate(String executionId) {
+        Workflow root = getFullExecution(executionId);
+        root.setAggregateTokenUsage(executionTokenUsageAggregator.aggregate(root));
+        return root;
     }
 
     public void restartExecution(String executionId, boolean useLatestDefinitions) {

@@ -47,8 +47,3 @@ export interface MenuItemType {
    */
   useBadgeCount?: () => number;
 }
-
-export interface SubMenuProps extends MenuItemType {
-  items: MenuItemType[];
-  parentId?: string;
-}

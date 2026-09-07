@@ -6,7 +6,11 @@ COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-redis-os3.yaml"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
 
 echo "Starting Conductor (Redis + OpenSearch 3.x)..."
-docker compose -f "$COMPOSE_FILE" build conductor-server
+# CI builds the server image once (build-server-image job) and pre-loads it;
+# SKIP_SERVER_BUILD=1 skips the per-flavor rebuild of the identical image.
+if [ "${SKIP_SERVER_BUILD:-0}" != "1" ]; then
+    docker compose -f "$COMPOSE_FILE" build conductor-server
+fi
 docker compose -f "$COMPOSE_FILE" up -d
 
 echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."

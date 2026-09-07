@@ -17,7 +17,9 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
+import org.conductoross.conductor.mysql.dao.MySQLSchemaDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
 import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +37,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
@@ -75,13 +78,13 @@ public class MySQLConfiguration {
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource,
-            MySQLQueueDAO queueDAO) {
+            QueueDAO queueDAO) {
         return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MySQLQueueDAO mySqlQueueDAO(
+    public QueueDAO mySqlQueueDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource) {
@@ -116,6 +119,15 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    public SchemaDAO mySqlSchemaDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

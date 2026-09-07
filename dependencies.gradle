@@ -27,11 +27,11 @@ ext {
     revEmbeddedRedis = '0.6'
     revEurekaClient = '2.0.2'
     revGroovy = '4.0.21'
-    revGrpc = '1.73.0'
+    revGrpc = '1.75.0'
     revGuava = '33.2.1-jre'
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
-    revPostgres = '42.7.2'
+    revPostgres = '42.7.11'
 
     // -----------------------------------------------------------------
     // PINNED DEPENDENCIES — do not upgrade without reading the notes.
@@ -62,7 +62,7 @@ ext {
     revJq = '0.0.13'
     revJsr311Api = '1.1.1'
     revMockServerClient = '5.12.0'
-    revSpringDoc = '2.1.0'
+    revSpringDoc = '2.8.6'
     revOrkesQueues = '2.0.0.rc3'
     revPowerMock = '2.0.9'
     revProtogenAnnotations = '1.0.0'
@@ -75,10 +75,17 @@ ext {
     revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
     revAmqpClient = '5.13.0'
-    revKafka = '2.6.0'
-    revMicrometer = '1.14.6'
+    revKafka = '3.9.1'
+    // micrometer-core carries CVE-2026-40983 / CVE-2026-40984, fixed in 1.15.12.
+    revMicrometer = '1.15.12'
+    // The registry artifacts (otlp / cloudwatch2 / azure-monitor / prometheus) must stay on the
+    // 1.14.x line: micrometer-registry-otlp 1.15.x pulls opentelemetry-proto 1.5.0-alpha, whose
+    // generated code requires protobuf-java 4.x (com.google.protobuf.RuntimeVersion$RuntimeDomain).
+    // protobuf-java is pinned to 3.x here (#964, GraalVM), so 1.15.x otlp fails at runtime with a
+    // NoClassDefFoundError. 1.14.6 registries pull opentelemetry-proto 1.3.2-alpha (protobuf 3.x).
+    revMicrometerRegistry = '1.14.6'
     revPrometheus = '0.9.0'
-    revElasticSearch7 = '7.17.11'
+    revElasticSearch7 = '7.17.29'
     revElasticSearch8 = '8.19.11'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.25.1'
@@ -88,12 +95,12 @@ ext {
     revFlyway = '10.15.2'
     revConductorClient = '5.0.1'
     revReactor = '1.3.1'
-    revSpringAI = '1.1.2'
+    revSpringAI = '1.1.6'
     revJSonSchemaValidator  = '1.0.73'
     mongodb = '4.11.0'
     pgVector = '0.1.4'
     sqliteJdbc = '3.49.0.0'
-    revMCP = '0.13.0'
+    revMCP = '1.0.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
     revFlexmark = '0.64.8'

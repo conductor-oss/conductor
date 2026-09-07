@@ -14,6 +14,9 @@ dependencies {
 
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
+    // conductor-sqlite-persistence keeps the driver on its own implementation classpath, so the
+    // SQLiteDataSource the integration test builds directly has to be declared here.
+    testImplementation "org.xerial:sqlite-jdbc:${sqliteJdbc}"
 
     // Conductor-Agents' real event listener depends on its SSE registry at test runtime.
     testImplementation 'org.springframework:spring-webmvc'

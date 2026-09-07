@@ -273,7 +273,7 @@ public class AgentController {
     /** Get full execution with tasks (Conductor Workflow object, used by UI). */
     @GetMapping("/executions/{executionId}/full")
     public Workflow getFullExecution(@PathVariable("executionId") String executionId) {
-        return agentService.getFullExecution(executionId);
+        return agentService.getFullExecutionWithAggregate(executionId);
     }
 
     /** Restart a completed/failed execution. */
