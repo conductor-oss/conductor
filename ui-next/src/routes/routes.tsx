@@ -9,6 +9,7 @@
  * - Task definitions
  * - Event handlers
  * - Scheduler definitions and executions
+ * - Schemas
  * - Queue monitor
  * - Event monitor
  * - API reference
@@ -25,7 +26,6 @@
  * - Remote Services
  * - Metrics
  * - Environment Variables
- * - Schemas
  * - Workers
  */
 
@@ -45,6 +45,7 @@ import ErrorPage from "pages/error/ErrorPage";
 import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
 import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
+import { SchemaEditPage, SchemaList } from "pages/schema";
 import { pluginRegistry } from "plugins/registry";
 import { Navigate, RouteObject } from "react-router-dom";
 import { featureFlags, FEATURES } from "utils";
@@ -56,6 +57,7 @@ import {
   NEW_TASK_DEF_URL,
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
+  SCHEMAS_URL,
   TASK_DEF_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
@@ -211,6 +213,30 @@ const getCoreAuthenticatedRoutes = () => [
 ];
 
 /**
+ * Schema registry routes.
+ *
+ * Withheld when a plugin has already claimed the same paths. Core routes are
+ * matched ahead of plugin routes, so registering these unconditionally would
+ * displace a plugin-provided schema screen rather than defer to it.
+ */
+export const getSchemaRoutes = (pluginRoutes: RouteObject[]): RouteObject[] => {
+  const routes = [
+    {
+      path: SCHEMAS_URL.BASE,
+      element: <SchemaList />,
+    },
+    {
+      path: SCHEMAS_URL.EDIT,
+      element: <SchemaEditPage />,
+    },
+  ];
+  const claimedByPlugin = routes.some((route) =>
+    pluginRoutes.some((pluginRoute) => pluginRoute.path === route.path),
+  );
+  return claimedByPlugin ? [] : routes;
+};
+
+/**
  * Get the default index route based on feature flags
  */
 const getIndexRoute = (isPlayground: boolean) => {
@@ -248,6 +274,7 @@ export const getRoutes = (): RouteObject[] => {
   const allAuthenticatedRoutes = [
     ...(indexRoute ? [indexRoute] : []),
     ...coreRoutes,
+    ...getSchemaRoutes(pluginAuthenticatedRoutes),
     ...pluginAuthenticatedRoutes,
   ];
 
