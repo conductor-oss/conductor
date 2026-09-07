@@ -182,25 +182,20 @@ export const persistServerError = assign<
   ErrorInspectorMachineContext,
   ReportServerErrorEvent
 >(({ currentWf }, { text, validationErrors: incomingValidationErrors }) => {
-  const validationErrors = incomingValidationErrors ?? [
-    {
-      path: "workflow",
-      message: text,
-    },
-  ]; // Server error reported without validation. will be treated as a workflow error
+  // The server may report an error with no per-task validation details, either by
+  // omitting the field or by sending an empty array. Both mean "workflow level error".
   const serverError: ValidationError = {
     id: ErrorIds.FLOW_ERROR,
     message: text,
     hint: "Assert taskReferenceName is not repeated across tasks",
     type: ErrorTypes.WORKFLOW,
     severity: ErrorSeverity.ERROR,
-    validationErrors:
-      validationErrors == null
-        ? undefined
-        : serverValidationErrorToIndexTask(
-            validationErrors || [],
-            currentWf?.tasks || [],
-          ),
+    validationErrors: incomingValidationErrors?.length
+      ? serverValidationErrorToIndexTask(
+          incomingValidationErrors,
+          currentWf?.tasks || [],
+        )
+      : undefined,
   };
 
   return {

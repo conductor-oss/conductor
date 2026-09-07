@@ -19,6 +19,8 @@ export interface MenuItemType {
   icon: ReactNode;
   linkTo?: string;
   activeRoutes?: string[];
+  /** When set, an activeRoutes match also requires these search params to be present. */
+  activeSearchParams?: Record<string, string>;
   shortcuts: string[];
   hotkeys?: string;
   items?: MenuItemType[];
@@ -44,9 +46,4 @@ export interface MenuItemType {
    * Default: returns 0 (no badge).
    */
   useBadgeCount?: () => number;
-}
-
-export interface SubMenuProps extends MenuItemType {
-  items: MenuItemType[];
-  parentId?: string;
 }

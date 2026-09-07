@@ -15,7 +15,7 @@ package org.conductoross.conductor.model.file;
 import java.util.Objects;
 
 /**
- * File-metadata DTO returned by {@code GET /api/files/{fileId}}. Does not expose the
+ * File-metadata DTO returned by {@code GET /api/files/{workflowId}/{fileId}}. Does not expose the
  * server-internal {@code storagePath}.
  */
 public class FileHandle {
@@ -26,6 +26,9 @@ public class FileHandle {
     private String fileName;
 
     private String contentType;
+
+    /** Actual byte size reported by the storage backend after upload completion. */
+    private long fileSize;
 
     private String contentHash;
 
@@ -63,6 +66,14 @@ public class FileHandle {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
     }
 
     public String getContentHash() {
@@ -128,6 +139,7 @@ public class FileHandle {
         return Objects.equals(fileHandleId, that.fileHandleId)
                 && Objects.equals(fileName, that.fileName)
                 && Objects.equals(contentType, that.contentType)
+                && fileSize == that.fileSize
                 && Objects.equals(contentHash, that.contentHash)
                 && storageType == that.storageType
                 && uploadStatus == that.uploadStatus;
@@ -136,7 +148,13 @@ public class FileHandle {
     @Override
     public int hashCode() {
         return Objects.hash(
-                fileHandleId, fileName, contentType, contentHash, storageType, uploadStatus);
+                fileHandleId,
+                fileName,
+                contentType,
+                fileSize,
+                contentHash,
+                storageType,
+                uploadStatus);
     }
 
     @Override

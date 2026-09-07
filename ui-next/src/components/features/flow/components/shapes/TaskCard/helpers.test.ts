@@ -34,6 +34,9 @@ describe("dowhileHasAllIterationsInOutput", () => {
     );
     expect(result).toBe(true);
   });
+  it("Should return false when iteration is missing", () => {
+    expect(dowhileHasAllIterationsInOutput({})).toBe(false);
+  });
 });
 
 describe("showIterationChip", () => {
@@ -164,5 +167,35 @@ describe("showIterationChip", () => {
       nodeDataWithKeepLastNAndNotSummarized as any,
     );
     expect(result).toBe(false);
+  });
+  it("Should return true for standalone retries with no parent DO_WHILE", () => {
+    const result = showIterationChip({ attempts: 3 } as any);
+    expect(result).toBe(true);
+  });
+  it("Should return false for standalone tasks with only one attempt", () => {
+    const result = showIterationChip({ attempts: 1 } as any);
+    expect(result).toBe(false);
+  });
+
+  it("visibility matrix for attempt badge on task cards", () => {
+    expect({
+      standaloneRetries: showIterationChip({ attempts: 3 } as any),
+      standaloneSingleAttempt: showIterationChip({ attempts: 1 } as any),
+      keepLastN: showIterationChip(nodeDataWithKeepLastN as any),
+      summarizedWithoutKeepLastN: showIterationChip(
+        nodeDataWithoutKeepLastNAndSummarized as any,
+      ),
+      unsummarizedWithoutKeepLastN: showIterationChip(
+        nodeDataWithoutKeepLastNAndNotSummarized as any,
+      ),
+    }).toMatchInlineSnapshot(`
+      {
+        "keepLastN": false,
+        "standaloneRetries": true,
+        "standaloneSingleAttempt": false,
+        "summarizedWithoutKeepLastN": false,
+        "unsummarizedWithoutKeepLastN": true,
+      }
+    `);
   });
 });

@@ -85,12 +85,17 @@ public class CohereApi {
     // Request/Response Records
     // ========================================================================
 
-    /** Chat message with role and content. */
+    /** Chat message with role and content. Content is a String or a List&lt;ContentPart&gt;. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ChatMessage(
-            @JsonProperty("role") String role, @JsonProperty("content") String content) {
+            @JsonProperty("role") String role, @JsonProperty("content") Object content) {
 
         public static ChatMessage user(String content) {
+            return new ChatMessage("user", content);
+        }
+
+        /** Multi-part user message (text + image parts) for vision input. */
+        public static ChatMessage user(List<ContentPart> content) {
             return new ChatMessage("user", content);
         }
 
@@ -101,6 +106,24 @@ public class CohereApi {
         public static ChatMessage system(String content) {
             return new ChatMessage("system", content);
         }
+    }
+
+    /** A content part of a multi-part message (Cohere v2 multimodal format). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ContentPart(
+            String type, String text, @JsonProperty("image_url") ImageUrl imageUrl) {
+
+        public static ContentPart text(String text) {
+            return new ContentPart("text", text, null);
+        }
+
+        /** {@code url} is an https URL or a {@code data:<mime>;base64,<...>} URI. */
+        public static ContentPart imageUrl(String url) {
+            return new ContentPart("image_url", null, new ImageUrl(url));
+        }
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public record ImageUrl(String url) {}
     }
 
     /** Chat completion request for Cohere v2 API. */

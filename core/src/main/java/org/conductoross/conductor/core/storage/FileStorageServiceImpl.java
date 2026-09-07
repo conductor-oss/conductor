@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.core.storage;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -80,8 +81,8 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public FileUploadUrlResponse getUploadUrl(String fileId) {
-        FileModel model = getFileModelOrThrow(fileId);
+    public FileUploadUrlResponse getUploadUrl(String workflowId, String fileId) {
+        FileModel model = getOwnedFile(workflowId, fileId);
         String uploadUrl =
                 fileStorage.generateUploadUrl(
                         model.getStoragePath(), properties.getSignedUrlExpiration());
@@ -95,8 +96,8 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public FileUploadCompleteResponse confirmUpload(String fileId) {
-        FileModel model = getFileModelOrThrow(fileId);
+    public FileUploadCompleteResponse confirmUpload(String workflowId, String fileId) {
+        FileModel model = getOwnedFile(workflowId, fileId);
         if (model.getUploadStatus() == FileUploadStatus.UPLOADED) {
             throw new ConflictException("File already uploaded: " + fileId);
         }
@@ -117,8 +118,12 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public FileDownloadUrlResponse getDownloadUrl(String fileId, String workflowId) {
-        FileModel model = getFileModel(fileId, workflowId);
+    public FileDownloadUrlResponse getDownloadUrl(String workflowId, String fileId) {
+        FileModel model = getFamilyAccessibleFile(workflowId, fileId);
+        if (model.getUploadStatus() != FileUploadStatus.UPLOADED) {
+            throw new IllegalArgumentException(
+                    "File not yet uploaded: " + fileId + ", status=" + model.getUploadStatus());
+        }
         String downloadUrl =
                 fileStorage.generateDownloadUrl(
                         model.getStoragePath(), properties.getSignedUrlExpiration());
@@ -132,14 +137,37 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public FileHandle getFileMetadata(String fileId) {
-        FileModel model = getFileModelOrThrow(fileId);
+    public void uploadContent(String workflowId, String fileId, InputStream content) {
+        FileModel model = getOwnedFile(workflowId, fileId);
+        if (model.getUploadStatus() != FileUploadStatus.UPLOADING) {
+            throw new ConflictException("File is not accepting content uploads: " + fileId);
+        }
+        fileStorage.writeContent(model.getStoragePath(), content);
+    }
+
+    @Override
+    public FileContent downloadContent(String workflowId, String fileId) {
+        // Family-accessible, like getDownloadUrl: for the Conductor backend that URL is this
+        // endpoint, so requiring the exact owner here would 403 a URL we just handed out.
+        FileModel model = getFamilyAccessibleFile(workflowId, fileId);
+        if (model.getUploadStatus() != FileUploadStatus.UPLOADED) {
+            throw new IllegalArgumentException("File has not been uploaded: " + fileId);
+        }
+        return new FileContent(
+                fileStorage.readContent(model.getStoragePath()),
+                model.getContentType(),
+                model.getStorageContentSize());
+    }
+
+    @Override
+    public FileHandle getFileMetadata(String workflowId, String fileId) {
+        FileModel model = getFamilyAccessibleFile(workflowId, fileId);
         return FileModelConverter.toFileHandle(model);
     }
 
     @Override
-    public MultipartInitResponse initiateMultipartUpload(String fileId) {
-        FileModel model = getFileModelOrThrow(fileId);
+    public MultipartInitResponse initiateMultipartUpload(String workflowId, String fileId) {
+        FileModel model = getOwnedFile(workflowId, fileId);
         String uploadId = fileStorage.initiateMultipartUpload(model.getStoragePath());
 
         MultipartInitResponse response = new MultipartInitResponse();
@@ -149,8 +177,9 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public FileUploadUrlResponse getPartUploadUrl(String fileId, String uploadId, int partNumber) {
-        FileModel model = getFileModelOrThrow(fileId);
+    public FileUploadUrlResponse getPartUploadUrl(
+            String workflowId, String fileId, String uploadId, int partNumber) {
+        FileModel model = getOwnedFile(workflowId, fileId);
         String url =
                 fileStorage.generatePartUploadUrl(
                         model.getStoragePath(),
@@ -168,8 +197,8 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public FileUploadCompleteResponse completeMultipartUpload(
-            String fileId, String uploadId, List<String> partETags) {
-        FileModel model = getFileModelOrThrow(fileId);
+            String workflowId, String fileId, String uploadId, List<String> partETags) {
+        FileModel model = getOwnedFile(workflowId, fileId);
         fileStorage.completeMultipartUpload(model.getStoragePath(), uploadId, partETags);
 
         StorageFileInfo info = fileStorage.getStorageFileInfo(model.getStoragePath());
@@ -188,22 +217,33 @@ public class FileStorageServiceImpl implements FileStorageService {
         return response;
     }
 
-    private @NonNull FileModel getFileModel(String fileId, String workflowId) {
-        FileModel model = getFileModelOrThrow(fileId);
-        if (model.getUploadStatus() != FileUploadStatus.UPLOADED) {
-            throw new IllegalArgumentException(
-                    "File not yet uploaded: " + fileId + ", status=" + model.getUploadStatus());
-        }
+    @Override
+    public void abortMultipartUpload(String workflowId, String fileId, String uploadId) {
+        FileModel model = getOwnedFile(workflowId, fileId);
+        fileStorage.abortMultipartUpload(model.getStoragePath(), uploadId);
+    }
 
+    /** Upload state may only be mutated by the workflow that created the file record. */
+    private @NonNull FileModel getOwnedFile(String workflowId, String fileId) {
+        FileModel model = getFileModelOrThrow(fileId);
+        if (workflowId == null
+                || workflowId.isBlank()
+                || !workflowId.equals(model.getWorkflowId())) {
+            throw new AccessForbiddenException("Workflow does not own file: " + fileId);
+        }
+        return model;
+    }
+
+    /** Downloads and metadata are visible to the owning workflow's full workflow family. */
+    private @NonNull FileModel getFamilyAccessibleFile(String workflowId, String fileId) {
+        FileModel model = getFileModelOrThrow(fileId);
         if (model.getWorkflowId() == null || model.getWorkflowId().isBlank()) {
             throw new AccessForbiddenException("File has no workflowId: " + fileId);
         }
 
         Set<String> family = workflowFamilyResolver.getFamily(workflowId);
         if (!family.contains(model.getWorkflowId())) {
-            throw new AccessForbiddenException(
-                    "workflowId %s is not in the workflow family of file %s"
-                            .formatted(workflowId, fileId));
+            throw new AccessForbiddenException("Workflow cannot access file: " + fileId);
         }
         return model;
     }

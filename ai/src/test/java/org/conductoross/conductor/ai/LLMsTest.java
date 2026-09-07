@@ -14,7 +14,7 @@ package org.conductoross.conductor.ai;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

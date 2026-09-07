@@ -19,6 +19,7 @@ import { DynamicTask } from "./DynamicTask";
 import EventTask from "./EventTask";
 import ForkJoinDynamicTask from "./ForkJoinDynamicTask";
 import { showIterationChip } from "./helpers";
+import { getAgentTaskPresentation } from "utils/agentMetadata";
 import HTTPTask from "./HTTPTask";
 import INLINETask from "./INLINETask";
 import JSONJQTransformTask from "./JSONJQTransformTask";
@@ -74,6 +75,15 @@ const TaskCard = ({
 
   const { task, status } = nodeData;
   const { name, type, taskReferenceName } = task;
+  const agentPresentation =
+    type === TaskType.AGENT ? getAgentTaskPresentation(task) : undefined;
+  const primaryLabel = agentPresentation
+    ? agentPresentation.unresolved
+      ? `UNRESOLVED: ${agentPresentation.name}`
+      : agentPresentation.name
+    : name;
+  const secondaryLabel =
+    agentPresentation?.taskReferenceName ?? taskReferenceName;
 
   const showIterationsNumber = showIterationChip(nodeData);
   return (
@@ -136,9 +146,10 @@ const TaskCard = ({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                paddingRight: agentPresentation ? "112px" : undefined,
               }}
             >
-              {name}
+              {primaryLabel}
             </div>
             <div
               style={{
@@ -149,7 +160,7 @@ const TaskCard = ({
                 whiteSpace: "nowrap",
               }}
             >
-              {taskReferenceName}
+              {secondaryLabel}
             </div>
             <div
               style={{
@@ -177,6 +188,7 @@ const TaskCard = ({
 
           <CardLabel
             type={type}
+            label={agentPresentation?.badge}
             displayDescription={false}
             integrationIconName={
               task.type === TaskType.INTEGRATION

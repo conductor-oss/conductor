@@ -18,7 +18,7 @@ vi.mock("utils", async (importOriginal) => {
       PLAYGROUND: "PLAYGROUND",
       SHOW_GET_STARTED_PAGE: "SHOW_GET_STARTED_PAGE",
       TASK_INDEXING: "TASK_INDEXING",
-      AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+      CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
     },
   };
 });
@@ -35,7 +35,9 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/eventHandlers/new",
   },
   EVENT_MONITOR_URL: { BASE: "/event-monitor", NAME: "/event-monitor/:name" },
+  GET_STARTED_URL: "/get-started",
   GROUP_MANAGEMENT_URL: { BASE: "/groups" },
+  HUB_URL: "/hub",
   ROLE_MANAGEMENT_URL: {
     BASE: "/roleManagement",
     TYPE_ID: "/roleManagement/:type?/:id?",
@@ -57,15 +59,28 @@ vi.mock("utils/constants/route", () => ({
     EDIT: "/remote-services/:id/edit",
   },
   RUN_WORKFLOW_URL: "/runWorkflow",
+  RUN_AGENT_URL: "/runAgent",
   SCHEDULER_DEFINITION_URL: {
     BASE: "/scheduleDef",
     NAME: "/scheduleDef/:name",
     NEW: "/scheduleDef/new",
   },
-  SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
+  SCHEDULER_EXECUTION_URL: "/schedulerExecs",
+  SCHEMAS_URL: {
+    BASE: "/schemas",
+    EDIT: "/schemas/:schemaName/:version?",
+    DEF: "/schemas/schemaDef",
+  },
   SECRETS_URL: { BASE: "/secrets" },
-  AGENT_DEFINITION_URL: { BASE: "/agents" },
-  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_DEFINITION_URL: {
+    BASE: "/agents",
+    NEW: "/agents/new",
+    NAME_VERSION: "/agents/:name/:version?",
+  },
+  AGENT_EXECUTIONS_URL: {
+    BASE: "/agentExecutions",
+    ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+  },
   AGENT_SECRETS_URL: "/agentSecrets",
   SKILLS_URL: { BASE: "/skills" },
   SERVICE_URL: {
@@ -91,10 +106,19 @@ vi.mock("utils/constants/route", () => ({
     NAME_VERSION: "/workflowDef/:name/:version",
     NEW: "/workflowDef/new",
   },
+  WORKFLOW_EXECUTION_URL: {
+    BASE: "/execution",
+    WF_ID_TASK_ID: "/execution/:id/:taskId?",
+  },
   WORKERS_URL: {
     BASE: "/workers",
   },
   TAGS_DASHBOARD_URL: { BASE: "/tags-dashboard" },
+}));
+
+vi.mock("utils/resolveDefaultHomePath", () => ({
+  resolveDefaultHomePath: () => "/executions",
+  findFirstNavigableSidebarPath: () => "/executions",
 }));
 
 vi.mock("components/features/auth/AuthGuard", () => ({
@@ -137,8 +161,11 @@ vi.mock("pages/tags/TagsDashboard", () => ({
   default: () => ({ type: "TagsDashboard" }),
 }));
 vi.mock("pages/agent", () => ({
+  AgentDefinition: () => ({ type: "AgentDefinition" }),
   AgentDefinitions: () => ({ type: "AgentDefinitions" }),
+  CreateAgentGuide: () => ({ type: "CreateAgentGuide" }),
   AgentExecutions: () => ({ type: "AgentExecutions" }),
+  RunAgent: () => ({ type: "RunAgent" }),
   Skills: () => ({ type: "Skills" }),
   Secrets: () => ({ type: "Secrets" }),
 }));
@@ -147,18 +174,6 @@ vi.mock("../pages/definition/EventHandler/EventHandler", () => ({
 }));
 vi.mock("../pages/execution/Execution", () => ({
   default: () => ({ type: "Execution" }),
-}));
-vi.mock("../pages/kitchensink/Examples", () => ({
-  default: () => ({ type: "Examples" }),
-}));
-vi.mock("../pages/kitchensink/Gantt", () => ({
-  default: () => ({ type: "Gantt" }),
-}));
-vi.mock("../pages/kitchensink/KitchenSink", () => ({
-  default: () => ({ type: "KitchenSink" }),
-}));
-vi.mock("../pages/kitchensink/ThemeSampler", () => ({
-  default: () => ({ type: "ThemeSampler" }),
 }));
 vi.mock("../pages/queueMonitor/TaskQueue", () => ({
   default: () => ({ type: "TaskQueue" }),
@@ -180,7 +195,7 @@ vi.mock("react-vis-timeline", () => ({
 }));
 
 import { router } from "../router";
-import { getRoutes } from "../routes";
+import { getRoutes, getSchemaRoutes } from "../routes";
 
 function flattenRoutes(routeList: any[]): any[] {
   const out: any[] = [];
@@ -233,26 +248,40 @@ describe("router (OSS)", () => {
     expect(router).toBeDefined();
   });
 
-  describe("AgentSpan gating (AGENTSPAN_ENABLED)", () => {
+  describe("Conductor AI integration gating", () => {
     const AGENT_PATHS = [
       "/agents",
+      "/agents/new",
+      "/agents/:name/:version?",
       "/agentExecutions",
+      "/runAgent",
       "/skills",
       "/agentSecrets",
     ];
 
-    it("omits agent routes when AGENTSPAN_ENABLED is off", () => {
+    it("omits agent routes when the AI integration is off", () => {
       mockFeatureFlags.isEnabled.mockReturnValue(false);
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).not.toContain(p));
     });
 
-    it("includes agent routes when AGENTSPAN_ENABLED is on", () => {
+    it("includes agent routes when the AI integration is on", () => {
       mockFeatureFlags.isEnabled.mockImplementation(
-        (feature: string) => feature === "AGENTSPAN_ENABLED",
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
       );
       const paths = collectPaths(getRoutes());
       AGENT_PATHS.forEach((p) => expect(paths).toContain(p));
+    });
+
+    it("registers the create-agent route before the agent detail route", () => {
+      mockFeatureFlags.isEnabled.mockImplementation(
+        (feature: string) => feature === "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
+      );
+      const paths = collectPaths(getRoutes());
+
+      expect(paths.indexOf("/agents/new")).toBeLessThan(
+        paths.indexOf("/agents/:name/:version?"),
+      );
     });
   });
 
@@ -343,47 +372,6 @@ describe("router (OSS)", () => {
       );
 
       expect(wildcardRoutes.length).toBeGreaterThan(0);
-    });
-
-    it("should have kitchen sink development routes with correct elements", () => {
-      const routes = getRoutes();
-      const allRoutes = flattenRoutes(routes);
-
-      const kitchenRoutes = allRoutes.filter(
-        (route) => route.path && route.path.includes("/kitchen"),
-      );
-
-      expect(kitchenRoutes.length).toBeGreaterThan(0);
-
-      const kitchenSinkRoute = allRoutes.find(
-        (route) => route.path === "/kitchen",
-      );
-      const examplesRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/examples",
-      );
-      const ganttRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/gantt",
-      );
-      const themeRoute = allRoutes.find(
-        (route) => route.path === "/kitchen/theme",
-      );
-
-      expect(kitchenSinkRoute).toBeDefined();
-      expect(kitchenSinkRoute?.element).toBeDefined();
-
-      expect(examplesRoute).toBeDefined();
-      expect(examplesRoute?.element).toBeDefined();
-
-      expect(ganttRoute).toBeDefined();
-      expect(ganttRoute?.element).toBeDefined();
-
-      expect(themeRoute).toBeDefined();
-      expect(themeRoute?.element).toBeDefined();
-
-      kitchenRoutes.forEach((route) => {
-        expect(route.element).toBeDefined();
-        expect(route.path).toContain("/kitchen");
-      });
     });
 
     it("should have a substantial number of routes", () => {
@@ -502,6 +490,35 @@ describe("router (OSS)", () => {
       expect(allPaths).toContain("*");
       expect(allPaths).toContain("/executions");
       expect(allPaths).toContain("/runWorkflow");
+    });
+
+    describe("Schema registry routes", () => {
+      it("registers the schema screens as core OSS routes", () => {
+        const allPaths = collectPaths(getRoutes());
+
+        expect(allPaths).toContain("/schemas");
+        // The editor's route also serves SCHEMAS_URL.DEF ("/schemas/schemaDef"),
+        // which is how a new schema is reached: there is no separate route.
+        expect(allPaths).toContain("/schemas/:schemaName/:version?");
+      });
+
+      it("is withheld when a plugin has claimed either schema path", () => {
+        // Core routes are matched ahead of plugin routes, so registering these
+        // anyway would displace a plugin's own schema screen.
+        expect(getSchemaRoutes([{ path: "/schemas" }])).toEqual([]);
+        expect(
+          getSchemaRoutes([{ path: "/schemas/:schemaName/:version?" }]),
+        ).toEqual([]);
+      });
+
+      it("is registered when a plugin claims unrelated paths", () => {
+        const routes = getSchemaRoutes([{ path: "/secrets" }]);
+
+        expect(routes.map((route) => route.path)).toEqual([
+          "/schemas",
+          "/schemas/:schemaName/:version?",
+        ]);
+      });
     });
 
     it("should include all scheduler routes as core OSS routes", () => {

@@ -33,7 +33,7 @@ services:
       start_period: 300s
 
   playwright:
-    image: mcr.microsoft.com/playwright:v1.59.1-noble
+    image: mcr.microsoft.com/playwright:v1.60.0-noble
     working_dir: /app
     volumes:
       - .:/app
@@ -48,6 +48,7 @@ services:
       CI: "true"
       npm_config_store_dir: /root/.pnpm-store
       BASE_URL: http://localhost:1234
+      PLAYWRIGHT_FLAGS: ${PLAYWRIGHT_FLAGS:-}
     # PLAYWRIGHT_FLAGS is set by the :update script to --update-snapshots.
     command: >
       sh -c "corepack enable &&

@@ -20,6 +20,9 @@ public enum StorageType {
     S3,
     AZURE_BLOB,
     GCS,
-    /** Server-local filesystem. Does not support multipart. */
-    LOCAL
+    /**
+     * Content is stored and transferred through a Conductor-managed shared filesystem. Does not
+     * support multipart.
+     */
+    CONDUCTOR
 }

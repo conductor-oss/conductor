@@ -16,6 +16,7 @@ import SaveIcon from "components/icons/SaveIcon";
 import TrashIcon from "components/icons/TrashIcon";
 
 import { exportObjToFile } from "utils";
+import { pluginRegistry } from "plugins/registry";
 import {
   DefinitionMachineEventTypes,
   WorkflowDefinitionEvents,
@@ -37,10 +38,13 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
   const { isTrialExpired } = useAuth();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSaveRequest = () =>
+  const handleSaveRequest = () => {
+    pluginRegistry.runPreSaveValidation();
     service.send({ type: DefinitionMachineEventTypes.SAVE_EVT });
+  };
 
   const handleSaveAsNewVersionRequest = () => {
+    pluginRegistry.runPreSaveValidation();
     service.send({
       type: DefinitionMachineEventTypes.SAVE_EVT,
       isNewVersion: true,
@@ -68,10 +72,12 @@ export const HeadActionButtons: FunctionComponent<HeaderActionButtonsProps> = ({
   };
 
   const handleSaveAndRunRequest = () => {
+    pluginRegistry.runPreSaveValidation();
     service.send({ type: DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN });
   };
 
   const handleSaveAndCreateNewRequest = () => {
+    pluginRegistry.runPreSaveValidation();
     service.send({
       type: DefinitionMachineEventTypes.HANDLE_SAVE_AND_CREATE_NEW,
     });

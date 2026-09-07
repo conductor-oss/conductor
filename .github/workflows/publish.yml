@@ -42,6 +42,15 @@ jobs:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+      - name: Point SDK e2e workflows at this version
+        env:
+          GH_TOKEN: ${{ secrets.CI_UTIL_DISPATCH_TOKEN }}
+        run: |
+          export VERSION="${{github.ref_name}}"
+          export PUBLISH_VERSION=`echo ${VERSION:1}`
+          gh variable set CONDUCTOR_SERVER_VERSION \
+            --org conductor-oss \
+            --body "$PUBLISH_VERSION"
 
   publish-docker:
     runs-on: ubuntu-latest

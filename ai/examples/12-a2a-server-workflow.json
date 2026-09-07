@@ -1,0 +1,23 @@
+{
+  "name": "order_pizza",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Takes a pizza order — exposed as an A2A agent via metadata.a2a.enabled",
+  "ownerEmail": "a2a@example.com",
+  "metadata": {
+    "a2a.enabled": true,
+    "a2a.tags": ["ordering", "demo"]
+  },
+  "tasks": [
+    {
+      "name": "confirm_order",
+      "taskReferenceName": "confirm",
+      "type": "INLINE",
+      "inputParameters": {
+        "evaluatorType": "graaljs",
+        "expression": "({ orderId: 'ORD-' + ($.text || 'unknown') })",
+        "text": "${workflow.input._a2a_text}"
+      }
+    }
+  ]
+}

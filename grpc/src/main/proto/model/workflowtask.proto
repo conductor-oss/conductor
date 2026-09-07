@@ -51,4 +51,5 @@ message WorkflowTask {
     CacheConfig cache_config = 31;
     bool permissive = 32;
     WorkflowTask.JoinMode join_mode = 34;
+    map<string, google.protobuf.Value> metadata = 35;
 }

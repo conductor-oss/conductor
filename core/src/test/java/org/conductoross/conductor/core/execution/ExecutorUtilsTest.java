@@ -15,6 +15,8 @@ package org.conductoross.conductor.core.execution;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -22,6 +24,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -234,6 +238,22 @@ public class ExecutorUtilsTest {
         assertTrue(
                 "Result should be ~120s remaining; got " + result.getSeconds(),
                 result.getSeconds() <= 121);
+    }
+
+    private static SystemTaskRegistry registryWith(String type, boolean async, Long offsetSeconds) {
+        WorkflowSystemTask stub =
+                new WorkflowSystemTask(type) {
+                    @Override
+                    public boolean isAsync() {
+                        return async;
+                    }
+
+                    @Override
+                    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+                        return Optional.ofNullable(offsetSeconds);
+                    }
+                };
+        return new SystemTaskRegistry(Set.of(stub));
     }
 
     private WorkflowModel newWorkflow(List<TaskModel> tasks, long timeoutSeconds) {

@@ -79,14 +79,27 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                         });
     }
 
+    /**
+     * End time is absent until an execution reaches a terminal state. The column is NOT NULL so
+     * that ordering does not depend on how an engine places NULLs, so unfinished rows are stored as
+     * the epoch and sort last on endTime:DESC.
+     */
+    private static Timestamp toTimestampOrEpoch(String isoInstant) {
+        if (isoInstant == null) {
+            return Timestamp.from(Instant.EPOCH);
+        }
+        return Timestamp.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoInstant)));
+    }
+
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, json_data)"
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, end_time, update_time, status, parent_workflow_id, classifier, json_data)"
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (workflow_id) \n"
                         + "DO UPDATE SET correlation_id = EXCLUDED.correlation_id, workflow_type = EXCLUDED.workflow_type, "
-                        + "start_time = EXCLUDED.start_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data, "
-                        + "update_time = EXCLUDED.update_time, parent_workflow_id = EXCLUDED.parent_workflow_id "
+                        + "start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time, status = EXCLUDED.status, json_data = EXCLUDED.json_data, "
+                        + "update_time = EXCLUDED.update_time, parent_workflow_id = EXCLUDED.parent_workflow_id, "
+                        + "classifier = EXCLUDED.classifier "
                         + "WHERE EXCLUDED.update_time >= workflow_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -99,6 +112,8 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
         TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(workflow.getStartTime());
         Timestamp startTime = Timestamp.from(Instant.from(ta));
 
+        Timestamp endTime = toTimestampOrEpoch(workflow.getEndTime());
+
         int rowsUpdated =
                 queryWithTransaction(
                         INSERT_WORKFLOW_INDEX_SQL,
@@ -107,12 +122,14 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                         .addParameter(workflow.getCorrelationId())
                                         .addParameter(workflow.getWorkflowType())
                                         .addParameter(startTime)
+                                        .addParameter(endTime)
                                         .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
                                         .addParameter(
                                                 workflow.getParentWorkflowId() != null
                                                         ? workflow.getParentWorkflowId()
                                                         : "")
+                                        .addParameter(workflow.getClassifier())
                                         .addJsonParameter(workflow)
                                         .executeUpdate());
         logger.debug("Postgres index workflow rows updated: {}", rowsUpdated);
@@ -149,10 +166,10 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
     @Override
     public void indexTask(TaskSummary task) {
         String INSERT_TASK_INDEX_SQL =
-                "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, update_time, workflow_type, json_data)"
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (task_id) "
+                "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, end_time, update_time, workflow_type, json_data)"
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::JSONB) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = EXCLUDED.task_type, task_def_name = EXCLUDED.task_def_name, "
-                        + "status = EXCLUDED.status, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data "
+                        + "status = EXCLUDED.status, end_time = EXCLUDED.end_time, update_time = EXCLUDED.update_time, json_data = EXCLUDED.json_data "
                         + "WHERE EXCLUDED.update_time >= task_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -165,6 +182,8 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
         TemporalAccessor startTa = DateTimeFormatter.ISO_INSTANT.parse(task.getStartTime());
         Timestamp startTime = Timestamp.from(Instant.from(startTa));
 
+        Timestamp endTime = toTimestampOrEpoch(task.getEndTime());
+
         int rowsUpdated =
                 queryWithTransaction(
                         INSERT_TASK_INDEX_SQL,
@@ -174,6 +193,7 @@ public class PostgresIndexDAO extends PostgresBaseDAO implements IndexDAO {
                                         .addParameter(task.getTaskDefName())
                                         .addParameter(task.getStatus().toString())
                                         .addParameter(startTime)
+                                        .addParameter(endTime)
                                         .addParameter(updateTime)
                                         .addParameter(task.getWorkflowType())
                                         .addJsonParameter(task)

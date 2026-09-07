@@ -19,7 +19,7 @@ vi.mock("utils", () => ({
     PLAYGROUND: "PLAYGROUND",
     SHOW_FEEDBACK_FORM: "SHOW_FEEDBACK_FORM",
     SCHEDULER: "SCHEDULER",
-    AGENTSPAN_ENABLED: "AGENTSPAN_ENABLED",
+    CONDUCTOR_INTEGRATIONS_AI_ENABLED: "CONDUCTOR_INTEGRATIONS_AI_ENABLED",
   },
   featureFlags: {
     isEnabled: vi.fn((feature: string) => feature === "SCHEDULER"),
@@ -41,8 +41,16 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/newScheduleDef",
   },
   SCHEDULER_EXECUTION_URL: "/schedulerExecs",
+  SCHEMAS_URL: {
+    BASE: "/schemas",
+    EDIT: "/schemas/:schemaName/:version?",
+    DEF: "/schemas/schemaDef",
+  },
   AGENT_DEFINITION_URL: { BASE: "/agents" },
-  AGENT_EXECUTIONS_URL: "/agentExecutions",
+  AGENT_EXECUTIONS_URL: {
+    BASE: "/agentExecutions",
+    ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+  },
   AGENT_SECRETS_URL: "/agentSecrets",
   SKILLS_URL: { BASE: "/skills" },
   TASK_DEF_URL: { BASE: "/taskDef", NAME: "/taskDef/:name" },
@@ -56,6 +64,7 @@ vi.mock("utils/constants/route", () => ({
 }));
 
 import { getCoreSidebarItems } from "../sidebarCoreItems";
+import { mergePluginSidebarItems } from "../sidebarMenuUtils";
 import type { MenuItemType } from "../types";
 
 function findItem(items: MenuItemType[], id: string): MenuItemType | undefined {
@@ -76,6 +85,39 @@ describe("getCoreSidebarItems", () => {
 
   beforeEach(() => {
     items = getCoreSidebarItems(true);
+  });
+
+  describe("schemas item", () => {
+    it("is present in the definitionsSubMenu", () => {
+      expect(
+        findNestedItem(items, "definitionsSubMenu", "schemas"),
+      ).toBeDefined();
+    });
+
+    it("links to the schema management screen", () => {
+      const schemas = findNestedItem(items, "definitionsSubMenu", "schemas");
+      expect(schemas?.linkTo).toBe("/schemas");
+      expect(schemas?.hidden).toBe(false);
+      expect(schemas?.title).toBe("Schemas");
+    });
+
+    it("is replaced, not duplicated, by a plugin item of the same id", () => {
+      const merged = mergePluginSidebarItems(items, [
+        {
+          id: "schemas",
+          title: "Schemas",
+          icon: null,
+          linkTo: "/schemas",
+          targetMenu: "definitionsSubMenu",
+          position: 850,
+        },
+      ]);
+
+      const definitions = findItem(merged, "definitionsSubMenu");
+      const schemaItems = definitions?.items?.filter((i) => i.id === "schemas");
+      expect(schemaItems).toHaveLength(1);
+      expect(schemaItems?.[0].position).toBe(850);
+    });
   });
 
   describe("scheduler execution item", () => {

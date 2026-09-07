@@ -44,7 +44,7 @@ public class TaskResultTest {
         task.setStatus(Task.Status.CANCELED);
         taskResult = new TaskResult(task);
         validateTaskResult();
-        assertEquals(TaskResult.Status.FAILED, taskResult.getStatus());
+        assertEquals(TaskResult.Status.CANCELED, taskResult.getStatus());
     }
 
     @Test

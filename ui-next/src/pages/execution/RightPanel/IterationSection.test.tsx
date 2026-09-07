@@ -147,6 +147,57 @@ describe("IterationSection — WORKFLOW_SUMMARIZE enabled", () => {
       "Summarize",
     );
   });
+
+  it("does not render SummarizeToggle for simple tasks with multiple retries", () => {
+    const simpleTask = {
+      taskType: "SIMPLE",
+      taskId: "task-simple-1",
+      referenceTaskName: "http_task",
+      status: "COMPLETED",
+      retryCount: 2,
+      iteration: 0,
+      workflowTask: {
+        taskReferenceName: "http_task",
+        name: "http_task",
+        type: "SIMPLE",
+      },
+    };
+    const retryAttempts = [
+      {
+        retryCount: 2,
+        status: "COMPLETED",
+        taskId: "t3",
+        workflowTask: { taskReferenceName: "http_task" },
+      },
+      {
+        retryCount: 1,
+        status: "FAILED",
+        taskId: "t2",
+        workflowTask: { taskReferenceName: "http_task" },
+      },
+      {
+        retryCount: 0,
+        status: "FAILED",
+        taskId: "t1",
+        workflowTask: { taskReferenceName: "http_task" },
+      },
+    ];
+
+    render(
+      <IterationSection
+        {...baseProps}
+        selectedTask={simpleTask as any}
+        retryIterationOptions={retryAttempts as any}
+        isIteration={false}
+        parentDoWhileRef={undefined}
+      />,
+    );
+
+    expect(screen.getByTestId("inline-iterations")).not.toHaveTextContent(
+      "Summarize",
+    );
+    expect(screen.queryByTestId("do-while-iteration")).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------

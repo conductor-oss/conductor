@@ -1,0 +1,27 @@
+{
+  "name": "google_adk_order_exception_triage",
+  "description": "Invokes a deployed Google ADK-authored Conductor Agent for a non-mutating order exception recommendation.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 300,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "orderId",
+    "exception"
+  ],
+  "tasks": [
+    {
+      "name": "triage_order_exception",
+      "taskReferenceName": "triage_order_exception",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "name": "adk_order_exception_triage",
+        "prompt": "Order ${workflow.input.orderId}; exception: ${workflow.input.exception}. Recommend a disposition only."
+      }
+    }
+  ],
+  "outputParameters": {
+    "triage": "${triage_order_exception.output.output}"
+  }
+}

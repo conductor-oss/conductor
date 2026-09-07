@@ -100,11 +100,8 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
                   handleChangeInputForm("description", value)
                 }
                 value={modifiedTaskDefinition.description}
-                error={
-                  !!error?.description || !modifiedTaskDefinition.description
-                }
+                error={!!error?.description}
                 helperText={error?.description?.message}
-                required
                 autoFocus
                 placeholder="Enter description"
                 sx={{
@@ -367,7 +364,12 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
           />
         </Grid>
       </Grid>
-      <Grid container sx={{ width: "100%" }} spacing={2}>
+      <Grid
+        container
+        sx={{ width: "100%" }}
+        spacing={2}
+        id="task-schema-section"
+      >
         <Grid size={12}>
           <MuiTypography fontWeight={800} fontSize={16}>
             Schema

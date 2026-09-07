@@ -2,7 +2,7 @@ import { FunctionComponent } from "react";
 import { TaskStatus } from "types/TaskStatus";
 import { HumanTaskState as TaskState } from "types/HumanTaskTypes";
 import { getChipStatusColor } from "utils/helpers";
-import { capitalizeFirstLetter } from "utils/utils";
+import { humanizeStatus } from "utils/utils";
 import TagChip from "components/ui/TagChip";
 
 export interface StatusBadgeProps {
@@ -21,11 +21,7 @@ const StatusBadge: FunctionComponent<StatusBadgeProps> = ({
       : {
           backgroundColor: color,
         };
-  let formattedStatus = status ? status.toLowerCase() : "";
-  formattedStatus =
-    formattedStatus && formattedStatus.length > 0
-      ? capitalizeFirstLetter(formattedStatus)
-      : "";
+  const formattedStatus = humanizeStatus(status);
   return (
     <TagChip
       style={chipStyles}

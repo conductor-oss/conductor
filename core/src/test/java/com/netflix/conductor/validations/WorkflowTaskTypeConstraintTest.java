@@ -613,6 +613,47 @@ public class WorkflowTaskTypeConstraintTest {
         assertEquals(0, result.size());
     }
 
+    @Test
+    public void testSwitchJavascriptExpressionWithRuntimeBoundVariableIsAccepted() {
+        // Registration must only syntax-check the expression: inputParameters still holds
+        // unresolved ${...} placeholders at this point, so evaluating would throw a
+        // ReferenceError for runtime-bound values and reject a valid definition (issue #1311)
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("SWITCH");
+        workflowTask.setEvaluatorType("javascript");
+        // At registration $.items is the unresolved placeholder STRING, so evaluating this
+        // expression throws (filter is not a function on a string) even though it is valid at
+        // runtime when the placeholder resolves to an array
+        workflowTask.setExpression("$.items.filter(i => i > 10).length > 0 ? 'big' : 'small'");
+        workflowTask.getInputParameters().put("items", "${workflow.input.items}");
+        workflowTask.setDecisionCases(Map.of("big", List.of(createSampleWorkflowTask())));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        List<String> validationErrors = getErrorMessages(workflowTask);
+        assertTrue(
+                "expression must not be rejected: " + validationErrors,
+                validationErrors.stream()
+                        .noneMatch(e -> e.contains("Expression is not well formatted")));
+    }
+
+    @Test
+    public void testSwitchJavascriptExpressionWithSyntaxErrorIsRejected() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("SWITCH");
+        workflowTask.setEvaluatorType("javascript");
+        workflowTask.setExpression("$.inputValue > 10 ? 'big' :");
+        workflowTask.setDecisionCases(Map.of("big", List.of(createSampleWorkflowTask())));
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        List<String> validationErrors = getErrorMessages(workflowTask);
+        assertTrue(
+                "expected a syntax rejection, got: " + validationErrors,
+                validationErrors.stream()
+                        .anyMatch(e -> e.contains("Expression is not well formatted")));
+    }
+
     private List<String> getErrorMessages(WorkflowTask workflowTask) {
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         List<String> validationErrors = new ArrayList<>();

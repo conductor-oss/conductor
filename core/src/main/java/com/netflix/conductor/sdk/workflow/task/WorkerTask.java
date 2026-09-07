@@ -37,4 +37,11 @@ public @interface WorkerTask {
     // default is 1 which is good enough for most use cases
     // a number higher than 1 will have concurrent pollers doing poll and execute
     int pollerCount() default 1;
+
+    /**
+     * Extend the task lease while the worker method is running.
+     *
+     * <p>This is intended for annotated tasks that may block on a streaming response.
+     */
+    boolean leaseExtendEnabled() default false;
 }

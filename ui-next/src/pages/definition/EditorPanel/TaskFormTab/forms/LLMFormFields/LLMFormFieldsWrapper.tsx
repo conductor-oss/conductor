@@ -67,20 +67,28 @@ const LLMFormFieldsWrapper = ({
             taskWithVariables,
           );
 
-          // Auto-populate temperature if available in the prompt
+          // Auto-populate sampling params when defined on the prompt.
+          // Claude rejects temperature + top_p together — prefer temperature and clear the other.
           if (maybeAvailablePromptName.temperature != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
               maybeAvailablePromptName.temperature,
               taskWithSelectedPromptName,
             );
-          }
-
-          // Auto-populate topP if available in the prompt
-          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              null,
+              taskWithSelectedPromptName,
+            );
+          } else if (maybeAvailablePromptName.topP != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
               maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              null,
               taskWithSelectedPromptName,
             );
           }
@@ -94,6 +102,14 @@ const LLMFormFieldsWrapper = ({
             );
           }
 
+          // A known registered template is selected — Orkes' prompt-association
+          // check (checkPromptAccess) will find it, so raw-prompt bypass isn't needed.
+          taskWithSelectedPromptName = updateField(
+            `inputParameters.allowRawPrompts`,
+            false,
+            taskWithSelectedPromptName,
+          );
+
           onChange(taskWithSelectedPromptName);
         } else {
           const updatedTask = updateField(
@@ -102,7 +118,16 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          onChange(updatedTask);
+          // Free text (or OSS, which has no prompt registry at all) — without this,
+          // Orkes' checkPromptAccess terminates the workflow at runtime because the
+          // value isn't an associated prompt name.
+          const updatedTaskWithRawFlag = updateField(
+            `inputParameters.allowRawPrompts`,
+            true,
+            updatedTask,
+          );
+
+          onChange(updatedTaskWithRawFlag);
         }
       },
       selectInstructions: (
@@ -136,20 +161,28 @@ const LLMFormFieldsWrapper = ({
             taskWithVariables,
           );
 
-          // Auto-populate temperature if available in the prompt
+          // Auto-populate sampling params when defined on the prompt.
+          // Claude rejects temperature + top_p together — prefer temperature and clear the other.
           if (maybeAvailablePromptName.temperature != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
               maybeAvailablePromptName.temperature,
               taskWithSelectedPromptName,
             );
-          }
-
-          // Auto-populate topP if available in the prompt
-          if (maybeAvailablePromptName.topP != null) {
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
+              null,
+              taskWithSelectedPromptName,
+            );
+          } else if (maybeAvailablePromptName.topP != null) {
             taskWithSelectedPromptName = updateField(
               `inputParameters.${UiIntegrationsFieldType.TOP_P}`,
               maybeAvailablePromptName.topP,
+              taskWithSelectedPromptName,
+            );
+            taskWithSelectedPromptName = updateField(
+              `inputParameters.${UiIntegrationsFieldType.TEMPERATURE}`,
+              null,
               taskWithSelectedPromptName,
             );
           }
@@ -163,6 +196,14 @@ const LLMFormFieldsWrapper = ({
             );
           }
 
+          // A known registered template is selected — Orkes' prompt-association
+          // check (checkPromptAccess) will find it, so raw-prompt bypass isn't needed.
+          taskWithSelectedPromptName = updateField(
+            `inputParameters.allowRawPrompts`,
+            false,
+            taskWithSelectedPromptName,
+          );
+
           onChange(taskWithSelectedPromptName);
         } else {
           const updatedTask = updateField(
@@ -171,7 +212,17 @@ const LLMFormFieldsWrapper = ({
             event.task,
           );
 
-          onChange(updatedTask);
+          // Free text (or OSS, which has no prompt registry at all) — without this,
+          // Orkes' checkPromptAccess terminates the workflow at runtime because the
+          // value isn't an associated prompt name (ChatCompletion.getPrompt() reads
+          // instructions server-side).
+          const updatedTaskWithRawFlag = updateField(
+            `inputParameters.allowRawPrompts`,
+            true,
+            updatedTask,
+          );
+
+          onChange(updatedTaskWithRawFlag);
         }
       },
     },

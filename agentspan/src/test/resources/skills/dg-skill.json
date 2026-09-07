@@ -1,0 +1,12 @@
+{
+  "model": "anthropic/claude-sonnet-4-6",
+  "agentModels": {"gilfoyle": "openai/gpt-4o"},
+  "skillMd": "---\nname: dg-skill\ndescription: Adversarial code review.\nmetadata:\n  author: test\n---\n# DG Review\n\nDispatch gilfoyle, then dinesh. Repeat until convergence.",
+  "agentFiles": {
+    "gilfoyle": "# You Are Gilfoyle\nReview code with precision.",
+    "dinesh": "# You Are Dinesh\nDefend the code."
+  },
+  "scripts": {},
+  "resourceFiles": ["comic-template.html"],
+  "crossSkillRefs": {}
+}

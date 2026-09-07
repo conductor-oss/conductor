@@ -33,6 +33,14 @@ import static org.mockito.Mockito.*;
 /** Unit tests for StatusChangePublisher to verify configurable workflow status publishing. */
 public class StatusChangePublisherTest {
 
+    /**
+     * Notifications are published asynchronously by a background consumer thread. Under a loaded CI
+     * machine (tests run with Gradle {@code --parallel}) that thread can be slow to schedule, so we
+     * give Mockito a generous ceiling. {@code timeout()} returns as soon as the call arrives, so a
+     * large value only affects the worst case, not healthy runs.
+     */
+    private static final int NOTIFICATION_TIMEOUT_MS = 15_000;
+
     private WorkflowModel workflow;
     private RestClientManager restClientManager;
     private ExecutionDAOFacade executionDAOFacade;
@@ -64,7 +72,7 @@ public class StatusChangePublisherTest {
         TimeUnit.MILLISECONDS.sleep(100);
 
         // Verify that the workflow was enqueued (would be published)
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -100,7 +108,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -135,7 +143,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -155,7 +163,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -175,7 +183,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -194,7 +202,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -213,7 +221,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -232,7 +240,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -252,7 +260,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -283,7 +291,7 @@ public class StatusChangePublisherTest {
         publisher.onWorkflowTerminated(workflow);
 
         // Verify COMPLETED and TERMINATED are published by default
-        verify(restClientManager, timeout(1000).atLeast(2))
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeast(2))
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -313,7 +321,7 @@ public class StatusChangePublisherTest {
         publisher.onWorkflowTerminated(workflow);
 
         // Verify COMPLETED and TERMINATED are published by default
-        verify(restClientManager, timeout(1000).atLeast(2))
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeast(2))
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -351,7 +359,7 @@ public class StatusChangePublisherTest {
         TimeUnit.MILLISECONDS.sleep(50);
 
         // Verify that all three notifications were posted
-        verify(restClientManager, timeout(1000).atLeast(3))
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeast(3))
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -371,7 +379,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),
@@ -391,7 +399,7 @@ public class StatusChangePublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(NOTIFICATION_TIMEOUT_MS).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.WORKFLOW),
                         anyString(),

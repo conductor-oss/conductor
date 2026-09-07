@@ -9,7 +9,6 @@ import {
   RightPanelEvents,
   SetSelectedTaskEvent,
 } from "./types";
-import { TaskStatus } from "types/TaskStatus";
 import { fillIterationPlaceholders } from "../iterationHelpers";
 
 export const useRightPanelActor = (
@@ -62,24 +61,6 @@ export const useRightPanelActor = (
   }, [selectedTaskInStatusMap, parentDoWhileRef]);
   const maybeSiblings = selectedTaskInStatusMap?.related?.siblings || [];
 
-  const isSelectedTaskInProgressStatus = useSelector(
-    rightPanelActor,
-    (state: State<RightPanelContext>) =>
-      state.context?.selectedTask?.status &&
-      [
-        TaskStatus.PENDING,
-        TaskStatus.SCHEDULED,
-        TaskStatus.IN_PROGRESS,
-      ].includes(state?.context?.selectedTask?.status),
-  );
-  // this condition check is required as there is a backend bug which returns the previous iterations outputdata when rerunning from a task in progress status
-  const isSelectedTaskIsARetry = useSelector(
-    rightPanelActor,
-    (state: State<RightPanelContext>) =>
-      state.context?.selectedTask?.retryCount &&
-      state.context?.selectedTask?.retryCount > 0,
-  );
-
   const executionId = useSelector(
     rightPanelActor,
     (state: State<RightPanelContext>) => state.context.executionId,
@@ -114,8 +95,6 @@ export const useRightPanelActor = (
         rightPanelActor,
         (state: State<RightPanelContext>) => state?.context?.currentTab,
       ),
-      isReRunFromTaskInProgress:
-        isSelectedTaskInProgressStatus && isSelectedTaskIsARetry,
     },
     {
       handleClosePanel: () => {

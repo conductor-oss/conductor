@@ -56,6 +56,12 @@ public abstract class AbstractSchedulerAutoConfigurationSmokeTest {
         public RetryTemplate postgresRetryTemplate() {
             return new RetryTemplate();
         }
+
+        // mysql scheduler config injects by this name (server context has 3 RetryTemplates)
+        @Bean
+        public RetryTemplate mysqlRetryTemplate() {
+            return new RetryTemplate();
+        }
     }
 
     private ApplicationContextRunner baseRunner() {

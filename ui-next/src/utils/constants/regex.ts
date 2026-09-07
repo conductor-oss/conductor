@@ -6,8 +6,13 @@ export const CONTAIN_VARIABLE_SYNTAX_REGEX = /^(?=.*?[${}]{1}).*$/;
 // workflowType IN (wf_name(test), wf_name2), because the
 // end parenthesis would be interpreted as the end of the
 // IN clause.
+// `/` and `%` are additionally disallowed: although the backend accepts them,
+// a name containing either cannot be reopened from the UI. The name is carried
+// as a path segment (/workflowDef/{name} and GET /metadata/workflow/{name}), and
+// the percent-encoded `%2F` / `%25` is rejected by the server's path handling
+// (400), leaving the definition saved but unreachable.
 export const WORKFLOW_NAME_REGEX =
-  /^(?! )[.A-Za-z0-9!@#$%^&*_<>{}[\]|+=\s-]+(?<! )$/;
+  /^(?! )[.A-Za-z0-9!@#$^&*_<>{}[\]|+=\s-]+(?<! )$/;
 
 export const TASK_NAME_REGEX = /^[A-Za-z0-9_<>{}#\s-]*$/;
 

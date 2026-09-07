@@ -1,4 +1,9 @@
-export type SupportedDisplayTypes = "javascript" | "java" | "curl" | "python";
+export type SupportedDisplayTypes =
+  | "javascript"
+  | "java"
+  | "curl"
+  | "python"
+  | "cli";
 
 export type ApiSearchModalProps = {
   dialogTitle?: string;

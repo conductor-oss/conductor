@@ -1,0 +1,31 @@
+{
+  "properties": [
+    {
+      "name": "conductor.file-storage.conductor.directory",
+      "type": "java.lang.String",
+      "description": "Directory used by the Conductor filesystem backend. It must be shared by all server nodes in a multi-node deployment."
+    },
+    {
+      "name": "conductor.file-storage.conductor.base-url",
+      "type": "java.lang.String",
+      "description": "Public Conductor base URL for file transfer URLs. When unset, the origin is derived from the current request."
+    },
+    {
+      "name": "conductor.file-storage.conductor.max-size",
+      "type": "java.lang.Long",
+      "description": "Maximum number of bytes accepted by a single filesystem upload.",
+      "defaultValue": 104857600
+    },
+    {
+      "name": "conductor.file-storage.conductor.signing.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether generated Conductor content URLs include HMAC signature parameters.",
+      "defaultValue": false
+    },
+    {
+      "name": "conductor.file-storage.conductor.signing.keys",
+      "type": "java.util.List",
+      "description": "Ordered HMAC signing keys. The first key signs new URLs and all keys verify existing URLs."
+    }
+  ]
+}

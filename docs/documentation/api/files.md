@@ -1,256 +1,262 @@
----
-description: "Conductor File API — create, upload, download, and inspect file payloads. Includes single-shot and multipart presigned URL flows."
----
-
 # File API
 
-The File API manages binary file payloads associated with workflow executions. All endpoints use the base path `/api/files` and are gated by `conductor.file-storage.enabled=true` — when the feature is disabled, every endpoint returns `404`. See [File Storage](../advanced/file-storage.md) for backend setup.
+The file API creates workflow-scoped metadata records and issues upload and download URLs. The
+workflow-visible handle is `conductor://file/<file-id>`; route path variables use the bare
+`file-id`.
 
-Path variables carry the bare `fileId` (a UUID assigned at creation). Request and response bodies carry the prefixed handle as `fileHandleId` (`conductor://file/<fileId>`); pass either form back in to subsequent calls — the server normalizes them.
+All routes below are relative to the Conductor server URL.
 
-Download access is *workflow-family scoped*: callers must supply a `workflowId` that belongs to the same workflow family (self, ancestors, or descendants) as the file's owning workflow. Cross-family access returns `403 Forbidden`.
+## Handles and workflow scope
 
-## Create a File
+Every file has an owning workflow.
 
-```
+- Creating a file and every upload mutation require the exact owning `workflowId`.
+- Metadata and downloads accept a workflow in the owner's workflow family, including parent and
+  child workflows.
+- A file does not become downloadable until upload completion records it as `UPLOADED`.
+
+## Single-request upload
+
+### 1. Create a file record
+
+```http
 POST /api/files
+Content-Type: application/json
+
+{
+  "workflowId": "3a5b8c2d-1234-5678-9abc-def012345678",
+  "taskId": "optional-task-id",
+  "fileName": "report.pdf",
+  "contentType": "application/pdf"
+}
 ```
 
-Reserves a `fileId`, persists the metadata record, and returns a presigned upload URL. The file is created in `UPLOADING` status; the client must confirm completion via [Confirm Upload](#confirm-upload) once the bytes are uploaded.
+`workflowId` is required. `fileName`, `contentType`, and `taskId` are optional metadata.
 
-**Request body:**
-
-| Field | Description | Required |
-|---|---|---|
-| `workflowId` | Workflow execution that owns this file. Used for download-access scoping. | Yes |
-| `fileName` | Original file name. | No |
-| `contentType` | MIME type. | No |
-| `taskId` | Task that produced the file, if applicable. | No |
-
-```shell
-curl -X POST 'http://localhost:8080/api/files' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "workflowId": "3a5b8c2d-1234-5678-9abc-def012345678",
-    "fileName": "input.mp4",
-    "contentType": "video/mp4"
-  }'
-```
-
-**Response** `201 Created`
+The response is `201 Created` with this shape:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "fileName": "input.mp4",
-  "contentType": "video/mp4",
-  "storageType": "S3",
+  "fileHandleId": "conductor://file/<file-id>",
+  "fileName": "report.pdf",
+  "contentType": "application/pdf",
+  "storageType": "CONDUCTOR",
   "uploadStatus": "UPLOADING",
-  "uploadUrl": "https://bucket.s3.amazonaws.com/conductor/3a5b8c2d.../a1b2c3d4...?X-Amz-Signature=...",
-  "uploadUrlExpiresAt": 1700000060000,
-  "createdAt": 1700000000000
+  "uploadUrl": "<backend upload URL>",
+  "uploadUrlExpiresAt": 0,
+  "createdAt": 0
 }
 ```
 
-The client `PUT`s file bytes directly to `uploadUrl`, then calls [Confirm Upload](#confirm-upload).
+`uploadUrlExpiresAt` and `createdAt` are epoch milliseconds. The `storageType` value reflects the
+configured backend; it is `CONDUCTOR` for Conductor-managed storage.
 
----
+### 2. Upload the bytes
 
-## Get a Fresh Upload URL
+Send the bytes to `uploadUrl`. The transfer protocol depends on the backend:
 
+- `conductor`: the URL points to Conductor's raw content endpoint. See
+  [Conductor-managed raw content](#conductor-managed-raw-content).
+- `s3`, `azure-blob`, and `gcs`: the URL is a provider URL and the client transfers directly to
+  that object store.
+
+### 3. Refresh an expired upload URL
+
+```http
+GET /api/files/{workflowId}/{fileId}/upload-url
 ```
-GET /api/files/{fileId}/upload-url
-```
 
-Issues a new presigned upload URL — used to retry an upload after the original URL expired.
-
-```shell
-curl 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111/upload-url'
-```
-
-**Response** `200 OK`
+The response is `200 OK`:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "uploadUrl": "https://bucket.s3.amazonaws.com/conductor/3a5b8c2d.../a1b2c3d4...?X-Amz-Signature=...",
-  "expiresAt": 1700000060000
+  "fileHandleId": "conductor://file/<file-id>",
+  "uploadUrl": "<backend upload URL>",
+  "expiresAt": 0
 }
 ```
 
----
+`expiresAt` is epoch milliseconds.
 
-## Confirm Upload
+### 4. Confirm the upload
 
-```
-POST /api/files/{fileId}/upload-complete
-```
+After the bytes are stored, confirm the upload:
 
-Marks the upload as complete. The server probes the storage backend to verify the object exists, then transitions the record to `UPLOADED` and records the backend-reported content hash and size.
-
-```shell
-curl -X POST 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111/upload-complete'
+```http
+POST /api/files/{workflowId}/{fileId}/upload-complete
 ```
 
-**Response** `200 OK`
+The response is `200 OK`:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
+  "fileHandleId": "conductor://file/<file-id>",
   "uploadStatus": "UPLOADED",
-  "contentHash": "d41d8cd98f00b204e9800998ecf8427e"
+  "contentHash": "<backend content hash>"
 }
 ```
 
-`409 Conflict` if the file is already in `UPLOADED` status; `500 Internal Server Error` if the backend reports the object is missing.
+## Conductor-managed raw content
 
----
+When `conductor.file-storage.type=conductor`, the upload and download URL use Conductor's raw
+content routes. The request and response bodies are raw file bytes, not JSON.
 
-## Get a Download URL
+### Upload content
 
+```http
+PUT /api/files/content/{workflowId}/{fileId}
+
+<raw file bytes>
 ```
+
+The exact response is:
+
+```http
+204 No Content
+```
+
+There is no response body. The owning workflow ID is required; a different workflow cannot upload
+or overwrite the file.
+
+### Download content
+
+```http
+GET /api/files/content/{workflowId}/{fileId}
+```
+
+The exact successful response shape is:
+
+```http
+200 OK
+Content-Type: <the stored file content type>
+Content-Length: <the stored file size>
+
+<raw file bytes>
+```
+
+The controller streams the response body from storage. It sets `Content-Type` from the file
+metadata and `Content-Length` from the stored file size. The file must already be `UPLOADED`.
+
+If content URL signing is enabled, use the signed URL returned by the create, refresh, or download
+URL endpoint. The signed content URL contains `op`, `exp`, `kid`, and `sig`; do not log it.
+
+## Read metadata
+
+```http
+GET /api/files/{workflowId}/{fileId}
+```
+
+The response is `200 OK`:
+
+```json
+{
+  "fileHandleId": "conductor://file/<file-id>",
+  "fileName": "report.pdf",
+  "contentType": "application/pdf",
+  "fileSize": 0,
+  "contentHash": "<backend content hash>",
+  "storageType": "CONDUCTOR",
+  "uploadStatus": "UPLOADED",
+  "workflowId": "<owning workflow id>",
+  "taskId": "optional-task-id",
+  "createdAt": 0,
+  "updatedAt": 0
+}
+```
+
+`fileSize`, `createdAt`, and `updatedAt` are numeric values; timestamps are epoch milliseconds.
+
+## Download
+
+### 1. Get a download URL
+
+```http
 GET /api/files/{workflowId}/{fileId}/download-url
 ```
 
-Issues a presigned download URL. The caller's `workflowId` must be in the same workflow family as the file's owning workflow.
-
-| Parameter | Description |
-|---|---|
-| `workflowId` | The caller's workflow ID, used for family-scope check. |
-| `fileId` | The file to download. |
-
-```shell
-curl 'http://localhost:8080/api/files/3a5b8c2d-1234-5678-9abc-def012345678/a1b2c3d4-5678-90ab-cdef-111111111111/download-url'
-```
-
-**Response** `200 OK`
+The response is `200 OK`:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "downloadUrl": "https://bucket.s3.amazonaws.com/conductor/3a5b8c2d.../a1b2c3d4...?X-Amz-Signature=...",
-  "expiresAt": 1700000060000
+  "fileHandleId": "conductor://file/<file-id>",
+  "downloadUrl": "<backend download URL>",
+  "expiresAt": 0
 }
 ```
 
-`403 Forbidden` if the caller's workflow is not in the file's family. `400 Bad Request` if the file is not yet `UPLOADED`.
+For the `conductor` backend, `downloadUrl` is the raw `GET /api/files/content/{workflowId}/{fileId}`
+endpoint. For object-store backends, it is a provider URL.
 
----
+### 2. Download the bytes
 
-## Get File Metadata
+Issue a `GET` to `downloadUrl`. For Conductor-managed storage, the response is the raw-stream shape
+shown above. For object-store backends, follow the provider's signed-URL contract.
 
+## Multipart upload
+
+Multipart is available only for backends that implement it. S3 and Azure Blob Storage support the
+multipart routes; `conductor` and GCS do not. Do not start a multipart session for the `conductor`
+backend: Conductor-managed uploads are single-request and bounded by
+`conductor.file-storage.conductor.max-size`.
+
+### 1. Initiate
+
+```http
+POST /api/files/{workflowId}/{fileId}/multipart
 ```
-GET /api/files/{fileId}
-```
 
-Returns the file metadata record. Does not expose the server-internal storage path.
-
-```shell
-curl 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111'
-```
-
-**Response** `200 OK`
+The response is `200 OK`:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "fileName": "input.mp4",
-  "contentType": "video/mp4",
-  "contentHash": "d41d8cd98f00b204e9800998ecf8427e",
-  "storageType": "S3",
-  "uploadStatus": "UPLOADED",
-  "workflowId": "3a5b8c2d-1234-5678-9abc-def012345678",
-  "taskId": "task-uuid-1",
-  "createdAt": 1700000000000,
-  "updatedAt": 1700000005000
+  "fileHandleId": "conductor://file/<file-id>",
+  "uploadId": "<backend multipart upload id>"
 }
 ```
 
----
+### 2. Get a URL for each part
 
-## Multipart Upload
-
-Multipart is opt-in (typically for files above ~100 MB) and supported on `s3`, `azure-blob`, and `gcs` backends. The `local` backend does not support multipart.
-
-### Initiate Multipart
-
-```
-POST /api/files/{fileId}/multipart
+```http
+GET /api/files/{workflowId}/{fileId}/multipart/{uploadId}/part/{partNumber}
 ```
 
-Begins a multipart upload session. Returns a backend-specific `uploadId`. For GCS/Azure, `uploadUrl` is the resumable session URL clients upload parts to directly; for S3 it is `null` and clients fetch a per-part URL via [Get Part Upload URL](#get-part-upload-url).
-
-```shell
-curl -X POST 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111/multipart'
-```
-
-**Response** `200 OK`
+The response uses the upload URL shape:
 
 ```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "uploadId": "S3-multipart-upload-id-string",
-  "uploadUrl": null
+  "fileHandleId": "conductor://file/<file-id>",
+  "uploadUrl": "<provider part upload URL>",
+  "expiresAt": 0
 }
 ```
 
-### Get Part Upload URL
+### 3. Complete
 
-```
-GET /api/files/{fileId}/multipart/{uploadId}/part/{partNumber}
-```
+```http
+POST /api/files/{workflowId}/{fileId}/multipart/{uploadId}/complete
+Content-Type: application/json
 
-S3 only. Returns a presigned URL for uploading a single part. Part numbers start at `1`.
-
-```shell
-curl 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111/multipart/S3-multipart-upload-id-string/part/1'
-```
-
-**Response** `200 OK`
-
-```json
 {
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "uploadUrl": "https://bucket.s3.amazonaws.com/conductor/.../?partNumber=1&uploadId=...&X-Amz-Signature=...",
-  "expiresAt": 1700000060000
+  "partETags": ["<part 1 token>", "<part 2 token>"]
 }
 ```
 
-### Complete Multipart
+The response uses the upload-complete shape shown above.
 
-```
-POST /api/files/{fileId}/multipart/{uploadId}/complete
-```
+### Abort a failed session
 
-Finalizes the multipart upload and transitions the file to `UPLOADED`. The request body carries the ordered list of part ETags (or backend equivalents) from the part uploads.
-
-```shell
-curl -X POST 'http://localhost:8080/api/files/a1b2c3d4-5678-90ab-cdef-111111111111/multipart/S3-multipart-upload-id-string/complete' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "partETags": ["\"etag-of-part-1\"", "\"etag-of-part-2\"", "\"etag-of-part-3\""]
-  }'
+```http
+DELETE /api/files/{workflowId}/{fileId}/multipart/{uploadId}
 ```
 
-**Response** `200 OK`
-
-```json
-{
-  "fileHandleId": "conductor://file/a1b2c3d4-5678-90ab-cdef-111111111111",
-  "uploadStatus": "UPLOADED",
-  "contentHash": "d41d8cd98f00b204e9800998ecf8427e"
-}
-```
-
----
+The response is `204 No Content`.
 
 ## Errors
 
-| Status | Cause |
+| Status | Meaning |
 |---|---|
-| `400 Bad Request` | Missing `workflowId` on create; download requested before file is `UPLOADED`. |
-| `403 Forbidden` | Caller's `workflowId` is not in the file's workflow family. |
-| `404 Not Found` | Unknown `fileId`, or `conductor.file-storage.enabled=false`. |
-| `409 Conflict` | Confirm-upload called on a file already in `UPLOADED` status. |
-| `413 Payload Too Large` | `FileStorageException` raised by a backend (e.g., upstream size enforcement). |
-| `500 Internal Server Error` | Backend reports object missing on confirm/complete; other transient/non-transient backend errors. |
+| `400 Bad Request` | Invalid request, an upload is not complete, or multipart is unsupported by the selected backend. |
+| `403 Forbidden` | The workflow does not have the required owner or family access; a signed content URL is invalid or expired when signing is enabled. |
+| `404 Not Found` | The file ID does not exist, or file storage is not enabled. |
+| `405 Method Not Allowed` | A signed URL was used with the wrong operation, such as a download URL for a `PUT`. |
+| `413 Payload Too Large` | A Conductor-managed upload exceeds `conductor.file-storage.conductor.max-size`. |

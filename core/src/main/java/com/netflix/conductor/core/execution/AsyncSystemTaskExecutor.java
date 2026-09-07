@@ -12,13 +12,17 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -35,6 +39,7 @@ public class AsyncSystemTaskExecutor {
     private final long queueTaskMessagePostponeSecs;
     private final long systemTaskCallbackTime;
     private final WorkflowExecutor workflowExecutor;
+    private final ParametersUtils parametersUtils;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
@@ -43,7 +48,8 @@ public class AsyncSystemTaskExecutor {
             QueueDAO queueDAO,
             MetadataDAO metadataDAO,
             ConductorProperties conductorProperties,
-            WorkflowExecutor workflowExecutor) {
+            WorkflowExecutor workflowExecutor,
+            ParametersUtils parametersUtils) {
         this.executionDAOFacade = executionDAOFacade;
         this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
@@ -52,6 +58,7 @@ public class AsyncSystemTaskExecutor {
                 conductorProperties.getSystemTaskWorkerCallbackDuration().getSeconds();
         this.queueTaskMessagePostponeSecs =
                 conductorProperties.getTaskExecutionPostponeDuration().getSeconds();
+        this.parametersUtils = parametersUtils;
     }
 
     /**
@@ -146,12 +153,61 @@ public class AsyncSystemTaskExecutor {
                 task.incrementPollCount();
             }
 
-            if (task.getStatus() == TaskModel.Status.SCHEDULED) {
-                task.setStartTime(System.currentTimeMillis());
-                Monitors.recordQueueWaitTime(task.getTaskType(), task.getQueueWaitTime());
-                systemTask.start(workflow, task, workflowExecutor);
-            } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                systemTask.execute(workflow, task, workflowExecutor);
+            boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
+            if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
+                if (scheduled && hasExceededResponseTimeout(task)) {
+                    // A blocking start() never leaves SCHEDULED, so a redelivered SCHEDULED task
+                    // past responseTimeout means its run overran: time it out, don't re-run it
+                    // (#1321). IN_PROGRESS response-timeouts are
+                    // DeciderService.isResponseTimedOut's
+                    // job (it budgets responseTimeout + callbackAfterSeconds).
+                    task.setStatus(TaskModel.Status.TIMED_OUT);
+                    task.setReasonForIncompletion(
+                            "Task did not complete within its responseTimeout of "
+                                    + effectiveResponseTimeoutSeconds(task)
+                                    + "s");
+                    LOGGER.info(
+                            "Timing out {}/{}: no response within responseTimeout",
+                            task.getTaskType(),
+                            task.getTaskId());
+                } else {
+                    // Keep the message present but invisible for the run so repair can't re-queue
+                    // this running task (#1321). If the reserve fails, the message stays leased at
+                    // the queue's default unack timeout and would redeliver and run in parallel, so
+                    // don't start it: leave the still-SCHEDULED message to redeliver and retry.
+                    if (!reserveInflightMessage(queueName, task)) {
+                        LOGGER.warn(
+                                "Could not reserve in-flight message for {}/{}; skipping execution, will retry on redelivery",
+                                task.getTaskType(),
+                                task.getTaskId());
+                        return;
+                    }
+                    Map<String, Object> literalInput = task.getInputData();
+                    // Secrets substitution only sees task.getInputData(); when input has been
+                    // offloaded to external payload storage, getInputData()/setInputData() operate
+                    // on a different field and this substitution silently becomes a no-op.
+                    if (task.getExternalInputPayloadStoragePath() != null) {
+                        LOGGER.warn(
+                                "Task {} has externalized input; ${{workflow.secrets.*}} references are not resolved for external payload storage",
+                                task.getTaskId());
+                    }
+                    task.setInputData(parametersUtils.substituteSecrets(literalInput));
+                    try {
+                        if (scheduled) {
+                            task.setStartTime(System.currentTimeMillis());
+                            // Persist startTime before invoking so a redelivery can detect an
+                            // overrun (status left unchanged for start()'s SCHEDULED branch).
+                            executionDAOFacade.updateTask(task);
+                            Monitors.recordQueueWaitTime(
+                                    task.getTaskType(), task.getQueueWaitTime());
+                            systemTask.start(workflow, task, workflowExecutor);
+                        } else {
+                            systemTask.execute(workflow, task, workflowExecutor);
+                        }
+                    } finally {
+                        task.setInputData(literalInput);
+                    }
+                }
             }
 
             // Update message in Task queue based on Task status
@@ -164,17 +220,16 @@ public class AsyncSystemTaskExecutor {
                 shouldRemoveTaskFromQueue = true;
                 hasTaskExecutionCompleted = true;
             } else {
-                task.setCallbackAfterSeconds(systemTaskCallbackTime);
-                systemTask
-                        .getEvaluationOffset(task, systemTaskCallbackTime)
-                        .ifPresentOrElse(
-                                task::setCallbackAfterSeconds,
-                                () -> task.setCallbackAfterSeconds(systemTaskCallbackTime));
+                long callbackAfterSeconds =
+                        systemTask
+                                .getEvaluationOffset(task, systemTaskCallbackTime)
+                                .orElse(systemTaskCallbackTime);
+                task.setCallbackAfterSeconds(callbackAfterSeconds);
                 queueDAO.postpone(
                         queueName,
                         task.getTaskId(),
                         task.getWorkflowPriority(),
-                        task.getCallbackAfterSeconds());
+                        callbackAfterSeconds);
                 LOGGER.debug("{} postponed in queue: {}", task, queueName);
             }
 
@@ -197,6 +252,51 @@ public class AsyncSystemTaskExecutor {
                 workflowExecutor.decide(workflowId);
             }
         }
+    }
+
+    /**
+     * Extend the popped message's unack lease so it stays reserved (unacked, not redelivered) for
+     * the duration of the invocation (issue #1321), using the task's {@code responseTimeoutSeconds}
+     * or the default {@link TaskDef#ONE_HOUR} when unset. Returns {@code false} if the reserve
+     * failed, in which case the caller must not start the task: the message is still leased at only
+     * the queue's default unack timeout and would otherwise redeliver and run a second time in
+     * parallel.
+     */
+    private boolean reserveInflightMessage(String queueName, TaskModel task) {
+        try {
+            queueDAO.setUnackTimeout(
+                    queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
+            return true;
+        } catch (Exception e) {
+            LOGGER.error(
+                    "Error reserving in-flight message for task: {} in queue: {}",
+                    task.getTaskId(),
+                    queueName,
+                    e);
+            return false;
+        }
+    }
+
+    /** The task's {@code responseTimeoutSeconds}, or the default {@link TaskDef#ONE_HOUR}. */
+    private long effectiveResponseTimeoutSeconds(TaskModel task) {
+        return task.getResponseTimeoutSeconds() > 0
+                ? task.getResponseTimeoutSeconds()
+                : TaskDef.ONE_HOUR;
+    }
+
+    /**
+     * True if the task has already started (startTime set) and has not been updated within its
+     * responseTimeout — i.e. a redelivered message belongs to a run that overran its allowed time
+     * and should be timed out rather than re-executed. Only meaningful for a SCHEDULED task (a
+     * blocking start() that never returned); the caller gates on that. Requires updateTime > 0: a
+     * just-scheduled task whose mapper set startTime (e.g. JOIN) has updateTime == 0 and must not
+     * be treated as overrun.
+     */
+    private boolean hasExceededResponseTimeout(TaskModel task) {
+        return task.getStartTime() > 0
+                && task.getUpdateTime() > 0
+                && (System.currentTimeMillis() - task.getUpdateTime())
+                        >= effectiveResponseTimeoutSeconds(task) * 1000L;
     }
 
     private void postponeQuietly(String queueName, TaskModel task) {

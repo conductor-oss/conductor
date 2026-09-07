@@ -1106,7 +1106,11 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public WorkflowSchedule getSchedule(String name) {
-        return schedulerDAO.findScheduleByName(name);
+        WorkflowScheduleModel schedule = schedulerDAO.findScheduleByName(name);
+        if (schedule == null) {
+            throw new NotFoundException("Schedule '%s' not found".formatted(name));
+        }
+        return schedule;
     }
 
     public List<WorkflowScheduleModel> getAllSchedules(String workflowName) {

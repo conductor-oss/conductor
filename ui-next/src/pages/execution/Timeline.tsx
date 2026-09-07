@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Timeline from "react-vis-timeline";
 import { colors } from "theme/tokens/variables";
 import { ExecutionTask } from "types/Execution";
-import { formatDate } from "utils";
+import { formatDate, formatToDateTimeString } from "utils";
 import NoAnimRangeSlider from "./NoAnimRangeSlider";
 import { processTasksToGroupsAndItems } from "./timelineUtils";
 
@@ -18,10 +18,6 @@ type ExecutionStatusMap = Record<string, { related?: unknown }>;
 
 const EMPTY_STATUS_MAP: ExecutionStatusMap = {};
 
-interface VisMoment {
-  format: (formatStr: string) => string;
-}
-
 interface TimelineComponentProps {
   tasks: ExecutionTask[];
   onClick: (task: { ref: string; taskId: string }) => void;
@@ -30,7 +26,7 @@ interface TimelineComponentProps {
 }
 
 function valuetext(value: number): string {
-  return formatDate(value, "dd-MM-yyyy hh:mm:ss SSS");
+  return formatDate(value, "yyyy-MM-dd HH:mm:ss SSS");
 }
 
 export default function TimelineComponent({
@@ -175,8 +171,7 @@ export default function TimelineComponent({
             format: {
               // vis-timeline passes a moment-like object at runtime despite the Date type
               majorLabels: function (date: Date) {
-                const d = date as unknown as VisMoment;
-                return d.format("DD-MM-YYYY") + " " + d.format("hh:mm::ss");
+                return formatToDateTimeString(Number(date));
               },
             },
           }}

@@ -54,6 +54,9 @@ import {
   ChunkTextTaskDef,
   ListFilesTaskDef,
   ParseDocumentTaskDef,
+  AgentTaskDef,
+  GetAgentCardTaskDef,
+  CancelAgentTaskDef,
 } from "types";
 import { HTTP_TEST_ENDPOINT } from "utils/constants/common";
 import { BaseTaskMenuItem } from "./state/types";
@@ -591,6 +594,23 @@ export const generateAITask = <T extends LLMTaskTypes>(
   return taskGen as GenerateTaskFn<T>;
 };
 
+/**
+ * Minimal generator for AI task types that don't need a bespoke typed scaffold — produces a task
+ * with a generated name/reference, the given type and empty inputParameters.
+ */
+export const generateGenericAITask = (type: TaskType) => {
+  const taskGen = ({
+    overrides = {},
+    nameGenerator = generateNameAndTaskReference,
+  } = DEFAULT_ARGS) => ({
+    ...nameGenerator(type.toLowerCase()),
+    inputParameters: {},
+    type,
+    ...overrides,
+  });
+  return taskGen as GenerateTaskFn<any>;
+};
+
 export const generateUpdateSecretTask: GenerateTaskFn<UpdateSecretTaskDef> = ({
   overrides = {},
   nameGenerator = generateNameAndTaskReference,
@@ -726,6 +746,48 @@ export const generateListFilesTask: GenerateTaskFn<ListFilesTaskDef> = ({
   ...overrides,
 });
 
+export const generateAgentTask: GenerateTaskFn<AgentTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): AgentTaskDef => ({
+  ...nameGenerator("agent"),
+  type: TaskType.AGENT,
+  inputParameters: {
+    agentType: "a2a",
+    agentUrl: "",
+    text: "",
+    pollIntervalSeconds: 5,
+  },
+  ...overrides,
+});
+
+export const generateGetAgentCardTask: GenerateTaskFn<GetAgentCardTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): GetAgentCardTaskDef => ({
+  ...nameGenerator("get_agent_card"),
+  type: TaskType.GET_AGENT_CARD,
+  inputParameters: {
+    agentType: "a2a",
+    agentUrl: "",
+  },
+  ...overrides,
+});
+
+export const generateCancelAgentTask: GenerateTaskFn<CancelAgentTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): CancelAgentTaskDef => ({
+  ...nameGenerator("cancel_agent"),
+  type: TaskType.CANCEL_AGENT,
+  inputParameters: {
+    agentType: "a2a",
+    agentUrl: "",
+    taskId: "",
+  },
+  ...overrides,
+});
+
 export const taskGeneratorMap = {
   [TaskType.WAIT]: generateWaitTask,
   [TaskType.HTTP]: generateHTTPTask,
@@ -776,6 +838,18 @@ export const taskGeneratorMap = {
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,
+  [TaskType.AGENT]: generateAgentTask,
+  [TaskType.GET_AGENT_CARD]: generateGetAgentCardTask,
+  [TaskType.CANCEL_AGENT]: generateCancelAgentTask,
+  [TaskType.LLM_SEARCH_EMBEDDINGS]: generateGenericAITask(
+    TaskType.LLM_SEARCH_EMBEDDINGS,
+  ),
+  [TaskType.LIST_MCP_TOOLS]: generateGenericAITask(TaskType.LIST_MCP_TOOLS),
+  [TaskType.CALL_MCP_TOOL]: generateGenericAITask(TaskType.CALL_MCP_TOOL),
+  [TaskType.GENERATE_IMAGE]: generateGenericAITask(TaskType.GENERATE_IMAGE),
+  [TaskType.GENERATE_AUDIO]: generateGenericAITask(TaskType.GENERATE_AUDIO),
+  [TaskType.GENERATE_VIDEO]: generateGenericAITask(TaskType.GENERATE_VIDEO),
+  [TaskType.GENERATE_PDF]: generateGenericAITask(TaskType.GENERATE_PDF),
 } satisfies Record<FormTaskType, GenerateTaskFn<any>>;
 
 export const uniqueTaskIdGenerator = (sr: BaseTaskMenuItem) => {

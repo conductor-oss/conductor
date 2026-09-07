@@ -150,6 +150,29 @@ class SchedulerServiceTest {
     }
 
     @Test
+    @DisplayName("getSchedule returns the schedule when it exists")
+    void getScheduleReturnsExistingSchedule() {
+        WorkflowSchedule ws = new WorkflowSchedule();
+        ws.setName("existing");
+        ws.setCronExpression("* * * * * ?");
+        schedulerDAO.updateSchedule(WorkflowScheduleModel.from(ws));
+
+        SchedulerService service = createService(Mockito.mock(SchedulerTimeProvider.class));
+
+        assertEquals("existing", service.getSchedule("existing").getName());
+    }
+
+    @Test
+    @DisplayName("getSchedule throws NotFoundException when the schedule does not exist")
+    void getScheduleThrowsNotFoundWhenMissing() {
+        SchedulerService service = createService(Mockito.mock(SchedulerTimeProvider.class));
+
+        NotFoundException ex =
+                assertThrows(NotFoundException.class, () -> service.getSchedule("does-not-exist"));
+        assertEquals("Schedule 'does-not-exist' not found", ex.getMessage());
+    }
+
+    @Test
     @DisplayName("getEffectiveCronSchedules wraps legacy single cronExpression")
     void effectiveCronSchedulesWrapsLegacyCronExpression() {
         WorkflowSchedule ws = new WorkflowSchedule();

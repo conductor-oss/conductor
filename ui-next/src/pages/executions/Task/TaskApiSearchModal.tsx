@@ -3,6 +3,7 @@ import { curlHeaders } from "shared/CodeModal/curlHeader";
 import { toCodeT, useParamsToSdk } from "shared/CodeModal/hook";
 import { SupportedDisplayTypes } from "shared/CodeModal/types";
 import { BuildQueryOutput } from "../ApiSearchModalIntegration";
+import { buildTaskSearchCli } from "../cliSearch";
 
 interface TaskApiSearchModalProps {
   buildQueryOutput: BuildQueryOutput;
@@ -39,6 +40,7 @@ const buildCurlCode = (
 
 const toCodeMap: toCodeT<BuildQueryOutput> = {
   curl: buildCurlCode,
+  cli: buildTaskSearchCli,
 };
 
 export const TaskApiSearchModal = ({

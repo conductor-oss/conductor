@@ -1,0 +1,19 @@
+{
+  "model": "anthropic/claude-sonnet-4-6",
+  "agentModels": {},
+  "skillMd": "---\nname: brainstorming\ndescription: Brainstorming skill with cross-skill references.\n---\n# Brainstorming\n\nUse writing-plans to organize ideas.",
+  "agentFiles": {},
+  "scripts": {},
+  "resourceFiles": [],
+  "crossSkillRefs": {
+    "writing-plans": {
+      "model": "openai/gpt-4o",
+      "agentModels": {},
+      "skillMd": "---\nname: writing-plans\ndescription: Create structured writing plans.\n---\n# Writing Plans\n\nYou help create structured writing plans.",
+      "agentFiles": {},
+      "scripts": {},
+      "resourceFiles": [],
+      "crossSkillRefs": {}
+    }
+  }
+}

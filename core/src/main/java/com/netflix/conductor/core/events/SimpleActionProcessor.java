@@ -16,12 +16,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
+import com.netflix.conductor.common.metadata.events.EventHandler.StartAgent;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -89,6 +92,8 @@ public class SimpleActionProcessor implements ActionProcessor {
                         TaskModel.Status.FAILED,
                         event,
                         messageId);
+            case start_agent:
+                return startAgent(action, jsonObject, event, messageId);
             default:
                 break;
         }
@@ -250,6 +255,81 @@ public class SimpleActionProcessor implements ActionProcessor {
             Monitors.recordEventActionError(action.getAction().name(), params.getName(), event);
             LOGGER.error(
                     "Error starting workflow: {}, version: {}, for event: {} for message: {}",
+                    params.getName(),
+                    params.getVersion(),
+                    event,
+                    messageId,
+                    e);
+            output.put("error", e.getMessage());
+            throw e;
+        }
+        return output;
+    }
+
+    private Map<String, Object> startAgent(
+            Action action, Object payload, String event, String messageId) {
+        StartAgent params = action.getStart_agent();
+        Map<String, Object> output = new HashMap<>();
+        try {
+            Map<String, Object> paramsMap = new HashMap<>();
+            paramsMap.put("name", params.getName());
+            Optional.ofNullable(params.getPrompt())
+                    .ifPresent(value -> paramsMap.put("prompt", value));
+            Optional.ofNullable(params.getSessionId())
+                    .ifPresent(value -> paramsMap.put("sessionId", value));
+            Optional.ofNullable(params.getIdempotencyKey())
+                    .ifPresent(value -> paramsMap.put("idempotencyKey", value));
+            if (params.getContext() != null) {
+                paramsMap.put("context", params.getContext());
+            }
+            if (params.getMedia() != null) {
+                paramsMap.put("media", params.getMedia());
+            }
+            Map<String, Object> replaced = parametersUtils.replace(paramsMap, payload);
+
+            AgentStartRequest request = new AgentStartRequest();
+            request.setName(
+                    Optional.ofNullable(replaced.get("name"))
+                            .map(Object::toString)
+                            .orElse(params.getName()));
+            request.setVersion(params.getVersion());
+            request.setPrompt(
+                    Optional.ofNullable(replaced.get("prompt")).map(Object::toString).orElse(null));
+            request.setSessionId(
+                    Optional.ofNullable(replaced.get("sessionId"))
+                            .map(Object::toString)
+                            .orElse(null));
+            request.setIdempotencyKey(
+                    Optional.ofNullable(replaced.get("idempotencyKey"))
+                            .map(Object::toString)
+                            .orElse(null));
+            if (replaced.get("context") instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> resolvedContext = (Map<String, Object>) replaced.get("context");
+                request.setContext(resolvedContext);
+            }
+            if (replaced.get("media") instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<String> resolvedMedia = (List<String>) replaced.get("media");
+                request.setMedia(resolvedMedia);
+            }
+
+            AgentStartResponse response = workflowExecutor.startAgentExecution(request);
+
+            output.put("executionId", response.getExecutionId());
+            output.put("agentName", response.getAgentName());
+            LOGGER.debug(
+                    "Started agent: {}/{}/{} for event: {} for message:{}",
+                    params.getName(),
+                    params.getVersion(),
+                    response.getExecutionId(),
+                    event,
+                    messageId);
+
+        } catch (RuntimeException e) {
+            Monitors.recordEventActionError(action.getAction().name(), params.getName(), event);
+            LOGGER.error(
+                    "Error starting agent: {}, version: {}, for event: {} for message: {}",
                     params.getName(),
                     params.getVersion(),
                     event,

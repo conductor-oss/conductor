@@ -74,7 +74,14 @@ export const updateWorkflowDefinitionService = async (
         }),
       workflowExecutionStatus,
     );
-    const justTheIds = nodes.map(_property("id"));
+    // Compare reference names trimmed of surrounding whitespace so a
+    // leading/trailing space (e.g. " wait_ref" vs "wait_ref") is still caught
+    // as a duplicate. Without trimming the two are distinct strings, so the
+    // whitespace variant silently bypasses duplicate detection while looking
+    // identical in the field and breaking ${ref.output} references and JOINs.
+    const justTheIds = nodes
+      .map(_property("id"))
+      .map((id) => (typeof id === "string" ? id.trim() : id));
     const duplicates = _filter(justTheIds, (value, index, iteratee) =>
       _includes(iteratee, value, index + 1),
     );

@@ -52,6 +52,7 @@ public class FileModelConverterTest {
         model.setFileId("abc");
         model.setFileName("doc.pdf");
         model.setContentType("application/pdf");
+        model.setStorageContentSize(4096);
         model.setStorageContentHash("hash123");
         model.setStorageType(StorageType.S3);
         model.setUploadStatus(FileUploadStatus.UPLOADED);
@@ -64,6 +65,7 @@ public class FileModelConverterTest {
 
         assertEquals(FileIdToFileHandleIdConverter.PREFIX + "abc", handle.getFileHandleId());
         assertEquals("doc.pdf", handle.getFileName());
+        assertEquals(4096, handle.getFileSize());
         assertEquals("hash123", handle.getContentHash());
         assertEquals(StorageType.S3, handle.getStorageType());
         assertEquals("wf-1", handle.getWorkflowId());

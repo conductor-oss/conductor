@@ -14,6 +14,9 @@ export function dowhileHasAllIterationsInOutput(
   outputData: Record<string, unknown>,
 ): boolean {
   const max = outputData?.iteration as number;
+  if (typeof max !== "number" || !Number.isFinite(max)) {
+    return false;
+  }
   const iterationKeyCount = Object.keys(outputData).filter((k) =>
     Number.isInteger(Number(k)),
   ).length;
@@ -38,13 +41,22 @@ export function dowhileHasSummarizedIterations(
 }
 
 export function showIterationChip(nodeData: NodeTaskData): boolean {
-  const keepLastN = nodeData?.parentLoop?.inputData?.keepLastN;
-  return (
-    !keepLastN &&
-    dowhileHasAllIterationsInOutput(nodeData?.parentLoop?.outputData ?? {}) &&
-    typeof nodeData?.attempts === "number" &&
-    nodeData.attempts > 1
-  );
+  if (typeof nodeData?.attempts !== "number" || nodeData.attempts <= 1) {
+    return false;
+  }
+
+  // Standalone retries (no DO_WHILE parent) should still show the attempt badge.
+  // DO_WHILE summarization / keepLastN checks only apply when a parent loop exists.
+  const parentLoop = nodeData.parentLoop;
+  if (!parentLoop) {
+    return true;
+  }
+
+  if (parentLoop.inputData?.keepLastN) {
+    return false;
+  }
+
+  return dowhileHasAllIterationsInOutput(parentLoop.outputData ?? {});
 }
 
 // Helper function to check if a string is a valid URI

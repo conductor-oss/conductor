@@ -1,6 +1,6 @@
 # Conductor AI Module
 
-The Conductor AI module provides built-in integration with 12 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
+The Conductor AI module provides built-in integration with 13 popular LLM providers and vector databases, enabling AI-powered workflows through simple task definitions -- including chat, embeddings, image generation, audio synthesis, video generation, document generation, and tool calling.
 
 ## Table of Contents
 - [Supported Providers](#supported-providers)
@@ -18,10 +18,10 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 
 | Provider | Chat | Embeddings | Image Gen | Audio Gen | Video Gen | Models |
 |----------|:----:|:----------:|:---------:|:---------:|:---------:|--------|
-| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, DALL-E-3, Sora-2, text-embedding-3-small/large |
+| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, gpt-image-1, Sora-2, text-embedding-3-small/large |
 | **Anthropic** | ✅ | ❌ | ❌ | ❌ | ❌ | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku, Claude 4 Sonnet |
 | **Google Gemini** | ✅ | ✅ | ✅ | ✅ | ✅ | Gemini 2.5 Flash/Pro, Veo 2/3, Imagen, text-embedding-004 |
-| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, DALL-E-3 |
+| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, gpt-image-1 |
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
 | **Cohere** | ✅ | ✅ | ❌ | ❌ | ❌ | Command, Command-R, Command-R+, embed-english-v3.0 |
@@ -29,6 +29,7 @@ The Conductor AI module provides built-in integration with 12 popular LLM provid
 | **Perplexity AI** | ✅ | ❌ | ❌ | ❌ | ❌ | Sonar, Sonar Pro |
 | **HuggingFace** | ✅ | ❌ | ❌ | ❌ | ❌ | Llama 3.x, Mistral 7B, Zephyr |
 | **Ollama** | ✅ | ✅ | ❌ | ❌ | ❌ | Llama 3.x, Mistral, Phi, nomic-embed-text (local deployment) |
+| **LiteLLM** | ✅ | ❌ | ❌ | ❌ | ❌ | 100+ models via [LiteLLM proxy](https://docs.litellm.ai/) (OpenAI, Anthropic, Azure, Bedrock, Vertex, etc.) |
 | **Stability AI** | ❌ | ❌ | ✅ | ❌ | ❌ | SD3.5 Large/Medium, Stable Image Core, Stable Image Ultra |
 
 ### Vector Database Providers
@@ -153,7 +154,7 @@ Generate images from text prompts.
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
 | `llmProvider` | String | ✅ | Provider name (e.g., `openai`) |
-| `model` | String | ✅ | Image model (e.g., `dall-e-3`) |
+| `model` | String | ✅ | Image model (e.g., `gpt-image-1`) |
 | `prompt` | String | ✅ | Image description |
 | `width` | Integer | ❌ | Image width in pixels |
 | `height` | Integer | ❌ | Image height in pixels |
@@ -230,7 +231,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 **Provider-Specific Notes:**
 
-- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
+- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1536x1024`, `1024x1792`. Returns video + webp thumbnail.
 - **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
@@ -590,6 +591,34 @@ conductor.ai.perplexity.base-url=https://api.perplexity.ai
 | `api-key` | ✅ | - | Perplexity API key |
 | `base-url` | ❌ | `https://api.perplexity.ai` | API base URL |
 
+#### LiteLLM (AI Gateway)
+
+[LiteLLM](https://docs.litellm.ai/) is an AI gateway/proxy that provides a unified OpenAI-compatible interface to 100+ LLM providers including OpenAI, Anthropic, Azure, AWS Bedrock, Google Vertex AI, Mistral, Cohere, and more. Run the LiteLLM proxy and point Conductor at it to access any supported model through a single configuration.
+
+```properties
+conductor.ai.litellm.base-url=${LITELLM_BASE_URL}
+conductor.ai.litellm.api-key=${LITELLM_API_KEY}
+```
+
+| Property | Required | Default | Description |
+|----------|:--------:|---------|-------------|
+| `base-url` | ✅ | - | LiteLLM proxy URL (e.g., `http://litellm-proxy:4000`, `https://my-gateway.example.com`) |
+| `api-key` | ❌ | - | LiteLLM proxy API key (master key or virtual key). Required only if your proxy has auth enabled |
+
+**Usage:**
+
+Set `llmProvider` to `litellm` in your workflow tasks and use any model supported by your LiteLLM proxy configuration:
+
+```json
+{
+  "llmProvider": "litellm",
+  "model": "gpt-4o",
+  "messages": [...]
+}
+```
+
+> **Note**: Set `drop_params: true` in your LiteLLM proxy config (`litellm_settings`) so provider-unsupported parameters (e.g. `frequency_penalty` for Anthropic) are silently dropped instead of causing 400 errors.
+
 #### HuggingFace
 
 ```properties
@@ -644,6 +673,8 @@ The AI module reads from standard environment variables automatically. Set the e
 | Grok / xAI | `XAI_API_KEY` | API key from [x.ai](https://x.ai/) |
 | Perplexity | `PERPLEXITY_API_KEY` | API key from [perplexity.ai](https://www.perplexity.ai/) |
 | HuggingFace | `HUGGINGFACE_API_KEY` | Token from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
+| LiteLLM | `LITELLM_BASE_URL` | LiteLLM proxy URL (required - e.g., `http://litellm-proxy:4000`) |
+| LiteLLM | `LITELLM_API_KEY` | LiteLLM proxy API key (optional - only if proxy has auth enabled) |
 | Stability AI | `STABILITY_API_KEY` | API key from [platform.stability.ai](https://platform.stability.ai/) |
 | Azure OpenAI | `AZURE_OPENAI_API_KEY` | API key from Azure portal |
 | Azure OpenAI | `AZURE_OPENAI_ENDPOINT` | Endpoint URL (e.g., `https://your-resource.openai.azure.com`) |
@@ -863,7 +894,7 @@ docker run -d \
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A futuristic cityscape at sunset",
         "width": 1024,
         "height": 1024,
@@ -1406,9 +1437,9 @@ A workflow that generates an image and a video in sequence:
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water",
-        "width": 1792,
+        "width": 1536,
         "height": 1024,
         "n": 1
       }

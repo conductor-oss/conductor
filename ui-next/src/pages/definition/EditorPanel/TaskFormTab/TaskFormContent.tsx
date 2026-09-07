@@ -31,6 +31,26 @@ import {
   UnknownTaskForm,
   WaitTaskForm,
   YieldTaskForm,
+  // AI / LLM
+  LLMChatCompleteTaskForm,
+  LLMTextCompleteTaskForm,
+  LLMGenerateEmbeddingsTaskForm,
+  LLMGetEmbeddingsTaskForm,
+  LLMStoreEmbeddingsTaskForm,
+  LLMSearchIndexTaskForm,
+  LLMSearchEmbeddingsTaskForm,
+  LLMIndexTextTaskForm,
+  LLMIndexDocumentTaskForm,
+  GetDocumentTaskForm,
+  AgentTaskForm,
+  GetAgentCardTaskForm,
+  CancelAgentTaskForm,
+  ListMcpToolsTaskForm,
+  CallMcpToolTaskForm,
+  GenerateImageTaskForm,
+  GenerateAudioTaskForm,
+  GenerateVideoTaskForm,
+  GeneratePdfTaskForm,
 } from "pages/definition/EditorPanel/TaskFormTab/forms";
 import TaskFormHeader from "pages/definition/EditorPanel/TaskFormTab/forms/TaskFormHeader/TaskFormHeader";
 import { FormMachineActionTypes } from "pages/definition/EditorPanel/TaskFormTab/state";
@@ -139,6 +159,52 @@ const getTaskForm = (type: string) => {
       return SimpleTaskForm;
     case TaskType.JDBC:
       return JDBCTaskForm;
+
+    // AI / LLM
+    case TaskType.LLM_CHAT_COMPLETE:
+      return LLMChatCompleteTaskForm;
+    case TaskType.LLM_TEXT_COMPLETE:
+      return LLMTextCompleteTaskForm;
+    case TaskType.LLM_GENERATE_EMBEDDINGS:
+      return LLMGenerateEmbeddingsTaskForm;
+    case TaskType.LLM_GET_EMBEDDINGS:
+      return LLMGetEmbeddingsTaskForm;
+    case TaskType.LLM_STORE_EMBEDDINGS:
+      return LLMStoreEmbeddingsTaskForm;
+    case TaskType.LLM_SEARCH_INDEX:
+      return LLMSearchIndexTaskForm;
+    case TaskType.LLM_SEARCH_EMBEDDINGS:
+      return LLMSearchEmbeddingsTaskForm;
+    case TaskType.LLM_INDEX_TEXT:
+      return LLMIndexTextTaskForm;
+    case TaskType.LLM_INDEX_DOCUMENT:
+      return LLMIndexDocumentTaskForm;
+    case TaskType.GET_DOCUMENT:
+      return GetDocumentTaskForm;
+
+    // Agent / A2A
+    case TaskType.AGENT:
+      return AgentTaskForm;
+    case TaskType.GET_AGENT_CARD:
+      return GetAgentCardTaskForm;
+    case TaskType.CANCEL_AGENT:
+      return CancelAgentTaskForm;
+
+    // MCP
+    case TaskType.LIST_MCP_TOOLS:
+      return ListMcpToolsTaskForm;
+    case TaskType.CALL_MCP_TOOL:
+      return CallMcpToolTaskForm;
+
+    // Media / document generation
+    case TaskType.GENERATE_IMAGE:
+      return GenerateImageTaskForm;
+    case TaskType.GENERATE_AUDIO:
+      return GenerateAudioTaskForm;
+    case TaskType.GENERATE_VIDEO:
+      return GenerateVideoTaskForm;
+    case TaskType.GENERATE_PDF:
+      return GeneratePdfTaskForm;
 
     // Unknown task type - show generic JSON form
     default:

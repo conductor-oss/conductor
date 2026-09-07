@@ -3,7 +3,7 @@ import { Chip } from "@mui/material";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskStatus } from "types/TaskStatus";
 import { getChipStatusColor } from "utils/helpers";
-import { capitalizeFirstLetter } from "utils/utils";
+import { humanizeStatus } from "utils/utils";
 
 export const renderStatusTagChip = (value: string[], getTagProps: any) =>
   value.map((val: string | { label: string }, index) => {
@@ -16,7 +16,7 @@ export const renderStatusTagChip = (value: string[], getTagProps: any) =>
     return (
       <Chip
         key={key}
-        label={capitalizeFirstLetter(renderableLabel)}
+        label={humanizeStatus(renderableLabel)}
         {...otherTagProps}
         sx={{
           marginTop: "1px",

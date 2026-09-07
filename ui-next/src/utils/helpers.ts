@@ -28,6 +28,14 @@ export function isFailedTask(status: TaskStatus) {
  * @param {array} data: data of table
  * @returns {string}
  */
+/**
+ * Formats a result count with a correctly singularized noun, e.g.
+ * "1 result" / "3 results".
+ */
+export function pluralizeResults(count: number): string {
+  return `${count} ${count === 1 ? "result" : "results"}`;
+}
+
 export function createTableTitle({
   filteredData = [],
   data = [],
@@ -35,11 +43,10 @@ export function createTableTitle({
   filteredData: any[];
   data: any[];
 }): string {
-  return filteredData.length === data.length
-    ? `${filteredData.length} results`
-    : `${filteredData.length} results (${
-        data.length - filteredData.length
-      } not shown)`;
+  const count = filteredData.length;
+  return count === data.length
+    ? pluralizeResults(count)
+    : `${pluralizeResults(count)} (${data.length - count} not shown)`;
 }
 
 export function juxt<T extends readonly unknown[]>(

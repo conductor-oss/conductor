@@ -5,7 +5,7 @@ End-to-end tests for conductor-oss covering workflow execution, task types, cont
 ## Prerequisites
 
 - Docker and Docker Compose
-- Java 17+
+- Java 21+
 - Gradle (use the `./gradlew` wrapper at the repo root)
 
 ## Quick Start
@@ -78,6 +78,18 @@ RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 \
   ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.control.DoWhileTests.testDoWhileSetVariableFix"
 ```
 
+### Run the server-backed agent lifecycle suite
+
+```bash
+RUN_E2E=true SERVER_ROOT_URI=http://localhost:8080 \
+  ./gradlew :conductor-e2e:test --tests "io.conductor.e2e.task.AgentTaskTests"
+```
+
+This deterministic suite needs no LLM credentials. It covers basic and nested agent execution,
+measured callback/poll intervals, manually completed long-running work, multi-turn human input,
+concurrent calls, parent and explicit `CANCEL_AGENT` cancellation, child cancellation, wrapper
+deadlines, agent workflow timeouts, internal failures, and missing agents.
+
 ### Exclude a test class
 
 ```bash
@@ -100,7 +112,7 @@ Tests run with `maxParallelForks = 4` by default. Reduce if the server is under-
 | Package | What it covers |
 |---------|----------------|
 | `control` | DO_WHILE, SWITCH, SUB_WORKFLOW, DYNAMIC_FORK |
-| `task` | WAIT, HTTP, concurrency limit, task timeout, backoff |
+| `task` | AGENT lifecycle, WAIT, HTTP, concurrency limit, task timeout, backoff |
 | `workflow` | Retry, restart, rerun, search, priority, failure workflows |
 | `processing` | GraalJS inline tasks, SET_VARIABLE, JSON_JQ |
 | `event` | Event handlers |
@@ -108,7 +120,7 @@ Tests run with `maxParallelForks = 4` by default. Reduce if the server is under-
 
 ## Disabled Tests
 
-17 tests are `@Disabled` due to conductor-oss behavioural differences or infrastructure constraints. All other skips during `./gradlew build` (without `RUN_E2E=true`) are simply the suite waiting for a server — those tests are not broken.
+18 tests are `@Disabled` due to conductor-oss behavioural differences or infrastructure constraints. All other skips during `./gradlew build` (without `RUN_E2E=true`) are simply the suite waiting for a server — those tests are not broken.
 
 ### Rerun behaviour (conductor-oss does not support rerun from non-terminal or complex task states)
 

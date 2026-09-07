@@ -21,3 +21,4 @@ export * from "./TaskDefinition";
 export * from "./Prompts";
 export * from "./TaskExecution";
 export * from "./EnvVariables";
+export * from "./AgentTaskMetadata";

@@ -205,10 +205,17 @@ export const workflowDefinitionMachine = createMachine<
             actions: ["updateWf"],
             target: "fetchForInputSchema",
           },
-          onError: {
-            actions: ["processErrorFetching"],
-            target: "errorFetchingWorkflow",
-          },
+          onError: [
+            {
+              cond: "isWorkflowNotFound",
+              actions: ["processErrorFetching"],
+              target: "notFound",
+            },
+            {
+              actions: ["processErrorFetching"],
+              target: "errorFetchingWorkflow",
+            },
+          ],
         },
       },
       fetchForInputSchema: {
@@ -860,11 +867,15 @@ export const workflowDefinitionMachine = createMachine<
                     {
                       cond: "isSaveAndRunRequest",
                       target: ".saveRunRequest",
-                      actions: ["changeToCodeTab"],
+                      actions: ["changeToCodeTab", "validateWorkflow"],
                     },
                     {
                       target: ".saveRequest",
-                      actions: ["changeToCodeTab", "gtagEventLogger"],
+                      actions: [
+                        "changeToCodeTab",
+                        "validateWorkflow",
+                        "gtagEventLogger",
+                      ],
                     },
                   ],
                   [DefinitionMachineEventTypes.HANDLE_SAVE_AND_RUN]: {
@@ -1292,7 +1303,13 @@ export const workflowDefinitionMachine = createMachine<
         on: {
           [DefinitionMachineEventTypes.MESSAGE_RESET_EVT]: {
             actions: ["resetMessage"],
-            target: "backToList",
+          },
+        },
+      },
+      notFound: {
+        on: {
+          [DefinitionMachineEventTypes.MESSAGE_RESET_EVT]: {
+            actions: ["resetMessage"],
           },
         },
       },
