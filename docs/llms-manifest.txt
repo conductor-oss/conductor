@@ -19,6 +19,8 @@ devguide/how-tos/Workflows/searching-workflows.md
 devguide/how-tos/Workflows/debugging-workflows.md
 devguide/architecture/tasklifecycle.md
 devguide/how-tos/Workflows/versioning-workflows.md
+devguide/how-tos/schema-validation.md
+devguide/how-tos/schema-registry.md
 devguide/how-tos/Workers/scaling-workers.md
 devguide/architecture/index.md
 devguide/cookbook/index.md
