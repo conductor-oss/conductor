@@ -100,20 +100,15 @@ export const SubWorkflowOperatorForm = ({
     { handleSelectWorkflowName },
   ] = useStartSubWfNameVersionMachine(startSubWfNameVersionActor);
 
+  // A blank version is valid: it opens the latest, so only the name matters.
   const isOpenButtonDisabled = useMemo(
     () =>
       !(
         task?.subWorkflowParam?.name &&
         options?.includes(task?.subWorkflowParam?.name) &&
-        task?.subWorkflowParam?.version &&
         !isFetching
       ),
-    [
-      task?.subWorkflowParam?.name,
-      options,
-      task?.subWorkflowParam?.version,
-      isFetching,
-    ],
+    [task?.subWorkflowParam?.name, options, isFetching],
   );
 
   const isPriorityError =
@@ -151,7 +146,20 @@ export const SubWorkflowOperatorForm = ({
                     }
                   }}
                   onInputChange={(val) => {
-                    onChange(updateField("subWorkflowParam.name", val, task));
+                    const updated = updateField(
+                      "subWorkflowParam.name",
+                      val,
+                      task,
+                    );
+                    if (!val?.trim()) {
+                      // A version belongs to a name; kept, it would apply to
+                      // whichever workflow is chosen next.
+                      const { version: _cleared, ...subWorkflowParam } =
+                        updated.subWorkflowParam ?? {};
+                      onChange({ ...updated, subWorkflowParam });
+                      return;
+                    }
+                    onChange(updated);
                   }}
                   value={task.subWorkflowParam?.name}
                   otherOptions={options}
@@ -172,13 +180,17 @@ export const SubWorkflowOperatorForm = ({
                     // Convert the value to an integer if it's not already
                     const version =
                       typeof val === "string" ? parseInt(val, 10) : val;
-
+                    // Clearing drops the key: an explicit null would pin the
+                    // version, where an absent one lets the backend resolve
+                    // the latest.
+                    const { version: _cleared, ...subWorkflowParam } =
+                      task.subWorkflowParam ?? {};
                     const taskJson = {
                       ...task,
-                      subWorkflowParam: {
-                        ...task.subWorkflowParam,
-                        version,
-                      },
+                      subWorkflowParam:
+                        version == null || Number.isNaN(version)
+                          ? subWorkflowParam
+                          : { ...subWorkflowParam, version },
                     };
                     updateInputParametersCommon(
                       taskJson,
@@ -202,10 +214,16 @@ export const SubWorkflowOperatorForm = ({
                   disabled={isOpenButtonDisabled}
                   sx={{ fontSize: "12px" }}
                   onClick={() => {
+                    // Omitting the segment resolves the latest.
+                    const version = task?.subWorkflowParam?.version;
+                    const versionSegment =
+                      version == null || String(version).trim() === ""
+                        ? ""
+                        : `/${encodeURIComponent(String(version))}`;
                     window.open(
                       `${WORKFLOW_DEFINITION_URL.BASE}/${encodeURIComponent(
                         task?.subWorkflowParam?.name ?? "",
-                      )}`,
+                      )}${versionSegment}`,
                     );
                   }}
                   startIcon={
