@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Conductor LLM fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "scenario", "streams"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "scenario": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$"},
+    "streams": {
+      "type": "object",
+      "propertyNames": {"type": "string", "pattern": "\\S"},
+      "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/turn"}}
+    }
+  },
+  "$defs": {
+    "turn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["request", "response"],
+      "properties": {
+        "request": {"$ref": "#/$defs/request"},
+        "response": {"$ref": "#/$defs/response"}
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["messages", "tools", "jsonOutput", "outputSchema"],
+      "properties": {
+        "messages": {"type": "array", "items": {"$ref": "#/$defs/message"}},
+        "tools": {"type": "array", "items": {"$ref": "#/$defs/tool"}},
+        "jsonOutput": {"type": "boolean"},
+        "outputSchema": {"type": ["object", "null"]}
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "inputSchema"],
+      "properties": {
+        "name": {"type": "string", "pattern": "\\S"},
+        "description": {"type": ["string", "null"]},
+        "inputSchema": {"type": "object"}
+      }
+    },
+    "message": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "text", "toolCalls", "toolResults"],
+      "properties": {
+        "role": {"enum": ["system", "user", "assistant", "tool"]},
+        "text": {"type": ["string", "null"]},
+        "toolCalls": {"type": "array", "items": {"$ref": "#/$defs/call"}},
+        "toolResults": {"type": "array", "items": {"$ref": "#/$defs/result"}}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"role": {"not": {"const": "assistant"}}}},
+          "then": {"properties": {"toolCalls": {"maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"role": {"not": {"const": "tool"}}}},
+          "then": {"properties": {"toolResults": {"maxItems": 0}}}
+        }
+      ]
+    },
+    "call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "name", "arguments"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "^call_(0|[1-9][0-9]*)$"},
+        "name": {"type": "string", "pattern": "\\S"},
+        "arguments": {"type": "object"}
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "name", "value"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "^call_(0|[1-9][0-9]*)$"},
+        "name": {"type": "string", "pattern": "\\S"},
+        "value": {}
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completions"],
+      "properties": {
+        "completions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["message", "finishReason"],
+            "properties": {
+              "message": {
+                "allOf": [{"$ref": "#/$defs/message"}, {"properties": {"role": {"const": "assistant"}}}]
+              },
+              "finishReason": {"enum": ["STOP", "TOOL_CALLS", "MAX_TOKENS", "CONTENT_FILTER"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}
