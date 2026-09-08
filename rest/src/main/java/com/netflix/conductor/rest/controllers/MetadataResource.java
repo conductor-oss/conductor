@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.exception.ConflictException;
@@ -133,6 +134,25 @@ public class MetadataResource {
     @GetMapping("/workflow/latest-versions")
     public List<WorkflowDef> getAllWorkflowsWithLatestVersions() {
         return metadataService.getWorkflowDefsLatestVersions();
+    }
+
+    @Operation(
+            summary =
+                    "Returns a lightweight list projection (latest version per workflow, no task blueprints), optionally filtered by classifier")
+    @GetMapping("/workflow/list")
+    public List<WorkflowDefListItem> getWorkflowListItems(
+            @RequestParam(value = "classifier", required = false) String classifier) {
+        List<WorkflowDefListItem> all = metadataService.getWorkflowDefListItems();
+        // Optional classifier filter mirroring getAll: "workflow" matches untagged (plain)
+        // defs; any other value matches the derived tag literally. Uses the classifier
+        // precomputed on each item rather than recomputing it here.
+        if (classifier == null || classifier.isBlank()) {
+            return all;
+        }
+        String wanted = classifier.trim();
+        return all.stream()
+                .filter(item -> wanted.equalsIgnoreCase(item.getClassifier()))
+                .toList();
     }
 
     @DeleteMapping("/workflow/{name}/{version}")
