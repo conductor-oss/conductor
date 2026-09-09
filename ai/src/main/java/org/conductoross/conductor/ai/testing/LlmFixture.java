@@ -13,9 +13,7 @@
 package org.conductoross.conductor.ai.testing;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -23,8 +21,11 @@ import org.conductoross.conductor.ai.model.FinishReason;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Portable LLM turns. Runtime IDs, provider configuration, and usage are deliberately absent. */
-public record LlmFixture(int schemaVersion, String scenario, Map<String, List<Turn>> streams) {
+/**
+ * Portable request/response pairs. Runtime IDs, provider configuration, and usage are deliberately
+ * absent.
+ */
+public record LlmFixture(int schemaVersion, String scenario, List<Entry> entries) {
     public static final int SCHEMA_VERSION = 1;
 
     public LlmFixture {
@@ -35,19 +36,11 @@ public record LlmFixture(int schemaVersion, String scenario, Map<String, List<Tu
         if (StringUtils.isBlank(scenario) || !scenario.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}")) {
             throw new IllegalArgumentException("Invalid LLM fixture scenario name");
         }
-        var copy = new TreeMap<String, List<Turn>>();
-        streams.forEach(
-                (name, turns) -> {
-                    if (StringUtils.isBlank(name)) {
-                        throw new IllegalArgumentException("Fixture stream name must not be blank");
-                    }
-                    copy.put(name, List.copyOf(turns));
-                });
-        streams = java.util.Collections.unmodifiableMap(copy);
+        entries = List.copyOf(entries);
     }
 
-    public record Turn(Request request, Response response) {
-        public Turn {
+    public record Entry(Request request, Response response) {
+        public Entry {
             Objects.requireNonNull(request, "request");
             Objects.requireNonNull(response, "response");
         }

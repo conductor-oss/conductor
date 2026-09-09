@@ -19,7 +19,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -41,7 +40,7 @@ class LlmFixtureFilesTest {
     @Test
     void fixtureJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         var shared = new ObjectMapperProvider().getObjectMapper();
-        var fixture = new LlmFixture(1, "mapper_isolation", Map.of());
+        var fixture = new LlmFixture(1, "mapper_isolation", List.of());
         var path = LlmFixtureFiles.write(directory, fixture, false);
         try (var source = Files.newInputStream(path)) {
             assertEquals(fixture, LlmFixtureFiles.read(source));
@@ -56,7 +55,7 @@ class LlmFixtureFilesTest {
 
     @Test
     void writesAndReadsFixtureWithoutExposingTemporaryFiles() throws Exception {
-        var fixture = new LlmFixture(1, "blocked_before_llm", Map.of("agent", List.of()));
+        var fixture = new LlmFixture(1, "blocked_before_llm", List.of());
         Path target = LlmFixtureFiles.write(directory, fixture, false);
         try (var source = Files.newInputStream(target)) {
             assertEquals(fixture, LlmFixtureFiles.read(source));
@@ -68,8 +67,8 @@ class LlmFixtureFilesTest {
 
     @Test
     void preservesExistingFixtureUnlessRefreshIsExplicit() throws Exception {
-        var old = new LlmFixture(1, "scenario", Map.of("original", List.of()));
-        var replacement = new LlmFixture(1, "scenario", Map.of("replacement", List.of()));
+        var old = new LlmFixture(1, "scenario", List.of());
+        var replacement = new LlmFixture(1, "scenario", List.of(entry()));
         Path target = LlmFixtureFiles.write(directory, old, false);
         assertThrows(
                 FileAlreadyExistsException.class,
@@ -85,7 +84,7 @@ class LlmFixtureFilesTest {
 
     @Test
     void concurrentPublishersCannotOverwriteEachOther() throws Exception {
-        var fixture = new LlmFixture(1, "scenario", Map.of());
+        var fixture = new LlmFixture(1, "scenario", List.of());
         Callable<Boolean> write =
                 () -> {
                     try {
@@ -106,12 +105,12 @@ class LlmFixtureFilesTest {
 
     @Test
     void rejectsUnknownFieldsMissingFieldsDuplicateKeysAndTrailingDocuments() {
-        String valid = "{\"schemaVersion\":1,\"scenario\":\"weather\",\"streams\":{}}";
+        String valid = "{\"schemaVersion\":1,\"scenario\":\"weather\",\"entries\":[]}";
         for (String invalid :
                 List.of(
-                        valid.replace("\"streams\":{}", "\"streams\":{},\"secret\":\"value\""),
+                        valid.replace("\"entries\":[]", "\"entries\":[],\"secret\":\"value\""),
                         valid.replace(
-                                "\"streams\":{}", "\"streams\":{},\"scenario\":\"duplicate\""),
+                                "\"entries\":[]", "\"entries\":[],\"scenario\":\"duplicate\""),
                         valid.replace("\"schemaVersion\":1,", ""),
                         valid.replace("\"schemaVersion\":1", "\"schemaVersion\":2"),
                         valid + " {}")) {
@@ -122,5 +121,18 @@ class LlmFixtureFilesTest {
                                     new ByteArrayInputStream(
                                             invalid.getBytes(StandardCharsets.UTF_8))));
         }
+    }
+
+    private static LlmFixture.Entry entry() {
+        var normalizer = new LlmFixtureNormalizer();
+        var request = normalizer.normalizeRequest(new Prompt("hello"), new ChatCompletion());
+        var message = new LlmFixture.Message("assistant", "hello", List.of(), List.of());
+        var response =
+                new LlmFixture.Response(
+                        List.of(
+                                new LlmFixture.Completion(
+                                        message,
+                                        org.conductoross.conductor.ai.model.FinishReason.STOP)));
+        return new LlmFixture.Entry(request, response);
     }
 }

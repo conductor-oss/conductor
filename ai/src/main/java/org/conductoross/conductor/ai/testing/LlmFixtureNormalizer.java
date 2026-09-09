@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
  * Normalizes only declared transport fields, never arbitrary user payload keys or prompt text.
- * Create one instance per conversation stream; retain it across turns to preserve call references.
+ * Create one instance per request/response pair to normalize IDs from its full history.
  */
 public final class LlmFixtureNormalizer {
     private static final ObjectMapper MAPPER =
@@ -51,13 +51,6 @@ public final class LlmFixtureNormalizer {
     private record CallIdentity(String reference, String name) {}
 
     public LlmFixtureNormalizer() {}
-
-    /** Work on a copy so a failed match or provider call cannot advance the stream's ID mapping. */
-    public LlmFixtureNormalizer copy() {
-        var copy = new LlmFixtureNormalizer();
-        copy.callIdentities.putAll(callIdentities);
-        return copy;
-    }
 
     public LlmFixture.Request normalizeRequest(Prompt prompt, ChatCompletion input) {
         return normalizeRequest(prompt, options(input));
@@ -138,7 +131,7 @@ public final class LlmFixtureNormalizer {
                 String id = idPrefix + "_" + call.reference();
                 if (!call.reference().equals(reference(id, call.name()))) {
                     throw new IllegalArgumentException(
-                            "Recorded tool-call reference is out of sequence");
+                            "Recorded tool-call reference does not match request history");
                 }
                 calls.add(
                         new AssistantMessage.ToolCall(

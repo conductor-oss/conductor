@@ -64,15 +64,12 @@ class LlmFixtureSessionTest {
         var recorded =
                 runHelper(
                         recording,
-                        context("record", 0),
                         input("real", "model"),
                         prompt -> textResponse("answer", providerReason));
         var replay = LlmFixtureSession.replaying(recording.fixture());
-        var replayed =
-                runHelper(replay, context("replay", 0), input("mockLLM", "finish_reason"), null);
+        var replayed = runHelper(replay, input("mockLLM", "finish_reason"), null);
         assertEquals(expected, recorded.getFinishReason());
         assertEquals(recorded.getFinishReason(), replayed.getFinishReason());
-        replay.verifyComplete();
     }
 
     @Test
@@ -82,14 +79,12 @@ class LlmFixtureSessionTest {
         var properties = new HashMap<String, Object>(Map.of("type", "string"));
         input.setOutputSchema(
                 SchemaDef.builder().type(SchemaDef.Type.JSON).data(properties).build());
-        var model =
-                recording.modelFor(
-                        context("record", 0), input, prompt -> textResponse("ok", "stop"));
+        var model = recording.modelFor(input, prompt -> textResponse("ok", "stop"));
         input.setJsonOutput(true);
         properties.put("type", "number");
         input.setWebSearch(true);
         model.call(new Prompt("hello"));
-        var request = recording.fixture().streams().get("agent").getFirst().request();
+        var request = recording.fixture().entries().getFirst().request();
         assertFalse(request.jsonOutput());
         assertEquals("string", request.outputSchema().path("data").path("type").textValue());
     }
@@ -113,23 +108,16 @@ class LlmFixtureSessionTest {
                 };
         var recording = LlmFixtureSession.recording("weather");
         assertEquals(
-                defaults,
-                recording
-                        .modelFor(context("a", 0), input("real", "model"), provider)
-                        .getDefaultOptions());
-        var replay = LlmFixtureSession.replaying(oneTurn());
-        runHelper(replay, context("a", 0), input("mockLLM", "weather"), provider);
-        replay.verifyComplete();
+                defaults, recording.modelFor(input("real", "model"), provider).getDefaultOptions());
+        var replay = LlmFixtureSession.replaying(oneEntry());
+        runHelper(replay, input("mockLLM", "weather"), provider);
     }
 
     @Test
     void recordsRealHelperCallsAndReplaysToolsThroughNormalResponseProcessing() throws Exception {
         var recording = LlmFixtureSession.recording("weather_tool_call");
         var input = input("provider-a", "real-model");
-        var firstContext = context("record-task-1", 0);
-        var first =
-                runHelper(
-                        recording, firstContext, input, prompt -> toolResponse("provider-call-99"));
+        var first = runHelper(recording, input, prompt -> toolResponse("provider-call-99"));
         assertTrue(first.hasToolCalls());
         assertEquals("get_weather", first.getToolCalls().getFirst().getName());
 
@@ -138,7 +126,6 @@ class LlmFixtureSessionTest {
         var next =
                 runHelper(
                         recording,
-                        context("record-task-2", 0),
                         nextInput,
                         prompt -> textResponse("Sunny in Lisbon, 21C.", "end_turn"));
         assertEquals("Sunny in Lisbon, 21C.", next.getResult());
@@ -157,12 +144,10 @@ class LlmFixtureSessionTest {
         }
 
         var replay = LlmFixtureSession.replaying(fixture);
-        var replayFirst =
-                runHelper(
-                        replay,
-                        context("replay-task-1", 0),
-                        input("mockLLM", "weather_tool_call"),
-                        null);
+        var followupOnly = input("mockLLM", "weather_tool_call");
+        addHistory(followupOnly, "unrelated-runtime-id");
+        assertEquals(next.getResult(), runHelper(replay, followupOnly, null).getResult());
+        var replayFirst = runHelper(replay, input("mockLLM", "weather_tool_call"), null);
         String replayId = replayFirst.getToolCalls().getFirst().getTaskReferenceName();
         assertNotEquals("provider-call-99", replayId);
         assertEquals(
@@ -170,54 +155,38 @@ class LlmFixtureSessionTest {
                 replayFirst.getToolCalls().getFirst().getInputParameters());
         var replayInput = input("mockLLM", "weather_tool_call");
         addHistory(replayInput, replayId);
-        var replayNext = runHelper(replay, context("replay-task-2", 0), replayInput, null);
+        var replayNext = runHelper(replay, replayInput, null);
         assertEquals(next.getResult(), replayNext.getResult());
         assertEquals("STOP", replayNext.getFinishReason());
         assertEquals(0, replayNext.getTokenUsed());
-        replay.verifyComplete();
     }
 
     @Test
-    void mismatchReportsLocationAndDoesNotConsumeTurn() {
-        var replay = LlmFixtureSession.replaying(oneTurn());
+    void unmatchedRequestFailsWithoutAffectingLaterMatches() {
+        var replay = LlmFixtureSession.replaying(oneEntry());
         var wrong = input("mockLLM", "weather");
         wrong.getMessages().getFirst().setMessage("secret changed prompt");
-        var error =
-                assertThrows(
-                        NonRetryableException.class,
-                        () -> runHelper(replay, context("task", 0), wrong, null));
-        assertTrue(error.getMessage().contains("request/messages/1/text"));
+        var error = assertThrows(NonRetryableException.class, () -> runHelper(replay, wrong, null));
+        assertTrue(error.getMessage().contains("No matching request"));
         assertFalse(error.getMessage().contains("secret changed prompt"));
-        assertThrows(NonRetryableException.class, replay::verifyComplete);
-        runHelper(replay, context("task", 0), input("mockLLM", "weather"), null);
-        assertEquals(1, replay.fixture().streams().get("agent").size());
-        assertThrows(NonRetryableException.class, replay::verifyComplete);
-        assertThrows(
-                NonRetryableException.class,
-                () -> runHelper(replay, context("extra", 0), input("mockLLM", "weather"), null));
-        assertThrows(NonRetryableException.class, replay::verifyComplete);
+        assertEquals("ok", runHelper(replay, input("mockLLM", "weather"), null).getResult());
+        assertEquals("ok", runHelper(replay, input("mockLLM", "weather"), null).getResult());
     }
 
     @Test
     void toolSchemaAndToolResultChangesFailReplay() {
         var recording = LlmFixtureSession.recording("weather");
         var result =
-                runHelper(
-                        recording,
-                        context("a", 0),
-                        input("real", "model"),
-                        prompt -> toolResponse("call-id"));
+                runHelper(recording, input("real", "model"), prompt -> toolResponse("call-id"));
         var followup = input("real", "model");
         addHistory(followup, result.getToolCalls().getFirst().getTaskReferenceName());
-        runHelper(recording, context("b", 0), followup, prompt -> textResponse("done", "stop"));
+        runHelper(recording, followup, prompt -> textResponse("done", "stop"));
 
         var replay = LlmFixtureSession.replaying(recording.fixture());
         var wrongSchema = input("mockLLM", "weather");
         wrongSchema.getTools().getFirst().setDescription("different description");
-        assertThrows(
-                NonRetryableException.class,
-                () -> runHelper(replay, context("a", 0), wrongSchema, null));
-        var first = runHelper(replay, context("a", 0), input("mockLLM", "weather"), null);
+        assertThrows(NonRetryableException.class, () -> runHelper(replay, wrongSchema, null));
+        var first = runHelper(replay, input("mockLLM", "weather"), null);
         var wrongResult = input("mockLLM", "weather");
         addHistory(wrongResult, first.getToolCalls().getFirst().getTaskReferenceName());
         wrongResult
@@ -226,102 +195,91 @@ class LlmFixtureSessionTest {
                 .getToolCalls()
                 .getFirst()
                 .setOutput(Map.of("temp_c", -10));
-        assertThrows(
-                NonRetryableException.class,
-                () -> runHelper(replay, context("b", 0), wrongResult, null));
+        assertThrows(NonRetryableException.class, () -> runHelper(replay, wrongResult, null));
     }
 
     @Test
-    void duplicateDeliveriesAreIdempotentButRetryAttemptsConsumeTheirOwnTurn() throws Exception {
+    void replayMatchesRequestsInAnyOrderAndCanRepeatThem() {
+        var recording = LlmFixtureSession.recording("weather");
+        var first = input("real", "model");
+        var second = input("real", "model");
+        second.getMessages().getFirst().setMessage("Weather in Paris?");
+        runHelper(recording, first, prompt -> textResponse("Lisbon", "stop"));
+        runHelper(recording, second, prompt -> textResponse("Paris", "stop"));
+        var fixture = recording.fixture();
+        var replay = LlmFixtureSession.replaying(fixture);
+        for (int i = 0; i < 2; i++) {
+            var replayInput = input("mockLLM", "weather");
+            replayInput.getMessages().getFirst().setMessage("Weather in Paris?");
+            assertEquals("Paris", runHelper(replay, replayInput, null).getResult());
+        }
+        assertEquals("Lisbon", runHelper(replay, input("mockLLM", "weather"), null).getResult());
+        assertEquals(fixture, replay.fixture());
+    }
+
+    @Test
+    void conflictingResponsesForTheSameRequestAreRejected() {
+        var recording = LlmFixtureSession.recording("weather");
+        runHelper(recording, input("real", "model"), prompt -> textResponse("one", "stop"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        runHelper(
+                                recording,
+                                input("real", "model"),
+                                prompt -> textResponse("two", "stop")));
+        var entry = recording.fixture().entries().getFirst();
+        var otherResponse =
+                new LlmFixtureNormalizer().normalizeResponse(textResponse("two", "stop"));
+        var ambiguous =
+                new LlmFixture(
+                        1,
+                        "weather",
+                        List.of(entry, new LlmFixture.Entry(entry.request(), otherResponse)));
+        assertThrows(IllegalArgumentException.class, () -> LlmFixtureSession.replaying(ambiguous));
+    }
+
+    @Test
+    void oneReplaySupportsConcurrentRepeatedRequests() throws Exception {
+        var fixture = oneEntry();
+        var replay = LlmFixtureSession.replaying(fixture);
+        try (var pool = Executors.newFixedThreadPool(4)) {
+            var jobs = new ArrayList<Callable<Object>>();
+            for (int i = 0; i < 20; i++) {
+                jobs.add(() -> runHelper(replay, input("mockLLM", "weather"), null).getResult());
+            }
+            for (var future : pool.invokeAll(jobs)) assertEquals("ok", future.get());
+        }
+        assertEquals(fixture, replay.fixture());
+    }
+
+    @Test
+    void recordingDoesNotSerializeOrDeduplicateProviderCalls() throws Exception {
+        var recording = LlmFixtureSession.recording("parallel");
+        var barrier = new java.util.concurrent.CyclicBarrier(2);
         var calls = new AtomicInteger();
-        var recording = LlmFixtureSession.recording("retry");
         ChatModel provider =
                 prompt -> {
                     calls.incrementAndGet();
-                    return textResponse("ok", "stop");
-                };
-        try (var pool = Executors.newFixedThreadPool(8)) {
-            var jobs = new ArrayList<Callable<Object>>();
-            for (int i = 0; i < 20; i++) {
-                jobs.add(
-                        () ->
-                                runHelper(
-                                        recording,
-                                        context("same-task", 0),
-                                        input("real", "model"),
-                                        provider));
-            }
-            for (var future : pool.invokeAll(jobs)) assertNotNull(future.get());
-        }
-        assertEquals(1, calls.get());
-        runHelper(recording, context("same-task", 1), input("real", "model"), provider);
-        assertEquals(2, calls.get());
-        assertEquals(2, recording.fixture().streams().get("agent").size());
-    }
-
-    @Test
-    void executionsUsingTheSameFixtureAreIndependent() throws Exception {
-        var fixture = oneTurn();
-        try (var pool = Executors.newFixedThreadPool(4)) {
-            var jobs = new ArrayList<Callable<Object>>();
-            for (int i = 0; i < 12; i++) {
-                jobs.add(
-                        () -> {
-                            var replay = LlmFixtureSession.replaying(fixture);
-                            runHelper(
-                                    replay, context("task", 0), input("mockLLM", "weather"), null);
-                            replay.verifyComplete();
-                            return replay.fixture();
-                        });
-            }
-            for (var future : pool.invokeAll(jobs)) assertEquals(fixture, future.get());
-        }
-    }
-
-    @Test
-    void independentStreamsCanInvokeProvidersConcurrently() throws Exception {
-        var recording = LlmFixtureSession.recording("parallel");
-        var barrier = new java.util.concurrent.CyclicBarrier(2);
-        ChatModel provider =
-                prompt -> {
                     try {
                         barrier.await(5, java.util.concurrent.TimeUnit.SECONDS);
                     } catch (Exception e) {
-                        throw new IllegalStateException("Streams blocked each other", e);
+                        throw new IllegalStateException("Provider calls blocked each other", e);
                     }
-                    return textResponse("ok", "stop");
+                    return toolResponse(java.util.UUID.randomUUID().toString());
                 };
         try (var pool = Executors.newFixedThreadPool(2)) {
-            var jobs =
-                    List.<Callable<Object>>of(
-                            () ->
-                                    runHelper(
-                                            recording,
-                                            new LlmCallContext("wf", "a", 0, "left"),
-                                            input("real", "model"),
-                                            provider),
-                            () ->
-                                    runHelper(
-                                            recording,
-                                            new LlmCallContext("wf", "b", 0, "right"),
-                                            input("real", "model"),
-                                            provider));
-            for (var future : pool.invokeAll(jobs)) assertNotNull(future.get());
+            Callable<Object> call = () -> runHelper(recording, input("real", "model"), provider);
+            for (var future : pool.invokeAll(List.of(call, call))) assertNotNull(future.get());
         }
-        assertEquals(2, recording.fixture().streams().size());
+        assertEquals(2, calls.get());
+        assertEquals(1, recording.fixture().entries().size());
         var replay = LlmFixtureSession.replaying(recording.fixture());
-        runHelper(
-                replay,
-                new LlmCallContext("replay", "b", 0, "right"),
-                input("mockLLM", "parallel"),
-                null);
-        assertThrows(NonRetryableException.class, replay::verifyComplete);
-        runHelper(
-                replay,
-                new LlmCallContext("replay", "a", 0, "left"),
-                input("mockLLM", "parallel"),
-                null);
-        replay.verifyComplete();
+        var first = runHelper(replay, input("mockLLM", "parallel"), null);
+        var second = runHelper(replay, input("mockLLM", "parallel"), null);
+        assertNotEquals(
+                first.getToolCalls().getFirst().getTaskReferenceName(),
+                second.getToolCalls().getFirst().getTaskReferenceName());
     }
 
     @Test
@@ -331,18 +289,12 @@ class LlmFixtureSessionTest {
         input.setJsonOutput(true);
         assertThrows(
                 RuntimeException.class,
-                () ->
-                        runHelper(
-                                recording,
-                                context("a", 0),
-                                input,
-                                prompt -> textResponse("not json", "stop")));
+                () -> runHelper(recording, input, prompt -> textResponse("not json", "stop")));
         assertEquals(
                 "not json",
                 recording
                         .fixture()
-                        .streams()
-                        .get("agent")
+                        .entries()
                         .getFirst()
                         .response()
                         .completions()
@@ -352,26 +304,22 @@ class LlmFixtureSessionTest {
         var replay = LlmFixtureSession.replaying(recording.fixture());
         var replayInput = input("mockLLM", "invalid_json");
         replayInput.setJsonOutput(true);
-        assertThrows(
-                RuntimeException.class,
-                () -> runHelper(replay, context("b", 0), replayInput, null));
-        replay.verifyComplete();
+        assertThrows(RuntimeException.class, () -> runHelper(replay, replayInput, null));
     }
 
     @Test
-    void failedProviderCallDoesNotPublishATurn() {
+    void failedProviderCallDoesNotPublishAnEntry() {
         var recording = LlmFixtureSession.recording("failure");
         assertThrows(
                 IllegalStateException.class,
                 () ->
                         runHelper(
                                 recording,
-                                context("a", 0),
                                 input("real", "model"),
                                 prompt -> {
                                     throw new IllegalStateException("provider failed");
                                 }));
-        assertTrue(recording.fixture().streams().get("agent").isEmpty());
+        assertTrue(recording.fixture().entries().isEmpty());
     }
 
     @Test
@@ -381,9 +329,7 @@ class LlmFixtureSessionTest {
                 IllegalArgumentException.class,
                 () ->
                         recording.modelFor(
-                                context("a", 0),
-                                input("mockLLM", "weather"),
-                                p -> textResponse("ok", "stop")));
+                                input("mockLLM", "weather"), p -> textResponse("ok", "stop")));
         var input = input("real", "model");
         input.setPreviousResponseId("provider-response");
         var calls = new AtomicInteger();
@@ -392,7 +338,6 @@ class LlmFixtureSessionTest {
                 () ->
                         runHelper(
                                 recording,
-                                context("a", 0),
                                 input,
                                 p -> {
                                     calls.incrementAndGet();
@@ -403,23 +348,15 @@ class LlmFixtureSessionTest {
 
     @Test
     void rejectsUnknownVersionAndUnsafeScenarioNames() {
-        assertThrows(IllegalArgumentException.class, () -> new LlmFixture(2, "weather", Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new LlmFixture(2, "weather", List.of()));
         assertThrows(
                 IllegalArgumentException.class, () -> LlmFixtureSession.recording("../weather"));
     }
 
-    private LlmFixture oneTurn() {
+    private LlmFixture oneEntry() {
         var recording = LlmFixtureSession.recording("weather");
-        runHelper(
-                recording,
-                context("record", 0),
-                input("real", "model"),
-                p -> textResponse("ok", "stop"));
+        runHelper(recording, input("real", "model"), p -> textResponse("ok", "stop"));
         return recording.fixture();
-    }
-
-    private static LlmCallContext context(String task, int attempt) {
-        return new LlmCallContext("workflow", task, attempt, "agent");
     }
 
     private static ChatCompletion input(String provider, String model) {
@@ -450,11 +387,8 @@ class LlmFixtureSessionTest {
     }
 
     private static org.conductoross.conductor.ai.model.LLMResponse runHelper(
-            LlmFixtureSession session,
-            LlmCallContext context,
-            ChatCompletion input,
-            ChatModel delegate) {
-        ChatModel wrapped = session.modelFor(context, input, delegate);
+            LlmFixtureSession session, ChatCompletion input, ChatModel delegate) {
+        ChatModel wrapped = session.modelFor(input, delegate);
         AIModel provider =
                 new AIModel() {
                     public String getModelProvider() {
@@ -474,8 +408,8 @@ class LlmFixtureSessionTest {
                     }
                 };
         var task = new Task();
-        task.setTaskId(context.taskId());
-        task.setWorkflowInstanceId(context.workflowId());
+        task.setTaskId(java.util.UUID.randomUUID().toString());
+        task.setWorkflowInstanceId("workflow");
         return new LLMHelper(null, List.of())
                 .chatComplete(task, provider, input, null, usage -> {});
     }
