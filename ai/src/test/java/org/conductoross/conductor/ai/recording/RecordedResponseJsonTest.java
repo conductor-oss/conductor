@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -22,6 +22,8 @@ import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.providers.mock.MockLLM;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -41,7 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmChatResponseJsonTest {
+class RecordedResponseJsonTest {
     @TempDir Path directory;
 
     @Test
@@ -93,19 +95,18 @@ class LlmChatResponseJsonTest {
                                                         0, Map.of("safe", true))))
                                 .build());
         ObjectMapper mapper = new ObjectMapperProvider().getObjectMapper();
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
+        RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
         ChatCompletion input = new ChatCompletion();
         Prompt prompt = new Prompt("hello");
-        JsonNode savedResponse = converter.toSavedResponse(response);
-        new LlmJsonFiles(mapper)
+        JsonNode savedResponse = RecordedResponseJson.write(response);
+        new FileLLMCallRecorder(directory, mapper)
                 .writeRecording(
-                        directory,
-                        new LlmSavedResponses(
-                                LlmSavedResponses.SCHEMA_VERSION,
+                        new LLMRecording(
+                                LLMRecording.SCHEMA_VERSION,
                                 "chat",
                                 List.of(
-                                        new LlmSavedResponses.Entry(
-                                                converter.toSavedRequest(prompt, input),
+                                        new LLMRecording.Entry(
+                                                normalizer.normalize(prompt, input),
                                                 savedResponse))));
 
         ChatResponse replay = new MockLLM(directory, mapper).getChatModel(input).call(prompt);
@@ -140,6 +141,33 @@ class LlmChatResponseJsonTest {
         assertNotEquals("original-call", replayId);
         // The complete stored snapshot must match after replay, apart from the fresh tool ID.
         ((ObjectNode) savedResponse.at("/results/0/output/toolCalls/0")).put("id", replayId);
-        assertEquals(savedResponse, converter.toSavedResponse(replay));
+        assertEquals(savedResponse, RecordedResponseJson.write(replay));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {"end_turn", "length", "refusal", "COMPLETE", "STOP_SEQUENCE", "unknown"})
+    void preservesProviderFinishReasons(String finishReason) {
+        JsonNode saved = RecordedResponseJson.write(response(finishReason));
+        assertEquals(finishReason, saved.at("/results/0/metadata/finishReason").asText());
+        assertEquals(
+                finishReason,
+                RecordedResponseJson.read(saved, "replay")
+                        .getResult()
+                        .getMetadata()
+                        .getFinishReason());
+    }
+
+    @Test
+    void rejectsAbsentModelResponses() {
+        assertThrows(IllegalArgumentException.class, () -> RecordedResponseJson.write(null));
+    }
+
+    private static ChatResponse response(String finish) {
+        return new ChatResponse(
+                List.of(
+                        new Generation(
+                                new AssistantMessage("answer"),
+                                ChatGenerationMetadata.builder().finishReason(finish).build())));
     }
 }

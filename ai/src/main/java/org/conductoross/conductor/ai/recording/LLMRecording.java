@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.util.List;
 import java.util.Objects;
@@ -24,12 +24,12 @@ import org.springframework.ai.chat.messages.MessageType;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** Normalized requests and complete model responses with the history policy for playback. */
-public record LlmSavedResponses(
+public record LLMRecording(
         int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
     private static final String MISMATCHED_MESSAGE_ROLE =
             "Tool calls/results do not match message role";
 
-    public LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
+    public LLMRecording(int schemaVersion, String scenario, List<Entry> entries) {
         this(schemaVersion, scenario, entries, null);
     }
 
@@ -37,7 +37,7 @@ public record LlmSavedResponses(
 
     public static final int SCHEMA_VERSION = 2;
 
-    public LlmSavedResponses {
+    public LLMRecording {
         if (schemaVersion != SCHEMA_VERSION) {
             throw new IllegalArgumentException(
                     "Unsupported LLM saved responses schema version: " + schemaVersion);

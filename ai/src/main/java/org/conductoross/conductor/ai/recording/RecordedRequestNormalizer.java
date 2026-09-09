@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +25,6 @@ import org.conductoross.conductor.ai.model.ToolSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -37,14 +36,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
  * Normalizes only declared transport fields, never arbitrary user payload keys or prompt text.
- * Create one instance per request/response pair to normalize IDs from its full history.
+ * Create one instance per request to normalize IDs from its full history.
  */
-public final class LlmRequestResponseConverter {
+public final class RecordedRequestNormalizer {
     public static final String FUNCTION_TOOL_TYPE = "function";
 
     private static final ObjectMapper MAPPER =
@@ -54,12 +52,12 @@ public final class LlmRequestResponseConverter {
 
     private record CallIdentity(String reference, String name) {}
 
-    public LlmSavedResponses.Request toSavedRequest(Prompt prompt, ChatCompletion input) {
-        return toSavedRequest(prompt, options(input));
+    public LLMRecording.Request normalize(Prompt prompt, ChatCompletion input) {
+        return normalize(prompt, options(input));
     }
 
     public record RequestOptions(
-            boolean jsonOutput, JsonNode outputSchema, List<LlmSavedResponses.Tool> tools) {}
+            boolean jsonOutput, JsonNode outputSchema, List<LLMRecording.Tool> tools) {}
 
     public static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
@@ -75,11 +73,11 @@ public final class LlmRequestResponseConverter {
         }
         // Providers with custom ChatOptions carry these same Conductor tool definitions.
         // Snapshot them now so later task mutations cannot change this call's recording.
-        List<LlmSavedResponses.Tool> tools = new ArrayList<>();
+        List<LLMRecording.Tool> tools = new ArrayList<>();
         if (input.getTools() != null) {
             for (ToolSpec tool : input.getTools()) {
                 tools.add(
-                        new LlmSavedResponses.Tool(
+                        new LLMRecording.Tool(
                                 tool.getName(),
                                 tool.getDescription(),
                                 MAPPER.valueToTree(tool.getInputSchema())));
@@ -91,10 +89,10 @@ public final class LlmRequestResponseConverter {
                 List.copyOf(tools));
     }
 
-    public LlmSavedResponses.Request toSavedRequest(Prompt prompt, RequestOptions input) {
-        List<LlmSavedResponses.Message> messages =
+    public LLMRecording.Request normalize(Prompt prompt, RequestOptions input) {
+        List<LLMRecording.Message> messages =
                 prompt.getInstructions().stream().map(this::toSavedMessage).toList();
-        List<LlmSavedResponses.Tool> tools = input.tools();
+        List<LLMRecording.Tool> tools = input.tools();
         // Prefer resolved callbacks when the provider exposes them through Spring AI options.
         if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
             tools = new ArrayList<>();
@@ -110,54 +108,29 @@ public final class LlmRequestResponseConverter {
                 for (ToolCallback callback : options.getToolCallbacks()) {
                     ToolDefinition definition = callback.getToolDefinition();
                     tools.add(
-                            new LlmSavedResponses.Tool(
+                            new LLMRecording.Tool(
                                     definition.name(),
                                     definition.description(),
                                     parseObject(definition.inputSchema(), "tool input schema")));
                 }
             }
         }
-        return new LlmSavedResponses.Request(
-                messages, tools, input.jsonOutput(), input.outputSchema());
+        return new LLMRecording.Request(messages, tools, input.jsonOutput(), input.outputSchema());
     }
 
-    public JsonNode toSavedResponse(ChatResponse response) {
-        if (response == null) {
-            throw new IllegalArgumentException("Cannot record an absent model response");
-        }
-        return LlmChatResponseJson.write(response);
-    }
-
-    /** Restore all response data, replacing only tool-call IDs for this playback invocation. */
-    public ChatResponse toChatResponse(JsonNode data, String idPrefix) {
-        return LlmChatResponseJson.read(data, idPrefix);
-    }
-
-    /** Ignore per-call IDs and usage when checking repeated recordings for conflicting answers. */
-    public static JsonNode responseContent(JsonNode response) {
-        JsonNode results = response.get("results").deepCopy();
-        int callIndex = 0;
-        for (JsonNode result : results) {
-            for (JsonNode call : result.get("output").get("toolCalls")) {
-                ((ObjectNode) call).put("id", "call_" + callIndex++);
-            }
-        }
-        return results;
-    }
-
-    private LlmSavedResponses.Message toSavedMessage(Message message) {
+    private LLMRecording.Message toSavedMessage(Message message) {
         if (message instanceof MediaContent media && ObjectUtils.isNotEmpty(media.getMedia())) {
             throw new IllegalArgumentException("Media is unsupported in LLM recordings");
         }
-        List<LlmSavedResponses.ToolCall> calls = new ArrayList<>();
-        List<LlmSavedResponses.ToolResult> results = new ArrayList<>();
+        List<LLMRecording.ToolCall> calls = new ArrayList<>();
+        List<LLMRecording.ToolResult> results = new ArrayList<>();
         if (message instanceof AssistantMessage assistant) {
             for (AssistantMessage.ToolCall call : assistant.getToolCalls()) {
                 Validate.isTrue(
                         FUNCTION_TOOL_TYPE.equals(call.type()),
                         "Only function tool calls are supported in LLM recordings");
                 calls.add(
-                        new LlmSavedResponses.ToolCall(
+                        new LLMRecording.ToolCall(
                                 reference(call.id(), call.name()),
                                 call.name(),
                                 parseObject(call.arguments(), "tool arguments")));
@@ -169,13 +142,13 @@ public final class LlmRequestResponseConverter {
                         call != null && result.name().equals(call.name()),
                         "Tool result has no matching call in the recorded history");
                 results.add(
-                        new LlmSavedResponses.ToolResult(
+                        new LLMRecording.ToolResult(
                                 call.reference(),
                                 result.name(),
                                 parseResult(result.responseData())));
             }
         }
-        return new LlmSavedResponses.Message(
+        return new LLMRecording.Message(
                 message.getMessageType().getValue(), message.getText(), calls, results);
     }
 

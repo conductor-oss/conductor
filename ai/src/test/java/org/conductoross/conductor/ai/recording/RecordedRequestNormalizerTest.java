@@ -10,28 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmRequestResponseConverterTest {
+class RecordedRequestNormalizerTest {
     private static final String PROMPT_WITH_PROVIDER_ID =
             "  Do not replace provider-a-id in this text.\n";
     private static final String FIRST_TOOL_REFERENCE = "call_0";
@@ -44,18 +39,18 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void normalizesPhysicalIdsButPreservesUserFieldsAndPromptText() {
-        LlmSavedResponses.Request a =
+        LLMRecording.Request a =
                 normalize(
                         "provider-a-id",
                         "{\"timestamp\":123,\"model\":\"user-model\",\"id\":\"user-id\"}");
-        LlmSavedResponses.Request b =
+        LLMRecording.Request b =
                 normalize(
                         "provider-b-id",
                         "{\"id\":\"user-id\",\"model\":\"user-model\",\"timestamp\":123}");
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
         assertEquals(PROMPT_WITH_PROVIDER_ID, a.messages().getFirst().text());
-        LlmSavedResponses.ToolResult result = a.messages().getLast().toolResults().getFirst();
+        LLMRecording.ToolResult result = a.messages().getLast().toolResults().getFirst();
         assertEquals(FIRST_TOOL_REFERENCE, result.reference());
         assertEquals("user-id", result.value().get("id").textValue());
         assertEquals("user-model", result.value().get("model").textValue());
@@ -87,56 +82,33 @@ class LlmRequestResponseConverterTest {
                         .getFirst()
                         .value()
                         .textValue());
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
+        RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        converter.toSavedRequest(
+                        normalizer.normalize(
                                 new Prompt(call(TOOL_CALL_ID, "{} trailing")),
                                 new ChatCompletion()));
     }
 
     @Test
     void rejectsMissingCallsAndWrongToolNames() {
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
+        RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        converter.toSavedRequest(
+                        normalizer.normalize(
                                 new Prompt(result("missing", TOOL_NAME, "{}")),
                                 new ChatCompletion()));
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        converter.toSavedRequest(
+                        normalizer.normalize(
                                 new Prompt(
                                         List.of(
                                                 call(TOOL_CALL_ID, "{}"),
                                                 result(TOOL_CALL_ID, "other", "{}"))),
                                 new ChatCompletion()));
-    }
-
-    @ParameterizedTest
-    @ValueSource(
-            strings = {"end_turn", "length", "refusal", "COMPLETE", "STOP_SEQUENCE", "unknown"})
-    void preservesProviderFinishReasons(String finishReason) {
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
-        JsonNode saved = converter.toSavedResponse(response(finishReason));
-        assertEquals(finishReason, saved.at("/results/0/metadata/finishReason").asText());
-        assertEquals(
-                finishReason,
-                converter
-                        .toChatResponse(saved, "replay")
-                        .getResult()
-                        .getMetadata()
-                        .getFinishReason());
-    }
-
-    @Test
-    void rejectsAbsentModelResponses() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new LlmRequestResponseConverter().toSavedResponse(null));
     }
 
     @Test
@@ -145,16 +117,16 @@ class LlmRequestResponseConverterTest {
         input.setWebSearch(true);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), input));
+                () -> new RecordedRequestNormalizer().normalize(new Prompt("hello"), input));
     }
 
     @Test
     void repeatedToolNamesKeepDistinctCallResultAssociations() {
         AssistantMessage first = call(FIRST_CALL_ID, LISBON_ARGUMENTS_JSON);
         AssistantMessage second = call(SECOND_CALL_ID, "{\"city\":\"Paris\"}");
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
-        LlmSavedResponses.Request request =
-                converter.toSavedRequest(
+        RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
+        LLMRecording.Request request =
+                normalizer.normalize(
                         new Prompt(
                                 List.of(
                                         first,
@@ -168,9 +140,9 @@ class LlmRequestResponseConverterTest {
                 request.messages().get(3).toolResults().getFirst().reference());
     }
 
-    private static LlmSavedResponses.Request normalize(String id, String output) {
-        return new LlmRequestResponseConverter()
-                .toSavedRequest(
+    private static LLMRecording.Request normalize(String id, String output) {
+        return new RecordedRequestNormalizer()
+                .normalize(
                         new Prompt(
                                 List.of(
                                         new UserMessage(PROMPT_WITH_PROVIDER_ID),
@@ -186,7 +158,7 @@ class LlmRequestResponseConverterTest {
                         List.of(
                                 new AssistantMessage.ToolCall(
                                         id,
-                                        LlmRequestResponseConverter.FUNCTION_TOOL_TYPE,
+                                        RecordedRequestNormalizer.FUNCTION_TOOL_TYPE,
                                         TOOL_NAME,
                                         args)))
                 .build();
@@ -196,13 +168,5 @@ class LlmRequestResponseConverterTest {
         return ToolResponseMessage.builder()
                 .responses(List.of(new ToolResponseMessage.ToolResponse(id, name, output)))
                 .build();
-    }
-
-    private static ChatResponse response(String finish) {
-        return new ChatResponse(
-                List.of(
-                        new Generation(
-                                new AssistantMessage("answer"),
-                                ChatGenerationMetadata.builder().finishReason(finish).build())));
     }
 }

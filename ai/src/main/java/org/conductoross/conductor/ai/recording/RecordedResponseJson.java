@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -44,7 +44,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 
 /** JSON storage for Spring AI responses, including their extensible metadata maps. */
-public final class LlmChatResponseJson {
+public final class RecordedResponseJson {
     private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper().copy();
 
@@ -71,7 +71,10 @@ public final class LlmChatResponseJson {
         MAPPER.registerModule(module);
     }
 
-    static JsonNode write(ChatResponse response) {
+    public static JsonNode write(ChatResponse response) {
+        if (response == null) {
+            throw new IllegalArgumentException("Cannot record an absent model response");
+        }
         ObjectNode data = MAPPER.valueToTree(response);
         // getResult() duplicates the first item in getResults().
         data.remove("result");
@@ -89,7 +92,8 @@ public final class LlmChatResponseJson {
         }
     }
 
-    static ChatResponse read(JsonNode data, String idPrefix) {
+    /** Restore all response data, replacing only tool-call IDs for this playback invocation. */
+    public static ChatResponse read(JsonNode data, String idPrefix) {
         List<Generation> generations = new ArrayList<>();
         int callIndex = 0;
         for (JsonNode result : data.get("results")) {
@@ -157,6 +161,18 @@ public final class LlmChatResponseJson {
                         .promptMetadata(PromptMetadata.of(filters))
                         .metadata(MAPPER.convertValue(metadata.get("properties"), MAP))
                         .build());
+    }
+
+    /** Ignore per-call IDs and usage when checking repeated recordings for conflicting answers. */
+    public static JsonNode responseContent(JsonNode response) {
+        JsonNode results = response.get("results").deepCopy();
+        int callIndex = 0;
+        for (JsonNode result : results) {
+            for (JsonNode call : result.get("output").get("toolCalls")) {
+                ((ObjectNode) call).put("id", "call_" + callIndex++);
+            }
+        }
+        return results;
     }
 
     private static void putProperties(ObjectNode metadata, Set<Map.Entry<String, Object>> entries) {

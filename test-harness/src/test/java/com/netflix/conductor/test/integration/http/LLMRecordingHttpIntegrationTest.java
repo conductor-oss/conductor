@@ -25,7 +25,6 @@ import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.mock.MockLLM;
-import org.conductoross.conductor.ai.testing.LlmJsonFiles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -59,7 +58,7 @@ import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmRecordingHttpIntegrationTest {
+class LLMRecordingHttpIntegrationTest {
     private static final String TEST_PROVIDER = "recording-test-provider";
     private static final String RECORDED_ANSWER = "recorded answer";
     private static final String TASK_NAME = "recording_chat";
@@ -78,10 +77,7 @@ class LlmRecordingHttpIntegrationTest {
         }
         assertEquals(1, PROVIDER_CALLS.get());
         try (Stream<Path> files = Files.list(directory)) {
-            assertEquals(
-                    1,
-                    files.filter(path -> path.toString().endsWith(LlmJsonFiles.FILE_EXTENSION))
-                            .count());
+            assertEquals(1, files.filter(path -> path.toString().endsWith(".json")).count());
         }
         try (ServletWebServerApplicationContext server = start(false)) {
             assertTrue(server.getBeansOfType(TestProviderConfiguration.class).isEmpty());

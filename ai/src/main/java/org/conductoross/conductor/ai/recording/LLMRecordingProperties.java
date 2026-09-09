@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.nio.file.Path;
 
@@ -19,8 +19,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import lombok.Data;
 
 @Data
-@ConfigurationProperties(prefix = LlmRecordingProperties.PREFIX)
-public class LlmRecordingProperties {
+@ConfigurationProperties(prefix = LLMRecordingProperties.PREFIX)
+public class LLMRecordingProperties {
     public static final String PREFIX = "conductor.ai";
     public static final String RECORD_MODE = "record-mode";
     public static final String ENABLE_LLM_MOCKS = "enable-llm-mocks";

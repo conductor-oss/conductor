@@ -36,7 +36,7 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.ai.testing.LlmCallRecorder;
+import org.conductoross.conductor.ai.recording.LLMCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.service.SchemaService;
@@ -91,7 +91,7 @@ public class LLMHelper {
     private final SchemaService schemaService;
     private final List<DocumentLoader> documentLoaders;
     private final OkHttpClient httpClient;
-    private final LlmCallRecorder recorder;
+    private final LLMCallRecorder recorder;
 
     public LLMHelper(SchemaService schemaService, List<DocumentLoader> documentLoaders) {
         this(schemaService, documentLoaders, AIHttpClients.defaultClient());
@@ -108,7 +108,7 @@ public class LLMHelper {
             SchemaService schemaService,
             List<DocumentLoader> documentLoaders,
             OkHttpClient httpClient,
-            LlmCallRecorder recorder) {
+            LLMCallRecorder recorder) {
         this.schemaService = schemaService;
         this.documentLoaders = documentLoaders;
         this.httpClient = httpClient;

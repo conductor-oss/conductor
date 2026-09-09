@@ -10,13 +10,13 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.springframework.ai.chat.model.ChatModel;
 
 /** Records calls at the model boundary, before Conductor validates the returned response. */
-public interface LlmCallRecorder {
+public interface LLMCallRecorder {
     ChatModel wrap(AIModel provider, ChatCompletion input, ChatModel delegate);
 }

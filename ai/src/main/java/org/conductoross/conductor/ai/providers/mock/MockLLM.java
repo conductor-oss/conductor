@@ -25,8 +25,9 @@ import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.testing.LlmRequestResponseConverter;
-import org.conductoross.conductor.ai.testing.LlmSavedResponses;
+import org.conductoross.conductor.ai.recording.LLMRecording;
+import org.conductoross.conductor.ai.recording.RecordedRequestNormalizer;
+import org.conductoross.conductor.ai.recording.RecordedResponseJson;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.image.ImageModel;
 
@@ -41,16 +42,15 @@ public final class MockLLM implements AIModel {
             "MockLLM only plays back recorded chat responses";
 
     public static final String NAME = "mockLLM";
-    private final Map<LlmSavedResponses.Request, JsonNode> responses;
+    private final Map<LLMRecording.Request, JsonNode> responses;
     private final Map<String, Boolean> assistantPrefillByModel;
 
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
-        Map<LlmSavedResponses.Request, JsonNode> loaded = new HashMap<>();
+        Map<LLMRecording.Request, JsonNode> loaded = new HashMap<>();
         Map<String, Boolean> policies = new HashMap<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
             for (Path file : files) {
-                LlmSavedResponses saved =
-                        objectMapper.readValue(file.toFile(), LlmSavedResponses.class);
+                LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
                 register(saved, loaded, policies);
             }
         }
@@ -59,21 +59,19 @@ public final class MockLLM implements AIModel {
     }
 
     private static void register(
-            LlmSavedResponses saved,
-            Map<LlmSavedResponses.Request, JsonNode> responses,
+            LLMRecording saved,
+            Map<LLMRecording.Request, JsonNode> responses,
             Map<String, Boolean> policies) {
         // Identical responses merge; conflicting responses for the same request fail.
-        for (LlmSavedResponses.Entry entry : saved.entries()) {
+        for (LLMRecording.Entry entry : saved.entries()) {
             JsonNode existing = responses.putIfAbsent(entry.request(), entry.response());
             Validate.isTrue(
                     existing == null
-                            || LlmRequestResponseConverter.responseContent(existing)
-                                    .equals(
-                                            LlmRequestResponseConverter.responseContent(
-                                                    entry.response())),
+                            || RecordedResponseJson.responseContent(existing)
+                                    .equals(RecordedResponseJson.responseContent(entry.response())),
                     "Conflicting recorded responses for the same request");
         }
-        LlmSavedResponses.ModelSettings settings = saved.modelSettings();
+        LLMRecording.ModelSettings settings = saved.modelSettings();
         if (settings != null && settings.model() != null) {
             policies.putIfAbsent(settings.model(), settings.supportsAssistantPrefill());
         }
@@ -100,16 +98,15 @@ public final class MockLLM implements AIModel {
 
     @Override
     public ChatModel getChatModel(ChatCompletion input) {
-        LlmRequestResponseConverter.RequestOptions options =
-                LlmRequestResponseConverter.options(input);
+        RecordedRequestNormalizer.RequestOptions options = RecordedRequestNormalizer.options(input);
         // Request options belong to this call's wrapper, never to the singleton provider.
         return prompt -> {
-            LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
-            LlmSavedResponses.Request request = converter.toSavedRequest(prompt, options);
+            RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
+            LLMRecording.Request request = normalizer.normalize(prompt, options);
             JsonNode response = responses.get(request);
             if (response == null)
                 throw new NonRetryableException("No recorded response matches the LLM request");
-            return converter.toChatResponse(response, UUID.randomUUID().toString());
+            return RecordedResponseJson.read(response, UUID.randomUUID().toString());
         };
     }
 

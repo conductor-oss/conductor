@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.io.IOException;
 
@@ -22,15 +22,15 @@ import org.springframework.context.annotation.Configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(LlmRecordingProperties.class)
-public class LlmRecordingConfiguration {
+@EnableConfigurationProperties(LLMRecordingProperties.class)
+public class LLMRecordingConfiguration {
     @Bean
     @ConditionalOnProperty(
-            prefix = LlmRecordingProperties.PREFIX,
-            name = LlmRecordingProperties.RECORD_MODE,
-            havingValue = LlmRecordingProperties.ENABLED)
-    public LlmCallRecorder llmCallRecorder(
-            LlmRecordingProperties properties, ObjectMapper objectMapper) throws IOException {
-        return new JsonFileLlmCallRecorder(properties.getRecordingsDirectory(), objectMapper);
+            prefix = LLMRecordingProperties.PREFIX,
+            name = LLMRecordingProperties.RECORD_MODE,
+            havingValue = LLMRecordingProperties.ENABLED)
+    public LLMCallRecorder llmCallRecorder(
+            LLMRecordingProperties properties, ObjectMapper objectMapper) throws IOException {
+        return new FileLLMCallRecorder(properties.getRecordingsDirectory(), objectMapper);
     }
 }

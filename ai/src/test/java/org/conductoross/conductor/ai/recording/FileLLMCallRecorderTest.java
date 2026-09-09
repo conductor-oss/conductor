@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.testing;
+package org.conductoross.conductor.ai.recording;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -39,24 +40,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmJsonFilesTest {
+class FileLLMCallRecorderTest {
     private static final String SCENARIO_NAME = "scenario";
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
-    private final LlmJsonFiles jsonFiles = new LlmJsonFiles(objectMapper);
+    private FileLLMCallRecorder recorder;
 
     @TempDir Path directory;
 
+    @BeforeEach
+    void setUp() throws Exception {
+        recorder = new FileLLMCallRecorder(directory, objectMapper);
+    }
+
     @Test
-    void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
+    void recordingJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = objectMapper;
-        LlmSavedResponses savedResponses =
-                new LlmSavedResponses(
-                        LlmSavedResponses.SCHEMA_VERSION, "mapper_isolation", List.of());
-        Path path = jsonFiles.writeRecording(directory, savedResponses);
+        LLMRecording recording =
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, "mapper_isolation", List.of());
+        Path path = recorder.writeRecording(recording);
         try (InputStream source = Files.newInputStream(path)) {
-            assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
+            assertEquals(recording, objectMapper.readValue(source, LLMRecording.class));
         }
-        new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), new ChatCompletion());
+        new RecordedRequestNormalizer().normalize(new Prompt("hello"), new ChatCompletion());
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
@@ -65,13 +70,12 @@ class LlmJsonFilesTest {
     }
 
     @Test
-    void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
-        LlmSavedResponses savedResponses =
-                new LlmSavedResponses(
-                        LlmSavedResponses.SCHEMA_VERSION, "blocked_before_llm", List.of());
-        Path target = jsonFiles.writeRecording(directory, savedResponses);
+    void writesAndReadsRecordingsWithoutExposingTemporaryFiles() throws Exception {
+        LLMRecording recording =
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, "blocked_before_llm", List.of());
+        Path target = recorder.writeRecording(recording);
         try (InputStream source = Files.newInputStream(target)) {
-            assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
+            assertEquals(recording, objectMapper.readValue(source, LLMRecording.class));
         }
         try (Stream<Path> files = Files.list(directory)) {
             assertEquals(List.of(target), files.toList());
@@ -80,31 +84,29 @@ class LlmJsonFilesTest {
 
     @Test
     void writesSeparateFilesForTheSameScenario() throws Exception {
-        LlmSavedResponses first =
-                new LlmSavedResponses(LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of());
-        LlmSavedResponses second =
-                new LlmSavedResponses(
-                        LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
-        Path firstFile = jsonFiles.writeRecording(directory, first);
-        Path secondFile = jsonFiles.writeRecording(directory, second);
+        LLMRecording first =
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of());
+        LLMRecording second =
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
+        Path firstFile = recorder.writeRecording(first);
+        Path secondFile = recorder.writeRecording(second);
         assertNotEquals(firstFile, secondFile);
-        assertEquals(first, objectMapper.readValue(firstFile.toFile(), LlmSavedResponses.class));
-        assertEquals(second, objectMapper.readValue(secondFile.toFile(), LlmSavedResponses.class));
+        assertEquals(first, objectMapper.readValue(firstFile.toFile(), LLMRecording.class));
+        assertEquals(second, objectMapper.readValue(secondFile.toFile(), LLMRecording.class));
     }
 
     @Test
     void concurrentPublishersWriteSeparateRecordings() throws Exception {
-        LlmSavedResponses savedResponses =
-                new LlmSavedResponses(
-                        LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
-        Callable<Path> write = () -> jsonFiles.writeRecording(directory, savedResponses);
+        LLMRecording recording =
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
+        Callable<Path> write = () -> recorder.writeRecording(recording);
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             List<Future<Path>> results = executor.invokeAll(List.of(write, write));
             assertNotEquals(results.get(0).get(), results.get(1).get());
             for (Future<Path> result : results) {
                 assertEquals(
-                        savedResponses,
-                        objectMapper.readValue(result.get().toFile(), LlmSavedResponses.class));
+                        recording,
+                        objectMapper.readValue(result.get().toFile(), LLMRecording.class));
             }
         }
         try (Stream<Path> files = Files.list(directory)) {
@@ -112,10 +114,10 @@ class LlmJsonFilesTest {
         }
     }
 
-    private static LlmSavedResponses.Entry entry() {
-        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
-        LlmSavedResponses.Request request =
-                converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
+    private static LLMRecording.Entry entry() {
+        RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
+        LLMRecording.Request request =
+                normalizer.normalize(new Prompt("hello"), new ChatCompletion());
         ChatResponse response =
                 new ChatResponse(
                         List.of(
@@ -124,6 +126,6 @@ class LlmJsonFilesTest {
                                         ChatGenerationMetadata.builder()
                                                 .finishReason("STOP")
                                                 .build())));
-        return new LlmSavedResponses.Entry(request, converter.toSavedResponse(response));
+        return new LLMRecording.Entry(request, RecordedResponseJson.write(response));
     }
 }
