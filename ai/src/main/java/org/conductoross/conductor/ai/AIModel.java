@@ -88,6 +88,11 @@ public interface AIModel {
         return true;
     }
 
+    /** Request-aware history policy; providers may retain their existing fixed capability. */
+    default boolean supportsAssistantPrefill(ChatCompletion input) {
+        return supportsAssistantPrefill();
+    }
+
     /**
      * Embedding generation
      *
@@ -100,6 +105,11 @@ public interface AIModel {
      * @return Chat Completion model
      */
     ChatModel getChatModel();
+
+    /** Request-scoped model selection, used by playback to capture output constraints. */
+    default ChatModel getChatModel(ChatCompletion input) {
+        return getChatModel();
+    }
 
     /**
      * @param input request to do chat completion

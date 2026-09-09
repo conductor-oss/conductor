@@ -24,10 +24,13 @@ import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.testing.LlmCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.service.SchemaService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -53,8 +56,19 @@ public class LLMs {
             SchemaService schemaService,
             AIModelProvider modelProvider,
             OkHttpClient conductorAiHttpClient) {
+        this(documentLoaders, schemaService, modelProvider, conductorAiHttpClient, null);
+    }
+
+    @Autowired
+    public LLMs(
+            List<DocumentLoader> documentLoaders,
+            SchemaService schemaService,
+            AIModelProvider modelProvider,
+            OkHttpClient conductorAiHttpClient,
+            @Nullable LlmCallRecorder recorder) {
         this.modelProvider = modelProvider;
-        this.helper = new LLMHelper(schemaService, documentLoaders, conductorAiHttpClient);
+        this.helper =
+                new LLMHelper(schemaService, documentLoaders, conductorAiHttpClient, recorder);
         this.payloadStoreLocation = modelProvider.getPayloadStoreLocation();
     }
 

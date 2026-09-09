@@ -22,10 +22,17 @@ import org.conductoross.conductor.ai.model.FinishReason;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Portable request/response pairs. Runtime IDs, provider configuration, and usage are deliberately
- * absent.
+ * Portable request/response pairs with the model's history policy for playback. Credentials,
+ * runtime IDs, and usage are deliberately absent.
  */
-public record LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
+public record LlmSavedResponses(
+        int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
+    public LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
+        this(schemaVersion, scenario, entries, null);
+    }
+
+    public record ModelSettings(String model, boolean supportsAssistantPrefill) {}
+
     public static final int SCHEMA_VERSION = 1;
 
     public LlmSavedResponses {

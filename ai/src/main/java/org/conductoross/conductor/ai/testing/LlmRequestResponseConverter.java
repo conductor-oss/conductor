@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.testing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -29,13 +30,17 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.CollectionUtils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
@@ -56,9 +61,9 @@ public final class LlmRequestResponseConverter {
         return toSavedRequest(prompt, options(input));
     }
 
-    record RequestOptions(boolean jsonOutput, JsonNode outputSchema) {}
+    public record RequestOptions(boolean jsonOutput, JsonNode outputSchema) {}
 
-    static RequestOptions options(ChatCompletion input) {
+    public static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
             throw new IllegalArgumentException(
                     "LLM recordings require full history; previousResponseId is unsupported");
@@ -75,9 +80,10 @@ public final class LlmRequestResponseConverter {
                 input.isJsonOutput(), canonical(MAPPER.valueToTree(input.getOutputSchema())));
     }
 
-    LlmSavedResponses.Request toSavedRequest(Prompt prompt, RequestOptions input) {
-        var messages = prompt.getInstructions().stream().map(this::toSavedMessage).toList();
-        var tools = new ArrayList<LlmSavedResponses.Tool>();
+    public LlmSavedResponses.Request toSavedRequest(Prompt prompt, RequestOptions input) {
+        List<LlmSavedResponses.Message> messages =
+                prompt.getInstructions().stream().map(this::toSavedMessage).toList();
+        List<LlmSavedResponses.Tool> tools = new ArrayList<LlmSavedResponses.Tool>();
         // Read the effective tool catalog passed to the model, not the original task definition.
         if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
             if (!CollectionUtils.isEmpty(options.getToolNames())) {
@@ -89,8 +95,8 @@ public final class LlmRequestResponseConverter {
                         "LLM recordings require external tool execution");
             }
             if (!CollectionUtils.isEmpty(options.getToolCallbacks())) {
-                for (var callback : options.getToolCallbacks()) {
-                    var definition = callback.getToolDefinition();
+                for (ToolCallback callback : options.getToolCallbacks()) {
+                    ToolDefinition definition = callback.getToolDefinition();
                     tools.add(
                             new LlmSavedResponses.Tool(
                                     definition.name(),
@@ -125,11 +131,11 @@ public final class LlmRequestResponseConverter {
         if (StringUtils.isBlank(idPrefix)) {
             throw new IllegalArgumentException("Replay tool-call ID prefix must not be blank");
         }
-        var generations = new ArrayList<Generation>();
-        for (var completion : response.completions()) {
-            var message = completion.message();
-            var calls = new ArrayList<AssistantMessage.ToolCall>();
-            for (var call : message.toolCalls()) {
+        List<Generation> generations = new ArrayList<Generation>();
+        for (LlmSavedResponses.Completion completion : response.completions()) {
+            LlmSavedResponses.Message message = completion.message();
+            List<AssistantMessage.ToolCall> calls = new ArrayList<>();
+            for (LlmSavedResponses.ToolCall call : message.toolCalls()) {
                 String id = idPrefix + "_" + call.reference();
                 if (!call.reference().equals(reference(id, call.name()))) {
                     throw new IllegalArgumentException(
@@ -157,10 +163,10 @@ public final class LlmRequestResponseConverter {
         if (message instanceof MediaContent media && !CollectionUtils.isEmpty(media.getMedia())) {
             throw new IllegalArgumentException("Media is unsupported in LLM recordings");
         }
-        var calls = new ArrayList<LlmSavedResponses.ToolCall>();
-        var results = new ArrayList<LlmSavedResponses.ToolResult>();
+        List<LlmSavedResponses.ToolCall> calls = new ArrayList<>();
+        List<LlmSavedResponses.ToolResult> results = new ArrayList<>();
         if (message instanceof AssistantMessage assistant) {
-            for (var call : assistant.getToolCalls()) {
+            for (AssistantMessage.ToolCall call : assistant.getToolCalls()) {
                 if (!"function".equals(call.type())) {
                     throw new IllegalArgumentException(
                             "Only function tool calls are supported in LLM recordings");
@@ -172,7 +178,7 @@ public final class LlmRequestResponseConverter {
                                 parseObject(call.arguments(), "tool arguments")));
             }
         } else if (message instanceof ToolResponseMessage tool) {
-            for (var result : tool.getResponses()) {
+            for (ToolResponseMessage.ToolResponse result : tool.getResponses()) {
                 CallIdentity call = callIdentities.get(result.id());
                 if (call == null || !result.name().equals(call.name())) {
                     throw new IllegalArgumentException(
@@ -228,16 +234,16 @@ public final class LlmRequestResponseConverter {
     private static JsonNode canonical(JsonNode node) {
         if (node == null || node.isNull()) return NullNode.instance;
         if (node.isObject()) {
-            var fields = new TreeMap<String, JsonNode>();
+            Map<String, JsonNode> fields = new TreeMap<String, JsonNode>();
             node.fields()
                     .forEachRemaining(
                             field -> fields.put(field.getKey(), canonical(field.getValue())));
-            var result = MAPPER.createObjectNode();
+            ObjectNode result = MAPPER.createObjectNode();
             fields.forEach(result::set);
             return result;
         }
         if (node.isArray()) {
-            var result = MAPPER.createArrayNode();
+            ArrayNode result = MAPPER.createArrayNode();
             node.forEach(item -> result.add(canonical(item)));
             return result;
         }

@@ -1,18 +1,19 @@
-**Saved responses** are a named collection of LLM requests and their recorded responses.
+Recording and playback are selected at server startup. SDKs keep using the existing workflow API.
 
-| Class | Plain meaning | What it does |
+| Property | Default | Behavior |
 | --- | --- | --- |
-| [LlmSavedResponses](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmSavedResponses.java) | Saved responses | Holds a scenario name and request/response entries. Each request includes messages, tools, JSON-output mode, and output schema. |
-| [LlmRecorderOrMock](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmRecorderOrMock.java) | Recorder or mock | Wraps a Spring AI `ChatModel` and either records real calls or looks up saved responses. |
-| [LlmRequestResponseConverter](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmRequestResponseConverter.java) | Request/response converter | Converts Spring AI objects into the saved format. Replaces runtime tool-call IDs with logical references and rebuilds responses for replay. |
-| [LlmJsonFiles](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmJsonFiles.java) | JSON file reader/writer | Validates and loads recordings, or saves them as `<scenario>.json`. |
+| `conductor.ai.record-mode` | `false` | Creates a recorder that saves each supported real chat response to a separate JSON file. |
+| `conductor.ai.enable-llm-mocks` | `false` | Registers `mockLLM`, which only plays back saved responses. |
+| `conductor.ai.recordings-directory` | `./llm-recordings` | Recording output and playback input directory. |
 
-**Start with `LlmRecorderOrMock.invoke()`**—it contains the main behavior:
+AI workers also require the existing `conductor.integrations.ai.enabled=true` setting.
 
-1. Normalize the incoming request, using a fresh converter for each call.
-2. When recording, call the real model, save the normalized request/response pair, and return the original response.
-3. When replaying, use `responses.get(request)` to find the saved answer. Rebuild a Spring AI response with fresh tool-call IDs. An unknown request throws an error.
+1. **Record:** keep the task's real `llmProvider`. [LLMs](ai/src/main/java/org/conductoross/conductor/ai/LLMs.java) passes the optional recorder to [LLMHelper](ai/src/main/java/org/conductoross/conductor/ai/LLMHelper.java). [JsonFileLlmCallRecorder](ai/src/main/java/org/conductoross/conductor/ai/testing/JsonFileLlmCallRecorder.java) wraps the real call and writes its normalized request and response before helper validation.
+2. **Load:** copy the JSON files into the playback server's directory before startup. [MockLLMConfiguration](ai/src/main/java/org/conductoross/conductor/ai/providers/mock/MockLLMConfiguration.java) loads and validates them when playback is enabled.
+3. **Play back:** set the task's `llmProvider` to `mockLLM`, keeping its original `model` for the recorded history policy. [MockLLM](ai/src/main/java/org/conductoross/conductor/ai/providers/mock/MockLLM.java) looks up the normalized request and rebuilds a normal response with fresh tool-call IDs. It needs no real-provider credentials and has no live fallback.
 
-The caller uses `recording(name).modelFor(input, realModel)` to create a recording wrapper. After calls finish, `savedResponses()` returns the saved data for writing to disk. For replay, load that data and use `replaying(savedResponses).modelFor(input, null)`.
+[LlmRequestResponseConverter](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmRequestResponseConverter.java) handles messages, tools, JSON-output constraints, and tool-ID normalization. [LlmJsonFiles](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmJsonFiles.java) validates and atomically writes files. [LlmSavedResponses](ai/src/main/java/org/conductoross/conductor/ai/testing/LlmSavedResponses.java) is the saved data structure.
 
-Matching uses the full normalized request, including history and tool definitions. Provider name and model name are excluded. Requests can repeat or arrive in any order; there is no response cursor. Recording still calls the real model every time and rejects different responses for an identical request.
+Matching includes the full normalized history and tool definitions. Requests may repeat or arrive in parallel or any order; there is no sequence cursor or lock around provider calls. Missing requests fail. Conflicting saved answers for the same request fail playback startup.
+
+With both flags enabled, real calls are recorded and playback calls are excluded. Provider exceptions have no response to save; file-write failures surface to the caller. This format supports chat text and tool responses, not images, embeddings, media, or provider-native tools.

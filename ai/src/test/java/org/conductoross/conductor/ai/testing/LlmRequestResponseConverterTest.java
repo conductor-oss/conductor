@@ -25,23 +25,25 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmRequestResponseConverterTest {
     @Test
     void normalizesPhysicalIdsButPreservesUserFieldsAndPromptText() {
-        var a =
+        LlmSavedResponses.Request a =
                 normalize(
                         "provider-a-id",
                         "{\"timestamp\":123,\"model\":\"user-model\",\"id\":\"user-id\"}");
-        var b =
+        LlmSavedResponses.Request b =
                 normalize(
                         "provider-b-id",
                         "{\"id\":\"user-id\",\"model\":\"user-model\",\"timestamp\":123}");
         assertEquals(a, b);
         assertEquals(
                 "  Do not replace provider-a-id in this text.\n", a.messages().getFirst().text());
-        var result = a.messages().getLast().toolResults().getFirst();
+        LlmSavedResponses.ToolResult result = a.messages().getLast().toolResults().getFirst();
         assertEquals("call_0", result.reference());
         assertEquals("user-id", result.value().get("id").textValue());
         assertEquals("user-model", result.value().get("model").textValue());
@@ -50,7 +52,7 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void preservesArrayOrderAndNestedJsonStrings() {
-        var result =
+        JsonNode result =
                 normalize("a", "{\"values\":[2,1],\"text\":\"{\\\"id\\\":1}\"}")
                         .messages()
                         .getLast()
@@ -73,7 +75,7 @@ class LlmRequestResponseConverterTest {
                         .getFirst()
                         .value()
                         .textValue());
-        var converter = new LlmRequestResponseConverter();
+        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -83,7 +85,7 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void rejectsMissingCallsAndWrongToolNames() {
-        var converter = new LlmRequestResponseConverter();
+        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -99,7 +101,7 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void normalizesFinishReasonsAndRejectsUnknownReasons() {
-        var converter = new LlmRequestResponseConverter();
+        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         assertEquals(
                 FinishReason.STOP,
                 converter
@@ -129,7 +131,7 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void rejectsProviderNativeTools() {
-        var input = new ChatCompletion();
+        ChatCompletion input = new ChatCompletion();
         input.setWebSearch(true);
         assertThrows(
                 IllegalArgumentException.class,
@@ -138,10 +140,10 @@ class LlmRequestResponseConverterTest {
 
     @Test
     void repeatedToolNamesKeepDistinctCallResultAssociations() {
-        var first = call("first", "{\"city\":\"Lisbon\"}");
-        var second = call("second", "{\"city\":\"Paris\"}");
-        var converter = new LlmRequestResponseConverter();
-        var request =
+        AssistantMessage first = call("first", "{\"city\":\"Lisbon\"}");
+        AssistantMessage second = call("second", "{\"city\":\"Paris\"}");
+        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
+        LlmSavedResponses.Request request =
                 converter.toSavedRequest(
                         new Prompt(
                                 List.of(

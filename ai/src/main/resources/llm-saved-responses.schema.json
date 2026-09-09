@@ -7,6 +7,15 @@
   "properties": {
     "schemaVersion": {"const": 1},
     "scenario": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$"},
+    "modelSettings": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["model", "supportsAssistantPrefill"],
+      "properties": {
+        "model": {"type": ["string", "null"]},
+        "supportsAssistantPrefill": {"type": "boolean"}
+      }
+    },
     "entries": {
       "type": "array",
       "items": {"$ref": "#/$defs/entry"}

@@ -17,11 +17,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 import org.conductoross.conductor.common.JsonSchemaValidator;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 
@@ -32,7 +34,6 @@ public final class LlmJsonFiles {
             new ObjectMapper()
                     .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                     .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)
                     .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                     .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
@@ -41,7 +42,7 @@ public final class LlmJsonFiles {
     private LlmJsonFiles() {}
 
     private static JsonSchema loadSchema() {
-        try (var source =
+        try (InputStream source =
                 LlmJsonFiles.class.getResourceAsStream("/llm-saved-responses.schema.json")) {
             if (source == null)
                 throw new IllegalStateException("LLM saved responses schema is missing");
@@ -63,7 +64,7 @@ public final class LlmJsonFiles {
         if (bytes.length > MAX_BYTES) {
             throw new IOException("LLM saved responses exceeds the 16 MiB limit");
         }
-        var node = MAPPER.readTree(bytes);
+        JsonNode node = MAPPER.readTree(bytes);
         if (node == null || !SCHEMA.validate(node).isEmpty()) {
             throw new IOException("Invalid LLM saved responses schema");
         }
@@ -71,6 +72,17 @@ public final class LlmJsonFiles {
     }
 
     public static Path write(Path directory, LlmSavedResponses savedResponses, boolean refresh)
+            throws IOException {
+        return write(directory, savedResponses.scenario(), savedResponses, refresh);
+    }
+
+    public static Path writeRecording(Path directory, LlmSavedResponses savedResponses)
+            throws IOException {
+        return write(directory, UUID.randomUUID().toString(), savedResponses, false);
+    }
+
+    private static Path write(
+            Path directory, String name, LlmSavedResponses savedResponses, boolean refresh)
             throws IOException {
         if (!SCHEMA.validate(MAPPER.valueToTree(savedResponses)).isEmpty()) {
             throw new IOException("Invalid LLM saved responses schema");
@@ -80,7 +92,7 @@ public final class LlmJsonFiles {
             throw new IOException("LLM saved responses exceeds the 16 MiB limit");
         }
         Files.createDirectories(directory);
-        Path target = directory.resolve(savedResponses.scenario() + ".json");
+        Path target = directory.resolve(name + ".json");
         Path temporary = Files.createTempFile(directory, ".llm-recording-", ".tmp");
         try {
             Files.write(temporary, bytes);

@@ -37,6 +37,8 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.providers.mock.MockLLM;
+import org.conductoross.conductor.ai.testing.LlmCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.service.SchemaService;
@@ -89,6 +91,7 @@ public class LLMHelper {
     private final SchemaService schemaService;
     private final List<DocumentLoader> documentLoaders;
     private final OkHttpClient httpClient;
+    private final LlmCallRecorder recorder;
 
     public LLMHelper(SchemaService schemaService, List<DocumentLoader> documentLoaders) {
         this(schemaService, documentLoaders, AIHttpClients.defaultClient());
@@ -98,9 +101,18 @@ public class LLMHelper {
             SchemaService schemaService,
             List<DocumentLoader> documentLoaders,
             OkHttpClient httpClient) {
+        this(schemaService, documentLoaders, httpClient, null);
+    }
+
+    public LLMHelper(
+            SchemaService schemaService,
+            List<DocumentLoader> documentLoaders,
+            OkHttpClient httpClient,
+            LlmCallRecorder recorder) {
         this.schemaService = schemaService;
         this.documentLoaders = documentLoaders;
         this.httpClient = httpClient;
+        this.recorder = recorder;
     }
 
     public LLMResponse chatComplete(
@@ -110,7 +122,10 @@ public class LLMHelper {
             String payloadStoreLocation,
             Consumer<TokenUsageLog> tokenUsageLogger) {
 
-        ChatModel chatModel = llm.getChatModel();
+        ChatModel chatModel = llm.getChatModel(chatCompletion);
+        if (recorder != null && !MockLLM.NAME.equals(llm.getModelProvider())) {
+            chatModel = recorder.wrap(llm, chatCompletion, chatModel);
+        }
         ChatOptions chatOptions = llm.getChatOptions(chatCompletion);
         LLMResponse response = chatComplete(chatModel, chatOptions, chatCompletion);
 

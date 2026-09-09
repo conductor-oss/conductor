@@ -14,13 +14,17 @@ package org.conductoross.conductor.ai.testing;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.Test;
@@ -31,6 +35,7 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,10 +44,10 @@ class LlmJsonFilesTest {
 
     @Test
     void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
-        var shared = new ObjectMapperProvider().getObjectMapper();
-        var savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
-        var path = LlmJsonFiles.write(directory, savedResponses, false);
-        try (var source = Files.newInputStream(path)) {
+        ObjectMapper shared = new ObjectMapperProvider().getObjectMapper();
+        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
+        Path path = LlmJsonFiles.write(directory, savedResponses, false);
+        try (InputStream source = Files.newInputStream(path)) {
             assertEquals(savedResponses, LlmJsonFiles.read(source));
         }
         new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), new ChatCompletion());
@@ -55,36 +60,37 @@ class LlmJsonFilesTest {
 
     @Test
     void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
-        var savedResponses = new LlmSavedResponses(1, "blocked_before_llm", List.of());
+        LlmSavedResponses savedResponses =
+                new LlmSavedResponses(1, "blocked_before_llm", List.of());
         Path target = LlmJsonFiles.write(directory, savedResponses, false);
-        try (var source = Files.newInputStream(target)) {
+        try (InputStream source = Files.newInputStream(target)) {
             assertEquals(savedResponses, LlmJsonFiles.read(source));
         }
-        try (var files = Files.list(directory)) {
+        try (Stream<Path> files = Files.list(directory)) {
             assertEquals(List.of(target), files.toList());
         }
     }
 
     @Test
     void preservesExistingSavedResponsesUnlessRefreshIsExplicit() throws Exception {
-        var old = new LlmSavedResponses(1, "scenario", List.of());
-        var replacement = new LlmSavedResponses(1, "scenario", List.of(entry()));
+        LlmSavedResponses old = new LlmSavedResponses(1, "scenario", List.of());
+        LlmSavedResponses replacement = new LlmSavedResponses(1, "scenario", List.of(entry()));
         Path target = LlmJsonFiles.write(directory, old, false);
         assertThrows(
                 FileAlreadyExistsException.class,
                 () -> LlmJsonFiles.write(directory, replacement, false));
-        try (var source = Files.newInputStream(target)) {
+        try (InputStream source = Files.newInputStream(target)) {
             assertEquals(old, LlmJsonFiles.read(source));
         }
         LlmJsonFiles.write(directory, replacement, true);
-        try (var source = Files.newInputStream(target)) {
+        try (InputStream source = Files.newInputStream(target)) {
             assertEquals(replacement, LlmJsonFiles.read(source));
         }
     }
 
     @Test
     void concurrentPublishersCannotOverwriteEachOther() throws Exception {
-        var savedResponses = new LlmSavedResponses(1, "scenario", List.of());
+        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "scenario", List.of());
         Callable<Boolean> write =
                 () -> {
                     try {
@@ -94,11 +100,11 @@ class LlmJsonFilesTest {
                         return false;
                     }
                 };
-        try (var executor = Executors.newFixedThreadPool(2)) {
-            var results = executor.invokeAll(List.of(write, write));
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            List<Future<Boolean>> results = executor.invokeAll(List.of(write, write));
             assertNotEquals(results.get(0).get(), results.get(1).get());
         }
-        try (var files = Files.list(directory)) {
+        try (Stream<Path> files = Files.list(directory)) {
             assertEquals(1, files.count());
         }
     }
@@ -124,10 +130,12 @@ class LlmJsonFilesTest {
     }
 
     private static LlmSavedResponses.Entry entry() {
-        var converter = new LlmRequestResponseConverter();
-        var request = converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
-        var message = new LlmSavedResponses.Message("assistant", "hello", List.of(), List.of());
-        var response =
+        LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
+        LlmSavedResponses.Request request =
+                converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
+        LlmSavedResponses.Message message =
+                new LlmSavedResponses.Message("assistant", "hello", List.of(), List.of());
+        LlmSavedResponses.Response response =
                 new LlmSavedResponses.Response(
                         List.of(
                                 new LlmSavedResponses.Completion(
