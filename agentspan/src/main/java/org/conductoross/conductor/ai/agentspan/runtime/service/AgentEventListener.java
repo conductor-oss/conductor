@@ -415,9 +415,10 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
      * worker tasks an agent workflow is otherwise made of.
      *
      * <p>Three ways in, in order: the dispatch script's {@code _agent_tool_name} input; an
-     * allowlist over {@link ToolCompiler#TOOL_TASK_TYPES}, the task types a declared tool compiles
-     * to; and the worker case. Nothing is a tool by default, so a task type the agent runtime gains
-     * later is reported as a tool only once it is a tool kind the compiler knows about.
+     * allowlist over {@link ToolCompiler#COMPILED_TOOL_TASK_TYPES}, the task types a declared tool
+     * compiles to; and the worker case. Nothing is a tool by default, so a task type the agent
+     * runtime gains later is reported as a tool only once it is a tool kind the compiler knows
+     * about.
      */
     private boolean isToolTask(TaskModel task) {
         String taskType = task.getTaskType();
@@ -439,7 +440,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             // script never saw it — and a handoff is not a tool call.
             return false;
         }
-        if (ToolCompiler.TOOL_TASK_TYPES.contains(taskType)) {
+        if (ToolCompiler.COMPILED_TOOL_TASK_TYPES.contains(taskType)) {
             return true;
         }
         // Worker tools compile to SIMPLE, whose mapper rewrites the executed task's type to the

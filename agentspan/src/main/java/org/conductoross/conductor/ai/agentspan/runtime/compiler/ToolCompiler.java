@@ -170,7 +170,7 @@ public class ToolCompiler {
      * all. {@code SimpleTaskMapper} rewrites an executed SIMPLE task's type to the task's own name,
      * so a worker tool is recognised by that instead.
      */
-    public static final Set<String> TOOL_TASK_TYPES =
+    public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
                             TYPE_MAP.values().stream(),
                             MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
