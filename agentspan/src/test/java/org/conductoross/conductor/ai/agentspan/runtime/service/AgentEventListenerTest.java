@@ -39,6 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AgentEventListenerTest {
 
+    private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
+
     @Test
     void scheduledLlmAndCompletedToolPublishOrderedEventsToTheRealStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
@@ -91,7 +93,7 @@ class AgentEventListenerTest {
         AgentSSEEvent done = next(parentStream);
         assertThat(done.getType()).isEqualTo("done");
         assertThat(done.getOutput()).isEqualTo(Map.of("result", "complete"));
-        assertThat(next(parentStream)).isNull();
+        assertNoEvent(parentStream);
     }
 
     @Test
@@ -126,7 +128,7 @@ class AgentEventListenerTest {
 
         TaskModel human = task("wf-tools", "HUMAN", "ask_question_0");
         human.setTaskDefName("ask_question");
-        human.setInputData(Map.of("_agent_tool_name", "ask_question"));
+        human.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "ask_question"));
         human.setOutputData(Map.of("result", "yes"));
         listener.onTaskCompleted(human);
 
@@ -150,7 +152,7 @@ class AgentEventListenerTest {
                 Map.of(
                         "http_request",
                         Map.of("uri", "https://example.test/weather", "method", "GET"),
-                        "_agent_tool_name",
+                        AGENT_TOOL_NAME_KEY,
                         "get_weather"));
         http.setOutputData(Map.of("result", "72F"));
         listener.onTaskCompleted(http);
@@ -175,7 +177,7 @@ class AgentEventListenerTest {
 
         TaskModel agentTool = task("wf-sub", "SUB_WORKFLOW", "research_0");
         agentTool.setTaskDefName("research_agent_wf");
-        agentTool.setInputData(Map.of("_agent_tool_name", "research", "prompt", "hi"));
+        agentTool.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "research", "prompt", "hi"));
         agentTool.setOutputData(Map.of("result", "done"));
         listener.onTaskCompleted(agentTool);
 
@@ -199,7 +201,7 @@ class AgentEventListenerTest {
         discovery.setOutputData(Map.of("tools", List.of()));
         listener.onTaskCompleted(discovery);
 
-        assertThat(next(stream)).isNull();
+        assertNoEvent(stream);
         stream.close();
     }
 
@@ -224,9 +226,8 @@ class AgentEventListenerTest {
             plumbing.setTaskDefName(taskType);
             plumbing.setOutputData(Map.of("result", "x"));
             listener.onTaskCompleted(plumbing);
+            assertThat(read(stream, 200)).as("%s reported as a tool call", taskType).isNull();
         }
-
-        assertThat(next(stream)).isNull();
         stream.close();
     }
 
@@ -239,7 +240,7 @@ class AgentEventListenerTest {
         // A media tool may carry taskType in its own config, so no static allowlist covers it.
         TaskModel media = task("wf-media", "GENERATE_DIAGRAM", "make_diagram_0");
         media.setTaskDefName("generate_diagram");
-        media.setInputData(Map.of("prompt", "a box", "_agent_tool_name", "make_diagram"));
+        media.setInputData(Map.of("prompt", "a box", AGENT_TOOL_NAME_KEY, "make_diagram"));
         media.setOutputData(Map.of("result", "diagram.png"));
         listener.onTaskCompleted(media);
 
@@ -251,25 +252,56 @@ class AgentEventListenerTest {
     }
 
     @Test
+    void anUnmarkedToolWhoseConfigNamedItsTaskTypeIsStillAToolCall() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-dynamic", null);
+
+        // enrichToolsScriptDynamic sets no _agent_tool_name, so selection is on task type alone.
+        TaskModel media = task("wf-dynamic", "GENERATE_DIAGRAM", "make_diagram_0");
+        media.setTaskDefName("make_diagram");
+        media.setInputData(Map.of("prompt", "a box", "method", "make_diagram"));
+        media.setOutputData(Map.of("result", "diagram.png"));
+        listener.onTaskCompleted(media);
+
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("make_diagram");
+        stream.close();
+    }
+
+    @Test
     void frameworkPassthroughWrappersStayOffTheStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         AgentEventListener listener = listener(registry);
         AgentEventStream stream = registry.openStream("wf-fw", null);
 
         TaskModel wrapper = workerTask("wf-fw", "get_weather", "_fw_get_weather_0");
-        wrapper.setInputData(Map.of("_agent_tool_name", "get_weather"));
+        wrapper.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "get_weather"));
         wrapper.setOutputData(Map.of("result", "72F"));
         listener.onTaskCompleted(wrapper);
 
-        assertThat(next(stream)).isNull();
+        assertNoEvent(stream);
         stream.close();
     }
 
-    /** Next event, or {@code null} if none. The bound stops a blocking take hanging the test. */
+    /** Next event. The generous bound only stops a missing event hanging the suite. */
     private static AgentSSEEvent next(AgentEventStream stream) {
+        return read(stream, 5000);
+    }
+
+    /**
+     * Asserts the stream carries no further event. Events are queued synchronously by the listener,
+     * so a short bound is enough: anything coming has already arrived.
+     */
+    private static void assertNoEvent(AgentEventStream stream) {
+        assertThat(read(stream, 200)).isNull();
+    }
+
+    private static AgentSSEEvent read(AgentEventStream stream, long timeoutMillis) {
         ExecutorService reader = Executors.newSingleThreadExecutor();
         try {
-            return reader.submit(stream::nextEvent).get(500, TimeUnit.MILLISECONDS);
+            return reader.submit(stream::nextEvent).get(timeoutMillis, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             return null;
         } catch (InterruptedException e) {

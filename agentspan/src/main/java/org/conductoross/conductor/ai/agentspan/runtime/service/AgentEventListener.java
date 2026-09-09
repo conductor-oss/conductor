@@ -56,7 +56,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
      * Input key naming the tool a task was dispatched for, set by {@code
      * JavaScriptBuilder.enrichToolsScript}. Absent on statically compiled tasks.
      */
-    private static final String AGENT_TOOL_NAME = "_agent_tool_name";
+    private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     private final AgentStreamRegistry streamRegistry;
     private final MeterRegistry meterRegistry;
@@ -413,7 +413,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             return false;
         }
         Map<String, Object> input = task.getInputData();
-        if (input != null && input.containsKey(AGENT_TOOL_NAME)) {
+        if (input != null && input.containsKey(AGENT_TOOL_NAME_KEY)) {
             // Covers tool kinds whose own config names the task type, which no allowlist can list.
             return true;
         }
@@ -424,10 +424,9 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         if (ToolCompiler.COMPILED_TOOL_TASK_TYPES.contains(taskType)) {
             return true;
         }
-        // SimpleTaskMapper rewrites an executed SIMPLE task's type to the task's own name.
-        // USER_DEFINED then excludes platform types named after themselves, like LIST_MCP_TOOLS.
-        return taskType.equals(task.getTaskDefName())
-                && TaskType.of(taskType) == TaskType.USER_DEFINED;
+        // A custom type is the user's own worker, or a tool whose config named the type. Every
+        // platform type is a TaskType constant, LIST_MCP_TOOLS included.
+        return TaskType.of(taskType) == TaskType.USER_DEFINED;
     }
 
     /**
@@ -437,7 +436,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
     private String resolveToolName(TaskModel task) {
         Map<String, Object> input = task.getInputData();
         if (input != null) {
-            Object toolName = input.get(AGENT_TOOL_NAME);
+            Object toolName = input.get(AGENT_TOOL_NAME_KEY);
             if (toolName != null) {
                 return String.valueOf(toolName);
             }

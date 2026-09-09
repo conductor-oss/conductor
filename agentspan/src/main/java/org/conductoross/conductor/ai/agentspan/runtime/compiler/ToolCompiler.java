@@ -157,7 +157,8 @@ public class ToolCompiler {
 
     /**
      * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
-     * tool's own name as its type.
+     * tool's own name as its type. A floor, not a closed set: a media or RAG tool's config may name
+     * its own task type.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
