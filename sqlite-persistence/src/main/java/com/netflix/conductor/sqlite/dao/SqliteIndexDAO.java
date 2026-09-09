@@ -48,6 +48,12 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
+    /**
+     * Sentinel written to end_time while an execution is still running. Matches the column default
+     * in V7 byte for byte, so migrated and newly written rows compare equal.
+     */
+    private static final String EPOCH_TIMESTAMP = SQLITE_UTC_TIMESTAMP.format(Instant.EPOCH);
+
     private boolean onlyIndexOnStatusChange;
 
     public SqliteIndexDAO(
@@ -90,13 +96,22 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                 Instant.from(DateTimeFormatter.ISO_INSTANT.parse(isoInstant)));
     }
 
+    /**
+     * End time is absent until an execution reaches a terminal state. The column is NOT NULL so
+     * that ordering does not depend on how an engine places NULLs, so unfinished rows are stored as
+     * the epoch and sort last on endTime:DESC.
+     */
+    private static String toSqliteUtcTimestampOrEpoch(String isoInstant) {
+        return isoInstant == null ? EPOCH_TIMESTAMP : toSqliteUtcTimestamp(isoInstant);
+    }
+
     @Override
     public void indexWorkflow(WorkflowSummary workflow) {
         String INSERT_WORKFLOW_INDEX_SQL =
-                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, update_time, status, parent_workflow_id, classifier, json_data) "
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
+                "INSERT INTO workflow_index (workflow_id, correlation_id, workflow_type, start_time, end_time, update_time, status, parent_workflow_id, classifier, json_data) "
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (workflow_id) "
                         + " DO UPDATE SET correlation_id = excluded.correlation_id, workflow_type = excluded.workflow_type, "
-                        + " start_time = excluded.start_time, status = excluded.status, json_data = excluded.json_data, "
+                        + " start_time = excluded.start_time, end_time = excluded.end_time, status = excluded.status, json_data = excluded.json_data, "
                         + " update_time = excluded.update_time, parent_workflow_id = excluded.parent_workflow_id, "
                         + " classifier = excluded.classifier "
                         + " WHERE excluded.update_time >= workflow_index.update_time";
@@ -107,6 +122,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
         String updateTime = toSqliteUtcTimestamp(workflow.getUpdateTime());
         String startTime = toSqliteUtcTimestamp(workflow.getStartTime());
+        String endTime = toSqliteUtcTimestampOrEpoch(workflow.getEndTime());
 
         int rowsUpdated =
                 queryWithTransaction(
@@ -116,6 +132,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                         .addParameter(workflow.getCorrelationId())
                                         .addParameter(workflow.getWorkflowType())
                                         .addParameter(startTime)
+                                        .addParameter(endTime)
                                         .addParameter(updateTime)
                                         .addParameter(workflow.getStatus().toString())
                                         .addParameter(
@@ -159,10 +176,10 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
     @Override
     public void indexTask(TaskSummary task) {
         String INSERT_TASK_INDEX_SQL =
-                "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, update_time, workflow_type, json_data)"
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (task_id) "
+                "INSERT INTO task_index (task_id, task_type, task_def_name, status, start_time, end_time, update_time, workflow_type, json_data)"
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (task_id) "
                         + "DO UPDATE SET task_type = excluded.task_type, task_def_name = excluded.task_def_name, "
-                        + "status = excluded.status, update_time = excluded.update_time, json_data = excluded.json_data "
+                        + "status = excluded.status, end_time = excluded.end_time, update_time = excluded.update_time, json_data = excluded.json_data "
                         + "WHERE excluded.update_time >= task_index.update_time";
 
         if (onlyIndexOnStatusChange) {
@@ -171,6 +188,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
 
         String updateTime = toSqliteUtcTimestamp(task.getUpdateTime());
         String startTime = toSqliteUtcTimestamp(task.getStartTime());
+        String endTime = toSqliteUtcTimestampOrEpoch(task.getEndTime());
 
         int rowsUpdated =
                 queryWithTransaction(
@@ -181,6 +199,7 @@ public class SqliteIndexDAO extends SqliteBaseDAO implements IndexDAO {
                                         .addParameter(task.getTaskDefName())
                                         .addParameter(task.getStatus().toString())
                                         .addParameter(startTime)
+                                        .addParameter(endTime)
                                         .addParameter(updateTime)
                                         .addParameter(task.getWorkflowType())
                                         .addJsonParameter(task)

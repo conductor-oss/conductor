@@ -78,23 +78,6 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: ui-next
 
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-chromium-${{ hashFiles('ui-next/pnpm-lock.yaml') }}
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install chromium
-        working-directory: ui-next
-
-      # OS-level dependencies (apt packages) cannot be cached — always install.
-      - name: Install Playwright OS dependencies
-        run: pnpm exec playwright install-deps chromium
-        working-directory: ui-next
-
       - name: Build UI (with coverage sourcemaps)
         run: pnpm build
         working-directory: ui-next
@@ -128,15 +111,15 @@ jobs:
         working-directory: ui-next
         env:
           E2E_COVERAGE: "true"
-          # dist/ already built above — webServer only needs vite preview.
+          # dist/ already built above — skip rebuild inside the wrapper script.
           SKIP_WEBSERVER_BUILD: "true"
-          # Forwarded into docker-compose-ui-e2e.yaml for LLM task execution;
+          # Forwarded into docker-compose.integration.yml for LLM task execution;
           # also gates the LLM "completes successfully" Playwright tests.
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Generate frontend coverage report
-        if: success()
-        run: node scripts/playwright-coverage-report.mjs --min 50
+      - name: Generate frontend coverage report and enforce threshold
+        if: success() || failure()
+        run: node scripts/playwright-coverage-report.mjs
         working-directory: ui-next
 
       - name: Upload Playwright integration report

@@ -209,6 +209,53 @@ public class SqliteIndexDAOTest {
     }
 
     @Test
+    public void testIndexWorkflowStoresEndTimeOnceItIsSet() throws SQLException {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-end-time");
+
+        // Still running: no end time on the summary, so the column holds the epoch sentinel
+        // rather than NULL, which is what keeps endTime ordering the same on SQLite and Postgres.
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "Unfinished workflow should store the epoch",
+                SQLITE_UTC_TIMESTAMP.format(Instant.EPOCH),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+
+        // Terminal: the end time must reach the column through the ON CONFLICT update path too,
+        // since the row already exists by the time the workflow finishes.
+        wfs.setEndTime("2023-02-07T08:44:45Z");
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "End time does not match",
+                SQLITE_UTC_TIMESTAMP.format(
+                        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getEndTime()))),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+    }
+
+    @Test
+    public void testIndexTaskStoresEndTime() throws SQLException {
+        TaskSummary ts = getMockTaskSummary("task-id-end-time");
+        ts.setEndTime("2023-02-07T09:43:45Z");
+
+        indexDAO.indexTask(ts);
+
+        assertEquals(
+                "End time does not match",
+                SQLITE_UTC_TIMESTAMP.format(
+                        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getEndTime()))),
+                queryEndTime("task_index", "task_id", "task-id-end-time"));
+    }
+
+    private Object queryEndTime(String table, String idColumn, String id) throws SQLException {
+        List<Map<String, Object>> result =
+                queryDb(
+                        String.format(
+                                "SELECT end_time FROM %s WHERE %s = '%s'", table, idColumn, id));
+        assertEquals("Wrong number of rows returned", 1, result.size());
+        return result.get(0).get("end_time");
+    }
+
+    @Test
     public void testIndexNewWorkflow() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-new");
 
@@ -352,6 +399,62 @@ public class SqliteIndexDAOTest {
         assertEquals(1675845986000L, records.get(0).get("created_time"));
         assertEquals(logs.get(1).getLog(), records.get(1).get("log"));
         assertEquals(1675845987000L, records.get(1).get("created_time"));
+    }
+
+    // Asserts the rows actually come back ordered, not just that the SQL contains an ORDER BY.
+    // Workflows are indexed in an order that is deliberately NOT end-time order, so a dropped
+    // ORDER BY would surface as insertion order and fail here.
+    @Test
+    public void testSearchWorkflowSummarySortsByEndTime() {
+        indexEndTimeFixture("wf-end-mid", "2023-02-07T10:00:00Z");
+        indexEndTimeFixture("wf-end-late", "2023-02-07T12:00:00Z");
+        indexEndTimeFixture("wf-end-running", null);
+        indexEndTimeFixture("wf-end-early", "2023-02-07T08:00:00Z");
+
+        assertEquals(
+                "Descending end time order is wrong",
+                List.of("wf-end-late", "wf-end-mid", "wf-end-early", "wf-end-running"),
+                searchEndTimeFixture("endTime:DESC"));
+
+        // The unfinished workflow carries the epoch, so it leads on ascending rather than
+        // landing wherever the engine happens to place NULLs.
+        assertEquals(
+                "Ascending end time order is wrong",
+                List.of("wf-end-running", "wf-end-early", "wf-end-mid", "wf-end-late"),
+                searchEndTimeFixture("endTime:ASC"));
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryFiltersByEndTimeRange() {
+        indexEndTimeFixture("wf-range-early", "2023-02-07T08:00:00Z");
+        indexEndTimeFixture("wf-range-late", "2023-02-07T12:00:00Z");
+
+        // 2023-02-07T10:00:00Z. Only the later workflow finished after this instant; the earlier
+        // one must be excluded rather than the filter being dropped and both returned.
+        String query = "workflowType=\"end-time-range\" AND endTime>1675764000000";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, List.of("endTime:DESC"));
+
+        assertEquals(
+                "End time range filter was not applied",
+                List.of("wf-range-late"),
+                results.getResults().stream().map(WorkflowSummary::getWorkflowId).toList());
+    }
+
+    private void indexEndTimeFixture(String id, String endTime) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id);
+        wfs.setWorkflowType(id.startsWith("wf-range") ? "end-time-range" : "end-time-order");
+        wfs.setEndTime(endTime);
+        indexDAO.indexWorkflow(wfs);
+    }
+
+    private List<String> searchEndTimeFixture(String sort) {
+        return indexDAO
+                .searchWorkflowSummary("workflowType=\"end-time-order\"", "*", 0, 15, List.of(sort))
+                .getResults()
+                .stream()
+                .map(WorkflowSummary::getWorkflowId)
+                .toList();
     }
 
     @Test

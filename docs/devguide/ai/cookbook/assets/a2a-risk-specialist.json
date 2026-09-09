@@ -1,0 +1,45 @@
+{
+  "name": "risk_specialist_agent",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "A Conductor workflow exposed as an A2A agent. Assesses delivery risk for a proposal and returns a structured finding.",
+  "ownerEmail": "cookbook@example.com",
+  "metadata": {
+    "a2a.enabled": true,
+    "a2a.tags": [
+      "risk",
+      "review"
+    ]
+  },
+  "timeoutSeconds": 300,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "tasks": [
+    {
+      "name": "assess_risk",
+      "taskReferenceName": "assess_risk",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You are a delivery risk reviewer. Return JSON: {\"domain\": \"risk\", \"findings\": [string], \"severity\": \"low\"|\"medium\"|\"high\"}. Recommend only; never approve or execute anything."
+          },
+          {
+            "role": "user",
+            "message": "${workflow.input._a2a_text}"
+          }
+        ],
+        "temperature": 0.2,
+        "maxTokens": 600,
+        "jsonOutput": true
+      }
+    }
+  ],
+  "outputParameters": {
+    "domain": "${assess_risk.output.result.domain}",
+    "findings": "${assess_risk.output.result.findings}",
+    "severity": "${assess_risk.output.result.severity}"
+  }
+}

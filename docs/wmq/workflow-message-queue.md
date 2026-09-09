@@ -13,12 +13,13 @@ Two pieces make this work:
 
 ## Prerequisites
 
-WMQ requires changes that are currently in review:
+WMQ is disabled by default. Enable it on the Conductor server before registering a workflow that uses `PULL_WORKFLOW_MESSAGES` or calling the push endpoint:
 
-| Component | PR |
-|---|---|
-| Conductor OSS | https://github.com/conductor-oss/conductor/pull/917 |
-| Python SDK (`conductor-python`) | https://github.com/conductor-oss/python-sdk/pull/389 |
+```properties
+conductor.workflow-message-queue.enabled=true
+```
+
+When this property is `false`, Conductor does not register the system task or the HTTP endpoint; the endpoint returns `404 Not Found`.
 
 ## Using WMQ
 
@@ -62,8 +63,9 @@ The task completes with:
 Your workflow accesses the user data via `output.messages[0].payload`. The `id` and `receivedAt` fields are added by Conductor at ingestion time.
 
 **Push errors:**
+- `404 Not Found` — the workflow ID does not exist, or the WMQ feature is disabled.
 - `409 Conflict` — workflow is not in `RUNNING` state (completed, failed, terminated, etc.). The message is not stored.
-- `500` — queue is full (`maxQueueSize` reached). Caller must back off and retry.
+- `429 Too Many Requests` — queue is full (`maxQueueSize` reached). Caller must back off and retry.
 
 ### Event loop pattern
 
@@ -98,65 +100,13 @@ For workflows that process an unbounded stream of messages, wrap the task in a `
 
 The loop parks on `PULL_WORKFLOW_MESSAGES` until the next message arrives.
 
-## Using WMQ with Agentspan
+## Using WMQ with agents
 
-Agentspan wraps WMQ behind `wait_for_message_tool` and `runtime.send_message()`. See https://github.com/agentspan/agentspan/pull/23.
-
-### Define a message-waiting tool
-
-```python
-from agentspan.agents import Agent, wait_for_message_tool
-
-inbox = wait_for_message_tool(
-    name="wait_for_message",
-    description="Wait for the next incoming message.",
-)
-
-agent = Agent(
-    name="my-agent",
-    model="openai/gpt-4o",
-    tools=[inbox],
-    system_prompt="You are a message processing agent. Wait for messages and process them one by one.",
-)
-```
-
-When the agent calls this tool the runtime emits a `WAITING` event, the workflow parks on a `PULL_WORKFLOW_MESSAGES` task, and nothing runs until a message arrives.
-
-### Send a message to the running agent
-
-```python
-with AgentRuntime() as runtime:
-    handle = runtime.start(agent, "Start processing messages.")
-
-    # from anywhere, at any time:
-    runtime.send_message(handle.workflow_id, {"text": "hello"})
-```
-
-`send_message` POSTs the payload to `/api/workflow/{workflowId}/messages`. The workflow unblocks, the agent sees the message as a tool result, and the loop continues.
+WMQ is framework-neutral. Use `PULL_WORKFLOW_MESSAGES` in the Conductor graph to park execution until a message arrives, then pass the returned payload to the next task. For SDK-authored agents, see [Conductor Agents](../devguide/ai/conductor-agents.md) and keep framework-specific runtime code in its maintained SDK example.
 
 ### Kafka bridge example
 
-The pattern also works as a bridge from external event streams.
-
-Run the agent (it runs as a workflow in Conductor), then send messages from a Kafka consumer:
-
-```python
-with AgentRuntime() as runtime:
-    handle = runtime.start(agent, "Start consuming messages from Kafka.")
-
-    consumer = Consumer({...})
-    consumer.subscribe([KAFKA_TOPIC])
-
-    while True:
-        msg = consumer.poll(timeout=1.0)
-        if msg:
-            runtime.send_message(handle.workflow_id, {
-                "topic": msg.topic(),
-                "value": msg.value().decode("utf-8"),
-            })
-```
-
-Full examples: [`72_wait_for_message.py`](../sdk/python/examples/72_wait_for_message.py), [`73_wait_for_message_streaming.py`](../sdk/python/examples/73_wait_for_message_streaming.py), [`74_kafka_consumer_agent.py`](../sdk/python/examples/74_kafka_consumer_agent.py).
+The pattern also works as a bridge from external event streams. A Kafka consumer can translate each record into a `POST /api/workflow/{workflowId}/messages` request using the payload shape shown above. Keep that consumer implementation in its owning SDK or service repository; it is independent of the framework used by the workflow's agent steps.
 
 ## Configuration
 

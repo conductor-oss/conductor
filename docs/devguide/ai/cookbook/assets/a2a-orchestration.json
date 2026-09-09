@@ -1,0 +1,137 @@
+{
+  "name": "a2a_agent_orchestration",
+  "description": "Deterministic workflow that verifies two remote A2A agents are reachable, delegates to both in parallel with caller-supplied idempotency keys, joins their findings, and synthesizes a recommendation without acting on it.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 900,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "proposal",
+    "riskAgentUrl",
+    "costAgentUrl",
+    "requestId"
+  ],
+  "tasks": [
+    {
+      "name": "discover_risk_agent",
+      "taskReferenceName": "risk_card",
+      "type": "GET_AGENT_CARD",
+      "inputParameters": {
+        "agentType": "a2a",
+        "agentUrl": "${workflow.input.riskAgentUrl}"
+      },
+      "optional": true
+    },
+    {
+      "name": "verify_agents_reachable",
+      "taskReferenceName": "verify_agents",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "card": "${risk_card.output}",
+        "queryExpression": "{reachable: (((.card // {}) | tojson | contains(\"\\\"name\\\"\")) == true), advertised: (((.card.name // .card.agentCard.name) // \"unknown\"))}"
+      }
+    },
+    {
+      "name": "route_on_reachability",
+      "taskReferenceName": "route_reachable",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "reachable",
+      "inputParameters": {
+        "reachable": "${verify_agents.output.result.reachable}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "fork_specialist_agents",
+            "taskReferenceName": "fork_specialists",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "delegate_risk_review",
+                  "taskReferenceName": "risk_review",
+                  "type": "AGENT",
+                  "inputParameters": {
+                    "agentType": "a2a",
+                    "agentUrl": "${workflow.input.riskAgentUrl}",
+                    "text": "Assess delivery risk for this proposal: ${workflow.input.proposal}",
+                    "idempotencyKey": "${workflow.input.requestId}-risk",
+                    "pollIntervalSeconds": 5
+                  }
+                }
+              ],
+              [
+                {
+                  "name": "delegate_cost_review",
+                  "taskReferenceName": "cost_review",
+                  "type": "AGENT",
+                  "inputParameters": {
+                    "agentType": "a2a",
+                    "agentUrl": "${workflow.input.costAgentUrl}",
+                    "text": "Assess cost exposure for this proposal: ${workflow.input.proposal}",
+                    "idempotencyKey": "${workflow.input.requestId}-cost",
+                    "pollIntervalSeconds": 5
+                  }
+                }
+              ]
+            ]
+          },
+          {
+            "name": "join_specialist_agents",
+            "taskReferenceName": "join_specialists",
+            "type": "JOIN",
+            "joinOn": [
+              "risk_review",
+              "cost_review"
+            ]
+          },
+          {
+            "name": "synthesize_recommendation",
+            "taskReferenceName": "synthesize",
+            "type": "LLM_CHAT_COMPLETE",
+            "inputParameters": {
+              "llmProvider": "openai",
+              "model": "gpt-4o-mini",
+              "messages": [
+                {
+                  "role": "system",
+                  "message": "Combine independent specialist findings into one recommendation. Return JSON: {\"recommendation\": string, \"blockers\": [string], \"highestSeverity\": \"low\"|\"medium\"|\"high\"}. Attribute each blocker to the specialist domain it came from. Do not invent findings neither specialist reported."
+                },
+                {
+                  "role": "user",
+                  "message": "Proposal: ${workflow.input.proposal}\nSpecialist findings: ${join_specialists.output}"
+                }
+              ],
+              "temperature": 0.1,
+              "maxTokens": 800,
+              "jsonOutput": true
+            }
+          }
+        ],
+        "false": [
+          {
+            "name": "terminate_agent_unreachable",
+            "taskReferenceName": "terminate_unreachable",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "error": "remote_agent_unreachable",
+                "agentUrl": "${workflow.input.riskAgentUrl}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "recommendation": "${synthesize.output.result.recommendation}",
+    "blockers": "${synthesize.output.result.blockers}",
+    "highestSeverity": "${synthesize.output.result.highestSeverity}",
+    "riskAgent": "${risk_review.output}",
+    "costAgent": "${cost_review.output}"
+  }
+}

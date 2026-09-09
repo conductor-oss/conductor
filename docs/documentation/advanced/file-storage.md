@@ -235,8 +235,6 @@ attempt each.
   after a complete response.
 - Content URLs are redacted from errors. When signing is enabled, URLs are bearer credentials.
 
-The detailed component and lifecycle rationale is in [File Storage Design](../../design/file-storage.md).
-
 ## Migration from smart file objects
 
 The current contract replaces `FileHandler`, `ManagedFileHandler`, `FileUploader`, and

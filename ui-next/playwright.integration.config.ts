@@ -1,31 +1,35 @@
 /**
  * Playwright integration test configuration.
  *
- * Unlike the default playwright.config.ts (which mocks all /api calls and
- * tests the UI in isolation), this config runs against a live Conductor
- * backend.  The global setup script starts the backend via Docker Compose
- * automatically; the Vite dev server is then pointed at it.
+ * Default path (`pnpm test:e2e:integration`) runs Playwright inside Linux
+ * Chromium Docker via docker-compose.integration.yml so screenshot baselines
+ * match locally and in CI.
  *
- * Quick start:
+ * Host debugging (not for updating baselines):
+ *   pnpm test:e2e:integration:headed
+ *   pnpm test:e2e:integration:ui
  *
- *   # Build the server image once (slow — only needed when server code changes)
- *   docker build -t conductor:server -f docker/server/Dockerfile .
+ * Update visual baselines (Docker):
+ *   pnpm test:e2e:integration:update-snapshots
  *
- *   # Run all integration tests (Docker is managed automatically)
- *   pnpm test:e2e:integration
- *
- * The backend URL defaults to http://localhost:8000.  Override with:
- *   CONDUCTOR_SERVER_URL=http://my-server:8000 pnpm test:e2e:integration
- *
- * Set SKIP_DOCKER=true to skip Docker management entirely (use a server you
- * started yourself):
- *   SKIP_DOCKER=true pnpm test:e2e:integration
+ * Inside Docker, SKIP_DOCKER + SKIP_WEBSERVER are set: compose already started
+ * Conductor and vite preview. On the host headed/ui path, global-setup starts
+ * the ui-e2e backend and webServer runs vite preview.
  */
 
 import { defineConfig, devices } from "@playwright/test";
+import { loadIntegrationEnv } from "./e2e/integration/load-env";
+
+// Pick up ui-next/.env.local (e.g. OPENAI_API_KEY) before tests / docker start.
+loadIntegrationEnv();
 
 const CONDUCTOR_SERVER_URL =
   process.env.CONDUCTOR_SERVER_URL ?? "http://localhost:8000";
+const BASE_URL =
+  process.env.BASE_URL ??
+  process.env.PLAYWRIGHT_BASE_URL ??
+  "http://localhost:1234";
+const SKIP_WEBSERVER = process.env.SKIP_WEBSERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e/integration",
@@ -47,13 +51,25 @@ export default defineConfig({
   globalSetup: "./e2e/integration/global-setup.ts",
   globalTeardown: "./e2e/integration/global-teardown.ts",
 
+  // Visual snapshots for integration specs (definition / execution pages).
+  // Dynamic names and IDs are masked in helpers.expectMainContentScreenshot.
+  // Baselines are platform-agnostic — always capture via Docker Chromium.
+  expect: {
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.06,
+    },
+  },
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFileName}/{arg}{ext}",
+
   use: {
-    baseURL: "http://localhost:1234",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     // Integration tests can be slower due to real API calls.
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+    // Fixed viewport so screenshot baselines are comparable across runs.
+    viewport: { width: 1280, height: 800 },
   },
 
   projects: [
@@ -63,29 +79,27 @@ export default defineConfig({
     },
   ],
 
-  // Build the app and serve it with `vite preview`.
-  // Integration tests run against the production bundle — not the dev server —
-  // so they exercise the same artifact that gets deployed.
-  // VITE_WF_SERVER is passed to both the build step (ignored) and the preview
-  // step (picked up by preview.proxy in vite.config.ts).
+  // Host headed/ui path: build + preview. Docker path sets SKIP_WEBSERVER —
+  // compose `app` service already serves dist/ on :1234.
   //
-  // In CI, build separately first (see ui-next-integration-ci.yml) and set
-  // SKIP_WEBSERVER_BUILD=true so the webServer only runs the lightweight
-  // preview — vite build + E2E_COVERAGE sourcemaps can OOM on the runner when
-  // combined with Docker.
-  webServer: {
-    command:
-      process.env.SKIP_WEBSERVER_BUILD === "true"
-        ? "pnpm preview"
-        : "pnpm build && pnpm preview",
-    url: "http://localhost:1234",
-    reuseExistingServer: !process.env.CI,
-    timeout: 300_000, // allow up to 5 min for a cold build
-    env: {
-      VITE_WF_SERVER: CONDUCTOR_SERVER_URL,
-      // Raise the heap for `vite build` (especially with E2E_COVERAGE sourcemaps).
-      // CI pre-builds with SKIP_WEBSERVER_BUILD so this mainly helps local runs.
-      NODE_OPTIONS: process.env.NODE_OPTIONS ?? "--max-old-space-size=8192",
-    },
-  },
+  // In CI, build separately first and set SKIP_WEBSERVER_BUILD=true when using
+  // the host webServer path. Docker integration uses SKIP_WEBSERVER instead.
+  ...(SKIP_WEBSERVER
+    ? {}
+    : {
+        webServer: {
+          command:
+            process.env.SKIP_WEBSERVER_BUILD === "true"
+              ? "pnpm preview"
+              : "pnpm build && pnpm preview",
+          url: BASE_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 300_000,
+          env: {
+            VITE_WF_SERVER: CONDUCTOR_SERVER_URL,
+            NODE_OPTIONS:
+              process.env.NODE_OPTIONS ?? "--max-old-space-size=8192",
+          },
+        },
+      }),
 });

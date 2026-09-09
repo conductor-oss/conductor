@@ -4,7 +4,7 @@
  * These items are merged with plugin-registered items in UiSidebar.
  * - Executions submenu (Workflow, Scheduler, Queue Monitor)
  * - Run Workflow button
- * - Definitions submenu (Workflow, Agents, Task, Event Handler, Scheduler)
+ * - Definitions submenu (Workflow, Agents, Task, Event Handler, Scheduler, Schemas)
  * - Help menu
  * - API Docs
  */
@@ -27,6 +27,7 @@ import {
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
   SCHEDULER_EXECUTION_URL,
+  SCHEMAS_URL,
   SKILLS_URL,
   TASK_DEF_URL,
   TASK_QUEUE_URL,
@@ -68,6 +69,7 @@ const CORE_SIDEBAR_POSITIONS = {
     taskDefItem: 200,
     eventHandlerDefItem: 300,
     schedulerDefItem: 350,
+    schemas: 375,
   },
   // Help submenu children
   HELP: {
@@ -258,6 +260,20 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: hideScheduler,
           position: D.schedulerDefItem,
+        },
+        // Sidebar items are merged by id, so a plugin registering its own schema
+        // screen under this id replaces this entry rather than adding a second
+        // "Schemas" item beside it.
+        {
+          id: "schemas",
+          title: "Schemas",
+          icon: null,
+          linkTo: SCHEMAS_URL.BASE,
+          activeRoutes: [SCHEMAS_URL.EDIT],
+          shortcuts: [],
+          hotkeys: "",
+          hidden: false,
+          position: D.schemas,
         },
       ],
     },
