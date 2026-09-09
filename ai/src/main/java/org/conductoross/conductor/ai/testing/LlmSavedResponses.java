@@ -23,10 +23,7 @@ import org.springframework.ai.chat.messages.MessageType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/**
- * Portable request/response pairs with the model's history policy for playback. Credentials,
- * runtime IDs, and usage are deliberately absent.
- */
+/** Normalized requests and complete model responses with the history policy for playback. */
 public record LlmSavedResponses(
         int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
     private static final String MISMATCHED_MESSAGE_ROLE =
@@ -38,7 +35,7 @@ public record LlmSavedResponses(
 
     public record ModelSettings(String model, boolean supportsAssistantPrefill) {}
 
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
 
     public LlmSavedResponses {
         if (schemaVersion != SCHEMA_VERSION) {
@@ -52,7 +49,7 @@ public record LlmSavedResponses(
         entries = List.copyOf(entries);
     }
 
-    public record Entry(Request request, Response response) {
+    public record Entry(Request request, JsonNode response) {
         public Entry {
             Objects.requireNonNull(request, "request");
             Objects.requireNonNull(response, "response");
@@ -112,24 +109,6 @@ public record LlmSavedResponses(
         public ToolResult {
             requireReference(reference);
             requireName(name);
-        }
-    }
-
-    public record Completion(Message message, String finishReason) {
-        public Completion {
-            Validate.isTrue(
-                    message != null && MessageType.ASSISTANT.getValue().equals(message.role()),
-                    "Completion must contain an assistant message");
-            Objects.requireNonNull(finishReason, "finishReason");
-        }
-    }
-
-    public record Response(List<Completion> completions) {
-        public Response {
-            completions = List.copyOf(completions);
-            if (completions.isEmpty()) {
-                throw new IllegalArgumentException("A recorded response must contain a completion");
-            }
         }
     }
 

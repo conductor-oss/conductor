@@ -32,6 +32,7 @@ import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
@@ -40,11 +41,11 @@ public final class MockLLM implements AIModel {
             "MockLLM only plays back recorded chat responses";
 
     public static final String NAME = "mockLLM";
-    private final Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses;
+    private final Map<LlmSavedResponses.Request, JsonNode> responses;
     private final Map<String, Boolean> assistantPrefillByModel;
 
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
-        Map<LlmSavedResponses.Request, LlmSavedResponses.Response> loaded = new HashMap<>();
+        Map<LlmSavedResponses.Request, JsonNode> loaded = new HashMap<>();
         Map<String, Boolean> policies = new HashMap<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
             for (Path file : files) {
@@ -59,14 +60,17 @@ public final class MockLLM implements AIModel {
 
     private static void register(
             LlmSavedResponses saved,
-            Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses,
+            Map<LlmSavedResponses.Request, JsonNode> responses,
             Map<String, Boolean> policies) {
         // Identical responses merge; conflicting responses for the same request fail.
         for (LlmSavedResponses.Entry entry : saved.entries()) {
-            LlmSavedResponses.Response existing =
-                    responses.putIfAbsent(entry.request(), entry.response());
+            JsonNode existing = responses.putIfAbsent(entry.request(), entry.response());
             Validate.isTrue(
-                    existing == null || existing.equals(entry.response()),
+                    existing == null
+                            || LlmRequestResponseConverter.responseContent(existing)
+                                    .equals(
+                                            LlmRequestResponseConverter.responseContent(
+                                                    entry.response())),
                     "Conflicting recorded responses for the same request");
         }
         LlmSavedResponses.ModelSettings settings = saved.modelSettings();
@@ -102,7 +106,7 @@ public final class MockLLM implements AIModel {
         return prompt -> {
             LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
             LlmSavedResponses.Request request = converter.toSavedRequest(prompt, options);
-            LlmSavedResponses.Response response = responses.get(request);
+            JsonNode response = responses.get(request);
             if (response == null)
                 throw new NonRetryableException("No recorded response matches the LLM request");
             return converter.toChatResponse(response, UUID.randomUUID().toString());

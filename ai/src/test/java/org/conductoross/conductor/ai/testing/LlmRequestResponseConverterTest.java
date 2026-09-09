@@ -121,8 +121,8 @@ class LlmRequestResponseConverterTest {
             strings = {"end_turn", "length", "refusal", "COMPLETE", "STOP_SEQUENCE", "unknown"})
     void preservesProviderFinishReasons(String finishReason) {
         LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
-        LlmSavedResponses.Response saved = converter.toSavedResponse(response(finishReason));
-        assertEquals(finishReason, saved.completions().getFirst().finishReason());
+        JsonNode saved = converter.toSavedResponse(response(finishReason));
+        assertEquals(finishReason, saved.at("/results/0/metadata/finishReason").asText());
         assertEquals(
                 finishReason,
                 converter

@@ -25,7 +25,10 @@ import java.util.stream.Stream;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -46,7 +49,9 @@ class LlmJsonFilesTest {
     @Test
     void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = objectMapper;
-        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
+        LlmSavedResponses savedResponses =
+                new LlmSavedResponses(
+                        LlmSavedResponses.SCHEMA_VERSION, "mapper_isolation", List.of());
         Path path = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(path)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
@@ -62,7 +67,8 @@ class LlmJsonFilesTest {
     @Test
     void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
         LlmSavedResponses savedResponses =
-                new LlmSavedResponses(1, "blocked_before_llm", List.of());
+                new LlmSavedResponses(
+                        LlmSavedResponses.SCHEMA_VERSION, "blocked_before_llm", List.of());
         Path target = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(target)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
@@ -74,8 +80,11 @@ class LlmJsonFilesTest {
 
     @Test
     void writesSeparateFilesForTheSameScenario() throws Exception {
-        LlmSavedResponses first = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
-        LlmSavedResponses second = new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
+        LlmSavedResponses first =
+                new LlmSavedResponses(LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of());
+        LlmSavedResponses second =
+                new LlmSavedResponses(
+                        LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
         Path firstFile = jsonFiles.writeRecording(directory, first);
         Path secondFile = jsonFiles.writeRecording(directory, second);
         assertNotEquals(firstFile, secondFile);
@@ -86,7 +95,8 @@ class LlmJsonFilesTest {
     @Test
     void concurrentPublishersWriteSeparateRecordings() throws Exception {
         LlmSavedResponses savedResponses =
-                new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
+                new LlmSavedResponses(
+                        LlmSavedResponses.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
         Callable<Path> write = () -> jsonFiles.writeRecording(directory, savedResponses);
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             List<Future<Path>> results = executor.invokeAll(List.of(write, write));
@@ -106,12 +116,14 @@ class LlmJsonFilesTest {
         LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         LlmSavedResponses.Request request =
                 converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
-        LlmSavedResponses.Message message =
-                new LlmSavedResponses.Message(
-                        MessageType.ASSISTANT.getValue(), "hello", List.of(), List.of());
-        LlmSavedResponses.Response response =
-                new LlmSavedResponses.Response(
-                        List.of(new LlmSavedResponses.Completion(message, "STOP")));
-        return new LlmSavedResponses.Entry(request, response);
+        ChatResponse response =
+                new ChatResponse(
+                        List.of(
+                                new Generation(
+                                        new AssistantMessage("hello"),
+                                        ChatGenerationMetadata.builder()
+                                                .finishReason("STOP")
+                                                .build())));
+        return new LlmSavedResponses.Entry(request, converter.toSavedResponse(response));
     }
 }

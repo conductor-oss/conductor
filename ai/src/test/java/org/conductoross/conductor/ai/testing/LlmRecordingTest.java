@@ -55,6 +55,7 @@ import org.conductoross.conductor.service.SchemaService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -140,7 +141,11 @@ class LlmRecordingTest {
                         .readValue(recordings().getFirst().toFile(), LlmSavedResponses.class);
         assertEquals(
                 providerReason,
-                saved.entries().getFirst().response().completions().getFirst().finishReason());
+                saved.entries()
+                        .getFirst()
+                        .response()
+                        .at("/results/0/metadata/finishReason")
+                        .asText());
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
             assertEquals(expected, call(context, input(MockLLM.NAME, "model")).getFinishReason());
         }
@@ -148,8 +153,12 @@ class LlmRecordingTest {
 
     @ParameterizedTest
     @MethodSource("providersWithCustomOptions")
-    void providerToolDefinitionsSurviveRecordingAndPlayback(AIModel provider) throws IOException {
+    void providerToolDefinitionsSurviveRecordingAndPlayback(AIModel provider, boolean withSchema)
+            throws IOException {
         ChatCompletion input = input(provider.getModelProvider(), "model");
+        if (!withSchema) {
+            input.getTools().getFirst().setInputSchema(null);
+        }
         ObjectMapper mapper = new ObjectMapper();
         ChatModel recording =
                 new JsonFileLlmCallRecorder(directory, mapper)
@@ -169,7 +178,9 @@ class LlmRecordingTest {
                 response.getResult().getOutput().getToolCalls().getFirst().name());
 
         // A changed tool schema must miss the recording, even when the prompt is identical.
-        input.getTools().getFirst().setInputSchema(Map.of("type", "object"));
+        input.getTools()
+                .getFirst()
+                .setInputSchema(Map.of("type", "object", "required", List.of("country")));
         assertThrows(
                 NonRetryableException.class,
                 () ->
@@ -180,7 +191,7 @@ class LlmRecordingTest {
                                                 playback.getChatOptions(input))));
     }
 
-    private static Stream<AIModel> providersWithCustomOptions() {
+    private static Stream<Arguments> providersWithCustomOptions() {
         OkHttpClient client = new OkHttpClient();
         AnthropicConfiguration anthropic = new AnthropicConfiguration();
         anthropic.setApiKey("test-key");
@@ -188,10 +199,15 @@ class LlmRecordingTest {
         openai.setApiKey("test-key");
         GeminiVertexConfiguration gemini = new GeminiVertexConfiguration();
         gemini.setApiKey("test-key");
-        return Stream.of(
-                new Anthropic(anthropic, client),
-                new OpenAI(openai, client),
-                new GeminiVertex(gemini, client));
+        return Stream.<AIModel>of(
+                        new Anthropic(anthropic, client),
+                        new OpenAI(openai, client),
+                        new GeminiVertex(gemini, client))
+                .flatMap(
+                        provider ->
+                                Stream.of(
+                                        Arguments.of(provider, true),
+                                        Arguments.of(provider, false)));
     }
 
     @Test
@@ -294,7 +310,7 @@ class LlmRecordingTest {
     void recordValidationStillRejectsUnsupportedSchemaVersion() throws IOException {
         Files.writeString(
                 directory.resolve(INVALID_RECORDING_FILE),
-                "{\"schemaVersion\":2,\"scenario\":\"weather\",\"entries\":[]}");
+                "{\"schemaVersion\":3,\"scenario\":\"weather\",\"entries\":[]}");
         assertThrows(RuntimeException.class, () -> context(false, true, null));
     }
 

@@ -25,9 +25,7 @@ import org.conductoross.conductor.ai.model.ToolSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -39,6 +37,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
@@ -83,10 +82,7 @@ public final class LlmRequestResponseConverter {
                         new LlmSavedResponses.Tool(
                                 tool.getName(),
                                 tool.getDescription(),
-                                MAPPER.valueToTree(
-                                        tool.getInputSchema() != null
-                                                ? tool.getInputSchema()
-                                                : Map.of("type", "object"))));
+                                MAPPER.valueToTree(tool.getInputSchema())));
             }
         }
         return new RequestOptions(
@@ -125,50 +121,28 @@ public final class LlmRequestResponseConverter {
                 messages, tools, input.jsonOutput(), input.outputSchema());
     }
 
-    public LlmSavedResponses.Response toSavedResponse(ChatResponse response) {
+    public JsonNode toSavedResponse(ChatResponse response) {
         if (response == null) {
             throw new IllegalArgumentException("Cannot record an absent model response");
         }
-        return new LlmSavedResponses.Response(
-                response.getResults().stream()
-                        .map(
-                                generation ->
-                                        new LlmSavedResponses.Completion(
-                                                toSavedMessage(generation.getOutput()),
-                                                generation.getMetadata().getFinishReason()))
-                        .toList());
+        return LlmChatResponseJson.write(response);
     }
 
-    /** Reconstruct a response before Conductor's normal tool conversion and JSON validation. */
-    public ChatResponse toChatResponse(LlmSavedResponses.Response response, String idPrefix) {
-        if (StringUtils.isBlank(idPrefix)) {
-            throw new IllegalArgumentException("Replay tool-call ID prefix must not be blank");
-        }
-        List<Generation> generations = new ArrayList<>();
-        for (LlmSavedResponses.Completion completion : response.completions()) {
-            LlmSavedResponses.Message message = completion.message();
-            List<AssistantMessage.ToolCall> calls = new ArrayList<>();
-            for (LlmSavedResponses.ToolCall call : message.toolCalls()) {
-                String id = idPrefix + "_" + call.reference();
-                Validate.isTrue(
-                        call.reference().equals(reference(id, call.name())),
-                        "Recorded tool-call reference does not match request history");
-                calls.add(
-                        new AssistantMessage.ToolCall(
-                                id, FUNCTION_TOOL_TYPE, call.name(), call.arguments().toString()));
+    /** Restore all response data, replacing only tool-call IDs for this playback invocation. */
+    public ChatResponse toChatResponse(JsonNode data, String idPrefix) {
+        return LlmChatResponseJson.read(data, idPrefix);
+    }
+
+    /** Ignore per-call IDs and usage when checking repeated recordings for conflicting answers. */
+    public static JsonNode responseContent(JsonNode response) {
+        JsonNode results = response.get("results").deepCopy();
+        int callIndex = 0;
+        for (JsonNode result : results) {
+            for (JsonNode call : result.get("output").get("toolCalls")) {
+                ((ObjectNode) call).put("id", "call_" + callIndex++);
             }
-            generations.add(
-                    new Generation(
-                            AssistantMessage.builder()
-                                    .content(message.text())
-                                    .toolCalls(calls)
-                                    .build(),
-                            ChatGenerationMetadata.builder()
-                                    .finishReason(completion.finishReason())
-                                    .build()));
         }
-        // Default Spring AI metadata supplies empty/zero usage, with no provider response ID.
-        return new ChatResponse(generations);
+        return results;
     }
 
     private LlmSavedResponses.Message toSavedMessage(Message message) {
