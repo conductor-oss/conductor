@@ -150,9 +150,7 @@ public class MetadataResource {
             return all;
         }
         String wanted = classifier.trim();
-        return all.stream()
-                .filter(item -> wanted.equalsIgnoreCase(item.getClassifier()))
-                .toList();
+        return all.stream().filter(item -> wanted.equalsIgnoreCase(item.getClassifier())).toList();
     }
 
     @DeleteMapping("/workflow/{name}/{version}")
