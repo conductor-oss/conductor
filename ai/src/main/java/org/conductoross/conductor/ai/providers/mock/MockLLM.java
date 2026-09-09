@@ -40,8 +40,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public final class MockLLM implements AIModel {
     private static final String CONFLICTING_RESPONSES =
             "Conflicting recorded responses for the same request";
-    private static final String CONFLICTING_HISTORY_POLICIES =
-            "Conflicting recorded history policies for model ";
     private static final String MISSING_HISTORY_POLICY =
             "No recorded history policy for the selected model";
     private static final String MISSING_RESPONSE = "No recorded response matches the LLM request";
@@ -73,7 +71,7 @@ public final class MockLLM implements AIModel {
             LlmSavedResponses saved,
             Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses,
             Map<String, Boolean> policies) {
-        // File order is irrelevant: identical recordings merge, conflicting recordings fail.
+        // Identical responses merge; conflicting responses for the same request fail.
         for (LlmSavedResponses.Entry entry : saved.entries()) {
             LlmSavedResponses.Response existing =
                     responses.putIfAbsent(entry.request(), entry.response());
@@ -83,10 +81,7 @@ public final class MockLLM implements AIModel {
         LlmSavedResponses.ModelSettings settings = saved.modelSettings();
         if (settings != null) {
             String model = Objects.toString(settings.model(), StringUtils.EMPTY);
-            Boolean existing = policies.putIfAbsent(model, settings.supportsAssistantPrefill());
-            if (existing != null && existing != settings.supportsAssistantPrefill()) {
-                throw new IllegalArgumentException(CONFLICTING_HISTORY_POLICIES + model);
-            }
+            policies.putIfAbsent(model, settings.supportsAssistantPrefill());
         }
     }
 

@@ -17,29 +17,25 @@ import java.io.IOException;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.conductoross.conductor.ai.testing.LlmRecordingProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(LlmRecordingProperties.class)
+@Component
 @ConditionalOnProperty(
         prefix = LlmRecordingProperties.PREFIX,
         name = LlmRecordingProperties.ENABLE_LLM_MOCKS,
         havingValue = LlmRecordingProperties.ENABLED)
-public class MockLLMConfiguration implements ModelConfiguration<MockLLM> {
+public class MockLLMModelConfig implements ModelConfiguration<MockLLM> {
     private final MockLLM model;
 
-    public MockLLMConfiguration(LlmRecordingProperties properties, ObjectMapper objectMapper)
+    public MockLLMModelConfig(LlmRecordingProperties properties, ObjectMapper objectMapper)
             throws IOException {
         // Validate during bean creation, before the provider registry's catch-and-log loop.
         this.model = new MockLLM(properties.getRecordingsDirectory(), objectMapper);
     }
 
-    @Bean
     @Override
     public MockLLM get() {
         return model;

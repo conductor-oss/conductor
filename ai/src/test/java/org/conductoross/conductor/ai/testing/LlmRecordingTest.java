@@ -40,7 +40,7 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.providers.mock.MockLLM;
-import org.conductoross.conductor.ai.providers.mock.MockLLMConfiguration;
+import org.conductoross.conductor.ai.providers.mock.MockLLMModelConfig;
 import org.conductoross.conductor.ai.tasks.worker.LLMWorkers;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.dao.schema.InMemorySchemaDAO;
@@ -129,7 +129,7 @@ class LlmRecordingTest {
     void startupFlagsControlRecorderAndProvider(boolean record, boolean playback) {
         try (AnnotationConfigApplicationContext context = context(record, playback, null)) {
             assertEquals(record ? 1 : 0, context.getBeansOfType(LlmCallRecorder.class).size());
-            assertEquals(playback ? 1 : 0, context.getBeansOfType(MockLLM.class).size());
+            assertEquals(playback ? 1 : 0, context.getBeansOfType(MockLLMModelConfig.class).size());
             AIModelProvider providers = context.getBean(AIModelProvider.class);
             if (playback)
                 assertInstanceOf(
@@ -179,7 +179,8 @@ class LlmRecordingTest {
                     repeated.getToolCalls().getFirst().getTaskReferenceName());
             assertEquals(0, first.getTokenUsed());
             assertFalse(
-                    context.getBean(MockLLM.class)
+                    context.getBean(MockLLMModelConfig.class)
+                            .get()
                             .supportsAssistantPrefill(input(MockLLM.NAME, MODEL_FIELD)));
         }
         assertEquals(2, recordings().size(), PLAYBACK_RECORDING_ASSERTION);
@@ -245,7 +246,7 @@ class LlmRecordingTest {
         Files.writeString(directory.resolve(IGNORED_FILE), INVALID_RECORDING_CONTENT);
         Files.createDirectory(directory.resolve(IGNORED_DIRECTORY));
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
-            assertNotNull(context.getBean(MockLLM.class));
+            assertNotNull(context.getBean(MockLLMModelConfig.class).get());
         }
     }
 
@@ -363,7 +364,7 @@ class LlmRecordingTest {
                                         directory.resolve(PAYLOAD_DIRECTORY).toString())));
         context.register(
                 LlmRecordingConfiguration.class,
-                MockLLMConfiguration.class,
+                MockLLMModelConfig.class,
                 AIModelProvider.class,
                 LLMs.class,
                 LLMWorkers.class);
