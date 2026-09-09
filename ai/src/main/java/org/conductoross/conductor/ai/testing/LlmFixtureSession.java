@@ -26,7 +26,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,7 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Conductor response validation. Lifecycle/retention is owned by the caller, not a global registry.
  */
 public final class LlmFixtureSession {
-    private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String scenario;
     private final LlmFixture replay;
@@ -70,7 +69,7 @@ public final class LlmFixtureSession {
             throw new IllegalArgumentException("Cannot record mockLLM");
         }
         // Freeze caller-owned options so later mutation cannot change an in-flight attempt.
-        ChatCompletion constraints = MAPPER.convertValue(input, ChatCompletion.class);
+        var constraints = LlmFixtureNormalizer.options(input);
         return new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {
@@ -89,7 +88,10 @@ public final class LlmFixtureSession {
     }
 
     private ChatResponse invoke(
-            LlmCallContext context, ChatCompletion input, ChatModel delegate, Prompt prompt) {
+            LlmCallContext context,
+            LlmFixtureNormalizer.RequestOptions input,
+            ChatModel delegate,
+            Prompt prompt) {
         if (replay != null && !replay.streams().containsKey(context.stream())) {
             throw mismatch(context.stream(), 0, "unexpected stream");
         }

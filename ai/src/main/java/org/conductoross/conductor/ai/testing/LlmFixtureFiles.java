@@ -20,9 +20,6 @@ import java.nio.file.StandardCopyOption;
 
 import org.conductoross.conductor.common.JsonSchemaValidator;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,9 +29,7 @@ import com.networknt.schema.JsonSchema;
 public final class LlmFixtureFiles {
     private static final int MAX_BYTES = 16 * 1024 * 1024;
     private static final ObjectMapper MAPPER =
-            new ObjectMapperProvider()
-                    .getObjectMapper()
-                    .setSerializationInclusion(JsonInclude.Include.ALWAYS)
+            new ObjectMapper()
                     .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
                     .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .enable(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES)

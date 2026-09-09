@@ -19,6 +19,7 @@ import java.util.TreeMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.conductoross.conductor.ai.model.FinishReason;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -101,15 +102,12 @@ public record LlmFixture(int schemaVersion, String scenario, Map<String, List<Tu
         }
     }
 
-    public record Completion(Message message, String finishReason) {
+    public record Completion(Message message, FinishReason finishReason) {
         public Completion {
             if (message == null || !"assistant".equals(message.role())) {
                 throw new IllegalArgumentException("Completion must contain an assistant message");
             }
-            if (!Strings.CS.equalsAny(
-                    finishReason, "STOP", "TOOL_CALLS", "MAX_TOKENS", "CONTENT_FILTER")) {
-                throw new IllegalArgumentException("Unsupported fixture finish reason");
-            }
+            Objects.requireNonNull(finishReason, "finishReason");
         }
     }
 

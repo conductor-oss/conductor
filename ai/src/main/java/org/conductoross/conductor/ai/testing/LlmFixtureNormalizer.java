@@ -14,12 +14,12 @@ package org.conductoross.conductor.ai.testing;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.FinishReason;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -30,8 +30,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.CollectionUtils;
-
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -46,24 +44,28 @@ import com.fasterxml.jackson.databind.node.TextNode;
  */
 public final class LlmFixtureNormalizer {
     private static final ObjectMapper MAPPER =
-            new ObjectMapperProvider()
-                    .getObjectMapper()
-                    .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+            new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
-    private final Map<String, String> callReferences = new HashMap<>();
-    private final Map<String, String> callNames = new HashMap<>();
+    private final Map<String, CallIdentity> callIdentities = new HashMap<>();
+
+    private record CallIdentity(String reference, String name) {}
 
     public LlmFixtureNormalizer() {}
 
     /** Work on a copy so a failed match or provider call cannot advance the stream's ID mapping. */
     public LlmFixtureNormalizer copy() {
         var copy = new LlmFixtureNormalizer();
-        copy.callReferences.putAll(callReferences);
-        copy.callNames.putAll(callNames);
+        copy.callIdentities.putAll(callIdentities);
         return copy;
     }
 
     public LlmFixture.Request normalizeRequest(Prompt prompt, ChatCompletion input) {
+        return normalizeRequest(prompt, options(input));
+    }
+
+    record RequestOptions(boolean jsonOutput, JsonNode outputSchema) {}
+
+    static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
             throw new IllegalArgumentException(
                     "LLM fixtures require full history; previousResponseId is unsupported");
@@ -75,6 +77,12 @@ public final class LlmFixtureNormalizer {
             throw new IllegalArgumentException(
                     "Provider-native tools are unsupported in LLM fixtures");
         }
+        // Capture only fixture constraints; messages and tools come from the effective prompt.
+        return new RequestOptions(
+                input.isJsonOutput(), canonical(MAPPER.valueToTree(input.getOutputSchema())));
+    }
+
+    LlmFixture.Request normalizeRequest(Prompt prompt, RequestOptions input) {
         var messages = prompt.getInstructions().stream().map(this::normalizeMessage).toList();
         var tools = new ArrayList<LlmFixture.Tool>();
         // Read the effective tool catalog passed to the model, not the original task definition.
@@ -97,11 +105,7 @@ public final class LlmFixtureNormalizer {
                 }
             }
         }
-        return new LlmFixture.Request(
-                messages,
-                tools,
-                input.isJsonOutput(),
-                canonical(MAPPER.valueToTree(input.getOutputSchema())));
+        return new LlmFixture.Request(messages, tools, input.jsonOutput(), input.outputSchema());
     }
 
     public LlmFixture.Response normalizeResponse(ChatResponse response) {
@@ -114,7 +118,7 @@ public final class LlmFixtureNormalizer {
                                 generation ->
                                         new LlmFixture.Completion(
                                                 normalizeMessage(generation.getOutput()),
-                                                normalizeFinishReason(
+                                                FinishReason.fromProvider(
                                                         generation
                                                                 .getMetadata()
                                                                 .getFinishReason())))
@@ -129,10 +133,6 @@ public final class LlmFixtureNormalizer {
         var generations = new ArrayList<Generation>();
         for (var completion : response.completions()) {
             var message = completion.message();
-            if (!"assistant".equals(message.role()) || !message.toolResults().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Recorded completion must be an assistant message");
-            }
             var calls = new ArrayList<AssistantMessage.ToolCall>();
             for (var call : message.toolCalls()) {
                 String id = idPrefix + "_" + call.reference();
@@ -151,7 +151,7 @@ public final class LlmFixtureNormalizer {
                                     .toolCalls(calls)
                                     .build(),
                             ChatGenerationMetadata.builder()
-                                    .finishReason(normalizeFinishReason(completion.finishReason()))
+                                    .finishReason(completion.finishReason().name())
                                     .build()));
         }
         // Default Spring AI metadata supplies empty/zero usage, with no provider response ID.
@@ -178,14 +178,16 @@ public final class LlmFixtureNormalizer {
             }
         } else if (message instanceof ToolResponseMessage tool) {
             for (var result : tool.getResponses()) {
-                String reference = callReferences.get(result.id());
-                if (reference == null || !result.name().equals(callNames.get(result.id()))) {
+                CallIdentity call = callIdentities.get(result.id());
+                if (call == null || !result.name().equals(call.name())) {
                     throw new IllegalArgumentException(
                             "Tool result has no matching call in the recorded history");
                 }
                 results.add(
                         new LlmFixture.ToolResult(
-                                reference, result.name(), parseResult(result.responseData())));
+                                call.reference(),
+                                result.name(),
+                                parseResult(result.responseData())));
             }
         }
         return new LlmFixture.Message(
@@ -196,11 +198,13 @@ public final class LlmFixtureNormalizer {
         if (StringUtils.isAnyBlank(id, name)) {
             throw new IllegalArgumentException("Recorded tool calls require a name and ID");
         }
-        String previousName = callNames.putIfAbsent(id, name);
-        if (previousName != null && !previousName.equals(name)) {
+        CallIdentity call =
+                callIdentities.computeIfAbsent(
+                        id, ignored -> new CallIdentity("call_" + callIdentities.size(), name));
+        if (!call.name().equals(name)) {
             throw new IllegalArgumentException("Tool-call ID was reused for a different tool");
         }
-        return callReferences.computeIfAbsent(id, ignored -> "call_" + callReferences.size());
+        return call.reference();
     }
 
     private static JsonNode parseObject(String json, String field) {
@@ -243,16 +247,5 @@ public final class LlmFixtureNormalizer {
             return result;
         }
         return node.deepCopy();
-    }
-
-    private static String normalizeFinishReason(String reason) {
-        if (reason == null) throw new IllegalArgumentException("Missing model finish reason");
-        return switch (reason.toUpperCase(Locale.ROOT)) {
-            case "STOP", "END_TURN", "STOP_SEQUENCE" -> "STOP";
-            case "TOOL_CALLS", "TOOL_USE" -> "TOOL_CALLS";
-            case "LENGTH", "MAX_TOKENS" -> "MAX_TOKENS";
-            case "CONTENT_FILTER", "REFUSAL" -> "CONTENT_FILTER";
-            default -> throw new IllegalArgumentException("Unsupported model finish reason");
-        };
     }
 }

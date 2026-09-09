@@ -31,6 +31,7 @@ import org.conductoross.conductor.ai.model.AudioGenRequest;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.ChatMessage;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.FinishReason;
 import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
@@ -83,8 +84,6 @@ import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFro
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
-    private static final Map<String, String> finishReasonMap =
-            Map.of("end_turn", "STOP", "tool_use", "TOOL_CALLS", "refusal", "CONTENT_FILTER");
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     private final SchemaService schemaService;
@@ -411,7 +410,7 @@ public class LLMHelper {
         if (responses.size() == 1) {
             result = responses.getFirst();
         }
-        finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
+        finishReason = FinishReason.normalize(finishReason);
 
         // Extract response_id if present (set by OpenAI Responses API for chaining)
         String responseId = null;

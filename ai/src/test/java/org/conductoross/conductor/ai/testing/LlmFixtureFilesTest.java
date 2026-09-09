@@ -23,13 +23,36 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
+import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.ai.chat.prompt.Prompt;
+
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmFixtureFilesTest {
     @TempDir Path directory;
+
+    @Test
+    void fixtureJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
+        var shared = new ObjectMapperProvider().getObjectMapper();
+        var fixture = new LlmFixture(1, "mapper_isolation", Map.of());
+        var path = LlmFixtureFiles.write(directory, fixture, false);
+        try (var source = Files.newInputStream(path)) {
+            assertEquals(fixture, LlmFixtureFiles.read(source));
+        }
+        new LlmFixtureNormalizer().normalizeRequest(new Prompt("hello"), new ChatCompletion());
+        assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+        assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
+        assertEquals(
+                JsonInclude.Include.NON_NULL,
+                shared.getSerializationConfig().getDefaultPropertyInclusion().getValueInclusion());
+    }
 
     @Test
     void writesAndReadsFixtureWithoutExposingTemporaryFiles() throws Exception {

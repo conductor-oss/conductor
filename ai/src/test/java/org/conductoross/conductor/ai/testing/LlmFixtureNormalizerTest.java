@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.testing;
 import java.util.List;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.FinishReason;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -100,21 +101,21 @@ class LlmFixtureNormalizerTest {
     void normalizesFinishReasonsAndRejectsUnknownReasons() {
         var normalizer = new LlmFixtureNormalizer();
         assertEquals(
-                "STOP",
+                FinishReason.STOP,
                 normalizer
                         .normalizeResponse(response("end_turn"))
                         .completions()
                         .getFirst()
                         .finishReason());
         assertEquals(
-                "MAX_TOKENS",
+                FinishReason.MAX_TOKENS,
                 normalizer
                         .normalizeResponse(response("length"))
                         .completions()
                         .getFirst()
                         .finishReason());
         assertEquals(
-                "CONTENT_FILTER",
+                FinishReason.CONTENT_FILTER,
                 normalizer
                         .normalizeResponse(response("refusal"))
                         .completions()

@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.testing;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -26,6 +27,8 @@ import org.conductoross.conductor.ai.model.ChatMessage;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -37,6 +40,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
@@ -47,6 +51,48 @@ import static org.junit.jupiter.api.Assertions.*;
 class LlmFixtureSessionTest {
     @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory;
     private final ObjectMapper mapper = new ObjectMapperProvider().getObjectMapper();
+
+    @ParameterizedTest
+    @CsvSource({
+        "length,MAX_TOKENS",
+        "stop_sequence,STOP",
+        "end_turn,STOP",
+        "refusal,CONTENT_FILTER"
+    })
+    void recordingAndReplayExposeTheSameFinishReason(String providerReason, String expected) {
+        var recording = LlmFixtureSession.recording("finish_reason");
+        var recorded =
+                runHelper(
+                        recording,
+                        context("record", 0),
+                        input("real", "model"),
+                        prompt -> textResponse("answer", providerReason));
+        var replay = LlmFixtureSession.replaying(recording.fixture());
+        var replayed =
+                runHelper(replay, context("replay", 0), input("mockLLM", "finish_reason"), null);
+        assertEquals(expected, recorded.getFinishReason());
+        assertEquals(recorded.getFinishReason(), replayed.getFinishReason());
+        replay.verifyComplete();
+    }
+
+    @Test
+    void wrapperCapturesOnlyFixtureConstraintsBeforeInputMutation() {
+        var recording = LlmFixtureSession.recording("constraints");
+        var input = input("real", "model");
+        var properties = new HashMap<String, Object>(Map.of("type", "string"));
+        input.setOutputSchema(
+                SchemaDef.builder().type(SchemaDef.Type.JSON).data(properties).build());
+        var model =
+                recording.modelFor(
+                        context("record", 0), input, prompt -> textResponse("ok", "stop"));
+        input.setJsonOutput(true);
+        properties.put("type", "number");
+        input.setWebSearch(true);
+        model.call(new Prompt("hello"));
+        var request = recording.fixture().streams().get("agent").getFirst().request();
+        assertFalse(request.jsonOutput());
+        assertEquals("string", request.outputSchema().path("data").path("type").textValue());
+    }
 
     @Test
     void recordingPreservesProviderDefaultsAndReplayNeverConsultsProvider() {
