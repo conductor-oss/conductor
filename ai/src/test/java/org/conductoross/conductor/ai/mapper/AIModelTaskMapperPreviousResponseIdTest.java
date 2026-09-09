@@ -454,7 +454,9 @@ class AIModelTaskMapperPreviousResponseIdTest {
     private static AIModelProvider providerFor(String providerName, boolean supportsPrefill) {
         AIModel model = mock(AIModel.class);
         when(model.getModelProvider()).thenReturn(providerName);
-        when(model.supportsAssistantPrefill()).thenReturn(supportsPrefill);
+        when(model.supportsAssistantPrefill(
+                        any(org.conductoross.conductor.ai.model.ChatCompletion.class)))
+                .thenReturn(supportsPrefill);
         AIModelProvider provider = mock(AIModelProvider.class);
         when(provider.getModel(any(LLMWorkerInput.class))).thenReturn(model);
         return provider;

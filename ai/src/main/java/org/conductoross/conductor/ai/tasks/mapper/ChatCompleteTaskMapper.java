@@ -142,7 +142,11 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
         }
         try {
             AIModel model = aiModelProvider.getModel(chatCompletion);
-            return model.supportsAssistantPrefill();
+            return model.supportsAssistantPrefill(chatCompletion);
+        } catch (
+                com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException
+                        playbackFailure) {
+            throw playbackFailure;
         } catch (RuntimeException unknownProvider) {
             log.debug(
                     "Provider '{}' not registered; defaulting supportsAssistantPrefill=true",
