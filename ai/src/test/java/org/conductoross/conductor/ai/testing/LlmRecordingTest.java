@@ -74,6 +74,11 @@ import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmRecordingTest {
+    private static final String IGNORED_FILE = "notes.txt";
+    private static final String IGNORED_DIRECTORY = "nested.json";
+    private static final String UNSUPPORTED_SCHEMA_RECORDING =
+            "{\"schemaVersion\":2,\"scenario\":\"weather\",\"entries\":[]}";
+
     private static final String BOTH_DISABLED = "false,false";
     private static final String RECORDING_ONLY = "true,false";
     private static final String PLAYBACK_ONLY = "false,true";
@@ -236,6 +241,21 @@ class LlmRecordingTest {
     }
 
     @Test
+    void playbackSkipsNonJsonFilesAndDirectories() throws IOException {
+        Files.writeString(directory.resolve(IGNORED_FILE), INVALID_RECORDING_CONTENT);
+        Files.createDirectory(directory.resolve(IGNORED_DIRECTORY));
+        try (AnnotationConfigApplicationContext context = context(false, true, null)) {
+            assertNotNull(context.getBean(MockLLM.class));
+        }
+    }
+
+    @Test
+    void recordValidationStillRejectsUnsupportedSchemaVersion() throws IOException {
+        Files.writeString(directory.resolve(INVALID_RECORDING_FILE), UNSUPPORTED_SCHEMA_RECORDING);
+        assertThrows(RuntimeException.class, () -> context(false, true, null));
+    }
+
+    @Test
     void playbackMissFailsWithoutCallingRealProvider() {
         AtomicInteger calls = new AtomicInteger();
         try (AnnotationConfigApplicationContext context =
@@ -308,7 +328,7 @@ class LlmRecordingTest {
                     }
                 };
         ChatModel wrapped =
-                new JsonFileLlmCallRecorder(directory)
+                new JsonFileLlmCallRecorder(directory, new ObjectMapper())
                         .wrap(
                                 new TestProvider(provider),
                                 input(REAL_PROVIDER, MODEL_FIELD),
@@ -348,6 +368,7 @@ class LlmRecordingTest {
                 LLMs.class,
                 LLMWorkers.class);
         context.registerBean(OkHttpClient.class, () -> new OkHttpClient());
+        context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
         context.registerBean(
                 SchemaService.class,
                 () ->

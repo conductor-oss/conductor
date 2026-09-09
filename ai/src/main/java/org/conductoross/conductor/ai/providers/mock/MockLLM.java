@@ -13,7 +13,7 @@
 package org.conductoross.conductor.ai.providers.mock;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -21,20 +21,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.testing.LlmJsonFiles;
 import org.conductoross.conductor.ai.testing.LlmRequestResponseConverter;
 import org.conductoross.conductor.ai.testing.LlmSavedResponses;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
 public final class MockLLM implements AIModel {
@@ -49,46 +49,45 @@ public final class MockLLM implements AIModel {
             "MockLLM only plays back recorded chat responses";
 
     public static final String NAME = "mockLLM";
+    private static final String JSON_GLOB = "*.json";
     private final Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses;
     private final Map<String, Boolean> assistantPrefillByModel;
 
-    public MockLLM(Path directory) throws IOException {
+    public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
         Map<LlmSavedResponses.Request, LlmSavedResponses.Response> loaded = new HashMap<>();
         Map<String, Boolean> policies = new HashMap<>();
-        try (Stream<Path> files = Files.list(directory)) {
-            for (Path file :
-                    files.filter(
-                                    path ->
-                                            path.getFileName()
-                                                    .toString()
-                                                    .endsWith(LlmJsonFiles.FILE_EXTENSION))
-                            .filter(Files::isRegularFile)
-                            .sorted()
-                            .toList()) {
-                try (InputStream source = Files.newInputStream(file)) {
-                    LlmSavedResponses saved = LlmJsonFiles.read(source);
-                    for (LlmSavedResponses.Entry entry : saved.entries()) {
-                        LlmSavedResponses.Response existing =
-                                loaded.putIfAbsent(entry.request(), entry.response());
-                        Validate.isTrue(
-                                existing == null || existing.equals(entry.response()),
-                                CONFLICTING_RESPONSES);
-                    }
-                    LlmSavedResponses.ModelSettings settings = saved.modelSettings();
-                    if (settings != null) {
-                        String model = Objects.toString(settings.model(), StringUtils.EMPTY);
-                        Boolean existing =
-                                policies.putIfAbsent(model, settings.supportsAssistantPrefill());
-                        if (existing != null && existing != settings.supportsAssistantPrefill()) {
-                            throw new IllegalArgumentException(
-                                    CONFLICTING_HISTORY_POLICIES + model);
-                        }
-                    }
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, JSON_GLOB)) {
+            for (Path file : files) {
+                if (Files.isRegularFile(file)) {
+                    LlmSavedResponses saved =
+                            objectMapper.readValue(file.toFile(), LlmSavedResponses.class);
+                    register(saved, loaded, policies);
                 }
             }
         }
         this.responses = Map.copyOf(loaded);
         this.assistantPrefillByModel = Map.copyOf(policies);
+    }
+
+    private static void register(
+            LlmSavedResponses saved,
+            Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses,
+            Map<String, Boolean> policies) {
+        // File order is irrelevant: identical recordings merge, conflicting recordings fail.
+        for (LlmSavedResponses.Entry entry : saved.entries()) {
+            LlmSavedResponses.Response existing =
+                    responses.putIfAbsent(entry.request(), entry.response());
+            Validate.isTrue(
+                    existing == null || existing.equals(entry.response()), CONFLICTING_RESPONSES);
+        }
+        LlmSavedResponses.ModelSettings settings = saved.modelSettings();
+        if (settings != null) {
+            String model = Objects.toString(settings.model(), StringUtils.EMPTY);
+            Boolean existing = policies.putIfAbsent(model, settings.supportsAssistantPrefill());
+            if (existing != null && existing != settings.supportsAssistantPrefill()) {
+                throw new IllegalArgumentException(CONFLICTING_HISTORY_POLICIES + model);
+            }
+        }
     }
 
     @Override

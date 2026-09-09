@@ -21,6 +21,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 
 @Configuration(proxyBeanMethods = false)
@@ -32,9 +33,10 @@ import okhttp3.OkHttpClient;
 public class MockLLMConfiguration implements ModelConfiguration<MockLLM> {
     private final MockLLM model;
 
-    public MockLLMConfiguration(LlmRecordingProperties properties) throws IOException {
+    public MockLLMConfiguration(LlmRecordingProperties properties, ObjectMapper objectMapper)
+            throws IOException {
         // Validate during bean creation, before the provider registry's catch-and-log loop.
-        this.model = new MockLLM(properties.getRecordingsDirectory());
+        this.model = new MockLLM(properties.getRecordingsDirectory(), objectMapper);
     }
 
     @Bean

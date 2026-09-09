@@ -25,16 +25,20 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /** Writes an independent JSON file for each real model response. */
 public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
     private static final String CHAT_SCENARIO = "chat";
     private static final String RECORDING_WRITE_FAILED = "Cannot write LLM recording";
 
     private final Path directory;
+    private final LlmJsonFiles files;
 
-    public JsonFileLlmCallRecorder(Path directory) throws IOException {
+    public JsonFileLlmCallRecorder(Path directory, ObjectMapper objectMapper) throws IOException {
         Files.createDirectories(directory);
         this.directory = directory;
+        this.files = new LlmJsonFiles(objectMapper);
     }
 
     @Override
@@ -60,7 +64,7 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
                                                 request, converter.toSavedResponse(response))),
                                 settings);
                 try {
-                    LlmJsonFiles.writeRecording(directory, saved);
+                    files.writeRecording(directory, saved);
                 } catch (IOException e) {
                     throw new UncheckedIOException(RECORDING_WRITE_FAILED, e);
                 }

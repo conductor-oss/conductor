@@ -19,6 +19,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(LlmRecordingProperties.class)
 public class LlmRecordingConfiguration {
@@ -27,7 +29,8 @@ public class LlmRecordingConfiguration {
             prefix = LlmRecordingProperties.PREFIX,
             name = LlmRecordingProperties.RECORD_MODE,
             havingValue = LlmRecordingProperties.ENABLED)
-    public LlmCallRecorder llmCallRecorder(LlmRecordingProperties properties) throws IOException {
-        return new JsonFileLlmCallRecorder(properties.getRecordingsDirectory());
+    public LlmCallRecorder llmCallRecorder(
+            LlmRecordingProperties properties, ObjectMapper objectMapper) throws IOException {
+        return new JsonFileLlmCallRecorder(properties.getRecordingsDirectory(), objectMapper);
     }
 }
