@@ -54,13 +54,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
 
     /**
      * Input key naming the tool a task was dispatched for, set by {@code
-     * JavaScriptBuilder.enrichToolsScript} on every task it emits for a tool call. Absent on
-     * anything the agent compiler emitted statically — the multi-agent strategies' handoff
-     * sub-workflows among them — which is what tells an agent-as-tool call apart from a handoff.
-     *
-     * <p>The second dispatch script, {@code enrichToolsScriptDynamic}, deliberately does not set it
-     * (removed in {@code 09842ab16}), so its tools are selected by task type and named from {@code
-     * method} or {@code taskDefName} instead.
+     * JavaScriptBuilder.enrichToolsScript}. Absent on statically compiled tasks.
      */
     private static final String AGENT_TOOL_NAME = "_agent_tool_name";
 
@@ -410,16 +404,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         }
     }
 
-    /**
-     * Determine if a completed task is a tool invocation rather than one of the orchestration or
-     * worker tasks an agent workflow is otherwise made of.
-     *
-     * <p>Three ways in, in order: the dispatch script's {@code _agent_tool_name} input; an
-     * allowlist over {@link ToolCompiler#COMPILED_TOOL_TASK_TYPES}, the task types a declared tool
-     * compiles to; and the worker case. Nothing is a tool by default, so a task type the agent
-     * runtime gains later is reported as a tool only once it is a tool kind the compiler knows
-     * about.
-     */
+    /** Whether a completed task is a tool invocation rather than orchestration or plumbing. */
     private boolean isToolTask(TaskModel task) {
         String taskType = task.getTaskType();
         if (taskType == null) return false;
@@ -429,41 +414,25 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         }
         Map<String, Object> input = task.getInputData();
         if (input != null && input.containsKey(AGENT_TOOL_NAME)) {
-            // The dispatch script marks every task it emits for a tool call, whatever type the
-            // tool compiled to. That covers the one kind no allowlist can enumerate: a media or
-            // RAG tool whose own config names its task type.
+            // Covers tool kinds whose own config names the task type, which no allowlist can list.
             return true;
         }
         if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskType)) {
-            // SUB_WORKFLOW carries both agent-as-tool calls and the handoffs of the multi-agent
-            // strategies. Unmarked, this is a handoff — statically compiled, so the dispatch
-            // script never saw it — and a handoff is not a tool call.
+            // SUB_WORKFLOW is also the multi-agent handoff. Unmarked means handoff, not a tool.
             return false;
         }
         if (ToolCompiler.COMPILED_TOOL_TASK_TYPES.contains(taskType)) {
             return true;
         }
-        // Worker tools compile to SIMPLE, whose mapper rewrites the executed task's type to the
-        // task's own name, so a type matching taskDefName is the worker signature. A platform task
-        // type never is a tool however it is named, and LIST_MCP_TOOLS — the discovery task
-        // compiled into every MCP-using agent, and a worker task that does reach this listener —
-        // is named after its own type, so the two conditions are both needed.
+        // SimpleTaskMapper rewrites an executed SIMPLE task's type to the task's own name.
+        // USER_DEFINED then excludes platform types named after themselves, like LIST_MCP_TOOLS.
         return taskType.equals(task.getTaskDefName())
                 && TaskType.of(taskType) == TaskType.USER_DEFINED;
     }
 
     /**
-     * Resolve the tool name a completed task was dispatched for.
-     *
-     * <p>{@code _agent_tool_name} is the only key the primary dispatch script sets for every tool.
-     * {@code method} carries the tool name for MCP and for the kinds that merge the LLM's own
-     * tool-call inputs — which is what names a tool off the second dispatch script — but the
-     * enrichment script replaces {@code inputParameters} wholesale for an HTTP tool, where {@code
-     * http_request.method} is the HTTP verb rather than a name. {@code taskDefName} is last because
-     * it is the compiled task's name, which for an agent-as-tool is the sub-workflow's name.
-     *
-     * <p>The task reference name is deliberately not consulted, even as a last resort: references
-     * carry provider-controlled data, notably the LLM's own {@code call_} prefixed tool-call ids.
+     * Tool name for a dispatched task. Never the reference name, which carries the provider's own
+     * tool-call ids.
      */
     private String resolveToolName(TaskModel task) {
         Map<String, Object> input = task.getInputData();

@@ -156,19 +156,8 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
-     * Conductor task types a declared tool compiles to, for consumers that have to tell a tool
-     * invocation apart from the rest of a compiled agent workflow.
-     *
-     * <p>Derived from {@link #TYPE_MAP} and from the media types that fall back to their own
-     * upper-cased name, so adding a tool kind to the map extends this set with it.
-     *
-     * <p>It is a floor rather than the closed set of what a tool can compile to. A media or RAG
-     * tool's own config may name its task type, which nothing static can enumerate; those tasks
-     * carry the dispatch script's {@code _agent_tool_name} input instead.
-     *
-     * <p>{@code SIMPLE} is deliberately excluded: a worker tool is not identifiable by task type at
-     * all. {@code SimpleTaskMapper} rewrites an executed SIMPLE task's type to the task's own name,
-     * so a worker tool is recognised by that instead.
+     * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
+     * tool's own name as its type.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(

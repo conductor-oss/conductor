@@ -137,11 +137,7 @@ class AgentEventListenerTest {
         stream.close();
     }
 
-    /**
-     * HTTP and SUB_WORKFLOW tools complete as async system tasks, which do not notify this listener
-     * today. The selection and naming rules are pinned here regardless, so that the change adding
-     * that notification does not have to rediscover them.
-     */
+    /** HTTP tools complete as async system tasks and do not reach this listener yet. */
     @Test
     void httpToolIsNamedByItsToolNameRatherThanItsHttpVerb() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
@@ -269,12 +265,7 @@ class AgentEventListenerTest {
         stream.close();
     }
 
-    /**
-     * The next event, or {@code null} when the stream carries none. Events are emitted
-     * synchronously, so anything the listener produced is queued before the read; the bound is only
-     * there to keep {@code nextEvent}'s blocking take from turning an absent event into a hung
-     * test.
-     */
+    /** Next event, or {@code null} if none. The bound stops a blocking take hanging the test. */
     private static AgentSSEEvent next(AgentEventStream stream) {
         ExecutorService reader = Executors.newSingleThreadExecutor();
         try {
@@ -311,9 +302,8 @@ class AgentEventListenerTest {
     }
 
     /**
-     * A scheduled task as the decider leaves it. The task definition matters: {@code
-     * MetadataMapperService} synthesizes an ad-hoc one for every named task whatever its type, so a
-     * definition being present says nothing about whether the task is a tool.
+     * A scheduled task with a {@code TaskDef} present, as {@code MetadataMapperService} leaves
+     * every named task.
      */
     private static TaskModel task(String workflowId, String type, String reference) {
         TaskModel task = new TaskModel();
