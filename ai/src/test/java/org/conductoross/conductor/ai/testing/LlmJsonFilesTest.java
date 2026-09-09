@@ -13,7 +13,6 @@
 package org.conductoross.conductor.ai.testing;
 
 import java.io.InputStream;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -52,7 +51,7 @@ class LlmJsonFilesTest {
         ObjectMapper shared = objectMapper;
         LlmSavedResponses savedResponses =
                 new LlmSavedResponses(1, MAPPER_ISOLATION_SCENARIO, List.of());
-        Path path = jsonFiles.write(directory, savedResponses, false);
+        Path path = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(path)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
         }
@@ -68,7 +67,7 @@ class LlmJsonFilesTest {
     @Test
     void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
         LlmSavedResponses savedResponses = new LlmSavedResponses(1, BLOCKED_SCENARIO, List.of());
-        Path target = jsonFiles.write(directory, savedResponses, false);
+        Path target = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(target)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
         }
@@ -78,40 +77,32 @@ class LlmJsonFilesTest {
     }
 
     @Test
-    void preservesExistingSavedResponsesUnlessRefreshIsExplicit() throws Exception {
-        LlmSavedResponses old = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
-        LlmSavedResponses replacement = new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
-        Path target = jsonFiles.write(directory, old, false);
-        assertThrows(
-                FileAlreadyExistsException.class,
-                () -> jsonFiles.write(directory, replacement, false));
-        try (InputStream source = Files.newInputStream(target)) {
-            assertEquals(old, objectMapper.readValue(source, LlmSavedResponses.class));
-        }
-        jsonFiles.write(directory, replacement, true);
-        try (InputStream source = Files.newInputStream(target)) {
-            assertEquals(replacement, objectMapper.readValue(source, LlmSavedResponses.class));
-        }
+    void writesSeparateFilesForTheSameScenario() throws Exception {
+        LlmSavedResponses first = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
+        LlmSavedResponses second = new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
+        Path firstFile = jsonFiles.writeRecording(directory, first);
+        Path secondFile = jsonFiles.writeRecording(directory, second);
+        assertNotEquals(firstFile, secondFile);
+        assertEquals(first, objectMapper.readValue(firstFile.toFile(), LlmSavedResponses.class));
+        assertEquals(second, objectMapper.readValue(secondFile.toFile(), LlmSavedResponses.class));
     }
 
     @Test
-    void concurrentPublishersCannotOverwriteEachOther() throws Exception {
-        LlmSavedResponses savedResponses = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
-        Callable<Boolean> write =
-                () -> {
-                    try {
-                        jsonFiles.write(directory, savedResponses, false);
-                        return true;
-                    } catch (FileAlreadyExistsException expected) {
-                        return false;
-                    }
-                };
+    void concurrentPublishersWriteSeparateRecordings() throws Exception {
+        LlmSavedResponses savedResponses =
+                new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
+        Callable<Path> write = () -> jsonFiles.writeRecording(directory, savedResponses);
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
-            List<Future<Boolean>> results = executor.invokeAll(List.of(write, write));
+            List<Future<Path>> results = executor.invokeAll(List.of(write, write));
             assertNotEquals(results.get(0).get(), results.get(1).get());
+            for (Future<Path> result : results) {
+                assertEquals(
+                        savedResponses,
+                        objectMapper.readValue(result.get().toFile(), LlmSavedResponses.class));
+            }
         }
         try (Stream<Path> files = Files.list(directory)) {
-            assertEquals(1, files.count());
+            assertEquals(2, files.count());
         }
     }
 

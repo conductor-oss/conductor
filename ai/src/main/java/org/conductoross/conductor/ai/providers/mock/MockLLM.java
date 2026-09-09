@@ -19,10 +19,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
@@ -56,11 +54,9 @@ public final class MockLLM implements AIModel {
         Map<String, Boolean> policies = new HashMap<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, JSON_GLOB)) {
             for (Path file : files) {
-                if (Files.isRegularFile(file)) {
-                    LlmSavedResponses saved =
-                            objectMapper.readValue(file.toFile(), LlmSavedResponses.class);
-                    register(saved, loaded, policies);
-                }
+                LlmSavedResponses saved =
+                        objectMapper.readValue(file.toFile(), LlmSavedResponses.class);
+                register(saved, loaded, policies);
             }
         }
         this.responses = Map.copyOf(loaded);
@@ -79,9 +75,8 @@ public final class MockLLM implements AIModel {
                     existing == null || existing.equals(entry.response()), CONFLICTING_RESPONSES);
         }
         LlmSavedResponses.ModelSettings settings = saved.modelSettings();
-        if (settings != null) {
-            String model = Objects.toString(settings.model(), StringUtils.EMPTY);
-            policies.putIfAbsent(model, settings.supportsAssistantPrefill());
+        if (settings != null && settings.model() != null) {
+            policies.putIfAbsent(settings.model(), settings.supportsAssistantPrefill());
         }
     }
 
@@ -93,7 +88,7 @@ public final class MockLLM implements AIModel {
     @Override
     public boolean supportsAssistantPrefill(ChatCompletion input) {
         Boolean policy =
-                assistantPrefillByModel.get(Objects.toString(input.getModel(), StringUtils.EMPTY));
+                input.getModel() == null ? null : assistantPrefillByModel.get(input.getModel());
         if (policy != null) return policy;
         if (assistantPrefillByModel.isEmpty()) return AIModel.super.supportsAssistantPrefill();
         throw new NonRetryableException(MISSING_HISTORY_POLICY);

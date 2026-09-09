@@ -75,7 +75,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class LlmRecordingTest {
     private static final String IGNORED_FILE = "notes.txt";
-    private static final String IGNORED_DIRECTORY = "nested.json";
     private static final String UNSUPPORTED_SCHEMA_RECORDING =
             "{\"schemaVersion\":2,\"scenario\":\"weather\",\"entries\":[]}";
 
@@ -242,9 +241,8 @@ class LlmRecordingTest {
     }
 
     @Test
-    void playbackSkipsNonJsonFilesAndDirectories() throws IOException {
+    void playbackSkipsNonJsonFiles() throws IOException {
         Files.writeString(directory.resolve(IGNORED_FILE), INVALID_RECORDING_CONTENT);
-        Files.createDirectory(directory.resolve(IGNORED_DIRECTORY));
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
             assertNotNull(context.getBean(MockLLMModelConfig.class).get());
         }

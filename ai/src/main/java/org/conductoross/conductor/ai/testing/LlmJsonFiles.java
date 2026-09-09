@@ -15,7 +15,6 @@ package org.conductoross.conductor.ai.testing;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,38 +30,17 @@ public final class LlmJsonFiles {
         this.objectMapper = objectMapper;
     }
 
-    public Path write(Path directory, LlmSavedResponses savedResponses, boolean refresh)
-            throws IOException {
-        return write(directory, savedResponses.scenario(), savedResponses, refresh);
-    }
-
     public Path writeRecording(Path directory, LlmSavedResponses savedResponses)
             throws IOException {
-        return write(directory, UUID.randomUUID().toString(), savedResponses, false);
-    }
-
-    private Path write(
-            Path directory, String name, LlmSavedResponses savedResponses, boolean refresh)
-            throws IOException {
         Files.createDirectories(directory);
-        Path target = directory.resolve(name + FILE_EXTENSION);
+        Path target = directory.resolve(UUID.randomUUID() + FILE_EXTENSION);
         Path temporary = Files.createTempFile(directory, TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX);
         try {
             objectMapper
                     .writerWithDefaultPrettyPrinter()
                     .writeValue(temporary.toFile(), savedResponses);
-            if (refresh) {
-                Files.move(
-                        temporary,
-                        target,
-                        StandardCopyOption.ATOMIC_MOVE,
-                        StandardCopyOption.REPLACE_EXISTING);
-            } else {
-                // A hard link publishes the complete file atomically and fails if target exists.
-                // ATOMIC_MOVE alone may overwrite an existing file even without REPLACE_EXISTING.
-                // Fail explicitly on filesystems without hard links rather than risk replacement.
-                Files.createLink(target, temporary);
-            }
+            // Publish the complete file atomically without replacing an existing recording.
+            Files.createLink(target, temporary);
         } finally {
             Files.deleteIfExists(temporary);
         }
