@@ -36,23 +36,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
 public final class MockLLM implements AIModel {
-    private static final String CONFLICTING_RESPONSES =
-            "Conflicting recorded responses for the same request";
-    private static final String MISSING_HISTORY_POLICY =
-            "No recorded history policy for the selected model";
-    private static final String MISSING_RESPONSE = "No recorded response matches the LLM request";
     private static final String UNSUPPORTED_OPERATION =
             "MockLLM only plays back recorded chat responses";
 
     public static final String NAME = "mockLLM";
-    private static final String JSON_GLOB = "*.json";
     private final Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses;
     private final Map<String, Boolean> assistantPrefillByModel;
 
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
         Map<LlmSavedResponses.Request, LlmSavedResponses.Response> loaded = new HashMap<>();
         Map<String, Boolean> policies = new HashMap<>();
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, JSON_GLOB)) {
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
             for (Path file : files) {
                 LlmSavedResponses saved =
                         objectMapper.readValue(file.toFile(), LlmSavedResponses.class);
@@ -72,7 +66,8 @@ public final class MockLLM implements AIModel {
             LlmSavedResponses.Response existing =
                     responses.putIfAbsent(entry.request(), entry.response());
             Validate.isTrue(
-                    existing == null || existing.equals(entry.response()), CONFLICTING_RESPONSES);
+                    existing == null || existing.equals(entry.response()),
+                    "Conflicting recorded responses for the same request");
         }
         LlmSavedResponses.ModelSettings settings = saved.modelSettings();
         if (settings != null && settings.model() != null) {
@@ -91,7 +86,7 @@ public final class MockLLM implements AIModel {
                 input.getModel() == null ? null : assistantPrefillByModel.get(input.getModel());
         if (policy != null) return policy;
         if (assistantPrefillByModel.isEmpty()) return AIModel.super.supportsAssistantPrefill();
-        throw new NonRetryableException(MISSING_HISTORY_POLICY);
+        throw new NonRetryableException("No recorded history policy for the selected model");
     }
 
     @Override
@@ -108,7 +103,8 @@ public final class MockLLM implements AIModel {
             LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
             LlmSavedResponses.Request request = converter.toSavedRequest(prompt, options);
             LlmSavedResponses.Response response = responses.get(request);
-            if (response == null) throw new NonRetryableException(MISSING_RESPONSE);
+            if (response == null)
+                throw new NonRetryableException("No recorded response matches the LLM request");
             return converter.toChatResponse(response, UUID.randomUUID().toString());
         };
     }

@@ -22,8 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /** Publishes completed recordings using the application's JSON mapper. */
 public final class LlmJsonFiles {
     public static final String FILE_EXTENSION = ".json";
-    private static final String TEMP_FILE_PREFIX = ".llm-recording-";
-    private static final String TEMP_FILE_SUFFIX = ".tmp";
     private final ObjectMapper objectMapper;
 
     public LlmJsonFiles(ObjectMapper objectMapper) {
@@ -34,7 +32,7 @@ public final class LlmJsonFiles {
             throws IOException {
         Files.createDirectories(directory);
         Path target = directory.resolve(UUID.randomUUID() + FILE_EXTENSION);
-        Path temporary = Files.createTempFile(directory, TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX);
+        Path temporary = Files.createTempFile(directory, ".llm-recording-", ".tmp");
         try {
             objectMapper
                     .writerWithDefaultPrettyPrinter()

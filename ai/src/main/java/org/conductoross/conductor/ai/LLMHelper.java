@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
 import org.conductoross.conductor.ai.http.AIHttpClients;
@@ -32,13 +31,11 @@ import org.conductoross.conductor.ai.model.AudioGenRequest;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.ChatMessage;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.model.FinishReason;
 import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.ai.providers.mock.MockLLM;
 import org.conductoross.conductor.ai.testing.LlmCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
@@ -87,6 +84,8 @@ import static org.conductoross.conductor.ai.MimeExtensionResolver.getMimeTypeFro
 public class LLMHelper {
     private static final TypeReference<Map<String, Object>> MAP_OF_STRING_TO_OBJ =
             new TypeReference<>() {};
+    private static final Map<String, String> finishReasonMap =
+            Map.of("end_turn", "STOP", "tool_use", "TOOL_CALLS", "refusal", "CONTENT_FILTER");
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     private final SchemaService schemaService;
@@ -124,7 +123,7 @@ public class LLMHelper {
             Consumer<TokenUsageLog> tokenUsageLogger) {
 
         ChatModel chatModel = llm.getChatModel(chatCompletion);
-        if (recorder != null && BooleanUtils.isFalse(MockLLM.NAME.equals(llm.getModelProvider()))) {
+        if (recorder != null) {
             chatModel = recorder.wrap(llm, chatCompletion, chatModel);
         }
         ChatOptions chatOptions = llm.getChatOptions(chatCompletion);
@@ -426,7 +425,7 @@ public class LLMHelper {
         if (responses.size() == 1) {
             result = responses.getFirst();
         }
-        finishReason = FinishReason.normalize(finishReason);
+        finishReason = finishReasonMap.getOrDefault(finishReason, finishReason).toUpperCase();
 
         // Extract response_id if present (set by OpenAI Responses API for chaining)
         String responseId = null;

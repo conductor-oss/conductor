@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.providers.mock.MockLLM;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -29,8 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Writes an independent JSON file for each real model response. */
 public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
-    private static final String CHAT_SCENARIO = "chat";
-    private static final String RECORDING_WRITE_FAILED = "Cannot write LLM recording";
 
     private final Path directory;
     private final LlmJsonFiles files;
@@ -43,6 +42,9 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
 
     @Override
     public ChatModel wrap(AIModel provider, ChatCompletion input, ChatModel delegate) {
+        if (MockLLM.NAME.equals(provider.getModelProvider())) {
+            return delegate;
+        }
         LlmRequestResponseConverter.RequestOptions options =
                 LlmRequestResponseConverter.options(input);
         LlmSavedResponses.ModelSettings settings =
@@ -58,7 +60,7 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
                 LlmSavedResponses saved =
                         new LlmSavedResponses(
                                 LlmSavedResponses.SCHEMA_VERSION,
-                                CHAT_SCENARIO,
+                                "chat",
                                 List.of(
                                         new LlmSavedResponses.Entry(
                                                 request, converter.toSavedResponse(response))),
@@ -66,7 +68,7 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
                 try {
                     files.writeRecording(directory, saved);
                 } catch (IOException e) {
-                    throw new UncheckedIOException(RECORDING_WRITE_FAILED, e);
+                    throw new UncheckedIOException("Cannot write LLM recording", e);
                 }
                 return response;
             }

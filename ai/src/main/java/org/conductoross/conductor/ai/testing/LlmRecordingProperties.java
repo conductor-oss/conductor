@@ -29,9 +29,8 @@ public class LlmRecordingProperties {
     public static final String RECORD_MODE_PROPERTY = PREFIX + "." + RECORD_MODE;
     public static final String ENABLE_LLM_MOCKS_PROPERTY = PREFIX + "." + ENABLE_LLM_MOCKS;
     public static final String RECORDINGS_DIRECTORY_PROPERTY = PREFIX + "." + RECORDINGS_DIRECTORY;
-    private static final String DEFAULT_DIRECTORY = "./llm-recordings";
 
     private boolean recordMode;
     private boolean enableLlmMocks;
-    private Path recordingsDirectory = Path.of(DEFAULT_DIRECTORY);
+    private Path recordingsDirectory = Path.of("./llm-recordings");
 }

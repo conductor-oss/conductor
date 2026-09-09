@@ -16,13 +16,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.model.ChatCompletion;
-import org.conductoross.conductor.ai.model.FinishReason;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -39,9 +38,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
@@ -49,32 +46,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
  * Create one instance per request/response pair to normalize IDs from its full history.
  */
 public final class LlmRequestResponseConverter {
-    private static final String PREVIOUS_RESPONSE_UNSUPPORTED =
-            "LLM recordings require full history; previousResponseId is unsupported";
-    private static final String NATIVE_TOOLS_UNSUPPORTED =
-            "Provider-native tools are unsupported in LLM recordings";
-    private static final String UNRESOLVED_TOOLS =
-            "LLM recordings require resolved tool definitions";
-    private static final String INTERNAL_TOOL_EXECUTION_UNSUPPORTED =
-            "LLM recordings require external tool execution";
-    private static final String TOOL_INPUT_SCHEMA_FIELD = "tool input schema";
-    private static final String MISSING_MODEL_RESPONSE = "Cannot record an absent model response";
-    private static final String MISSING_REPLAY_ID_PREFIX =
-            "Replay tool-call ID prefix must not be blank";
-    private static final String TOOL_ID_SEPARATOR = "_";
-    private static final String MISMATCHED_TOOL_REFERENCE =
-            "Recorded tool-call reference does not match request history";
     public static final String FUNCTION_TOOL_TYPE = "function";
-    private static final String MEDIA_UNSUPPORTED = "Media is unsupported in LLM recordings";
-    private static final String UNSUPPORTED_TOOL_TYPE =
-            "Only function tool calls are supported in LLM recordings";
-    private static final String TOOL_ARGUMENTS_FIELD = "tool arguments";
-    private static final String UNMATCHED_TOOL_RESULT =
-            "Tool result has no matching call in the recorded history";
-    private static final String MISSING_TOOL_IDENTITY = "Recorded tool calls require a name and ID";
-    private static final String TOOL_REFERENCE_PREFIX = "call_";
-    private static final String REUSED_TOOL_ID = "Tool-call ID was reused for a different tool";
-    private static final String EXPECTED_JSON_OBJECT = "Expected a JSON object for ";
 
     private static final ObjectMapper MAPPER =
             new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
@@ -83,40 +55,60 @@ public final class LlmRequestResponseConverter {
 
     private record CallIdentity(String reference, String name) {}
 
-    public LlmRequestResponseConverter() {}
-
     public LlmSavedResponses.Request toSavedRequest(Prompt prompt, ChatCompletion input) {
         return toSavedRequest(prompt, options(input));
     }
 
-    public record RequestOptions(boolean jsonOutput, JsonNode outputSchema) {}
+    public record RequestOptions(
+            boolean jsonOutput, JsonNode outputSchema, List<LlmSavedResponses.Tool> tools) {}
 
     public static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
-            throw new IllegalArgumentException(PREVIOUS_RESPONSE_UNSUPPORTED);
+            throw new IllegalArgumentException(
+                    "LLM recordings require full history; previousResponseId is unsupported");
         }
         if (input.isWebSearch()
                 || input.isCodeInterpreter()
                 || input.isGoogleSearchRetrieval()
                 || ObjectUtils.isNotEmpty(input.getFileSearchVectorStoreIds())) {
-            throw new IllegalArgumentException(NATIVE_TOOLS_UNSUPPORTED);
+            throw new IllegalArgumentException(
+                    "Provider-native tools are unsupported in LLM recordings");
         }
-        // Capture only recording constraints; messages and tools come from the effective prompt.
+        // Providers with custom ChatOptions carry these same Conductor tool definitions.
+        // Snapshot them now so later task mutations cannot change this call's recording.
+        List<LlmSavedResponses.Tool> tools = new ArrayList<>();
+        if (input.getTools() != null) {
+            for (ToolSpec tool : input.getTools()) {
+                tools.add(
+                        new LlmSavedResponses.Tool(
+                                tool.getName(),
+                                tool.getDescription(),
+                                MAPPER.valueToTree(
+                                        tool.getInputSchema() != null
+                                                ? tool.getInputSchema()
+                                                : Map.of("type", "object"))));
+            }
+        }
         return new RequestOptions(
-                input.isJsonOutput(), canonical(MAPPER.valueToTree(input.getOutputSchema())));
+                input.isJsonOutput(),
+                MAPPER.valueToTree(input.getOutputSchema()),
+                List.copyOf(tools));
     }
 
     public LlmSavedResponses.Request toSavedRequest(Prompt prompt, RequestOptions input) {
         List<LlmSavedResponses.Message> messages =
                 prompt.getInstructions().stream().map(this::toSavedMessage).toList();
-        List<LlmSavedResponses.Tool> tools = new ArrayList<LlmSavedResponses.Tool>();
-        // Read the effective tool catalog passed to the model, not the original task definition.
+        List<LlmSavedResponses.Tool> tools = input.tools();
+        // Prefer resolved callbacks when the provider exposes them through Spring AI options.
         if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
+            tools = new ArrayList<>();
             if (ObjectUtils.isNotEmpty(options.getToolNames())) {
-                throw new IllegalArgumentException(UNRESOLVED_TOOLS);
+                throw new IllegalArgumentException(
+                        "LLM recordings require resolved tool definitions");
             }
             if (Boolean.TRUE.equals(options.getInternalToolExecutionEnabled())) {
-                throw new IllegalArgumentException(INTERNAL_TOOL_EXECUTION_UNSUPPORTED);
+                throw new IllegalArgumentException(
+                        "LLM recordings require external tool execution");
             }
             if (ObjectUtils.isNotEmpty(options.getToolCallbacks())) {
                 for (ToolCallback callback : options.getToolCallbacks()) {
@@ -125,8 +117,7 @@ public final class LlmRequestResponseConverter {
                             new LlmSavedResponses.Tool(
                                     definition.name(),
                                     definition.description(),
-                                    parseObject(
-                                            definition.inputSchema(), TOOL_INPUT_SCHEMA_FIELD)));
+                                    parseObject(definition.inputSchema(), "tool input schema")));
                 }
             }
         }
@@ -136,7 +127,7 @@ public final class LlmRequestResponseConverter {
 
     public LlmSavedResponses.Response toSavedResponse(ChatResponse response) {
         if (response == null) {
-            throw new IllegalArgumentException(MISSING_MODEL_RESPONSE);
+            throw new IllegalArgumentException("Cannot record an absent model response");
         }
         return new LlmSavedResponses.Response(
                 response.getResults().stream()
@@ -144,27 +135,24 @@ public final class LlmRequestResponseConverter {
                                 generation ->
                                         new LlmSavedResponses.Completion(
                                                 toSavedMessage(generation.getOutput()),
-                                                FinishReason.fromProvider(
-                                                        generation
-                                                                .getMetadata()
-                                                                .getFinishReason())))
+                                                generation.getMetadata().getFinishReason()))
                         .toList());
     }
 
     /** Reconstruct a response before Conductor's normal tool conversion and JSON validation. */
     public ChatResponse toChatResponse(LlmSavedResponses.Response response, String idPrefix) {
         if (StringUtils.isBlank(idPrefix)) {
-            throw new IllegalArgumentException(MISSING_REPLAY_ID_PREFIX);
+            throw new IllegalArgumentException("Replay tool-call ID prefix must not be blank");
         }
-        List<Generation> generations = new ArrayList<Generation>();
+        List<Generation> generations = new ArrayList<>();
         for (LlmSavedResponses.Completion completion : response.completions()) {
             LlmSavedResponses.Message message = completion.message();
             List<AssistantMessage.ToolCall> calls = new ArrayList<>();
             for (LlmSavedResponses.ToolCall call : message.toolCalls()) {
-                String id = idPrefix + TOOL_ID_SEPARATOR + call.reference();
+                String id = idPrefix + "_" + call.reference();
                 Validate.isTrue(
                         call.reference().equals(reference(id, call.name())),
-                        MISMATCHED_TOOL_REFERENCE);
+                        "Recorded tool-call reference does not match request history");
                 calls.add(
                         new AssistantMessage.ToolCall(
                                 id, FUNCTION_TOOL_TYPE, call.name(), call.arguments().toString()));
@@ -176,7 +164,7 @@ public final class LlmRequestResponseConverter {
                                     .toolCalls(calls)
                                     .build(),
                             ChatGenerationMetadata.builder()
-                                    .finishReason(completion.finishReason().name())
+                                    .finishReason(completion.finishReason())
                                     .build()));
         }
         // Default Spring AI metadata supplies empty/zero usage, with no provider response ID.
@@ -185,24 +173,27 @@ public final class LlmRequestResponseConverter {
 
     private LlmSavedResponses.Message toSavedMessage(Message message) {
         if (message instanceof MediaContent media && ObjectUtils.isNotEmpty(media.getMedia())) {
-            throw new IllegalArgumentException(MEDIA_UNSUPPORTED);
+            throw new IllegalArgumentException("Media is unsupported in LLM recordings");
         }
         List<LlmSavedResponses.ToolCall> calls = new ArrayList<>();
         List<LlmSavedResponses.ToolResult> results = new ArrayList<>();
         if (message instanceof AssistantMessage assistant) {
             for (AssistantMessage.ToolCall call : assistant.getToolCalls()) {
-                Validate.isTrue(FUNCTION_TOOL_TYPE.equals(call.type()), UNSUPPORTED_TOOL_TYPE);
+                Validate.isTrue(
+                        FUNCTION_TOOL_TYPE.equals(call.type()),
+                        "Only function tool calls are supported in LLM recordings");
                 calls.add(
                         new LlmSavedResponses.ToolCall(
                                 reference(call.id(), call.name()),
                                 call.name(),
-                                parseObject(call.arguments(), TOOL_ARGUMENTS_FIELD)));
+                                parseObject(call.arguments(), "tool arguments")));
             }
         } else if (message instanceof ToolResponseMessage tool) {
             for (ToolResponseMessage.ToolResponse result : tool.getResponses()) {
                 CallIdentity call = callIdentities.get(result.id());
                 Validate.isTrue(
-                        call != null && result.name().equals(call.name()), UNMATCHED_TOOL_RESULT);
+                        call != null && result.name().equals(call.name()),
+                        "Tool result has no matching call in the recorded history");
                 results.add(
                         new LlmSavedResponses.ToolResult(
                                 call.reference(),
@@ -216,15 +207,12 @@ public final class LlmRequestResponseConverter {
 
     private String reference(String id, String name) {
         if (StringUtils.isAnyBlank(id, name)) {
-            throw new IllegalArgumentException(MISSING_TOOL_IDENTITY);
+            throw new IllegalArgumentException("Recorded tool calls require a name and ID");
         }
         CallIdentity call =
                 callIdentities.computeIfAbsent(
-                        id,
-                        ignored ->
-                                new CallIdentity(
-                                        TOOL_REFERENCE_PREFIX + callIdentities.size(), name));
-        Validate.isTrue(call.name().equals(name), REUSED_TOOL_ID);
+                        id, ignored -> new CallIdentity("call_" + callIdentities.size(), name));
+        Validate.isTrue(call.name().equals(name), "Tool-call ID was reused for a different tool");
         return call.reference();
     }
 
@@ -232,41 +220,22 @@ public final class LlmRequestResponseConverter {
         try {
             JsonNode node = MAPPER.readTree(json);
             if (node != null && node.isObject()) {
-                return canonical(node);
+                return node;
             }
         } catch (JsonProcessingException | IllegalArgumentException ignored) {
             // Report the contract field, not a potentially sensitive payload or parser exception.
         }
-        throw new IllegalArgumentException(EXPECTED_JSON_OBJECT + field);
+        throw new IllegalArgumentException("Expected a JSON object for " + field);
     }
 
     private static JsonNode parseResult(String value) {
         if (value == null) return NullNode.instance;
         try {
             JsonNode parsed = MAPPER.readTree(value);
-            if (parsed != null) return canonical(parsed);
+            if (parsed != null) return parsed;
         } catch (JsonProcessingException ignored) {
             // Tool results can also be plain text. Preserve their exact content.
         }
         return TextNode.valueOf(value);
-    }
-
-    private static JsonNode canonical(JsonNode node) {
-        if (node == null || node.isNull()) return NullNode.instance;
-        if (node.isObject()) {
-            Map<String, JsonNode> fields = new TreeMap<String, JsonNode>();
-            node.fields()
-                    .forEachRemaining(
-                            field -> fields.put(field.getKey(), canonical(field.getValue())));
-            ObjectNode result = MAPPER.createObjectNode();
-            fields.forEach(result::set);
-            return result;
-        }
-        if (node.isArray()) {
-            ArrayNode result = MAPPER.createArrayNode();
-            node.forEach(item -> result.add(canonical(item)));
-            return result;
-        }
-        return node.deepCopy();
     }
 }

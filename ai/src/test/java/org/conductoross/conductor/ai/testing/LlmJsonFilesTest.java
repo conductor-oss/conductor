@@ -37,9 +37,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmJsonFilesTest {
-    private static final String MAPPER_ISOLATION_SCENARIO = "mapper_isolation";
-    private static final String GREETING = "hello";
-    private static final String BLOCKED_SCENARIO = "blocked_before_llm";
     private static final String SCENARIO_NAME = "scenario";
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private final LlmJsonFiles jsonFiles = new LlmJsonFiles(objectMapper);
@@ -49,14 +46,12 @@ class LlmJsonFilesTest {
     @Test
     void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = objectMapper;
-        LlmSavedResponses savedResponses =
-                new LlmSavedResponses(1, MAPPER_ISOLATION_SCENARIO, List.of());
+        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
         Path path = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(path)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
         }
-        new LlmRequestResponseConverter()
-                .toSavedRequest(new Prompt(GREETING), new ChatCompletion());
+        new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), new ChatCompletion());
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
@@ -66,7 +61,8 @@ class LlmJsonFilesTest {
 
     @Test
     void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
-        LlmSavedResponses savedResponses = new LlmSavedResponses(1, BLOCKED_SCENARIO, List.of());
+        LlmSavedResponses savedResponses =
+                new LlmSavedResponses(1, "blocked_before_llm", List.of());
         Path target = jsonFiles.writeRecording(directory, savedResponses);
         try (InputStream source = Files.newInputStream(target)) {
             assertEquals(savedResponses, objectMapper.readValue(source, LlmSavedResponses.class));
@@ -109,16 +105,13 @@ class LlmJsonFilesTest {
     private static LlmSavedResponses.Entry entry() {
         LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         LlmSavedResponses.Request request =
-                converter.toSavedRequest(new Prompt(GREETING), new ChatCompletion());
+                converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
         LlmSavedResponses.Message message =
                 new LlmSavedResponses.Message(
-                        MessageType.ASSISTANT.getValue(), GREETING, List.of(), List.of());
+                        MessageType.ASSISTANT.getValue(), "hello", List.of(), List.of());
         LlmSavedResponses.Response response =
                 new LlmSavedResponses.Response(
-                        List.of(
-                                new LlmSavedResponses.Completion(
-                                        message,
-                                        org.conductoross.conductor.ai.model.FinishReason.STOP)));
+                        List.of(new LlmSavedResponses.Completion(message, "STOP")));
         return new LlmSavedResponses.Entry(request, response);
     }
 }

@@ -19,7 +19,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.Validate;
-import org.conductoross.conductor.ai.model.FinishReason;
 import org.springframework.ai.chat.messages.MessageType;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,23 +29,8 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public record LlmSavedResponses(
         int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
-    private static final String UNSUPPORTED_SCHEMA_VERSION =
-            "Unsupported LLM saved responses schema version: ";
-    private static final String SCENARIO_NAME_PATTERN = "[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}";
-    private static final String INVALID_SCENARIO_NAME = "Invalid LLM saved responses scenario name";
-    private static final String REQUEST_FIELD = "request";
-    private static final String RESPONSE_FIELD = "response";
-    private static final String INVALID_TOOL_SCHEMA = "Tool input schema must be an object";
-    private static final String UNSUPPORTED_MESSAGE_ROLE = "Unsupported recorded message role";
     private static final String MISMATCHED_MESSAGE_ROLE =
             "Tool calls/results do not match message role";
-    private static final String INVALID_TOOL_ARGUMENTS = "Tool arguments must be an object";
-    private static final String INVALID_COMPLETION = "Completion must contain an assistant message";
-    private static final String FINISH_REASON_FIELD = "finishReason";
-    private static final String EMPTY_RESPONSE = "A recorded response must contain a completion";
-    private static final String MISSING_TOOL_NAME = "Tool name must not be blank";
-    private static final String TOOL_REFERENCE_PATTERN = "call_(0|[1-9][0-9]*)";
-    private static final String INVALID_TOOL_REFERENCE = "Invalid logical tool-call reference";
 
     public LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
         this(schemaVersion, scenario, entries, null);
@@ -58,18 +42,20 @@ public record LlmSavedResponses(
 
     public LlmSavedResponses {
         if (schemaVersion != SCHEMA_VERSION) {
-            throw new IllegalArgumentException(UNSUPPORTED_SCHEMA_VERSION + schemaVersion);
+            throw new IllegalArgumentException(
+                    "Unsupported LLM saved responses schema version: " + schemaVersion);
         }
         Validate.isTrue(
-                StringUtils.isNotBlank(scenario) && scenario.matches(SCENARIO_NAME_PATTERN),
-                INVALID_SCENARIO_NAME);
+                StringUtils.isNotBlank(scenario)
+                        && scenario.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}"),
+                "Invalid LLM saved responses scenario name");
         entries = List.copyOf(entries);
     }
 
     public record Entry(Request request, Response response) {
         public Entry {
-            Objects.requireNonNull(request, REQUEST_FIELD);
-            Objects.requireNonNull(response, RESPONSE_FIELD);
+            Objects.requireNonNull(request, "request");
+            Objects.requireNonNull(response, "response");
         }
     }
 
@@ -84,7 +70,9 @@ public record LlmSavedResponses(
     public record Tool(String name, String description, JsonNode inputSchema) {
         public Tool {
             requireName(name);
-            Validate.isTrue(inputSchema != null && inputSchema.isObject(), INVALID_TOOL_SCHEMA);
+            Validate.isTrue(
+                    inputSchema != null && inputSchema.isObject(),
+                    "Tool input schema must be an object");
         }
     }
 
@@ -100,7 +88,7 @@ public record LlmSavedResponses(
                             MessageType.USER.getValue(),
                             MessageType.ASSISTANT.getValue(),
                             MessageType.TOOL.getValue()),
-                    UNSUPPORTED_MESSAGE_ROLE);
+                    "Unsupported recorded message role");
             if (ObjectUtils.isNotEmpty(toolCalls)) {
                 Validate.isTrue(
                         MessageType.ASSISTANT.getValue().equals(role), MISMATCHED_MESSAGE_ROLE);
@@ -115,7 +103,8 @@ public record LlmSavedResponses(
         public ToolCall {
             requireReference(reference);
             requireName(name);
-            Validate.isTrue(arguments != null && arguments.isObject(), INVALID_TOOL_ARGUMENTS);
+            Validate.isTrue(
+                    arguments != null && arguments.isObject(), "Tool arguments must be an object");
         }
     }
 
@@ -126,12 +115,12 @@ public record LlmSavedResponses(
         }
     }
 
-    public record Completion(Message message, FinishReason finishReason) {
+    public record Completion(Message message, String finishReason) {
         public Completion {
             Validate.isTrue(
                     message != null && MessageType.ASSISTANT.getValue().equals(message.role()),
-                    INVALID_COMPLETION);
-            Objects.requireNonNull(finishReason, FINISH_REASON_FIELD);
+                    "Completion must contain an assistant message");
+            Objects.requireNonNull(finishReason, "finishReason");
         }
     }
 
@@ -139,20 +128,20 @@ public record LlmSavedResponses(
         public Response {
             completions = List.copyOf(completions);
             if (completions.isEmpty()) {
-                throw new IllegalArgumentException(EMPTY_RESPONSE);
+                throw new IllegalArgumentException("A recorded response must contain a completion");
             }
         }
     }
 
     private static void requireName(String name) {
         if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException(MISSING_TOOL_NAME);
+            throw new IllegalArgumentException("Tool name must not be blank");
         }
     }
 
     private static void requireReference(String reference) {
         Validate.isTrue(
-                StringUtils.isNotBlank(reference) && reference.matches(TOOL_REFERENCE_PATTERN),
-                INVALID_TOOL_REFERENCE);
+                StringUtils.isNotBlank(reference) && reference.matches("call_(0|[1-9][0-9]*)"),
+                "Invalid logical tool-call reference");
     }
 }
