@@ -312,6 +312,10 @@ class AIModelTaskMapperPreviousResponseIdTest {
                 sawAssistantLoopIteration,
                 "providers that accept prefill must still receive loop-iteration history; saw "
                         + messages);
+        assertTrue(
+                messages.stream()
+                        .filter(m -> "Loop-iteration assistant.".equals(m.getMessage()))
+                        .allMatch(org.conductoross.conductor.ai.model.ChatMessage::isLoopHistory));
     }
 
     @Test
@@ -454,9 +458,7 @@ class AIModelTaskMapperPreviousResponseIdTest {
     private static AIModelProvider providerFor(String providerName, boolean supportsPrefill) {
         AIModel model = mock(AIModel.class);
         when(model.getModelProvider()).thenReturn(providerName);
-        when(model.supportsAssistantPrefill(
-                        any(org.conductoross.conductor.ai.model.ChatCompletion.class)))
-                .thenReturn(supportsPrefill);
+        when(model.supportsAssistantPrefill()).thenReturn(supportsPrefill);
         AIModelProvider provider = mock(AIModelProvider.class);
         when(provider.getModel(any(LLMWorkerInput.class))).thenReturn(model);
         return provider;

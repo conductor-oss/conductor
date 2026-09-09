@@ -48,7 +48,7 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
         RecordedRequestNormalizer.RequestOptions options = RecordedRequestNormalizer.options(input);
         LLMRecording.ModelSettings settings =
                 new LLMRecording.ModelSettings(
-                        input.getModel(), provider.supportsAssistantPrefill(input));
+                        input.getModel(), provider.supportsAssistantPrefill());
         return new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {

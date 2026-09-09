@@ -142,11 +142,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
         }
         try {
             AIModel model = aiModelProvider.getModel(chatCompletion);
-            return model.supportsAssistantPrefill(chatCompletion);
-        } catch (
-                com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException
-                        playbackFailure) {
-            throw playbackFailure;
+            return model.supportsAssistantPrefill();
         } catch (RuntimeException unknownProvider) {
             log.debug(
                     "Provider '{}' not registered; defaulting supportsAssistantPrefill=true",
@@ -246,6 +242,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                 response = LLMResponse.builder().result(task.getOutputData()).build();
             }
 
+            int historyStart = history.size();
             if (toolTaskTypes.contains(task.getWorkflowTask().getType())) {
                 // This is a tool call
                 ToolCall toolCall =
@@ -330,6 +327,12 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                         msg.setMedia(response.getMedia().stream().map(Media::getLocation).toList());
                     }
                     history.add(msg);
+                }
+            }
+            // Playback can omit exactly the history a source provider would suppress.
+            if (sameRefNameLoopIteration) {
+                for (int i = historyStart; i < history.size(); i++) {
+                    history.get(i).setLoopHistory(true);
                 }
             }
         }

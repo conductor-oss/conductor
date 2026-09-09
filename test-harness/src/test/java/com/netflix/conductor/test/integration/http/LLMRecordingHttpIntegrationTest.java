@@ -115,7 +115,13 @@ class LLMRecordingHttpIntegrationTest {
         taskDef.setRetryCount(0);
         task.setTaskDefinition(taskDef);
         task.setInputParameters(
-                Map.of("llmProvider", provider, "model", "test-model", "userInput", "Say hello"));
+                Map.of(
+                        "llmProvider",
+                        provider,
+                        "model",
+                        MockLLM.NAME.equals(provider) ? "mockLLM" : "test-model",
+                        "userInput",
+                        "Say hello"));
         WorkflowDef definition = new WorkflowDef();
         definition.setName("llm_recording_api_test");
         definition.setVersion(1);

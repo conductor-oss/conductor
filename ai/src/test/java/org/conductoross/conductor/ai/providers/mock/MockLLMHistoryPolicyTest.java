@@ -31,50 +31,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MockLLMHistoryPolicyTest {
-    private static final String MODEL = "recorded-model";
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     @TempDir Path directory;
 
     @Test
-    void acceptsMatchingHistoryPoliciesForTheSameModel() throws Exception {
-        writeRecording("first.json", true);
-        writeRecording("second.json", true);
+    void universalModelLoadsRecordingsWithDifferentSourceModelsAndHistoryPolicies()
+            throws Exception {
+        writeRecording("first.json", "gpt-4o-mini", true);
+        writeRecording("second.json", "claude", false);
 
         MockLLM mockLLM = new MockLLM(directory, objectMapper);
         ChatCompletion input = new ChatCompletion();
-        input.setModel(MODEL);
+        input.setLlmProvider("mock");
+        input.setModel("mockLLM");
 
-        assertTrue(mockLLM.supportsAssistantPrefill(input));
+        assertEquals("mock", mockLLM.getModelProvider());
+        assertDoesNotThrow(() -> mockLLM.getChatModel(input).call(new Prompt("hello")));
     }
 
-    @Test
-    void rejectsConflictingHistoryPoliciesForTheSameModel() throws Exception {
-        writeRecording("first.json", false);
-        writeRecording("second.json", true);
-
-        IllegalArgumentException exception =
-                assertThrows(
-                        IllegalArgumentException.class, () -> new MockLLM(directory, objectMapper));
-
-        assertAll(
-                () -> assertTrue(exception.getMessage().contains(MODEL)),
-                () -> assertTrue(exception.getMessage().contains("first.json")),
-                () -> assertTrue(exception.getMessage().contains("second.json")));
-    }
-
-    private void writeRecording(String filename, boolean supportsAssistantPrefill)
+    private void writeRecording(String filename, String model, boolean supportsAssistantPrefill)
             throws Exception {
         LLMRecording recording =
                 new LLMRecording(
                         LLMRecording.SCHEMA_VERSION,
-                        request(),
+                        new RecordedRequestNormalizer()
+                                .normalize(new Prompt("hello"), new ChatCompletion()),
                         RecordedResponseJson.write(new ChatResponse(List.of())),
-                        new LLMRecording.ModelSettings(MODEL, supportsAssistantPrefill));
+                        new LLMRecording.ModelSettings(model, supportsAssistantPrefill));
         objectMapper.writeValue(directory.resolve(filename).toFile(), recording);
-    }
-
-    private static LLMRecording.Request request() {
-        return new RecordedRequestNormalizer().normalize(new Prompt("hello"), new ChatCompletion());
     }
 }

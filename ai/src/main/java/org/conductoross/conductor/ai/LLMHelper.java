@@ -554,8 +554,16 @@ public class LLMHelper {
         }
     }
 
-    @SneakyThrows
     private Message constructMessage(ChatMessage chatMessage) {
+        Message message = constructMessageContent(chatMessage);
+        if (chatMessage.isLoopHistory()) {
+            message.getMetadata().put(ChatMessage.LOOP_HISTORY, true);
+        }
+        return message;
+    }
+
+    @SneakyThrows
+    private Message constructMessageContent(ChatMessage chatMessage) {
         return switch (chatMessage.getRole()) {
             case user -> getMessage(chatMessage);
             case assistant -> new AssistantMessage(chatMessage.getMessage());
@@ -859,7 +867,7 @@ public class LLMHelper {
      * @param messages The mutable list of messages to check and potentially modify
      */
     @VisibleForTesting
-    void ensureLastMessageIsFromUser(List<Message> messages) {
+    public static void ensureLastMessageIsFromUser(List<Message> messages) {
         if (messages.isEmpty()) return;
         Message last = messages.getLast();
         if (last instanceof UserMessage) return;
@@ -876,10 +884,18 @@ public class LLMHelper {
                                     + partialText
                                     + "\n\nPlease continue where you left off."
                             : "Please continue where you left off.";
-            messages.add(new UserMessage(continuation));
+            messages.add(
+                    UserMessage.builder()
+                            .text(continuation)
+                            .metadata(assistantMsg.getMetadata())
+                            .build());
         } else {
             // For any other non-user message type (tool_call, system, etc.)
-            messages.add(new UserMessage("Please continue where you left off."));
+            messages.add(
+                    UserMessage.builder()
+                            .text("Please continue where you left off.")
+                            .metadata(last.getMetadata())
+                            .build());
         }
     }
 

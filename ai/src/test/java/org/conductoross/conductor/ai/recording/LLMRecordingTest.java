@@ -101,11 +101,11 @@ class LLMRecordingTest {
                     playback ? 1 : 0, context.getBeansOfType(MockLLMConfiguration.class).size());
             AIModelProvider providers = context.getBean(AIModelProvider.class);
             if (playback)
-                assertInstanceOf(MockLLM.class, providers.getModel(input(MockLLM.NAME, "model")));
+                assertInstanceOf(MockLLM.class, providers.getModel(input(MockLLM.NAME, "mockLLM")));
             else
                 assertThrows(
                         RuntimeException.class,
-                        () -> providers.getModel(input(MockLLM.NAME, "model")));
+                        () -> providers.getModel(input(MockLLM.NAME, "mockLLM")));
         }
     }
 
@@ -142,7 +142,7 @@ class LLMRecordingTest {
         assertEquals(
                 providerReason, saved.response().at("/results/0/metadata/finishReason").asText());
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
-            assertEquals(expected, call(context, input(MockLLM.NAME, "model")).getFinishReason());
+            assertEquals(expected, call(context, input(MockLLM.NAME, "mockLLM")).getFinishReason());
         }
     }
 
@@ -220,23 +220,86 @@ class LLMRecordingTest {
         }
         assertEquals(2, recordings().size());
         try (AnnotationConfigApplicationContext context = context(true, true, null)) {
-            ChatCompletion followup = input(MockLLM.NAME, "model");
+            ChatCompletion followup = input(MockLLM.NAME, "mockLLM");
             addHistory(followup, "different-runtime-id");
             assertEquals(WEATHER_RESPONSE, call(context, followup).getResult());
-            LLMResponse first = call(context, input(MockLLM.NAME, "model"));
-            LLMResponse repeated = call(context, input(MockLLM.NAME, "model"));
+            LLMResponse first = call(context, input(MockLLM.NAME, "mockLLM"));
+            LLMResponse repeated = call(context, input(MockLLM.NAME, "mockLLM"));
             assertNotEquals(
                     PROVIDER_TOOL_CALL_ID, first.getToolCalls().getFirst().getTaskReferenceName());
             assertNotEquals(
                     first.getToolCalls().getFirst().getTaskReferenceName(),
                     repeated.getToolCalls().getFirst().getTaskReferenceName());
             assertEquals(0, first.getTokenUsed());
-            assertFalse(
-                    context.getBean(MockLLMConfiguration.class)
-                            .get()
-                            .supportsAssistantPrefill(input(MockLLM.NAME, "model")));
         }
         assertEquals(2, recordings().size(), "Playback must not create recordings");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false", "true"})
+    void universalModelReplaysDifferentModelsAndLoopHistoryPolicies(boolean withParticipant) {
+        // Record both kinds of provider history in the same directory.
+        for (boolean includesLoopHistory : List.of(false, true)) {
+            String originalModel = includesLoopHistory ? "gpt-4o-mini" : "claude";
+            try (AnnotationConfigApplicationContext context =
+                    context(true, false, prompt -> textResponse(originalModel, "stop"))) {
+                ChatCompletion recorded = input(REAL_PROVIDER, originalModel);
+                recorded.getMessages().getFirst().setMessage("Question for " + originalModel);
+                if (includesLoopHistory) recorded.getMessages().add(loopReply());
+                if (withParticipant)
+                    recorded.getMessages()
+                            .add(new ChatMessage(ChatMessage.Role.user, "Participant reply"));
+                call(context, recorded);
+            }
+        }
+        try (AnnotationConfigApplicationContext context = context(false, true, null)) {
+            for (String originalModel : List.of("gpt-4o-mini", "claude")) {
+                ChatCompletion replay = input("mock", "mockLLM");
+                replay.getMessages().getFirst().setMessage("Question for " + originalModel);
+                replay.getMessages().add(loopReply());
+                if (withParticipant)
+                    replay.getMessages()
+                            .add(new ChatMessage(ChatMessage.Role.user, "Participant reply"));
+                assertEquals(originalModel, call(context, replay).getResult());
+            }
+        }
+    }
+
+    @Test
+    void playbackOmitsLoopToolHistoryAndItsContinuationPrompt() {
+        try (AnnotationConfigApplicationContext context =
+                context(true, false, prompt -> textResponse("answer", "stop"))) {
+            call(context, input(REAL_PROVIDER, "claude"));
+        }
+        try (AnnotationConfigApplicationContext context = context(false, true, null)) {
+            ChatCompletion replay = input("mock", "mockLLM");
+            int historyStart = replay.getMessages().size();
+            addHistory(replay, "loop-tool-call");
+            replay.getMessages()
+                    .subList(historyStart, replay.getMessages().size())
+                    .forEach(message -> message.setLoopHistory(true));
+            assertEquals("answer", call(context, replay).getResult());
+        }
+    }
+
+    @Test
+    void playbackDoesNotDropExplicitAssistantHistory() {
+        try (AnnotationConfigApplicationContext context =
+                context(true, false, prompt -> textResponse("answer", "stop"))) {
+            call(context, input(REAL_PROVIDER, "gpt-4o-mini"));
+        }
+        try (AnnotationConfigApplicationContext context = context(false, true, null)) {
+            ChatCompletion replay = input("mock", "mockLLM");
+            replay.getMessages()
+                    .add(new ChatMessage(ChatMessage.Role.assistant, "Explicit history"));
+            assertThrows(NonRetryableException.class, () -> call(context, replay));
+        }
+    }
+
+    private static ChatMessage loopReply() {
+        ChatMessage message = new ChatMessage(ChatMessage.Role.assistant, "Previous loop reply");
+        message.setLoopHistory(true);
+        return message;
     }
 
     @Test
@@ -265,7 +328,7 @@ class LLMRecordingTest {
                 ExecutorService pool = Executors.newFixedThreadPool(4)) {
             List<Callable<LLMResponse>> jobs = new ArrayList<>();
             for (int i = 0; i < 20; i++)
-                jobs.add(() -> call(context, input(MockLLM.NAME, "model")));
+                jobs.add(() -> call(context, input(MockLLM.NAME, "mockLLM")));
             for (Future<LLMResponse> future : pool.invokeAll(jobs))
                 assertEquals("ok", future.get().getResult());
         }
@@ -320,7 +383,8 @@ class LLMRecordingTest {
                             return textResponse("live", "stop");
                         })) {
             assertThrows(
-                    NonRetryableException.class, () -> call(context, input(MockLLM.NAME, "model")));
+                    NonRetryableException.class,
+                    () -> call(context, input(MockLLM.NAME, "mockLLM")));
             assertEquals(0, calls.get());
         }
     }
@@ -336,7 +400,7 @@ class LLMRecordingTest {
         }
         assertEquals(1, recordings().size());
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
-            ChatCompletion input = input(MockLLM.NAME, "model");
+            ChatCompletion input = input(MockLLM.NAME, "mockLLM");
             input.setJsonOutput(true);
             RuntimeException failure =
                     assertThrows(RuntimeException.class, () -> call(context, input));

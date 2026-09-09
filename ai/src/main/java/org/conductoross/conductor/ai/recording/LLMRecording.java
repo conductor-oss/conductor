@@ -23,7 +23,7 @@ import org.springframework.ai.chat.messages.MessageType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Normalized requests and complete model responses with the history policy for playback. */
+/** Normalized requests and complete model responses with the original model settings. */
 public record LLMRecording(
         int schemaVersion, Request request, JsonNode response, ModelSettings modelSettings) {
     private static final String MISMATCHED_MESSAGE_ROLE =

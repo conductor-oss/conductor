@@ -88,11 +88,6 @@ public interface AIModel {
         return true;
     }
 
-    /** Request-aware history policy; providers may retain their existing fixed capability. */
-    default boolean supportsAssistantPrefill(ChatCompletion input) {
-        return supportsAssistantPrefill();
-    }
-
     /**
      * Embedding generation
      *

@@ -64,11 +64,11 @@ conductor.ai.enable-llm-mocks=true
 Restart the server. In Python, change the agent's model to:
 
 ```python
-model="mockLLM/gpt-4o-mini",
+model="mock/mockLLM",
 ```
 
 Run the same agent with the same prompt, instructions, tools, and starting conversation history.
-For multiple agents, change every model you want to replay.
+Use `mock/mockLLM` for every agent you want to replay, regardless of the provider or model used to record it.
 
 Tool workers still run. Their outputs must match the recorded run, including any dates or random values.
 Missing matches fail instead of calling OpenAI. Conflicting answers for the same request prevent playback startup.

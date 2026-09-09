@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +24,15 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
+import org.conductoross.conductor.ai.LLMHelper;
 import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatMessage;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.recording.LLMRecording;
 import org.conductoross.conductor.ai.recording.RecordedRequestNormalizer;
 import org.conductoross.conductor.ai.recording.RecordedResponseJson;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -41,20 +45,17 @@ public final class MockLLM implements AIModel {
     private static final String UNSUPPORTED_OPERATION =
             "MockLLM only plays back recorded chat responses";
 
-    public static final String NAME = "mockLLM";
+    public static final String NAME = "mock";
     private final Map<LLMRecording.Request, JsonNode> responses;
-    private final Map<String, Boolean> assistantPrefillByModel;
 
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
         Map<LLMRecording.Request, JsonNode> loaded = new HashMap<>();
-        Map<String, Boolean> policies = new HashMap<>();
-        Map<String, Path> policySources = new HashMap<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
             for (Path file : files) {
                 try {
                     LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
                     RecordedResponseJson.validate(saved.response());
-                    register(file, saved, loaded, policies, policySources);
+                    register(saved, loaded);
                 } catch (IOException | RuntimeException exception) {
                     throw new IllegalArgumentException(
                             "Invalid LLM recording in '"
@@ -66,15 +67,10 @@ public final class MockLLM implements AIModel {
             }
         }
         this.responses = Map.copyOf(loaded);
-        this.assistantPrefillByModel = Map.copyOf(policies);
     }
 
     private static void register(
-            Path file,
-            LLMRecording saved,
-            Map<LLMRecording.Request, JsonNode> responses,
-            Map<String, Boolean> policies,
-            Map<String, Path> policySources) {
+            LLMRecording saved, Map<LLMRecording.Request, JsonNode> responses) {
         // Identical responses merge; conflicting responses for the same request fail.
         JsonNode existingResponse = responses.putIfAbsent(saved.request(), saved.response());
         Validate.isTrue(
@@ -82,38 +78,11 @@ public final class MockLLM implements AIModel {
                         || RecordedResponseJson.responseContent(existingResponse)
                                 .equals(RecordedResponseJson.responseContent(saved.response())),
                 "Conflicting recorded responses for the same request");
-        LLMRecording.ModelSettings settings = saved.modelSettings();
-        if (settings != null && settings.model() != null) {
-            Boolean existingPolicy =
-                    policies.putIfAbsent(settings.model(), settings.supportsAssistantPrefill());
-            if (existingPolicy != null && existingPolicy != settings.supportsAssistantPrefill()) {
-                // Keep sources so incompatible recordings do not depend on directory iteration
-                // order.
-                throw new IllegalArgumentException(
-                        "Conflicting assistant prefill policies for model '"
-                                + settings.model()
-                                + "' in recordings '"
-                                + policySources.get(settings.model()).getFileName()
-                                + "' and '"
-                                + file.getFileName()
-                                + "'");
-            }
-            policySources.putIfAbsent(settings.model(), file);
-        }
     }
 
     @Override
     public String getModelProvider() {
         return NAME;
-    }
-
-    @Override
-    public boolean supportsAssistantPrefill(ChatCompletion input) {
-        Boolean policy =
-                input.getModel() == null ? null : assistantPrefillByModel.get(input.getModel());
-        if (policy != null) return policy;
-        if (assistantPrefillByModel.isEmpty()) return AIModel.super.supportsAssistantPrefill();
-        throw new NonRetryableException("No recorded history policy for the selected model");
     }
 
     @Override
@@ -126,9 +95,26 @@ public final class MockLLM implements AIModel {
         RecordedRequestNormalizer.RequestOptions options = RecordedRequestNormalizer.options(input);
         // Request options belong to this call's wrapper, never to the singleton provider.
         return prompt -> {
-            RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
-            LLMRecording.Request request = normalizer.normalize(prompt, options);
-            JsonNode response = responses.get(request);
+            JsonNode response =
+                    responses.get(new RecordedRequestNormalizer().normalize(prompt, options));
+            if (response == null) {
+                // Some providers omit prior loop replies. Try that recorded history too, while
+                // preserving explicit assistant messages and participant/tool history.
+                var messages = new ArrayList<>(prompt.getInstructions());
+                messages.removeIf(
+                        message ->
+                                Boolean.TRUE.equals(
+                                        message.getMetadata().get(ChatMessage.LOOP_HISTORY)));
+                if (messages.size() != prompt.getInstructions().size()) {
+                    LLMHelper.ensureLastMessageIsFromUser(messages);
+                    response =
+                            responses.get(
+                                    new RecordedRequestNormalizer()
+                                            .normalize(
+                                                    new Prompt(messages, prompt.getOptions()),
+                                                    options));
+                }
+            }
             if (response == null)
                 throw new NonRetryableException("No recorded response matches the LLM request");
             return RecordedResponseJson.read(response, UUID.randomUUID().toString());

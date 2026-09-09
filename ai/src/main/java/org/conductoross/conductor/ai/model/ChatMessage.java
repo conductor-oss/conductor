@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,6 +24,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChatMessage {
+
+    public static final String LOOP_HISTORY = "conductor.loopHistory";
 
     public enum Role {
         user,
@@ -40,6 +43,19 @@ public class ChatMessage {
     private List<String> media = new ArrayList<>();
     private String mimeType;
     private List<ToolCall> toolCalls;
+
+    /** Identifies replies injected from prior loop iterations, for model-independent playback. */
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    private boolean loopHistory;
+
+    public ChatMessage(
+            Role role,
+            String message,
+            List<String> media,
+            String mimeType,
+            List<ToolCall> toolCalls) {
+        this(role, message, media, mimeType, toolCalls, false);
+    }
 
     public ChatMessage(Role role, String message) {
         this.role = role;
