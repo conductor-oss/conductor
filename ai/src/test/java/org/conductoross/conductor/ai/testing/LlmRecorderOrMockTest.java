@@ -48,7 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmFixtureSessionTest {
+class LlmRecorderOrMockTest {
     @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory;
     private final ObjectMapper mapper = new ObjectMapperProvider().getObjectMapper();
 
@@ -60,21 +60,21 @@ class LlmFixtureSessionTest {
         "refusal,CONTENT_FILTER"
     })
     void recordingAndReplayExposeTheSameFinishReason(String providerReason, String expected) {
-        var recording = LlmFixtureSession.recording("finish_reason");
+        var recording = LlmRecorderOrMock.recording("finish_reason");
         var recorded =
                 runHelper(
                         recording,
                         input("real", "model"),
                         prompt -> textResponse("answer", providerReason));
-        var replay = LlmFixtureSession.replaying(recording.fixture());
+        var replay = LlmRecorderOrMock.replaying(recording.savedResponses());
         var replayed = runHelper(replay, input("mockLLM", "finish_reason"), null);
         assertEquals(expected, recorded.getFinishReason());
         assertEquals(recorded.getFinishReason(), replayed.getFinishReason());
     }
 
     @Test
-    void wrapperCapturesOnlyFixtureConstraintsBeforeInputMutation() {
-        var recording = LlmFixtureSession.recording("constraints");
+    void wrapperCapturesOnlySavedResponsesConstraintsBeforeInputMutation() {
+        var recording = LlmRecorderOrMock.recording("constraints");
         var input = input("real", "model");
         var properties = new HashMap<String, Object>(Map.of("type", "string"));
         input.setOutputSchema(
@@ -84,7 +84,7 @@ class LlmFixtureSessionTest {
         properties.put("type", "number");
         input.setWebSearch(true);
         model.call(new Prompt("hello"));
-        var request = recording.fixture().entries().getFirst().request();
+        var request = recording.savedResponses().entries().getFirst().request();
         assertFalse(request.jsonOutput());
         assertEquals("string", request.outputSchema().path("data").path("type").textValue());
     }
@@ -106,16 +106,16 @@ class LlmFixtureSessionTest {
                         return defaults;
                     }
                 };
-        var recording = LlmFixtureSession.recording("weather");
+        var recording = LlmRecorderOrMock.recording("weather");
         assertEquals(
                 defaults, recording.modelFor(input("real", "model"), provider).getDefaultOptions());
-        var replay = LlmFixtureSession.replaying(oneEntry());
+        var replay = LlmRecorderOrMock.replaying(oneEntry());
         runHelper(replay, input("mockLLM", "weather"), provider);
     }
 
     @Test
     void recordsRealHelperCallsAndReplaysToolsThroughNormalResponseProcessing() throws Exception {
-        var recording = LlmFixtureSession.recording("weather_tool_call");
+        var recording = LlmRecorderOrMock.recording("weather_tool_call");
         var input = input("provider-a", "real-model");
         var first = runHelper(recording, input, prompt -> toolResponse("provider-call-99"));
         assertTrue(first.hasToolCalls());
@@ -130,20 +130,20 @@ class LlmFixtureSessionTest {
                         prompt -> textResponse("Sunny in Lisbon, 21C.", "end_turn"));
         assertEquals("Sunny in Lisbon, 21C.", next.getResult());
 
-        String json = mapper.writeValueAsString(recording.fixture());
+        String json = mapper.writeValueAsString(recording.savedResponses());
         assertFalse(json.contains("provider-call-99"));
         assertFalse(json.contains("real-model"));
         assertFalse(json.contains("provider-a"));
         assertFalse(json.contains("response_id"));
         assertFalse(json.contains("token"));
-        var fixture = mapper.readValue(json, LlmFixture.class);
-        assertEquals(recording.fixture(), fixture);
-        var path = LlmFixtureFiles.write(directory, fixture, false);
+        var savedResponses = mapper.readValue(json, LlmSavedResponses.class);
+        assertEquals(recording.savedResponses(), savedResponses);
+        var path = LlmJsonFiles.write(directory, savedResponses, false);
         try (var source = java.nio.file.Files.newInputStream(path)) {
-            fixture = LlmFixtureFiles.read(source);
+            savedResponses = LlmJsonFiles.read(source);
         }
 
-        var replay = LlmFixtureSession.replaying(fixture);
+        var replay = LlmRecorderOrMock.replaying(savedResponses);
         var followupOnly = input("mockLLM", "weather_tool_call");
         addHistory(followupOnly, "unrelated-runtime-id");
         assertEquals(next.getResult(), runHelper(replay, followupOnly, null).getResult());
@@ -163,7 +163,7 @@ class LlmFixtureSessionTest {
 
     @Test
     void unmatchedRequestFailsWithoutAffectingLaterMatches() {
-        var replay = LlmFixtureSession.replaying(oneEntry());
+        var replay = LlmRecorderOrMock.replaying(oneEntry());
         var wrong = input("mockLLM", "weather");
         wrong.getMessages().getFirst().setMessage("secret changed prompt");
         var error = assertThrows(NonRetryableException.class, () -> runHelper(replay, wrong, null));
@@ -175,14 +175,14 @@ class LlmFixtureSessionTest {
 
     @Test
     void toolSchemaAndToolResultChangesFailReplay() {
-        var recording = LlmFixtureSession.recording("weather");
+        var recording = LlmRecorderOrMock.recording("weather");
         var result =
                 runHelper(recording, input("real", "model"), prompt -> toolResponse("call-id"));
         var followup = input("real", "model");
         addHistory(followup, result.getToolCalls().getFirst().getTaskReferenceName());
         runHelper(recording, followup, prompt -> textResponse("done", "stop"));
 
-        var replay = LlmFixtureSession.replaying(recording.fixture());
+        var replay = LlmRecorderOrMock.replaying(recording.savedResponses());
         var wrongSchema = input("mockLLM", "weather");
         wrongSchema.getTools().getFirst().setDescription("different description");
         assertThrows(NonRetryableException.class, () -> runHelper(replay, wrongSchema, null));
@@ -200,26 +200,26 @@ class LlmFixtureSessionTest {
 
     @Test
     void replayMatchesRequestsInAnyOrderAndCanRepeatThem() {
-        var recording = LlmFixtureSession.recording("weather");
+        var recording = LlmRecorderOrMock.recording("weather");
         var first = input("real", "model");
         var second = input("real", "model");
         second.getMessages().getFirst().setMessage("Weather in Paris?");
         runHelper(recording, first, prompt -> textResponse("Lisbon", "stop"));
         runHelper(recording, second, prompt -> textResponse("Paris", "stop"));
-        var fixture = recording.fixture();
-        var replay = LlmFixtureSession.replaying(fixture);
+        var savedResponses = recording.savedResponses();
+        var replay = LlmRecorderOrMock.replaying(savedResponses);
         for (int i = 0; i < 2; i++) {
             var replayInput = input("mockLLM", "weather");
             replayInput.getMessages().getFirst().setMessage("Weather in Paris?");
             assertEquals("Paris", runHelper(replay, replayInput, null).getResult());
         }
         assertEquals("Lisbon", runHelper(replay, input("mockLLM", "weather"), null).getResult());
-        assertEquals(fixture, replay.fixture());
+        assertEquals(savedResponses, replay.savedResponses());
     }
 
     @Test
     void conflictingResponsesForTheSameRequestAreRejected() {
-        var recording = LlmFixtureSession.recording("weather");
+        var recording = LlmRecorderOrMock.recording("weather");
         runHelper(recording, input("real", "model"), prompt -> textResponse("one", "stop"));
         assertThrows(
                 IllegalArgumentException.class,
@@ -228,21 +228,23 @@ class LlmFixtureSessionTest {
                                 recording,
                                 input("real", "model"),
                                 prompt -> textResponse("two", "stop")));
-        var entry = recording.fixture().entries().getFirst();
+        var entry = recording.savedResponses().entries().getFirst();
         var otherResponse =
-                new LlmFixtureNormalizer().normalizeResponse(textResponse("two", "stop"));
+                new LlmRequestResponseConverter().toSavedResponse(textResponse("two", "stop"));
         var ambiguous =
-                new LlmFixture(
+                new LlmSavedResponses(
                         1,
                         "weather",
-                        List.of(entry, new LlmFixture.Entry(entry.request(), otherResponse)));
-        assertThrows(IllegalArgumentException.class, () -> LlmFixtureSession.replaying(ambiguous));
+                        List.of(
+                                entry,
+                                new LlmSavedResponses.Entry(entry.request(), otherResponse)));
+        assertThrows(IllegalArgumentException.class, () -> LlmRecorderOrMock.replaying(ambiguous));
     }
 
     @Test
     void oneReplaySupportsConcurrentRepeatedRequests() throws Exception {
-        var fixture = oneEntry();
-        var replay = LlmFixtureSession.replaying(fixture);
+        var savedResponses = oneEntry();
+        var replay = LlmRecorderOrMock.replaying(savedResponses);
         try (var pool = Executors.newFixedThreadPool(4)) {
             var jobs = new ArrayList<Callable<Object>>();
             for (int i = 0; i < 20; i++) {
@@ -250,12 +252,12 @@ class LlmFixtureSessionTest {
             }
             for (var future : pool.invokeAll(jobs)) assertEquals("ok", future.get());
         }
-        assertEquals(fixture, replay.fixture());
+        assertEquals(savedResponses, replay.savedResponses());
     }
 
     @Test
     void recordingDoesNotSerializeOrDeduplicateProviderCalls() throws Exception {
-        var recording = LlmFixtureSession.recording("parallel");
+        var recording = LlmRecorderOrMock.recording("parallel");
         var barrier = new java.util.concurrent.CyclicBarrier(2);
         var calls = new AtomicInteger();
         ChatModel provider =
@@ -273,8 +275,8 @@ class LlmFixtureSessionTest {
             for (var future : pool.invokeAll(List.of(call, call))) assertNotNull(future.get());
         }
         assertEquals(2, calls.get());
-        assertEquals(1, recording.fixture().entries().size());
-        var replay = LlmFixtureSession.replaying(recording.fixture());
+        assertEquals(1, recording.savedResponses().entries().size());
+        var replay = LlmRecorderOrMock.replaying(recording.savedResponses());
         var first = runHelper(replay, input("mockLLM", "parallel"), null);
         var second = runHelper(replay, input("mockLLM", "parallel"), null);
         assertNotEquals(
@@ -284,7 +286,7 @@ class LlmFixtureSessionTest {
 
     @Test
     void recordingPreservesInvalidJsonSoReplayExercisesHelperValidation() {
-        var recording = LlmFixtureSession.recording("invalid_json");
+        var recording = LlmRecorderOrMock.recording("invalid_json");
         var input = input("real", "model");
         input.setJsonOutput(true);
         assertThrows(
@@ -293,7 +295,7 @@ class LlmFixtureSessionTest {
         assertEquals(
                 "not json",
                 recording
-                        .fixture()
+                        .savedResponses()
                         .entries()
                         .getFirst()
                         .response()
@@ -301,7 +303,7 @@ class LlmFixtureSessionTest {
                         .getFirst()
                         .message()
                         .text());
-        var replay = LlmFixtureSession.replaying(recording.fixture());
+        var replay = LlmRecorderOrMock.replaying(recording.savedResponses());
         var replayInput = input("mockLLM", "invalid_json");
         replayInput.setJsonOutput(true);
         assertThrows(RuntimeException.class, () -> runHelper(replay, replayInput, null));
@@ -309,7 +311,7 @@ class LlmFixtureSessionTest {
 
     @Test
     void failedProviderCallDoesNotPublishAnEntry() {
-        var recording = LlmFixtureSession.recording("failure");
+        var recording = LlmRecorderOrMock.recording("failure");
         assertThrows(
                 IllegalStateException.class,
                 () ->
@@ -319,12 +321,12 @@ class LlmFixtureSessionTest {
                                 prompt -> {
                                     throw new IllegalStateException("provider failed");
                                 }));
-        assertTrue(recording.fixture().entries().isEmpty());
+        assertTrue(recording.savedResponses().entries().isEmpty());
     }
 
     @Test
     void rejectsMockRecordingAndProviderSideChaining() {
-        var recording = LlmFixtureSession.recording("weather");
+        var recording = LlmRecorderOrMock.recording("weather");
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -348,15 +350,17 @@ class LlmFixtureSessionTest {
 
     @Test
     void rejectsUnknownVersionAndUnsafeScenarioNames() {
-        assertThrows(IllegalArgumentException.class, () -> new LlmFixture(2, "weather", List.of()));
         assertThrows(
-                IllegalArgumentException.class, () -> LlmFixtureSession.recording("../weather"));
+                IllegalArgumentException.class,
+                () -> new LlmSavedResponses(2, "weather", List.of()));
+        assertThrows(
+                IllegalArgumentException.class, () -> LlmRecorderOrMock.recording("../weather"));
     }
 
-    private LlmFixture oneEntry() {
-        var recording = LlmFixtureSession.recording("weather");
+    private LlmSavedResponses oneEntry() {
+        var recording = LlmRecorderOrMock.recording("weather");
         runHelper(recording, input("real", "model"), p -> textResponse("ok", "stop"));
-        return recording.fixture();
+        return recording.savedResponses();
     }
 
     private static ChatCompletion input(String provider, String model) {
@@ -387,8 +391,8 @@ class LlmFixtureSessionTest {
     }
 
     private static org.conductoross.conductor.ai.model.LLMResponse runHelper(
-            LlmFixtureSession session, ChatCompletion input, ChatModel delegate) {
-        ChatModel wrapped = session.modelFor(input, delegate);
+            LlmRecorderOrMock recorderOrMock, ChatCompletion input, ChatModel delegate) {
+        ChatModel wrapped = recorderOrMock.modelFor(input, delegate);
         AIModel provider =
                 new AIModel() {
                     public String getModelProvider() {

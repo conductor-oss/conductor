@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.JsonSchema;
 
 /** Strict JSON IO for completed recordings; callers finalize execution before publishing a file. */
-public final class LlmFixtureFiles {
+public final class LlmJsonFiles {
     private static final int MAX_BYTES = 16 * 1024 * 1024;
     private static final ObjectMapper MAPPER =
             new ObjectMapper()
@@ -38,47 +38,49 @@ public final class LlmFixtureFiles {
 
     private static final JsonSchema SCHEMA = loadSchema();
 
-    private LlmFixtureFiles() {}
+    private LlmJsonFiles() {}
 
     private static JsonSchema loadSchema() {
-        try (var source = LlmFixtureFiles.class.getResourceAsStream("/llm-fixture.schema.json")) {
-            if (source == null) throw new IllegalStateException("LLM fixture schema is missing");
+        try (var source =
+                LlmJsonFiles.class.getResourceAsStream("/llm-saved-responses.schema.json")) {
+            if (source == null)
+                throw new IllegalStateException("LLM saved responses schema is missing");
             return new JsonSchemaValidator(MAPPER)
                     .getJsonSchema(
                             new String(
                                     source.readAllBytes(),
                                     java.nio.charset.StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot load LLM fixture schema", e);
+            throw new IllegalStateException("Cannot load LLM saved responses schema", e);
         }
     }
 
     /**
-     * The caller owns the stream, allowing the same reader for classpath and filesystem fixtures.
+     * The caller owns the stream, allowing the same reader for classpath and filesystem recordings.
      */
-    public static LlmFixture read(InputStream source) throws IOException {
+    public static LlmSavedResponses read(InputStream source) throws IOException {
         byte[] bytes = source.readNBytes(MAX_BYTES + 1);
         if (bytes.length > MAX_BYTES) {
-            throw new IOException("LLM fixture exceeds the 16 MiB limit");
+            throw new IOException("LLM saved responses exceeds the 16 MiB limit");
         }
         var node = MAPPER.readTree(bytes);
         if (node == null || !SCHEMA.validate(node).isEmpty()) {
-            throw new IOException("Invalid LLM fixture schema");
+            throw new IOException("Invalid LLM saved responses schema");
         }
-        return MAPPER.treeToValue(node, LlmFixture.class);
+        return MAPPER.treeToValue(node, LlmSavedResponses.class);
     }
 
-    public static Path write(Path directory, LlmFixture fixture, boolean refresh)
+    public static Path write(Path directory, LlmSavedResponses savedResponses, boolean refresh)
             throws IOException {
-        if (!SCHEMA.validate(MAPPER.valueToTree(fixture)).isEmpty()) {
-            throw new IOException("Invalid LLM fixture schema");
+        if (!SCHEMA.validate(MAPPER.valueToTree(savedResponses)).isEmpty()) {
+            throw new IOException("Invalid LLM saved responses schema");
         }
-        byte[] bytes = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(fixture);
+        byte[] bytes = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(savedResponses);
         if (bytes.length > MAX_BYTES) {
-            throw new IOException("LLM fixture exceeds the 16 MiB limit");
+            throw new IOException("LLM saved responses exceeds the 16 MiB limit");
         }
         Files.createDirectories(directory);
-        Path target = directory.resolve(fixture.scenario() + ".json");
+        Path target = directory.resolve(savedResponses.scenario() + ".json");
         Path temporary = Files.createTempFile(directory, ".llm-recording-", ".tmp");
         try {
             Files.write(temporary, bytes);

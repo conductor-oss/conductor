@@ -42,7 +42,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
  * Normalizes only declared transport fields, never arbitrary user payload keys or prompt text.
  * Create one instance per request/response pair to normalize IDs from its full history.
  */
-public final class LlmFixtureNormalizer {
+public final class LlmRequestResponseConverter {
     private static final ObjectMapper MAPPER =
             new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
@@ -50,10 +50,10 @@ public final class LlmFixtureNormalizer {
 
     private record CallIdentity(String reference, String name) {}
 
-    public LlmFixtureNormalizer() {}
+    public LlmRequestResponseConverter() {}
 
-    public LlmFixture.Request normalizeRequest(Prompt prompt, ChatCompletion input) {
-        return normalizeRequest(prompt, options(input));
+    public LlmSavedResponses.Request toSavedRequest(Prompt prompt, ChatCompletion input) {
+        return toSavedRequest(prompt, options(input));
     }
 
     record RequestOptions(boolean jsonOutput, JsonNode outputSchema) {}
@@ -61,56 +61,58 @@ public final class LlmFixtureNormalizer {
     static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
             throw new IllegalArgumentException(
-                    "LLM fixtures require full history; previousResponseId is unsupported");
+                    "LLM recordings require full history; previousResponseId is unsupported");
         }
         if (input.isWebSearch()
                 || input.isCodeInterpreter()
                 || input.isGoogleSearchRetrieval()
                 || !CollectionUtils.isEmpty(input.getFileSearchVectorStoreIds())) {
             throw new IllegalArgumentException(
-                    "Provider-native tools are unsupported in LLM fixtures");
+                    "Provider-native tools are unsupported in LLM recordings");
         }
-        // Capture only fixture constraints; messages and tools come from the effective prompt.
+        // Capture only recording constraints; messages and tools come from the effective prompt.
         return new RequestOptions(
                 input.isJsonOutput(), canonical(MAPPER.valueToTree(input.getOutputSchema())));
     }
 
-    LlmFixture.Request normalizeRequest(Prompt prompt, RequestOptions input) {
-        var messages = prompt.getInstructions().stream().map(this::normalizeMessage).toList();
-        var tools = new ArrayList<LlmFixture.Tool>();
+    LlmSavedResponses.Request toSavedRequest(Prompt prompt, RequestOptions input) {
+        var messages = prompt.getInstructions().stream().map(this::toSavedMessage).toList();
+        var tools = new ArrayList<LlmSavedResponses.Tool>();
         // Read the effective tool catalog passed to the model, not the original task definition.
         if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
             if (!CollectionUtils.isEmpty(options.getToolNames())) {
                 throw new IllegalArgumentException(
-                        "LLM fixtures require resolved tool definitions");
+                        "LLM recordings require resolved tool definitions");
             }
             if (Boolean.TRUE.equals(options.getInternalToolExecutionEnabled())) {
-                throw new IllegalArgumentException("LLM fixtures require external tool execution");
+                throw new IllegalArgumentException(
+                        "LLM recordings require external tool execution");
             }
             if (!CollectionUtils.isEmpty(options.getToolCallbacks())) {
                 for (var callback : options.getToolCallbacks()) {
                     var definition = callback.getToolDefinition();
                     tools.add(
-                            new LlmFixture.Tool(
+                            new LlmSavedResponses.Tool(
                                     definition.name(),
                                     definition.description(),
                                     parseObject(definition.inputSchema(), "tool input schema")));
                 }
             }
         }
-        return new LlmFixture.Request(messages, tools, input.jsonOutput(), input.outputSchema());
+        return new LlmSavedResponses.Request(
+                messages, tools, input.jsonOutput(), input.outputSchema());
     }
 
-    public LlmFixture.Response normalizeResponse(ChatResponse response) {
+    public LlmSavedResponses.Response toSavedResponse(ChatResponse response) {
         if (response == null) {
             throw new IllegalArgumentException("Cannot record an absent model response");
         }
-        return new LlmFixture.Response(
+        return new LlmSavedResponses.Response(
                 response.getResults().stream()
                         .map(
                                 generation ->
-                                        new LlmFixture.Completion(
-                                                normalizeMessage(generation.getOutput()),
+                                        new LlmSavedResponses.Completion(
+                                                toSavedMessage(generation.getOutput()),
                                                 FinishReason.fromProvider(
                                                         generation
                                                                 .getMetadata()
@@ -119,7 +121,7 @@ public final class LlmFixtureNormalizer {
     }
 
     /** Reconstruct a response before Conductor's normal tool conversion and JSON validation. */
-    public ChatResponse replayResponse(LlmFixture.Response response, String idPrefix) {
+    public ChatResponse toChatResponse(LlmSavedResponses.Response response, String idPrefix) {
         if (StringUtils.isBlank(idPrefix)) {
             throw new IllegalArgumentException("Replay tool-call ID prefix must not be blank");
         }
@@ -151,20 +153,20 @@ public final class LlmFixtureNormalizer {
         return new ChatResponse(generations);
     }
 
-    private LlmFixture.Message normalizeMessage(Message message) {
+    private LlmSavedResponses.Message toSavedMessage(Message message) {
         if (message instanceof MediaContent media && !CollectionUtils.isEmpty(media.getMedia())) {
-            throw new IllegalArgumentException("Media is unsupported in LLM fixtures");
+            throw new IllegalArgumentException("Media is unsupported in LLM recordings");
         }
-        var calls = new ArrayList<LlmFixture.ToolCall>();
-        var results = new ArrayList<LlmFixture.ToolResult>();
+        var calls = new ArrayList<LlmSavedResponses.ToolCall>();
+        var results = new ArrayList<LlmSavedResponses.ToolResult>();
         if (message instanceof AssistantMessage assistant) {
             for (var call : assistant.getToolCalls()) {
                 if (!"function".equals(call.type())) {
                     throw new IllegalArgumentException(
-                            "Only function tool calls are supported in LLM fixtures");
+                            "Only function tool calls are supported in LLM recordings");
                 }
                 calls.add(
-                        new LlmFixture.ToolCall(
+                        new LlmSavedResponses.ToolCall(
                                 reference(call.id(), call.name()),
                                 call.name(),
                                 parseObject(call.arguments(), "tool arguments")));
@@ -177,13 +179,13 @@ public final class LlmFixtureNormalizer {
                             "Tool result has no matching call in the recorded history");
                 }
                 results.add(
-                        new LlmFixture.ToolResult(
+                        new LlmSavedResponses.ToolResult(
                                 call.reference(),
                                 result.name(),
                                 parseResult(result.responseData())));
             }
         }
-        return new LlmFixture.Message(
+        return new LlmSavedResponses.Message(
                 message.getMessageType().getValue(), message.getText(), calls, results);
     }
 

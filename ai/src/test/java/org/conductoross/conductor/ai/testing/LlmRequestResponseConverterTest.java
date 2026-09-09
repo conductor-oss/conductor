@@ -27,7 +27,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmFixtureNormalizerTest {
+class LlmRequestResponseConverterTest {
     @Test
     void normalizesPhysicalIdsButPreservesUserFieldsAndPromptText() {
         var a =
@@ -73,58 +73,58 @@ class LlmFixtureNormalizerTest {
                         .getFirst()
                         .value()
                         .textValue());
-        var normalizer = new LlmFixtureNormalizer();
+        var converter = new LlmRequestResponseConverter();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        normalizer.normalizeRequest(
+                        converter.toSavedRequest(
                                 new Prompt(call("a", "{} trailing")), new ChatCompletion()));
     }
 
     @Test
     void rejectsMissingCallsAndWrongToolNames() {
-        var normalizer = new LlmFixtureNormalizer();
+        var converter = new LlmRequestResponseConverter();
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        normalizer.normalizeRequest(
+                        converter.toSavedRequest(
                                 new Prompt(result("missing", "tool", "{}")), new ChatCompletion()));
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        normalizer.normalizeRequest(
+                        converter.toSavedRequest(
                                 new Prompt(List.of(call("a", "{}"), result("a", "other", "{}"))),
                                 new ChatCompletion()));
     }
 
     @Test
     void normalizesFinishReasonsAndRejectsUnknownReasons() {
-        var normalizer = new LlmFixtureNormalizer();
+        var converter = new LlmRequestResponseConverter();
         assertEquals(
                 FinishReason.STOP,
-                normalizer
-                        .normalizeResponse(response("end_turn"))
+                converter
+                        .toSavedResponse(response("end_turn"))
                         .completions()
                         .getFirst()
                         .finishReason());
         assertEquals(
                 FinishReason.MAX_TOKENS,
-                normalizer
-                        .normalizeResponse(response("length"))
+                converter
+                        .toSavedResponse(response("length"))
                         .completions()
                         .getFirst()
                         .finishReason());
         assertEquals(
                 FinishReason.CONTENT_FILTER,
-                normalizer
-                        .normalizeResponse(response("refusal"))
+                converter
+                        .toSavedResponse(response("refusal"))
                         .completions()
                         .getFirst()
                         .finishReason());
         assertThrows(
                 IllegalArgumentException.class,
-                () -> normalizer.normalizeResponse(response("unknown")));
-        assertThrows(IllegalArgumentException.class, () -> normalizer.normalizeResponse(null));
+                () -> converter.toSavedResponse(response("unknown")));
+        assertThrows(IllegalArgumentException.class, () -> converter.toSavedResponse(null));
     }
 
     @Test
@@ -133,16 +133,16 @@ class LlmFixtureNormalizerTest {
         input.setWebSearch(true);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new LlmFixtureNormalizer().normalizeRequest(new Prompt("hello"), input));
+                () -> new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), input));
     }
 
     @Test
     void repeatedToolNamesKeepDistinctCallResultAssociations() {
         var first = call("first", "{\"city\":\"Lisbon\"}");
         var second = call("second", "{\"city\":\"Paris\"}");
-        var normalizer = new LlmFixtureNormalizer();
+        var converter = new LlmRequestResponseConverter();
         var request =
-                normalizer.normalizeRequest(
+                converter.toSavedRequest(
                         new Prompt(
                                 List.of(
                                         first,
@@ -154,9 +154,9 @@ class LlmFixtureNormalizerTest {
         assertEquals("call_0", request.messages().get(3).toolResults().getFirst().reference());
     }
 
-    private static LlmFixture.Request normalize(String id, String output) {
-        return new LlmFixtureNormalizer()
-                .normalizeRequest(
+    private static LlmSavedResponses.Request normalize(String id, String output) {
+        return new LlmRequestResponseConverter()
+                .toSavedRequest(
                         new Prompt(
                                 List.of(
                                         new UserMessage(

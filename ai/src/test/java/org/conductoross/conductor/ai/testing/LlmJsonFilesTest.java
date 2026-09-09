@@ -34,18 +34,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LlmFixtureFilesTest {
+class LlmJsonFilesTest {
     @TempDir Path directory;
 
     @Test
-    void fixtureJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
+    void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         var shared = new ObjectMapperProvider().getObjectMapper();
-        var fixture = new LlmFixture(1, "mapper_isolation", List.of());
-        var path = LlmFixtureFiles.write(directory, fixture, false);
+        var savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
+        var path = LlmJsonFiles.write(directory, savedResponses, false);
         try (var source = Files.newInputStream(path)) {
-            assertEquals(fixture, LlmFixtureFiles.read(source));
+            assertEquals(savedResponses, LlmJsonFiles.read(source));
         }
-        new LlmFixtureNormalizer().normalizeRequest(new Prompt("hello"), new ChatCompletion());
+        new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), new ChatCompletion());
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
@@ -54,11 +54,11 @@ class LlmFixtureFilesTest {
     }
 
     @Test
-    void writesAndReadsFixtureWithoutExposingTemporaryFiles() throws Exception {
-        var fixture = new LlmFixture(1, "blocked_before_llm", List.of());
-        Path target = LlmFixtureFiles.write(directory, fixture, false);
+    void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
+        var savedResponses = new LlmSavedResponses(1, "blocked_before_llm", List.of());
+        Path target = LlmJsonFiles.write(directory, savedResponses, false);
         try (var source = Files.newInputStream(target)) {
-            assertEquals(fixture, LlmFixtureFiles.read(source));
+            assertEquals(savedResponses, LlmJsonFiles.read(source));
         }
         try (var files = Files.list(directory)) {
             assertEquals(List.of(target), files.toList());
@@ -66,29 +66,29 @@ class LlmFixtureFilesTest {
     }
 
     @Test
-    void preservesExistingFixtureUnlessRefreshIsExplicit() throws Exception {
-        var old = new LlmFixture(1, "scenario", List.of());
-        var replacement = new LlmFixture(1, "scenario", List.of(entry()));
-        Path target = LlmFixtureFiles.write(directory, old, false);
+    void preservesExistingSavedResponsesUnlessRefreshIsExplicit() throws Exception {
+        var old = new LlmSavedResponses(1, "scenario", List.of());
+        var replacement = new LlmSavedResponses(1, "scenario", List.of(entry()));
+        Path target = LlmJsonFiles.write(directory, old, false);
         assertThrows(
                 FileAlreadyExistsException.class,
-                () -> LlmFixtureFiles.write(directory, replacement, false));
+                () -> LlmJsonFiles.write(directory, replacement, false));
         try (var source = Files.newInputStream(target)) {
-            assertEquals(old, LlmFixtureFiles.read(source));
+            assertEquals(old, LlmJsonFiles.read(source));
         }
-        LlmFixtureFiles.write(directory, replacement, true);
+        LlmJsonFiles.write(directory, replacement, true);
         try (var source = Files.newInputStream(target)) {
-            assertEquals(replacement, LlmFixtureFiles.read(source));
+            assertEquals(replacement, LlmJsonFiles.read(source));
         }
     }
 
     @Test
     void concurrentPublishersCannotOverwriteEachOther() throws Exception {
-        var fixture = new LlmFixture(1, "scenario", List.of());
+        var savedResponses = new LlmSavedResponses(1, "scenario", List.of());
         Callable<Boolean> write =
                 () -> {
                     try {
-                        LlmFixtureFiles.write(directory, fixture, false);
+                        LlmJsonFiles.write(directory, savedResponses, false);
                         return true;
                     } catch (FileAlreadyExistsException expected) {
                         return false;
@@ -117,22 +117,22 @@ class LlmFixtureFilesTest {
             assertThrows(
                     IOException.class,
                     () ->
-                            LlmFixtureFiles.read(
+                            LlmJsonFiles.read(
                                     new ByteArrayInputStream(
                                             invalid.getBytes(StandardCharsets.UTF_8))));
         }
     }
 
-    private static LlmFixture.Entry entry() {
-        var normalizer = new LlmFixtureNormalizer();
-        var request = normalizer.normalizeRequest(new Prompt("hello"), new ChatCompletion());
-        var message = new LlmFixture.Message("assistant", "hello", List.of(), List.of());
+    private static LlmSavedResponses.Entry entry() {
+        var converter = new LlmRequestResponseConverter();
+        var request = converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
+        var message = new LlmSavedResponses.Message("assistant", "hello", List.of(), List.of());
         var response =
-                new LlmFixture.Response(
+                new LlmSavedResponses.Response(
                         List.of(
-                                new LlmFixture.Completion(
+                                new LlmSavedResponses.Completion(
                                         message,
                                         org.conductoross.conductor.ai.model.FinishReason.STOP)));
-        return new LlmFixture.Entry(request, response);
+        return new LlmSavedResponses.Entry(request, response);
     }
 }

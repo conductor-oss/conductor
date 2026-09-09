@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Conductor LLM fixture",
+  "title": "Conductor LLM saved responses",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "scenario", "entries"],

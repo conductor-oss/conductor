@@ -25,16 +25,16 @@ import com.fasterxml.jackson.databind.JsonNode;
  * Portable request/response pairs. Runtime IDs, provider configuration, and usage are deliberately
  * absent.
  */
-public record LlmFixture(int schemaVersion, String scenario, List<Entry> entries) {
+public record LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
     public static final int SCHEMA_VERSION = 1;
 
-    public LlmFixture {
+    public LlmSavedResponses {
         if (schemaVersion != SCHEMA_VERSION) {
             throw new IllegalArgumentException(
-                    "Unsupported LLM fixture schema version: " + schemaVersion);
+                    "Unsupported LLM saved responses schema version: " + schemaVersion);
         }
         if (StringUtils.isBlank(scenario) || !scenario.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}")) {
-            throw new IllegalArgumentException("Invalid LLM fixture scenario name");
+            throw new IllegalArgumentException("Invalid LLM saved responses scenario name");
         }
         entries = List.copyOf(entries);
     }
@@ -69,7 +69,7 @@ public record LlmFixture(int schemaVersion, String scenario, List<Entry> entries
             toolCalls = List.copyOf(toolCalls);
             toolResults = List.copyOf(toolResults);
             if (!Strings.CS.equalsAny(role, "system", "user", "assistant", "tool")) {
-                throw new IllegalArgumentException("Unsupported fixture message role");
+                throw new IllegalArgumentException("Unsupported recorded message role");
             }
             if ((!toolCalls.isEmpty() && !"assistant".equals(role))
                     || (!toolResults.isEmpty() && !"tool".equals(role))) {
