@@ -1,19 +1,30 @@
-Recording and playback are selected at server startup. SDKs keep using the existing workflow API.
+# LLM recording and mock playback
 
-| Property | Default | Behavior |
+Record real chat completions once, then replay them in another Conductor server without real-provider credentials. Playback is deterministic: `mockLLM` returns a saved response when the complete recorded request matches, and fails when none matches. It never calls a live provider.
+
+## Configure the server
+
+AI tasks require `conductor.integrations.ai.enabled=true`. These recording and playback properties are independent:
+
+| Property | Default | Purpose |
 | --- | --- | --- |
-| `conductor.ai.record-mode` | `false` | Creates a recorder that saves each supported real chat response to a separate JSON file. |
-| `conductor.ai.enable-llm-mocks` | `false` | Registers `mockLLM`, which only plays back saved responses. |
-| `conductor.ai.recordings-directory` | `./llm-recordings` | Recording output and playback input directory. |
+| `conductor.ai.record-mode` | `false` | Save each real chat-completion response as a JSON file. |
+| `conductor.ai.enable-llm-mocks` | `false` | Register the `mockLLM` provider for playback. |
+| `conductor.ai.recordings-directory` | `./llm-recordings` | Directory used to write recordings and load them for playback. |
 
-AI workers also require the existing `conductor.integrations.ai.enabled=true` setting.
+## Record and replay
 
-1. **Record:** keep the task's real `llmProvider`. [LLMs](ai/src/main/java/org/conductoross/conductor/ai/LLMs.java) passes the optional recorder to [LLMHelper](ai/src/main/java/org/conductoross/conductor/ai/LLMHelper.java). [FileLLMCallRecorder](ai/src/main/java/org/conductoross/conductor/ai/recording/FileLLMCallRecorder.java) wraps the real call and writes its normalized request and response before helper validation.
-2. **Load:** copy the JSON files into the playback server's directory before startup. [MockLLMConfiguration](ai/src/main/java/org/conductoross/conductor/ai/providers/mock/MockLLMConfiguration.java) creates the provider when playback is enabled. It scans `*.json` files with `Files.newDirectoryStream` and deserializes each with the registered Spring `ObjectMapper`.
-3. **Play back:** set the task's `llmProvider` to `mockLLM`, keeping its original `model` for the recorded history policy. [MockLLM](ai/src/main/java/org/conductoross/conductor/ai/providers/mock/MockLLM.java) looks up the normalized request and rebuilds a normal response with fresh tool-call IDs. It needs no real-provider credentials and has no live fallback.
+1. Start a server with `conductor.ai.record-mode=true`. Keep each task's normal `llmProvider`, model, and generation settings. Each returned model response writes one JSON file to `conductor.ai.recordings-directory`, before task output validation.
+2. Copy those JSON files to the directory configured on the playback server.
+3. Restart the playback server with `conductor.ai.enable-llm-mocks=true`.
+4. Change the task's `llmProvider` to `mockLLM`. Keep its original `model` so playback uses the recorded history policy. Messages, tools, JSON-output constraints, and generation options must match the recorded request. Provider and model names are excluded from response matching.
 
-Shared recording types live in `ai.recording`; playback remains in `ai.providers.mock`. [RecordedRequestNormalizer](ai/src/main/java/org/conductoross/conductor/ai/recording/RecordedRequestNormalizer.java) handles messages, tools, JSON-output constraints, and tool-ID normalization. [RecordedResponseJson](ai/src/main/java/org/conductoross/conductor/ai/recording/RecordedResponseJson.java) saves and restores complete responses and normalizes response content for comparison. `FileLLMCallRecorder` atomically writes recording files using the application mapper. [LLMRecording](ai/src/main/java/org/conductoross/conductor/ai/recording/LLMRecording.java) is the saved data structure; its constructors enforce the record invariants. File parsing uses the application mapper settings, without a separate JSON-schema pass or recording-specific size limit.
+The server reads recordings during startup. It rejects malformed files, conflicting responses for the same request, and conflicting history policies for the same model; correct the files and restart. A missing matching recording fails the task. Recordings can be replayed in any order and reused concurrently. Tool workers still run, and their outputs must match the recorded history.
 
-Matching includes the full normalized history and tool definitions. Tools come from resolved Spring AI callbacks when available, or from the Conductor request for providers with custom options, including OpenAI, Anthropic, and Gemini. JSON object key order does not affect matching. Responses retain their text, tool calls, media, usage, IDs, and metadata, including provider-specific fields. Playback restores those values and replaces only tool-call IDs. Finish reasons pass through the helper's existing conversion. An omitted tool input schema defaults to an object on `ToolSpec`, shared by real providers and playback. Requests may repeat or arrive in parallel or any order; there is no sequence cursor or lock around provider calls. Missing requests fail. Conflicting saved answers for the same request fail playback startup.
+Enabling both flags records real-provider calls while leaving `mockLLM` playback calls unrecorded.
 
-With both flags enabled, real calls are recorded and playback calls are excluded. Provider exceptions have no response to save; file-write failures surface to the caller. The recording boundary is chat completion; image and embedding APIs are separate. Requests with media or provider-native tools remain unsupported. Chat response media is saved. The complete response format uses schema version 2; regenerate recordings made with version 1.
+## Limits and compatibility
+
+Recording and playback support chat completion only. Image generation and embeddings are not supported. Requests that use media, a previous-response ID, or provider-native tools such as web search, code interpreter, Google Search retrieval, or file search cannot be recorded.
+
+Each JSON file contains one request and one response in recording schema version 3. Regenerate recordings created with earlier schema versions.

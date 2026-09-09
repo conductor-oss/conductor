@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.recording;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,6 +50,14 @@ class RecordedResponseJsonTest {
     @Test
     void completeResponseSurvivesFileStorageAndPlayback() throws Exception {
         byte[] bytes = {1, 2, 3};
+        RecordedResponseJson.RecordedRateLimit rateLimit =
+                new RecordedResponseJson.RecordedRateLimit();
+        rateLimit.setRequestsLimit(100L);
+        rateLimit.setRequestsRemaining(99L);
+        rateLimit.setRequestsReset(Duration.ofSeconds(10));
+        rateLimit.setTokensLimit(1_000L);
+        rateLimit.setTokensRemaining(900L);
+        rateLimit.setTokensReset(Duration.ofSeconds(20));
         AssistantMessage message =
                 AssistantMessage.builder()
                         .content("answer")
@@ -85,6 +94,7 @@ class RecordedResponseJsonTest {
                                 .id("original-response")
                                 .model("model")
                                 .usage(new DefaultUsage(12, 13, 25, Map.of("cached_tokens", 4)))
+                                .rateLimit(rateLimit)
                                 .keyValue("response_id", "response-chain-id")
                                 .keyValue("reasoning", "reasoning summary")
                                 .keyValue("reasoning_tokens", 7)
@@ -99,15 +109,23 @@ class RecordedResponseJsonTest {
         ChatCompletion input = new ChatCompletion();
         Prompt prompt = new Prompt("hello");
         JsonNode savedResponse = RecordedResponseJson.write(response);
+        assertEquals(Set.of("metadata", "results"), fieldNames(savedResponse));
+        assertEquals(
+                Set.of("id", "model", "usage", "rateLimit", "promptMetadata", "properties"),
+                fieldNames(savedResponse.get("metadata")));
+        assertEquals(Set.of("output", "metadata"), fieldNames(savedResponse.get("results").get(0)));
+        assertEquals(
+                Set.of("text", "metadata", "toolCalls", "media"),
+                fieldNames(savedResponse.at("/results/0/output")));
+        assertFalse(savedResponse.has("result"));
+        assertFalse(savedResponse.has("hasToolCalls"));
         new FileLLMCallRecorder(directory, mapper)
                 .writeRecording(
                         new LLMRecording(
                                 LLMRecording.SCHEMA_VERSION,
-                                "chat",
-                                List.of(
-                                        new LLMRecording.Entry(
-                                                normalizer.normalize(prompt, input),
-                                                savedResponse))));
+                                normalizer.normalize(prompt, input),
+                                savedResponse,
+                                null));
 
         ChatResponse replay = new MockLLM(directory, mapper).getChatModel(input).call(prompt);
         assertEquals("original-response", replay.getMetadata().getId());
@@ -116,6 +134,8 @@ class RecordedResponseJsonTest {
         assertEquals(7, (Integer) replay.getMetadata().get("reasoning_tokens"));
         assertEquals(25, replay.getMetadata().getUsage().getTotalTokens());
         assertEquals(Map.of("cached_tokens", 4), replay.getMetadata().getUsage().getNativeUsage());
+        assertEquals(100L, replay.getMetadata().getRateLimit().getRequestsLimit());
+        assertEquals(Duration.ofSeconds(20), replay.getMetadata().getRateLimit().getTokensReset());
         assertEquals(Map.of("nested", List.of(1, 2)), replay.getMetadata().get("provider_data"));
         assertEquals(Set.of("safe"), replay.getResult().getMetadata().getContentFilters());
         assertEquals(
@@ -163,11 +183,58 @@ class RecordedResponseJsonTest {
         assertThrows(IllegalArgumentException.class, () -> RecordedResponseJson.write(null));
     }
 
+    @Test
+    void responseContentIncludesReasoningMetadata() {
+        JsonNode first = RecordedResponseJson.write(responseWithReasoning("first explanation"));
+        JsonNode second = RecordedResponseJson.write(responseWithReasoning("second explanation"));
+
+        assertNotEquals(
+                RecordedResponseJson.responseContent(first),
+                RecordedResponseJson.responseContent(second));
+    }
+
+    @Test
+    void responseContentIgnoresVolatileResponseMetadata() {
+        JsonNode first = RecordedResponseJson.write(responseWithReasoning("explanation"));
+        ObjectNode second = first.deepCopy();
+        ObjectNode metadata = (ObjectNode) second.get("metadata");
+        metadata.put("id", "another-response");
+        metadata.putObject("usage").put("totalTokens", 999);
+        metadata.putObject("rateLimit").put("requestsRemaining", 0);
+        ((ObjectNode) metadata.get("properties")).put("response_id", "another-response");
+        ((ObjectNode) metadata.get("properties")).put("reasoning_tokens", 999);
+
+        assertEquals(
+                RecordedResponseJson.responseContent(first),
+                RecordedResponseJson.responseContent(second));
+    }
+
+    private static ChatResponse responseWithReasoning(String reasoning) {
+        return new ChatResponse(
+                List.of(
+                        new Generation(
+                                new AssistantMessage("answer"),
+                                ChatGenerationMetadata.builder().build())),
+                ChatResponseMetadata.builder()
+                        .id("response")
+                        .model("model")
+                        .usage(new DefaultUsage(1, 2, 3))
+                        .keyValue("response_id", "response")
+                        .keyValue("reasoning", reasoning)
+                        .build());
+    }
+
     private static ChatResponse response(String finish) {
         return new ChatResponse(
                 List.of(
                         new Generation(
                                 new AssistantMessage("answer"),
                                 ChatGenerationMetadata.builder().finishReason(finish).build())));
+    }
+
+    private static Set<String> fieldNames(JsonNode node) {
+        Set<String> names = new java.util.HashSet<>();
+        node.fieldNames().forEachRemaining(names::add);
+        return names;
     }
 }

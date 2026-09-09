@@ -25,42 +25,50 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /** Normalized requests and complete model responses with the history policy for playback. */
 public record LLMRecording(
-        int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
+        int schemaVersion, Request request, JsonNode response, ModelSettings modelSettings) {
     private static final String MISMATCHED_MESSAGE_ROLE =
             "Tool calls/results do not match message role";
 
-    public LLMRecording(int schemaVersion, String scenario, List<Entry> entries) {
-        this(schemaVersion, scenario, entries, null);
-    }
-
     public record ModelSettings(String model, boolean supportsAssistantPrefill) {}
 
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
 
     public LLMRecording {
         if (schemaVersion != SCHEMA_VERSION) {
             throw new IllegalArgumentException(
                     "Unsupported LLM saved responses schema version: " + schemaVersion);
         }
-        Validate.isTrue(
-                StringUtils.isNotBlank(scenario)
-                        && scenario.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}"),
-                "Invalid LLM saved responses scenario name");
-        entries = List.copyOf(entries);
-    }
-
-    public record Entry(Request request, JsonNode response) {
-        public Entry {
-            Objects.requireNonNull(request, "request");
-            Objects.requireNonNull(response, "response");
-        }
+        Objects.requireNonNull(request, "request");
+        Objects.requireNonNull(response, "response");
     }
 
     public record Request(
-            List<Message> messages, List<Tool> tools, boolean jsonOutput, JsonNode outputSchema) {
+            List<Message> messages,
+            List<Tool> tools,
+            boolean jsonOutput,
+            JsonNode outputSchema,
+            GenerationOptions generationOptions) {
         public Request {
             messages = List.copyOf(messages);
             tools = List.copyOf(tools);
+            Objects.requireNonNull(generationOptions, "generationOptions");
+        }
+    }
+
+    /** Generation settings that can change a model response. */
+    public record GenerationOptions(
+            Double temperature,
+            Double topP,
+            Integer topK,
+            Double frequencyPenalty,
+            Double presencePenalty,
+            List<String> stopWords,
+            Integer maxTokens,
+            int thinkingTokenLimit,
+            String reasoningEffort,
+            String reasoningSummary) {
+        public GenerationOptions {
+            stopWords = stopWords == null ? null : List.copyOf(stopWords);
         }
     }
 

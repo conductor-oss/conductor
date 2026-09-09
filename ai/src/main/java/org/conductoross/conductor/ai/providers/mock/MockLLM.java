@@ -48,10 +48,21 @@ public final class MockLLM implements AIModel {
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
         Map<LLMRecording.Request, JsonNode> loaded = new HashMap<>();
         Map<String, Boolean> policies = new HashMap<>();
+        Map<String, Path> policySources = new HashMap<>();
         try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
             for (Path file : files) {
-                LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
-                register(saved, loaded, policies);
+                try {
+                    LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
+                    RecordedResponseJson.validate(saved.response());
+                    register(file, saved, loaded, policies, policySources);
+                } catch (IOException | RuntimeException exception) {
+                    throw new IllegalArgumentException(
+                            "Invalid LLM recording in '"
+                                    + file.getFileName()
+                                    + "': "
+                                    + exception.getMessage(),
+                            exception);
+                }
             }
         }
         this.responses = Map.copyOf(loaded);
@@ -59,21 +70,35 @@ public final class MockLLM implements AIModel {
     }
 
     private static void register(
+            Path file,
             LLMRecording saved,
             Map<LLMRecording.Request, JsonNode> responses,
-            Map<String, Boolean> policies) {
+            Map<String, Boolean> policies,
+            Map<String, Path> policySources) {
         // Identical responses merge; conflicting responses for the same request fail.
-        for (LLMRecording.Entry entry : saved.entries()) {
-            JsonNode existing = responses.putIfAbsent(entry.request(), entry.response());
-            Validate.isTrue(
-                    existing == null
-                            || RecordedResponseJson.responseContent(existing)
-                                    .equals(RecordedResponseJson.responseContent(entry.response())),
-                    "Conflicting recorded responses for the same request");
-        }
+        JsonNode existingResponse = responses.putIfAbsent(saved.request(), saved.response());
+        Validate.isTrue(
+                existingResponse == null
+                        || RecordedResponseJson.responseContent(existingResponse)
+                                .equals(RecordedResponseJson.responseContent(saved.response())),
+                "Conflicting recorded responses for the same request");
         LLMRecording.ModelSettings settings = saved.modelSettings();
         if (settings != null && settings.model() != null) {
-            policies.putIfAbsent(settings.model(), settings.supportsAssistantPrefill());
+            Boolean existingPolicy =
+                    policies.putIfAbsent(settings.model(), settings.supportsAssistantPrefill());
+            if (existingPolicy != null && existingPolicy != settings.supportsAssistantPrefill()) {
+                // Keep sources so incompatible recordings do not depend on directory iteration
+                // order.
+                throw new IllegalArgumentException(
+                        "Conflicting assistant prefill policies for model '"
+                                + settings.model()
+                                + "' in recordings '"
+                                + policySources.get(settings.model()).getFileName()
+                                + "' and '"
+                                + file.getFileName()
+                                + "'");
+            }
+            policySources.putIfAbsent(settings.model(), file);
         }
     }
 

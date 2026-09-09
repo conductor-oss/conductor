@@ -23,10 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 
 @Component
-@ConditionalOnProperty(
-        prefix = LLMRecordingProperties.PREFIX,
-        name = LLMRecordingProperties.ENABLE_LLM_MOCKS,
-        havingValue = LLMRecordingProperties.ENABLED)
+@ConditionalOnProperty(prefix = "conductor.ai", name = "enable-llm-mocks", havingValue = "true")
 public class MockLLMConfiguration implements ModelConfiguration<MockLLM> {
     private final MockLLM model;
 

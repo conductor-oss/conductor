@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
 import org.conductoross.conductor.ai.AIModel;
@@ -60,10 +59,8 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
                 LLMRecording saved =
                         new LLMRecording(
                                 LLMRecording.SCHEMA_VERSION,
-                                "chat",
-                                List.of(
-                                        new LLMRecording.Entry(
-                                                request, RecordedResponseJson.write(response))),
+                                request,
+                                RecordedResponseJson.write(response),
                                 settings);
                 try {
                     writeRecording(saved);

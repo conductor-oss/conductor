@@ -140,12 +140,7 @@ class LLMRecordingTest {
         LLMRecording saved =
                 new ObjectMapper().readValue(recordings().getFirst().toFile(), LLMRecording.class);
         assertEquals(
-                providerReason,
-                saved.entries()
-                        .getFirst()
-                        .response()
-                        .at("/results/0/metadata/finishReason")
-                        .asText());
+                providerReason, saved.response().at("/results/0/metadata/finishReason").asText());
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
             assertEquals(expected, call(context, input(MockLLM.NAME, "model")).getFinishReason());
         }
@@ -167,7 +162,7 @@ class LLMRecordingTest {
         recording.call(new Prompt("Weather in Lisbon?", provider.getChatOptions(input)));
 
         LLMRecording saved = mapper.readValue(recordings().getFirst().toFile(), LLMRecording.class);
-        assertEquals(1, saved.entries().getFirst().request().tools().size());
+        assertEquals(1, saved.request().tools().size());
         MockLLM playback = new MockLLM(directory, mapper);
         ChatResponse response =
                 playback.getChatModel(input)
@@ -309,7 +304,7 @@ class LLMRecordingTest {
     void recordValidationStillRejectsUnsupportedSchemaVersion() throws IOException {
         Files.writeString(
                 directory.resolve(INVALID_RECORDING_FILE),
-                "{\"schemaVersion\":3,\"scenario\":\"weather\",\"entries\":[]}");
+                "{\"schemaVersion\":2,\"scenario\":\"weather\",\"entries\":[]}");
         assertThrows(RuntimeException.class, () -> context(false, true, null));
     }
 
@@ -408,11 +403,11 @@ class LLMRecordingTest {
                                 Map.of(
                                         "conductor.integrations.ai.enabled",
                                         "true",
-                                        LLMRecordingProperties.RECORD_MODE_PROPERTY,
+                                        "conductor.ai.record-mode",
                                         Boolean.toString(record),
-                                        LLMRecordingProperties.ENABLE_LLM_MOCKS_PROPERTY,
+                                        "conductor.ai.enable-llm-mocks",
                                         Boolean.toString(playback),
-                                        LLMRecordingProperties.RECORDINGS_DIRECTORY_PROPERTY,
+                                        "conductor.ai.recordings-directory",
                                         directory.toString(),
                                         "conductor.file-storage.parentDir",
                                         directory.resolve("payload").toString())));

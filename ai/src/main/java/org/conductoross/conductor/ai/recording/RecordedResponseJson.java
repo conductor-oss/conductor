@@ -12,7 +12,6 @@
  */
 package org.conductoross.conductor.ai.recording;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,14 +31,10 @@ import org.springframework.util.MimeTypeUtils;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
 
@@ -48,86 +43,75 @@ public final class RecordedResponseJson {
     private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
     private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper().copy();
 
-    static {
-        // Media's convenience byte-array getter throws for URL media. Store its actual data
-        // and distinguish bytes from URLs so both survive a JSON round trip.
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(
-                Media.class,
-                new JsonSerializer<>() {
-                    @Override
-                    public void serialize(
-                            Media media, JsonGenerator json, SerializerProvider provider)
-                            throws IOException {
-                        json.writeStartObject();
-                        json.writeStringField("mimeType", media.getMimeType().toString());
-                        json.writeStringField("id", media.getId());
-                        json.writeStringField("name", media.getName());
-                        json.writeBooleanField("binary", media.getData() instanceof byte[]);
-                        json.writeObjectField("data", media.getData());
-                        json.writeEndObject();
-                    }
-                });
-        MAPPER.registerModule(module);
-    }
-
     public static JsonNode write(ChatResponse response) {
         if (response == null) {
             throw new IllegalArgumentException("Cannot record an absent model response");
         }
-        ObjectNode data = MAPPER.valueToTree(response);
-        // getResult() duplicates the first item in getResults().
-        data.remove("result");
-        putProperties((ObjectNode) data.get("metadata"), response.getMetadata().entrySet());
-        for (int i = 0; i < response.getResults().size(); i++) {
-            putProperties(
-                    (ObjectNode) data.get("results").get(i).get("metadata"),
-                    response.getResults().get(i).getMetadata().entrySet());
+        ObjectNode data = MAPPER.createObjectNode();
+        data.set("metadata", responseMetadata(response));
+        ArrayNode results = data.putArray("results");
+        for (Generation generation : response.getResults()) {
+            results.add(generation(generation));
         }
-        try {
-            // Materialize JSON types exactly as they will be read from disk (bytes, numbers).
-            return MAPPER.readTree(data.toString());
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Cannot serialize LLM response", e);
-        }
+        return data;
     }
 
     /** Restore all response data, replacing only tool-call IDs for this playback invocation. */
     public static ChatResponse read(JsonNode data, String idPrefix) {
+        ObjectNode response = requireObject(data, "response");
+        ArrayNode results = requireArray(response.get("results"), "response.results");
         List<Generation> generations = new ArrayList<>();
         int callIndex = 0;
-        for (JsonNode result : data.get("results")) {
-            JsonNode output = result.get("output");
+        int resultIndex = 0;
+        for (JsonNode result : results) {
+            String resultField = "response.results[" + resultIndex++ + "]";
+            ObjectNode recordedResult = requireObject(result, resultField);
+            ObjectNode output =
+                    requireObject(recordedResult.get("output"), resultField + ".output");
             List<Media> media = new ArrayList<>();
-            for (JsonNode item : output.get("media")) {
+            for (JsonNode item : requireArray(output.get("media"), resultField + ".output.media")) {
+                ObjectNode recordedMedia = requireObject(item, resultField + ".output.media item");
                 media.add(
                         Media.builder()
                                 .mimeType(
-                                        MimeTypeUtils.parseMimeType(item.get("mimeType").asText()))
-                                .id(item.path("id").asText(null))
-                                .name(item.path("name").asText(null))
+                                        MimeTypeUtils.parseMimeType(
+                                                requireText(
+                                                        recordedMedia.get("mimeType"), "mimeType")))
+                                .id(recordedMedia.path("id").asText(null))
+                                .name(recordedMedia.path("name").asText(null))
                                 .data(
-                                        item.get("binary").asBoolean()
+                                        requireBoolean(recordedMedia.get("binary"), "binary")
                                                 ? MAPPER.convertValue(
-                                                        item.get("data"), byte[].class)
-                                                : item.get("data").asText())
+                                                        requireValue(
+                                                                recordedMedia.get("data"), "data"),
+                                                        byte[].class)
+                                                : requireText(recordedMedia.get("data"), "data"))
                                 .build());
             }
             List<AssistantMessage.ToolCall> calls = new ArrayList<>();
-            for (JsonNode call : output.get("toolCalls")) {
+            for (JsonNode call :
+                    requireArray(output.get("toolCalls"), resultField + ".output.toolCalls")) {
+                ObjectNode recordedCall =
+                        requireObject(call, resultField + ".output.toolCalls item");
                 calls.add(
                         new AssistantMessage.ToolCall(
                                 idPrefix + "_" + callIndex++,
-                                call.get("type").asText(),
-                                call.get("name").asText(),
-                                call.get("arguments").asText()));
+                                requireText(recordedCall.get("type"), "type"),
+                                requireText(recordedCall.get("name"), "name"),
+                                requireText(recordedCall.get("arguments"), "arguments")));
             }
-            JsonNode metadata = result.get("metadata");
+            ObjectNode metadata =
+                    requireObject(recordedResult.get("metadata"), resultField + ".metadata");
             generations.add(
                     new Generation(
                             AssistantMessage.builder()
                                     .content(output.path("text").asText(null))
-                                    .properties(MAPPER.convertValue(output.get("metadata"), MAP))
+                                    .properties(
+                                            MAPPER.convertValue(
+                                                    requireObject(
+                                                            output.get("metadata"),
+                                                            resultField + ".output.metadata"),
+                                                    MAP))
                                     .toolCalls(calls)
                                     .media(media)
                                     .build(),
@@ -137,17 +121,25 @@ public final class RecordedResponseJson {
                                             MAPPER.convertValue(
                                                     metadata.get("contentFilters"),
                                                     new TypeReference<Set<String>>() {}))
-                                    .metadata(MAPPER.convertValue(metadata.get("properties"), MAP))
+                                    .metadata(
+                                            MAPPER.convertValue(
+                                                    requireObject(
+                                                            metadata.get("properties"),
+                                                            resultField + ".metadata.properties"),
+                                                    MAP))
                                     .build()));
         }
-        JsonNode metadata = data.get("metadata");
+        ObjectNode metadata = requireObject(response.get("metadata"), "response.metadata");
         List<PromptMetadata.PromptFilterMetadata> filters = new ArrayList<>();
-        for (JsonNode filter : metadata.get("promptMetadata")) {
+        for (JsonNode filter :
+                requireArray(metadata.get("promptMetadata"), "response.metadata.promptMetadata")) {
+            ObjectNode promptFilter =
+                    requireObject(filter, "response.metadata.promptMetadata item");
             filters.add(
                     PromptMetadata.PromptFilterMetadata.from(
-                            filter.get("promptIndex").asInt(),
+                            requireValue(promptFilter.get("promptIndex"), "promptIndex").asInt(),
                             MAPPER.convertValue(
-                                    filter.get("contentFilterMetadata"), Object.class)));
+                                    promptFilter.get("contentFilterMetadata"), Object.class)));
         }
         return new ChatResponse(
                 generations,
@@ -159,26 +151,154 @@ public final class RecordedResponseJson {
                                 MAPPER.convertValue(
                                         metadata.get("rateLimit"), RecordedRateLimit.class))
                         .promptMetadata(PromptMetadata.of(filters))
-                        .metadata(MAPPER.convertValue(metadata.get("properties"), MAP))
+                        .metadata(
+                                MAPPER.convertValue(
+                                        requireObject(
+                                                metadata.get("properties"),
+                                                "response.metadata.properties"),
+                                        MAP))
                         .build());
     }
 
-    /** Ignore per-call IDs and usage when checking repeated recordings for conflicting answers. */
+    /** Validate the stored response shape before it is accepted for playback. */
+    public static void validate(JsonNode data) {
+        read(data, "validation");
+    }
+
+    /**
+     * Compare recorded responses without per-call values while retaining provider metadata that
+     * affects the response exposed to callers.
+     */
     public static JsonNode responseContent(JsonNode response) {
-        JsonNode results = response.get("results").deepCopy();
+        ObjectNode content = response.deepCopy();
+        ObjectNode metadata = (ObjectNode) content.get("metadata");
+        metadata.remove("id");
+        metadata.remove("usage");
+        metadata.remove("rateLimit");
+        // OpenAI Responses stores its per-call ID in both fields.
+        ((ObjectNode) metadata.get("properties")).remove("response_id");
+        // This is another provider usage counter rather than response content.
+        ((ObjectNode) metadata.get("properties")).remove("reasoning_tokens");
+
+        JsonNode results = content.get("results");
         int callIndex = 0;
         for (JsonNode result : results) {
             for (JsonNode call : result.get("output").get("toolCalls")) {
                 ((ObjectNode) call).put("id", "call_" + callIndex++);
             }
         }
-        return results;
+        return content;
     }
 
-    private static void putProperties(ObjectNode metadata, Set<Map.Entry<String, Object>> entries) {
-        ObjectNode properties = metadata.putObject("properties");
+    private static ObjectNode responseMetadata(ChatResponse response) {
+        ChatResponseMetadata metadata = response.getMetadata();
+        ObjectNode data = MAPPER.createObjectNode();
+        data.put("id", metadata.getId());
+        data.put("model", metadata.getModel());
+        data.set("usage", usage(metadata.getUsage()));
+        data.set("rateLimit", rateLimit(metadata.getRateLimit()));
+        ArrayNode promptMetadata = data.putArray("promptMetadata");
+        for (PromptMetadata.PromptFilterMetadata filter : metadata.getPromptMetadata()) {
+            ObjectNode item = promptMetadata.addObject();
+            item.put("promptIndex", filter.getPromptIndex());
+            item.set(
+                    "contentFilterMetadata", MAPPER.valueToTree(filter.getContentFilterMetadata()));
+        }
+        data.set("properties", properties(metadata.entrySet()));
+        return data;
+    }
+
+    private static ObjectNode requireObject(JsonNode node, String field) {
+        if (node == null || !node.isObject()) {
+            throw new IllegalArgumentException(field + " must be an object");
+        }
+        return (ObjectNode) node;
+    }
+
+    private static ArrayNode requireArray(JsonNode node, String field) {
+        if (node == null || !node.isArray()) {
+            throw new IllegalArgumentException(field + " must be an array");
+        }
+        return (ArrayNode) node;
+    }
+
+    private static String requireText(JsonNode node, String field) {
+        if (node == null || !node.isTextual()) {
+            throw new IllegalArgumentException(field + " must be text");
+        }
+        return node.asText();
+    }
+
+    private static boolean requireBoolean(JsonNode node, String field) {
+        if (node == null || !node.isBoolean()) {
+            throw new IllegalArgumentException(field + " must be a boolean");
+        }
+        return node.asBoolean();
+    }
+
+    private static JsonNode requireValue(JsonNode node, String field) {
+        if (node == null || node.isNull()) {
+            throw new IllegalArgumentException(field + " must be present");
+        }
+        return node;
+    }
+
+    private static ObjectNode generation(Generation generation) {
+        ObjectNode data = MAPPER.createObjectNode();
+        AssistantMessage message = generation.getOutput();
+        ObjectNode output = data.putObject("output");
+        output.put("text", message.getText());
+        output.set("metadata", MAPPER.valueToTree(message.getMetadata()));
+        ArrayNode calls = output.putArray("toolCalls");
+        for (AssistantMessage.ToolCall call : message.getToolCalls()) {
+            ObjectNode item = calls.addObject();
+            item.put("id", call.id());
+            item.put("type", call.type());
+            item.put("name", call.name());
+            item.put("arguments", call.arguments());
+        }
+        ArrayNode media = output.putArray("media");
+        for (Media item : message.getMedia()) {
+            ObjectNode mediaItem = media.addObject();
+            mediaItem.put("mimeType", item.getMimeType().toString());
+            mediaItem.put("id", item.getId());
+            mediaItem.put("name", item.getName());
+            mediaItem.put("binary", item.getData() instanceof byte[]);
+            mediaItem.set("data", MAPPER.valueToTree(item.getData()));
+        }
+        ChatGenerationMetadata metadata = generation.getMetadata();
+        ObjectNode generationMetadata = data.putObject("metadata");
+        generationMetadata.put("finishReason", metadata.getFinishReason());
+        generationMetadata.set("contentFilters", MAPPER.valueToTree(metadata.getContentFilters()));
+        generationMetadata.set("properties", properties(metadata.entrySet()));
+        return data;
+    }
+
+    private static ObjectNode usage(org.springframework.ai.chat.metadata.Usage usage) {
+        ObjectNode data = MAPPER.createObjectNode();
+        data.put("promptTokens", usage.getPromptTokens());
+        data.put("completionTokens", usage.getCompletionTokens());
+        data.put("totalTokens", usage.getTotalTokens());
+        data.set("nativeUsage", MAPPER.valueToTree(usage.getNativeUsage()));
+        return data;
+    }
+
+    private static ObjectNode rateLimit(RateLimit rateLimit) {
+        ObjectNode data = MAPPER.createObjectNode();
+        data.put("requestsLimit", rateLimit.getRequestsLimit());
+        data.put("requestsRemaining", rateLimit.getRequestsRemaining());
+        data.set("requestsReset", MAPPER.valueToTree(rateLimit.getRequestsReset()));
+        data.put("tokensLimit", rateLimit.getTokensLimit());
+        data.put("tokensRemaining", rateLimit.getTokensRemaining());
+        data.set("tokensReset", MAPPER.valueToTree(rateLimit.getTokensReset()));
+        return data;
+    }
+
+    private static ObjectNode properties(Set<Map.Entry<String, Object>> entries) {
+        ObjectNode properties = MAPPER.createObjectNode();
         entries.forEach(
                 entry -> properties.set(entry.getKey(), MAPPER.valueToTree(entry.getValue())));
+        return properties;
     }
 
     // Spring AI exposes rate limits through an interface with no general-purpose implementation.

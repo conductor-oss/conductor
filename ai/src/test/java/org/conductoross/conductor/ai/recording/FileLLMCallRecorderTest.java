@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.ai.recording;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,12 +36,12 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FileLLMCallRecorderTest {
-    private static final String SCENARIO_NAME = "scenario";
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
     private FileLLMCallRecorder recorder;
 
@@ -55,12 +55,9 @@ class FileLLMCallRecorderTest {
     @Test
     void recordingJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = objectMapper;
-        LLMRecording recording =
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, "mapper_isolation", List.of());
+        LLMRecording recording = recording();
         Path path = recorder.writeRecording(recording);
-        try (InputStream source = Files.newInputStream(path)) {
-            assertEquals(recording, objectMapper.readValue(source, LLMRecording.class));
-        }
+        assertSaved(recording, path);
         new RecordedRequestNormalizer().normalize(new Prompt("hello"), new ChatCompletion());
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
@@ -71,42 +68,39 @@ class FileLLMCallRecorderTest {
 
     @Test
     void writesAndReadsRecordingsWithoutExposingTemporaryFiles() throws Exception {
-        LLMRecording recording =
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, "blocked_before_llm", List.of());
+        LLMRecording recording = recording();
         Path target = recorder.writeRecording(recording);
-        try (InputStream source = Files.newInputStream(target)) {
-            assertEquals(recording, objectMapper.readValue(source, LLMRecording.class));
-        }
+        assertSaved(recording, target);
+        JsonNode json = objectMapper.readTree(target.toFile());
+        assertTrue(json.has("request"));
+        assertTrue(json.has("response"));
+        assertFalse(json.has("scenario"));
+        assertFalse(json.has("entries"));
         try (Stream<Path> files = Files.list(directory)) {
             assertEquals(List.of(target), files.toList());
         }
     }
 
     @Test
-    void writesSeparateFilesForTheSameScenario() throws Exception {
-        LLMRecording first =
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of());
-        LLMRecording second =
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
+    void writesSeparateFilesForTheSameRequest() throws Exception {
+        LLMRecording first = recording();
+        LLMRecording second = recording();
         Path firstFile = recorder.writeRecording(first);
         Path secondFile = recorder.writeRecording(second);
         assertNotEquals(firstFile, secondFile);
-        assertEquals(first, objectMapper.readValue(firstFile.toFile(), LLMRecording.class));
-        assertEquals(second, objectMapper.readValue(secondFile.toFile(), LLMRecording.class));
+        assertSaved(first, firstFile);
+        assertSaved(second, secondFile);
     }
 
     @Test
     void concurrentPublishersWriteSeparateRecordings() throws Exception {
-        LLMRecording recording =
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, SCENARIO_NAME, List.of(entry()));
+        LLMRecording recording = recording();
         Callable<Path> write = () -> recorder.writeRecording(recording);
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             List<Future<Path>> results = executor.invokeAll(List.of(write, write));
             assertNotEquals(results.get(0).get(), results.get(1).get());
             for (Future<Path> result : results) {
-                assertEquals(
-                        recording,
-                        objectMapper.readValue(result.get().toFile(), LLMRecording.class));
+                assertSaved(recording, result.get());
             }
         }
         try (Stream<Path> files = Files.list(directory)) {
@@ -114,7 +108,18 @@ class FileLLMCallRecorderTest {
         }
     }
 
-    private static LLMRecording.Entry entry() {
+    private void assertSaved(LLMRecording expected, Path file) throws IOException {
+        LLMRecording actual = objectMapper.readValue(file.toFile(), LLMRecording.class);
+        assertEquals(expected.schemaVersion(), actual.schemaVersion());
+        assertEquals(expected.request(), actual.request());
+        assertEquals(expected.modelSettings(), actual.modelSettings());
+        // Compare persisted JSON values: JSON does not preserve Java integer widths or byte arrays.
+        assertEquals(
+                objectMapper.readTree(objectMapper.writeValueAsBytes(expected.response())),
+                actual.response());
+    }
+
+    private static LLMRecording recording() {
         RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
         LLMRecording.Request request =
                 normalizer.normalize(new Prompt("hello"), new ChatCompletion());
@@ -126,6 +131,7 @@ class FileLLMCallRecorderTest {
                                         ChatGenerationMetadata.builder()
                                                 .finishReason("STOP")
                                                 .build())));
-        return new LLMRecording.Entry(request, RecordedResponseJson.write(response));
+        return new LLMRecording(
+                LLMRecording.SCHEMA_VERSION, request, RecordedResponseJson.write(response), null);
     }
 }

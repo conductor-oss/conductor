@@ -25,10 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @EnableConfigurationProperties(LLMRecordingProperties.class)
 public class LLMRecordingConfiguration {
     @Bean
-    @ConditionalOnProperty(
-            prefix = LLMRecordingProperties.PREFIX,
-            name = LLMRecordingProperties.RECORD_MODE,
-            havingValue = LLMRecordingProperties.ENABLED)
+    @ConditionalOnProperty(prefix = "conductor.ai", name = "record-mode", havingValue = "true")
     public LLMCallRecorder llmCallRecorder(
             LLMRecordingProperties properties, ObjectMapper objectMapper) throws IOException {
         return new FileLLMCallRecorder(properties.getRecordingsDirectory(), objectMapper);

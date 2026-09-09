@@ -57,7 +57,10 @@ public final class RecordedRequestNormalizer {
     }
 
     public record RequestOptions(
-            boolean jsonOutput, JsonNode outputSchema, List<LLMRecording.Tool> tools) {}
+            boolean jsonOutput,
+            JsonNode outputSchema,
+            List<LLMRecording.Tool> tools,
+            LLMRecording.GenerationOptions generationOptions) {}
 
     public static RequestOptions options(ChatCompletion input) {
         if (StringUtils.isNotBlank(input.getPreviousResponseId())) {
@@ -86,7 +89,18 @@ public final class RecordedRequestNormalizer {
         return new RequestOptions(
                 input.isJsonOutput(),
                 MAPPER.valueToTree(input.getOutputSchema()),
-                List.copyOf(tools));
+                List.copyOf(tools),
+                new LLMRecording.GenerationOptions(
+                        input.getTemperature(),
+                        input.getTopP(),
+                        input.getTopK(),
+                        input.getFrequencyPenalty(),
+                        input.getPresencePenalty(),
+                        input.getStopWords(),
+                        input.getMaxTokens(),
+                        input.getThinkingTokenLimit(),
+                        input.getReasoningEffort(),
+                        input.getReasoningSummary()));
     }
 
     public LLMRecording.Request normalize(Prompt prompt, RequestOptions input) {
@@ -115,7 +129,12 @@ public final class RecordedRequestNormalizer {
                 }
             }
         }
-        return new LLMRecording.Request(messages, tools, input.jsonOutput(), input.outputSchema());
+        return new LLMRecording.Request(
+                messages,
+                tools,
+                input.jsonOutput(),
+                input.outputSchema(),
+                input.generationOptions());
     }
 
     private LLMRecording.Message toSavedMessage(Message message) {
