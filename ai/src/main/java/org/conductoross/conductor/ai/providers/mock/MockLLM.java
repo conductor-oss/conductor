@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -36,6 +38,16 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
 public final class MockLLM implements AIModel {
+    private static final String CONFLICTING_RESPONSES =
+            "Conflicting recorded responses for the same request";
+    private static final String CONFLICTING_HISTORY_POLICIES =
+            "Conflicting recorded history policies for model ";
+    private static final String MISSING_HISTORY_POLICY =
+            "No recorded history policy for the selected model";
+    private static final String MISSING_RESPONSE = "No recorded response matches the LLM request";
+    private static final String UNSUPPORTED_OPERATION =
+            "MockLLM only plays back recorded chat responses";
+
     public static final String NAME = "mockLLM";
     private final Map<LlmSavedResponses.Request, LlmSavedResponses.Response> responses;
     private final Map<String, Boolean> assistantPrefillByModel;
@@ -45,7 +57,11 @@ public final class MockLLM implements AIModel {
         Map<String, Boolean> policies = new HashMap<>();
         try (Stream<Path> files = Files.list(directory)) {
             for (Path file :
-                    files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                    files.filter(
+                                    path ->
+                                            path.getFileName()
+                                                    .toString()
+                                                    .endsWith(LlmJsonFiles.FILE_EXTENSION))
                             .filter(Files::isRegularFile)
                             .sorted()
                             .toList()) {
@@ -54,19 +70,18 @@ public final class MockLLM implements AIModel {
                     for (LlmSavedResponses.Entry entry : saved.entries()) {
                         LlmSavedResponses.Response existing =
                                 loaded.putIfAbsent(entry.request(), entry.response());
-                        if (existing != null && !existing.equals(entry.response())) {
-                            throw new IllegalArgumentException(
-                                    "Conflicting recorded responses for the same request");
-                        }
+                        Validate.isTrue(
+                                existing == null || existing.equals(entry.response()),
+                                CONFLICTING_RESPONSES);
                     }
                     LlmSavedResponses.ModelSettings settings = saved.modelSettings();
                     if (settings != null) {
-                        String model = Objects.toString(settings.model(), "");
+                        String model = Objects.toString(settings.model(), StringUtils.EMPTY);
                         Boolean existing =
                                 policies.putIfAbsent(model, settings.supportsAssistantPrefill());
                         if (existing != null && existing != settings.supportsAssistantPrefill()) {
                             throw new IllegalArgumentException(
-                                    "Conflicting recorded history policies for model " + model);
+                                    CONFLICTING_HISTORY_POLICIES + model);
                         }
                     }
                 }
@@ -83,10 +98,11 @@ public final class MockLLM implements AIModel {
 
     @Override
     public boolean supportsAssistantPrefill(ChatCompletion input) {
-        Boolean policy = assistantPrefillByModel.get(Objects.toString(input.getModel(), ""));
+        Boolean policy =
+                assistantPrefillByModel.get(Objects.toString(input.getModel(), StringUtils.EMPTY));
         if (policy != null) return policy;
         if (assistantPrefillByModel.isEmpty()) return AIModel.super.supportsAssistantPrefill();
-        throw new NonRetryableException("No recorded history policy for the selected model");
+        throw new NonRetryableException(MISSING_HISTORY_POLICY);
     }
 
     @Override
@@ -103,19 +119,18 @@ public final class MockLLM implements AIModel {
             LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
             LlmSavedResponses.Request request = converter.toSavedRequest(prompt, options);
             LlmSavedResponses.Response response = responses.get(request);
-            if (response == null)
-                throw new NonRetryableException("No recorded response matches the LLM request");
+            if (response == null) throw new NonRetryableException(MISSING_RESPONSE);
             return converter.toChatResponse(response, UUID.randomUUID().toString());
         };
     }
 
     @Override
     public ImageModel getImageModel() {
-        throw new UnsupportedOperationException("MockLLM only plays back recorded chat responses");
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 
     @Override
     public List<Float> generateEmbeddings(EmbeddingGenRequest request) {
-        throw new UnsupportedOperationException("MockLLM only plays back recorded chat responses");
+        throw new UnsupportedOperationException(UNSUPPORTED_OPERATION);
     }
 }

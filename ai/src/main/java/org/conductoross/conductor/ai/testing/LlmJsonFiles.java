@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.conductoross.conductor.common.JsonSchemaValidator;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -29,6 +30,16 @@ import com.networknt.schema.JsonSchema;
 
 /** Strict JSON IO for completed recordings; callers finalize execution before publishing a file. */
 public final class LlmJsonFiles {
+    private static final String SCHEMA_RESOURCE = "/llm-saved-responses.schema.json";
+    private static final String MISSING_SCHEMA = "LLM saved responses schema is missing";
+    private static final String SCHEMA_LOAD_FAILED = "Cannot load LLM saved responses schema";
+    private static final String RECORDING_TOO_LARGE =
+            "LLM saved responses exceeds the 16 MiB limit";
+    private static final String INVALID_SCHEMA = "Invalid LLM saved responses schema";
+    public static final String FILE_EXTENSION = ".json";
+    private static final String TEMP_FILE_PREFIX = ".llm-recording-";
+    private static final String TEMP_FILE_SUFFIX = ".tmp";
+
     private static final int MAX_BYTES = 16 * 1024 * 1024;
     private static final ObjectMapper MAPPER =
             new ObjectMapper()
@@ -42,17 +53,15 @@ public final class LlmJsonFiles {
     private LlmJsonFiles() {}
 
     private static JsonSchema loadSchema() {
-        try (InputStream source =
-                LlmJsonFiles.class.getResourceAsStream("/llm-saved-responses.schema.json")) {
-            if (source == null)
-                throw new IllegalStateException("LLM saved responses schema is missing");
+        try (InputStream source = LlmJsonFiles.class.getResourceAsStream(SCHEMA_RESOURCE)) {
+            if (source == null) throw new IllegalStateException(MISSING_SCHEMA);
             return new JsonSchemaValidator(MAPPER)
                     .getJsonSchema(
                             new String(
                                     source.readAllBytes(),
                                     java.nio.charset.StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot load LLM saved responses schema", e);
+            throw new IllegalStateException(SCHEMA_LOAD_FAILED, e);
         }
     }
 
@@ -62,11 +71,11 @@ public final class LlmJsonFiles {
     public static LlmSavedResponses read(InputStream source) throws IOException {
         byte[] bytes = source.readNBytes(MAX_BYTES + 1);
         if (bytes.length > MAX_BYTES) {
-            throw new IOException("LLM saved responses exceeds the 16 MiB limit");
+            throw new IOException(RECORDING_TOO_LARGE);
         }
         JsonNode node = MAPPER.readTree(bytes);
-        if (node == null || !SCHEMA.validate(node).isEmpty()) {
-            throw new IOException("Invalid LLM saved responses schema");
+        if (node == null || ObjectUtils.isNotEmpty(SCHEMA.validate(node))) {
+            throw new IOException(INVALID_SCHEMA);
         }
         return MAPPER.treeToValue(node, LlmSavedResponses.class);
     }
@@ -84,16 +93,16 @@ public final class LlmJsonFiles {
     private static Path write(
             Path directory, String name, LlmSavedResponses savedResponses, boolean refresh)
             throws IOException {
-        if (!SCHEMA.validate(MAPPER.valueToTree(savedResponses)).isEmpty()) {
-            throw new IOException("Invalid LLM saved responses schema");
+        if (ObjectUtils.isNotEmpty(SCHEMA.validate(MAPPER.valueToTree(savedResponses)))) {
+            throw new IOException(INVALID_SCHEMA);
         }
         byte[] bytes = MAPPER.writerWithDefaultPrettyPrinter().writeValueAsBytes(savedResponses);
         if (bytes.length > MAX_BYTES) {
-            throw new IOException("LLM saved responses exceeds the 16 MiB limit");
+            throw new IOException(RECORDING_TOO_LARGE);
         }
         Files.createDirectories(directory);
-        Path target = directory.resolve(name + ".json");
-        Path temporary = Files.createTempFile(directory, ".llm-recording-", ".tmp");
+        Path target = directory.resolve(name + FILE_EXTENSION);
+        Path temporary = Files.createTempFile(directory, TEMP_FILE_PREFIX, TEMP_FILE_SUFFIX);
         try {
             Files.write(temporary, bytes);
             if (refresh) {

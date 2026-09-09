@@ -26,9 +26,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -40,17 +42,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmJsonFilesTest {
+    private static final String MAPPER_ISOLATION_SCENARIO = "mapper_isolation";
+    private static final String GREETING = "hello";
+    private static final String BLOCKED_SCENARIO = "blocked_before_llm";
+    private static final String SCENARIO_NAME = "scenario";
+    private static final String VALID_RECORDING_JSON =
+            "{\"schemaVersion\":1,\"scenario\":\"weather\",\"entries\":[]}";
+    private static final String EMPTY_ENTRIES_JSON = "\"entries\":[]";
+    private static final String UNKNOWN_FIELD_JSON = "\"entries\":[],\"secret\":\"value\"";
+    private static final String DUPLICATE_SCENARIO_JSON =
+            "\"entries\":[],\"scenario\":\"duplicate\"";
+    private static final String SCHEMA_VERSION_PREFIX_JSON = "\"schemaVersion\":1,";
+    private static final String SUPPORTED_SCHEMA_VERSION_JSON = "\"schemaVersion\":1";
+    private static final String UNSUPPORTED_SCHEMA_VERSION_JSON = "\"schemaVersion\":2";
+    private static final String TRAILING_DOCUMENT_JSON = " {}";
+
     @TempDir Path directory;
 
     @Test
     void savedResponsesJsonDoesNotChangeSharedMapperConfiguration() throws Exception {
         ObjectMapper shared = new ObjectMapperProvider().getObjectMapper();
-        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "mapper_isolation", List.of());
+        LlmSavedResponses savedResponses =
+                new LlmSavedResponses(1, MAPPER_ISOLATION_SCENARIO, List.of());
         Path path = LlmJsonFiles.write(directory, savedResponses, false);
         try (InputStream source = Files.newInputStream(path)) {
             assertEquals(savedResponses, LlmJsonFiles.read(source));
         }
-        new LlmRequestResponseConverter().toSavedRequest(new Prompt("hello"), new ChatCompletion());
+        new LlmRequestResponseConverter()
+                .toSavedRequest(new Prompt(GREETING), new ChatCompletion());
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
@@ -60,8 +79,7 @@ class LlmJsonFilesTest {
 
     @Test
     void writesAndReadsSavedResponsesWithoutExposingTemporaryFiles() throws Exception {
-        LlmSavedResponses savedResponses =
-                new LlmSavedResponses(1, "blocked_before_llm", List.of());
+        LlmSavedResponses savedResponses = new LlmSavedResponses(1, BLOCKED_SCENARIO, List.of());
         Path target = LlmJsonFiles.write(directory, savedResponses, false);
         try (InputStream source = Files.newInputStream(target)) {
             assertEquals(savedResponses, LlmJsonFiles.read(source));
@@ -73,8 +91,8 @@ class LlmJsonFilesTest {
 
     @Test
     void preservesExistingSavedResponsesUnlessRefreshIsExplicit() throws Exception {
-        LlmSavedResponses old = new LlmSavedResponses(1, "scenario", List.of());
-        LlmSavedResponses replacement = new LlmSavedResponses(1, "scenario", List.of(entry()));
+        LlmSavedResponses old = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
+        LlmSavedResponses replacement = new LlmSavedResponses(1, SCENARIO_NAME, List.of(entry()));
         Path target = LlmJsonFiles.write(directory, old, false);
         assertThrows(
                 FileAlreadyExistsException.class,
@@ -90,7 +108,7 @@ class LlmJsonFilesTest {
 
     @Test
     void concurrentPublishersCannotOverwriteEachOther() throws Exception {
-        LlmSavedResponses savedResponses = new LlmSavedResponses(1, "scenario", List.of());
+        LlmSavedResponses savedResponses = new LlmSavedResponses(1, SCENARIO_NAME, List.of());
         Callable<Boolean> write =
                 () -> {
                     try {
@@ -111,15 +129,15 @@ class LlmJsonFilesTest {
 
     @Test
     void rejectsUnknownFieldsMissingFieldsDuplicateKeysAndTrailingDocuments() {
-        String valid = "{\"schemaVersion\":1,\"scenario\":\"weather\",\"entries\":[]}";
+        String valid = VALID_RECORDING_JSON;
         for (String invalid :
                 List.of(
-                        valid.replace("\"entries\":[]", "\"entries\":[],\"secret\":\"value\""),
+                        valid.replace(EMPTY_ENTRIES_JSON, UNKNOWN_FIELD_JSON),
+                        valid.replace(EMPTY_ENTRIES_JSON, DUPLICATE_SCENARIO_JSON),
+                        valid.replace(SCHEMA_VERSION_PREFIX_JSON, StringUtils.EMPTY),
                         valid.replace(
-                                "\"entries\":[]", "\"entries\":[],\"scenario\":\"duplicate\""),
-                        valid.replace("\"schemaVersion\":1,", ""),
-                        valid.replace("\"schemaVersion\":1", "\"schemaVersion\":2"),
-                        valid + " {}")) {
+                                SUPPORTED_SCHEMA_VERSION_JSON, UNSUPPORTED_SCHEMA_VERSION_JSON),
+                        valid + TRAILING_DOCUMENT_JSON)) {
             assertThrows(
                     IOException.class,
                     () ->
@@ -132,9 +150,10 @@ class LlmJsonFilesTest {
     private static LlmSavedResponses.Entry entry() {
         LlmRequestResponseConverter converter = new LlmRequestResponseConverter();
         LlmSavedResponses.Request request =
-                converter.toSavedRequest(new Prompt("hello"), new ChatCompletion());
+                converter.toSavedRequest(new Prompt(GREETING), new ChatCompletion());
         LlmSavedResponses.Message message =
-                new LlmSavedResponses.Message("assistant", "hello", List.of(), List.of());
+                new LlmSavedResponses.Message(
+                        MessageType.ASSISTANT.getValue(), GREETING, List.of(), List.of());
         LlmSavedResponses.Response response =
                 new LlmSavedResponses.Response(
                         List.of(

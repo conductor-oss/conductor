@@ -20,11 +20,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.awaitility.Awaitility;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.ModelConfiguration;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.providers.mock.MockLLM;
+import org.conductoross.conductor.ai.testing.LlmJsonFiles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -59,6 +61,38 @@ import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmRecordingHttpIntegrationTest {
+    private static final String TEST_PROVIDER = "recording-test-provider";
+    private static final String RECORDED_ANSWER = "recorded answer";
+    private static final String RESULT_FIELD = "result";
+    private static final String PLAYBACK_PROVIDER_ASSERTION =
+            "Playback must never invoke the test provider";
+    private static final String SERVER_CONFIG_ARGUMENT =
+            "--spring.config.name=application,application-integrationtest";
+    private static final String RANDOM_PORT_ARGUMENT = "--server.port=0";
+    private static final String AI_ENABLED_ARGUMENT = "--conductor.integrations.ai.enabled=true";
+    private static final String RECORD_MODE_ARGUMENT = "--conductor.ai.record-mode=";
+    private static final String PLAYBACK_ARGUMENT = "--conductor.ai.enable-llm-mocks=";
+    private static final String RECORDINGS_DIRECTORY_ARGUMENT =
+            "--conductor.ai.recordings-directory=";
+    private static final String PAYLOAD_DIRECTORY_ARGUMENT = "--conductor.file-storage.parentDir=";
+    private static final String PAYLOAD_DIRECTORY = "payload";
+    private static final String TEST_PROVIDER_ARGUMENT = "--test.llm.real-provider=";
+    private static final String TASK_NAME = "recording_chat";
+    private static final String TASK_REFERENCE = "chat";
+    private static final String CHAT_TASK_TYPE = "LLM_CHAT_COMPLETE";
+    private static final String PROVIDER_FIELD = "llmProvider";
+    private static final String MODEL_FIELD = "model";
+    private static final String TEST_MODEL = "test-model";
+    private static final String USER_INPUT_FIELD = "userInput";
+    private static final String GREETING_PROMPT = "Say hello";
+    private static final String WORKFLOW_NAME = "llm_recording_api_test";
+    private static final String SERVER_URL_PREFIX = "http://localhost:";
+    private static final String WORKFLOW_API_PATH = "/api/workflow";
+    private static final String PATH_SEPARATOR = "/";
+    private static final String TEST_PROVIDER_PROPERTY = "test.llm.real-provider";
+    private static final String ENABLED_VALUE = "true";
+    private static final String STOP_REASON = "STOP";
+
     @TempDir Path directory;
     private static final AtomicInteger PROVIDER_CALLS = new AtomicInteger();
 
@@ -66,23 +100,26 @@ class LlmRecordingHttpIntegrationTest {
     void recordThroughWorkflowApiThenRestartForPlayback() throws Exception {
         PROVIDER_CALLS.set(0);
         try (ServletWebServerApplicationContext server = start(true)) {
-            Workflow workflow = run(server, "recording-test-provider");
+            Workflow workflow = run(server, TEST_PROVIDER);
             assertEquals(
-                    "recorded answer",
-                    workflow.getTasks().getFirst().getOutputData().get("result"));
+                    RECORDED_ANSWER,
+                    workflow.getTasks().getFirst().getOutputData().get(RESULT_FIELD));
         }
         assertEquals(1, PROVIDER_CALLS.get());
         try (Stream<Path> files = Files.list(directory)) {
-            assertEquals(1, files.filter(path -> path.toString().endsWith(".json")).count());
+            assertEquals(
+                    1,
+                    files.filter(path -> path.toString().endsWith(LlmJsonFiles.FILE_EXTENSION))
+                            .count());
         }
         try (ServletWebServerApplicationContext server = start(false)) {
             assertTrue(server.getBeansOfType(TestProviderConfiguration.class).isEmpty());
             Workflow workflow = run(server, MockLLM.NAME);
             assertEquals(
-                    "recorded answer",
-                    workflow.getTasks().getFirst().getOutputData().get("result"));
+                    RECORDED_ANSWER,
+                    workflow.getTasks().getFirst().getOutputData().get(RESULT_FIELD));
         }
-        assertEquals(1, PROVIDER_CALLS.get(), "Playback must never invoke the test provider");
+        assertEquals(1, PROVIDER_CALLS.get(), PLAYBACK_PROVIDER_ASSERTION);
     }
 
     private ServletWebServerApplicationContext start(boolean recording) {
@@ -92,29 +129,34 @@ class LlmRecordingHttpIntegrationTest {
                                 ForkJoinSyncModeIntegrationTest.TestConfig.class,
                                 TestProviderConfiguration.class)
                         .run(
-                                "--spring.config.name=application,application-integrationtest",
-                                "--server.port=0",
-                                "--conductor.integrations.ai.enabled=true",
-                                "--conductor.ai.record-mode=" + recording,
-                                "--conductor.ai.enable-llm-mocks=" + !recording,
-                                "--conductor.ai.recordings-directory=" + directory,
-                                "--conductor.file-storage.parentDir="
-                                        + directory.resolve("payload"),
-                                "--test.llm.real-provider=" + recording);
+                                SERVER_CONFIG_ARGUMENT,
+                                RANDOM_PORT_ARGUMENT,
+                                AI_ENABLED_ARGUMENT,
+                                RECORD_MODE_ARGUMENT + recording,
+                                PLAYBACK_ARGUMENT + BooleanUtils.isFalse(recording),
+                                RECORDINGS_DIRECTORY_ARGUMENT + directory,
+                                PAYLOAD_DIRECTORY_ARGUMENT + directory.resolve(PAYLOAD_DIRECTORY),
+                                TEST_PROVIDER_ARGUMENT + recording);
     }
 
     private Workflow run(ServletWebServerApplicationContext server, String provider) {
         WorkflowTask task = new WorkflowTask();
-        task.setName("recording_chat");
-        task.setTaskReferenceName("chat");
-        task.setType("LLM_CHAT_COMPLETE");
-        TaskDef taskDef = new TaskDef("recording_chat");
+        task.setName(TASK_NAME);
+        task.setTaskReferenceName(TASK_REFERENCE);
+        task.setType(CHAT_TASK_TYPE);
+        TaskDef taskDef = new TaskDef(TASK_NAME);
         taskDef.setRetryCount(0);
         task.setTaskDefinition(taskDef);
         task.setInputParameters(
-                Map.of("llmProvider", provider, "model", "test-model", "userInput", "Say hello"));
+                Map.of(
+                        PROVIDER_FIELD,
+                        provider,
+                        MODEL_FIELD,
+                        TEST_MODEL,
+                        USER_INPUT_FIELD,
+                        GREETING_PROMPT));
         WorkflowDef definition = new WorkflowDef();
-        definition.setName("llm_recording_api_test");
+        definition.setName(WORKFLOW_NAME);
         definition.setVersion(1);
         definition.setSchemaVersion(2);
         definition.setEnforceSchema(false);
@@ -127,13 +169,12 @@ class LlmRecordingHttpIntegrationTest {
         http.getMessageConverters().removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
         http.getMessageConverters()
                 .add(new MappingJackson2HttpMessageConverter(server.getBean(ObjectMapper.class)));
-        String baseUrl = "http://localhost:" + server.getWebServer().getPort() + "/api/workflow";
+        String baseUrl = SERVER_URL_PREFIX + server.getWebServer().getPort() + WORKFLOW_API_PATH;
         String workflowId = http.postForObject(baseUrl, request, String.class);
         assertNotNull(workflowId);
         QueueDAO queues = server.getBean(QueueDAO.class);
         AsyncSystemTaskExecutor executor = server.getBean(AsyncSystemTaskExecutor.class);
-        WorkflowSystemTask worker =
-                server.getBean(SystemTaskRegistry.class).get("LLM_CHAT_COMPLETE");
+        WorkflowSystemTask worker = server.getBean(SystemTaskRegistry.class).get(CHAT_TASK_TYPE);
         assertNotNull(worker);
         // The integration-test configuration disables background workers; drain the real task
         // executor.
@@ -142,19 +183,20 @@ class LlmRecordingHttpIntegrationTest {
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
-                            for (String taskId : queues.pop("LLM_CHAT_COMPLETE", 10, 0))
+                            for (String taskId : queues.pop(CHAT_TASK_TYPE, 10, 0))
                                 executor.execute(worker, taskId);
                             server.getBean(WorkflowExecutor.class).decide(workflowId);
                             Workflow workflow =
-                                    http.getForObject(baseUrl + "/" + workflowId, Workflow.class);
+                                    http.getForObject(
+                                            baseUrl + PATH_SEPARATOR + workflowId, Workflow.class);
                             assertNotNull(workflow);
                             assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
                         });
-        return http.getForObject(baseUrl + "/" + workflowId, Workflow.class);
+        return http.getForObject(baseUrl + PATH_SEPARATOR + workflowId, Workflow.class);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    @ConditionalOnProperty(name = "test.llm.real-provider", havingValue = "true")
+    @ConditionalOnProperty(name = TEST_PROVIDER_PROPERTY, havingValue = ENABLED_VALUE)
     static class TestProviderConfiguration implements ModelConfiguration<TestProvider> {
         @Bean
         public TestProvider get() {
@@ -166,7 +208,7 @@ class LlmRecordingHttpIntegrationTest {
 
     static class TestProvider implements AIModel {
         public String getModelProvider() {
-            return "recording-test-provider";
+            return TEST_PROVIDER;
         }
 
         public ChatModel getChatModel() {
@@ -175,9 +217,9 @@ class LlmRecordingHttpIntegrationTest {
                 return new ChatResponse(
                         List.of(
                                 new Generation(
-                                        new AssistantMessage("recorded answer"),
+                                        new AssistantMessage(RECORDED_ANSWER),
                                         ChatGenerationMetadata.builder()
-                                                .finishReason("STOP")
+                                                .finishReason(STOP_REASON)
                                                 .build())));
             };
         }

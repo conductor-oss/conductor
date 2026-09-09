@@ -23,7 +23,10 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(LlmRecordingProperties.class)
 public class LlmRecordingConfiguration {
     @Bean
-    @ConditionalOnProperty(prefix = "conductor.ai", name = "record-mode", havingValue = "true")
+    @ConditionalOnProperty(
+            prefix = LlmRecordingProperties.PREFIX,
+            name = LlmRecordingProperties.RECORD_MODE,
+            havingValue = LlmRecordingProperties.ENABLED)
     public LlmCallRecorder llmCallRecorder(LlmRecordingProperties properties) throws IOException {
         return new JsonFileLlmCallRecorder(properties.getRecordingsDirectory());
     }

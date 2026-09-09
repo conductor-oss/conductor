@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
 import org.conductoross.conductor.ai.http.AIHttpClients;
@@ -123,7 +124,7 @@ public class LLMHelper {
             Consumer<TokenUsageLog> tokenUsageLogger) {
 
         ChatModel chatModel = llm.getChatModel(chatCompletion);
-        if (recorder != null && !MockLLM.NAME.equals(llm.getModelProvider())) {
+        if (recorder != null && BooleanUtils.isFalse(MockLLM.NAME.equals(llm.getModelProvider()))) {
             chatModel = recorder.wrap(llm, chatCompletion, chatModel);
         }
         ChatOptions chatOptions = llm.getChatOptions(chatCompletion);

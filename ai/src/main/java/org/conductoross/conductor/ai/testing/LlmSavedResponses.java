@@ -15,9 +15,12 @@ package org.conductoross.conductor.ai.testing;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.model.FinishReason;
+import org.springframework.ai.chat.messages.MessageType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -27,6 +30,24 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public record LlmSavedResponses(
         int schemaVersion, String scenario, List<Entry> entries, ModelSettings modelSettings) {
+    private static final String UNSUPPORTED_SCHEMA_VERSION =
+            "Unsupported LLM saved responses schema version: ";
+    private static final String SCENARIO_NAME_PATTERN = "[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}";
+    private static final String INVALID_SCENARIO_NAME = "Invalid LLM saved responses scenario name";
+    private static final String REQUEST_FIELD = "request";
+    private static final String RESPONSE_FIELD = "response";
+    private static final String INVALID_TOOL_SCHEMA = "Tool input schema must be an object";
+    private static final String UNSUPPORTED_MESSAGE_ROLE = "Unsupported recorded message role";
+    private static final String MISMATCHED_MESSAGE_ROLE =
+            "Tool calls/results do not match message role";
+    private static final String INVALID_TOOL_ARGUMENTS = "Tool arguments must be an object";
+    private static final String INVALID_COMPLETION = "Completion must contain an assistant message";
+    private static final String FINISH_REASON_FIELD = "finishReason";
+    private static final String EMPTY_RESPONSE = "A recorded response must contain a completion";
+    private static final String MISSING_TOOL_NAME = "Tool name must not be blank";
+    private static final String TOOL_REFERENCE_PATTERN = "call_(0|[1-9][0-9]*)";
+    private static final String INVALID_TOOL_REFERENCE = "Invalid logical tool-call reference";
+
     public LlmSavedResponses(int schemaVersion, String scenario, List<Entry> entries) {
         this(schemaVersion, scenario, entries, null);
     }
@@ -37,19 +58,18 @@ public record LlmSavedResponses(
 
     public LlmSavedResponses {
         if (schemaVersion != SCHEMA_VERSION) {
-            throw new IllegalArgumentException(
-                    "Unsupported LLM saved responses schema version: " + schemaVersion);
+            throw new IllegalArgumentException(UNSUPPORTED_SCHEMA_VERSION + schemaVersion);
         }
-        if (StringUtils.isBlank(scenario) || !scenario.matches("[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}")) {
-            throw new IllegalArgumentException("Invalid LLM saved responses scenario name");
-        }
+        Validate.isTrue(
+                StringUtils.isNotBlank(scenario) && scenario.matches(SCENARIO_NAME_PATTERN),
+                INVALID_SCENARIO_NAME);
         entries = List.copyOf(entries);
     }
 
     public record Entry(Request request, Response response) {
         public Entry {
-            Objects.requireNonNull(request, "request");
-            Objects.requireNonNull(response, "response");
+            Objects.requireNonNull(request, REQUEST_FIELD);
+            Objects.requireNonNull(response, RESPONSE_FIELD);
         }
     }
 
@@ -64,9 +84,7 @@ public record LlmSavedResponses(
     public record Tool(String name, String description, JsonNode inputSchema) {
         public Tool {
             requireName(name);
-            if (inputSchema == null || !inputSchema.isObject()) {
-                throw new IllegalArgumentException("Tool input schema must be an object");
-            }
+            Validate.isTrue(inputSchema != null && inputSchema.isObject(), INVALID_TOOL_SCHEMA);
         }
     }
 
@@ -75,12 +93,20 @@ public record LlmSavedResponses(
         public Message {
             toolCalls = List.copyOf(toolCalls);
             toolResults = List.copyOf(toolResults);
-            if (!Strings.CS.equalsAny(role, "system", "user", "assistant", "tool")) {
-                throw new IllegalArgumentException("Unsupported recorded message role");
+            Validate.isTrue(
+                    Strings.CS.equalsAny(
+                            role,
+                            MessageType.SYSTEM.getValue(),
+                            MessageType.USER.getValue(),
+                            MessageType.ASSISTANT.getValue(),
+                            MessageType.TOOL.getValue()),
+                    UNSUPPORTED_MESSAGE_ROLE);
+            if (ObjectUtils.isNotEmpty(toolCalls)) {
+                Validate.isTrue(
+                        MessageType.ASSISTANT.getValue().equals(role), MISMATCHED_MESSAGE_ROLE);
             }
-            if ((!toolCalls.isEmpty() && !"assistant".equals(role))
-                    || (!toolResults.isEmpty() && !"tool".equals(role))) {
-                throw new IllegalArgumentException("Tool calls/results do not match message role");
+            if (ObjectUtils.isNotEmpty(toolResults)) {
+                Validate.isTrue(MessageType.TOOL.getValue().equals(role), MISMATCHED_MESSAGE_ROLE);
             }
         }
     }
@@ -89,9 +115,7 @@ public record LlmSavedResponses(
         public ToolCall {
             requireReference(reference);
             requireName(name);
-            if (arguments == null || !arguments.isObject()) {
-                throw new IllegalArgumentException("Tool arguments must be an object");
-            }
+            Validate.isTrue(arguments != null && arguments.isObject(), INVALID_TOOL_ARGUMENTS);
         }
     }
 
@@ -104,10 +128,10 @@ public record LlmSavedResponses(
 
     public record Completion(Message message, FinishReason finishReason) {
         public Completion {
-            if (message == null || !"assistant".equals(message.role())) {
-                throw new IllegalArgumentException("Completion must contain an assistant message");
-            }
-            Objects.requireNonNull(finishReason, "finishReason");
+            Validate.isTrue(
+                    message != null && MessageType.ASSISTANT.getValue().equals(message.role()),
+                    INVALID_COMPLETION);
+            Objects.requireNonNull(finishReason, FINISH_REASON_FIELD);
         }
     }
 
@@ -115,20 +139,20 @@ public record LlmSavedResponses(
         public Response {
             completions = List.copyOf(completions);
             if (completions.isEmpty()) {
-                throw new IllegalArgumentException("A recorded response must contain a completion");
+                throw new IllegalArgumentException(EMPTY_RESPONSE);
             }
         }
     }
 
     private static void requireName(String name) {
         if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException("Tool name must not be blank");
+            throw new IllegalArgumentException(MISSING_TOOL_NAME);
         }
     }
 
     private static void requireReference(String reference) {
-        if (StringUtils.isBlank(reference) || !reference.matches("call_(0|[1-9][0-9]*)")) {
-            throw new IllegalArgumentException("Invalid logical tool-call reference");
-        }
+        Validate.isTrue(
+                StringUtils.isNotBlank(reference) && reference.matches(TOOL_REFERENCE_PATTERN),
+                INVALID_TOOL_REFERENCE);
     }
 }

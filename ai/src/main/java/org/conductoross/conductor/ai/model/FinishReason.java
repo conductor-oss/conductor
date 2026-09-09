@@ -20,6 +20,12 @@ public enum FinishReason {
     TOOL_CALLS,
     MAX_TOKENS,
     CONTENT_FILTER;
+    private static final String MISSING_FINISH_REASON = "Missing model finish reason";
+    private static final String END_TURN_ALIAS = "END_TURN";
+    private static final String STOP_SEQUENCE_ALIAS = "STOP_SEQUENCE";
+    private static final String TOOL_USE_ALIAS = "TOOL_USE";
+    private static final String LENGTH_ALIAS = "LENGTH";
+    private static final String REFUSAL_ALIAS = "REFUSAL";
 
     public static FinishReason fromProvider(String reason) {
         return valueOf(normalize(reason));
@@ -27,12 +33,12 @@ public enum FinishReason {
 
     /** Normalize known provider aliases while preserving other provider-specific reasons. */
     public static String normalize(String reason) {
-        if (reason == null) throw new IllegalArgumentException("Missing model finish reason");
+        if (reason == null) throw new IllegalArgumentException(MISSING_FINISH_REASON);
         return switch (reason.toUpperCase(Locale.ROOT)) {
-            case "END_TURN", "STOP_SEQUENCE" -> STOP.name();
-            case "TOOL_USE" -> TOOL_CALLS.name();
-            case "LENGTH" -> MAX_TOKENS.name();
-            case "REFUSAL" -> CONTENT_FILTER.name();
+            case END_TURN_ALIAS, STOP_SEQUENCE_ALIAS -> STOP.name();
+            case TOOL_USE_ALIAS -> TOOL_CALLS.name();
+            case LENGTH_ALIAS -> MAX_TOKENS.name();
+            case REFUSAL_ALIAS -> CONTENT_FILTER.name();
             default -> reason.toUpperCase(Locale.ROOT);
         };
     }

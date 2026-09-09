@@ -25,7 +25,10 @@ import okhttp3.OkHttpClient;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(LlmRecordingProperties.class)
-@ConditionalOnProperty(prefix = "conductor.ai", name = "enable-llm-mocks", havingValue = "true")
+@ConditionalOnProperty(
+        prefix = LlmRecordingProperties.PREFIX,
+        name = LlmRecordingProperties.ENABLE_LLM_MOCKS,
+        havingValue = LlmRecordingProperties.ENABLED)
 public class MockLLMConfiguration implements ModelConfiguration<MockLLM> {
     private final MockLLM model;
 

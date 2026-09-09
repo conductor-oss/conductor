@@ -27,6 +27,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 /** Writes an independent JSON file for each real model response. */
 public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
+    private static final String CHAT_SCENARIO = "chat";
+    private static final String RECORDING_WRITE_FAILED = "Cannot write LLM recording";
+
     private final Path directory;
 
     public JsonFileLlmCallRecorder(Path directory) throws IOException {
@@ -51,7 +54,7 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
                 LlmSavedResponses saved =
                         new LlmSavedResponses(
                                 LlmSavedResponses.SCHEMA_VERSION,
-                                "chat",
+                                CHAT_SCENARIO,
                                 List.of(
                                         new LlmSavedResponses.Entry(
                                                 request, converter.toSavedResponse(response))),
@@ -59,7 +62,7 @@ public final class JsonFileLlmCallRecorder implements LlmCallRecorder {
                 try {
                     LlmJsonFiles.writeRecording(directory, saved);
                 } catch (IOException e) {
-                    throw new UncheckedIOException("Cannot write LLM recording", e);
+                    throw new UncheckedIOException(RECORDING_WRITE_FAILED, e);
                 }
                 return response;
             }

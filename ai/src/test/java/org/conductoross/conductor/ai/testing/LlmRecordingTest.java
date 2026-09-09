@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.AIModelProvider;
 import org.conductoross.conductor.ai.LLMs;
@@ -73,29 +74,74 @@ import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LlmRecordingTest {
+    private static final String BOTH_DISABLED = "false,false";
+    private static final String RECORDING_ONLY = "true,false";
+    private static final String PLAYBACK_ONLY = "false,true";
+    private static final String BOTH_ENABLED = "true,true";
+    private static final String MODEL_FIELD = "model";
+    private static final String SUCCESS_RESPONSE = "ok";
+    private static final String STOP_REASON = "stop";
+    private static final String REAL_PROVIDER = "real";
+    private static final String WEATHER_RESPONSE = "Sunny";
+    private static final String END_TURN_REASON = "end_turn";
+    private static final String PROVIDER_TOOL_CALL_ID = "provider-call-id";
+    private static final String REPLAY_TOOL_CALL_ID = "different-runtime-id";
+    private static final String PLAYBACK_RECORDING_ASSERTION =
+            "Playback must not create recordings";
+    private static final String ANSWER_PREFIX = "answer ";
+    private static final String INVALID_RECORDING_FILE = "broken.json";
+    private static final String INVALID_RECORDING_CONTENT = "not JSON";
+    private static final String LIVE_RESPONSE = "live";
+    private static final String INVALID_JSON_RESPONSE = "not json";
+    private static final String JSON_VALIDATION_ASSERTION = "Must reach helper JSON validation";
+    private static final String PROVIDER_FAILURE = "provider failed";
+    private static final String PROPERTY_SOURCE_NAME = "recording-test";
+    private static final String AI_ENABLED_PROPERTY = "conductor.integrations.ai.enabled";
+    private static final String ENABLED_VALUE = "true";
+    private static final String PAYLOAD_DIRECTORY_PROPERTY = "conductor.file-storage.parentDir";
+    private static final String PAYLOAD_DIRECTORY = "payload";
+    private static final String WORKFLOW_ID = "workflow";
+    private static final String SYSTEM_PROMPT = "Answer weather questions.";
+    private static final String USER_PROMPT = "Weather in Lisbon?";
+    private static final String WEATHER_TOOL_NAME = "get_weather";
+    private static final String WEATHER_TOOL_DESCRIPTION = "Get weather";
+    private static final String TYPE_FIELD = "type";
+    private static final String OBJECT_TYPE = "object";
+    private static final String PROPERTIES_FIELD = "properties";
+    private static final String CITY_FIELD = "city";
+    private static final String STRING_TYPE = "string";
+    private static final String CITY = "Lisbon";
+    private static final String TEMPERATURE_FIELD = "temp_c";
+    private static final String LISBON_ARGUMENTS_JSON = "{\"city\":\"Lisbon\"}";
+    private static final String TOOL_USE_REASON = "tool_use";
+    private static final String PROVIDER_RESPONSE_ID = "provider-response-id";
+    private static final String PROVIDER_MODEL = "provider-model";
+
     @TempDir Path directory;
 
     @ParameterizedTest
-    @CsvSource({"false,false", "true,false", "false,true", "true,true"})
+    @CsvSource({BOTH_DISABLED, RECORDING_ONLY, PLAYBACK_ONLY, BOTH_ENABLED})
     void startupFlagsControlRecorderAndProvider(boolean record, boolean playback) {
         try (AnnotationConfigApplicationContext context = context(record, playback, null)) {
             assertEquals(record ? 1 : 0, context.getBeansOfType(LlmCallRecorder.class).size());
             assertEquals(playback ? 1 : 0, context.getBeansOfType(MockLLM.class).size());
             AIModelProvider providers = context.getBean(AIModelProvider.class);
             if (playback)
-                assertInstanceOf(MockLLM.class, providers.getModel(input(MockLLM.NAME, "model")));
+                assertInstanceOf(
+                        MockLLM.class, providers.getModel(input(MockLLM.NAME, MODEL_FIELD)));
             else
                 assertThrows(
                         RuntimeException.class,
-                        () -> providers.getModel(input(MockLLM.NAME, "model")));
+                        () -> providers.getModel(input(MockLLM.NAME, MODEL_FIELD)));
         }
     }
 
     @Test
     void disabledRecordingLeavesRealCallsAlone() throws IOException {
         try (AnnotationConfigApplicationContext context =
-                context(false, false, prompt -> textResponse("ok", "stop"))) {
-            assertEquals("ok", call(context, input("real", "model")).getResult());
+                context(false, false, prompt -> textResponse(SUCCESS_RESPONSE, STOP_REASON))) {
+            assertEquals(
+                    SUCCESS_RESPONSE, call(context, input(REAL_PROVIDER, MODEL_FIELD)).getResult());
         }
         assertTrue(recordings().isEmpty());
     }
@@ -106,32 +152,32 @@ class LlmRecordingTest {
                 prompt ->
                         prompt.getInstructions().stream()
                                         .anyMatch(ToolResponseMessage.class::isInstance)
-                                ? textResponse("Sunny", "end_turn")
-                                : toolResponse("provider-call-id");
+                                ? textResponse(WEATHER_RESPONSE, END_TURN_REASON)
+                                : toolResponse(PROVIDER_TOOL_CALL_ID);
         try (AnnotationConfigApplicationContext context = context(true, false, provider)) {
-            LLMResponse first = call(context, input("real", "model"));
-            ChatCompletion next = input("real", "model");
+            LLMResponse first = call(context, input(REAL_PROVIDER, MODEL_FIELD));
+            ChatCompletion next = input(REAL_PROVIDER, MODEL_FIELD);
             addHistory(next, first.getToolCalls().getFirst().getTaskReferenceName());
-            assertEquals("Sunny", call(context, next).getResult());
+            assertEquals(WEATHER_RESPONSE, call(context, next).getResult());
         }
         assertEquals(2, recordings().size());
         try (AnnotationConfigApplicationContext context = context(true, true, null)) {
-            ChatCompletion followup = input(MockLLM.NAME, "model");
-            addHistory(followup, "different-runtime-id");
-            assertEquals("Sunny", call(context, followup).getResult());
-            LLMResponse first = call(context, input(MockLLM.NAME, "model"));
-            LLMResponse repeated = call(context, input(MockLLM.NAME, "model"));
+            ChatCompletion followup = input(MockLLM.NAME, MODEL_FIELD);
+            addHistory(followup, REPLAY_TOOL_CALL_ID);
+            assertEquals(WEATHER_RESPONSE, call(context, followup).getResult());
+            LLMResponse first = call(context, input(MockLLM.NAME, MODEL_FIELD));
+            LLMResponse repeated = call(context, input(MockLLM.NAME, MODEL_FIELD));
             assertNotEquals(
-                    "provider-call-id", first.getToolCalls().getFirst().getTaskReferenceName());
+                    PROVIDER_TOOL_CALL_ID, first.getToolCalls().getFirst().getTaskReferenceName());
             assertNotEquals(
                     first.getToolCalls().getFirst().getTaskReferenceName(),
                     repeated.getToolCalls().getFirst().getTaskReferenceName());
             assertEquals(0, first.getTokenUsed());
             assertFalse(
                     context.getBean(MockLLM.class)
-                            .supportsAssistantPrefill(input(MockLLM.NAME, "model")));
+                            .supportsAssistantPrefill(input(MockLLM.NAME, MODEL_FIELD)));
         }
-        assertEquals(2, recordings().size(), "Playback must not create recordings");
+        assertEquals(2, recordings().size(), PLAYBACK_RECORDING_ASSERTION);
     }
 
     @Test
@@ -146,13 +192,13 @@ class LlmRecordingTest {
                     } catch (Exception e) {
                         throw new IllegalStateException(e);
                     }
-                    return textResponse("ok", "stop");
+                    return textResponse(SUCCESS_RESPONSE, STOP_REASON);
                 };
         try (AnnotationConfigApplicationContext context = context(true, false, provider);
                 ExecutorService pool = Executors.newFixedThreadPool(2)) {
-            Callable<LLMResponse> job = () -> call(context, input("real", "model"));
+            Callable<LLMResponse> job = () -> call(context, input(REAL_PROVIDER, MODEL_FIELD));
             for (Future<LLMResponse> future : pool.invokeAll(List.of(job, job)))
-                assertEquals("ok", future.get().getResult());
+                assertEquals(SUCCESS_RESPONSE, future.get().getResult());
         }
         assertEquals(2, calls.get());
         assertEquals(2, recordings().size());
@@ -160,9 +206,9 @@ class LlmRecordingTest {
                 ExecutorService pool = Executors.newFixedThreadPool(4)) {
             List<Callable<LLMResponse>> jobs = new ArrayList<>();
             for (int i = 0; i < 20; i++)
-                jobs.add(() -> call(context, input(MockLLM.NAME, "model")));
+                jobs.add(() -> call(context, input(MockLLM.NAME, MODEL_FIELD)));
             for (Future<LLMResponse> future : pool.invokeAll(jobs))
-                assertEquals("ok", future.get().getResult());
+                assertEquals(SUCCESS_RESPONSE, future.get().getResult());
         }
     }
 
@@ -173,9 +219,11 @@ class LlmRecordingTest {
                 context(
                         true,
                         false,
-                        prompt -> textResponse("answer " + calls.incrementAndGet(), "stop"))) {
-            call(context, input("real", "model"));
-            call(context, input("real", "model"));
+                        prompt ->
+                                textResponse(
+                                        ANSWER_PREFIX + calls.incrementAndGet(), STOP_REASON))) {
+            call(context, input(REAL_PROVIDER, MODEL_FIELD));
+            call(context, input(REAL_PROVIDER, MODEL_FIELD));
         }
         assertEquals(2, recordings().size());
         assertThrows(RuntimeException.class, () -> context(false, true, null));
@@ -183,7 +231,7 @@ class LlmRecordingTest {
 
     @Test
     void malformedFilesFailStartupInsteadOfSilentlyDroppingProvider() throws IOException {
-        Files.writeString(directory.resolve("broken.json"), "not JSON");
+        Files.writeString(directory.resolve(INVALID_RECORDING_FILE), INVALID_RECORDING_CONTENT);
         assertThrows(RuntimeException.class, () -> context(false, true, null));
     }
 
@@ -196,10 +244,11 @@ class LlmRecordingTest {
                         true,
                         prompt -> {
                             calls.incrementAndGet();
-                            return textResponse("live", "stop");
+                            return textResponse(LIVE_RESPONSE, STOP_REASON);
                         })) {
             assertThrows(
-                    NonRetryableException.class, () -> call(context, input(MockLLM.NAME, "model")));
+                    NonRetryableException.class,
+                    () -> call(context, input(MockLLM.NAME, MODEL_FIELD)));
             assertEquals(0, calls.get());
         }
     }
@@ -208,19 +257,18 @@ class LlmRecordingTest {
     void invalidJsonIsRecordedBeforeHelperValidationAndFailsAgainDuringPlayback()
             throws IOException {
         try (AnnotationConfigApplicationContext context =
-                context(true, false, prompt -> textResponse("not json", "stop"))) {
-            ChatCompletion input = input("real", "model");
+                context(true, false, prompt -> textResponse(INVALID_JSON_RESPONSE, STOP_REASON))) {
+            ChatCompletion input = input(REAL_PROVIDER, MODEL_FIELD);
             input.setJsonOutput(true);
             assertThrows(RuntimeException.class, () -> call(context, input));
         }
         assertEquals(1, recordings().size());
         try (AnnotationConfigApplicationContext context = context(false, true, null)) {
-            ChatCompletion input = input(MockLLM.NAME, "model");
+            ChatCompletion input = input(MockLLM.NAME, MODEL_FIELD);
             input.setJsonOutput(true);
             RuntimeException failure =
                     assertThrows(RuntimeException.class, () -> call(context, input));
-            assertFalse(
-                    failure instanceof NonRetryableException, "Must reach helper JSON validation");
+            assertFalse(failure instanceof NonRetryableException, JSON_VALIDATION_ASSERTION);
         }
     }
 
@@ -233,10 +281,12 @@ class LlmRecordingTest {
                         false,
                         prompt -> {
                             calls.incrementAndGet();
-                            throw new IllegalStateException("provider failed");
+                            throw new IllegalStateException(PROVIDER_FAILURE);
                         })) {
-            assertThrows(IllegalStateException.class, () -> call(context, input("real", "model")));
-            ChatCompletion unsupported = input("real", "model");
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> call(context, input(REAL_PROVIDER, MODEL_FIELD)));
+            ChatCompletion unsupported = input(REAL_PROVIDER, MODEL_FIELD);
             unsupported.setWebSearch(true);
             assertThrows(IllegalArgumentException.class, () -> call(context, unsupported));
             assertEquals(1, calls.get());
@@ -250,7 +300,7 @@ class LlmRecordingTest {
         ChatModel provider =
                 new ChatModel() {
                     public ChatResponse call(Prompt prompt) {
-                        return textResponse("ok", "stop");
+                        return textResponse(SUCCESS_RESPONSE, STOP_REASON);
                     }
 
                     public ChatOptions getDefaultOptions() {
@@ -259,13 +309,16 @@ class LlmRecordingTest {
                 };
         ChatModel wrapped =
                 new JsonFileLlmCallRecorder(directory)
-                        .wrap(new TestProvider(provider), input("real", "model"), provider);
+                        .wrap(
+                                new TestProvider(provider),
+                                input(REAL_PROVIDER, MODEL_FIELD),
+                                provider);
         assertSame(defaults, wrapped.getDefaultOptions());
     }
 
     private List<Path> recordings() throws IOException {
         try (Stream<Path> files = Files.list(directory)) {
-            return files.filter(p -> p.toString().endsWith(".json")).toList();
+            return files.filter(p -> p.toString().endsWith(LlmJsonFiles.FILE_EXTENSION)).toList();
         }
     }
 
@@ -276,14 +329,18 @@ class LlmRecordingTest {
                 .getPropertySources()
                 .addFirst(
                         new MapPropertySource(
-                                "recording-test",
+                                PROPERTY_SOURCE_NAME,
                                 Map.of(
-                                        "conductor.integrations.ai.enabled", "true",
-                                        "conductor.ai.record-mode", Boolean.toString(record),
-                                        "conductor.ai.enable-llm-mocks", Boolean.toString(playback),
-                                        "conductor.ai.recordings-directory", directory.toString(),
-                                        "conductor.file-storage.parentDir",
-                                                directory.resolve("payload").toString())));
+                                        AI_ENABLED_PROPERTY,
+                                        ENABLED_VALUE,
+                                        LlmRecordingProperties.RECORD_MODE_PROPERTY,
+                                        Boolean.toString(record),
+                                        LlmRecordingProperties.ENABLE_LLM_MOCKS_PROPERTY,
+                                        Boolean.toString(playback),
+                                        LlmRecordingProperties.RECORDINGS_DIRECTORY_PROPERTY,
+                                        directory.toString(),
+                                        PAYLOAD_DIRECTORY_PROPERTY,
+                                        directory.resolve(PAYLOAD_DIRECTORY).toString())));
         context.register(
                 LlmRecordingConfiguration.class,
                 MockLLMConfiguration.class,
@@ -315,7 +372,7 @@ class LlmRecordingTest {
             AnnotationConfigApplicationContext context, ChatCompletion input) {
         Task task = new Task();
         task.setTaskId(UUID.randomUUID().toString());
-        task.setWorkflowInstanceId("workflow");
+        task.setWorkflowInstanceId(WORKFLOW_ID);
         task.setStatus(Task.Status.IN_PROGRESS);
         TaskContext.set(task);
         try {
@@ -347,7 +404,7 @@ class LlmRecordingTest {
         }
 
         public String getModelProvider() {
-            return "real";
+            return REAL_PROVIDER;
         }
 
         public ChatModel getChatModel() {
@@ -371,13 +428,17 @@ class LlmRecordingTest {
         ChatCompletion input = new ChatCompletion();
         input.setLlmProvider(provider);
         input.setModel(model);
-        input.setInstructions("Answer weather questions.");
-        input.getMessages().add(new ChatMessage(ChatMessage.Role.user, "Weather in Lisbon?"));
+        input.setInstructions(SYSTEM_PROMPT);
+        input.getMessages().add(new ChatMessage(ChatMessage.Role.user, USER_PROMPT));
         ToolSpec tool = new ToolSpec();
-        tool.setName("get_weather");
-        tool.setDescription("Get weather");
+        tool.setName(WEATHER_TOOL_NAME);
+        tool.setDescription(WEATHER_TOOL_DESCRIPTION);
         tool.setInputSchema(
-                Map.of("type", "object", "properties", Map.of("city", Map.of("type", "string"))));
+                Map.of(
+                        TYPE_FIELD,
+                        OBJECT_TYPE,
+                        PROPERTIES_FIELD,
+                        Map.of(CITY_FIELD, Map.of(TYPE_FIELD, STRING_TYPE))));
         input.getTools().add(tool);
         return input;
     }
@@ -386,9 +447,9 @@ class LlmRecordingTest {
         ToolCall call =
                 org.conductoross.conductor.ai.model.ToolCall.builder()
                         .taskReferenceName(id)
-                        .name("get_weather")
-                        .inputParameters(Map.of("city", "Lisbon"))
-                        .output(Map.of("temp_c", 21))
+                        .name(WEATHER_TOOL_NAME)
+                        .inputParameters(Map.of(CITY_FIELD, CITY))
+                        .output(Map.of(TEMPERATURE_FIELD, 21))
                         .build();
         input.getMessages().add(new ChatMessage(ChatMessage.Role.tool_call, call));
         input.getMessages().add(new ChatMessage(ChatMessage.Role.tool, call));
@@ -399,17 +460,18 @@ class LlmRecordingTest {
                 List.of(
                         new Generation(
                                 AssistantMessage.builder()
-                                        .content("")
+                                        .content(StringUtils.EMPTY)
                                         .toolCalls(
                                                 List.of(
                                                         new AssistantMessage.ToolCall(
                                                                 id,
-                                                                "function",
-                                                                "get_weather",
-                                                                "{\"city\":\"Lisbon\"}")))
+                                                                LlmRequestResponseConverter
+                                                                        .FUNCTION_TOOL_TYPE,
+                                                                WEATHER_TOOL_NAME,
+                                                                LISBON_ARGUMENTS_JSON)))
                                         .build(),
                                 ChatGenerationMetadata.builder()
-                                        .finishReason("tool_use")
+                                        .finishReason(TOOL_USE_REASON)
                                         .build())));
     }
 
@@ -420,8 +482,8 @@ class LlmRecordingTest {
                                 new AssistantMessage(text),
                                 ChatGenerationMetadata.builder().finishReason(finish).build())),
                 ChatResponseMetadata.builder()
-                        .id("provider-response-id")
-                        .model("provider-model")
+                        .id(PROVIDER_RESPONSE_ID)
+                        .model(PROVIDER_MODEL)
                         .usage(new DefaultUsage(12, 13, 25))
                         .build());
     }
