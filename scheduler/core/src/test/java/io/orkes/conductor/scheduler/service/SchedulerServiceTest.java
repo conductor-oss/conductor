@@ -998,6 +998,28 @@ class SchedulerServiceTest {
     }
 
     @Test
+    @DisplayName("searchSchedules filters by name pattern case-insensitively")
+    void testSearchSchedulesByNamePatternCaseInsensitive() {
+        SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);
+        SchedulerService service = createService(mockTimeProvider);
+
+        WorkflowSchedule schedule = new WorkflowSchedule();
+        schedule.setName("DailyReport");
+        schedule.setCronExpression("0 0 * * * ?");
+        schedule.setStartWorkflowRequest(new StartWorkflowRequest());
+        schedule.getStartWorkflowRequest().setName("report_workflow");
+        when(mockTimeProvider.getUtcTime(any())).thenReturn(utcTime(1630000000000L));
+        service.createOrUpdateWorkflowSchedule(schedule);
+
+        SearchResult<WorkflowScheduleModel> result =
+                service.searchSchedules(null, "dailyreport", null, "*", 0, 10, List.of());
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalHits());
+        assertEquals("DailyReport", result.getResults().get(0).getName());
+    }
+
+    @Test
     @DisplayName("searchSchedules handles pagination correctly")
     void testSearchSchedulesPagination() {
         SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);

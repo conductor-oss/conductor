@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -320,7 +321,14 @@ public class SchedulerIntegrationTest {
                                             workflowName == null
                                                     || workflowName.equals(
                                                             s.getStartWorkflowRequest().getName()))
-                            .filter(s -> scheduleName == null || s.getName().contains(scheduleName))
+                            .filter(
+                                    s ->
+                                            scheduleName == null
+                                                    || s.getName()
+                                                            .toLowerCase(Locale.ROOT)
+                                                            .contains(
+                                                                    scheduleName.toLowerCase(
+                                                                            Locale.ROOT)))
                             .filter(s -> paused == null || s.isPaused() == paused)
                             .sorted(Comparator.comparing(WorkflowScheduleModel::getName))
                             .collect(Collectors.toList());
