@@ -104,7 +104,7 @@ public class TaskTest {
         // NOTE: `runtimeMetadata` (wire-only resolved secret values, injected at poll time) is
         // intentionally NOT propagated by copy()/deepCopy() - see
         // testRuntimeMetadataExcludedFromCopy.
-        final int expectedTaskFieldsNumber = 44;
+        final int expectedTaskFieldsNumber = 45;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         final ExecutionMetadata executionMetadata = new ExecutionMetadata();
@@ -155,10 +155,15 @@ public class TaskTest {
         task.setWorkerId("");
         task.setSubWorkflowId("");
         task.setSubworkflowChanged(false);
+        task.setParentTaskReferenceName("parent_ref_task_name");
         task.setExecutionMetadata(executionMetadata);
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);
+
+        // equals() compares a curated subset that excludes the newest fields, so a field missing
+        // from copy()/deepCopy() would slip past assertEquals above. Assert this one outright.
+        assertEquals("parent_ref_task_name", copy.getParentTaskReferenceName());
 
         // Verify execution metadata is copied
         assertNotNull(copy.getExecutionMetadata());
