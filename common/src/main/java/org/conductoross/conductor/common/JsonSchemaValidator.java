@@ -14,11 +14,14 @@ package org.conductoross.conductor.common;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
 import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaException;
+import com.networknt.schema.SchemaLocation;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +46,33 @@ public class JsonSchemaValidator {
         JsonNode jsonNode = mapper.readTree(schemaContent);
         SpecificationVersion dialect =
                 SpecificationVersion.fromSchemaNode(jsonNode).orElse(DEFAULT_DIALECT);
-        return SchemaRegistry.withDefaultDialect(dialect).getSchema(jsonNode);
+        SchemaRegistry registry = SchemaRegistry.withDefaultDialect(dialect);
+        rejectMalformedSchema(registry, dialect, jsonNode);
+        return registry.getSchema(jsonNode);
+    }
+
+    /**
+     * Checks the schema document against its own dialect before it is used.
+     *
+     * <p>Version 1.x refused to build a schema whose keywords were the wrong shape, for example a
+     * numeric "type", and callers relied on that to tell a broken schema apart from a payload that
+     * genuinely does not match. Version 3.x accepts such a document and only reports the problem
+     * later, as if the payload were at fault. Validating against the metaschema restores the
+     * distinction.
+     */
+    private void rejectMalformedSchema(
+            SchemaRegistry registry, SpecificationVersion dialect, JsonNode schemaNode) {
+        List<Error> schemaErrors =
+                registry.getSchema(SchemaLocation.of(dialect.getDialectId())).validate(schemaNode);
+        if (schemaErrors != null && !schemaErrors.isEmpty()) {
+            throw new SchemaException(
+                    "Schema does not conform to "
+                            + dialect.getDialectId()
+                            + ": "
+                            + schemaErrors.stream()
+                                    .map(Error::getMessage)
+                                    .collect(Collectors.joining(", ")));
+        }
     }
 
     public List<Error> validate(String schemaContent, Map<String, Object> body) {

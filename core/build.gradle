@@ -19,6 +19,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter-validation'
 
     implementation "com.fasterxml.jackson.core:jackson-annotations"
+    implementation "com.networknt:json-schema-validator:${revJSonSchemaValidator}"
     implementation "tools.jackson.core:jackson-databind"
 
     implementation "commons-io:commons-io:${revCommonsIo}"

@@ -25,7 +25,7 @@ import org.conductoross.conductor.es8.utils.TestUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.junit.Test;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -39,7 +39,6 @@ import com.netflix.conductor.core.events.queue.Message;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import tools.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import tools.jackson.databind.JsonNode;
 
@@ -163,7 +162,8 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
 
         ElasticsearchClient client =
                 new ElasticsearchClient(
-                        new RestClientTransport(restClient, new JacksonJsonpMapper(transportObjectMapper())));
+                        new RestClientTransport(
+                                restClient, new JacksonJsonpMapper(transportObjectMapper())));
         Es8IndexManagementSupport indexManagementSupport =
                 new Es8IndexManagementSupport(
                         client,
@@ -891,5 +891,4 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
                 com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
         return mapper;
     }
-
 }
