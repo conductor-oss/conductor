@@ -1,14 +1,15 @@
 version: '2.3'
 
+# Hybrid stack: Postgres for metadata/execution/payload/indexing, Redis (standalone)
+# for the workflow queue. Modeled on docker-compose-postgres.yaml; adds a redis
+# service borrowed from docker-compose.yaml.
+
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-postgres.properties
-      # Forwarded from the host shell when set. Empty/absent ⇒ the matching AI provider
-      # stays unconfigured and the LLM e2e tests that depend on it self-skip.
+      - CONFIG_PROP=config-postgres-redis.properties
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - COHERE_API_KEY=${COHERE_API_KEY:-}
     image: conductor:server
     container_name: conductor-server
     build:
@@ -28,8 +29,11 @@ services:
       retries: 12
     links:
       - conductor-postgres:postgresdb
+      - conductor-redis:rs
     depends_on:
       conductor-postgres:
+        condition: service_healthy
+      conductor-redis:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -48,6 +52,23 @@ services:
       - internal
     healthcheck:
       test: timeout 5 bash -c 'cat < /dev/null > /dev/tcp/localhost/5432'
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+  conductor-redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ../server/config/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 12
