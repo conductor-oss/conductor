@@ -1,5 +1,5 @@
 ```bash
-dotnet add package conductor-ai-google-adk --version 3.0.0-rc3
+dotnet add package conductor-ai-google-adk
 ```
 
 ```csharp

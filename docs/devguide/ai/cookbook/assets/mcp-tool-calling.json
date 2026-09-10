@@ -1,0 +1,193 @@
+{
+  "name": "mcp_tool_calling",
+  "description": "Discovers MCP tools at runtime, strips mutating verbs deterministically, has a small model shortlist five relevant tools, intersects that shortlist with what was actually discovered, then lets a second model pick one and calls it.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 420,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "mcpServerUrl",
+    "task"
+  ],
+  "tasks": [
+    {
+      "name": "discover_mcp_tools",
+      "taskReferenceName": "discover_tools",
+      "type": "LIST_MCP_TOOLS",
+      "inputParameters": {
+        "mcpServer": "${workflow.input.mcpServerUrl}"
+      }
+    },
+    {
+      "name": "strip_mutating_tools",
+      "taskReferenceName": "safe_catalog",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "tools": "${discover_tools.output.tools}",
+        "queryExpression": "(.tools // []) as $all | ($all | map(select(.name | test(\"^(delete_|drop_|remove_|write_|create_|update_|put_|post_|send_|pay_|charge_|refund_|deploy_|revoke_|grant_)\") | not))) as $safe | {catalog: ($safe | map({name: .name, description: ((.description // \"\")[0:160])})), safeNames: ($safe | map(.name)), discovered: ($all | length), excluded: (($all | length) - ($safe | length))}"
+      }
+    },
+    {
+      "name": "shortlist_relevant_tools",
+      "taskReferenceName": "shortlist_llm",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "You narrow a large tool catalog down to the few tools that could plausibly help with a task. Return JSON: {\"shortlist\": [string]}. Include at most 5 names, most relevant first, copied verbatim from the catalog. Never invent a name. If nothing is relevant, return an empty list."
+          },
+          {
+            "role": "user",
+            "message": "Task: ${workflow.input.task}\nCatalog: ${safe_catalog.output.result.catalog}"
+          }
+        ],
+        "temperature": 0.0,
+        "maxTokens": 300,
+        "jsonOutput": true
+      }
+    },
+    {
+      "name": "intersect_shortlist_with_catalog",
+      "taskReferenceName": "shortlist",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "proposed": "${shortlist_llm.output.result.shortlist}",
+        "safeNames": "${safe_catalog.output.result.safeNames}",
+        "catalog": "${safe_catalog.output.result.catalog}",
+        "queryExpression": ". as $r | (($r.proposed // []) | map(select(. as $n | ($r.safeNames // []) | index($n) != null))[:5]) as $allowed | {allowed: $allowed, allowedCount: ($allowed | length), candidates: (($r.catalog // []) | map(select(.name as $n | $allowed | index($n) != null))), rejected: ((($r.proposed // []) - $allowed))}"
+      }
+    },
+    {
+      "name": "require_candidate_tools",
+      "taskReferenceName": "require_candidates",
+      "type": "SWITCH",
+      "evaluatorType": "graaljs",
+      "expression": "$.count > 0 ? 'ready' : 'none'",
+      "inputParameters": {
+        "count": "${shortlist.output.result.allowedCount}"
+      },
+      "decisionCases": {
+        "none": [
+          {
+            "name": "terminate_no_candidate_tools",
+            "taskReferenceName": "terminate_no_tools",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "error": "no_relevant_tool_available",
+                "discovered": "${safe_catalog.output.result.discovered}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    },
+    {
+      "name": "select_tool",
+      "taskReferenceName": "select_tool",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Choose exactly one tool from the supplied candidates to accomplish the task, and build its arguments from the task text. Return JSON: {\"method\": string, \"arguments\": object, \"reason\": string}. The method MUST be one of the candidate names verbatim."
+          },
+          {
+            "role": "user",
+            "message": "Task: ${workflow.input.task}\nCandidate tools: ${shortlist.output.result.candidates}"
+          }
+        ],
+        "temperature": 0.0,
+        "maxTokens": 500,
+        "jsonOutput": true
+      }
+    },
+    {
+      "name": "enforce_tool_allowlist",
+      "taskReferenceName": "enforce_allowlist",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "chosen": "${select_tool.output.result.method}",
+        "allowed": "${shortlist.output.result.allowed}",
+        "queryExpression": ". as $r | {method: $r.chosen, permitted: ((($r.allowed // []) | index($r.chosen)) != null)}"
+      }
+    },
+    {
+      "name": "route_on_allowlist",
+      "taskReferenceName": "route_allowlist",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "permitted",
+      "inputParameters": {
+        "permitted": "${enforce_allowlist.output.result.permitted}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "call_selected_tool",
+            "taskReferenceName": "call_tool",
+            "type": "CALL_MCP_TOOL",
+            "inputParameters": {
+              "mcpServer": "${workflow.input.mcpServerUrl}",
+              "method": "${select_tool.output.result.method}",
+              "arguments": "${select_tool.output.result.arguments}"
+            }
+          },
+          {
+            "name": "summarize_tool_result",
+            "taskReferenceName": "summarize",
+            "type": "LLM_CHAT_COMPLETE",
+            "inputParameters": {
+              "llmProvider": "openai",
+              "model": "gpt-4o-mini",
+              "messages": [
+                {
+                  "role": "system",
+                  "message": "Summarize the tool result for the original task in at most three sentences. State only what the result contains. If the result does not answer the task, say so plainly."
+                },
+                {
+                  "role": "user",
+                  "message": "Task: ${workflow.input.task}\nTool: ${select_tool.output.result.method}\nResult: ${call_tool.output.content}"
+                }
+              ],
+              "temperature": 0.1,
+              "maxTokens": 400
+            }
+          }
+        ],
+        "false": [
+          {
+            "name": "terminate_tool_not_allowed",
+            "taskReferenceName": "terminate_not_allowed",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "error": "tool_not_in_allowlist",
+                "requested": "${select_tool.output.result.method}",
+                "allowed": "${shortlist.output.result.allowed}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "summary": "${summarize.output.result}",
+    "tool": "${select_tool.output.result.method}",
+    "reason": "${select_tool.output.result.reason}",
+    "evidence": "${call_tool.output.content}",
+    "shortlist": "${shortlist.output.result}",
+    "catalogSize": "${safe_catalog.output.result.discovered}",
+    "excludedMutating": "${safe_catalog.output.result.excluded}"
+  }
+}

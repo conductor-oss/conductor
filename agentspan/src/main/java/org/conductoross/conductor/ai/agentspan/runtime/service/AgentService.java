@@ -24,6 +24,7 @@ import org.apache.logging.log4j.util.Strings;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,6 +70,7 @@ public class AgentService {
     private final MetadataDAO metadataDAO;
 
     private final WorkflowService workflowService;
+    private final AgentExecutionTokenUsageAggregator executionTokenUsageAggregator;
     private final TaskService taskService;
     private final WorkflowExecutor workflowExecutor;
 
@@ -1451,6 +1453,17 @@ public class AgentService {
 
     public Workflow getFullExecution(String executionId) {
         return workflowService.getExecutionStatus(executionId, true);
+    }
+
+    /**
+     * Returns the normal full execution payload with token usage aggregated across the complete
+     * sub-workflow tree. Descendants are loaded inside the server, avoiding one large HTTP response
+     * per child in the UI.
+     */
+    public Workflow getFullExecutionWithAggregate(String executionId) {
+        Workflow root = getFullExecution(executionId);
+        root.setAggregateTokenUsage(executionTokenUsageAggregator.aggregate(root));
+        return root;
     }
 
     public void restartExecution(String executionId, boolean useLatestDefinitions) {

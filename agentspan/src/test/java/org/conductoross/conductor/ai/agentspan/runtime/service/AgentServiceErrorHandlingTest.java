@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class AgentServiceErrorHandlingTest {
                         executionDAO,
                         mock(MetadataDAO.class),
                         workflowService,
+                        new AgentExecutionTokenUsageAggregator(workflowService),
                         mock(TaskService.class),
                         mock(WorkflowExecutor.class),
                         mock(AgentStreamRegistry.class),

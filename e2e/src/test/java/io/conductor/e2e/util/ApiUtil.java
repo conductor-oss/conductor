@@ -22,6 +22,7 @@ import com.netflix.conductor.client.http.WorkflowClient;
 
 import io.orkes.conductor.client.AgentClient;
 import io.orkes.conductor.client.OrkesClients;
+import io.orkes.conductor.client.http.OrkesSchemaClient;
 
 public class ApiUtil {
 
@@ -39,8 +40,10 @@ public class ApiUtil {
     public static final ConductorClient CLIENT =
             ConductorClient.builder()
                     .basePath(SERVER_ROOT_URI)
-                    .readTimeout(
-                            30_000) // 30 seconds to support synchronous workflow execution endpoint
+                    // 90s: fetching a large workflow (e.g. DoWhile stress tests with hundreds of
+                    // tasks) from a loaded CI server can exceed 30s and fail the test with a
+                    // client-side timeout rather than a real assertion.
+                    .readTimeout(90_000)
                     .build();
 
     public static final WorkflowClient WORKFLOW_CLIENT = new WorkflowClient(CLIENT);
@@ -49,4 +52,6 @@ public class ApiUtil {
     public static final EventClient EVENT_CLIENT = new EventClient(CLIENT);
     public static final AgentClient AGENT_CLIENT = new OrkesClients(CLIENT).getAgentClient();
     public static final FileClient FILE_CLIENT = new FileClient(CLIENT);
+    public static final OrkesSchemaClient SCHEMA_CLIENT =
+            new OrkesClients(CLIENT).getSchemaClient();
 }

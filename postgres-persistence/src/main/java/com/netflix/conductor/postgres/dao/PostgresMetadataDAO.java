@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
@@ -28,11 +29,13 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.config.PostgresProperties;
+import com.netflix.conductor.postgres.util.ExecuteFunction;
 import com.netflix.conductor.postgres.util.ExecutorsUtil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -117,7 +120,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     public void removeTaskDef(String name) {
         final String DELETE_TASKDEF_QUERY = "DELETE FROM meta_task_def WHERE name = ?";
 
-        executeWithTransaction(
+        executeWithMetadataTransaction(
                 DELETE_TASKDEF_QUERY,
                 q -> {
                     if (!q.addParameter(name).executeDelete()) {
@@ -132,7 +135,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     public void createWorkflowDef(WorkflowDef def) {
         validate(def);
 
-        withTransaction(
+        withMetadataTransaction(
                 tx -> {
                     if (workflowExists(tx, def)) {
                         throw new ConflictException(
@@ -179,7 +182,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         final String DELETE_WORKFLOW_QUERY =
                 "DELETE from meta_workflow_def WHERE name = ? AND version = ?";
 
-        withTransaction(
+        withMetadataTransaction(
                 tx -> {
                     // remove specified workflow
                     execute(
@@ -283,7 +286,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
                 "INSERT INTO meta_event_handler (name, event, active, json_data) "
                         + "VALUES (?, ?, ?, ?)";
 
-        withTransaction(
+        withMetadataTransaction(
                 tx -> {
                     if (getEventHandler(tx, eventHandler.getName()) != null) {
                         throw new ConflictException(
@@ -315,7 +318,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
                         + "modified_on = CURRENT_TIMESTAMP WHERE name = ?";
         // @formatter:on
 
-        withTransaction(
+        withMetadataTransaction(
                 tx -> {
                     EventHandler existing = getEventHandler(tx, eventHandler.getName());
                     if (existing == null) {
@@ -339,7 +342,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     public void removeEventHandler(String name) {
         final String DELETE_EVENT_HANDLER_QUERY = "DELETE FROM meta_event_handler WHERE name = ?";
 
-        withTransaction(
+        withMetadataTransaction(
                 tx -> {
                     EventHandler existing = getEventHandler(tx, name);
                     if (existing == null) {
@@ -579,6 +582,33 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         return queryWithTransaction(
                 READ_ONE_TASKDEF_QUERY,
                 q -> q.addParameter(name).executeAndFetchFirst(TaskDef.class));
+    }
+
+    private void withMetadataExceptionHandling(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (NonTransientException e) {
+            throw unwrapMetadataException(e);
+        }
+    }
+
+    private RuntimeException unwrapMetadataException(NonTransientException exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof ConflictException || current instanceof NotFoundException) {
+                return (RuntimeException) current;
+            }
+            current = current.getCause();
+        }
+        return exception;
+    }
+
+    private void withMetadataTransaction(Consumer<Connection> consumer) {
+        withMetadataExceptionHandling(() -> withTransaction(consumer));
+    }
+
+    private void executeWithMetadataTransaction(String query, ExecuteFunction function) {
+        withMetadataExceptionHandling(() -> executeWithTransaction(query, function));
     }
 
     private String insertOrUpdateTaskDef(TaskDef taskDef) {

@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
+import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -57,6 +58,7 @@ class AgentServiceOpenStreamTest {
                         mock(ExecutionDAO.class),
                         mock(MetadataDAO.class),
                         workflowService,
+                        new AgentExecutionTokenUsageAggregator(workflowService),
                         mock(TaskService.class),
                         mock(WorkflowExecutor.class),
                         streamRegistry,

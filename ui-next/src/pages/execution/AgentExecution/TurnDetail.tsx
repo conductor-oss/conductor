@@ -11,9 +11,11 @@ import { SubAgentTree } from "./SubAgentTree";
 interface TurnDetailProps {
   turn: AgentTurn;
   onDrillIn: (agentRun: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (agentRun: AgentRunData) => void;
 }
 
-export function TurnDetail({ turn, onDrillIn }: TurnDetailProps) {
+export function TurnDetail({ turn, onDrillIn, onExpand }: TurnDetailProps) {
   return (
     <Box>
       {/* Header bar */}
@@ -62,6 +64,7 @@ export function TurnDetail({ turn, onDrillIn }: TurnDetailProps) {
             subAgents={turn.subAgents}
             strategy={turn.strategy}
             onDrillIn={onDrillIn}
+            onExpand={onExpand}
           />
         </Box>
       )}

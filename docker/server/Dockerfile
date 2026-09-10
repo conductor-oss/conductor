@@ -1,9 +1,10 @@
 #
 # conductor:server - Conductor Server + UI
 #
-# Two modes:
+# Build args:
+#   PREBUILT=true:  Skips both JAR and UI builds, uses pre-built artifacts (CI multi-arch)
+#   SKIP_UI=true:   Skips only the UI build (E2E CI — tests serve UI from the host)
 #   Default:        Builds JAR and UI from source (docker-compose, local dev)
-#   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
 #
 
 # ===========================================================================================================
@@ -37,13 +38,16 @@ RUN if [ "$PREBUILT" = "true" ]; then \
 FROM node:lts AS ui-builder
 
 ARG PREBUILT=false
+ARG SKIP_UI=false
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 COPY ui-next /conductor/ui-next
 WORKDIR /conductor/ui-next
 
-RUN if [ "$PREBUILT" = "false" ]; then \
+RUN if [ "$SKIP_UI" = "true" ]; then \
+      mkdir -p dist && echo "UI build skipped (SKIP_UI=true)"; \
+    elif [ "$PREBUILT" = "false" ]; then \
       corepack enable && \
       pnpm install && \
       NODE_OPTIONS=--max-old-space-size=4096 pnpm build; \
