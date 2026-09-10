@@ -12,6 +12,7 @@ import {
   MouseEvent,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -23,8 +24,8 @@ import { CustomLabel, CustomNode } from "./components/graphs";
 import PanAndZoomWrapper, {
   usePanAndZoomActor,
 } from "./components/graphs/PanAndZoomWrapper";
-import { EDGE_SPACING } from "./components/graphs/PanAndZoomWrapper/constants";
 import QuickAddMenu from "./components/RichAddTaskMenu/QuickAddMenu";
+import { flowLayoutOptions } from "./layoutOptions";
 import { DraggableOverlay, useNodeCollisionDetection } from "./dragDrop";
 import {
   DraggedNodeData,
@@ -133,6 +134,9 @@ export const Flow: FunctionComponent<FlowProps> = ({
     { handleSetEventType, handleCenterOnSelectedTask },
   ] = usePanAndZoomActor(panAndZoomActor);
 
+  // Depends on the graph: a node with side tasks needs the canvas widened to draw them in.
+  const layoutOptions = useMemo(() => flowLayoutOptions(nodes), [nodes]);
+
   const richAddTaskMenuActor = (flowActor as any)?.children?.get(
     "richAddTaskMenuMachine",
   );
@@ -224,14 +228,7 @@ export const Flow: FunctionComponent<FlowProps> = ({
               fit={false}
               zoomable={false}
               pannable={false}
-              layoutOptions={{
-                "org.eclipse.elk.spacing.edgeEdge": EDGE_SPACING.toString(),
-                "org.eclipse.elk.padding":
-                  "[top=10,left=100,bottom=10,right=100]",
-                "org.eclipse.elk.layered.edgeLabels.centerLabelPlacementStrategy":
-                  "SPACE_EFFICIENT_LAYER",
-                "org.eclipse.elk.nodeLabels.placement": "V_CENTER",
-              }}
+              layoutOptions={layoutOptions}
               edge={(edge: EdgeData) => {
                 const edgeStylesForTaskStatus = [
                   TaskStatus.COMPLETED,

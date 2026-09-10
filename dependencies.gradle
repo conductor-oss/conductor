@@ -74,7 +74,10 @@ ext {
     revSpotifyCompletableFutures = '0.3.3'
     revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
-    revAmqpClient = '5.13.0'
+    // amqp-client is BOM-managed (rabbit-amqp-client.version); the Spring Boot 3.5 BOM pins 5.25.0,
+    // which carries CVE-2026-63337 / CVE-2026-69219 / CVE-2026-69220. 5.35.0 clears all three.
+    // The override that actually forces this into the shaded jar lives in springboot-bom-overrides.gradle.
+    revAmqpClient = '5.35.0'
     revKafka = '3.9.1'
     // micrometer-core carries CVE-2026-40983 / CVE-2026-40984, fixed in 1.15.12.
     revMicrometer = '1.15.12'
