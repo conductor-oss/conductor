@@ -249,6 +249,35 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     }
 
     @Override
+    public boolean setUnackTimeoutIfDueOrShorter(
+            String queueName, String messageId, long unackTimeout) {
+        long updatedOffsetTimeInSecond = unackTimeout / 1000;
+
+        // If the message is already due (deliver_on <= now), advance it to now + offset — this
+        // unsticks a delivery time frozen in the past. Otherwise only shorten: never push a
+        // pending, sooner delivery time (e.g. from an expedited postpone()) further out.
+        final String UPDATE_UNACK_TIMEOUT_IF_DUE_OR_SHORTER =
+                "UPDATE queue_message SET offset_time_seconds = ?, "
+                        + "deliver_on = CASE "
+                        + "  WHEN deliver_on <= current_timestamp "
+                        + "    THEN (current_timestamp + (? ||' seconds')::interval) "
+                        + "  ELSE LEAST(deliver_on, current_timestamp + (? ||' seconds')::interval) "
+                        + "END "
+                        + "WHERE queue_name = ? AND message_id = ?";
+
+        return queryWithTransaction(
+                        UPDATE_UNACK_TIMEOUT_IF_DUE_OR_SHORTER,
+                        q ->
+                                q.addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(queueName)
+                                        .addParameter(messageId)
+                                        .executeUpdate())
+                == 1;
+    }
+
+    @Override
     public void flush(String queueName) {
         final String FLUSH_QUEUE = "DELETE FROM queue_message WHERE queue_name = ?";
         executeWithTransaction(FLUSH_QUEUE, q -> q.addParameter(queueName).executeDelete());

@@ -528,6 +528,84 @@ public class PostgresQueueDAOTest {
         assertEquals(messageId, popped.get(0));
     }
 
+    /**
+     * Reproduces the original decider-queue busy-loop bug: a message whose delivery time is
+     * frozen in the past (e.g. left behind by a skipped postpone write) must be advanced into
+     * the future, not left permanently "due".
+     */
+    @Test
+    public void setUnackTimeoutIfDueOrShorterUnsticksPastDeliverTime() throws Exception {
+        String queueName = "setUnackIfDueOrShorter_unstick";
+        String messageId = "msg-unstick";
+
+        queueDAO.push(queueName, messageId, 0L);
+        freezeDeliverOnInThePast(queueName, messageId);
+
+        boolean updated = queueDAO.setUnackTimeoutIfDueOrShorter(queueName, messageId, 1_800_000L);
+        assertTrue("setUnackTimeoutIfDueOrShorter must apply when the message exists", updated);
+
+        // deliver_on must have been advanced into the future — no longer immediately poppable.
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(
+                "A deliver_on frozen in the past must be advanced, not left stuck due forever",
+                0,
+                popped.size());
+    }
+
+    /**
+     * Regression test for the race a PR reviewer identified: an unconditional postpone write from
+     * a concurrent decide() must not overwrite a pending, sooner wake-up written by a sibling
+     * caller (e.g. a child sub-workflow completing and calling expediteLazyWorkflowEvaluation() on
+     * its parent via {@link com.netflix.conductor.dao.QueueDAO#postpone}).
+     */
+    @Test
+    public void setUnackTimeoutIfDueOrShorterDoesNotOverwriteExpeditedWakeup() {
+        String queueName = "setUnackIfDueOrShorter_expedite";
+        String messageId = "msg-expedite";
+
+        // Simulates a decide() that previously computed a far-future re-check for this workflow.
+        queueDAO.push(queueName, messageId, 3600L);
+
+        // A sibling caller expedites it — e.g. a child completing and waking its parent —
+        // making it immediately due.
+        queueDAO.postpone(queueName, messageId, 10, 0L);
+
+        // A second, concurrent decide() — having read state from before the expedite — now
+        // (belatedly) writes its own, much later, postpone for the same workflow.
+        queueDAO.setUnackTimeoutIfDueOrShorter(queueName, messageId, 1_800_000L); // 30 min
+
+        // The expedited wake-up must survive: the message must remain immediately poppable.
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(
+                "A pending sooner wake-up (expedite) must not be pushed back by a later decide()",
+                1,
+                popped.size());
+        assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void setUnackTimeoutIfDueOrShorterReturnsFalseForNonExistent() {
+        String queueName = "setUnackIfDueOrShorter_nonexistent";
+        boolean updated =
+                queueDAO.setUnackTimeoutIfDueOrShorter(queueName, "no-such-message", 0L);
+        assertFalse(
+                "setUnackTimeoutIfDueOrShorter must return false for a non-existent message",
+                updated);
+    }
+
+    private void freezeDeliverOnInThePast(String queueName, String messageId) throws Exception {
+        try (Connection c = dataSource.getConnection()) {
+            c.setAutoCommit(false);
+            final String FREEZE_IN_PAST =
+                    "UPDATE queue_message SET deliver_on = current_timestamp - interval '1 hour' "
+                            + "WHERE queue_name = ? AND message_id = ?";
+            try (Query q = new Query(objectMapper, c, FREEZE_IN_PAST)) {
+                q.addParameter(queueName).addParameter(messageId).executeUpdate();
+            }
+            c.commit();
+        }
+    }
+
     // @Test
     public void processUnacksTest() {
         processUnacks(

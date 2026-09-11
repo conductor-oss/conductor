@@ -140,6 +140,44 @@ public interface QueueDAO {
     }
 
     /**
+     * Advances the message's delivery time, but never delays a wake-up that is already
+     * scheduled sooner than {@code now + unackTimeout}.
+     *
+     * <p>Two cases:
+     *
+     * <ul>
+     *   <li>If the message is already due (its current delivery time is at or before now — e.g.
+     *       a delivery time frozen in the past by a prior no-op write), it is advanced to {@code
+     *       now + unackTimeout}. This is what unsticks a message stuck permanently "due".
+     *   <li>Otherwise (the message is already scheduled for some point in the future — e.g. an
+     *       expedited wake-up via {@link #postpone}), the delivery time is only moved earlier:
+     *       it becomes {@code min(current delivery time, now + unackTimeout)}. A pending, sooner
+     *       wake-up is never pushed back out.
+     * </ul>
+     *
+     * <p>Unlike an unconditional {@link #setUnackTimeout}, this method is safe to call on every
+     * decide() cycle regardless of whether anything actually changed: it cannot race with and
+     * silently undo a concurrent expedited wake-up written by a different caller (e.g. a sibling
+     * workflow's {@link #postpone} call), because it only ever moves the delivery time forward
+     * from a due/past value or backward (sooner) from a future one — never backward from due,
+     * never forward from a pending future value.
+     *
+     * <p>Implementations should perform this as an atomic compare-and-set where possible (e.g.
+     * a single {@code CASE WHEN deliver_on <= now() THEN … ELSE LEAST(deliver_on, …) END} in
+     * SQL). The default falls back to {@link #setUnackTimeoutIfShorter}, which is safe
+     * (non-destructive) but does not unstick a delivery time frozen in the past.
+     *
+     * @param queueName Name of the queue
+     * @param messageId Message Id
+     * @param unackTimeout timeout in milliseconds
+     * @return true if the message exists and the update was applied
+     */
+    default boolean setUnackTimeoutIfDueOrShorter(
+            String queueName, String messageId, long unackTimeout) {
+        return setUnackTimeoutIfShorter(queueName, messageId, unackTimeout);
+    }
+
+    /**
      * @param queueName Name of the queue
      */
     void flush(String queueName);
