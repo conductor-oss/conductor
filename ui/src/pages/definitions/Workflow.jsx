@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { NavLink, DataTable, Button } from "../../components";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
@@ -70,39 +70,55 @@ const columns = [
 export default function WorkflowDefinitions() {
   const classes = useStyles();
 
-  const { data, isFetching } = useLatestWorkflowDefs();
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
   const [filterParam, setFilterParam] = useQueryState("filter", "");
   const filterObj = filterParam === "" ? undefined : JSON.parse(filterParam);
 
-  const handleFilterChange = (obj) => {
-    if (obj) {
-      setFilterParam(JSON.stringify(obj));
-    } else {
-      setFilterParam("");
+  const serverFilter = useMemo(() => {
+    if (filterObj && filterObj.columnName && filterObj.substring) {
+      return {
+        filterField: filterObj.columnName,
+        filterValue: filterObj.substring,
+      };
     }
-  };
+    return null;
+  }, [filterObj]);
+
+  const pagination = { start: (page - 1) * rowsPerPage, size: rowsPerPage };
+
+  const { data, isFetching } = useLatestWorkflowDefs(pagination, serverFilter);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const handleFilterChange = useCallback(
+    _.debounce((obj) => {
+      setPage(1);
+      if (obj) {
+        setFilterParam(JSON.stringify(obj));
+      } else {
+        setFilterParam("");
+      }
+    }, 300),
+    []
+  );
 
   const workflows = useMemo(() => {
-    // Extract latest versions only
     if (data) {
-      const unique = new Map();
-      const types = new Set();
-      for (let workflowDef of data) {
-        if (!unique.has(workflowDef.name)) {
-          unique.set(workflowDef.name, workflowDef);
-        } else if (unique.get(workflowDef.name).version < workflowDef.version) {
-          unique.set(workflowDef.name, workflowDef);
-        }
-
-        for (let task of workflowDef.tasks) {
-          types.add(task.type);
-        }
-      }
-
-      return Array.from(unique.values());
+      return data.results || data;
     }
   }, [data]);
+
+  const handlePageChange = useCallback((newPage) => {
+    setPage(newPage);
+  }, []);
+
+  const handleRowsPerPageChange = useCallback((newPerPage) => {
+    setRowsPerPage(newPerPage);
+    setPage(1);
+  }, []);
+
+  const totalRows = data?.totalHits || 0;
 
   return (
     <div className={classes.wrapper}>
@@ -124,7 +140,7 @@ export default function WorkflowDefinitions() {
 
         {workflows && (
           <DataTable
-            title={`${workflows.length} results`}
+            title={`${totalRows} results`}
             localStorageKey="definitionsTable"
             defaultShowColumns={[
               "name",
@@ -140,6 +156,12 @@ export default function WorkflowDefinitions() {
             initialFilterObj={filterObj}
             data={workflows}
             columns={columns}
+            paginationServer
+            paginationTotalRows={totalRows}
+            paginationPerPage={rowsPerPage}
+            paginationDefaultPage={page}
+            onChangePage={handlePageChange}
+            onChangeRowsPerPage={handleRowsPerPageChange}
           />
         )}
       </div>
