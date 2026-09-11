@@ -154,6 +154,35 @@ public class ApplicationExceptionMapperTest {
                 new HttpRequestMethodNotSupportedException("GET"), status().isMethodNotAllowed());
     }
 
+    @Test
+    public void testClientDisconnectNotLoggedAsError() throws Exception {
+        var disconnect =
+                new org.springframework.web.context.request.async.AsyncRequestNotUsableException(
+                        "ServletOutputStream failed to write");
+        doThrow(disconnect).when(this.queueAdminResource).update(any(), any(), any(), any());
+
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andDo(print());
+
+        // must NOT be logged at ERROR (reserved for genuine 5xx server faults)
+        verify(logger, never()).error(any(), any(), any(), any());
+        // recorded at WARN instead
+        verify(logger, atLeastOnce())
+                .warn(
+                        eq(
+                                "Client disconnected before response was written. url: '{}', exception: {}"),
+                        eq("/api/queue/update/workflowId/taskRefName/SKIPPED"),
+                        eq("AsyncRequestNotUsableException"));
+    }
+
     private void assertLoggedAtWarn(Exception exception, ResultMatcher expectedStatus)
             throws Exception {
         // logger is a static mock reused across assertions; start each one clean.
