@@ -110,16 +110,11 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.addOutput("evaluationResult", List.of(evalResult));
         switchTask.addOutput("selectedCase", evalResult);
         switchTask.setStartTime(System.currentTimeMillis());
-        switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
+        switchTask.setStatus(TaskModel.Status.COMPLETED);
         tasksToBeScheduled.add(switchTask);
 
         // get the list of tasks based on the evaluated expression
-        List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);
-        // fall back to defaultCase only when no case key matched (null); an explicitly empty case
-        // list means the branch intentionally has no tasks and should not execute the default
-        if (selectedTasks == null) {
-            selectedTasks = workflowTask.getDefaultCase();
-        }
+        List<WorkflowTask> selectedTasks = getSwitchCaseTasks(workflowTask, evalResult);
         // once there are selected tasks that need to proceeded as part of the switch, get the next
         // task to be scheduled by using the decider service
         if (selectedTasks != null && !selectedTasks.isEmpty()) {
@@ -139,5 +134,29 @@ public class SwitchTaskMapper implements TaskMapper {
             switchTask.getInputData().put("hasChildren", "true");
         }
         return tasksToBeScheduled;
+    }
+
+    /**
+     * Resolves the list of tasks for the evaluated case. Falls back to the {@link
+     * WorkflowTask#getDefaultCase()} only when no case key matches the evaluated result
+     * (case-insensitively); an explicitly empty case list means the branch intentionally has no
+     * tasks and must not execute the default case.
+     */
+    protected static List<WorkflowTask> getSwitchCaseTasks(
+            WorkflowTask workflowTask, String evalResult) {
+        List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);
+
+        boolean defaultOrNonExistentCase =
+                workflowTask.getDecisionCases().entrySet().stream()
+                        .noneMatch(
+                                entry ->
+                                        entry.getKey() != null
+                                                && entry.getKey().equalsIgnoreCase(evalResult));
+
+        // If the case is default or non-existent always go to defaultCase
+        if (defaultOrNonExistentCase) {
+            selectedTasks = workflowTask.getDefaultCase();
+        }
+        return selectedTasks;
     }
 }
