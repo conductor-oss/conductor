@@ -2,6 +2,7 @@ import { Box, Tooltip } from "@mui/material";
 import {
   CopySimple as CopyIcon,
   Trash as DeleteIcon,
+  Tag as TagIcon,
 } from "@phosphor-icons/react";
 import { Button, DataTable, IconButton, NavLink, Paper } from "components";
 import { FilterObjectItem } from "components/ui/DataTable/state";
@@ -32,6 +33,8 @@ import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
 import TagList from "components/ui/TagList";
+import TagChip from "components/ui/TagChip";
+import AddTagDialog from "components/features/tags/AddTagDialog";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
 
@@ -39,22 +42,64 @@ const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as n
 
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
-const toTagDtos = (tags?: string[]): TagDto[] =>
-  (tags || []).map((tag) => ({
-    key: "capability",
-    value: tag,
-    type: "METADATA",
-  }));
+// AgentSummary.tags carries compiler-derived capabilities (`tool-calling`,
+// `multi-agent-*`, `simple`) — not user tags. They describe how an agent is composed,
+// are recomputed on every deploy, and are not grantable. Rendered as bare chips in
+// their own column: they have no key, so TagList's `key:value` label would read
+// "capability:tool-calling" under a column already titled Capabilities.
+const CapabilityList = ({
+  capabilities,
+  name,
+}: {
+  capabilities?: string[];
+  name: string;
+}) => {
+  if (!capabilities?.length) return null;
+  return (
+    <Box>
+      {capabilities.map((capability) => (
+        <TagChip
+          key={`${name}-${capability}`}
+          sx={{ mr: 2, mt: 1 }}
+          label={capability}
+        />
+      ))}
+    </Box>
+  );
+};
+
+/**
+ * "Tag" means three different things around agents; this page shows two of them:
+ *
+ *  - capabilities — `AgentSummary.tags`, derived by the compiler from the agent's shape,
+ *    recomputed on every deploy, read-only. Shown in the Capabilities column.
+ *  - RBAC tags — key/value pairs authored by a user, stored separately, and the unit
+ *    permissions are granted against. Fetched from /agent/tags. Shown in the Tags column.
+ *  - A2A skill tags — what `AgentSummary.tags` feeds on the agent card, unrelated to either
+ *    of the above beyond sharing the word.
+ *
+ * The row field is named rbacTags rather than tags so the distinction survives contact with
+ * `AgentSummary.tags`, which sits right beside it and means something else entirely.
+ */
+type AgentRow = AgentSummary & { rbacTags: TagDto[] };
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
   const { isTrialExpired } = useAuth();
+  // Gates RBAC tags, not capabilities: named tagsEnabled to match the other definition
+  // pages that read the same flag. Off in OSS, where there is no tag store.
   const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
   const { data, isFetching, refetch } = useFetch<AgentSummary[]>("/agent/list");
+  // Bulk user tags keyed by agent name. Gated on the tag feature: the endpoint is
+  // orkes-only, and OSS has no tag store at all.
+  const { data: rbacTagsByAgent, refetch: refetchTags } = useFetch<
+    Record<string, TagDto[]>
+  >("/agent/tags", { when: tagsEnabled });
   const { setMessage } = useContext(MessageContext);
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AgentSummary | null>(null);
   const [agentToClone, setAgentToClone] = useState<AgentSummary | null>(null);
+  const [agentToTag, setAgentToTag] = useState<AgentRow | null>(null);
   const [
     { filterParam, pageParam, searchParam },
     { setFilterParam, setSearchParam, handlePageChange },
@@ -100,19 +145,32 @@ export default function AgentDefinitions() {
         grow: 2,
         tooltip: "The description of the workflow",
       },
+      {
+        id: "workflow_tags",
+        name: "tags",
+        label: "Capabilities",
+        searchable: true,
+        searchableFunc: (capabilities: string[]) => (capabilities || []).join(", "),
+        renderer: (capabilities: string[], row: AgentSummary) => (
+          <CapabilityList capabilities={capabilities} name={row.name} />
+        ),
+        grow: 2,
+        tooltip: "How the agent is composed, derived by the compiler",
+      },
       ...(tagsEnabled
         ? ([
             {
-              id: "workflow_tags",
-              name: "tags",
+              id: "agent_rbac_tags",
+              name: "rbacTags",
               label: "Tags",
               searchable: true,
-              searchableFunc: (tags: string[]) => (tags || []).join(", "),
-              renderer: (tags: string[], row: AgentSummary) => (
-                <TagList tags={toTagDtos(tags)} name={row.name} />
+              searchableFunc: (tags: TagDto[]) =>
+                (tags || []).map((t) => `${t.key}:${t.value}`).join(", "),
+              renderer: (tags: TagDto[], row: AgentSummary) => (
+                <TagList tags={tags || []} name={row.name} />
               ),
               grow: 2,
-              tooltip: "The tags associated with the workflow",
+              tooltip: "Tags applied to this agent. Permissions can be granted on a tag.",
             },
           ] as LegacyColumn[])
         : []),
@@ -239,6 +297,18 @@ export default function AgentDefinitions() {
                 <PlayIcon size={22} />
               </IconButton>
             </Tooltip>
+            {tagsEnabled && (
+              <Tooltip title="Add/Edit tags">
+                <IconButton
+                  id={`add-tags-${agent.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() => setAgentToTag(agent as AgentRow)}
+                  size="small"
+                >
+                  <TagIcon size={20} />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Clone Agent">
               <IconButton
                 id={`clone-${agent.name}-btn`}
@@ -272,9 +342,13 @@ export default function AgentDefinitions() {
     [setFilterParam],
   );
 
-  const tableData = useMemo<AgentSummary[]>(
-    () => (Array.isArray(data) ? data : []),
-    [data],
+  const tableData = useMemo<AgentRow[]>(
+    () =>
+      (Array.isArray(data) ? data : []).map((agent) => ({
+        ...agent,
+        rbacTags: rbacTagsByAgent?.[agent.name] ?? [],
+      })),
+    [data, rbacTagsByAgent],
   );
 
   return (
@@ -282,6 +356,24 @@ export default function AgentDefinitions() {
       <Helmet>
         <title>Agent Definitions</title>
       </Helmet>
+      {/* Agent tags live under ResourceType.AGENT. The dialog's default
+          /metadata/{itemType}/{name}/tags path would write a WORKFLOW_DEF-typed
+          row, which the AGENT-typed permission checks never see, so apiPath is
+          pointed at the agent surface instead. */}
+      {tagsEnabled && agentToTag && (
+        <AddTagDialog
+          open
+          itemName={agentToTag.name}
+          itemType="agent"
+          tags={agentToTag.rbacTags || []}
+          apiPath={`/agent/${encodeURIComponent(agentToTag.name)}/tags`}
+          onClose={() => setAgentToTag(null)}
+          onSuccess={() => {
+            setAgentToTag(null);
+            refetchTags();
+          }}
+        />
+      )}
       {agentToClone && (
         <CloneAgentDialog
           selectedAgent={agentToClone}
@@ -359,7 +451,8 @@ export default function AgentDefinitions() {
             defaultShowColumns={[
               "workflow_name",
               "workflow_description",
-              ...(tagsEnabled ? ["workflow_tags"] : []),
+              "workflow_tags",
+              ...(tagsEnabled ? ["agent_rbac_tags"] : []),
               "latest_version",
               "create_time",
               "owner_email",
