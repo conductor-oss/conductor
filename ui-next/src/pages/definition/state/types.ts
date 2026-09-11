@@ -355,4 +355,7 @@ export interface DefinitionMachineContext {
   importSummary?: ImportSummary;
   runTabFormState?: RunWorkflowFields;
   isAgentExpanded?: boolean;
+  // Set while the user is heading to the run tab to edit inputs before executing,
+  // so the run tab knows to focus its input editor.
+  runWithInputs?: boolean;
 }
