@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -93,6 +94,56 @@ public class WorkflowFunctionalTest extends FunctionalTestBase {
                             Workflow wf = workflowClient.getWorkflow(workflowId, true);
                             assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
                             assertEquals(2, wf.getTasks().size());
+                        });
+    }
+
+    @Test
+    public void testHumanTaskWorkflowDefersThenCompletes() {
+        // Workflow whose only work is a HUMAN task. The sweeper DEFERS it (parked only on the
+        // human) instead of removing it from the decider queue; completing the human must still
+        // wake and complete the workflow promptly. If deferral stranded it, this test times out.
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("func_test_human_defer");
+        workflowDef.setVersion(1);
+        workflowDef.setOwnerEmail(OWNER_EMAIL);
+        workflowDef.setTimeoutSeconds(120);
+        WorkflowTask human = new WorkflowTask();
+        human.setName("func_human");
+        human.setTaskReferenceName("human_ref");
+        human.setWorkflowTaskType(TaskType.HUMAN);
+        workflowDef.getTasks().add(human);
+        metadataClient.registerWorkflowDef(workflowDef);
+
+        String workflowId =
+                workflowClient.startWorkflow(
+                        new StartWorkflowRequest().withName("func_test_human_defer"));
+        assertNotNull(workflowId);
+
+        // Parked on the HUMAN task -> RUNNING with the human IN_PROGRESS.
+        await().atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
+                            assertEquals(1, wf.getTasks().size());
+                            assertEquals(Task.Status.IN_PROGRESS, wf.getTasks().get(0).getStatus());
+                        });
+
+        // Complete the HUMAN task.
+        Task humanTask = workflowClient.getWorkflow(workflowId, true).getTasks().get(0);
+        TaskResult result = new TaskResult();
+        result.setWorkflowInstanceId(workflowId);
+        result.setTaskId(humanTask.getTaskId());
+        result.setStatus(TaskResult.Status.COMPLETED);
+        taskClient.updateTask(result);
+
+        // Workflow wakes and completes promptly (deferral kept it in the queue, updateTask
+        // decides).
+        await().atMost(15, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            Workflow wf = workflowClient.getWorkflow(workflowId, true);
+                            assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
                         });
     }
 
