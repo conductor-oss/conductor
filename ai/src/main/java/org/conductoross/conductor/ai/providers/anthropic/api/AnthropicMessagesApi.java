@@ -56,7 +56,7 @@ public class AnthropicMessagesApi {
     public AnthropicMessagesApi(
             OkHttpClient httpClient, String apiKey, String baseUrl, String anthropicVersion) {
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.anthropic.com";
-        this.apiKey = apiKey;
+        this.apiKey = apiKey != null ? apiKey.strip() : null;
         this.anthropicVersion = anthropicVersion != null ? anthropicVersion : DEFAULT_VERSION;
         this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
