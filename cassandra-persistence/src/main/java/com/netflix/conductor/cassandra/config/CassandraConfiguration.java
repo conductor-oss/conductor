@@ -52,7 +52,15 @@ public class CassandraConfiguration {
 
         LOGGER.info("Connecting to cassandra cluster with host:{}, port:{}", host, port);
 
-        Cluster cluster = Cluster.builder().addContactPoint(host).withPort(port).build();
+        Cluster.Builder builder = Cluster.builder().addContactPoint(host).withPort(port);
+        if (properties.getUsername() != null && !properties.getUsername().isBlank()) {
+            LOGGER.info(
+                    "Using credentials-based authentication for cassandra user:{}",
+                    properties.getUsername());
+            builder.withCredentials(properties.getUsername(), properties.getPassword());
+        }
+
+        Cluster cluster = builder.build();
 
         Metadata metadata = cluster.getMetadata();
         LOGGER.info("Connected to cluster: {}", metadata.getClusterName());
