@@ -60,7 +60,25 @@ public final class ConductorAgentResults {
     /** The pending tool/human request surfaced while waiting. */
     public static final String KEY_PENDING_TOOL = "pendingTool";
 
+    /** Every tool call the agent is blocked on, when it asked for more than one. */
+    public static final String KEY_PENDING_TOOLS = "pendingTools";
+
+    /**
+     * Handle for a batch of tool calls being run on the agent's behalf. Present only while that
+     * batch is in flight, and the reason the AGENT task can stay IN_PROGRESS across replicas.
+     */
+    public static final String KEY_TOOL_DISPATCH_ID = "toolDispatchId";
+
+    /**
+     * The workflow running this agent's tools. Named to match the SUB_WORKFLOW system task's own
+     * output, which is what the execution view keys its drill-in link off.
+     */
+    public static final String KEY_SUB_WORKFLOW_ID = "subWorkflowId";
+
     /** Latest/final text emitted by the agent. */
+    /** Tool calls the platform ran itself, with the input each was given. */
+    public static final String KEY_EXECUTED_TOOLS = "executedTools";
+
     public static final String KEY_TEXT = "text";
 
     /** Structured output of a completed run. */
@@ -80,6 +98,43 @@ public final class ConductorAgentResults {
         if (execution.getText() != null) {
             outputData.put(KEY_TEXT, execution.getText());
         }
+        writeExecutedTools(outputData, execution);
+    }
+
+    /**
+     * Records the tools the platform ran itself, keeping what earlier turns reported.
+     *
+     * <p>A run reports these per turn, and a turn that pauses for a function has usually run some
+     * getting there. Overwriting rather than accumulating would leave only the last turn's, so the
+     * work an agent did on the way to its answer would disappear as it went.
+     */
+    public static void writeExecutedTools(
+            Map<String, Object> outputData, ConductorAgentExecution execution) {
+        if (execution.getExecutedTools() == null || execution.getExecutedTools().isEmpty()) {
+            return;
+        }
+        List<Object> all = new ArrayList<>();
+        Object existing = outputData.get(KEY_EXECUTED_TOOLS);
+        if (existing instanceof List<?> list) {
+            all.addAll(list);
+        }
+        all.addAll(execution.getExecutedTools());
+        outputData.put(KEY_EXECUTED_TOOLS, all);
+    }
+
+    /**
+     * Marks the outstanding tool batch as finished with.
+     *
+     * <p>Empties rather than removes. An agent task's output reaches the store by merging the
+     * worker's returned object over what is already there, and a null field is omitted from that
+     * merge entirely - so removing a key leaves the old value in place. An empty value overwrites
+     * it, and every reader treats blank as absent.
+     */
+    public static void clearToolBatch(Map<String, Object> outputData) {
+        outputData.put(KEY_TOOL_DISPATCH_ID, "");
+        outputData.put(KEY_PENDING_TOOL, Map.of());
+        outputData.put(KEY_PENDING_TOOLS, List.of());
+        outputData.put(KEY_WAITING, false);
     }
 
     /**

@@ -82,7 +82,7 @@ public final class KnownProviderEnvVars {
                     "BEDROCK_API_KEY",
                     "BEDROCK_AGENT_ID",
                     "BEDROCK_AGENT_ALIAS_ID",
-                    // Azure Foundry / Entra ID
+                    // Microsoft Foundry / Entra ID
                     "AZURE_CLIENT_ID",
                     "AZURE_CLIENT_SECRET",
                     "AZURE_TENANT_ID",

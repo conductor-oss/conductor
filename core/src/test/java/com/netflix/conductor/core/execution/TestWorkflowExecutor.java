@@ -2475,6 +2475,72 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testScheduleDynamicTasksSchedulesTasksTheDefinitionDoesNotDeclare() {
+        // What an agent needs: run the tools its model just asked for, none of which the author
+        // could have written into the definition.
+        WorkflowModel workflow = generateSampleWorkflow();
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        int before = workflow.getTasks().size();
+
+        // No TaskDef registered, which is the normal case: a tool task is named after the tool the
+        // model asked for, and nobody registered that name up front.
+        WorkflowTask tool = new WorkflowTask();
+        tool.setType(TaskType.TASK_TYPE_SIMPLE);
+        tool.setName("get_revenue");
+        tool.setTaskReferenceName("agent_ref__t1__call_1");
+
+        List<TaskModel> scheduled = workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+
+        assertEquals(1, scheduled.size());
+        assertEquals("agent_ref__t1__call_1", scheduled.get(0).getReferenceTaskName());
+        assertEquals(TaskModel.Status.SCHEDULED, scheduled.get(0).getStatus());
+        assertEquals(before + 1, workflow.getTasks().size());
+        verify(executionDAOFacade).createTasks(anyList());
+        // Persisted is not enough - a task nothing polls for never runs. addTaskToQueue swallows
+        // its own failures, so this is the only place the push is visible.
+        verify(queueDAO).push(eq("get_revenue"), anyString(), anyInt(), anyLong());
+    }
+
+    @Test
+    public void testScheduleDynamicTasksRefusesATerminalWorkflow() {
+        // The caller runs on a worker thread with no execution lock, so the workflow can finish
+        // underneath it. Queueing tools into a dead run would still run them.
+        WorkflowModel workflow = generateSampleWorkflow();
+        workflow.setStatus(WorkflowModel.Status.TERMINATED);
+
+        WorkflowTask tool = new WorkflowTask();
+        tool.setType(TaskType.TASK_TYPE_SIMPLE);
+        tool.setName("get_revenue");
+        tool.setTaskReferenceName("agent_ref__t1__call_1");
+
+        assertTrue(workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool)).isEmpty());
+        verify(executionDAOFacade, never()).createTasks(anyList());
+    }
+
+    @Test
+    public void testScheduleDynamicTasksIgnoresARepeatedReferenceName() {
+        // dedupAndAddTasks keys on refName + retryCount, so a second round has to use fresh names.
+        // Proving the drop is silent is what makes the naming rule worth following.
+        WorkflowModel workflow = generateSampleWorkflow();
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+
+        WorkflowTask tool = new WorkflowTask();
+        tool.setType(TaskType.TASK_TYPE_SIMPLE);
+        tool.setName("get_revenue");
+        tool.setTaskReferenceName("agent_ref__t1__call_1");
+        tool.setTaskDefinition(new TaskDef());
+
+        workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+        int afterFirst = workflow.getTasks().size();
+        List<TaskModel> second = workflowExecutor.scheduleDynamicTasks(workflow, List.of(tool));
+
+        // The returned list is the caller's only signal that nothing happened.
+        assertTrue(second.isEmpty());
+        assertEquals(afterFirst, workflow.getTasks().size());
+        verify(executionDAOFacade, times(1)).createTasks(anyList());
+    }
+
+    @Test
     public void testCancelNonTerminalTasks() {
         WorkflowDef def = new WorkflowDef();
         def.setWorkflowStatusListenerEnabled(true);

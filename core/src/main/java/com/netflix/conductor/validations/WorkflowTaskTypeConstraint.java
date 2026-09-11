@@ -114,6 +114,9 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_WAIT:
                     valid = isWaitTaskValid(workflowTask, context);
                     break;
+                case TaskType.TASK_TYPE_AGENT:
+                    valid = isAgentTaskValid(workflowTask, context);
+                    break;
             }
 
             return valid;
@@ -403,6 +406,54 @@ public @interface WorkflowTaskTypeConstraint {
             }
 
             return valid;
+        }
+
+        /**
+         * An AGENT task on any runtime other than A2A carries the message in {@code prompt}, and
+         * nowhere else: unlike the A2A path it does not fall back to {@code text}, {@code parts} or
+         * {@code message}. Without it the task fails at run time, on a workflow that may already
+         * have done real work, so it is rejected at save instead.
+         *
+         * <p>A2A is left alone here, taking any of four fields, and an {@code agentType} that is
+         * itself an expression is not judged, since what it resolves to is unknowable until the
+         * workflow runs.
+         */
+        private boolean isAgentTaskValid(
+                WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            Map<String, Object> inputParameters = workflowTask.getInputParameters();
+            Object agentType = inputParameters == null ? null : inputParameters.get("agentType");
+            String declared = agentType == null ? "" : agentType.toString().trim();
+            if (declared.isEmpty() || declared.contains("${") || "a2a".equalsIgnoreCase(declared)) {
+                return true;
+            }
+
+            if (isNotBlank(inputParameters.get("prompt"))) {
+                return true;
+            }
+
+            TaskDef taskDef =
+                    Optional.ofNullable(workflowTask.getTaskDefinition())
+                            .orElse(
+                                    ValidationContext.getMetadataDAO()
+                                            .getTaskDef(workflowTask.getName()));
+            if (taskDef != null
+                    && taskDef.getInputTemplate() != null
+                    && isNotBlank(taskDef.getInputTemplate().get("prompt"))) {
+                return true;
+            }
+
+            context.buildConstraintViolationWithTemplate(
+                            String.format(
+                                    PARAM_REQUIRED_STRING_FORMAT,
+                                    "inputParameters.prompt",
+                                    TaskType.AGENT + " with agentType '" + declared + "'",
+                                    workflowTask.getName()))
+                    .addConstraintViolation();
+            return false;
+        }
+
+        private static boolean isNotBlank(Object value) {
+            return value != null && !value.toString().trim().isEmpty();
         }
 
         private boolean isHttpTaskValid(
