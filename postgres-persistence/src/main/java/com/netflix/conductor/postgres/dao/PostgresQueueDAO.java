@@ -141,7 +141,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         final String SQL =
                 "SELECT message_id FROM queue_message "
                         + "WHERE queue_name = ? AND popped = false "
-                        + "ORDER BY deliver_on, priority DESC, created_on LIMIT ?";
+                        + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
         return queryWithTransaction(
                 SQL,
                 q -> q.addParameter(queueName).addParameter(count).executeScalarList(String.class));
@@ -489,7 +489,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                         + "    WHERE queue_name = ? "
                         + "      AND popped = false "
                         + "      AND deliver_on <= (current_timestamp + (1000 || ' microseconds')::interval) "
-                        + "    ORDER BY deliver_on, priority DESC, created_on "
+                        + "    ORDER BY priority DESC, deliver_on, created_on "
                         + "    LIMIT ? "
                         + "    FOR UPDATE SKIP LOCKED "
                         + ") "
