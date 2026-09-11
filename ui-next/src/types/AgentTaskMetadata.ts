@@ -1,4 +1,4 @@
-export type AgentRuntimeType = "a2a" | "conductor";
+export type AgentRuntimeType = "a2a" | "conductor" | "bedrock" | "azure-foundry";
 
 export interface A2AAgentInterface {
   url?: string;
