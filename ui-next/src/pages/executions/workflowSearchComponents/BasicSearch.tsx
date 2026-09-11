@@ -20,6 +20,7 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
+import { useWorkflowSearchFilters } from "../useWorkflowSearchFilters";
 import { Key } from "ts-key-enum";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
@@ -60,10 +61,8 @@ export interface BasicSearchProps {
   setStartTimeTo: (val: string) => void;
   onStartToChange: (val: string) => void;
   endTimeFrom: string;
-  setEndTimeFrom: (val: string) => void;
   onEndFromChange: (val: string) => void;
   endTimeTo: string;
-  setEndTimeTo: (val: string) => void;
   onEndToChange: (val: string) => void;
   fromDisplayTime: string;
   setFromDisplayTime: (val: string) => void;
@@ -102,10 +101,8 @@ export default function BasicSearch({
   setStartTimeTo,
   onStartToChange,
   endTimeFrom,
-  setEndTimeFrom,
   onEndFromChange,
   endTimeTo,
-  setEndTimeTo,
   onEndToChange,
   fromDisplayTime,
   setFromDisplayTime,
@@ -123,26 +120,23 @@ export default function BasicSearch({
   excludeSubLabel,
 }: BasicSearchProps) {
   const [page, setPage] = useQueryState("page", 1);
-  const [workflowType, setWorkflowType] = useQueryState<string[]>(
-    "workflowType",
-    [],
-  );
-  const [workflowId, setWorkflowId] = useQueryState("workflowId", "");
-  const [correlationIds, setCorrelationIds] = useQueryState<string[]>(
-    "correlationIds",
-    [],
-  );
-  const [idempotencyKey, setIdempotencyKey] = useQueryState<string[]>(
-    "idempotencyKey",
-    [],
-  );
-  const [excludeSubExecutions, setExcludeSubExecutions] = useQueryState(
-    "excludeSubExecutions",
-    false,
-  );
-
-  const [modifiedFrom, setModifiedFrom] = useQueryState("modifiedFrom", "");
-  const [modifiedTo, setModifiedTo] = useQueryState("modifiedTo", "");
+  // Filter keys live in useWorkflowSearchFilters so they are declared once
+  // rather than in each search mode.
+  const {
+    workflowType,
+    setWorkflowType,
+    workflowId,
+    setWorkflowId,
+    correlationIds,
+    setCorrelationIds,
+    idempotencyKey,
+    setIdempotencyKey,
+    excludeSubExecutions,
+    setExcludeSubExecutions,
+    modifiedFrom,
+    modifiedTo,
+    resetFilters,
+  } = useWorkflowSearchFilters();
 
   const [rowsPerPage, setRowsPerPage] = useQueryState(
     "rowsPerPage",
@@ -180,19 +174,9 @@ export default function BasicSearch({
   };
 
   const clearAllFields = () => {
-    setWorkflowType([]);
-    setCorrelationIds([]);
-    setIdempotencyKey([]);
-    setWorkflowId("");
-    setStatus([]);
-    setStartTimeFrom("");
-    setStartTimeTo("");
-    setFreeText("");
-    setModifiedFrom("");
-    setModifiedTo("");
-    setEndTimeFrom("");
-    setEndTimeTo("");
-    setExcludeSubExecutions(false);
+    // Clears every filter, not just the ones this mode renders, so nothing
+    // reappears on switching to SQL format.
+    resetFilters();
     setToDisplayTime("Now");
     setFromDisplayTime("Last 72 Hours");
   };
@@ -220,6 +204,10 @@ export default function BasicSearch({
     error?: string;
   } | null>(null);
 
+  // The clause formats for the basic-only filters (workflow name/id,
+  // correlation ids, idempotency key, modified times, exclude sub-executions)
+  // are mirrored in basicFilterQuery.ts, which seeds the SQL box when the
+  // format toggle is switched on. Keep the two in sync.
   const buildQuery = useCallback(() => {
     const clauses = [];
     if (!_isEmpty(workflowType)) {
