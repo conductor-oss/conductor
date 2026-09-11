@@ -158,14 +158,10 @@ public class AsyncSystemTaskExecutor {
                 if (scheduled
                         && hasExceededResponseTimeout(task)
                         && !systemTask.isStartRetriable()) {
-                    // A blocking start() never leaves SCHEDULED, so a redelivered SCHEDULED task
-                    // past responseTimeout means its run overran: time it out, don't re-run it
-                    // (#1321). IN_PROGRESS response-timeouts are
-                    // DeciderService.isResponseTimedOut's
-                    // job (it budgets responseTimeout + callbackAfterSeconds).
-                    // Excluded: start-retriable tasks (e.g. SUB_WORKFLOW), whose start() may leave
-                    // the task SCHEDULED on a transient error or be cut short by a worker restart;
-                    // these fall through and re-run start() rather than being timed out (#1615).
+                    // A redelivered SCHEDULED task past responseTimeout means a blocking start()
+                    // overran: time it out, don't re-run it (#1321). Start-retriable tasks (e.g.
+                    // SUB_WORKFLOW) are excluded and re-run start() instead (#1615). IN_PROGRESS
+                    // response-timeouts are DeciderService.isResponseTimedOut's job.
                     task.setStatus(TaskModel.Status.TIMED_OUT);
                     task.setReasonForIncompletion(
                             "Task did not complete within its responseTimeout of "

@@ -330,11 +330,10 @@ public class SubWorkflow extends WorkflowSystemTask {
     }
 
     /**
-     * {@code start()} leaves the task SCHEDULED on a transient error (and can be cut short by a
-     * worker restart mid-launch), so a redelivered SCHEDULED sub-workflow task must be re-started,
-     * not timed out (issue #1615). Re-running is idempotent: the deterministic child id and the
-     * child-id lock in {@code startWorkflowIdempotent} collapse concurrent attempts onto the same
-     * child workflow.
+     * {@code start()} may leave the task SCHEDULED (transient error, or a worker restart
+     * mid-launch) and is idempotent to re-run (deterministic child id plus the child-id lock in
+     * {@code startWorkflowIdempotent}), so a redelivered SCHEDULED task should retry, not time out
+     * (#1615).
      */
     @Override
     public boolean isStartRetriable() {
