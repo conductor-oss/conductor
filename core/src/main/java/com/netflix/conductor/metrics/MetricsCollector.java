@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.metrics;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,7 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class MetricsCollector {
 
-    public MetricsCollector(MeterRegistry... registries) {
+    public MetricsCollector(
+            @Value("${conductor.metrics.workflow-name-tag.enabled:true}")
+                    boolean workflowNameTagEnabled,
+            MeterRegistry... registries) {
+        Monitors.setWorkflowNameTagEnabled(workflowNameTagEnabled);
         log.info("=========");
         log.info("Conductor configured with {} metrics registries", registries.length);
         for (MeterRegistry registry : registries) {
