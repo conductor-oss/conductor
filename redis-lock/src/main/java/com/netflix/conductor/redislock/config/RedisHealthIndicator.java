@@ -13,9 +13,9 @@
 package com.netflix.conductor.redislock.config;
 
 import org.redisson.api.RedissonClient;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

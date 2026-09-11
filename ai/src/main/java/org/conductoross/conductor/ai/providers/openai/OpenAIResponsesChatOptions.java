@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.providers.openai;
 
 import java.util.List;
 
+import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
 import org.conductoross.conductor.ai.providers.openai.api.OpenAIResponsesApi;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
@@ -50,20 +51,23 @@ public class OpenAIResponsesChatOptions implements ChatOptions {
     }
 
     @Override
-    public ChatOptions copy() {
-        return OpenAIResponsesChatOptions.builder()
-                .model(model)
-                .temperature(temperature)
-                .topP(topP)
-                .maxTokens(maxTokens)
-                .frequencyPenalty(frequencyPenalty)
-                .presencePenalty(presencePenalty)
-                .stopSequences(stopSequences)
-                .previousResponseId(previousResponseId)
-                .reasoningEffort(reasoningEffort)
-                .reasoningSummary(reasoningSummary)
-                .jsonOutput(jsonOutput)
-                .responsesApiTools(responsesApiTools)
-                .build();
+    public ChatOptions.Builder<?> mutate() {
+        return ProviderChatOptionsBuilder.from(
+                this,
+                fields ->
+                        OpenAIResponsesChatOptions.builder()
+                                .model(fields.model())
+                                .temperature(fields.temperature())
+                                .topP(fields.topP())
+                                .maxTokens(fields.maxTokens())
+                                .frequencyPenalty(fields.frequencyPenalty())
+                                .presencePenalty(fields.presencePenalty())
+                                .stopSequences(fields.stopSequences())
+                                .previousResponseId(previousResponseId)
+                                .reasoningEffort(reasoningEffort)
+                                .reasoningSummary(reasoningSummary)
+                                .jsonOutput(jsonOutput)
+                                .responsesApiTools(responsesApiTools)
+                                .build());
     }
 }

@@ -5,19 +5,19 @@ dependencies {
     implementation project(':conductor-postgres-persistence')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.retry:spring-retry'
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "org.apache.commons:commons-lang3"
     implementation "org.postgresql:postgresql:${revPostgres}"
-    implementation "org.flywaydb:flyway-core:${revFlyway}"
-    implementation "org.flywaydb:flyway-database-postgresql:${revFlyway}"
+    implementation "org.flywaydb:flyway-core"
+    implementation "org.springframework.boot:spring-boot-flyway"
+    implementation "org.springframework.boot:spring-boot-jdbc"
+    implementation "org.flywaydb:flyway-database-postgresql"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.testcontainers:postgresql:${revTestContainer}"
     testImplementation testFixtures(project(':conductor-scheduler-core'))
 }

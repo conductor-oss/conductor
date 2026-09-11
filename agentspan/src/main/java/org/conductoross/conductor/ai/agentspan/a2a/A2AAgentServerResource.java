@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A2A server endpoints for native Conductor agents. Exposes agentspan agents as A2A agents. Routes:
@@ -104,7 +104,7 @@ public class A2AAgentServerResource {
         if (properties.getPublicUrl() != null && !properties.getPublicUrl().isBlank()) {
             return properties.getPublicUrl();
         }
-        return UriComponentsBuilder.fromHttpUrl(request.getRequestURL().toString())
+        return UriComponentsBuilder.fromUriString(request.getRequestURL().toString())
                 .replacePath(null)
                 .replaceQuery(null)
                 .build()

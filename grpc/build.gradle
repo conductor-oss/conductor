@@ -34,27 +34,26 @@ dependencies {
     implementation "io.grpc:grpc-protobuf:${revGrpc}"
     implementation "io.grpc:grpc-stub:${revGrpc}"
     implementation "io.grpc:grpc-xds:${revGrpc}"
-    implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
+    implementation "jakarta.annotation:jakarta.annotation-api"
     implementation "javax.annotation:javax.annotation-api:1.3.2" //Needs to be added as a workaround for the generated tags
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
     implementation "com.fasterxml.jackson.core:jackson-annotations"
 
 }
 
-// PINNED (#964): protoc must match protobuf-java 3.x used by grpc-protobuf:1.75.0.
-// Using protoc 4.x generates code incompatible with the 3.x runtime.
+// protoc is kept in step with revProtoBuf so generated code and runtime agree.
 // See: https://github.com/grpc/grpc-java/issues/12246
-def artifactName = 'com.google.protobuf:protoc:3.25.5'
+def artifactName = "com.google.protobuf:protoc:${revProtoBuf}"
 switch (org.gradle.internal.os.OperatingSystem.current()) {
     case org.gradle.internal.os.OperatingSystem.LINUX:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:${revProtoBuf}"
         break;
     case org.gradle.internal.os.OperatingSystem.MAC_OS:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:${revProtoBuf}"
         break;
     case org.gradle.internal.os.OperatingSystem.WINDOWS:
-        artifactName = "com.google.protobuf:protoc:3.25.5"
+        artifactName = "com.google.protobuf:protoc:${revProtoBuf}"
         break;
 }
 

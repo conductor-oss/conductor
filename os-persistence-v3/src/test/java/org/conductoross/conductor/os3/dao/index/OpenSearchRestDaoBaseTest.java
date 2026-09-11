@@ -27,7 +27,7 @@ import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {
 
@@ -46,7 +46,8 @@ public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {
         restClient = restClientBuilder.build();
 
         RestClientTransport transport =
-                new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+                new RestClientTransport(
+                        restClient, new JacksonJsonpMapper(transportObjectMapper()));
         OpenSearchClient openSearchClient = new OpenSearchClient(transport);
 
         indexDAO =
@@ -81,5 +82,20 @@ public abstract class OpenSearchRestDaoBaseTest extends OpenSearchTest {
             System.out.println("Deleting index: " + endpoint);
             restClient.performRequest(new Request("DELETE", endpoint));
         }
+    }
+
+    /**
+     * The OpenSearch java client serialises with Jackson 2 and cannot take the Jackson 3 mapper the
+     * DAO uses, so the transport gets its own. Mirrors OpenSearchConfiguration.
+     */
+    private static com.fasterxml.jackson.databind.ObjectMapper transportObjectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false);
+        mapper.setSerializationInclusion(
+                com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        return mapper;
     }
 }

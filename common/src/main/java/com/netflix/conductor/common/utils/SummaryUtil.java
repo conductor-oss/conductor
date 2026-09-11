@@ -21,9 +21,9 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class SummaryUtil {
@@ -55,7 +55,7 @@ public class SummaryUtil {
 
         try {
             return objectMapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             logger.error(
                     "The provided value ({}) could not be serialized as Json",
                     object.toString(),

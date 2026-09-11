@@ -30,7 +30,6 @@ import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.NotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.SCHEMA;
@@ -65,18 +64,19 @@ public class SchemaResource {
      * spring.jackson.deserialization.accept-single-value-as-array}. Taking a bare {@code SchemaDef}
      * here instead would reject the other three.
      *
-     * <p>{@code @Valid} here validates the list, not its elements — cascading into them would need
-     * {@code List<@Valid SchemaDef>} — so {@link SchemaDef}'s {@code @NotNull} on {@code type} is
-     * not enforced by it, and a schema with no type is stored. That is the behaviour to keep: the
-     * schema fields on task and workflow definitions carry no cascading validation either, so
-     * refusing a type-less schema only here would make the two paths disagree. {@code
-     * SchemaService.validate} reports it when such a schema is used. A missing name is still
-     * rejected, by the service, as a 400.
+     * <p>There is deliberately no {@code @Valid} on the body. Hibernate Validator 8 only validated
+     * the list itself, so {@link SchemaDef}'s {@code @NotNull} on {@code type} was never enforced
+     * here and a schema with no type was stored. Hibernate Validator 9, which arrives with Spring
+     * Boot 4, cascades into the elements instead, which would start rejecting those schemas. That
+     * is not the behaviour to keep: the schema fields on task and workflow definitions carry no
+     * cascading validation either, so refusing a type-less schema only here would make the two
+     * paths disagree. {@code SchemaService.validate} reports it when such a schema is used. A
+     * missing name is still rejected, by the service, as a 400.
      */
     @PostMapping
     @Operation(summary = "Save schema")
     public void save(
-            @Valid @RequestBody List<SchemaDef> schemas,
+            @RequestBody List<SchemaDef> schemas,
             @RequestParam(value = "newVersion", defaultValue = "false") boolean newVersion) {
         if (schemas == null) {
             return;

@@ -2128,7 +2128,7 @@ class MultiAgentCompilerTest {
         // SIMPLE. Drop = fail-open on a safety control; we want fail-closed.
         // The smallest way to force convertValue() to throw is a circular
         // reference in the tool's config map: Jackson stack-overflows /
-        // throws JsonMappingException trying to walk it.
+        // throws DatabindException trying to walk it.
         java.util.Map<String, Object> cyclic = new java.util.LinkedHashMap<>();
         cyclic.put("self", cyclic);
 

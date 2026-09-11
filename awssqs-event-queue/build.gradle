@@ -1,4 +1,7 @@
 dependencies {
+    implementation "tools.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation project(':conductor-common')
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'

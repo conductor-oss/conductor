@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableConfigurationProperties(KafkaWorkflowStatusPublisherProperties.class)

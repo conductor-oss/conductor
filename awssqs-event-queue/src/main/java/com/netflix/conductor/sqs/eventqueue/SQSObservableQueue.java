@@ -29,8 +29,6 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 import rx.Scheduler;
@@ -54,6 +52,8 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.SetQueueAttributesResponse;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class SQSObservableQueue implements ObservableQueue {
 
@@ -308,7 +308,7 @@ public class SQSObservableQueue implements ObservableQueue {
 
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.writeValueAsString(policy);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error("Failed to generate SQS policy for accounts: {}", accountIds, e);
             throw new RuntimeException("Failed to generate SQS policy", e);
         }

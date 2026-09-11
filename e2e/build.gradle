@@ -4,10 +4,15 @@ plugins {
 
 dependencies {
     testImplementation 'org.conductoross:conductor-client:6.0.0.rc3'
+    // Compat: these tests drive the published client SDK, which is built against Jackson 2. The
+    // client declares Jackson at runtime scope only, so the compile-time artifacts are named here.
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    testImplementation 'com.fasterxml.jackson.core:jackson-core'
+    testImplementation 'com.fasterxml.jackson.core:jackson-annotations'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'org.awaitility:awaitility'
     testImplementation 'org.apache.logging.log4j:log4j-slf4j2-impl'
     testImplementation 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'

@@ -18,14 +18,14 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.dao.PollDataDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqlitePollDataDAO extends SqliteBaseDAO implements PollDataDAO {
 

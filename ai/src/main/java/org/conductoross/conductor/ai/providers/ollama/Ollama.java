@@ -30,6 +30,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import com.google.common.primitives.Floats;
@@ -62,8 +63,7 @@ public class Ollama implements AIModel {
         OllamaApi api = buildOllamaApi();
         var options =
                 OllamaEmbeddingOptions.builder().model(embeddingGenRequest.getModel()).build();
-        var embeddingModel =
-                OllamaEmbeddingModel.builder().ollamaApi(api).defaultOptions(options).build();
+        var embeddingModel = OllamaEmbeddingModel.builder().ollamaApi(api).options(options).build();
         float[] embeddingsResponse =
                 embeddingModel
                         .embedForResponse(List.of(embeddingGenRequest.getText()))
@@ -90,8 +90,6 @@ public class Ollama implements AIModel {
                         .stop(input.getStopWords())
                         .frequencyPenalty(input.getFrequencyPenalty())
                         .toolCallbacks(toolCallbacks)
-                        .toolNames(toolNames)
-                        .internalToolExecutionEnabled(false)
                         .presencePenalty(input.getPresencePenalty());
 
         if (input.isJsonOutput()) {
@@ -112,12 +110,10 @@ public class Ollama implements AIModel {
     }
 
     private OllamaApi buildOllamaApi() {
-        OkHttpClient effective =
-                (config.getTimeout() != null)
-                        ? httpClient.newBuilder().readTimeout(config.getTimeout()).build()
-                        : httpClient;
-        var factory =
-                new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory();
+        if (config.getTimeout() != null) {
+            factory.setReadTimeout(config.getTimeout());
+        }
         RestClient.Builder builder = RestClient.builder().requestFactory(factory);
         if (StringUtils.isNotBlank(config.getAuthHeaderName())) {
             builder.defaultHeader(config.getAuthHeaderName(), config.getAuthHeader());

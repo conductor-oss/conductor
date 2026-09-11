@@ -29,10 +29,10 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.TaskModel.Status;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_WAIT;
 
@@ -154,7 +154,7 @@ public class DefaultEventQueueProcessor {
                                 if (!failures.isEmpty()) {
                                     LOGGER.error("Not able to ack the messages {}", failures);
                                 }
-                            } catch (JsonParseException e) {
+                            } catch (StreamReadException e) {
                                 LOGGER.error("Bad message? : {} ", msg, e);
                                 queue.ack(Collections.singletonList(msg));
                             } catch (NotFoundException nfe) {

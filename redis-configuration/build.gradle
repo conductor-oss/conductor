@@ -7,17 +7,17 @@ dependencies {
     implementation project(':conductor-redis-api')
 
     //Micrometer
-    implementation "io.micrometer:micrometer-core:${revMicrometer}"
+    implementation "io.micrometer:micrometer-core"
 
     //Commons
     implementation "org.apache.commons:commons-lang3:"
     implementation "org.apache.commons:commons-pool2:"
 
     //Apache HTTP Client 5 (SSL support for Redis Cluster)
-    implementation "org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}"
+    implementation "org.apache.httpcomponents.client5:httpclient5"
 
     //Jakarta
-    //implementation "jakarta.annotation:jakarta.annotation-api:${revJakartaAnnotation}"
+    //implementation "jakarta.annotation:jakarta.annotation-api"
 
     //Test
     testCompileOnly 'org.projectlombok:lombok:1.18.42'

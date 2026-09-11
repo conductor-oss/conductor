@@ -35,7 +35,7 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler.ref;
 import static org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler.toRef;
