@@ -117,13 +117,32 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
             String callbackUrl) {
         this.a2aService = a2aService;
         this.applicationContext = null;
-        conductorAgentClients.forEach(c -> agentClients.put(c.agentType().toLowerCase(), c));
+        conductorAgentClients.forEach(this::register);
         this.agentClientsLoaded = true;
         this.callbackUrl = StringUtils.trimToNull(callbackUrl);
     }
 
     public A2AWorkers(A2AService a2aService, List<ConductorAgentClient> conductorAgentClients) {
         this(a2aService, conductorAgentClients, (String) null);
+    }
+
+    /**
+     * Index a client by its agent type. Two clients claiming the same type would otherwise
+     * last-one-wins on discovery order, silently shadowing one of them; {@code agentType()}
+     * defaults to {@code "conductor"}, so an implementation that forgets to override collides with
+     * the built-in client. Keep the first and say so rather than swapping it out invisibly.
+     */
+    private void register(ConductorAgentClient client) {
+        String agentType = client.agentType().toLowerCase();
+        ConductorAgentClient existing = agentClients.putIfAbsent(agentType, client);
+        if (existing != null && existing != client) {
+            log.warn(
+                    "Ignoring agent client {} — agentType '{}' is already served by {}. "
+                            + "Override agentType() so both are reachable.",
+                    client.getClass().getName(),
+                    agentType,
+                    existing.getClass().getName());
+        }
     }
 
     private Map<String, ConductorAgentClient> clients() {
@@ -133,7 +152,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                     applicationContext
                             .getBeansOfType(ConductorAgentClient.class)
                             .values()
-                            .forEach(c -> agentClients.put(c.agentType().toLowerCase(), c));
+                            .forEach(this::register);
                     agentClientsLoaded = true;
                 }
             }

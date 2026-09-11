@@ -1,7 +1,7 @@
 ## 1. Add dependencies
 
 ```groovy
-implementation 'org.conductoross:conductor-ai:5.1.0'
+implementation 'org.conductoross:conductor-ai'
 compileOnly 'com.google.adk:google-adk:1.3.0'
 ```
 

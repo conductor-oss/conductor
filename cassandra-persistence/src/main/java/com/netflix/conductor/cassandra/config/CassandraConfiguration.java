@@ -27,11 +27,12 @@ import com.netflix.conductor.cassandra.dao.CassandraExecutionDAO;
 import com.netflix.conductor.cassandra.dao.CassandraFileMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraMetadataDAO;
 import com.netflix.conductor.cassandra.dao.CassandraPollDataDAO;
+import com.netflix.conductor.cassandra.dao.CassandraRateLimitingDAO;
 import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RateLimitingDAO;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Metadata;
@@ -86,7 +87,7 @@ public class CassandraConfiguration {
     }
 
     @Bean
-    public ExecutionDAO cassandraExecutionDAO(
+    public CassandraExecutionDAO cassandraExecutionDAO(
             Session session,
             ObjectMapper objectMapper,
             CassandraProperties properties,
@@ -117,6 +118,15 @@ public class CassandraConfiguration {
     public CassandraFileMetadataDAO cassandraFileMetadataDAO(
             Session session, ObjectMapper objectMapper, CassandraProperties properties) {
         return new CassandraFileMetadataDAO(session, objectMapper, properties);
+    }
+
+    @Bean
+    public RateLimitingDAO cassandraRateLimitingDAO(
+            Session session,
+            ObjectMapper objectMapper,
+            CassandraProperties properties,
+            Statements statements) {
+        return new CassandraRateLimitingDAO(session, objectMapper, properties, statements);
     }
 
     @Bean

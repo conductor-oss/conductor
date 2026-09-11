@@ -58,6 +58,9 @@ conductor.elasticsearch.indexPrefix=conductor
 # Default refresh interval applied via the component template.
 conductor.elasticsearch.indexRefreshInterval=30s
 
+# Force an immediate refresh after every ES8 write/delete operation.
+conductor.elasticsearch.refreshOnWrite=false
+
 # Path to a PEM-encoded certificate to trust for HTTPS connections.
 conductor.elasticsearch.trustCertPath=
 

@@ -1,11 +1,10 @@
 ---
 description: "Build Conductor workers in Go with type-safe task definitions and workflow management."
+source_repo: "https://github.com/conductor-oss/go-sdk"
+sdk_page: go
 ---
 
 # Go SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/go-sdk](https://github.com/conductor-oss/go-sdk) | Report issues and contribute on GitHub.
 
 ## Installation
 

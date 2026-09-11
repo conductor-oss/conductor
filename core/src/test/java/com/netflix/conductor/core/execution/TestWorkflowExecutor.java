@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -227,7 +228,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -2406,6 +2408,42 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
         assertEquals(TaskModel.Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
+    }
+
+    @Test
+    public void testUpdateParentWorkflowTaskDropsSupersededGeneration() {
+        String parentWorkflowTaskId = "superseded_task_id";
+        String childId = "child_workflow_id";
+        String parentId = "parent_workflow_id";
+
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setWorkflowId(childId);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        subWorkflow.setStatus(WorkflowModel.Status.FAILED);
+
+        TaskModel staleTask = new TaskModel();
+        staleTask.setTaskId(parentWorkflowTaskId);
+        staleTask.setSubWorkflowId(childId);
+        staleTask.setWorkflowInstanceId(parentId);
+        staleTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        // The parent's current task list does NOT contain the stale task (a rerun replaced the
+        // fork generation) — the late child failure must be dropped, not propagated.
+        TaskModel freshTask = new TaskModel();
+        freshTask.setTaskId("fresh_task_id");
+        freshTask.setWorkflowInstanceId(parentId);
+        freshTask.setStatus(TaskModel.Status.SCHEDULED);
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId(parentId);
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow.getTasks().add(freshTask);
+
+        when(executionDAOFacade.getTaskModel(parentWorkflowTaskId)).thenReturn(staleTask);
+        when(executionDAOFacade.getWorkflowModel(parentId, true)).thenReturn(parentWorkflow);
+
+        workflowExecutor.updateParentWorkflowTask(subWorkflow);
+
+        verify(executionDAOFacade, never()).updateTask(any(TaskModel.class));
     }
 
     @Test

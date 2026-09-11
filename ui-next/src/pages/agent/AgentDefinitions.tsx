@@ -35,7 +35,7 @@ import TagList from "components/ui/TagList";
 import CloneAgentDialog from "./CloneAgentDialog";
 import { AgentSummary } from "./types";
 
-const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded AgentSpan runtime.
+const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded Conductor Agents runtime.
 
 No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 

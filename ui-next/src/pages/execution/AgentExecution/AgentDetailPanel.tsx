@@ -1,6 +1,6 @@
 /**
  * AgentDetailPanel — right-hand panel matching Conductor's task detail style.
- * Tabs: Summary | Input | Output | JSON
+ * Tabs: Summary | Input | Prompt | Output | JSON
  */
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
@@ -14,9 +14,9 @@ import {
 import { X as CloseIcon, ArrowRight, Scissors } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
 import { AgentDefinitionDetails } from "components/features/agents/AgentSnapshotDetails";
-import Editor from "@monaco-editor/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { ContentView, JsonView } from "./ContentViews";
+import { PromptPreview } from "./PromptPreview";
+import { hasPromptMessages } from "./promptPreviewModel";
 import {
   AgentEvent,
   AgentRunData,
@@ -60,148 +60,11 @@ export interface DetailNodeData {
 
 const SUMMARY_TAB = "summary";
 const INPUT_TAB = "input";
+const PROMPT_TAB = "prompt";
 const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
 const FORMATTED_OUTPUT_TAB = "formatted";
 const RAW_OUTPUT_TAB = "raw";
-
-// ─── JSON editor viewer (Monaco, fills available height) ─────────────────────
-
-function JsonView({ src }: { src: unknown }) {
-  const json = JSON.stringify(src, null, 2);
-  return (
-    <Editor
-      height="100%"
-      language="json"
-      value={json}
-      options={
-        {
-          readOnly: true,
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          lineNumbers: "off",
-          folding: true,
-          wordWrap: "on",
-          fontSize: 12,
-          renderLineHighlight: "none",
-          overviewRulerLanes: 0,
-          renderIndentGuides: false,
-        } as any
-      }
-      theme="vs"
-    />
-  );
-}
-
-// ─── Markdown renderer ────────────────────────────────────────────────────────
-
-function looksLikeMarkdown(text: string): boolean {
-  return /^#{1,6}\s|\*\*[^*]+\*\*|^[-*]\s|\n#{1,6}\s|^\d+\.\s|^>\s/m.test(text);
-}
-
-function MarkdownView({ content }: { content: string }) {
-  return (
-    <Box
-      sx={{
-        "& h1,& h2,& h3": {
-          fontWeight: 700,
-          mt: 1.5,
-          mb: 0.75,
-          lineHeight: 1.3,
-        },
-        "& h1": { fontSize: "1rem" },
-        "& h2": { fontSize: "0.9rem" },
-        "& h3": { fontSize: "0.85rem" },
-        "& p": { my: 0.75, lineHeight: 1.6, fontSize: "0.875rem" },
-        "& ul,& ol": { pl: 2.5, my: 0.5 },
-        "& li": { fontSize: "0.875rem", lineHeight: 1.5 },
-        "& code": {
-          backgroundColor: "#f1f5f9",
-          borderRadius: 0.5,
-          px: 0.5,
-          fontFamily: "monospace",
-          fontSize: "0.8rem",
-        },
-        "& pre": {
-          backgroundColor: "#f1f5f9",
-          borderRadius: 1,
-          p: 1.5,
-          overflowX: "auto",
-          my: 1,
-          "& code": { backgroundColor: "transparent", p: 0 },
-        },
-        "& blockquote": {
-          borderLeft: "3px solid",
-          borderColor: "divider",
-          pl: 1.5,
-          my: 0.75,
-          color: "text.secondary",
-        },
-        "& strong": { fontWeight: 700 },
-        "& a": { color: "primary.main" },
-        "& table": { borderCollapse: "collapse", width: "100%", my: 1 },
-        "& th,& td": {
-          border: "1px solid",
-          borderColor: "divider",
-          px: 1,
-          py: 0.5,
-          fontSize: "0.875rem",
-        },
-        "& th": { backgroundColor: "grey.50", fontWeight: 600 },
-      }}
-    >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-    </Box>
-  );
-}
-
-// ─── Smart content renderer (text/markdown/JSON) ──────────────────────────────
-
-function ContentView({ value, label }: { value: unknown; label?: string }) {
-  if (value == null) {
-    return (
-      <Typography
-        variant="body2"
-        color="text.disabled"
-        sx={{ py: 2, textAlign: "center", fontSize: "0.875rem" }}
-      >
-        No {label ?? "data"}
-      </Typography>
-    );
-  }
-  if (typeof value === "string") {
-    if (looksLikeMarkdown(value)) return <MarkdownView content={value} />;
-    return (
-      <Box
-        component="pre"
-        sx={{
-          m: 0,
-          fontFamily: "monospace",
-          fontSize: "0.8rem",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          lineHeight: 1.6,
-        }}
-      >
-        {value}
-      </Box>
-    );
-  }
-  // Object: wrap Monaco in fixed-height container (height="100%" requires flex parent,
-  // which only the JSON tab provides — Input/Output tabs use block layout).
-  return (
-    <Box
-      sx={{
-        height: 400,
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: 1,
-        overflow: "hidden",
-      }}
-    >
-      <JsonView src={value} />
-    </Box>
-  );
-}
 
 function formattedOutput(value: unknown): unknown {
   if (typeof value !== "object" || value == null || Array.isArray(value)) {
@@ -261,6 +124,10 @@ interface FetchedAgentExecution {
 
 const fetchedAgentExecutions = new Map<string, FetchedAgentExecution | null>();
 
+function isTerminalExecution(execution: WorkflowExecution): boolean {
+  return execution.status !== "RUNNING" && execution.status !== "PAUSED";
+}
+
 function useAgentExecutionDetail(run: AgentRunData): {
   data: FetchedAgentExecution | null;
   loading: boolean;
@@ -277,8 +144,9 @@ function useAgentExecutionDetail(run: AgentRunData): {
       setLoading(false);
       return;
     }
-    if (fetchedAgentExecutions.has(executionId)) {
-      setData(fetchedAgentExecutions.get(executionId) ?? null);
+    const cached = fetchedAgentExecutions.get(executionId);
+    if (cached && isTerminalExecution(cached.rawExecution)) {
+      setData(cached);
       setLoading(false);
       return;
     }
@@ -296,7 +164,11 @@ function useAgentExecutionDetail(run: AgentRunData): {
               rawExecution,
             }
           : null;
-        fetchedAgentExecutions.set(executionId, detail);
+        if (rawExecution && isTerminalExecution(rawExecution)) {
+          fetchedAgentExecutions.set(executionId, detail);
+        } else {
+          fetchedAgentExecutions.delete(executionId);
+        }
         setData(detail);
       })
       .catch(() => {
@@ -311,7 +183,7 @@ function useAgentExecutionDetail(run: AgentRunData): {
     return () => {
       cancelled = true;
     };
-  }, [executionId]);
+  }, [executionId, run.status]);
 
   return { data, loading };
 }
@@ -2009,6 +1881,25 @@ export function AgentDetailPanel({
   const isAgentNode = node.kind === "start" || node.kind === "subagent";
   const hasInput = inputValue != null;
   const hasOutput = outputValue != null || isAgentNode;
+  // A past attempt's raw inputData already has the {instructions, messages} shape.
+  const promptValue = selectedAttempt
+    ? selectedAttempt.inputData
+    : ((node.event?.detail as { prompt?: unknown } | undefined)?.prompt ??
+      null);
+  const hasPrompt = node.kind === "llm" && hasPromptMessages(promptValue);
+
+  const tabs = [
+    { value: SUMMARY_TAB, label: "Summary" },
+    ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
+    ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt" }] : []),
+    ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
+    { value: JSON_TAB, label: "JSON" },
+  ];
+  // The selected tab can disappear, e.g. switching to an attempt with no prompt.
+  // Falling back keeps the strip and the body below in agreement.
+  const activeTab = tabs.some((entry) => entry.value === tab)
+    ? tab
+    : SUMMARY_TAB;
 
   return (
     <Paper
@@ -2157,42 +2048,20 @@ export function AgentDetailPanel({
       {/* ── Tabs ──────────────────────────────────────────────────────── */}
       <Box sx={{ flexShrink: 0 }}>
         <Tabs
-          value={tab}
+          value={activeTab}
           contextual
           variant="scrollable"
           scrollButtons="auto"
           style={{ marginBottom: 0 }}
         >
-          {[
+          {tabs.map(({ value, label }) => (
             <Tab
-              key="summary"
-              label="Summary"
-              value={SUMMARY_TAB}
-              onClick={() => setTab(SUMMARY_TAB)}
-            />,
-            hasInput ? (
-              <Tab
-                key="input"
-                label="Input"
-                value={INPUT_TAB}
-                onClick={() => setTab(INPUT_TAB)}
-              />
-            ) : null,
-            hasOutput ? (
-              <Tab
-                key="output"
-                label="Output"
-                value={OUTPUT_TAB}
-                onClick={() => setTab(OUTPUT_TAB)}
-              />
-            ) : null,
-            <Tab
-              key="json"
-              label="JSON"
-              value={JSON_TAB}
-              onClick={() => setTab(JSON_TAB)}
-            />,
-          ].filter(Boolean)}
+              key={value}
+              label={label}
+              value={value}
+              onClick={() => setTab(value)}
+            />
+          ))}
         </Tabs>
       </Box>
 
@@ -2201,14 +2070,14 @@ export function AgentDetailPanel({
         sx={{
           flex: 1,
           minHeight: 0,
-          display: tab === SUMMARY_TAB ? "block" : "flex",
+          display: activeTab === SUMMARY_TAB ? "block" : "flex",
           flexDirection: "column",
-          overflowY: tab === SUMMARY_TAB ? "auto" : "hidden",
+          overflowY: activeTab === SUMMARY_TAB ? "auto" : "hidden",
           scrollbarWidth: "none",
           "&::-webkit-scrollbar": { display: "none" },
         }}
       >
-        {tab === SUMMARY_TAB && (
+        {activeTab === SUMMARY_TAB && (
           <SummaryContent
             node={
               selectedAttempt ? buildAttemptNode(node, selectedAttempt) : node
@@ -2216,7 +2085,7 @@ export function AgentDetailPanel({
             onDrillIn={onDrillIn}
           />
         )}
-        {tab === INPUT_TAB && (
+        {activeTab === INPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2258,7 +2127,8 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === OUTPUT_TAB && (
+        {activeTab === PROMPT_TAB && <PromptPreview input={promptValue} />}
+        {activeTab === OUTPUT_TAB && (
           <>
             <Box
               sx={{
@@ -2300,7 +2170,7 @@ export function AgentDetailPanel({
             </Box>
           </>
         )}
-        {tab === JSON_TAB && (
+        {activeTab === JSON_TAB && (
           <>
             <Box
               sx={{

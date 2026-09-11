@@ -1,212 +1,50 @@
 ---
-description: "Conductor Event Handlers API — create, update, delete, and list event handlers for event-driven workflow orchestration."
+description: REST endpoints and status behavior for OSS Conductor event handlers.
 ---
 
 # Event Handlers API
 
-The Event Handlers API manages event handler definitions — rules that start workflows or complete tasks in response to events from message brokers (Kafka, NATS, SQS, AMQP). All endpoints use the base path `/api/event`.
-
-For details on configuring event handlers, see [Event Handler Configuration](../configuration/eventhandlers.md). For configuring message broker connections, see the [Event Bus Orchestration](../../devguide/how-tos/event-bus.md) guide.
+The controller is mounted at `/api/event`. Successful mutating operations return an empty `200 OK` response.
 
 ## Endpoints
 
-| Endpoint | Method | Description |
+| Method | Path | Request/response |
 |---|---|---|
-| `/event` | `POST` | Create a new event handler |
-| `/event` | `PUT` | Update an existing event handler |
-| `/event` | `GET` | Get all event handlers |
-| `/event/{name}` | `DELETE` | Delete an event handler |
-| `/event/{event}` | `GET` | Get event handlers for a specific event |
+| `POST` | `/api/event` | Create one event-handler object; empty response |
+| `PUT` | `/api/event` | Replace/update one handler object; empty response |
+| `GET` | `/api/event` | Array of all handlers |
+| `DELETE` | `/api/event/{name}` | Remove by handler name; empty response |
+| `GET` | `/api/event/{event}?activeOnly=true` | Handlers for the exact event; `activeOnly` defaults to `true` |
 
-### Create an Event Handler
+The `{event}` path value can contain provider separators and must be URL-encoded when required by the client/proxy.
 
-```
-POST /api/event
-```
+## Create example
 
-```shell
-curl -X POST 'http://localhost:8080/api/event' \
+```bash
+curl -sS -X POST 'http://localhost:8080/api/event' \
   -H 'Content-Type: application/json' \
-  -d '{
-    "name": "order_event_handler",
-    "event": "kafka:orders_topic:new_order",
-    "active": true,
-    "actions": [
-      {
-        "action": "start_workflow",
-        "start_workflow": {
-          "name": "order_processing",
-          "version": 1,
-          "input": {
-            "orderId": "${eventPayload.orderId}",
-            "customerId": "${eventPayload.customerId}",
-            "payload": "${eventPayload}"
-          }
-        }
-      }
-    ]
-  }'
+  --data-binary @docs/devguide/cookbook/examples/events/start-workflow-handler.json
 ```
 
-**Response** `200 OK` — no response body.
+## Handler fields
 
-#### Event Handler Fields
-
-| Field | Description | Required |
+| Field | Required | Behavior |
 |---|---|---|
-| `name` | Unique name for the event handler | Yes |
-| `event` | Event identifier in format `type:queue:subject` (e.g., `kafka:my_topic:my_event`) | Yes |
-| `active` | Whether the handler is active | Yes |
-| `actions` | List of actions to execute when the event is received | Yes |
-| `condition` | Optional JavaScript expression to filter events | No |
-| `evaluatorType` | Expression evaluator type (`javascript` or `graaljs`) | No |
+| `name` | Yes | Non-empty, unique handler name |
+| `event` | Yes | `provider:<provider-specific queue URI>`; split at first colon |
+| `condition` | No | Evaluated against payload root; omitted means true |
+| `actions` | Yes | Non-empty list; actions execute concurrently |
+| `active` | No | Defaults to `false` |
+| `evaluatorType` | No | Selects a registered evaluator; otherwise the default script evaluator is used |
 
-#### Action Types
+The shared model declares five enum values, but the OSS action processor implements only `start_workflow`, `complete_task`, and `fail_task`. Requests using `terminate_workflow` or `update_workflow_variables` can deserialize but fail during processing as unsupported.
 
-| Action | Description |
-|---|---|
-| `start_workflow` | Start a new workflow execution |
-| `complete_task` | Complete a pending task (e.g., a WAIT task) |
-| `fail_task` | Fail a pending task |
+## Task targeting
 
-#### Complete Task Action Example
+For `complete_task` and `fail_task`, provide `taskId`, or `workflowId` plus `taskRefName`. `reasonForIncompletion` is meaningful for `fail_task`. Output fields are expression-resolved from the event payload root.
 
-```json
-{
-  "name": "approval_handler",
-  "event": "kafka:approvals_topic:approved",
-  "active": true,
-  "actions": [
-    {
-      "action": "complete_task",
-      "complete_task": {
-        "workflowId": "${eventPayload.workflowId}",
-        "taskRefName": "wait_for_approval",
-        "output": {
-          "approved": true,
-          "approvedBy": "${eventPayload.approver}"
-        }
-      }
-    }
-  ]
-}
-```
+## Status and delivery behavior
 
-### Update an Event Handler
+A false condition records `SKIPPED`. Each action has its own persisted event-execution record. Duplicate suppression depends on a stable broker message ID and the persisted record; actions are concurrent and not atomic.
 
-```
-PUT /api/event
-```
-
-Updates an existing event handler. The request body is the full event handler definition (same format as create).
-
-```shell
-curl -X PUT 'http://localhost:8080/api/event' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "name": "order_event_handler",
-    "event": "kafka:orders_topic:new_order",
-    "active": false,
-    "actions": [
-      {
-        "action": "start_workflow",
-        "start_workflow": {
-          "name": "order_processing",
-          "version": 2,
-          "input": {
-            "payload": "${eventPayload}"
-          }
-        }
-      }
-    ]
-  }'
-```
-
-**Response** `200 OK` — no response body.
-
-### Get All Event Handlers
-
-```
-GET /api/event
-```
-
-Returns a list of all registered event handlers.
-
-```shell
-curl 'http://localhost:8080/api/event'
-```
-
-**Response** `200 OK`
-
-```json
-[
-  {
-    "name": "order_event_handler",
-    "event": "kafka:orders_topic:new_order",
-    "active": true,
-    "actions": [
-      {
-        "action": "start_workflow",
-        "start_workflow": {
-          "name": "order_processing",
-          "version": 1,
-          "input": {
-            "payload": "${eventPayload}"
-          }
-        }
-      }
-    ]
-  }
-]
-```
-
-### Delete an Event Handler
-
-```
-DELETE /api/event/{name}
-```
-
-Removes an event handler by name.
-
-```shell
-curl -X DELETE 'http://localhost:8080/api/event/order_event_handler'
-```
-
-**Response** `200 OK` — no response body.
-
-### Get Event Handlers for an Event
-
-```
-GET /api/event/{event}?activeOnly=true
-```
-
-Returns event handlers configured for a specific event.
-
-| Parameter | Description | Default |
-|---|---|---|
-| `event` | Event identifier (e.g., `kafka:orders_topic:new_order`) | — |
-| `activeOnly` | Only return active handlers | `true` |
-
-```shell
-curl 'http://localhost:8080/api/event/kafka:orders_topic:new_order?activeOnly=true'
-```
-
-**Response** `200 OK` — returns a list of matching event handler definitions.
-
----
-
-## Event Identifier Format
-
-Event identifiers follow the pattern:
-
-```
-{type}:{queue/topic}:{subject}
-```
-
-| Type | Example | Description |
-|---|---|---|
-| `kafka` | `kafka:my_topic:my_event` | Apache Kafka topic |
-| `nats` | `nats:my_subject:my_event` | NATS subject |
-| `sqs` | `sqs:my_queue:my_event` | Amazon SQS queue |
-| `amqp_exchange` | `amqp_exchange:my_exchange:my_event` | RabbitMQ exchange |
-| `conductor` | `conductor:my_event:my_event` | Conductor internal event queue |
+See [Event handler configuration](../configuration/eventhandlers.md) for the data model and [Event orchestration](../../devguide/how-tos/event-bus.md) for provider configuration and operating guidance.

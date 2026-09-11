@@ -6,7 +6,7 @@ description: "Complete reference for Conductor workflow definitions — properti
 
 The Workflow Definition contains all the information necessary to define the behavior of a workflow. The most important part of this definition is the `tasks` property, which is an array of [**Task Configurations**](#task-configurations).
 
-For the formal JSON Schema definitions of workflow and task structures, see the [`schemas/`](https://github.com/conductor-oss/conductor/tree/main/schemas) directory in the repository.
+For the formal JSON Schema definitions of workflow and task structures, see [Schemas](../schemas.md). The linked source schemas are the field-level contract.
 
 
 ## Workflow Properties

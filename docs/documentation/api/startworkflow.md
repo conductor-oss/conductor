@@ -91,8 +91,8 @@ Starts a workflow and **waits for completion** (or a specified condition) before
 | `requestId` | Query | Idempotency key | No (auto-generated) |
 | `waitUntilTaskRef` | Query | Comma-separated task reference names to wait for | No |
 | `waitForSeconds` | Query | Maximum wait time in seconds | No (default: 10) |
-| `consistency` | Query | `DURABLE` or `EVENTUAL` | No (default: `DURABLE`) |
-| `returnStrategy` | Query | Controls which workflow state is returned | No (default: `TARGET_WORKFLOW`) |
+| `consistency` | Query | Accepted for compatibility; has no effect in open-source Conductor - executions are always durable | No (default: `DURABLE`) |
+| `returnStrategy` | Query | Which state to return when execution blocks on a Yield task: `TARGET_WORKFLOW` (the originally started workflow), `BLOCKING_WORKFLOW` (the workflow currently blocking, possibly a subworkflow), `BLOCKING_TASK` (the blocking task's state), or `BLOCKING_TASK_INPUT` (the blocking task's input) | No (default: `TARGET_WORKFLOW`) |
 
 Request body: a StartWorkflowRequest object (same format as the [async start](#start-a-workflow-asynchronous)).
 

@@ -120,7 +120,7 @@ public class DoWhileEdgeCasesTests {
             // Poll every second to check if the workflow is in the wait task
             // HTTP task before WAIT can take several seconds; allow 30s for conductor-oss postgres
             await().pollInterval(1, TimeUnit.SECONDS)
-                    .atMost(30, TimeUnit.SECONDS)
+                    .atMost(60, TimeUnit.SECONDS)
                     .untilAsserted(
                             () -> {
                                 Workflow workflow = workflowClient.getWorkflow(workflowId, true);
@@ -175,7 +175,7 @@ public class DoWhileEdgeCasesTests {
         }
 
         await().pollInterval(1, TimeUnit.SECONDS)
-                .atMost(30, TimeUnit.SECONDS)
+                .atMost(60, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow = workflowClient.getWorkflow(workflowId, true);
