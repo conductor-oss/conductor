@@ -1,0 +1,33 @@
+{
+  "properties": [
+    {
+      "name": "conductor.event-queues.azure.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of Azure Queue Storage implementation to provide queues for consuming events.",
+      "sourceType": "com.netflix.conductor.config.AzureEventQueueConfiguration"
+    },
+    {
+      "name": "conductor.default-event-queue.type",
+      "type": "java.lang.String",
+      "description": "The default event queue type to listen on for the WAIT task.",
+      "sourceType": "com.netflix.conductor.config.AzureEventQueueConfiguration"
+    },
+    {
+      "name": "conductor.event-queues.azure.identity",
+      "type": "java.lang.String",
+      "description": "Authenticatation method with Azure Kubernetes Service (AKS).",
+      "sourceType": "com.netflix.conductor.config.AzureEventQueueConfiguration"
+    }
+  ],
+  "hints": [
+    {
+      "name": "conductor.default-event-queue.type",
+      "values": [
+        {
+          "value": "azure",
+          "description": "Use Azure Queue Storage as the event queue to listen on for the WAIT task."
+        }
+      ]
+    }
+  ]
+}
