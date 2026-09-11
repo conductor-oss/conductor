@@ -6,7 +6,7 @@
  * confirming versioned definitions resolve to the right URL.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../coverage-fixture";
 import {
   createWorkflowDef,
   deleteWorkflowDef,

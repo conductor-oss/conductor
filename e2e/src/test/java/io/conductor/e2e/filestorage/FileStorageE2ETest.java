@@ -22,6 +22,7 @@ import org.conductoross.conductor.client.model.file.FileMetadata;
 import org.conductoross.conductor.client.model.file.FileUploadStatus;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import com.netflix.conductor.client.exception.ConductorClientException;
 import com.netflix.conductor.client.http.ConductorClient;
@@ -55,6 +56,10 @@ import static org.junit.jupiter.api.Assertions.fail;
  *
  * <p>Run via: {@code e2e/run_tests-es8.sh}.
  */
+@DisabledIfSystemProperty(
+        named = "E2E_DISABLED_CAPABILITIES",
+        matches = ".*\\bfilestorage\\b.*",
+        disabledReason = "target server does not expose the /api/files resource")
 class FileStorageE2ETest {
 
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};

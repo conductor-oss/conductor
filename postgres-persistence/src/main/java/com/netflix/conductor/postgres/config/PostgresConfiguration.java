@@ -19,7 +19,9 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
 import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
 import org.flywaydb.core.Flyway;
@@ -34,6 +36,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,7 +102,7 @@ public class PostgresConfiguration {
     public PostgresExecutionDAO postgresExecutionDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            PostgresQueueDAO queueDAO) {
+            QueueDAO queueDAO) {
         return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
@@ -114,7 +117,7 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    public PostgresQueueDAO postgresQueueDAO(
+    public QueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             PostgresProperties properties) {
@@ -167,6 +170,14 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn("flywayForPrimaryDb")
+    public SchemaDAO postgresSchemaDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

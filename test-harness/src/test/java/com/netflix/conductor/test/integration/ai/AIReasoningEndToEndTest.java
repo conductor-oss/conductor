@@ -384,7 +384,7 @@ class AIReasoningEndToEndTest {
                                                         + " registered — the AI module's"
                                                         + " WorkerTaskAnnotationScanner must run"
                                                         + " before this test executes."));
-        List<String> taskIds = queueDAO.pop("LLM_CHAT_COMPLETE", 5, 100);
+        List<String> taskIds = queueDAO.pop("LLM_CHAT_COMPLETE", 5, 0);
         for (String taskId : taskIds) {
             asyncSystemTaskExecutor.execute(chatTask, taskId);
         }

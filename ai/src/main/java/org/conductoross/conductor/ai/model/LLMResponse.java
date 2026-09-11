@@ -26,6 +26,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LLMResponse {
+    public static final String TOKEN_USED = "tokenUsed";
+    public static final String PROMPT_TOKENS = "promptTokens";
+    public static final String COMPLETION_TOKENS = "completionTokens";
+
     private Object result;
     private List<Media> media;
     private String finishReason;

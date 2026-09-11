@@ -116,6 +116,7 @@ export const persistExecutionId = assign<
   UpdateExecutionEvent
 >({
   executionId: (__, { executionId }) => executionId,
+  agentExecution: (__, { agentExecution }) => agentExecution ?? false,
 });
 
 export const sendResetZoomEventToFlow = sendTo<

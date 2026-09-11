@@ -65,3 +65,24 @@ export const parseErrors = (errors: ErrorObject[] | null) =>
         {},
       )
     : {};
+
+/**
+ * Save is blocked only by conditions that would make the request fail or be a
+ * no-op. An empty description is deliberately NOT one of them: the API marks
+ * description optional (only ownerEmail is required), and gating Save on it
+ * left the button dead with nothing on screen explaining why.
+ *
+ * isNewTaskDef is optional because the form machine's context does not carry
+ * it, so it arrives undefined there.
+ */
+export const isSaveDisabled = ({
+  noChanges,
+  isNewTaskDef,
+  isTrialExpired,
+  jsonInvalid = false,
+}: {
+  noChanges: boolean;
+  isNewTaskDef?: boolean;
+  isTrialExpired: boolean;
+  jsonInvalid?: boolean;
+}) => jsonInvalid || (!isNewTaskDef && noChanges) || isTrialExpired;

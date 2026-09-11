@@ -30,6 +30,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -49,9 +50,13 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.SessionState;
  * {@code startAgent} or {@code respond} streams the response and buffers it into an in-memory
  * {@link ExecutionState}. Subsequent {@code getAgentStatus} calls read from that state.
  *
- * <p>Activated by {@code conductor.ai.bedrock-agent.enabled=true}.
+ * <p>Activated by {@code conductor.integrations.ai.enabled=true}, like the other agent clients.
+ * Credentials are resolved per request from {@code credentialRef}, falling back to the default AWS
+ * credential chain, so the client registers whether or not Bedrock is configured; an unconfigured
+ * runtime fails only if a workflow routes to it.
  */
 @Component
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class BedrockAgentClient implements ConductorAgentClient {
 
     private static final Logger log = LoggerFactory.getLogger(BedrockAgentClient.class);

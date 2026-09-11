@@ -4450,7 +4450,7 @@ class AgentSpanDeploymentContractEndToEndTest {
             if ("LLM_CHAT_COMPLETE".equals(task.getTaskType())) {
                 continue;
             }
-            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 100)) {
+            for (String taskId : queueDAO.pop(task.getTaskType(), 5, 0)) {
                 asyncSystemTaskExecutor.execute(task, taskId);
             }
         }

@@ -8,6 +8,7 @@ export type PaginationChangePage = (page: number, totalRows: number) => void;
 export enum ColumnCustomType {
   DATE = "date",
   JSON = "json",
+  BOOLEAN = "boolean",
 }
 
 export interface LegacyColumn extends TableColumn<any> {

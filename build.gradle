@@ -8,7 +8,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.3.11'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:3.5.14'
         classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
@@ -21,7 +21,7 @@ plugins {
     id 'signing'
     id 'java-library'
     id "com.diffplug.spotless" version "6.25.0"
-    id 'org.springframework.boot' version '3.3.5'
+    id 'org.springframework.boot' version '3.5.14'
 }
 
 // Establish version and status
@@ -64,7 +64,16 @@ allprojects {
             resolutionStrategy.eachDependency { details ->
                 // Compat: align all com.fasterxml.jackson.* to the same version — mixed versions cause ClassNotFoundException
                 if (details.requested.group.startsWith('com.fasterxml.jackson.')) {
-                    details.useVersion "2.17.0"
+                    details.useVersion "2.18.8"
+                }
+                // Compat: Spring Boot 3.5 requires HttpClient 5.4+ for TlsSocketStrategy.
+                if (details.requested.group == 'org.apache.httpcomponents.client5'
+                        && details.requested.name == 'httpclient5') {
+                    details.useVersion "5.5.2"
+                }
+                // Compat: Flyway database modules must match Flyway core's internal API.
+                if (details.requested.group == 'org.flywaydb') {
+                    details.useVersion "11.7.2"
                 }
                 // Compat: commons-lang3 3.18.0+ required by Testcontainers/commons-compress
                 if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
@@ -95,7 +104,7 @@ allprojects {
 
     dependencyManagement {
         imports {
-            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.3.11/reference/htmlsingle/#appendix.dependency-versions
+            // dependency versions for the BOM can be found at https://docs.spring.io/spring-boot/docs/3.5.14/reference/htmlsingle/#appendix.dependency-versions
             mavenBom(SpringBootPlugin.BOM_COORDINATES)
         }
     }
@@ -115,6 +124,7 @@ allprojects {
 
         testImplementation('org.springframework.boot:spring-boot-starter-test')
         testImplementation('org.springframework.boot:spring-boot-starter-log4j2')
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
         testImplementation 'junit:junit'
         testImplementation "org.junit.vintage:junit-vintage-engine"
         testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'

@@ -1,67 +1,122 @@
-site_name: Durable Execution for workflows and agents
+site_name: Durable execution for workflows and agents
 site_description: Conductor is an open-source durable code execution engine and agentic workflow engine. Orchestrate distributed workflows with saga pattern compensation, at-least-once task delivery, and polyglot workers in Java, Python, Go, and more.
 repo_url: https://github.com/conductor-oss/conductor
 site_url: https://conductor-oss.github.io/conductor
 edit_uri: ''
 strict: false
 use_directory_urls: false
+exclude_docs: |
+  index.html
+not_in_nav: |
+  devguide/architecture/directed-acyclic-graph.md
+  devguide/cookbook/files-api-usecase.md
+  devguide/labs/**
+  documentation/advanced/annotation-processor.md
+  quickstart/choose-path.md
+  resources/license.md
+  wmq/**
 
 nav:
-  - Home: index.md
-  - Quickstart:
+  - Home:
+    - index.md
+    - FAQ: devguide/faq.md
+  - Getting Started:
     - quickstart/index.md
-    - Concepts: devguide/concepts/index.md
+    - Connect to Conductor: quickstart/connect.md
+    - Build with Your AI Coding Agent: devguide/how-tos/conductor-skills.md
+    - Your First Workflow & Worker: quickstart/first-worker.md
+    - Your First Agent: quickstart/first-agent.md
+    - Bring Your Framework Agent: quickstart/framework-agents.md
+    - Run a Workflow from JSON: quickstart/first-workflow.md
+    - Conductor for AI Assistants: devguide/ai/conductor-for-ai-assistants.md
+  - Workflows:
+    - Overview: devguide/workflows/index.md
     - Workflows: devguide/concepts/workflows.md
     - Tasks: devguide/concepts/tasks.md
     - Workers: devguide/concepts/workers.md
-    - Durable Execution: architecture/durable-execution.md
-    - JSON + Code Native: architecture/json-native.md
-    - Task Lifecycle: devguide/architecture/tasklifecycle.md
-  - Guides:
-    - Build with AI Agents: devguide/how-tos/conductor-skills.md
-    - devguide/concepts/conductor.md
-    - Workflows:
-      - devguide/how-tos/Workflows/creating-workflows.md
-      - devguide/how-tos/Workflows/starting-workflows.md
-      - devguide/how-tos/Workflows/handling-errors.md
-      - devguide/how-tos/Workflows/debugging-workflows.md
-      - devguide/how-tos/Workflows/versioning-workflows.md
-      - devguide/how-tos/Workflows/searching-workflows.md
-      - devguide/how-tos/Workflows/viewing-workflow-executions.md
-      - devguide/how-tos/Workflows/scheduling-workflows.md
-    - Tasks:
-      - devguide/how-tos/Tasks/creating-tasks.md
-      - devguide/how-tos/Tasks/task-inputs.md
-      - devguide/how-tos/Tasks/choosing-tasks.md
-      - devguide/how-tos/Workers/scaling-workers.md
-    - Event Bus Orchestration: devguide/how-tos/event-bus.md
-    - Best Practices: devguide/bestpractices.md
-    - FAQ: devguide/faq.md
-  - Cookbook:
-    - devguide/cookbook/index.md
-    - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
-    - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
-    - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
-    - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
-    - Event-Driven Recipes: devguide/cookbook/event-driven.md
-    - AI & LLM Recipes: devguide/cookbook/ai-llm.md
-    - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
-    - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
-  - AI Cookbook:
-    - devguide/ai/index.md
-    - Build Your First AI Agent: devguide/ai/first-ai-agent.md
-    - AI & LLM Recipes: devguide/cookbook/ai-llm.md
-    - LLM Orchestration: devguide/ai/llm-orchestration.md
-    - MCP Integration: devguide/ai/mcp-guide.md
-    - A2A Integration: devguide/ai/a2a-integration.md
-    - Production Agent Architecture: devguide/ai/production-agent-architecture.md
-    - Failure Semantics: devguide/ai/failure-semantics.md
-    - Why Conductor for Agents: devguide/ai/why-conductor.md
+    - Build:
+      - Creating Workflows: devguide/how-tos/Workflows/creating-workflows.md
+      - Choosing Tasks: devguide/how-tos/Tasks/choosing-tasks.md
+      - Creating Tasks: devguide/how-tos/Tasks/creating-tasks.md
+      - Task Inputs: devguide/how-tos/Tasks/task-inputs.md
+      - Schema Validation: devguide/how-tos/schema-validation.md
+      - Schema Registry: devguide/how-tos/schema-registry.md
+      - Managing Workflow Versions: devguide/how-tos/Workflows/versioning-workflows.md
+      - Testing Workflows: devguide/how-tos/Workflows/testing-workflows.md
+    - Run:
+      - Starting Workflows: devguide/how-tos/Workflows/starting-workflows.md
+      - Choosing a Trigger: devguide/how-tos/Workflows/choosing-a-trigger.md
+      - Scheduling Workflows: devguide/how-tos/Workflows/scheduling-workflows.md
+      - Send Signals: devguide/cookbook/sending-signals.md
+      - Handling Errors: devguide/how-tos/Workflows/handling-errors.md
+    - Operate:
+      - Production Path: devguide/workflows/production-path.md
+      - Viewing Executions: devguide/how-tos/Workflows/viewing-workflow-executions.md
+      - Searching Workflows: devguide/how-tos/Workflows/searching-workflows.md
+      - Debugging Workflows: devguide/how-tos/Workflows/debugging-workflows.md
+      - Guide to Scaling Workers: devguide/how-tos/Workers/scaling-workers.md
+  - Agents:
+    - Overview: devguide/ai/index.md
+    - Agent Concepts: devguide/concepts/agents.md
     - Durable Agents: devguide/ai/durable-agents.md
-    - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
-    - Dynamic Workflows: devguide/ai/dynamic-workflows.md
-    - Token Efficiency: devguide/ai/token-efficiency.md
-  - SDKs:
+    - Why Conductor for Agents: devguide/ai/why-conductor.md
+    - Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
+    - Build:
+      - Conductor Agents: devguide/ai/conductor-agents.md
+      - Framework Agents: devguide/ai/agent-framework-recipes.md
+      - Build Agentic Workflow Graph: devguide/ai/first-ai-agent.md
+      - LLM Orchestration: devguide/ai/llm-orchestration.md
+      - Durable Adaptive Graphs: devguide/ai/dynamic-workflows.md
+      - Multi-Agent Architecture: devguide/ai/multi-agent-architecture.md
+    - Operate:
+      - Agent Configuration: devguide/ai/agent-configuration.md
+      - Deploying Agents: devguide/ai/deploying-agents.md
+      - Scheduling Agents: devguide/ai/scheduling-agents.md
+      - Token Efficiency: devguide/ai/token-efficiency.md
+    - Govern:
+      - Agent Guardrails: devguide/ai/agent-guardrails.md
+      - Agent Evals: devguide/ai/agent-evals.md
+      - Human-in-the-Loop: devguide/ai/human-in-the-loop.md
+      - Failure Semantics: devguide/ai/failure-semantics.md
+    - Production Agent Architecture: devguide/ai/production-agent-architecture.md
+  - AI Cookbook:
+    - Overview: devguide/ai/cookbook/index.md
+    - Agentic Patterns:
+      - RAG Agent: devguide/ai/cookbook/rag-agent.md
+      - MCP Tool Calling: devguide/ai/cookbook/mcp-tool-calling.md
+      - A2A Agent Orchestration: devguide/ai/cookbook/a2a-orchestration.md
+      - HITL Workflow: devguide/ai/cookbook/hitl-approval.md
+      - LLM with Guardrails: devguide/ai/cookbook/llm-guardrails.md
+      - Deep Research Agent: devguide/ai/cookbook/deep-research.md
+      - A2A Delegation: devguide/ai/cookbook/remote-a2a-delegation.md
+      - LLM Workflows: devguide/cookbook/ai-llm.md
+      - AI Workflow Routing: devguide/cookbook/ai-workflow-routing.md
+    - Agent Recipes:
+      - Tool Calling Agent: devguide/ai/cookbook/agent-tool-calling.md
+      - Agent with Guardrails: devguide/ai/cookbook/agent-guardrails.md
+      - Multi-Agent Handoff: devguide/ai/cookbook/agent-handoff.md
+      - Agent with Memory: devguide/ai/cookbook/agent-memory.md
+      - Agent with CLI Tools: devguide/ai/cookbook/agent-cli-tools.md
+      - Massively Parallel Agents: devguide/ai/cookbook/agent-scatter-gather.md
+      - Conductor Agent: devguide/ai/cookbook/reusable-conductor-agent.md
+      - LangChain Investigator: devguide/ai/cookbook/langchain-entitlement-investigator.md
+      - ADK Triage: devguide/ai/cookbook/google-adk-order-triage.md
+      - Specialist Review: devguide/ai/cookbook/parallel-specialist-review.md
+      - Agent Approval: devguide/ai/cookbook/human-approved-action.md
+      - Agent Cancellation: devguide/ai/cookbook/conductor-agent-cancellation.md
+  - Design Patterns:
+    - Overview: devguide/cookbook/index.md
+    - Workflow Patterns:
+      - Microservice Orchestration: devguide/cookbook/microservice-orchestration.md
+      - Dynamic Parallelism: devguide/cookbook/dynamic-parallelism.md
+      - Wait & Timer Patterns: devguide/cookbook/wait-and-timers.md
+      - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
+      - Saga & Compensation: devguide/cookbook/saga-compensation.md
+      - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
+      - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
+      - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
+      - Event-Driven Patterns: devguide/cookbook/event-driven.md
+  - SDK:
     - documentation/clientsdks/index.md
     - Java: documentation/clientsdks/java-sdk.md
     - Python: documentation/clientsdks/python-sdk.md
@@ -70,6 +125,25 @@ nav:
     - C#: documentation/clientsdks/csharp-sdk.md
     - Ruby: documentation/clientsdks/ruby-sdk.md
     - Rust: documentation/clientsdks/rust-sdk.md
+  - Integrations:
+    - Overview: devguide/integrations/index.md
+    - Event-Driven Orchestration:
+      - Overview: devguide/how-tos/event-bus.md
+      - Publish Events: devguide/how-tos/publish-events.md
+      - Consume and Route Events: devguide/how-tos/consume-route-events.md
+      - Incoming Webhooks: devguide/how-tos/incoming-webhooks.md
+      - Workflow Status Events: devguide/how-tos/workflow-status-events.md
+    - MCP Integration: devguide/ai/mcp-guide.md
+    - A2A Integration: devguide/ai/a2a-integration.md
+  - Learn:
+    - learn/index.md
+    - Contribute:
+      - Overview: resources/contribute/index.md
+      - Repositories: resources/contribute/repositories.md
+      - Contribution Guide: resources/contributing.md
+      - Best Practices: resources/contribute/best-practices.md
+      - Code of Conduct: resources/contribute/code-of-conduct.md
+    - Get Help: resources/contribute/get-help.md
   - Reference:
     - API:
       - documentation/api/index.md
@@ -82,8 +156,25 @@ nav:
       - documentation/api/eventhandlers.md
       - documentation/api/taskdomains.md
       - documentation/api/scheduler.md
+      - documentation/api/agents.md
+    - CLI: documentation/cli/index.md
     - Workflow Definition:
       - documentation/configuration/workflowdef/index.md
+      - Schemas: documentation/configuration/schemas.md
+    - Task Definition: documentation/configuration/taskdef.md
+    - Operators:
+      - documentation/configuration/workflowdef/operators/index.md
+      - documentation/configuration/workflowdef/operators/fork-task.md
+      - documentation/configuration/workflowdef/operators/join-task.md
+      - documentation/configuration/workflowdef/operators/exclusive-join-task.md
+      - documentation/configuration/workflowdef/operators/switch-task.md
+      - documentation/configuration/workflowdef/operators/do-while-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-task.md
+      - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
+      - documentation/configuration/workflowdef/operators/sub-workflow-task.md
+      - documentation/configuration/workflowdef/operators/start-workflow-task.md
+      - documentation/configuration/workflowdef/operators/set-variable-task.md
+      - documentation/configuration/workflowdef/operators/terminate-task.md
     - System Tasks:
       - documentation/configuration/workflowdef/systemtasks/index.md
       - documentation/configuration/workflowdef/systemtasks/http-task.md
@@ -95,29 +186,27 @@ nav:
       - documentation/configuration/workflowdef/systemtasks/noop-task.md
       - documentation/configuration/workflowdef/systemtasks/jdbc-task.md
       - documentation/configuration/workflowdef/systemtasks/wait-task.md
-    - Operators:
-      - documentation/configuration/workflowdef/operators/index.md
-      - documentation/configuration/workflowdef/operators/fork-task.md
-      - documentation/configuration/workflowdef/operators/join-task.md
-      - documentation/configuration/workflowdef/operators/switch-task.md
-      - documentation/configuration/workflowdef/operators/do-while-task.md
-      - documentation/configuration/workflowdef/operators/dynamic-task.md
-      - documentation/configuration/workflowdef/operators/dynamic-fork-task.md
-      - documentation/configuration/workflowdef/operators/sub-workflow-task.md
-      - documentation/configuration/workflowdef/operators/start-workflow-task.md
-      - documentation/configuration/workflowdef/operators/set-variable-task.md
-      - documentation/configuration/workflowdef/operators/terminate-task.md
-    - Task Definition: documentation/configuration/taskdef.md
+      - documentation/configuration/workflowdef/systemtasks/pull-workflow-messages-task.md
+      - documentation/configuration/workflowdef/systemtasks/ai-tasks.md
     - Event Handlers: documentation/configuration/eventhandlers.md
+
+  - Platform:
+    - Core Concepts: devguide/concepts/index.md
+    - Why Conductor: devguide/concepts/conductor.md
+    - Architecture: devguide/architecture/index.md
+    - Durable Execution: architecture/durable-execution.md
+    - JSON + Code Native: architecture/json-native.md
+    - Task Lifecycle: devguide/architecture/tasklifecycle.md
+    - Deploy:
+      - Production Deployment: devguide/running/deploy.md
+      - From Source: devguide/running/source.md
+      - Hosted: devguide/running/hosted.md
+      - CI/CD Integration: devguide/how-tos/cicd-integration.md
+      - Best Practices: devguide/bestpractices.md
     - Configuration: documentation/configuration/appconf.md
-    - Metrics:
+    - Observability:
       - Server Metrics: documentation/metrics/server.md
       - Client Metrics: documentation/metrics/client.md
-  - Deploy:
-    - Docker: devguide/running/deploy.md
-    - From Source: devguide/running/source.md
-    - Hosted: devguide/running/hosted.md
-    - devguide/architecture/index.md
     - Advanced:
       - documentation/advanced/extend.md
       - documentation/advanced/isolationgroups.md
@@ -127,7 +216,6 @@ nav:
       - documentation/advanced/redis.md
       - documentation/advanced/postgresql.md
       - documentation/advanced/opensearch.md
-
 theme:
   name: material
   logo: img/logo.svg
@@ -145,9 +233,9 @@ theme:
         name: Switch to light mode
   font: false
   features:
+    - navigation.indexes
     - navigation.tabs
     - navigation.tabs.sticky
-    - navigation.indexes
     - navigation.footer
     - navigation.sections
     - navigation.expand
@@ -185,12 +273,15 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - !relative $config_dir
+      check_paths: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format: !!python/name:main.mermaid_fence
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.details

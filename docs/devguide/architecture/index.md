@@ -38,9 +38,9 @@ Each worker declares beforehand what task(s) it can execute. At runtime, task wo
 
 By default, workers infinitely poll Conductor every 100ms. The polling interval value for each type of worker can be adjusted accordingly based on factors like workload. Here is the polling mechanism in detail:
 
-1. The application starts a workflow execution by interacting with Orkes Conductor, which returns a workflow (execution) ID. It can be used to track the workflow's progress and manage its execution.
+1. The application starts a workflow execution by interacting with Conductor, which returns a workflow (execution) ID. It can be used to track the workflow's progress and manage its execution.
 2. Conductor schedules the first task in the workflow to its task queue.
-3. The workers responsible for executing the first task within the workflow are polling Orkes Conductor for tasks to execute via HTTP or gRPC. When a task is scheduled, Conductor sends it to the next available worker, which then performs the required work.
+3. The workers responsible for executing the first task within the workflow are polling Conductor for tasks to execute via HTTP or gRPC. When a task is scheduled, Conductor sends it to the next available worker, which then performs the required work.
 4. Periodically, the worker returns the task status to Conductor (e.g. IN PROGRESS, FAILED, COMPLETED, etc).
 5. Once the first task in the workflow instance is completed, the worker returns the task output to the server, and Conductor schedules the next set of tasks to be performed.
 
