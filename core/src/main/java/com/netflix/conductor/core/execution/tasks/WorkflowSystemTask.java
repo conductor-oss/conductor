@@ -89,6 +89,28 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * Whether {@link #start} may legitimately return with the task still in {@code SCHEDULED}
+     * state, and is safe to re-run on a later redelivery.
+     *
+     * <p>The message-reserve / overrun-timeout logic in {@code AsyncSystemTaskExecutor} (issue
+     * #1321) assumes a blocking {@code start()} never leaves the task {@code SCHEDULED}, so a
+     * redelivered {@code SCHEDULED} task past its {@code responseTimeout} is treated as an overrun
+     * and timed out. That assumption is false for tasks like {@link SubWorkflow}, whose {@code
+     * start()} deliberately leaves the task {@code SCHEDULED} on a transient error and can also be
+     * cut short by a worker restart mid-launch. For such a task the executor must re-run {@code
+     * start()} rather than time the task out (issue #1615).
+     *
+     * <p>Overriding this to {@code true} opts into that re-run behavior; {@code start()} must be
+     * idempotent (e.g. {@link SubWorkflow} derives a deterministic child id and serializes
+     * concurrent attempts through the child-id lock).
+     *
+     * @return true if a redelivered SCHEDULED task should be re-started rather than timed out
+     */
+    public boolean isStartRetriable() {
+        return false;
+    }
+
+    /**
      * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external
      *     message.
      */
