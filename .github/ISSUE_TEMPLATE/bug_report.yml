@@ -5,7 +5,9 @@ body:
 - type: markdown
   attributes:
     value: >
-      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/conductor-oss/conductor/issues?q=is%3Aissue%20label%3Abug). 
+      **Conductor OSS** is a workflow orchestration server — a Java/Spring Boot backend that runs durable workflows defined as JSON task graphs, accessible via REST API. Workers in any language poll the server for tasks to execute. Issues here are for the server, CLI, and worker SDKs.
+
+      #### Before submitting a bug, please make sure the issue hasn't been already addressed by searching through [the existing and past issues](https://github.com/conductor-oss/conductor/issues?q=is%3Aissue%20label%3Abug).
 - type: textarea
   attributes:
     label: Describe the bug
