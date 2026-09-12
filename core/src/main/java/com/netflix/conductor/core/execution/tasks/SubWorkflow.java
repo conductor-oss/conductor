@@ -329,6 +329,17 @@ public class SubWorkflow extends WorkflowSystemTask {
         return true;
     }
 
+    /**
+     * {@code start()} may leave the task SCHEDULED (transient error, or a worker restart
+     * mid-launch) and is idempotent to re-run (deterministic child id plus the child-id lock in
+     * {@code startWorkflowIdempotent}), so a redelivered SCHEDULED task should retry, not time out
+     * (#1615).
+     */
+    @Override
+    public boolean isStartRetriable() {
+        return true;
+    }
+
     private void updateTaskStatus(WorkflowModel subworkflow, TaskModel task) {
         WorkflowModel.Status status = subworkflow.getStatus();
         switch (status) {
