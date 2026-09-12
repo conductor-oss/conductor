@@ -26,7 +26,7 @@ http://localhost:8080/api/agent
 | `GET` | `/{name}?version=` | Get a registered agent definition. |
 | `DELETE` | `/{name}?version=` | Delete a registered agent definition. |
 
-`/compile`, `/deploy`, and `/start` accept an `AgentStartRequest`. To use a previously deployed agent, provide `name` and optionally `version`. To create an agent inline, provide either `agentConfig` for a Conductor Agent or `framework` plus framework-specific `rawConfig` for a supported bridge.
+`/compile`, `/deploy`, and `/start` accept an `AgentStartRequest`. To use a previously deployed agent, provide `name` and optionally `version`. To create an agent inline, provide either `agentConfig` for a Conductor Agent or `framework` plus framework-specific `rawConfig` for a supported framework.
 
 ```json
 {
@@ -96,5 +96,5 @@ The skill endpoints are present only when skill packages are enabled on the serv
 ## Related guides
 
 - [Conductor Agents](../../devguide/ai/conductor-agents.md) — SDK creation, deploy/serve lifecycle, and use as an `AGENT` task.
-- [Framework Agent Bridges](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agent paths.
+- [Framework Agents](../../devguide/ai/agent-framework-recipes.md) — OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agent paths.
 - [A2A Integration](../../devguide/ai/a2a-integration.md) — Remote A2A agents; this is a separate `AGENT` mode.

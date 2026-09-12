@@ -20,9 +20,21 @@ const toolBarHeight = 60;
 
 type Props = {
   children: ReactNode;
+  /**
+   * Rendered inside the content area after {children}. Lets a wrapper add
+   * panels that share this shell — the enterprise agent layout puts its
+   * assistant here rather than reproducing the whole layout.
+   */
+  contentExtras?: ReactNode;
+  /** Replaces the sidebar footer's user block. See UISidebar. */
+  customUserBlock?: ReactNode;
 };
 
-export const BaseLayout = ({ children }: Props) => {
+export const BaseLayout = ({
+  children,
+  contentExtras,
+  customUserBlock,
+}: Props) => {
   const {
     data: apiVersion,
     isLoading: apiVersionLoading,
@@ -101,6 +113,7 @@ export const BaseLayout = ({ children }: Props) => {
           <UISidebar
             apiVersion={resolvedApiVersion}
             releaseVersion={releaseVersion}
+            customUserBlock={customUserBlock}
           />
         )}
 
@@ -153,6 +166,7 @@ export const BaseLayout = ({ children }: Props) => {
         id="main-content"
       >
         {children}
+        {contentExtras}
       </Box>
     </Box>
   );

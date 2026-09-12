@@ -45,6 +45,17 @@ export enum IntegrationType {
   AWS_S3 = "aws-s3",
   HUBSPOT = "hubspot",
   SLACK = "slack",
+  GITHUB = "github",
+  JIRA = "jira",
+  AZURE_STORAGE = "azure-storage",
+  AZURE_FUNCTIONS = "azure-functions",
+  GOOGLE_CLOUD_STORAGE = "google-cloud-storage",
+  GOOGLE_CLOUD_FUNCTIONS = "google-cloud-functions",
+  AWS_LAMBDA = "aws-lambda",
+  MYSQL = "mysql",
+  POSTGRES = "postgres",
+  REDIS = "redis",
+  STRIPE = "stripe-v2",
 }
 export enum IntegrationCategory {
   API = "API",

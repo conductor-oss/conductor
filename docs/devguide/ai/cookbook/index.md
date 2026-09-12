@@ -61,7 +61,7 @@ Each of these carries the control that makes the pattern safe to run for real �
 
 ## AI Agents
 
-An agent owns its own reasoning loop: it decides which tool to call and when it is done. You author it with a Conductor SDK in Python, TypeScript, Java, or C#, or bring one written in LangChain or Google ADK through the Conductor bridge. Conductor supplies what the loop cannot give itself — every tool call is a durable, individually retryable task, and approval and cancellation are boundaries the agent cannot skip.
+An agent owns its own reasoning loop: it decides which tool to call and when it is done. You author it with a Conductor SDK in Python, TypeScript, Java, or C#, or bring one written in LangChain or Google ADK through the Conductor SDK. Conductor supplies what the loop cannot give itself — every tool call is a durable, individually retryable task, and approval and cancellation are boundaries the agent cannot skip.
 
 | Recipe | Outcome | Built from |
 |---|---|---|
@@ -72,8 +72,8 @@ An agent owns its own reasoning loop: it decides which tool to call and when it 
 | [Agent with CLI tools](agent-cli-tools.md) | Run real shell commands, restricted to an allowlist. | `cli_allowed_commands` |
 | [Massively parallel agents](agent-scatter-gather.md) | Fan out to 100 sub-agents and synthesize the results. | `scatter_gather()` |
 | [Conductor agent](reusable-conductor-agent.md) | Invoke a stable deployed capability from another workflow. | `AGENT` (`conductor`) |
-| [LangChain investigator](langchain-entitlement-investigator.md) | Author with LangChain and invoke through the Conductor bridge. | `AGENT` (`conductor`) |
-| [ADK triage](google-adk-order-triage.md) | Author with ADK and invoke through the Conductor bridge. | `AGENT` (`conductor`) |
+| [LangChain investigator](langchain-entitlement-investigator.md) | Author with LangChain and invoke through the Conductor SDK. | `AGENT` (`conductor`) |
+| [ADK triage](google-adk-order-triage.md) | Author with ADK and invoke through the Conductor SDK. | `AGENT` (`conductor`) |
 | [Specialist review](parallel-specialist-review.md) | Collect independent reviews with durable fan-out and join. | `AGENT`, `FORK_JOIN`, `JOIN` |
 | [Agent approval](human-approved-action.md) | Pause a deployed agent at its durable approval boundary. | `AGENT`, `SWITCH`, `HUMAN` |
 | [Agent cancellation](conductor-agent-cancellation.md) | Propagate parent termination to a long-running deployed agent. | `AGENT`, `FORK_JOIN`, `TERMINATE` |

@@ -309,7 +309,7 @@ Every agentic pattern maps to a specific Conductor primitive:
 ## Next steps
 
 - **[Conductor Agents](conductor-agents.md)** — Author Conductor Agents or bring existing framework agents into durable Conductor graphs.
-- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agents.
+- **[Framework Agents](agent-framework-recipes.md)** — Supported SDK paths for OpenAI Agents, Google ADK, LangChain, LangGraph, Vercel AI SDK, and Conductor Agents.
 - **[Production Agent Architecture](production-agent-architecture.md)** — The canonical end-to-end agent pattern, fully wired.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract under every scenario.
 - **[Build Your First Agentic Workflow Graph](first-ai-agent.md)** — Compose an SDK-authored agent with durable workflow tasks.
