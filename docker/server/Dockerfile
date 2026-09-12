@@ -58,14 +58,18 @@ RUN if [ "$SKIP_UI" = "true" ]; then \
 # ===========================================================================================================
 # 2. Final stage
 # ===========================================================================================================
-FROM debian:stable-slim
+# Alpine base to shed the OS-level CVEs that debian:stable-slim carried: perl
+# (CVE-2026-13221 / CVE-2026-57432), libssh2 (CVE-2026-58050), and an nginx that debian-slim
+# could not patch past 1.26.3 (CVE-2026-60005). The temurin JRE ships in the base image, so the
+# only package we add is nginx. The healthcheck uses busybox wget (built in) instead of curl,
+# which also removes curl's libcurl/libssh2 chain from the image entirely.
+FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends openjdk-21-jre-headless nginx curl ca-certificates \
-    && rm -f /etc/nginx/sites-enabled/default \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache nginx ca-certificates \
+    && rm -f /etc/nginx/http.d/default.conf \
+    && mkdir -p /run/nginx
 
 # Make app folders
 RUN mkdir -p /app/config /app/logs /app/libs
@@ -79,12 +83,14 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui-next/dist .
-COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
+COPY docker/server/nginx/nginx.conf  /etc/nginx/http.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh
 
-HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD curl -I -XGET http://localhost:8080/health || exit 1
+# Uses 127.0.0.1 (not localhost): busybox wget resolves localhost to ::1 first and does not fall
+# back to IPv4 the way curl did, so localhost would fail against the IPv4-bound server.
+HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1
 
 CMD [ "/app/startup.sh" ]
 ENTRYPOINT [ "/bin/sh"]
