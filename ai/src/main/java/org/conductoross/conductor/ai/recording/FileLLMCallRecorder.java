@@ -33,11 +33,26 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
 
     private final Path directory;
     private final ObjectMapper objectMapper;
+    private long sequence;
 
     public FileLLMCallRecorder(Path directory, ObjectMapper objectMapper) throws IOException {
         Files.createDirectories(directory);
         this.directory = directory;
         this.objectMapper = objectMapper;
+        // Each configured directory has its own numbering, continued across server restarts.
+        try (var files = Files.newDirectoryStream(directory, "*.json")) {
+            for (Path file : files) {
+                String name = file.getFileName().toString();
+                int separator = name.indexOf('_');
+                if (separator > 0) {
+                    try {
+                        sequence = Math.max(sequence, Long.parseLong(name.substring(0, separator)));
+                    } catch (NumberFormatException ignored) {
+                        // Legacy UUID filenames and unrelated names do not affect numbering.
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -52,7 +67,7 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
         return new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {
-                // Each call owns its ID mappings and file; provider calls never share a lock.
+                // Each call owns its ID mappings; provider requests remain concurrent.
                 RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
                 LLMRecording.Request request = normalizer.normalize(prompt, options);
                 ChatResponse response = delegate.call(prompt);
@@ -77,17 +92,18 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
         };
     }
 
-    Path writeRecording(LLMRecording recording) throws IOException {
+    synchronized Path writeRecording(LLMRecording recording) throws IOException {
         Files.createDirectories(directory);
-        Path target = directory.resolve(UUID.randomUUID() + ".json");
         Path temporary = Files.createTempFile(directory, ".llm-recording-", ".tmp");
         try {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(), recording);
+            // Number publication order, including concurrent calls that finish out of order.
+            Path target = directory.resolve(++sequence + "_" + UUID.randomUUID() + ".json");
             // Publish the complete file atomically without replacing an existing recording.
             Files.createLink(target, temporary);
+            return target;
         } finally {
             Files.deleteIfExists(temporary);
         }
-        return target;
     }
 }

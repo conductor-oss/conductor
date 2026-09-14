@@ -13,9 +13,13 @@
 package org.conductoross.conductor.ai.recording;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,18 +39,49 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 /**
- * Normalizes only declared transport fields, never arbitrary user payload keys or prompt text.
+ * Normalizes transport fields and verified generated tool summaries, preserving user payloads.
  * Create one instance per request to normalize IDs from its full history.
  */
 public final class RecordedRequestNormalizer {
     public static final String FUNCTION_TOOL_TYPE = "function";
+    private static final Set<String> TRANSPORT_RESULT_NAMES =
+            Set.of(
+                    "CALL_MCP_TOOL",
+                    "GET",
+                    "HEAD",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "OPTIONS",
+                    "TRACE",
+                    "CONNECT");
 
     private static final ObjectMapper MAPPER =
             new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+
+    private static final Set<String> VOLATILE_HTTP_HEADERS =
+            Set.of(
+                    "date",
+                    "x-request-id",
+                    "x-github-request-id",
+                    "x-github-edge-region",
+                    "x-ratelimit-remaining",
+                    "x-ratelimit-used",
+                    "x-ratelimit-reset");
+    private static final String TOOL_RESULTS_START = "[TOOL RESULTS]\n";
+    private static final String TOOL_RESULTS_END = "\n[/TOOL RESULTS]";
+    // stateMergeScript removes the final task index from tool reference names when a worker does
+    // not supply a tool name.
+    private static final Pattern GENERATED_RESULT_NAME =
+            Pattern.compile(
+                    "(?:call_[A-Za-z0-9]+|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}_[0-9]+)_");
 
     private final Map<String, CallIdentity> callIdentities = new HashMap<>();
 
@@ -129,12 +164,13 @@ public final class RecordedRequestNormalizer {
                 }
             }
         }
-        return new LLMRecording.Request(
-                messages,
-                tools,
-                input.jsonOutput(),
-                input.outputSchema(),
-                input.generationOptions());
+        return normalizeTransportHistory(
+                new LLMRecording.Request(
+                        messages,
+                        tools,
+                        input.jsonOutput(),
+                        input.outputSchema(),
+                        input.generationOptions()));
     }
 
     private LLMRecording.Message toSavedMessage(Message message) {
@@ -158,17 +194,191 @@ public final class RecordedRequestNormalizer {
             for (ToolResponseMessage.ToolResponse result : tool.getResponses()) {
                 CallIdentity call = callIdentities.get(result.id());
                 Validate.isTrue(
-                        call != null && result.name().equals(call.name()),
+                        call != null
+                                && (call.name().equals(result.name())
+                                        || (result.name() != null
+                                                && TRANSPORT_RESULT_NAMES.contains(result.name()))),
                         "Tool result has no matching call in the recorded history");
+                // MCP/HTTP history can label results with a task type or HTTP method. Match by
+                // the existing call ID and retain its function name for recording/playback.
                 results.add(
                         new LLMRecording.ToolResult(
-                                call.reference(),
-                                result.name(),
-                                parseResult(result.responseData())));
+                                call.reference(), call.name(), parseResult(result.responseData())));
             }
         }
         return new LLMRecording.Message(
                 message.getMessageType().getValue(), message.getText(), calls, results);
+    }
+
+    /** Applies the same matching rules to legacy saved requests and newly recorded requests. */
+    public static LLMRecording.Request normalizeTransportHistory(LLMRecording.Request request) {
+        Map<String, Integer> turns = new HashMap<>();
+        List<String> callOrder = new ArrayList<>();
+        Map<String, LLMRecording.ToolResult> results = new HashMap<>();
+        int turn = 0;
+        for (LLMRecording.Message message : request.messages()) {
+            if (!message.toolCalls().isEmpty()) {
+                for (LLMRecording.ToolCall call : message.toolCalls()) {
+                    turns.put(call.reference(), turn);
+                    callOrder.add(call.reference());
+                }
+                turn++;
+            }
+            for (LLMRecording.ToolResult result : message.toolResults()) {
+                results.put(result.reference(), result);
+            }
+        }
+        List<LLMRecording.ToolResult> history =
+                callOrder.stream().filter(results::containsKey).map(results::get).toList();
+        List<LLMRecording.Message> messages =
+                request.messages().stream()
+                        .map(
+                                message ->
+                                        new LLMRecording.Message(
+                                                message.role(),
+                                                "user".equals(message.role())
+                                                        ? normalizeToolSummary(
+                                                                message.text(), history, turns)
+                                                        : message.text(),
+                                                message.toolCalls(),
+                                                message.toolResults().stream()
+                                                        .map(
+                                                                result ->
+                                                                        new LLMRecording.ToolResult(
+                                                                                result.reference(),
+                                                                                result.name(),
+                                                                                normalizeHttpResponse(
+                                                                                        result
+                                                                                                .value())))
+                                                        .toList()))
+                        .toList();
+        return new LLMRecording.Request(
+                messages,
+                request.tools(),
+                request.jsonOutput(),
+                request.outputSchema(),
+                request.generationOptions());
+    }
+
+    private static String normalizeToolSummary(
+            String text, List<LLMRecording.ToolResult> history, Map<String, Integer> turns) {
+        if (text == null || history.isEmpty()) return text;
+        int start = text.indexOf(TOOL_RESULTS_START);
+        if (start < 0 || (start > 0 && !text.substring(0, start).endsWith("\n\n"))) return text;
+        int end = text.indexOf(TOOL_RESULTS_END, start + TOOL_RESULTS_START.length());
+        if (end < 0 || !text.substring(end + TOOL_RESULTS_END.length()).startsWith("\n\n"))
+            return text;
+        JsonNode entries;
+        try {
+            entries = MAPPER.readTree(text.substring(start + TOOL_RESULTS_START.length(), end));
+        } catch (JsonProcessingException exception) {
+            return text;
+        }
+        if (entries == null || !entries.isArray() || entries.size() != history.size()) return text;
+        // Only rewrite the generated duplicate when every observation agrees with structured
+        // history. Never discard unknown fields, unmatched results, or arbitrary prompt text.
+        List<Integer> matched = new ArrayList<>();
+        int previousTurn = -1;
+        for (JsonNode entry : entries) {
+            if (!entry.isObject()
+                    || entry.size() != 2
+                    || !entry.path("name").isTextual()
+                    || !entry.has("output")) return text;
+            String name = entry.get("name").textValue();
+            int index = -1;
+            for (int i = 0; i < history.size(); i++) {
+                LLMRecording.ToolResult result = history.get(i);
+                boolean matchesName =
+                        name.equals(result.name())
+                                || name.equals(result.reference())
+                                || GENERATED_RESULT_NAME.matcher(name).matches();
+                if (!matched.contains(i)
+                        && matchesName
+                        && sameSummaryValue(
+                                normalizeHttpResponse(entry.get("output")),
+                                normalizeHttpResponse(result.value()))) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index < 0) return text;
+            int currentTurn = turns.get(history.get(index).reference());
+            // Completion order may vary within a parallel turn, never across sequential turns.
+            if (currentTurn < previousTurn) return text;
+            previousTurn = currentTurn;
+            matched.add(index);
+        }
+        ArrayNode normalized = MAPPER.createArrayNode();
+        matched.sort(Comparator.naturalOrder());
+        for (int index : matched) {
+            LLMRecording.ToolResult result = history.get(index);
+            normalized
+                    .addObject()
+                    .put("name", result.reference())
+                    .set("output", sortedObjectKeys(normalizeHttpResponse(result.value())));
+        }
+        return text.substring(0, start + TOOL_RESULTS_START.length())
+                + normalized
+                + text.substring(end);
+    }
+
+    private static boolean sameSummaryValue(JsonNode summary, JsonNode result) {
+        if (summary == null || result == null) return summary == result;
+        // JavaScript's generated summary renders 54.0 as 54. Compare numeric values only for
+        // this duplicate-history check; retain exact strings, array order, and structured values.
+        return summary.equals(
+                (left, right) -> {
+                    if (left.isNumber() && right.isNumber()) {
+                        return left.decimalValue().compareTo(right.decimalValue());
+                    }
+                    return left.equals(right) ? 0 : 1;
+                },
+                result);
+    }
+
+    private static boolean isHttpResponse(JsonNode value) {
+        if (value == null || !value.isObject() || value.size() != 1) return false;
+        JsonNode response = value.path("response");
+        return response.isObject()
+                && response.path("statusCode").isIntegralNumber()
+                && response.path("headers").isObject()
+                && response.has("body")
+                && response.path("reasonPhrase").isTextual();
+    }
+
+    private static JsonNode normalizeHttpResponse(JsonNode value) {
+        if (!isHttpResponse(value)) return value;
+        // Limit exclusions to transport headers in the HTTP task envelope. Body fields, status,
+        // Retry-After, and all other headers remain part of the matching key.
+        JsonNode copy = value.deepCopy();
+        ObjectNode headers = (ObjectNode) copy.get("response").get("headers");
+        List<String> remove = new ArrayList<>();
+        headers.fieldNames()
+                .forEachRemaining(
+                        name -> {
+                            if (VOLATILE_HTTP_HEADERS.contains(name.toLowerCase(Locale.ROOT)))
+                                remove.add(name);
+                        });
+        headers.remove(remove);
+        return copy;
+    }
+
+    private static JsonNode sortedObjectKeys(JsonNode value) {
+        if (value == null) return NullNode.instance;
+        if (value.isObject()) {
+            ObjectNode sorted = MAPPER.createObjectNode();
+            List<String> names = new ArrayList<>();
+            value.fieldNames().forEachRemaining(names::add);
+            names.sort(Comparator.naturalOrder());
+            names.forEach(name -> sorted.set(name, sortedObjectKeys(value.get(name))));
+            return sorted;
+        }
+        if (value.isArray()) {
+            ArrayNode array = MAPPER.createArrayNode();
+            value.forEach(item -> array.add(sortedObjectKeys(item)));
+            return array;
+        }
+        return value;
     }
 
     private String reference(String id, String name) {

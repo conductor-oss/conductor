@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,8 +90,26 @@ class FileLLMCallRecorderTest {
         Path firstFile = recorder.writeRecording(first);
         Path secondFile = recorder.writeRecording(second);
         assertNotEquals(firstFile, secondFile);
+        assertNumber(1, firstFile);
+        assertNumber(2, secondFile);
         assertSaved(first, firstFile);
         assertSaved(second, secondFile);
+    }
+
+    @Test
+    void numberingIsIndependentPerDirectoryAndContinuesAfterRestart() throws Exception {
+        Path first = recorder.writeRecording(recording());
+        assertNumber(1, first);
+        FileLLMCallRecorder other =
+                new FileLLMCallRecorder(directory.resolve("other"), objectMapper);
+        assertNumber(1, other.writeRecording(recording()));
+        assertNumber(2, other.writeRecording(recording()));
+        // Older recordings and arbitrary filenames remain supported without consuming a number.
+        Files.copy(first, directory.resolve(UUID.randomUUID() + ".json"));
+        Files.copy(first, directory.resolve("legacy_recording.json"));
+        FileLLMCallRecorder restarted = new FileLLMCallRecorder(directory, objectMapper);
+        assertNumber(2, restarted.writeRecording(recording()));
+        assertSaved(recording(), first);
     }
 
     @Test
@@ -99,6 +119,11 @@ class FileLLMCallRecorderTest {
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
             List<Future<Path>> results = executor.invokeAll(List.of(write, write));
             assertNotEquals(results.get(0).get(), results.get(1).get());
+            assertEquals(
+                    Set.of("1", "2"),
+                    Set.of(
+                            results.get(0).get().getFileName().toString().split("_")[0],
+                            results.get(1).get().getFileName().toString().split("_")[0]));
             for (Future<Path> result : results) {
                 assertSaved(recording, result.get());
             }
@@ -106,6 +131,17 @@ class FileLLMCallRecorderTest {
         try (Stream<Path> files = Files.list(directory)) {
             assertEquals(2, files.count());
         }
+    }
+
+    private static void assertNumber(long expected, Path file) {
+        String name = file.getFileName().toString();
+        assertTrue(name.startsWith(expected + "_"), name);
+        assertTrue(name.endsWith(".json"), name);
+        assertDoesNotThrow(
+                () ->
+                        UUID.fromString(
+                                name.substring(
+                                        name.indexOf('_') + 1, name.length() - ".json".length())));
     }
 
     private void assertSaved(LLMRecording expected, Path file) throws IOException {

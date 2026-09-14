@@ -72,7 +72,10 @@ public final class MockLLM implements AIModel {
     private static void register(
             LLMRecording saved, Map<LLMRecording.Request, JsonNode> responses) {
         // Identical responses merge; conflicting responses for the same request fail.
-        JsonNode existingResponse = responses.putIfAbsent(saved.request(), saved.response());
+        JsonNode existingResponse =
+                responses.putIfAbsent(
+                        RecordedRequestNormalizer.normalizeTransportHistory(saved.request()),
+                        saved.response());
         Validate.isTrue(
                 existingResponse == null
                         || RecordedResponseJson.responseContent(existingResponse)

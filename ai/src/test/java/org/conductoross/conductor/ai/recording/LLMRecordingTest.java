@@ -58,6 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -204,8 +205,23 @@ class LLMRecordingTest {
                                         Arguments.of(provider, false)));
     }
 
-    @Test
-    void workerRecordsAndFreshContextPlaysBackToolsWithoutARealProvider() throws Exception {
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                WEATHER_TOOL_NAME,
+                "CALL_MCP_TOOL",
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "HEAD",
+                "OPTIONS",
+                "TRACE",
+                "CONNECT"
+            })
+    void workerRecordsAndFreshContextPlaysBackToolsWithoutARealProvider(String resultName)
+            throws Exception {
         ChatModel provider =
                 prompt ->
                         prompt.getInstructions().stream()
@@ -215,7 +231,7 @@ class LLMRecordingTest {
         try (AnnotationConfigApplicationContext context = context(true, false, provider)) {
             LLMResponse first = call(context, input(REAL_PROVIDER, "model"));
             ChatCompletion next = input(REAL_PROVIDER, "model");
-            addHistory(next, first.getToolCalls().getFirst().getTaskReferenceName());
+            addHistory(next, first.getToolCalls().getFirst().getTaskReferenceName(), resultName);
             assertEquals(WEATHER_RESPONSE, call(context, next).getResult());
         }
         assertEquals(2, recordings().size());
@@ -223,6 +239,9 @@ class LLMRecordingTest {
             ChatCompletion followup = input(MockLLM.NAME, "mockLLM");
             addHistory(followup, "different-runtime-id");
             assertEquals(WEATHER_RESPONSE, call(context, followup).getResult());
+            ChatCompletion transportFollowup = input(MockLLM.NAME, "mockLLM");
+            addHistory(transportFollowup, "another-runtime-id", resultName);
+            assertEquals(WEATHER_RESPONSE, call(context, transportFollowup).getResult());
             LLMResponse first = call(context, input(MockLLM.NAME, "mockLLM"));
             LLMResponse repeated = call(context, input(MockLLM.NAME, "mockLLM"));
             assertNotEquals(
@@ -575,6 +594,10 @@ class LLMRecordingTest {
     }
 
     private static void addHistory(ChatCompletion input, String id) {
+        addHistory(input, id, WEATHER_TOOL_NAME);
+    }
+
+    private static void addHistory(ChatCompletion input, String id, String resultName) {
         ToolCall call =
                 org.conductoross.conductor.ai.model.ToolCall.builder()
                         .taskReferenceName(id)
@@ -583,7 +606,14 @@ class LLMRecordingTest {
                         .output(Map.of("temp_c", 21))
                         .build();
         input.getMessages().add(new ChatMessage(ChatMessage.Role.tool_call, call));
-        input.getMessages().add(new ChatMessage(ChatMessage.Role.tool, call));
+        ToolCall result =
+                ToolCall.builder()
+                        .taskReferenceName(id)
+                        .name(resultName)
+                        .inputParameters(call.getInputParameters())
+                        .output(call.getOutput())
+                        .build();
+        input.getMessages().add(new ChatMessage(ChatMessage.Role.tool, result));
     }
 
     private static ChatResponse toolResponse(String id) {
