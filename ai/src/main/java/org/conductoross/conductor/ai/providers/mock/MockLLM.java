@@ -13,14 +13,20 @@
 package org.conductoross.conductor.ai.providers.mock;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.Validate;
 import org.conductoross.conductor.ai.AIModel;
@@ -28,10 +34,12 @@ import org.conductoross.conductor.ai.LLMHelper;
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.ChatMessage;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.recording.LLMPlaybackVerifier;
 import org.conductoross.conductor.ai.recording.LLMRecording;
 import org.conductoross.conductor.ai.recording.RecordedRequestNormalizer;
 import org.conductoross.conductor.ai.recording.RecordedResponseJson;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.image.ImageModel;
 
@@ -41,25 +49,43 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
-public final class MockLLM implements AIModel {
+public final class MockLLM implements AIModel, LLMPlaybackVerifier {
     private static final String UNSUPPORTED_OPERATION =
             "MockLLM only plays back recorded chat responses";
 
     public static final String NAME = "mock";
     private final Map<LLMRecording.Request, JsonNode> responses;
 
+    private final Map<String, String> recordingDigests;
+    private final Map<LLMRecording.Request, Set<String>> recordingFiles;
+    private final Set<String> replayedFiles = ConcurrentHashMap.newKeySet();
+    private final AtomicLong unmatchedRequests = new AtomicLong();
+
     public MockLLM(Path directory, ObjectMapper objectMapper) throws IOException {
         Map<LLMRecording.Request, JsonNode> loaded = new HashMap<>();
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(directory, "*.json")) {
-            for (Path file : files) {
+        Map<String, String> digests = new HashMap<>();
+        Map<LLMRecording.Request, Set<String>> filesByRequest = new HashMap<>();
+        // A single configured root can contain the same example folders for every SDK.
+        try (var files = Files.walk(directory)) {
+            for (Path file :
+                    files.filter(Files::isRegularFile)
+                            .filter(path -> path.getFileName().toString().endsWith(".json"))
+                            .sorted()
+                            .toList()) {
+                String relative = directory.relativize(file).toString().replace('\\', '/');
                 try {
-                    LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
+                    byte[] bytes = Files.readAllBytes(file);
+                    LLMRecording saved = objectMapper.readValue(bytes, LLMRecording.class);
                     RecordedResponseJson.validate(saved.response());
-                    register(saved, loaded);
+                    LLMRecording.Request request = register(saved, loaded);
+                    digests.put(relative, sha256(bytes));
+                    filesByRequest
+                            .computeIfAbsent(request, ignored -> new HashSet<>())
+                            .add(relative);
                 } catch (IOException | RuntimeException exception) {
                     throw new IllegalArgumentException(
                             "Invalid LLM recording in '"
-                                    + file.getFileName()
+                                    + relative
                                     + "': "
                                     + exception.getMessage(),
                             exception);
@@ -67,20 +93,55 @@ public final class MockLLM implements AIModel {
             }
         }
         this.responses = Map.copyOf(loaded);
+        this.recordingDigests = Map.copyOf(digests);
+        filesByRequest.replaceAll((request, names) -> Set.copyOf(names));
+        this.recordingFiles = Map.copyOf(filesByRequest);
     }
 
-    private static void register(
+    private static String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
+    }
+
+    @Override
+    public Verification verify(Map<String, String> expectedRecordings) {
+        List<String> missing = new ArrayList<>();
+        List<String> different = new ArrayList<>();
+        List<String> notReplayed = new ArrayList<>();
+        int matched = 0;
+        // Compare against bytes loaded at startup, not files that may have changed on disk.
+        // CI calls this after its SDK has finished, on a server started for that CI run.
+        for (String name : expectedRecordings.keySet().stream().sorted().toList()) {
+            if (!recordingDigests.containsKey(name)) missing.add(name);
+            else if (!recordingDigests.get(name).equals(expectedRecordings.get(name)))
+                different.add(name);
+            else if (!replayedFiles.contains(name)) notReplayed.add(name);
+            else matched++;
+        }
+        return new Verification(
+                expectedRecordings.size(),
+                matched,
+                unmatchedRequests.get(),
+                List.copyOf(missing),
+                List.copyOf(different),
+                List.copyOf(notReplayed));
+    }
+
+    private static LLMRecording.Request register(
             LLMRecording saved, Map<LLMRecording.Request, JsonNode> responses) {
         // Identical responses merge; conflicting responses for the same request fail.
-        JsonNode existingResponse =
-                responses.putIfAbsent(
-                        RecordedRequestNormalizer.normalizeTransportHistory(saved.request()),
-                        saved.response());
+        LLMRecording.Request request =
+                RecordedRequestNormalizer.normalizeTransportHistory(saved.request());
+        JsonNode existingResponse = responses.putIfAbsent(request, saved.response());
         Validate.isTrue(
                 existingResponse == null
                         || RecordedResponseJson.responseContent(existingResponse)
                                 .equals(RecordedResponseJson.responseContent(saved.response())),
                 "Conflicting recorded responses for the same request");
+        return request;
     }
 
     @Override
@@ -98,8 +159,9 @@ public final class MockLLM implements AIModel {
         RecordedRequestNormalizer.RequestOptions options = RecordedRequestNormalizer.options(input);
         // Request options belong to this call's wrapper, never to the singleton provider.
         return prompt -> {
-            JsonNode response =
-                    responses.get(new RecordedRequestNormalizer().normalize(prompt, options));
+            LLMRecording.Request request =
+                    new RecordedRequestNormalizer().normalize(prompt, options);
+            JsonNode response = responses.get(request);
             if (response == null) {
                 // Some providers omit prior loop replies. Try that recorded history too, while
                 // preserving explicit assistant messages and participant/tool history.
@@ -110,17 +172,21 @@ public final class MockLLM implements AIModel {
                                         message.getMetadata().get(ChatMessage.LOOP_HISTORY)));
                 if (messages.size() != prompt.getInstructions().size()) {
                     LLMHelper.ensureLastMessageIsFromUser(messages);
-                    response =
-                            responses.get(
-                                    new RecordedRequestNormalizer()
-                                            .normalize(
-                                                    new Prompt(messages, prompt.getOptions()),
-                                                    options));
+                    request =
+                            new RecordedRequestNormalizer()
+                                    .normalize(new Prompt(messages, prompt.getOptions()), options);
+                    response = responses.get(request);
                 }
             }
-            if (response == null)
+            if (response == null) {
+                unmatchedRequests.incrementAndGet();
                 throw new NonRetryableException("No recorded response matches the LLM request");
-            return RecordedResponseJson.read(response, UUID.randomUUID().toString());
+            }
+            ChatResponse result = RecordedResponseJson.read(response, UUID.randomUUID().toString());
+            // Identical duplicate fixtures are aliases of one request. A successful replay covers
+            // every alias; repeated calls cannot compensate for a different, unplayed request.
+            replayedFiles.addAll(recordingFiles.get(request));
+            return result;
         };
     }
 

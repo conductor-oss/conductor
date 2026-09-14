@@ -1,0 +1,18 @@
+name: Check shared LLM playback
+description: Verify the shared recordings were played back on an existing Conductor server.
+inputs:
+  server-url:
+    description: Conductor API URL reachable from this runner, including /api.
+    required: true
+  auth-header:
+    description: Optional complete authentication header, supplied from a secret.
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Verify shared recordings
+      shell: sh
+      env:
+        CONDUCTOR_SERVER_URL: ${{ inputs.server-url }}
+        CONDUCTOR_AUTH_HEADER: ${{ inputs.auth-header }}
+      run: sh "$GITHUB_ACTION_PATH/check-playback.sh" "$CONDUCTOR_SERVER_URL"
