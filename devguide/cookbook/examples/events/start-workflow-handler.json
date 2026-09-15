@@ -1,0 +1,20 @@
+{
+  "name": "start_fulfillment_on_order_ready",
+  "event": "conductor:publish_order_event:order-status",
+  "condition": "$.status == 'READY'",
+  "actions": [
+    {
+      "action": "start_workflow",
+      "start_workflow": {
+        "name": "fulfill_order",
+        "version": 1,
+        "correlationId": "${orderId}",
+        "input": {
+          "orderId": "${orderId}",
+          "sourceEventId": "${workflowInstanceId}"
+        }
+      }
+    }
+  ],
+  "active": true
+}
