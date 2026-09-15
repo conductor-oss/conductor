@@ -640,6 +640,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
         if (task.getStatus() != null && task.getStatus().isTerminal()) {
             removeTaskInProgress(connection, task);
+            removeScheduledTask(connection, task, taskKey(task));
         }
 
         addWorkflowToTaskMapping(connection, task);
