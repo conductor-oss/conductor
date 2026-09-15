@@ -9,6 +9,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
 } from "@mui/material";
 import { MagicWand } from "@phosphor-icons/react";
 import MuiButton from "components/ui/buttons/MuiButton";
@@ -106,8 +107,22 @@ function ServiceRegistryPopulator({
     });
   }, [selectedMethod?.requestParams, requestParams, serviceType]);
 
+  const disabledReason = (() => {
+    if (!isInIdleState) return "";
+    if (!selectedService?.name) return "Select a service";
+    if (!(selectedService?.serviceURI || selectedHost)) {
+      return serviceType === "gRPC" ? "Select a host:port" : "Select a host";
+    }
+    if (!selectedMethod?.methodType) return "Select a service method";
+    if (!isParamsValid) return "Fill all required parameters";
+    return "";
+  })();
+
   const handleExecute = () => {
-    if (selectedMethod?.methodType && selectedService?.serviceURI) {
+    if (
+      selectedMethod?.methodType &&
+      (selectedService?.serviceURI || selectedHost)
+    ) {
       const { url: updatedUrl, headers } = replaceDynamicParams(
         selectedMethod?.methodName,
         requestParams,
@@ -408,16 +423,20 @@ function ServiceRegistryPopulator({
           )}
         </Grid>
         <Box display="flex" justifyContent="flex-end" width="100%" pt={3}>
-          <Button
-            onClick={handleExecute}
-            disabled={!isParamsValid || !isInIdleState}
-          >
-            {isInIdleState ? (
-              "Populate"
-            ) : (
-              <CircularProgress color="inherit" size={20} />
-            )}
-          </Button>
+          <Tooltip title={disabledReason} placement="top">
+            <span>
+              <Button
+                onClick={handleExecute}
+                disabled={!isInIdleState || Boolean(disabledReason)}
+              >
+                {isInIdleState ? (
+                  "Populate"
+                ) : (
+                  <CircularProgress color="inherit" size={20} />
+                )}
+              </Button>
+            </span>
+          </Tooltip>
         </Box>
       </UIModal>
     </Box>
