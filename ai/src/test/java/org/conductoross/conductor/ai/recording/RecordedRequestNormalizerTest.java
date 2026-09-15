@@ -212,6 +212,68 @@ class RecordedRequestNormalizerTest {
         assertEquals("dlrow olleh", reversed.value().get("result").textValue());
     }
 
+    @Test
+    void agentToolSummaryPlaysBackAcrossSubWorkflowIds() throws Exception {
+        // An agent tool runs as a sub-workflow. Its structured history keeps only the result,
+        // but the generated [TOOL RESULTS] text carries the sub-workflow's envelope, including
+        // an id that is new on every run. Playback must match across that id.
+        String structured = "{\"result\":\"ECHO_ARGS_RESULT:proof42\"}";
+        String recordedEntry =
+                "[{\"name\":\"go_e2e_skill\",\"output\":" + envelope("run-one") + "}]";
+        MockLLM playback =
+                playback(
+                        historyRequest(
+                                List.of("go_e2e_skill"),
+                                List.of(structured),
+                                recordedEntry,
+                                false));
+        String id = "call_0";
+        Prompt prompt =
+                new Prompt(
+                        List.of(
+                                // The live text names the result by the sub-workflow's task
+                                // reference, not the tool: the fork indexes the call and the
+                                // merge script strips only the last index.
+                                new UserMessage(
+                                        summary(
+                                                "[{\"name\":\"b0da41e6-1a5c-4dc9-8ada-35c94b3adc71_0_0_\",\"output\":"
+                                                        + envelope("run-two")
+                                                        + "}]")),
+                                AssistantMessage.builder()
+                                        .content("{}")
+                                        .toolCalls(
+                                                List.of(
+                                                        new AssistantMessage.ToolCall(
+                                                                id,
+                                                                "function",
+                                                                "go_e2e_skill",
+                                                                "{}")))
+                                        .build(),
+                                result(id, "go_e2e_skill", structured)));
+        assertEquals(
+                "saved answer",
+                playback.getChatModel().call(prompt).getResult().getOutput().getText());
+        // An output with an unknown extra key is not an envelope and is left alone.
+        LLMRecording.Request other =
+                historyRequest(
+                        List.of("go_e2e_skill"),
+                        List.of(structured),
+                        "[{\"name\":\"go_e2e_skill\",\"output\":{\"result\":\"x\",\"extra\":1}}]",
+                        false);
+        assertTrue(
+                RecordedRequestNormalizer.normalizeTransportHistory(other)
+                        .messages()
+                        .getFirst()
+                        .text()
+                        .contains("\"extra\":1"));
+    }
+
+    private static String envelope(String subWorkflowId) {
+        return "{\"result\":\"ECHO_ARGS_RESULT:proof42\",\"subWorkflowId\":\""
+                + subWorkflowId
+                + "\",\"finishReason\":\"STOP\",\"context\":{},\"rejectionReason\":null}";
+    }
+
     @ParameterizedTest
     @ValueSource(
             strings = {
