@@ -103,6 +103,13 @@ public class WorkflowModel {
 
     private String updatedBy;
 
+    /**
+     * The caller's Entra ID SSO token, set by the enterprise SSO layer at workflow start and never
+     * serialized to the API. Read by the Microsoft Foundry client when a task asks to run as the
+     * caller.
+     */
+    @JsonIgnore private String callerEntraToken;
+
     // Capture the failed taskId if the workflow execution failed because of task failure
     private String failedTaskId;
 

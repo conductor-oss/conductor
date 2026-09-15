@@ -27,6 +27,7 @@ import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegi
 import org.conductoross.conductor.ai.agentspan.runtime.util.AgentExecutionTokenUsageAggregator;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowClassifiers;
 import org.conductoross.conductor.common.metadata.agent.*;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -77,6 +78,9 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
+    private final AzureFoundryAgentClient azureFoundryAgentClient;
+    private final BedrockAgentClient bedrockAgentClient;
+    private final SecretsDAO secretsDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -338,10 +342,24 @@ public class AgentService {
                         + def.getVersion());
     }
 
+    /** The flat string fields of a credential secret, which is what the clients consume. */
+    private static Map<String, String> credentialValues(
+            com.fasterxml.jackson.databind.JsonNode secretJson) {
+        Map<String, String> values = new java.util.LinkedHashMap<>();
+        secretJson
+                .fields()
+                .forEachRemaining(
+                        field -> {
+                            if (field.getValue().isValueNode()) {
+                                values.put(field.getKey(), field.getValue().asText());
+                            }
+                        });
+        return values;
+    }
+
     // ── Agent discovery ─────────────────────────────────────────────
 
     /** List all registered agents (workflow defs with agent_sdk metadata). */
-    @SuppressWarnings("unchecked")
     public List<AgentSummary> listAgents() {
         // Use the portable getAllWorkflowDefs() (present across Conductor cores, incl. orkes'
         // vendored oss-core which lacks getAllWorkflowDefsLatestVersions()) and reduce to the
@@ -380,9 +398,9 @@ public class AgentService {
             }
 
             List<String> tags = null;
-            Object caps = metadata.get("agent_capabilities");
-            if (caps instanceof List) {
-                tags = (List<String>) caps;
+            Object capabilities = metadata.get("agent_capabilities");
+            if (capabilities instanceof List<?> list) {
+                tags = list.stream().map(String::valueOf).toList();
             }
 
             agents.add(
@@ -408,6 +426,47 @@ public class AgentService {
                             .timeoutSeconds(def.getTimeoutSeconds())
                             .failureWorkflow(def.getFailureWorkflow())
                             .build());
+        }
+
+        // Discover external agents by scanning all credential secrets.
+        // Any secret whose JSON value contains an "endpoint" key is treated as an Microsoft Foundry
+        // credential; one with a "region" key is treated as an AWS Bedrock credential.
+        if (secretsDAO != null) {
+            try {
+                List<String> secretNames = secretsDAO.listSecretNames();
+                for (String secretName : secretNames) {
+                    try {
+                        String secretValue = secretsDAO.getSecret(secretName);
+                        if (secretValue == null || secretValue.isBlank()) continue;
+                        com.fasterxml.jackson.databind.JsonNode secretJson =
+                                MAPPER.readTree(secretValue);
+                        String endpoint = secretJson.path("endpoint").asText(null);
+                        String region = secretJson.path("region").asText(null);
+                        // Discovery is a control-plane scan with no task behind it, so this is the
+                        // one place that reads secrets directly — the clients are handed values.
+                        Map<String, String> credentials = credentialValues(secretJson);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            agents.addAll(
+                                    azureFoundryAgentClient.listExternalAgents(
+                                            credentials, endpoint));
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            agents.addAll(
+                                    bedrockAgentClient.listExternalAgents(credentials, region));
+                        }
+                    } catch (Exception e) {
+                        log.debug(
+                                "Skipping secret '{}' for external agent discovery: {}",
+                                secretName,
+                                e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to scan secrets for external agent discovery: {}", e.getMessage());
+            }
         }
 
         return agents;
@@ -851,26 +910,61 @@ public class AgentService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> getAgentDef(String name, Integer version) {
-        WorkflowDef def;
-        if (version != null) {
-            def =
-                    metadataDAO
-                            .getWorkflowDef(name, version)
-                            .orElseThrow(
-                                    () ->
-                                            new NotFoundException(
-                                                    "Agent not found: " + name + " v" + version));
-        } else {
-            def =
-                    metadataDAO
-                            .getLatestWorkflowDef(name)
-                            .orElseThrow(() -> new NotFoundException("Agent not found: " + name));
+        Optional<WorkflowDef> defOpt =
+                version != null
+                        ? metadataDAO.getWorkflowDef(name, version)
+                        : metadataDAO.getLatestWorkflowDef(name);
+
+        if (defOpt.isPresent()) {
+            Map<String, Object> metadata = defOpt.get().getMetadata();
+            if (metadata != null && metadata.get("agentDef") instanceof Map) {
+                return (Map<String, Object>) metadata.get("agentDef");
+            }
+            throw new NotFoundException("No agent definition found for: " + name);
         }
-        Map<String, Object> metadata = def.getMetadata();
-        if (metadata != null && metadata.get("agentDef") instanceof Map) {
-            return (Map<String, Object>) metadata.get("agentDef");
+
+        // Not a conductor agent — try external providers by scanning secrets
+        if (secretsDAO != null) {
+            try {
+                for (String secretName : secretsDAO.listSecretNames()) {
+                    try {
+                        String secretValue = secretsDAO.getSecret(secretName);
+                        if (secretValue == null || secretValue.isBlank()) continue;
+                        com.fasterxml.jackson.databind.JsonNode secretJson =
+                                MAPPER.readTree(secretValue);
+                        String endpoint = secretJson.path("endpoint").asText(null);
+                        String region = secretJson.path("region").asText(null);
+                        // Discovery is a control-plane scan with no task behind it, so this is the
+                        // one place that reads secrets directly — the clients are handed values.
+                        Map<String, String> credentials = credentialValues(secretJson);
+                        if (endpoint != null
+                                && !endpoint.isBlank()
+                                && azureFoundryAgentClient != null) {
+                            Map<String, Object> def =
+                                    azureFoundryAgentClient.getExternalAgentDef(
+                                            name, credentials, endpoint);
+                            if (def != null) return def;
+                        } else if (region != null
+                                && !region.isBlank()
+                                && bedrockAgentClient != null) {
+                            Map<String, Object> def =
+                                    bedrockAgentClient.getExternalAgentDef(
+                                            name, credentials, region);
+                            if (def != null) return def;
+                        }
+                    } catch (Exception e) {
+                        log.debug(
+                                "Skipping secret '{}' for external agent def lookup: {}",
+                                secretName,
+                                e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to scan secrets for external agent def: {}", e.getMessage());
+            }
         }
-        throw new NotFoundException("No agent definition found for: " + name);
+
+        throw new NotFoundException("Agent not found: " + name);
     }
 
     public void deleteAgent(String name, Integer version) {

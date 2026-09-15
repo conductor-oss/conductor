@@ -390,11 +390,12 @@ class AgentTaskTests {
         registerCallAgentWorkflow(wfName, agentName, null);
         String workflowId = startWorkflow(wfName, Map.of());
 
-        // 60s, not 30s: registerAgentTaskDef's retryCount=0 makes this fail on the first attempt
-        // once the server's metadata cache picks it up, but tolerates the worst case (the
-        // class-default retryCount=3, ~45-50s observed) if that registration hasn't propagated
-        // yet against a long-lived server.
-        Workflow completed = awaitTerminal(workflowId, 60);
+        // 90s: registerAgentTaskDef's retryCount=0 makes this fail on the first attempt once the
+        // server's metadata cache picks it up (~16s). The worst case is the class-default
+        // retryCount=3 against a long-lived server whose cached task def has not been replaced yet;
+        // each of the four attempts starts a fresh sub-workflow whose LLM task retries three times
+        // with exponential backoff (2+4+8=14s delay), giving 4 × ~16s ≈ 64s. 90s adds headroom.
+        Workflow completed = awaitTerminal(workflowId, 90);
         assertEquals(Workflow.WorkflowStatus.FAILED, completed.getStatus());
 
         Task agentTask = agentTaskOf(completed);
