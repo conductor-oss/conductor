@@ -1,4 +1,4 @@
-import { Box, Tooltip } from "@mui/material";
+import { Box, Divider, Tooltip } from "@mui/material";
 import {
   CopySimple as CopyIcon,
   Trash as DeleteIcon,
@@ -19,6 +19,7 @@ import TagList from "components/ui/TagList";
 import PlayIcon from "components/icons/PlayIcon";
 import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
+import ImportBpmnButton from "pages/executions/SplitWorkflowDefinitionButton/ImportBpmnButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
 import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
@@ -64,6 +65,7 @@ export default function WorkflowDefinitions() {
 
   const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
   const tagsEnabled = featureFlags.isEnabled(FEATURES.TAG_VISIBILITY);
+  const isImportBpmnHidden = featureFlags.isEnabled(FEATURES.HIDE_IMPORT_BPMN);
   const { data, isFetching, refetch }: UseQueryResult<WorkflowDef[]> =
     useWorkflowDefs({}, "workflow");
   const [showAddTagDialog, setShowAddTagDialog] = useState(false);
@@ -473,6 +475,20 @@ export default function WorkflowDefinitions() {
         actions={
           <SectionHeaderActions
             buttons={[
+              ...(isImportBpmnHidden
+                ? []
+                : [
+                    { customButtonElement: <ImportBpmnButton /> },
+                    {
+                      customButtonElement: (
+                        <Divider
+                          orientation="vertical"
+                          flexItem
+                          sx={{ height: 24, alignSelf: "center" }}
+                        />
+                      ),
+                    },
+                  ]),
               {
                 label: "Run workflow",
                 color: "secondary",

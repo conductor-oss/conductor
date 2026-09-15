@@ -250,6 +250,10 @@ export const filterServerErrorsNotPresentInNodes = (
 ) => {
   const serverError = _nth(serverErrors, 0);
   if (serverError != null) {
+    if (!serverError.validationErrors?.length) {
+      // Workflow level error: nothing to match against nodes, so it stays valid.
+      return serverErrors;
+    }
     const validationErrors =
       serverError.validationErrors
         ?.map((sve) => {
