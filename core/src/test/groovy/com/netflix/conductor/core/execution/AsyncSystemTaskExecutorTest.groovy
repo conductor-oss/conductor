@@ -359,6 +359,35 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.TIMED_OUT
     }
 
+    def "Re-runs start() instead of timing out a redelivered SCHEDULED start-retriable task (e.g. SUB_WORKFLOW) past responseTimeout"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // start-retriable tasks (SUB_WORKFLOW) leave the task SCHEDULED on a transient error or a
+        // worker restart mid-launch. A redelivery past responseTimeout must re-run start(), NOT
+        // time the task out (issue #1615). Same stale timing as the overrun-timeout test above.
+        long stale = System.currentTimeMillis() - 20_000
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.isStartRetriable() >> true
+        // re-reserved and re-started (self-healing retry), NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 10_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor)
+        0 * workflowSystemTask.execute(*_)
+
+        task.status != TaskModel.Status.TIMED_OUT
+        task.status == TaskModel.Status.SCHEDULED
+    }
+
     def "Does not time out an IN_PROGRESS task waiting for its callback even when the callback interval exceeds responseTimeout"() {
         given:
         String workflowId = "workflowId"
