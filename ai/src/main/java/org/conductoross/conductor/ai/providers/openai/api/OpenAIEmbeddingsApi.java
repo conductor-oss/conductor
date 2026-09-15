@@ -46,9 +46,10 @@ public class OpenAIEmbeddingsApi {
 
     public OpenAIEmbeddingsApi(
             OkHttpClient httpClient, String apiKey, String baseUrl, boolean azureAuth) {
+        String cleanKey = apiKey != null ? apiKey.strip() : null;
         this.baseUrl = baseUrl != null ? baseUrl : "https://api.openai.com/v1";
         this.authHeaderName = azureAuth ? "api-key" : "Authorization";
-        this.authHeaderValue = azureAuth ? apiKey : "Bearer " + apiKey;
+        this.authHeaderValue = azureAuth ? cleanKey : "Bearer " + cleanKey;
         this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
     }
