@@ -153,6 +153,7 @@ public class ToolCompiler {
                     Map.entry("generate_video", "GENERATE_VIDEO"),
                     Map.entry("rag_index", "LLM_INDEX_TEXT"),
                     Map.entry("rag_search", "LLM_SEARCH_INDEX"),
+                    Map.entry("handoff", "INLINE"),
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
@@ -184,6 +185,14 @@ public class ToolCompiler {
 
         for (ToolConfig tool : tools) {
             String toolType = tool.getToolType() != null ? tool.getToolType() : "worker";
+            if (!TYPE_MAP.containsKey(toolType)) {
+                logger.warn(
+                        "Unrecognized tool type '{}' for tool '{}' — defaulting to SIMPLE. "
+                                + "If this is a new compiler-owned control-signal type, add it to "
+                                + "ToolCompiler.TYPE_MAP instead of relying on this fallback.",
+                        toolType,
+                        tool.getName());
+            }
             String conductorType = TYPE_MAP.getOrDefault(toolType, "SIMPLE");
 
             Map<String, Object> spec = new LinkedHashMap<>();
