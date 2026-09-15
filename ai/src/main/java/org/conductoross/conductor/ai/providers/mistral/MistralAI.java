@@ -123,15 +123,16 @@ public class MistralAI implements AIModel {
                         : httpClient;
         var factory =
                 new org.springframework.http.client.OkHttp3ClientHttpRequestFactory(effective);
-        // Needs accept-encoding headers
-        // https://github.com/spring-projects/spring-ai/issues/372
+        // Do NOT set the Accept-Encoding header manually here. OkHttp only
+        // decompresses a gzip response transparently when it adds the
+        // Accept-Encoding header itself. Setting it explicitly turns off that
+        // automatic decompression, so the gzipped body reaches Jackson undecoded
+        // and parsing fails with "Illegal character ((CTRL-CHAR, code 31))".
+        // Letting OkHttp manage compression makes responses parse correctly.
         return MistralAiApi.builder()
                 .baseUrl(config.getBaseURL())
                 .apiKey(config.getApiKey())
-                .restClientBuilder(
-                        RestClient.builder()
-                                .requestFactory(factory)
-                                .defaultHeader("Accept-Encoding", "gzip, deflate"))
+                .restClientBuilder(RestClient.builder().requestFactory(factory))
                 .build();
     }
 
