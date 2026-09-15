@@ -15,9 +15,9 @@ package org.conductoross.conductor.ai.mcp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Helper class for parsing text content that may contain JSON.
@@ -54,7 +54,7 @@ public class JsonTextParser {
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             try {
                 return objectMapper.readTree(trimmed);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 log.debug(
                         "Text looks like JSON but failed to parse, treating as text: {}",
                         e.getMessage());

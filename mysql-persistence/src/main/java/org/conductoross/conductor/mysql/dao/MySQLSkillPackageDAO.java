@@ -17,11 +17,11 @@ import java.util.Base64;
 import javax.sql.DataSource;
 
 import org.conductoross.conductor.dao.SkillPackageDAO;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** MySQL {@link SkillPackageDAO} — table {@code skill_package} (Base64-encoded bytes). */
 public class MySQLSkillPackageDAO extends MySQLBaseDAO implements SkillPackageDAO {

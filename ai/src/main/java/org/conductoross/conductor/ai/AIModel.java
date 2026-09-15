@@ -40,8 +40,8 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** Interface for LLM implementations. */
 public interface AIModel {
@@ -115,7 +115,6 @@ public interface AIModel {
                 .stopSequences(input.getStopWords())
                 .frequencyPenalty(input.getFrequencyPenalty())
                 .topK(input.getTopK())
-                .internalToolExecutionEnabled(false)
                 .presencePenalty(input.getPresencePenalty())
                 .build();
     }
@@ -129,7 +128,7 @@ public interface AIModel {
                 .model(input.getModel())
                 .height(input.getHeight())
                 .width(input.getWidth())
-                .N(input.getN())
+                .n(input.getN())
                 .responseFormat("b64_json")
                 .style(input.getStyle())
                 .build();
@@ -216,7 +215,7 @@ public interface AIModel {
                                 .build();
                 functions.add(function);
             }
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             throw new RuntimeException(jpe);
         }
         return functions;

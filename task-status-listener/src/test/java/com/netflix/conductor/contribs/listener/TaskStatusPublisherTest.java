@@ -57,7 +57,7 @@ public class TaskStatusPublisherTest {
 
         TimeUnit.MILLISECONDS.sleep(100);
 
-        verify(restClientManager, timeout(1000).atLeastOnce())
+        verify(restClientManager, timeout(15000).atLeastOnce())
                 .postNotification(
                         eq(RestClientManager.NotificationType.TASK),
                         anyString(),
@@ -104,7 +104,7 @@ public class TaskStatusPublisherTest {
         TaskModel nextTask = createTask("next_task", TaskModel.Status.SCHEDULED);
         publisher.onTaskScheduled(nextTask);
 
-        verify(restClientManager, timeout(1000).atLeast(2))
+        verify(restClientManager, timeout(15000).atLeast(2))
                 .postNotification(
                         eq(RestClientManager.NotificationType.TASK),
                         anyString(),

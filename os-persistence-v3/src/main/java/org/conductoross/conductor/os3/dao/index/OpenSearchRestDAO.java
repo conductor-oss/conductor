@@ -46,7 +46,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -60,11 +60,11 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @Trace
 public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
@@ -1360,7 +1360,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             BulkRequest bulkRequest = new BulkRequest.Builder().operations(operations).build();
-            retryTemplate.execute(context -> openSearchClient.bulk(bulkRequest));
+            retryTemplate.execute(() -> openSearchClient.bulk(bulkRequest));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

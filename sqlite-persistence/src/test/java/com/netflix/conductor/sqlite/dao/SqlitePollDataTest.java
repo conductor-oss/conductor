@@ -27,7 +27,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -39,9 +39,9 @@ import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.sqlite.config.SqliteConfiguration;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
@@ -94,7 +94,7 @@ public class SqlitePollDataTest {
     }
 
     @Test
-    public void updateLastPollDataTest() throws SQLException, JsonProcessingException {
+    public void updateLastPollDataTest() throws SQLException, JacksonException {
         pollDataDAO.updateLastPollData("dummy-task", "dummy-domain", "dummy-worker-id");
 
         List<Map<String, Object>> records =
@@ -109,7 +109,7 @@ public class SqlitePollDataTest {
     }
 
     @Test
-    public void updateLastPollDataNullDomainTest() throws SQLException, JsonProcessingException {
+    public void updateLastPollDataNullDomainTest() throws SQLException, JacksonException {
         pollDataDAO.updateLastPollData("dummy-task", null, "dummy-worker-id");
 
         List<Map<String, Object>> records =

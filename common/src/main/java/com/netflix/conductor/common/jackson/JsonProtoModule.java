@@ -12,22 +12,20 @@
  */
 package com.netflix.conductor.common.jackson;
 
-import java.io.IOException;
-
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * JsonProtoModule can be registered into an {@link ObjectMapper} to enable the serialization and
@@ -40,7 +38,7 @@ import com.google.protobuf.Message;
  *
  * @see AnySerializer
  * @see AnyDeserializer
- * @see org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
+ * @see org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration
  */
 @Component(JsonProtoModule.NAME)
 public class JsonProtoModule extends SimpleModule {
@@ -94,14 +92,13 @@ public class JsonProtoModule extends SimpleModule {
      * <p>{@see AnyDeserializer}
      */
     @SuppressWarnings("InnerClassMayBeStatic")
-    protected class AnySerializer extends JsonSerializer<Any> {
+    protected class AnySerializer extends ValueSerializer<Any> {
 
         @Override
-        public void serialize(Any value, JsonGenerator jgen, SerializerProvider provider)
-                throws IOException {
+        public void serialize(Any value, JsonGenerator jgen, SerializationContext context) {
             jgen.writeStartObject();
-            jgen.writeStringField(JSON_TYPE, value.getTypeUrl());
-            jgen.writeBinaryField(JSON_VALUE, value.getValue().toByteArray());
+            jgen.writeStringProperty(JSON_TYPE, value.getTypeUrl());
+            jgen.writeBinaryProperty(JSON_VALUE, value.getValue().toByteArray());
             jgen.writeEndObject();
         }
     }
@@ -113,28 +110,26 @@ public class JsonProtoModule extends SimpleModule {
      * <p>{@see AnySerializer} for details on this representation.
      */
     @SuppressWarnings("InnerClassMayBeStatic")
-    protected class AnyDeserializer extends JsonDeserializer<Any> {
+    protected class AnyDeserializer extends ValueDeserializer<Any> {
 
         @Override
-        public Any deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-            JsonNode root = p.getCodec().readTree(p);
+        public Any deserialize(JsonParser p, DeserializationContext ctxt) {
+            JsonNode root = ctxt.readTree(p);
             JsonNode type = root.get(JSON_TYPE);
             JsonNode value = root.get(JSON_VALUE);
 
-            if (type == null || !type.isTextual()) {
+            if (type == null || !type.isString()) {
                 ctxt.reportBadDefinition(
-                        type.getClass(),
-                        "invalid '@type' field when deserializing ProtoBuf Any object");
+                        Any.class, "invalid '@type' field when deserializing ProtoBuf Any object");
             }
 
-            if (value == null || !value.isTextual()) {
+            if (value == null || !value.isString()) {
                 ctxt.reportBadDefinition(
-                        type.getClass(),
-                        "invalid '@value' field when deserializing ProtoBuf Any object");
+                        Any.class, "invalid '@value' field when deserializing ProtoBuf Any object");
             }
 
             return Any.newBuilder()
-                    .setTypeUrl(type.textValue())
+                    .setTypeUrl(type.stringValue())
                     .setValue(ByteString.copyFrom(value.binaryValue()))
                     .build();
         }

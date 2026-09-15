@@ -5,12 +5,13 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "org.xerial:sqlite-jdbc:3.49.0.0"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
-    implementation "org.flywaydb:flyway-core:11.3.1"
+    implementation "org.springframework.boot:spring-boot-flyway"
+    implementation "org.flywaydb:flyway-core"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

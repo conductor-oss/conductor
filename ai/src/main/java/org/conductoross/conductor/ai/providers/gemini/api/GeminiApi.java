@@ -32,7 +32,7 @@ public class GeminiApi {
     private final String endpointBase; // e.g. "https://generativelanguage.googleapis.com/v1beta"
     private final String apiKey; // null for Vertex
     private final com.google.auth.oauth2.GoogleCredentials credentials; // null for API key mode
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
 
     /** Factory: API-key mode (AI Studio / generativelanguage.googleapis.com). */
     public static GeminiApi forApiKey(

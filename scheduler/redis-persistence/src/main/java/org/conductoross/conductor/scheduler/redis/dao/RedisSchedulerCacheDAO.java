@@ -19,9 +19,9 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.dao.BaseDynoDAO;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerCacheDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis-backed implementation of {@link SchedulerCacheDAO}. Intended to sit in front of a SQL

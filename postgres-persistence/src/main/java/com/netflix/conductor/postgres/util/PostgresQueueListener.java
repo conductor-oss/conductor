@@ -30,9 +30,9 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresQueueListener {
 
@@ -202,7 +202,7 @@ public class PostgresQueueListener {
             if (lastNotificationTime != null) {
                 this.lastNotificationTime = lastNotificationTime.asLong();
             }
-            Iterator<String> iterator = notification.fieldNames();
+            Iterator<String> iterator = notification.propertyNames().iterator();
 
             HashMap<String, QueueStats> queueStats = new HashMap<>();
             iterator.forEachRemaining(
@@ -213,13 +213,13 @@ public class PostgresQueueListener {
                                         objectMapper.treeToValue(
                                                 notification.get(key), QueueStats.class);
                                 queueStats.put(key, stats);
-                            } catch (JsonProcessingException e) {
+                            } catch (JacksonException e) {
                                 throw new RuntimeException(e);
                             }
                         }
                     });
             this.queues = queueStats;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
