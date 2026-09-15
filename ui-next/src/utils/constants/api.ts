@@ -22,4 +22,5 @@ export const INTEGRATIONS_API_URL = {
 
 export const WORKFLOW_METADATA_SHORT_URL =
   "/metadata/workflow?short=true&metadata=true";
+export const WORKFLOW_METADATA_LIST_URL = "/metadata/workflow/list";
 export const ROLES_API_BASE_URL = "/roles";

@@ -21,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
 
@@ -160,6 +161,12 @@ public interface MetadataService {
             boolean activeOnly);
 
     List<WorkflowDef> getWorkflowDefsLatestVersions();
+
+    /**
+     * @return Returns lightweight list items for the latest version of each workflow definition (no
+     *     full definition bodies)
+     */
+    List<WorkflowDefListItem> getWorkflowDefListItems();
 
     /**
      * @return Returns distinct workflow definition names (no versions, no definition bodies)
