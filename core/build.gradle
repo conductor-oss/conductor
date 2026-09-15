@@ -36,6 +36,10 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
+    // Vegas/Gradient2 adaptive concurrency limiter used by the self-tuning
+    // event scheduler (com.netflix.conductor.core.events.scheduler).
+    implementation "com.netflix.concurrency-limits:concurrency-limits-core:${revConcurrencyLimits}"
+
     implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.github.ben-manes.caffeine:caffeine"
