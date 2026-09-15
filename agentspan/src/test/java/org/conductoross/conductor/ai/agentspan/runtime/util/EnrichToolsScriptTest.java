@@ -106,12 +106,23 @@ class EnrichToolsScriptTest {
         return (List<Map<String, Object>>) tasks;
     }
 
-    @SuppressWarnings("unchecked")
     private List<Map<String, Object>> enrichDynamic(
             String httpJson, String knownNamesJson, String toolCallsJson) throws Exception {
+        return enrichDynamicWithConfigs(httpJson, "{}", knownNamesJson, toolCallsJson);
+    }
+
+    private List<Map<String, Object>> enrichDynamicWithAgentTools(
+            String agentToolJson, String knownNamesJson, String toolCallsJson) throws Exception {
+        return enrichDynamicWithConfigs("{}", agentToolJson, knownNamesJson, toolCallsJson);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> enrichDynamicWithConfigs(
+            String httpJson, String agentToolJson, String knownNamesJson, String toolCallsJson)
+            throws Exception {
         String script =
                 JavaScriptBuilder.enrichToolsScriptDynamic(
-                        httpJson, "{}", "{}", "{}", "{}", "{}", knownNamesJson);
+                        httpJson, "{}", agentToolJson, "{}", "{}", "{}", knownNamesJson);
         String wrapped =
                 "var $ = {toolCalls: "
                         + toolCallsJson
@@ -346,6 +357,42 @@ class EnrichToolsScriptTest {
         assertThat((Map<String, Object>) req.get("body"))
                 .containsEntry("city", "SF")
                 .doesNotContainKey("method");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void bothDispatchersMarkAnAgentToolWithTheToolNameItWasDispatchedFor() throws Exception {
+        String agentToolCfg = "{\"research\": {\"workflowName\": \"research_agent_wf\"}}";
+        String toolCalls =
+                "[{\"name\": \"research\", \"taskReferenceName\": \"call_abc123_0\","
+                        + " \"inputParameters\": {\"prompt\": \"find sources\"}}]";
+
+        for (List<Map<String, Object>> tasks :
+                List.of(
+                        enrichWithAgentTools(agentToolCfg, "{}", toolCalls),
+                        enrichDynamicWithAgentTools(agentToolCfg, "{}", toolCalls))) {
+            assertThat(tasks).singleElement().extracting("type").isEqualTo("SUB_WORKFLOW");
+            assertThat((Map<String, Object>) tasks.get(0).get("inputParameters"))
+                    .containsEntry("_agent_tool_name", "research");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void bothDispatchersMarkAnHttpToolSoItIsNamedByItsToolNameRatherThanItsVerb() throws Exception {
+        String httpCfg =
+                "{\"weather\": {\"url\": \"https://api.weather.com\", \"method\": \"POST\"}}";
+        String toolCalls =
+                "[{\"name\": \"weather\", \"taskReferenceName\": \"call_1\","
+                        + " \"inputParameters\": {\"city\": \"SF\", \"method\": \"weather\"}}]";
+
+        for (List<Map<String, Object>> tasks :
+                List.of(
+                        enrichWithConfigs(httpCfg, "{}", "{\"weather\": true}", toolCalls),
+                        enrichDynamic(httpCfg, "{\"weather\": true}", toolCalls))) {
+            assertThat((Map<String, Object>) tasks.get(0).get("inputParameters"))
+                    .containsEntry("_agent_tool_name", "weather");
+        }
     }
 
     @Test
