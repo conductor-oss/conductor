@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.recording;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,6 +41,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.BigIntegerNode;
+import com.fasterxml.jackson.databind.node.DoubleNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.LongNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -240,16 +245,26 @@ public final class RecordedRequestNormalizer {
                                                         ? normalizeToolSummary(
                                                                 message.text(), history, turns)
                                                         : message.text(),
-                                                message.toolCalls(),
+                                                message.toolCalls().stream()
+                                                        .map(
+                                                                call ->
+                                                                        new LLMRecording.ToolCall(
+                                                                                call.reference(),
+                                                                                call.name(),
+                                                                                canonicalNumbers(
+                                                                                        call
+                                                                                                .arguments())))
+                                                        .toList(),
                                                 message.toolResults().stream()
                                                         .map(
                                                                 result ->
                                                                         new LLMRecording.ToolResult(
                                                                                 result.reference(),
                                                                                 result.name(),
-                                                                                normalizeHttpResponse(
-                                                                                        result
-                                                                                                .value())))
+                                                                                canonicalNumbers(
+                                                                                        normalizeHttpResponse(
+                                                                                                result
+                                                                                                        .value()))))
                                                         .toList()))
                         .toList();
         return new LLMRecording.Request(
@@ -315,7 +330,10 @@ public final class RecordedRequestNormalizer {
             normalized
                     .addObject()
                     .put("name", result.reference())
-                    .set("output", sortedObjectKeys(normalizeHttpResponse(result.value())));
+                    .set(
+                            "output",
+                            sortedObjectKeys(
+                                    canonicalNumbers(normalizeHttpResponse(result.value()))));
         }
         return text.substring(0, start + TOOL_RESULTS_START.length())
                 + normalized
@@ -361,6 +379,43 @@ public final class RecordedRequestNormalizer {
                         });
         headers.remove(remove);
         return copy;
+    }
+
+    /**
+     * Gives every JSON number the representation Jackson would parse for its value, so equal values
+     * compare equal. SDKs spell the same tool result differently: Python writes a float with an
+     * integral value as {@code 15000.0}, Go and JavaScript write {@code 15000}. Jackson's number
+     * nodes compare by type as well as value, so without this the two never match. Integral values
+     * become the int, long or big-integer node the literal would parse to; other numbers become a
+     * double node. A value that already has that form is unchanged.
+     */
+    static JsonNode canonicalNumbers(JsonNode value) {
+        if (value == null) return NullNode.instance;
+        if (value.isObject()) {
+            ObjectNode out = MAPPER.createObjectNode();
+            value.fields()
+                    .forEachRemaining(e -> out.set(e.getKey(), canonicalNumbers(e.getValue())));
+            return out;
+        }
+        if (value.isArray()) {
+            ArrayNode array = MAPPER.createArrayNode();
+            value.forEach(item -> array.add(canonicalNumbers(item)));
+            return array;
+        }
+        if (value.isNumber()) {
+            BigDecimal decimal = value.decimalValue().stripTrailingZeros();
+            if (decimal.scale() > 0) return DoubleNode.valueOf(value.doubleValue());
+            if (decimal.compareTo(BigDecimal.valueOf(Integer.MIN_VALUE)) >= 0
+                    && decimal.compareTo(BigDecimal.valueOf(Integer.MAX_VALUE)) <= 0) {
+                return IntNode.valueOf(decimal.intValueExact());
+            }
+            if (decimal.compareTo(BigDecimal.valueOf(Long.MIN_VALUE)) >= 0
+                    && decimal.compareTo(BigDecimal.valueOf(Long.MAX_VALUE)) <= 0) {
+                return LongNode.valueOf(decimal.longValueExact());
+            }
+            return BigIntegerNode.valueOf(decimal.toBigIntegerExact());
+        }
+        return value;
     }
 
     private static JsonNode sortedObjectKeys(JsonNode value) {
