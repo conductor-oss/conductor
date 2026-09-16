@@ -379,7 +379,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         long start = System.currentTimeMillis();
         List<Message> messages = peekMessages(connection, queueName, count);
 
-        while (messages.size() < count && ((System.currentTimeMillis() - start) < timeout)) {
+        // Long-poll semantics: return as soon as at least one message is available (up to
+        // count), rather than blocking for the full timeout waiting to fill the whole batch.
+        // This matches the Redis queue behavior and keeps tail latency low under low activity.
+        while (messages.isEmpty() && ((System.currentTimeMillis() - start) < timeout)) {
             Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
             messages = peekMessages(connection, queueName, count);
         }
