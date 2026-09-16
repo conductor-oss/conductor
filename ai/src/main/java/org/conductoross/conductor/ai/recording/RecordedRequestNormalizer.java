@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -71,6 +72,14 @@ public final class RecordedRequestNormalizer {
     private static final ObjectMapper MAPPER =
             new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
+    /**
+     * Keys an agent tool (a sub-workflow) adds around its {@code result} in the generated [TOOL
+     * RESULTS] text. The structured history keeps only {@code result}; the sub-workflow id differs
+     * on every run, so the text must be reduced the same way before it can match.
+     */
+    private static final Set<String> AGENT_RESULT_ENVELOPE =
+            Set.of("subWorkflowId", "finishReason", "context", "rejectionReason");
+
     private static final Set<String> VOLATILE_HTTP_HEADERS =
             Set.of(
                     "date",
@@ -83,10 +92,11 @@ public final class RecordedRequestNormalizer {
     private static final String TOOL_RESULTS_START = "[TOOL RESULTS]\n";
     private static final String TOOL_RESULTS_END = "\n[/TOOL RESULTS]";
     // stateMergeScript removes the final task index from tool reference names when a worker does
-    // not supply a tool name.
+    // not supply a tool name. The fork appends one index to the call's reference; an agent tool
+    // (a sub-workflow) carries a second, so the name keeps one or more.
     private static final Pattern GENERATED_RESULT_NAME =
             Pattern.compile(
-                    "(?:call_[A-Za-z0-9]+|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}_[0-9]+)_");
+                    "(?:call_[A-Za-z0-9]+|[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}(?:_[0-9]+)+)_");
 
     private final Map<String, CallIdentity> callIdentities = new HashMap<>();
 
@@ -310,7 +320,7 @@ public final class RecordedRequestNormalizer {
                 if (!matched.contains(i)
                         && matchesName
                         && sameSummaryValue(
-                                normalizeHttpResponse(entry.get("output")),
+                                normalizeHttpResponse(stripAgentEnvelope(entry.get("output"))),
                                 normalizeHttpResponse(result.value()))) {
                     index = i;
                     break;
@@ -338,6 +348,23 @@ public final class RecordedRequestNormalizer {
         return text.substring(0, start + TOOL_RESULTS_START.length())
                 + normalized
                 + text.substring(end);
+    }
+
+    /**
+     * Reduces an agent tool's summary output to its {@code result}. Only an object whose other keys
+     * are all part of the sub-workflow envelope is reduced; anything else is returned as is, so an
+     * unknown shape is never rewritten.
+     */
+    private static JsonNode stripAgentEnvelope(JsonNode output) {
+        if (output == null || !output.isObject() || !output.has("result")) return output;
+        Iterator<String> names = output.fieldNames();
+        while (names.hasNext()) {
+            String name = names.next();
+            if (!name.equals("result") && !AGENT_RESULT_ENVELOPE.contains(name)) return output;
+        }
+        ObjectNode reduced = MAPPER.createObjectNode();
+        reduced.set("result", output.get("result"));
+        return reduced;
     }
 
     private static boolean sameSummaryValue(JsonNode summary, JsonNode result) {
