@@ -182,25 +182,17 @@ export default function CreateAgentGuide() {
                   id="agent-guide-framework"
                   value={guide.id}
                   label="Framework"
+                  MenuProps={{
+                    slotProps: {
+                      root: {
+                        sx: { pointerEvents: "none" },
+                      },
+                      paper: { sx: { pointerEvents: "auto" } },
+                    },
+                  }}
                   onChange={(event) =>
                     selectGuide(language.id, event.target.value)
                   }
-                  MenuProps={{
-                    // Select Menu is a Modal: it locks scroll and restores focus
-                    // to the field, which blocks scrolling #main-content until
-                    // another click moves focus away.
-                    disableScrollLock: true,
-                    disableRestoreFocus: true,
-                    slotProps: {
-                      root: {
-                        // Let wheel/trackpad events reach the page under the menu
-                        sx: { pointerEvents: "none" },
-                      },
-                      paper: {
-                        sx: { pointerEvents: "auto" },
-                      },
-                    },
-                  }}
                   sx={{
                     bgcolor: "#eef6ff",
                     color: "#145b9e",

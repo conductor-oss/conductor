@@ -70,6 +70,22 @@ test("the open menu's overlay does not capture pointer events", async ({
   expect(pointerEvents.paper).toBe("auto");
 });
 
+test("scroll stays locked while the menu is open, and is released after", async ({
+  page,
+}) => {
+  const bodyOverflow = () =>
+    page.evaluate(() => document.body.style.overflow || "");
+
+  await page.locator("#agent-guide-framework").click();
+  await expect(page.getByRole("option", { name: "LangChain4j" })).toBeVisible();
+  // Locking the page behind an open menu is intended; the fix must not remove it.
+  expect(await bodyOverflow()).toBe("hidden");
+
+  await page.getByRole("option", { name: "LangChain4j" }).click();
+  await expect(page).toHaveURL(/framework=langchain4j/);
+  await expect.poll(bodyOverflow).toBe("");
+});
+
 test("the framework menu is still usable after the fix", async ({ page }) => {
   // pointer-events are disabled on the Modal root and re-enabled on the paper,
   // so the menu itself must remain clickable — guard against over-correcting.
