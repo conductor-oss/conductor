@@ -35,10 +35,10 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
 import rx.subscriptions.Subscriptions;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class KafkaObservableQueue implements ObservableQueue {
 
@@ -219,7 +219,7 @@ public class KafkaObservableQueue implements ObservableQueue {
         try {
             objectMapper.readTree(json); // Parses the JSON to check validity
             return true;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return false;
         }
     }
@@ -230,7 +230,7 @@ public class KafkaObservableQueue implements ObservableQueue {
         }
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             // Log the error and return a placeholder or null
             LOGGER.error("Failed to convert object to JSON: {}", value, ex);
             return null;

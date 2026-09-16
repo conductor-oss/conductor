@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @Conditional(AIIntegrationEnabledCondition.class)

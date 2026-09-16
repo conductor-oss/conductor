@@ -16,16 +16,16 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.dao.PostgresBaseDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * PostgreSQL implementation of {@link SchedulerDAO}.

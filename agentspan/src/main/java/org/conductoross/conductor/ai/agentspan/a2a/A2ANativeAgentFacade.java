@@ -52,9 +52,9 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.TaskService;
 import com.netflix.conductor.service.WorkflowService;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Exposes native Conductor agents (agentspan) as A2A agents (server side). One agent = one A2A

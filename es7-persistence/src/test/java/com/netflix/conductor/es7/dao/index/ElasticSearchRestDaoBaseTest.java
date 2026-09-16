@@ -24,7 +24,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.junit.After;
 import org.junit.Before;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 public abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
 

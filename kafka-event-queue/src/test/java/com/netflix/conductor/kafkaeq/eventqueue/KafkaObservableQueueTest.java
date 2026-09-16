@@ -37,9 +37,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.kafkaeq.config.KafkaEventQueueProperties;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import rx.Observable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -274,7 +274,7 @@ public class KafkaObservableQueueTest {
         try {
             objectMapper.readTree(json); // Parses the JSON to check validity
             return true;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return false;
         }
     }
@@ -285,7 +285,7 @@ public class KafkaObservableQueueTest {
         }
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             return null;
         }
     }

@@ -32,7 +32,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.DriverException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;

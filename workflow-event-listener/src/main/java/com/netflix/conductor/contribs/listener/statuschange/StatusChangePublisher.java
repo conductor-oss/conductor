@@ -18,9 +18,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +27,6 @@ import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.WorkflowModel;
 
-@Singleton
 public class StatusChangePublisher implements WorkflowStatusListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusChangePublisher.class);
@@ -102,7 +98,6 @@ public class StatusChangePublisher implements WorkflowStatusListener {
         }
     }
 
-    @Inject
     public StatusChangePublisher(
             RestClientManager rcm,
             ExecutionDAOFacade executionDAOFacade,

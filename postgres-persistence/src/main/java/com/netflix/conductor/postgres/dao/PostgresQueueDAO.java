@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
@@ -30,11 +30,11 @@ import com.netflix.conductor.postgres.util.ExecutorsUtil;
 import com.netflix.conductor.postgres.util.PostgresQueueListener;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 

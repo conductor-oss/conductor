@@ -26,9 +26,9 @@ import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import tools.jackson.databind.ObjectMapper;
 
 /** Runs the {@link SchemaDAO} contract against a real Redis container. */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

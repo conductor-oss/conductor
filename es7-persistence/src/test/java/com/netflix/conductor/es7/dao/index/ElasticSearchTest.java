@@ -27,7 +27,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.es7.config.ElasticSearchProperties;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @ContextConfiguration(
         classes = {TestObjectMapperConfiguration.class, ElasticSearchTest.TestConfiguration.class})

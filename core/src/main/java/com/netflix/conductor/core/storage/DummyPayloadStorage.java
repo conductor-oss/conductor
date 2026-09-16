@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is

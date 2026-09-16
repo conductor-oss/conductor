@@ -23,7 +23,7 @@ import org.conductoross.conductor.model.file.FileUploadStatus;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
 
 import com.datastax.driver.core.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_FILE_METADATA_BY_TASK;

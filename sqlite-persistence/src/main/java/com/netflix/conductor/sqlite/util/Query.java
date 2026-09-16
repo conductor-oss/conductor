@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.sqlite.util;
 
-import java.io.IOException;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
@@ -24,8 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Represents a {@link PreparedStatement} that is wrapped with convenience methods and utilities.
@@ -614,7 +613,7 @@ public class Query implements AutoCloseable {
 
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new NonTransientException(ex.getMessage(), ex);
         }
     }
@@ -626,7 +625,7 @@ public class Query implements AutoCloseable {
 
         try {
             return objectMapper.readValue(value, returnType);
-        } catch (IOException ex) {
+        } catch (JacksonException ex) {
             throw new NonTransientException(
                     "Could not convert JSON '" + value + "' to " + returnType.getName(), ex);
         }

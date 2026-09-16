@@ -15,13 +15,23 @@ dependencies {
     implementation project(':conductor-core')
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.springframework.boot:spring-boot-restclient'
 
-    implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
-    implementation("org.apache.httpcomponents.client5:httpclient5:${revApacheHttpComponentsClient5}")
+    implementation("org.apache.httpcomponents.client5:httpclient5")
 
     testImplementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-restclient'
     testImplementation "org.testcontainers:mockserver:${revTestContainer}"
     testImplementation "org.mock-server:mockserver-client-java:${revMockServerClient}"
     testImplementation "org.bouncycastle:bcprov-jdk15on:1.70"
     testImplementation "org.bouncycastle:bcpkix-jdk15on:1.70"
+}
+
+// Compat: mockserver validates its expectation JSON with json-schema-validator 1.x, whose
+// SpecVersion API 3.x replaced. conductor-common pulls 3.x transitively for Jackson 3 support, and
+// Gradle would otherwise resolve the higher version and break mockserver at runtime. These tests do
+// not touch Conductor's own schema validation, so the test classpath keeps the version mockserver
+// was built against.
+configurations.matching { it.name.startsWith('test') }.configureEach {
+    resolutionStrategy.force 'com.networknt:json-schema-validator:1.0.76'
 }
