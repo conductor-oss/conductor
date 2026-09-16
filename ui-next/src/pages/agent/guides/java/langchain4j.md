@@ -39,4 +39,4 @@ export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
 ```
 
-[LangChain4j bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/langchain4j.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples)
+[LangChain4j bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/langchain4j.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples/src/main/java/org/conductoross/conductor/ai/examples/langchain)
