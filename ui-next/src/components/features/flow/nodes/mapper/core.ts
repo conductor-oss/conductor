@@ -33,6 +33,7 @@ import {
   isForkJoinTask,
   isForkJoinDynamicTask,
   isDoWhileTask,
+  isAgentWithTools,
   isTerminateTask,
   isSubWorkflowTask,
   isSwitchTask,
@@ -226,9 +227,11 @@ export const tasksAsNodes: TaskWalkerFn = async (
         previousTask: currentTask,
         previousTaskAllowsConnection: !everyTaskIsTerminate,
       });
-    } else if (isDoWhileTask(currentTask)) {
+    } else if (isAgentWithTools(currentTask) || isDoWhileTask(currentTask)) {
+      // Both are containers of child tasks; isAgentWithTools is a plain predicate rather than a
+      // type guard, since an AGENT is not a DoWhileTaskDef even though it is drawn like one.
       const { nodes: doWhileNodes, edges: doWhileEdges } = await processDoWhile(
-        currentTask,
+        currentTask as Parameters<typeof processDoWhile>[0],
         crumbs,
         taskWalkerFunc,
       );

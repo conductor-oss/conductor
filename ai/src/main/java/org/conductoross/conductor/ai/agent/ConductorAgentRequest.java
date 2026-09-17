@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import java.util.Map;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -50,4 +52,29 @@ public class ConductorAgentRequest extends ConductorAgentStartRequest {
      * Defaults to 30.
      */
     private Integer maxPollFailures;
+
+    /**
+     * Run the agent's tool calls as tasks in this workflow instead of handing them back.
+     *
+     * <p>Off by default: a workflow that already wires its own dispatch branch keeps working
+     * unchanged. Turned on, the {@code AGENT} task stays {@code IN_PROGRESS} while each requested
+     * tool is scheduled as an ordinary task — one per call, in parallel — and resumes the agent
+     * with their results once they finish.
+     */
+    /**
+     * How many rounds of tools one agent task may run before it is stopped.
+     *
+     * <p>An agent that keeps asking for tools is a loop, and maxDurationSeconds - a day by default
+     * - is not a useful backstop for one. Default 10.
+     */
+    private Integer maxToolTurns;
+
+    private Boolean autoRunTools;
+
+    /**
+     * Optional {@code tool name -> task name} overrides for {@link #autoRunTools}. A tool with no
+     * entry runs as a task of its own name, so a worker registered for {@code get_revenue} serves
+     * the agent's {@code get_revenue} tool with no configuration at all.
+     */
+    private Map<String, String> toolTaskNames;
 }
