@@ -68,6 +68,56 @@ test("task definition appears in the /taskDef list with expected row data", asyn
   // tests instead.
 });
 
+test("Executable column honors caller-relative values returned with task definitions", async ({
+  page,
+}) => {
+  const executableTask = makeTaskDef("response_executable");
+  const nonExecutableTask = makeTaskDef("response_not_executable");
+
+  await page.route("**/api/metadata/taskdefs?**", async (route) => {
+    const access = new URL(route.request().url()).searchParams.get("access");
+
+    if (access === "READ") {
+      await route.fulfill({
+        contentType: "application/json",
+        json: [
+          { ...executableTask, executable: true },
+          { ...nonExecutableTask, executable: false },
+        ],
+      });
+      return;
+    }
+
+    if (access === "EXECUTE") {
+      // Deliberately contradict the enriched response. The caller-relative
+      // field returned with each READ row is authoritative when available.
+      await route.fulfill({
+        contentType: "application/json",
+        json: [nonExecutableTask],
+      });
+      return;
+    }
+
+    await route.continue();
+  });
+
+  await page.goto("/taskDef");
+  await page.waitForLoadState("networkidle");
+
+  const executableRow = page.getByRole("row").filter({
+    has: page.getByRole("link", { name: executableTask.name, exact: true }),
+  });
+  const nonExecutableRow = page.getByRole("row").filter({
+    has: page.getByRole("link", {
+      name: nonExecutableTask.name,
+      exact: true,
+    }),
+  });
+
+  await expect(executableRow.getByText("Yes", { exact: true })).toBeVisible();
+  await expect(nonExecutableRow.getByText("No", { exact: true })).toBeVisible();
+});
+
 test("DataTable Columns button opens ColumnSelector with MuiCheckbox items", async ({
   page,
 }) => {

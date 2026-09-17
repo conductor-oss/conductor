@@ -85,15 +85,20 @@ export default function TaskDefinitions() {
         id: "executable",
         name: "executable",
         label: "Executable?",
-        renderer: (executable: boolean) => (
-          <TagChip
-            style={{
-              background: executable ? colors.successTag : colors.errorTag,
-            }}
-            sx={{ mr: 2 }}
-            label={executable ? "Yes" : "No"}
-          />
-        ),
+        // `undefined` means the execute-permission lookup has not resolved, so
+        // neither "Yes" nor "No" can be claimed yet.
+        renderer: (executable?: boolean) =>
+          executable === undefined ? (
+            <TagChip sx={{ mr: 2 }} label="Unknown" />
+          ) : (
+            <TagChip
+              style={{
+                background: executable ? colors.successTag : colors.errorTag,
+              }}
+              sx={{ mr: 2 }}
+              label={executable ? "Yes" : "No"}
+            />
+          ),
         tooltip:
           "Tasks marked as Yes are available for you to execute. If you need access to execute any other task, please contact the task owner or your Administrator.",
       },
@@ -284,16 +289,12 @@ export default function TaskDefinitions() {
     [isTrialExpired, tagsEnabled],
   );
 
-  const taskVisibility = featureFlags.getValue(
-    FEATURES.TASK_VISIBILITY,
-    "READ",
-  );
   const pushHistory = usePushHistory();
   const {
-    data: visibilityData,
+    data: executableData,
     isFetching,
     refetch,
-  } = useFetch(`/metadata/taskdefs?access=${taskVisibility}&metadata=true`);
+  } = useFetch(`/metadata/taskdefs?access=EXECUTE`);
 
   const {
     data: readonlyData,
@@ -321,14 +322,25 @@ export default function TaskDefinitions() {
     },
   });
 
+  // Null until the execute-permission request resolves. An empty set is a
+  // meaningful answer (nothing is executable) and must stay distinct from it.
+  const executableNames = useMemo(
+    () =>
+      executableData
+        ? new Set<string>(executableData.map((item: TaskDto) => item.name))
+        : null,
+    [executableData],
+  );
+
   const tableData = useMemo<TaskDto[]>(
     () =>
-      readonlyData && visibilityData
+      readonlyData
         ? readonlyData.reduce((result: TaskDto[], currentItem: TaskDto) => {
+            // Permission-aware servers include this caller-relative value on
+            // the READ payload. Fall back to the filtered endpoint for OSS
+            // and older servers that do not provide it.
             const executable =
-              visibilityData.findIndex(
-                (item: TaskDto) => item.name === currentItem.name,
-              ) > -1;
+              currentItem.executable ?? executableNames?.has(currentItem.name);
             result.push({
               createTime: !currentItem.createTime ? 0 : currentItem.createTime,
               ...currentItem,
@@ -338,7 +350,7 @@ export default function TaskDefinitions() {
             return result;
           }, [])
         : [],
-    [visibilityData, readonlyData],
+    [executableNames, readonlyData],
   );
 
   const handleSearchTermChange = useCallback(
