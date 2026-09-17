@@ -91,14 +91,14 @@ export default function AgentDefinitions() {
             {name.trim()}
           </NavLink>
         ),
-        tooltip: "The name of the workflow",
+        tooltip: "The name of the agent",
       },
       {
         id: "workflow_description",
         name: "description",
         label: "Description",
         grow: 2,
-        tooltip: "The description of the workflow",
+        tooltip: "The description of the agent",
       },
       ...(tagsEnabled
         ? ([
@@ -112,7 +112,7 @@ export default function AgentDefinitions() {
                 <TagList tags={toTagDtos(tags)} name={row.name} />
               ),
               grow: 2,
-              tooltip: "The tags associated with the workflow",
+              tooltip: "The tags associated with the agent",
             },
           ] as LegacyColumn[])
         : []),
@@ -121,43 +121,27 @@ export default function AgentDefinitions() {
         name: "createTime",
         label: "Created time",
         type: ColumnCustomType.DATE,
-        tooltip: "The time the workflow was created",
+        tooltip: "The time the agent was created",
       },
       {
         id: "latest_version",
         name: "version",
         label: "Latest version",
         grow: 0.5,
-        tooltip: "The latest version of the workflow",
+        tooltip: "The latest version of the agent",
       },
       {
         id: "schema_version",
         name: "schemaVersion",
         label: "Schema version",
         grow: 0.5,
-        tooltip: "The schema version of the workflow",
-      },
-      {
-        id: "restartable",
-        name: "restartable",
-        label: "Restartable",
-        type: ColumnCustomType.BOOLEAN,
-        grow: 0.5,
-        tooltip: "Whether the workflow is restartable",
-      },
-      {
-        id: "status_listener_enabled",
-        name: "workflowStatusListenerEnabled",
-        label: "Status listener enabled",
-        type: ColumnCustomType.BOOLEAN,
-        grow: 0.5,
-        tooltip: "Whether the status listener is enabled",
+        tooltip: "The schema version of the agent's compiled workflow",
       },
       {
         id: "owner_email",
         name: "ownerEmail",
         label: "Owner email",
-        tooltip: "The email of the owner of the workflow",
+        tooltip: "The email of the owner of the agent",
       },
       {
         id: "input_params",
@@ -165,7 +149,7 @@ export default function AgentDefinitions() {
         label: "Input params",
         type: ColumnCustomType.JSON,
         sortable: false,
-        tooltip: "The input parameters of the workflow",
+        tooltip: "The input parameters of the agent",
       },
       {
         id: "output_params",
@@ -173,28 +157,29 @@ export default function AgentDefinitions() {
         label: "Output params",
         type: ColumnCustomType.JSON,
         sortable: false,
-        tooltip: "The output parameters of the workflow",
+        tooltip: "The output parameters of the agent",
       },
       {
         id: "timeout_policy",
         name: "timeoutPolicy",
         label: "Timeout policy",
         grow: 0.5,
-        tooltip: "The timeout policy of the workflow",
+        tooltip: "The timeout policy of the agent's compiled workflow",
       },
       {
         id: "timeout_seconds",
         name: "timeoutSeconds",
         label: "Timeout seconds",
         grow: 0.5,
-        tooltip: "The timeout seconds of the workflow",
+        tooltip:
+          "How long the agent may run before the timeout policy applies, in seconds",
       },
       {
         id: "failure_workflow",
         name: "failureWorkflow",
         label: "Failure workflow",
         grow: 1,
-        tooltip: "The compensation workflow",
+        tooltip: "The compensation workflow to run if this agent fails",
       },
       {
         id: "executions_link",
@@ -211,7 +196,7 @@ export default function AgentDefinitions() {
             Query
           </NavLink>
         ),
-        tooltip: "The executions of the workflow",
+        tooltip: "Query executions of this agent",
       },
       {
         id: "actions",
@@ -221,7 +206,7 @@ export default function AgentDefinitions() {
         searchable: false,
         grow: 0.5,
         minWidth: "180px",
-        tooltip: "Actions you can perform on the workflow",
+        tooltip: "Actions you can perform on the agent",
         renderer: (_: string, agent: AgentSummary) => (
           <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
             <Tooltip title="Run agent">
@@ -251,7 +236,7 @@ export default function AgentDefinitions() {
                 <CopyIcon size={20} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete workflow">
+            <Tooltip title="Delete agent">
               <IconButton
                 id={`delete-${agent.name}-btn`}
                 disabled={isTrialExpired}
