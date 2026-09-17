@@ -41,7 +41,8 @@ interface AdvanceSearchComponentProps {
   setToDisplayTime: Dispatch<SetStateAction<string>>;
   openEndDatePicker: boolean;
   setFreeText: QueryDispatch<SetStateAction<string>>;
-  setQueryText: QueryDispatch<SetStateAction<string>>;
+  /** Takes the editor's value directly; the page decides what to store. */
+  setQueryText: (value: string) => void;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
   handleReset: () => void;
   doSearch: () => void;

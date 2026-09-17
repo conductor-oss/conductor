@@ -1,5 +1,6 @@
 import { Box } from "@mui/material";
 import { Paper } from "components";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
 import MuiTypography from "components/ui/MuiTypography";
 import AddIcon from "components/icons/AddIcon";
@@ -30,6 +31,12 @@ import { BasicSearch } from "./Task/BasicSearch";
 import { SwitchComponent } from "./Task/SwitchComponent";
 import { TaskApiSearchModal } from "./Task/TaskApiSearchModal";
 import ResultsTable from "./TaskResultsTable";
+import {
+  ParsedBasicTaskFilters,
+  basicOnlyTaskFilterQuery,
+  basicTaskFieldsAfterQueryFormat,
+  parseQueryToBasicTaskFilters,
+} from "./taskFilterQuery";
 
 const DEFAULT_SORT = "startTime:DESC";
 
@@ -56,9 +63,42 @@ export function TaskSearch() {
   const [taskId, setTaskId] = useQueryState("taskId", "");
   const [taskRefName, setTaskRefName] = useQueryState("taskRefName", "");
   const [workflowName, setWorkflowName] = useQueryState("workflowName", "");
-  const [queryText, setQueryText] = useQueryState("query", "");
   const [status, setStatus] = useQueryState<string[]>("status", []);
   const [taskType, setTaskType] = useQueryState<string[]>("taskType", []);
+
+  const [asQuery, setAsQuery] = useQueryState("asQuery", false);
+  const [authoredQuery, setAuthoredQuery] = useQueryState("query", "");
+
+  /** The clauses for the filters that only basic search renders a control for. */
+  const seedFromBasicFilters = () =>
+    basicOnlyTaskFilterQuery({
+      taskDefName,
+      taskType,
+      taskId,
+      taskRefName,
+      workflowName,
+      status,
+    });
+
+  // The seed cannot ride on useQueryState's default value the way the workflow
+  // and agent searches do: that default is captured on the hook's first render
+  // and never updated again, so any filter set after page load would be missed.
+  // Those two get away with it because their advanced panel is a separate
+  // component that mounts at the toggle; both modes live in this one. So the
+  // seed is held in state, recomputed whenever SQL format is entered, and a
+  // flag records whether the box is still showing it or the user has since
+  // edited it — which is what tells the toggle back whether the basic fields
+  // need updating from the text.
+  const [seededQuery, setSeededQuery] = useState(seedFromBasicFilters);
+  const [showingSeed, setShowingSeed] = useState(
+    () => asQuery && _isEmpty(authoredQuery),
+  );
+  const queryText = showingSeed ? seededQuery : authoredQuery;
+
+  const setQueryText = (value: string) => {
+    setShowingSeed(false);
+    setAuthoredQuery(value);
+  };
 
   const [startTimeFrom, setStartTimeFrom] = useQueryState(
     "startFrom",
@@ -76,7 +116,7 @@ export function TaskSearch() {
   );
   const [sort, setSort] = useQueryState("sort", DEFAULT_SORT);
   const [showCodeDialog, setShowCodeDialog] = useQueryState("displayCode", "");
-  const [asQuery, setAsQuery] = useQueryState("asQuery", false);
+  const [discardQueryOpen, setDiscardQueryOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<IObject | null>(null);
 
   const [unauthorized, setUnauthorized] = useState<{
@@ -121,7 +161,7 @@ export function TaskSearch() {
       if (!_isEmpty(taskDefName)) {
         clauses.push(`taskDefName='${taskDefName}'`);
       }
-      if (!_isEmpty(taskType) && !queryText.includes("taskType")) {
+      if (!_isEmpty(taskType) && !authoredQuery.includes("taskType")) {
         clauses.push(`taskType IN (${taskType.join(",")})`);
       }
       if (!_isEmpty(taskId)) {
@@ -133,7 +173,7 @@ export function TaskSearch() {
       if (!_isEmpty(workflowName)) {
         clauses.push(`workflowName='${workflowName}'`);
       }
-      if (!_isEmpty(status) && !queryText.includes("status")) {
+      if (!_isEmpty(status) && !authoredQuery.includes("status")) {
         clauses.push(`status IN (${status.join(",")})`);
       }
     }
@@ -156,6 +196,7 @@ export function TaskSearch() {
     };
   }, [
     asQuery,
+    authoredQuery,
     endTimeTo,
     endTimeFrom,
     freeText,
@@ -319,16 +360,17 @@ export function TaskSearch() {
   };
 
   const clearAllFields = () => {
-    if (asQuery) {
-      setQueryText("");
-    } else {
-      setTaskDefName("");
-      setTaskType([]);
-      setTaskId("");
-      setTaskRefName("");
-      setWorkflowName("");
-      setStatus([]);
-    }
+    // Clears every filter, not just the ones the current mode renders, so
+    // nothing reappears on flipping the toggle. setQueryText also drops the
+    // seed, so the box stays empty rather than refilling from fields that
+    // have just been cleared.
+    setQueryText("");
+    setTaskDefName("");
+    setTaskType([]);
+    setTaskId("");
+    setTaskRefName("");
+    setWorkflowName("");
+    setStatus([]);
     setStartTimeFrom(last72HoursTimestamp.toString());
     setStartTimeEnd("");
     setEndTimeFrom("");
@@ -337,6 +379,68 @@ export function TaskSearch() {
     setToDisplayTime("");
     setFromDisplayTime("Last 72 Hours");
     setSort(DEFAULT_SORT);
+  };
+
+  const leaveQueryFormat = () => {
+    // Drop the param too, so a discarded query cannot reappear the next time
+    // SQL format is switched on.
+    setShowingSeed(false);
+    setAuthoredQuery("");
+    setAsQuery(false);
+  };
+
+  const applyParsedFilters = (parsed: ParsedBasicTaskFilters) => {
+    const next = basicTaskFieldsAfterQueryFormat(parsed, {
+      startTimeFrom,
+      startTimeTo: startTimeEnd,
+      endTimeFrom,
+      endTimeTo,
+    });
+    setTaskDefName(next.taskDefName);
+    setTaskType(next.taskType);
+    setTaskId(next.taskId);
+    setTaskRefName(next.taskRefName);
+    setWorkflowName(next.workflowName);
+    setStatus(next.status);
+    setStartTimeFrom(next.startTimeFrom);
+    setStartTimeEnd(next.startTimeTo);
+    setEndTimeFrom(next.endTimeFrom);
+    setEndTime(next.endTimeTo);
+    // Mirror how these labels are derived on mount.
+    setFromDisplayTime(
+      next.startTimeFrom
+        ? getSearchDateTime(next.startTimeFrom, next.startTimeTo)
+        : "Last 72 Hours",
+    );
+    setToDisplayTime(
+      next.endTimeTo
+        ? getSearchDateTime(next.endTimeFrom, next.endTimeTo)
+        : "Select time range",
+    );
+  };
+
+  const handleToggleQueryFormat = () => {
+    if (!asQuery) {
+      setSeededQuery(seedFromBasicFilters());
+      setShowingSeed(true);
+      setAuthoredQuery("");
+      setAsQuery(true);
+      return;
+    }
+    // An untouched box still says exactly what the basic fields say, so there
+    // is nothing to read back into them.
+    if (showingSeed) {
+      leaveQueryFormat();
+      return;
+    }
+    const parsed = parseQueryToBasicTaskFilters(authoredQuery);
+    if (parsed) {
+      applyParsedFilters(parsed);
+      leaveQueryFormat();
+      return;
+    }
+    // Nothing basic search can express; ask before dropping it.
+    setDiscardQueryOpen(true);
   };
 
   const handleReset = () => {
@@ -383,7 +487,10 @@ export function TaskSearch() {
       />
       <SectionContainer>
         <Paper variant="outlined" sx={{ marginBottom: 6 }}>
-          <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+          <SwitchComponent
+            asQuery={asQuery}
+            onToggle={handleToggleQueryFormat}
+          />
           {asQuery ? (
             <AdvanceSearch
               setShowCodeDialog={setShowCodeDialog}
@@ -474,6 +581,21 @@ export function TaskSearch() {
           handleReset={handleReset}
         />
       </SectionContainer>
+      {discardQueryOpen && (
+        <ConfirmChoiceDialog
+          id="discard-sql-query-dialog"
+          header="Discard SQL query?"
+          message="Basic search cannot represent this query, so switching will discard it and search with the fields above instead."
+          cancelBtnLabel="Keep editing"
+          confirmBtnLabel="Discard and switch"
+          handleConfirmationValue={(confirmed: boolean) => {
+            setDiscardQueryOpen(false);
+            if (confirmed) {
+              leaveQueryFormat();
+            }
+          }}
+        />
+      )}
     </>
   );
 }
