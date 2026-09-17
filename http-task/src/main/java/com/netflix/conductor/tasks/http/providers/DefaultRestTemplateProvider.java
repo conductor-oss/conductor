@@ -21,6 +21,8 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
+import org.conductoross.conductor.tasks.http.providers.interceptors.RestTemplateInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -41,13 +43,21 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
 
     private final int defaultReadTimeout;
     private final int defaultConnectTimeout;
+    private final Optional<RestTemplateInterceptor> interceptor;
 
+    @Autowired
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
-            @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout) {
+            @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout,
+            Optional<RestTemplateInterceptor> interceptor) {
         this.threadLocalRestTemplateBuilder = ThreadLocal.withInitial(RestTemplateBuilder::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
+        this.interceptor = interceptor;
+    }
+
+    public DefaultRestTemplateProvider(Duration readTimeout, Duration connectTimeout) {
+        this(readTimeout, connectTimeout, Optional.empty());
     }
 
     @Override
@@ -73,6 +83,7 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
         requestFactory.setConnectTimeout(
                 Optional.ofNullable(input.getConnectionTimeOut()).orElse(defaultConnectTimeout));
         restTemplate.setRequestFactory(requestFactory);
+        interceptor.ifPresent(it -> restTemplate.getInterceptors().add(it));
         return restTemplate;
     }
 }
