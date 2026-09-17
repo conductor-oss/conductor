@@ -9,8 +9,15 @@ dependencies {
     implementation project(':conductor-core')
     implementation project(':conductor-ai')
 
-    // AWS Bedrock Agent Runtime — for BedrockAgentClient
+    // AWS Bedrock Agent Runtime — for BedrockAgentClient (invoke)
     implementation "software.amazon.awssdk:bedrockagentruntime:${revAwsSdk}"
+    // AWS Bedrock Agent management client — for listing agents
+    implementation "software.amazon.awssdk:bedrockagent:${revAwsSdk}"
+    // AWS STS — for AssumeRole in listing (reuses STS already used by BedrockAgentClient)
+    implementation "software.amazon.awssdk:sts:${revAwsSdk}"
+
+    // Azure Identity SDK — for AzureFoundryAgentClient (ClientSecretCredential, ManagedIdentityCredential, DefaultAzureCredential)
+    implementation "com.azure:azure-identity:${revAzureIdentitySdk}"
 
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')

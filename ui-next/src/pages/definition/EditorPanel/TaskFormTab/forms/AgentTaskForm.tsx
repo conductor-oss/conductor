@@ -40,6 +40,8 @@ import { TaskFormProps } from "./types";
 const AGENT_TYPES = [
   { value: "a2a", label: "A2A" },
   { value: "conductor", label: "Conductor" },
+  { value: "azure-foundry", label: "Azure Foundry" },
+  { value: "bedrock", label: "Bedrock" },
 ];
 
 /**
@@ -65,6 +67,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const isConductor = agentType === "conductor";
+  const isAzureFoundry = agentType === "azure-foundry";
   const agentName = get("inputParameters.name") as string | undefined;
   const taskInput = (task.inputParameters ?? {}) as AgentTaskInput;
   const sourceKey = agentSourceKey(taskInput);
@@ -361,6 +364,19 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
       {!isConductor && (
         <TaskFormSection title="Execution mode">
           <Box display="flex" flexDirection="column" mb={3}>
+            {isAzureFoundry && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!get("inputParameters.useCallerIdentity")}
+                    onChange={(e) =>
+                      set("inputParameters.useCallerIdentity", e.target.checked)
+                    }
+                  />
+                }
+                label="Use caller identity (OBO) — pass the triggering user's Entra token to Azure Foundry"
+              />
+            )}
             <FormControlLabel
               control={
                 <Switch
