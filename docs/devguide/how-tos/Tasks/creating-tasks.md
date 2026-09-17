@@ -4,7 +4,7 @@ description: "Create and update task definitions in Conductor to configure timeo
 
 # Creating / Updating Task Definitions
 
-A [task definition](../../../documentation/configuration/taskdef.md) specifies a task’s general implementation details:
+A [task definition](../../../documentation/configuration/taskdef.md) specifies a task's general implementation details:
 
 - Timeout policy
 - Retry logic
@@ -14,10 +14,10 @@ A [task definition](../../../documentation/configuration/taskdef.md) specifies a
 
 This definition applies to all instances of the task across workflows.
 
-You can create task definitions using the Conductor UI or APIs for the following scenarios:
+You can create task definitions using the Conductor UI, CLI, or APIs for the following scenarios:
 
-- **Worker tasks**—All Worker tasks (`SIMPLE`) must be registered to the Conductor server as a task definition before it can execute in a workflow.
-- **System tasks**—System tasks don't require a task definition, but you can create one with the same name to customize retry, timeout, and rate limit behavior.
+- **Worker tasks**: all worker tasks (`SIMPLE`) must be registered to the Conductor server as a task definition before they can execute in a workflow.
+- **System tasks**: system tasks don't require a task definition, but you can create one with the same name to customize retry, timeout, and rate limit behavior.
 
 ## Using Conductor UI
 
@@ -27,27 +27,34 @@ With the UI, you can create or update task definitions visually.
 
 **To create a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select **+ New Task Definition**.
-2. Configure the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
-3. Select **Save** > **Save**.
+1. In the left navigation, open **Definitions** and select **Task**.
+2. Select **Define task**.
+3. Configure the task in the **Task** form, or open the **Code** tab to edit the JSON directly. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
+4. Select **Save**.
 
 ### Updating task definitions
 
 **To update a task definition:**
 
-1. In [**Executions** > **Tasks**](http://localhost:8080/taskDefs), select the task definition to be updated.
-2. Modify the task definition JSON. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
-3. Select **Save** > **Save**.
+1. In the left navigation, open **Definitions** and select **Task**, then select the task definition to be updated.
+2. Modify the task in the **Task** form or the **Code** tab. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for the full parameters.
+3. Select **Save**.
 
 ## Using the CLI
 
-You can create task definitions using the Conductor CLI. Save your task definitions to a JSON file and run:
+Save your task definition to a JSON file and run:
 
 ```bash
-conductor task create tasks.json
+conductor task create taskdef.json
 ```
 
-The file should contain an array of task definitions. Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
+The file can contain a single task definition object or an array of them. To update an existing definition, edit the file and run:
+
+```bash
+conductor task update taskdef.json
+```
+
+Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
 
 ## Using APIs
 
@@ -55,68 +62,34 @@ Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for
 
 ### Creating task definitions
 
-You can also create task definitions using the Create Task Definition API (`POST api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
+You can also create task definitions using the Create Task Definition API (`POST /api/metadata/taskdefs`). The API accepts an array of task definitions, allowing you to create them in bulk.
 
 ??? note "Example using cURL"
     ```shell
-    curl '{{ server_host }}/api/metadata/taskdefs' \
+    curl 'http://localhost:8080/api/metadata/taskdefs' \
       -H 'accept: */*' \
       -H 'content-type: application/json' \
-      --data-raw '[{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
+      --data-raw '[{"name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}]'
     ```
 
 
 ### Updating task definitions
 
-You can update task definitions using the Update Task Definition API (`PUT api/metadata/taskdefs`). This API can only be used to update a single task definition at a time.
+You can update task definitions using the Update Task Definition API (`PUT /api/metadata/taskdefs`). This API can only be used to update a single task definition at a time.
 
 ??? note "Example using cURL"
     ```shell
-    curl '{{ server_host }}/api/metadata/taskdefs' \
+    curl 'http://localhost:8080/api/metadata/taskdefs' \
       -X 'PUT' \
       -H 'accept: */*' \
       -H 'content-type: application/json' \
-      --data-raw '{"createdBy":"user","name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
+      --data-raw '{"name":"sample_task_name_1","description":"This is a sample task for demo","responseTimeoutSeconds":10,"timeoutSeconds":30,"inputKeys":[],"outputKeys":[],"timeoutPolicy":"TIME_OUT_WF","retryCount":3,"retryLogic":"FIXED","retryDelaySeconds":5,"inputTemplate":{},"rateLimitPerFrequency":0,"rateLimitFrequencyInSeconds":1}'
     ```
 
 
 ## Using SDKs
 
-Conductor offers client SDKs for popular languages which have library methods for making the API call. Refer to the SDK documentation to configure a client in your selected language to create or update task definitions.
-
-Refer to [Task Definitions](../../../documentation/configuration/taskdef.md) for a reference guide on the full parameters.
-
-### Creating task definitions - Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to create the task definition `sample_task_name_1`.
-
-```javascript
-fetch("{{ server_host }}/api/metadata/taskdefs", {
-    "headers": {
-        "accept": "*/*",
-        "content-type": "application/json",
-    },
-    "body": "[{\"createdBy\":\"user\",\"name\":\"sample_task_name_1\",\"description\":\"This is a sample task for demo\",\"responseTimeoutSeconds\":10,\"timeoutSeconds\":30,\"inputKeys\":[],\"outputKeys\":[],\"timeoutPolicy\":\"TIME_OUT_WF\",\"retryCount\":3,\"retryLogic\":\"FIXED\",\"retryDelaySeconds\":5,\"inputTemplate\":{},\"rateLimitPerFrequency\":0,\"rateLimitFrequencyInSeconds\":1}]",
-    "method": "POST"
-});
-```
-
-
-### Updating task definitions - Example using JavaScript
-
-In this example, the JavaScript Fetch API is used to update the task definition `sample_task_name_1`.
-
-```javascript
-fetch("{{ server_host }}/api/metadata/taskdefs", {
-    "headers": {
-        "accept": "*/*",
-        "content-type": "application/json",
-    },
-    "body": "{\"createdBy\":\"user\",\"name\":\"sample_task_name_1\",\"description\":\"This is a sample task for demo\",\"responseTimeoutSeconds\":10,\"timeoutSeconds\":30,\"inputKeys\":[],\"outputKeys\":[],\"timeoutPolicy\":\"TIME_OUT_WF\",\"retryCount\":3,\"retryLogic\":\"FIXED\",\"retryDelaySeconds\":5,\"inputTemplate\":{},\"rateLimitPerFrequency\":0,\"rateLimitFrequencyInSeconds\":1}",
-    "method": "PUT"
-});
-```
-
+Every [client SDK](../../../documentation/clientsdks/index.md) includes metadata-client methods that call the same create and update endpoints. Use them when task registration belongs in your application or deployment code rather than in a manual step.
 
 ## Reusing tasks
 

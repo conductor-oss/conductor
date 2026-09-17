@@ -17,12 +17,22 @@ vi.mock("utils/query", () => ({
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ label, value, onTextInputChange }: any) => (
-    <textarea
-      aria-label={label}
-      value={value ?? ""}
-      onChange={(event) => onTextInputChange?.(event.target.value)}
-    />
+  default: ({ label, value, onTextInputChange, helperText, tooltip }: any) => (
+    <div>
+      <textarea
+        aria-label={label}
+        value={value ?? ""}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
+      />
+      {helperText && (
+        <span data-testid={`${label}-helperText`}>{helperText}</span>
+      )}
+      {tooltip && (
+        <span data-testid={`${label}-tooltip`}>
+          {tooltip.title}: {tooltip.content}
+        </span>
+      )}
+    </div>
   ),
 }));
 
@@ -125,5 +135,15 @@ describe("LLMChatCompleteTaskForm — Instructions field", () => {
 
     expect(savedTask().inputParameters?.instructions).toBe("System prompt");
     expect(savedTask().inputParameters?.allowRawPrompts).toBeUndefined();
+  });
+
+  it("renders a tooltip and helper text explaining the Instructions field", () => {
+    render(<Harness initialTask={{ inputParameters: {} }} />);
+
+    expect(screen.getByTestId("Instructions-helperText")).toBeInTheDocument();
+    expect(screen.getByTestId("Instructions-tooltip")).toBeInTheDocument();
+    expect(screen.getByTestId("Instructions-tooltip").textContent).toContain(
+      "Instructions",
+    );
   });
 });

@@ -45,6 +45,7 @@ public class PostgresIndexQueryBuilder {
         "correlation_id",
         "workflow_type",
         "start_time",
+        "end_time",
         "status",
         "task_id",
         "task_type",

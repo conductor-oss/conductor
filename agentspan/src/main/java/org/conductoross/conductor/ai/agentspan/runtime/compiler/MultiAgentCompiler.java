@@ -1685,6 +1685,14 @@ public class MultiAgentCompiler {
                         "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || %s) ) { true; } else { false; }",
                         loopRef, maxTurns, llmRef, llmRef, continueAfterToolCalls);
 
+        // Context injection: without this, a resumed turn only ever sees the original prompt with
+        // no record of what happened on prior turns, so the LLM has no way to know it already
+        // made a tool call and just repeats it until max_turns instead of reading the result and
+        // answering. Shares AgentCompiler's ctx_inject wiring (and its configured size limits).
+        String ctxInjectRef = agent.getName() + "_ctx_inject";
+        WorkflowTask ctxInject = agentCompiler.buildContextInjectionTask(ctxInjectRef);
+        agentCompiler.injectContextIntoUserMessage(llmTask, ctxInjectRef);
+
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
         loopInputs.put(llmRef, "${" + llmRef + "}");
@@ -1693,7 +1701,7 @@ public class MultiAgentCompiler {
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(llmTask, checkTransferTask, toolRouter),
+                        List.of(ctxInject, llmTask, checkTransferTask, toolRouter),
                         loopInputs);
 
         // Initialize _agent_state for ToolContext.state from the caller-provided context
@@ -2158,20 +2166,37 @@ public class MultiAgentCompiler {
         return caseTasks;
     }
 
+    /**
+     * True when one of the parent's {@code on_tool_result} handoffs watches a tool owned by {@code
+     * sub}. Only then should the sub-agent's loop end right after its tool results — otherwise
+     * every sub-agent in the swarm would lose its follow-up turn just because some other agent's
+     * tool happens to be a handoff trigger, leaving that other agent's tool result never summarized
+     * in words (it calls the tool, then the loop ends before the LLM ever sees the tool's output).
+     */
+    private static boolean parentHandsOffOnToolOf(AgentConfig parent, AgentConfig sub) {
+        if (parent.getHandoffs() == null || sub.getTools() == null) {
+            return false;
+        }
+        Set<String> subToolNames =
+                sub.getTools().stream()
+                        .map(ToolConfig::getName)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        return parent.getHandoffs().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(
+                        handoff ->
+                                "on_tool_result".equals(handoff.getType())
+                                        && subToolNames.contains(handoff.getToolName()));
+    }
+
     private List<WorkflowTask> buildSwarmCaseTasks(
             AgentConfig parent, AgentConfig sub, int idx, List<ToolConfig> transferTools) {
         List<WorkflowTask> caseTasks = new ArrayList<>();
         String subRef = parent.getName() + "_agent_" + idx + "_" + sub.getName();
 
-        // Compile as SUB_WORKFLOW with inline transfer-aware workflow
-        boolean returnAfterToolResults =
-                parent.getHandoffs() != null
-                        && parent.getHandoffs().stream()
-                                .anyMatch(
-                                        handoff ->
-                                                handoff != null
-                                                        && "on_tool_result"
-                                                                .equals(handoff.getType()));
+        // Compile as SUB_WORKFLOW with inline transfer-aware workflow.
+        boolean returnAfterToolResults = parentHandsOffOnToolOf(parent, sub);
         WorkflowDef agentWf = compileSwarmAgentWorkflow(sub, transferTools, returnAfterToolResults);
         WorkflowTask task = new WorkflowTask();
         task.setType("SUB_WORKFLOW");

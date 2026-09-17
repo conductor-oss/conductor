@@ -12,7 +12,27 @@
  */
 
 // Contains overrides for Spring Boot Dependency Management plugin
-// Dependency version override properties can be found at https://docs.spring.io/spring-boot/docs/3.3.11/reference/htmlsingle/#appendix.dependency-versions.properties
+// Spring Boot documents supported dependency version override properties at
+// https://docs.spring.io/spring-boot/3.3/appendix/dependency-versions/properties.html.
+
+// Keep server runtime dependencies on patched versions until the Spring Boot BOM includes them.
+ext['spring-framework.version'] = '6.2.19'
+ext['spring-security.version'] = '6.5.11'
+ext['log4j2.version'] = '2.25.4'
+ext['netty.version'] = '4.1.136.Final'
+// Bumps the BOM-managed micrometer family (micrometer-core et al.) to the CVE-patched
+// revMicrometer. The registry artifacts are pinned separately to revMicrometerRegistry in
+// server/build.gradle and must NOT be bumped through this property — see dependencies.gradle.
+ext['micrometer.version'] = revMicrometer
+ext['kafka.version'] = '3.9.1'
+// The Spring Boot 3.5 BOM pins com.rabbitmq:amqp-client to 5.25.0, which carries
+// CVE-2026-63337 / CVE-2026-69219 / CVE-2026-69220. This property is what actually forces
+// revAmqpClient (5.35.0) into the shaded jar — the amqp module's explicit version is otherwise
+// overridden back down to the BOM version by the dependency-management plugin.
+ext['rabbit-amqp-client.version'] = revAmqpClient
+// httpcore5 / httpcore5-h2 are BOM-managed at 5.3.6, which carries CVE-2026-54399. 5.4.3 is the
+// latest stable in the 5.4 line (5.5.x is alpha/beta) and clears it. Shared by both artifacts.
+ext['httpcore5.version'] = '5.4.3'
 
 // Conductor's default is ES6, but SB brings in ES7
 ext['elasticsearch.version'] = revElasticSearch7

@@ -4,6 +4,20 @@ description: "Conductor Task API — poll, update, search, and manage tasks. Inc
 
 # Task API
 
+Task responses are runtime objects. See [Task.json](../configuration/schemas.md#runtime-objects) for the full schema and [TaskDef.json](../configuration/schemas.md#definition-objects) for registered worker-task configuration.
+
+## Signal a blocked task
+
+Signal the currently blocked task in a workflow without first resolving its task ID:
+
+```http
+POST /api/tasks/{workflowId}/{status}/signal
+POST /api/tasks/{workflowId}/{status}/signal/sync
+Content-Type: application/json
+```
+
+`status` is a `TaskResult.Status`; the request body is the task output map. The asynchronous route returns after signaling. The synchronous route waits for the workflow signal response and accepts optional `returnStrategy` (`TARGET_WORKFLOW` by default) and `timeoutMillis` (default `5000`).
+
 The Task API manages task execution — polling, updating, logging, and queue management. All endpoints use the base path `/api/tasks`.
 
 ## Get Task
@@ -38,6 +52,20 @@ curl 'http://localhost:8080/api/tasks/a1b2c3d4-5678-90ab-cdef-111111111111'
   "workerId": "worker-host-1"
 }
 ```
+
+**Status and failure fields**
+
+| Field | Description |
+|---|---|
+| `status` | Current task status. See [Task statuses](../../devguide/architecture/tasklifecycle.md#task-statuses). |
+| `reasonForIncompletion` | Why the task stopped without succeeding. Empty while healthy. Written by the worker, the system task, or the engine; truncated to 500 characters. See [Understanding reasonForIncompletion](../../devguide/how-tos/Workflows/debugging-workflows.md#understanding-reasonforincompletion). |
+| `retryCount` | Attempt number, starting at `0`. |
+| `retried` | `true` when a later attempt was scheduled for this task. |
+| `retriedTaskId` | ID of the earlier attempt that this task retries. |
+| `workerId` | Worker instance that last polled or updated the task. |
+| `pollCount` | Number of times the task was polled. |
+| `callbackAfterSeconds` | Delay before the task is offered to workers again after an `IN_PROGRESS` update. |
+| `scheduledTime`, `startTime`, `endTime`, `updateTime` | Epoch milliseconds for this attempt. |
 
 ---
 
@@ -137,7 +165,7 @@ curl -X POST 'http://localhost:8080/api/tasks' \
 | `taskId` | Task ID | Yes |
 | `status` | `IN_PROGRESS`, `COMPLETED`, `FAILED`, or `FAILED_WITH_TERMINAL_ERROR` | Yes |
 | `outputData` | JSON map of output data | No |
-| `reasonForIncompletion` | Reason for failure (when status is `FAILED`) | No |
+| `reasonForIncompletion` | Free-text explanation recorded on the task when `status` is `FAILED` or `FAILED_WITH_TERMINAL_ERROR`. Truncated to 500 characters. See [Understanding reasonForIncompletion](../../devguide/how-tos/Workflows/debugging-workflows.md#understanding-reasonforincompletion). | No |
 | `callbackAfterSeconds` | Callback delay — task will be put back in queue after this time | No |
 | `logs` | List of log entries to append | No |
 

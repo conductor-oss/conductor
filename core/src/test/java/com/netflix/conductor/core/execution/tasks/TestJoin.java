@@ -91,6 +91,41 @@ public class TestJoin {
     }
 
     @Test
+    public void testJoinIsCanceledWhenForkedTaskIsCanceled() {
+        // a manually terminated sub-workflow surfaces as a CANCELED forked task; the join
+        // must propagate the cancellation instead of converting it into a failure, so the
+        // decider can map the workflow to TERMINATED instead of FAILED
+        var task1 = createTask("task1", TaskModel.Status.COMPLETED, false, false);
+        var task2 = createTask("task2", TaskModel.Status.CANCELED, false, false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
+
+        var join = new Join(properties);
+        var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
+        assertTrue("Join task should be terminal when a forked task is canceled", result);
+        assertEquals(
+                "Join task status should be CANCELED when the only unsuccessful forked task is canceled",
+                TaskModel.Status.CANCELED,
+                wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
+    public void testJoinFailsWhenAnotherForkedTaskFailsBesidesCancellation() {
+        var task1 = createTask("task1", TaskModel.Status.CANCELED, false, false);
+        var task2 = createTask("task2", TaskModel.Status.FAILED, false, false);
+
+        var wfJoinPair = createJoinWorkflow(List.of(task1, task2));
+
+        var join = new Join(properties);
+        var result = join.execute(wfJoinPair.getLeft(), wfJoinPair.getRight(), executor);
+        assertTrue(result);
+        assertEquals(
+                "Join task status should be FAILED when a genuine failure exists alongside a cancellation",
+                TaskModel.Status.FAILED,
+                wfJoinPair.getRight().getStatus());
+    }
+
+    @Test
     public void testJoinWaitsWhenAnyTaskIsNotTerminal() {
         var task1 = createTask("task1", TaskModel.Status.IN_PROGRESS, false, false);
         var task2 = createTask("task2", TaskModel.Status.COMPLETED, false, false);

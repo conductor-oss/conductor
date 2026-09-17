@@ -1,10 +1,10 @@
 ---
-description: "Deploy Conductor as a self-hosted workflow engine in production — architecture overview, horizontal scaling, database, queue, indexing, and lock configuration, workflow monitoring, and recommended production deployment settings for this open source workflow orchestration platform."
+description: "Deploy Conductor in production: architecture, Docker, database, queue, indexing, and lock configuration, horizontal scaling, monitoring, and recommended settings."
 ---
 
-# Self-hosted deployment guide
+# Production Deployment
 
-Conductor is a self-hosted, open source workflow engine that you deploy on your own infrastructure. This production deployment guide covers everything you need to run Conductor at scale: architecture, backend configuration, horizontal scaling, workflow monitoring, and tuning.
+Conductor is open source and self-hosted: you run the server on your own infrastructure. This guide covers the deployment architecture, how to run the server with Docker, the backend configuration options, and how to scale and monitor a production installation.
 
 ## Architecture overview
 
@@ -22,15 +22,33 @@ A Conductor deployment consists of these components:
 | **System Task Workers** | Execute built-in task types (HTTP, Event, Wait, Inline, JSON_JQ, etc.) within the server JVM. |
 | **Event Processor** | Listens to configured event buses and triggers workflows or completes tasks based on incoming events. |
 | **Database** | Persists workflow definitions, execution state, task state, and poll data. |
-| **Queue** | Manages task scheduling — pending tasks, delayed tasks, and the sweeper's own work queue. |
+| **Queue** | Manages task scheduling: pending tasks, delayed tasks, and the sweeper's own work queue. |
 | **Index** | Powers workflow and task search in the UI and via the search API. |
 | **Lock** | Distributed lock that prevents concurrent decider evaluations of the same workflow. **Required in production.** |
 
 ---
 
-## Quick start with Docker Compose
+## Run with Docker
 
-For local development and evaluation:
+### Standalone image
+
+For a first look, run the standalone image. It bundles the server, the UI, and SQLite-backed persistence, so it needs no external dependencies:
+
+```shell
+docker run -p 8080:8080 conductoross/conductor:latest
+```
+
+| URL | Description |
+|:----|:---|
+| `http://localhost:8080` | Conductor UI |
+| `http://localhost:8080/swagger-ui/index.html` | REST API docs |
+| `http://localhost:8080/api/` | API base URL |
+
+In production, pin a release tag such as `conductoross/conductor:3.4.0` instead of `latest`, so upgrades happen when you choose.
+
+### Docker Compose
+
+The repository ships compose files that pair the server with production backends:
 
 ```shell
 git clone https://github.com/conductor-oss/conductor
@@ -39,12 +57,6 @@ docker compose -f docker/docker-compose.yaml up
 ```
 
 This starts Conductor with Redis (database + queue), Elasticsearch (indexing), and the server with UI on port **8080**.
-
-| URL | Description |
-|:----|:---|
-| `http://localhost:8080` | Conductor UI |
-| `http://localhost:8080/swagger-ui/index.html` | REST API docs |
-| `http://localhost:8080/api/` | API base URL |
 
 Pre-built compose files for other backend combinations:
 
@@ -55,6 +67,7 @@ Pre-built compose files for other backend combinations:
 | `docker-compose-postgres.yaml` | PostgreSQL | PostgreSQL | PostgreSQL |
 | `docker-compose-postgres-es7.yaml` | PostgreSQL | PostgreSQL | Elasticsearch 7 |
 | `docker-compose-mysql.yaml` | MySQL | Redis | Elasticsearch 7 |
+| `docker-compose-cassandra-es7.yaml` | Cassandra | Redis | Elasticsearch 7 |
 | `docker-compose-redis-os2.yaml` | Redis | Redis | OpenSearch 2 |
 | `docker-compose-redis-os3.yaml` | Redis | Redis | OpenSearch 3 |
 
@@ -71,6 +84,28 @@ docker compose -f docker/docker-compose-redis-os3.yaml up
 
 For Elasticsearch 8, set `conductor.indexing.type=elasticsearch8` and use
 `config-redis-es8.properties` or an equivalent custom config.
+
+### Custom configuration
+
+The image reads a properties file from `/app/config` when the `CONFIG_PROP` environment variable names it. Mount your file and set the variable:
+
+```shell
+docker run -p 8080:8080 \
+  -e CONFIG_PROP=config.properties \
+  -v /path/to/my-config.properties:/app/config/config.properties \
+  conductoross/conductor:latest
+```
+
+Without `CONFIG_PROP`, the server ignores mounted files and starts with its built-in SQLite defaults.
+
+Set JVM options with the `JAVA_OPTS` environment variable, for example `-e JAVA_OPTS="-Xms2g -Xmx4g"`.
+
+### Shutting down
+
+```shell
+# Ctrl+C to stop, then:
+docker compose down
+```
 
 ---
 
@@ -90,9 +125,9 @@ conductor.db.type=postgres
 
 | Backend | Property value | When to use | Notes |
 |:--|:--|:--|:--|
-| PostgreSQL | `postgres` | **Recommended for production.** ACID, battle-tested, supports indexing too. | Requires `spring.datasource.*` config. |
+| PostgreSQL | `postgres` | **Recommended for production.** ACID, and can serve as the indexing backend too. | Requires `spring.datasource.*` config. |
 | MySQL | `mysql` | Production alternative if your team already runs MySQL. | Requires `spring.datasource.*` config. Needs separate queue backend (Redis). |
-| Redis | `redis_standalone` | Fast, simple. Good for moderate scale. | Requires `conductor.redis.*` config. |
+| Redis | `redis_standalone` | Fast, simple. Good for moderate scale. | Requires `conductor.redis.*` config. `redis_cluster` and `redis_sentinel` are also supported. |
 | Cassandra | `cassandra` | High write throughput, multi-region. | Requires `conductor.cassandra.*` config. |
 | SQLite | `sqlite` | **Local development only.** Single-file, zero config. | Default. Not for production. |
 
@@ -153,7 +188,7 @@ conductor.redis.ssl=false
 
 ### Queue
 
-The queue backend manages task scheduling — it tracks which tasks are pending, delayed, or ready for execution. The sweeper and system task workers all depend on it.
+The queue backend manages task scheduling. It tracks which tasks are pending, delayed, or ready for execution, and the sweeper and system task workers all depend on it.
 
 ```properties
 conductor.queue.type=postgres
@@ -459,7 +494,7 @@ For external payload storage configuration, see [External Payload Storage](../..
 
 ### Workflow monitoring and observability
 
-Conductor exposes Prometheus-compatible metrics out of the box for workflow monitoring and observability:
+Conductor exposes Prometheus-compatible metrics:
 
 ```properties
 conductor.metrics-prometheus.enabled=true
@@ -468,9 +503,13 @@ management.metrics.web.server.request.autotime.percentiles=0.50,0.75,0.90,0.95,0
 management.endpoint.health.show-details=always
 ```
 
-Scrape `http://<conductor-host>:8080/actuator/prometheus` with Prometheus.
+The `management.endpoints.web.exposure.include` line matches the server default, so `health`, `info`, and `prometheus` are exposed even without custom configuration. Scrape `http://<conductor-host>:8080/actuator/prometheus` with Prometheus.
 
 For details on available metrics, see [Server Metrics](../../documentation/metrics/server.md) and [Client Metrics](../../documentation/metrics/client.md).
+
+#### Health checks
+
+Point liveness and readiness probes at `http://<conductor-host>:8080/actuator/health`. To verify the API layer specifically, request `GET /api/metadata/workflow`, which returns `200` on a healthy server. There is no `/api/health` endpoint.
 
 ---
 
@@ -546,54 +585,6 @@ conductor.app.systemTaskMaxPollCount=40
 # Metrics
 conductor.metrics-prometheus.enabled=true
 management.endpoints.web.exposure.include=health,info,prometheus
-```
-
----
-
-## Running with Docker
-
-### Using Docker Compose
-
-```shell
-git clone https://github.com/conductor-oss/conductor
-cd conductor
-docker compose -f docker/docker-compose.yaml up
-```
-
-To use a different backend, swap the compose file:
-
-```shell
-docker compose -f docker/docker-compose-postgres.yaml up
-```
-
-### Using the standalone image
-
-```shell
-docker run -p 8080:8080 conductoross/conductor:latest
-```
-
-### Custom configuration via volume mount
-
-Mount your own properties file to override the defaults without rebuilding the image:
-
-```shell
-docker run -p 8080:8080 \
-  -v /path/to/my-config.properties:/app/config/config.properties \
-  conductoross/conductor:latest
-```
-
-### Accessing Conductor
-
-| URL | Description |
-|:----|:---|
-| `http://localhost:8080` | Conductor UI |
-| `http://localhost:8080/swagger-ui/index.html` | REST API docs |
-
-### Shutting down
-
-```shell
-# Ctrl+C to stop, then:
-docker compose down
 ```
 
 ---

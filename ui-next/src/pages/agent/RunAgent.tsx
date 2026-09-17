@@ -15,6 +15,7 @@ import { useAction, useFetch } from "utils/query";
 import { useLocalStorage } from "utils";
 import { v4 as uuidv4 } from "uuid";
 import { AgentSummary } from "./types";
+import { useAiModelOptions } from "./hooks/useAiModelOptions";
 
 type AgentStartResponse = {
   executionId: string;
@@ -39,6 +40,8 @@ export default function RunAgent() {
     agentVersion?: number;
   } | null;
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
+  const modelOptions = useAiModelOptions();
+
   const [agentName, setAgentName] = useState(selectedAgent?.agentName || "");
   const [agentVersion, setAgentVersion] = useState<number | undefined>(
     selectedAgent?.agentVersion,
@@ -198,14 +201,22 @@ export default function RunAgent() {
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorInput
+                  <ConductorAutoComplete
                     id="run-agent-model"
                     fullWidth
-                    label="Model override"
+                    freeSolo
+                    label="Model override (optional)"
                     placeholder="Use the deployed agent model"
                     value={model}
-                    onTextInputChange={setModel}
-                    helperText="Optional. This applies only to this execution."
+                    options={modelOptions}
+                    groupBy={(option: string) => option.split("/")[0]}
+                    onChange={(_: unknown, newValue: string | null) => {
+                      setModel(newValue ?? "");
+                    }}
+                    onInputChange={(_: unknown, newValue: string) => {
+                      setModel(newValue);
+                    }}
+                    helperText="This applies only to this execution."
                   />
                 </Grid>
                 <Grid size={12}>

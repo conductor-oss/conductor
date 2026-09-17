@@ -143,10 +143,10 @@ Pause a workflow until an external system (or human) completes the task via API 
 Complete the WAIT task externally (e.g., from a UI or webhook):
 
 ```shell
-# Complete the wait task and resume the workflow
-curl -X POST 'http://localhost:8080/api/tasks/{workflowId}/approval/COMPLETED/sync' \
+# Complete the currently blocked wait task and return the updated workflow
+curl -X POST 'http://localhost:8080/api/tasks/{workflowId}/COMPLETED/signal/sync' \
   -H 'Content-Type: application/json' \
   -d '{"approvedBy": "manager@example.com"}'
 ```
 
-The output data you pass when completing the task is available in subsequent tasks via `${approval.output.approvedBy}`.
+The output data you pass when signaling the current blocked `WAIT` task is available in subsequent tasks via `${approval.output.approvedBy}`. See [Sending signals to workflows](sending-signals.md) for async signaling, return strategies, and timeout behavior.

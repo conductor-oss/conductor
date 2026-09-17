@@ -1,250 +1,61 @@
 ---
-description: "Conductor cookbook — event-driven workflow recipes for publishing to Kafka, NATS, RabbitMQ, SQS, triggering workflows from events, and completing tasks from external events."
+description: Copy-and-paste EVENT and event-handler recipes using canonical fixtures.
 ---
 
 # Event-driven recipes
 
-### Publish events to Kafka, NATS, and RabbitMQ
+Read [Event orchestration](../how-tos/event-bus.md) first for action support, provider configuration, delivery, and idempotency semantics.
 
-Use the `EVENT` task type to publish messages. The `sink` field determines the destination.
-
-**Kafka:**
+## Publish an internal event
 
 ```json
-{
-  "name": "publish_to_kafka",
-  "taskReferenceName": "kafka_event",
-  "type": "EVENT",
-  "sink": "kafka:order-events",
-  "inputParameters": {
-    "orderId": "${workflow.input.orderId}",
-    "status": "PROCESSED"
-  }
-}
+--8<-- "docs/devguide/cookbook/examples/events/publish-internal-event-workflow.json"
 ```
 
-**NATS:**
+Register and run the workflow. Its `conductor:order-status` sink expands to `conductor:publish_order_event:order-status`.
+
+## Start a workflow from the event
+
+Register the target workflow first:
 
 ```json
-{
-  "name": "publish_to_nats",
-  "taskReferenceName": "nats_event",
-  "type": "EVENT",
-  "sink": "nats:order-events",
-  "inputParameters": {
-    "orderId": "${workflow.input.orderId}",
-    "status": "PROCESSED"
-  }
-}
+--8<-- "docs/devguide/cookbook/examples/events/fulfill-order-workflow.json"
 ```
-
-**RabbitMQ (AMQP):**
 
 ```json
-{
-  "name": "publish_to_rabbitmq",
-  "taskReferenceName": "amqp_event",
-  "type": "EVENT",
-  "sink": "amqp_exchange:order-events",
-  "inputParameters": {
-    "orderId": "${workflow.input.orderId}",
-    "status": "PROCESSED"
-  }
-}
+--8<-- "docs/devguide/cookbook/examples/events/start-workflow-handler.json"
 ```
 
-**Sink format reference:**
-
-| Sink | Format |
-|---|---|
-| Kafka | `kafka:topic-name` |
-| NATS | `nats:subject-name` |
-| RabbitMQ queue | `amqp:queue-name` |
-| RabbitMQ exchange | `amqp_exchange:exchange-name` |
-| SQS | `sqs:queue-name` |
-| Conductor internal | `conductor` |
-
----
-
-### Listen for events to trigger workflows
-
-Register event handlers to start workflows automatically when messages arrive on a queue or topic.
-
-**Kafka event handler:**
-
-```json
-{
-  "name": "kafka_order_handler",
-  "event": "kafka:order-events",
-  "condition": "$.status == 'NEW'",
-  "actions": [
-    {
-      "action": "start_workflow",
-      "start_workflow": {
-        "name": "process_order",
-        "input": {
-          "orderId": "${orderId}",
-          "payload": "${$}"
-        }
-      }
-    }
-  ],
-  "active": true
-}
-```
-
-**NATS event handler:**
-
-```json
-{
-  "name": "nats_notification_handler",
-  "event": "nats:notifications",
-  "actions": [
-    {
-      "action": "start_workflow",
-      "start_workflow": {
-        "name": "handle_notification",
-        "input": { "data": "${$}" }
-      }
-    }
-  ],
-  "active": true
-}
-```
-
-**AMQP event handler:**
-
-```json
-{
-  "name": "amqp_task_handler",
-  "event": "amqp:task-queue",
-  "actions": [
-    {
-      "action": "start_workflow",
-      "start_workflow": {
-        "name": "process_task",
-        "input": { "taskData": "${$}" }
-      }
-    }
-  ],
-  "active": true
-}
-```
-
-**Register an event handler:**
-
-```shell
-curl -X POST 'http://localhost:8080/api/event' \
+```bash
+curl -sS -X POST 'http://localhost:8080/api/event' \
   -H 'Content-Type: application/json' \
-  -d @handler.json
+  --data-binary @docs/devguide/cookbook/examples/events/start-workflow-handler.json
 ```
 
----
+The payload expression is rooted directly at the Event task's published JSON.
 
-### Complete a task from an external event
+## Wait for an external approval
 
-Use a WAIT task to pause a workflow until an external system sends an event. An event handler listens for that event and completes the task, resuming the workflow.
-
-**Workflow with WAIT task:**
+Workflow:
 
 ```json
-{
-  "name": "order_with_approval",
-  "version": 1,
-  "schemaVersion": 2,
-  "tasks": [
-    {
-      "name": "process_order",
-      "taskReferenceName": "process",
-      "type": "SIMPLE"
-    },
-    {
-      "name": "wait_for_approval",
-      "taskReferenceName": "approval_wait",
-      "type": "WAIT"
-    },
-    {
-      "name": "ship_order",
-      "taskReferenceName": "ship",
-      "type": "SIMPLE"
-    }
-  ]
-}
+--8<-- "docs/devguide/cookbook/examples/events/wait-for-approval-workflow.json"
 ```
 
-**Event handler to complete the WAIT task:**
+Handler:
 
 ```json
-{
-  "name": "approval_event_handler",
-  "event": "kafka:approval-events",
-  "condition": "$.approved == true",
-  "actions": [
-    {
-      "action": "complete_task",
-      "complete_task": {
-        "workflowId": "${workflowId}",
-        "taskRefName": "approval_wait",
-        "output": {
-          "approvedBy": "${approvedBy}",
-          "approvedAt": "${timestamp}"
-        }
-      }
-    }
-  ],
-  "active": true
-}
+--8<-- "docs/devguide/cookbook/examples/events/complete-wait-handler.json"
 ```
 
-When a message with `approved: true` arrives on the `approval-events` Kafka topic, the handler completes the WAIT task and the workflow continues to `ship_order`.
+Representative broker payload:
 
-**Register both:**
-
-```shell
-# Register the workflow
-curl -X POST 'http://localhost:8080/api/metadata/workflow' \
-  -H 'Content-Type: application/json' \
-  -d @order_with_approval.json
-
-# Register the event handler
-curl -X POST 'http://localhost:8080/api/event' \
-  -H 'Content-Type: application/json' \
-  -d @approval_event_handler.json
+```json
+--8<-- "docs/devguide/cookbook/examples/events/approval-event.json"
 ```
 
----
+Replace the representative `workflowId` with the ID returned when the waiting workflow starts. A correlation ID alone cannot target the WAIT task.
 
-### Server configuration for event buses
+## Use an external provider
 
-Add the relevant properties to your `application.properties` to enable each event bus.
-
-**Kafka:**
-
-```properties
-conductor.event-queues.kafka.enabled=true
-conductor.event-queues.kafka.bootstrap-servers=kafka:9092
-```
-
-**NATS:**
-
-```properties
-conductor.event-queues.nats.enabled=true
-conductor.event-queues.nats.url=nats://localhost:4222
-```
-
-**AMQP (RabbitMQ):**
-
-```properties
-conductor.event-queues.amqp.enabled=true
-conductor.event-queues.amqp.hosts=rabbitmq
-conductor.event-queues.amqp.port=5672
-conductor.event-queues.amqp.username=guest
-conductor.event-queues.amqp.password=guest
-```
-
-**SQS:**
-
-```properties
-conductor.event-queues.sqs.enabled=true
-# Uses AWS default credential chain (env vars, IAM role, etc.)
-```
+Change `event`/`sink` to a registered provider identifier and its provider-specific URI, for example `kafka:order-approvals`, `sqs:https://sqs.us-east-1.amazonaws.com/123/order-events`, `nats:orders.ready`, `jsm:orders.ready`, `nats_stream:orders.ready`, `amqp_queue:orders`, or `amqp_exchange:orders`. Enable the matching module and properties described in the guide.

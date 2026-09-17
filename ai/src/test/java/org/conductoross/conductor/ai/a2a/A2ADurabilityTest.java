@@ -41,9 +41,9 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.spy;
 
 /**
- * Durability test-harness — validates the proof obligations from {@code
- * design/a2a/09-durable-a2a.md} by injecting failures against a real embedded A2A agent and the
- * real annotation-backed {@link A2AWorkers} / {@link A2AService} logic.
+ * Durability test-harness — validates the P1–P3 durability proof obligations tabulated below by
+ * injecting failures against a real embedded A2A agent and the real annotation-backed {@link
+ * A2AWorkers} / {@link A2AService} logic.
  *
  * <table>
  *   <tr><td>T1</td><td>{@link #t1_crashRecovery_resumesOnAFreshInstance()}</td><td>P1 crash-safe resume</td></tr>
