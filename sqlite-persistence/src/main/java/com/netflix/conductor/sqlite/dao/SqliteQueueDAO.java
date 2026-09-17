@@ -155,28 +155,24 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
         }
 
         long start = System.currentTimeMillis();
-        final List<Message> messages = new ArrayList<>();
 
         while (true) {
             List<Message> messagesSlice =
                     getWithTransactionWithOutErrorPropagation(
-                            tx -> popMessages(tx, queueName, count - messages.size(), timeout));
+                            tx -> popMessages(tx, queueName, count, timeout));
             if (messagesSlice == null) {
                 logger.warn(
-                        "Unable to poll {} messages from {} due to tx conflict, only {} popped",
-                        count,
-                        queueName,
-                        messages.size());
-                // conflict could have happened, returned messages popped so far
-                return messages;
+                        "Unable to poll {} messages from {} due to tx conflict", count, queueName);
+                return new ArrayList<>();
             }
 
-            messages.addAll(messagesSlice);
             // Long-poll semantics: return as soon as at least one message is available (up to
             // count), rather than blocking for the full timeout waiting to fill the whole batch.
-            // This matches the Redis queue behavior and keeps tail latency low under low activity.
-            if (!messages.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
-                return messages;
+            // The retry is still needed to keep waiting while the queue is empty; there is no
+            // partial batch to accumulate because we return on the first non-empty poll. This
+            // matches the Redis queue behavior and keeps tail latency low under low activity.
+            if (!messagesSlice.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
+                return messagesSlice;
             }
             Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
         }

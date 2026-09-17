@@ -377,16 +377,25 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     private List<Message> popMessages(
             Connection connection, String queueName, int count, int timeout) {
         long start = System.currentTimeMillis();
-        List<Message> messages = peekMessages(connection, queueName, count);
+        List<Message> poppedMessages = peekAndPop(connection, queueName, count);
 
-        // Long-poll semantics: return as soon as at least one message is available (up to
-        // count), rather than blocking for the full timeout waiting to fill the whole batch.
-        // This matches the Redis queue behavior and keeps tail latency low under low activity.
-        while (messages.isEmpty() && ((System.currentTimeMillis() - start) < timeout)) {
+        // Long-poll semantics: return as soon as at least one message is successfully popped (up
+        // to count), rather than blocking for the full timeout waiting to fill the whole batch.
+        // Retry while nothing has been popped and the timeout hasn't elapsed. The loop guards on
+        // what was actually popped, not on what the peek saw: an empty peek -- or a race where
+        // another consumer claims the rows between our peek and our pop -- must not short-circuit
+        // the long poll into an immediate empty return, which would busy-poll the DB instead of
+        // waiting. This matches the Redis queue behavior and keeps tail latency low under low
+        // activity.
+        while (poppedMessages.isEmpty() && ((System.currentTimeMillis() - start) < timeout)) {
             Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
-            messages = peekMessages(connection, queueName, count);
+            poppedMessages = peekAndPop(connection, queueName, count);
         }
+        return poppedMessages;
+    }
 
+    private List<Message> peekAndPop(Connection connection, String queueName, int count) {
+        List<Message> messages = peekMessages(connection, queueName, count);
         if (messages.isEmpty()) {
             return messages;
         }

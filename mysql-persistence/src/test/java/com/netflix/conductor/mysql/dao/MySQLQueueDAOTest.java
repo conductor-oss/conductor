@@ -261,6 +261,34 @@ public class MySQLQueueDAOTest {
     }
 
     /**
+     * Companion to {@link #pollMessagesReturnsPromptlyWhenFewerThanCountAvailable()} guarding the
+     * other side of the long-poll contract for
+     * https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>When the queue is empty, pollMessages must keep waiting until the timeout rather than
+     * returning an empty result immediately. The poll loop guards on what was actually popped, so
+     * an empty peek must not short-circuit the long poll into an immediate empty return (which
+     * would make workers busy-poll the DB at round-trip speed instead of long-polling).
+     */
+    @Test
+    public void pollMessagesBlocksUntilTimeoutWhenQueueEmpty() {
+        final String queueName = "issue142_emptyQueue";
+        assertEquals("Queue should start empty", 0, queueDAO.getSize(queueName));
+
+        final int timeoutMs = 1_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, 5, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertTrue("Empty queue should return no messages", polled.isEmpty());
+        assertTrue(
+                "pollMessages returned after " + elapsed + "ms; should have waited out the timeout",
+                elapsed >= timeoutMs);
+    }
+
+    /**
      * Test fix for https://github.com/Netflix/conductor/issues/448
      *
      * @since 1.8.2-rc5
