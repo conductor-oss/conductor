@@ -48,26 +48,19 @@ test("scrolls with the wheel after changing framework, without clicking first", 
   await expect.poll(() => scrollTop(page)).toBeGreaterThan(0);
 });
 
-test("the open menu's overlay does not capture pointer events", async ({
+test("the menu's modal root is removed from the DOM after closing", async ({
   page,
 }) => {
-  // The Modal root spans the viewport. The fix makes it transparent to pointer
-  // input while keeping the menu paper itself interactive; without that, a
-  // wheel over the page lands on the overlay instead of the scroll container.
+  // The root cause: navigating from the change handler interrupted the Menu's
+  // exit transition, so MUI never set `exited` and left the Modal root mounted
+  // across the viewport. Navigating from onExited instead lets the close
+  // finish, so nothing is left behind.
   await page.locator("#agent-guide-framework").click();
-  await expect(page.getByRole("option", { name: "LangChain4j" })).toBeVisible();
+  await expect(page.locator(".MuiMenu-root")).toHaveCount(1);
 
-  const pointerEvents = await page.evaluate(() => {
-    const root = document.querySelector(".MuiMenu-root");
-    const paper = root?.querySelector(".MuiPaper-root");
-    return {
-      root: root ? getComputedStyle(root).pointerEvents : null,
-      paper: paper ? getComputedStyle(paper).pointerEvents : null,
-    };
-  });
-
-  expect(pointerEvents.root).toBe("none");
-  expect(pointerEvents.paper).toBe("auto");
+  await page.getByRole("option", { name: "LangChain4j" }).click();
+  await expect(page).toHaveURL(/framework=langchain4j/);
+  await expect(page.locator(".MuiMenu-root")).toHaveCount(0);
 });
 
 test("scroll stays locked while the menu is open, and is released after", async ({
