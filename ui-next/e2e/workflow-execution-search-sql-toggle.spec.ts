@@ -2,10 +2,9 @@
  * Workflow execution search — the "SQL format" toggle.
  *
  * Behavioural (not snapshot) coverage of switching between basic and SQL
- * search. Unit tests cover the clause translation itself; this covers the glue
- * in WorkflowSearch that the unit suite cannot reach, because two separate
- * react-router instances in the jsdom module graph make the page unrenderable
- * there.
+ * search. Unit tests cover the clause translation and the seeding; this covers
+ * the rest of the glue in WorkflowSearch against a real browser, where Monaco
+ * and the date pickers actually run.
  *
  * All /api/* calls are mocked, so no live backend is needed.
  */
