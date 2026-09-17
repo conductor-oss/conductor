@@ -172,7 +172,10 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
             }
 
             messages.addAll(messagesSlice);
-            if (messages.size() >= count || ((System.currentTimeMillis() - start) > timeout)) {
+            // Long-poll semantics: return as soon as at least one message is available (up to
+            // count), rather than blocking for the full timeout waiting to fill the whole batch.
+            // This matches the Redis queue behavior and keeps tail latency low under low activity.
+            if (!messages.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
                 return messages;
             }
             Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
