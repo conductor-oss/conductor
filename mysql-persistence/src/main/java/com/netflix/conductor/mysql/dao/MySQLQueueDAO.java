@@ -119,6 +119,9 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        if (count <= 0) {
+            return new ArrayList<>();
+        }
         List<Message> messages =
                 getWithTransactionWithOutErrorPropagation(
                         tx -> popMessages(tx, queueName, count, timeout));

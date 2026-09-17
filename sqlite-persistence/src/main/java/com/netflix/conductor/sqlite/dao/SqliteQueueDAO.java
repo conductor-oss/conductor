@@ -144,6 +144,9 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        if (count <= 0) {
+            return new ArrayList<>();
+        }
         if (timeout < 1) {
             List<Message> messages =
                     getWithTransactionWithOutErrorPropagation(
