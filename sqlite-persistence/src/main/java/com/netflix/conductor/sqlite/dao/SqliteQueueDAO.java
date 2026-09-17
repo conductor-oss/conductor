@@ -144,6 +144,10 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        // A zero- (or negative-) count poll can never pop a message, so return immediately.
+        // Otherwise the long-poll loop below would block for the full timeout waiting on a message
+        // it would never accept. This preserves the immediate empty return that callers relied on
+        // before issue #142 moved the loop guard onto what was actually popped.
         if (count <= 0) {
             return new ArrayList<>();
         }
