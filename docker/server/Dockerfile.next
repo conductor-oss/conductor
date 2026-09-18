@@ -73,6 +73,14 @@ RUN apk add --no-cache nginx ca-certificates \
     && rm -f /etc/nginx/http.d/default.conf \
     && mkdir -p /run/nginx
 
+# DO NOT REMOVE WHILE WE ARE RUNNING ALPINE!
+# grpc-java (bundled via conductor-grpc-server) is not officially supported on Alpine/musl and
+# recommends a glibc-based image. Its native netty bits can segfault the JVM at load time under
+# musl. gcompat + libunwind provide the glibc-compat shims; startup.sh LD_PRELOADs them around the
+# java invocation only (not nginx/busybox). Without these packages the preload paths would not
+# exist and the dynamic loader would error.
+RUN apk add --no-cache gcompat libunwind
+
 RUN mkdir -p /app/config /app/logs /app/libs
 
 COPY docker/server/bin /app
