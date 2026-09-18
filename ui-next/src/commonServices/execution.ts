@@ -53,3 +53,19 @@ export const fetchExecution = async ({
     return Promise.reject({ originalError: error, errorDetails });
   }
 };
+
+/** Fetch an agent execution with server-aggregated descendant metrics. */
+export const fetchAgentExecution = async ({
+  authHeaders: headers,
+  executionId,
+}: HasAuthHeaders & { executionId: string }) => {
+  const url = `/agent/executions/${executionId}/full`;
+  try {
+    return await queryClient.fetchQuery([fetchContext.stack, url], () =>
+      fetchWithContext(url, fetchContext, { headers }),
+    );
+  } catch (error) {
+    const errorDetails = await getErrors(error as Response);
+    return Promise.reject({ originalError: error, errorDetails });
+  }
+};

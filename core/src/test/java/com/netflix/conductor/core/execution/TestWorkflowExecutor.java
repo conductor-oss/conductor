@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +42,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
@@ -227,7 +228,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -894,12 +896,17 @@ public class TestWorkflowExecutor {
                                 "agents",
                                 List.of(Map.of("name", "peer")))));
 
-        Workflow existing = new Workflow();
-        existing.setWorkflowId("existing-agent-execution");
+        String idempotentWorkflowId =
+                UUID.nameUUIDFromBytes(
+                                ("agent:registered-agent:agent-request-1")
+                                        .getBytes(StandardCharsets.UTF_8))
+                        .toString();
+        WorkflowModel existing = new WorkflowModel();
+        existing.setWorkflowId(idempotentWorkflowId);
         when(metadataDAO.getWorkflowDef("registered-agent", 3)).thenReturn(Optional.of(agentDef));
-        when(executionDAOFacade.getWorkflowsByCorrelationId(
-                        "registered-agent", "agent-request-1", false))
-                .thenReturn(List.of(existing));
+        when(executionLockService.acquireLock(idempotentWorkflowId)).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO(idempotentWorkflowId, false))
+                .thenReturn(existing);
 
         AgentStartResponse response =
                 workflowExecutor.startAgentExecution(
@@ -910,16 +917,12 @@ public class TestWorkflowExecutor {
                                 .idempotencyKey("agent-request-1")
                                 .build());
 
-        assertEquals("existing-agent-execution", response.getExecutionId());
+        assertEquals(idempotentWorkflowId, response.getExecutionId());
         assertEquals("registered-agent", response.getAgentName());
-        assertEquals(
-                Set.of(
-                        "static_worker",
-                        "registered-agent_transfer_to_peer",
-                        "peer_transfer_to_registered-agent"),
-                new HashSet<>(response.getRequiredWorkers()));
+        assertEquals(Set.of("static_worker"), new HashSet<>(response.getRequiredWorkers()));
         verify(metadataDAO, never()).getLatestWorkflowDef(anyString());
         verify(executionDAOFacade, never()).createWorkflow(any());
+        verify(executionLockService).releaseLock(idempotentWorkflowId);
     }
 
     @Test
@@ -2408,6 +2411,42 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testUpdateParentWorkflowTaskDropsSupersededGeneration() {
+        String parentWorkflowTaskId = "superseded_task_id";
+        String childId = "child_workflow_id";
+        String parentId = "parent_workflow_id";
+
+        WorkflowModel subWorkflow = new WorkflowModel();
+        subWorkflow.setWorkflowId(childId);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        subWorkflow.setStatus(WorkflowModel.Status.FAILED);
+
+        TaskModel staleTask = new TaskModel();
+        staleTask.setTaskId(parentWorkflowTaskId);
+        staleTask.setSubWorkflowId(childId);
+        staleTask.setWorkflowInstanceId(parentId);
+        staleTask.setStatus(TaskModel.Status.IN_PROGRESS);
+
+        // The parent's current task list does NOT contain the stale task (a rerun replaced the
+        // fork generation) — the late child failure must be dropped, not propagated.
+        TaskModel freshTask = new TaskModel();
+        freshTask.setTaskId("fresh_task_id");
+        freshTask.setWorkflowInstanceId(parentId);
+        freshTask.setStatus(TaskModel.Status.SCHEDULED);
+        WorkflowModel parentWorkflow = new WorkflowModel();
+        parentWorkflow.setWorkflowId(parentId);
+        parentWorkflow.setStatus(WorkflowModel.Status.RUNNING);
+        parentWorkflow.getTasks().add(freshTask);
+
+        when(executionDAOFacade.getTaskModel(parentWorkflowTaskId)).thenReturn(staleTask);
+        when(executionDAOFacade.getWorkflowModel(parentId, true)).thenReturn(parentWorkflow);
+
+        workflowExecutor.updateParentWorkflowTask(subWorkflow);
+
+        verify(executionDAOFacade, never()).updateTask(any(TaskModel.class));
+    }
+
+    @Test
     public void testScheduleNextIteration() {
         WorkflowModel workflow = generateSampleWorkflow();
         workflow.setTaskToDomain(
@@ -2623,6 +2662,19 @@ public class TestWorkflowExecutor {
         // And verify that the failure workflow definition was fetched without version
         verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
         assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+
+        // And the failure workflow input carries failedWorkflow as a Map, not a raw
+        // WorkflowModel POJO, so nested ${workflow.input.failedWorkflow.<field>} references
+        // are resolvable by JsonPath (issue #1164)
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        Object failedWorkflowInput =
+                failureWorkflowCaptor.getValue().getInput().get("failedWorkflow");
+        assertTrue(
+                "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
+                failedWorkflowInput instanceof Map);
+        assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
     }
 
     @Test

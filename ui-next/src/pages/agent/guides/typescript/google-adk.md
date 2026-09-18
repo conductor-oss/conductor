@@ -6,7 +6,7 @@ export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
-export AGENTSPAN_LLM_MODEL=google_gemini/gemini-2.5-flash
+export CONDUCTOR_AGENT_LLM_MODEL=google_gemini/gemini-2.5-flash
 ```
 
 ## 2. Run the agent

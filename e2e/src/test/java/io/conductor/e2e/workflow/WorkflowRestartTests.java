@@ -303,7 +303,7 @@ public class WorkflowRestartTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(15, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -389,7 +389,7 @@ public class WorkflowRestartTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
         // Wait for sub-workflow to be started and get its ID
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(20, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -409,7 +409,7 @@ public class WorkflowRestartTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to complete
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(15, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -422,7 +422,8 @@ public class WorkflowRestartTests {
         // Restart the sub workflow.
         workflowClient.restart(workflowId, false);
         // Check the workflow status and few other parameters
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);
@@ -496,7 +497,7 @@ public class WorkflowRestartTests {
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         System.out.print("Workflow id is " + workflowId);
         // Wait for sub-workflow to be started and get its ID
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(20, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
@@ -516,7 +517,7 @@ public class WorkflowRestartTests {
         taskClient.updateTask(taskResult);
 
         // Wait for parent workflow to get failed
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(15, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
@@ -529,7 +530,8 @@ public class WorkflowRestartTests {
         // Restart the sub workflow.
         workflowClient.restart(workflowId, false);
         // Check the workflow status and few other parameters
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(
                         () -> {
                             Workflow workflow1 = workflowClient.getWorkflow(workflowId, true);

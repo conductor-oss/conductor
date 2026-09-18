@@ -1,123 +1,41 @@
 ---
-description: "Event Handlers — configure Conductor to produce and consume events from Kafka, SQS, and other message systems."
+description: Event handler model, expression scope, supported actions, and OSS runtime semantics.
 ---
-# Event Handlers
-Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.
 
-This includes:
+# Consume and route events with event handlers
 
-1. Being able to produce an event (message) in an external system like SQS, Kafka or internal to Conductor. 
-2. Start a workflow when a specific event occurs that matches the provided criteria.
-
-Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside parent workflow.  Eventing supports provides similar capability without explicitly adding dependencies and provides **fire-and-forget** style integrations.
-
-## Event Task
-Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS or Kafka. Event tasks are useful for creating event based dependencies for workflows and tasks.
-
-See [Event Task](workflowdef/systemtasks/event-task.md) for documentation.
-
-## Event Handler
-Event handlers are listeners registered that executes an action when a matching event occurs.  The supported actions are:
-
-1.  Start a Workflow
-2.  Fail a Task
-3.  Complete a Task
-
-Event Handlers can be configured to listen to Conductor Events or an external event like SQS or Kafka.
-
-## Configuration
-Event Handlers are configured via ```/event/``` APIs.
-
-### Structure
-```json
-{
-  "name" : "descriptive unique name",
-  "event": "event_type:event_location",
-  "condition": "boolean condition",
-  "actions": ["see examples below"]
-}
-```
-`condition` is an expression that MUST evaluate to a boolean value.  A Javascript like syntax is supported that can be used to evaluate condition based on the payload.
-Actions are executed only when the condition evaluates to `true`.
-
-## Examples
-### Condition
-Given the following payload in the message:
+An event handler consumes one provider event, evaluates an optional condition, and dispatches one or more actions. Register it with the [Event Handlers API](../api/eventhandlers.md); only active handlers are subscribed for processing.
 
 ```json
-{
-    "fileType": "AUDIO",
-    "version": 3,
-    "metadata": {
-       "length": 300,
-       "codec": "aac"
-    }
-}
+--8<-- "docs/devguide/cookbook/examples/events/start-workflow-handler.json"
 ```
 
-The following expressions can be used in `condition` with the indicated results:
+## Event identifier
 
-| Expression                 | Result |
-| -------------------------- | ------ |
-| `$.version > 1`            | true   |
-| `$.version > 10`           | false  |
-| `$.metadata.length == 300` | true   |
+The format is `provider:<provider-specific queue URI>`. Runtime parsing splits at the first colon. Valid registered provider keys are `conductor`, `kafka`, `sqs`, `nats`, `jsm`, `nats_stream`, `amqp_queue`, and `amqp_exchange` when their modules are enabled.
 
+## Conditions and payload expressions
 
-### Actions
-Examples of actions that can be configured in the `actions` array:
+- `active` defaults to `false`.
+- An absent condition is treated as true.
+- Conditions evaluate against the payload root, for example `$.status == 'READY'`. If `evaluatorType` identifies a registered evaluator, Conductor uses it; otherwise it evaluates the condition with the default script evaluator.
+- Action placeholders also resolve from the payload root, for example `${orderId}`.
+- `expandInlineJSON: true` expands stringified JSON fields before expressions resolve.
 
-**To start a workflow**
+## Action capability matrix
 
-```json
-{
-    "action": "start_workflow",
-    "start_workflow": {
-        "name": "WORKFLOW_NAME",
-        "version": "<optional_param>",
-        "input": {
-            "param1": "${param1}" 
-        }
-    }
-}
-```
+| Action | OSS Conductor | Orkes | Behavior |
+|---|:---:|:---:|---|
+| `start_workflow` | Yes | Yes | Starts the named workflow and adds Conductor event metadata to its input |
+| `complete_task` | Yes | Yes | Completes an identified task |
+| `fail_task` | Yes | Yes | Fails an identified task; can set `reasonForIncompletion` |
+| `terminate_workflow` | No | Yes | Terminates the targeted workflow |
+| `update_workflow_variables` | No | Yes | Updates variables on the targeted workflow |
 
-**To complete a task**
+For `complete_task` and `fail_task`, specify either `taskId`, or both `workflowId` and `taskRefName`. Those are exact task-targeting mechanisms; an OSS handler does not resolve a business correlation key to a waiting task. `terminate_workflow` and `update_workflow_variables` exist in the shared model but are not implemented by the OSS action processor.
 
-```json
-{
-    "action": "complete_task",
-    "complete_task": {
-      "workflowId": "${workflowId}",
-      "taskRefName": "task_1",
-      "output": {
-        "response": "${result}"
-      }
-    },
-    "expandInlineJSON": true
-}
-```
+## Concurrency and deduplication
 
-**To fail a task***
+Actions run concurrently and are not atomic. Each action is recorded separately using the broker message ID plus its action index. A stable broker message ID enables persisted duplicate detection after the event-execution record is stored, but downstream workflow starts, task updates, and external side effects still require idempotency.
 
-```json
-{
-    "action": "fail_task",
-    "fail_task": {
-      "workflowId": "${workflowId}",
-      "taskRefName": "task_1",
-      "reasonForIncompletion": "${error}",
-      "output": {
-        "response": "${result}"
-      }
-    },
-    "expandInlineJSON": true
-}
-```
-`reasonForIncompletion` is optional, but when provided on `fail_task` it is stored on the failed task and can propagate to the workflow failure reason when that task causes the workflow to fail.
-
-Input for starting a workflow and output when completing / failing task follows the same [expressions](workflowdef/index.md#using-expressions) used for wiring task inputs.
-
-!!!info "Expanding stringified JSON elements in payload"
-	`expandInlineJSON` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  
-	This feature allows such elements to be used with JSON path expressions. 
+For a condition that evaluates to false, Conductor records a skipped event execution and runs no actions. For a practical first-use walkthrough, see [Consume and route events](../../devguide/how-tos/consume-route-events.md); use this page as the action and expression reference.

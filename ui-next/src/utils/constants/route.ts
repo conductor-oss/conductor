@@ -37,7 +37,7 @@ export const SCHEDULER_DEFINITION_URL = {
 
 export const SCHEDULER_EXECUTION_URL = "/schedulerExecs";
 
-// Embedded AgentSpan agent pages (gated by AGENTSPAN_ENABLED / conductor.integrations.ai.enabled)
+// Embedded Conductor-Agents pages, gated by conductor.integrations.ai.enabled.
 export const AGENT_DEFINITION_URL = {
   BASE: "/agents",
   NEW: "/agents/new",

@@ -22,6 +22,7 @@ import { colors } from "theme/tokens/variables";
 import { useEventNameSuggestions } from "utils/hooks/useEventNameSuggestions";
 import { CompleteTask } from "./ActionForms/CompleteTask";
 import { FailTask } from "./ActionForms/FailTask";
+import { StartAgentActionForm } from "./ActionForms/StartAgentTask";
 import { StartWorkflowActionForm } from "./ActionForms/StartWorkflowTask";
 import { TerminateWorkflowForm } from "./ActionForms/TerminateWorkflowTask";
 import { UpdateWorkflowForm } from "./ActionForms/UpdateWorkflowTask";
@@ -209,6 +210,11 @@ const EventHandlerForm = ({
                           return renderFormComponent(
                             StartWorkflowActionForm,
                             `startWorkflow`,
+                          );
+                        case Action.START_AGENT:
+                          return renderFormComponent(
+                            StartAgentActionForm,
+                            `startAgent`,
                           );
                         case Action.TERMINATE_WORKFLOW:
                           return renderFormComponent(

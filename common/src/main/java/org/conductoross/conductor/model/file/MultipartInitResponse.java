@@ -14,7 +14,10 @@ package org.conductoross.conductor.model.file;
 
 import java.util.Objects;
 
-/** Response to {@code POST /api/files/{fileId}/multipart} — initiates a multipart upload. */
+/**
+ * Response to {@code POST /api/files/{workflowId}/{fileId}/multipart} — initiates a multipart
+ * upload.
+ */
 public class MultipartInitResponse {
 
     private String fileHandleId;

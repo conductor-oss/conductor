@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agent;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**
  * Lifecycle state derived from the Conductor agent's child workflow execution.
  *
@@ -26,6 +28,21 @@ public enum ConductorAgentState {
     COMPLETED,
     FAILED,
     CANCELED;
+
+    /** Normalize native workflow statuses into the portable agent lifecycle. */
+    @JsonCreator
+    public static ConductorAgentState fromStatus(String status) {
+        if (status == null) {
+            return RUNNING;
+        }
+        return switch (status) {
+            case "WAITING" -> WAITING;
+            case "COMPLETED" -> COMPLETED;
+            case "FAILED", "TIMED_OUT" -> FAILED;
+            case "CANCELED", "TERMINATED" -> CANCELED;
+            default -> RUNNING;
+        };
+    }
 
     /** A settled outcome the execution will not move on from. */
     public boolean isTerminal() {

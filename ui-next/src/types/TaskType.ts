@@ -1,6 +1,7 @@
 import { ExecutedData } from "./Execution";
 import { TaskDefinitionDto } from "./TaskDefinition";
 import { TaskType } from "./common";
+import { AgentTaskInput, WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 // Copied and fixed from codegen. Use this one.
 export enum PollingStrategy {
@@ -19,6 +20,7 @@ export interface CommonTaskDef {
   taskDefinition?: TaskDefinitionDto;
   description?: string;
   optional?: boolean;
+  metadata?: WorkflowTaskMetadata;
 }
 
 export interface JoinTaskDef extends CommonTaskDef {
@@ -570,19 +572,7 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
 
 export interface AgentTaskDef extends CommonTaskDef {
   type: TaskType.AGENT;
-  inputParameters: {
-    agentType?: string;
-    agentUrl: string;
-    text?: string;
-    prompt?: string;
-    contextId?: string;
-    taskId?: string;
-    pollIntervalSeconds?: number;
-    maxDurationSeconds?: number;
-    streaming?: boolean;
-    pushNotification?: boolean;
-    headers?: Record<string, string>;
-  };
+  inputParameters: AgentTaskInput;
 }
 
 export interface GetAgentCardTaskDef extends CommonTaskDef {

@@ -19,6 +19,7 @@ import { Key } from "ts-key-enum";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { IObject } from "types/common";
 import { dateToEpoch } from "utils";
+import { pluralizeResults } from "utils/helpers";
 import { ERROR_URL, NEW_TASK_DEF_URL } from "utils/constants/route";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
@@ -37,7 +38,7 @@ const getTableTitle = (resultObj: TaskExecutionResult) => {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
       <MuiTypography fontWeight={400} fontSize={14}>
-        {results.length} results
+        {pluralizeResults(results.length)}
       </MuiTypography>
       <MuiTypography color={colors.greyText} fontSize={12}>
         of {totalHits}

@@ -17,6 +17,8 @@ import { FunctionComponent, useMemo } from "react";
 import { useContainerQuery } from "react-container-query";
 import { colors } from "theme/tokens/variables";
 import { TaskType } from "types/common";
+import { WorkflowDef } from "types/WorkflowDef";
+import { isSideTaskOf } from "pages/execution/state/detachedTasks";
 import {
   DoWhileSelection,
   ExecutionTask,
@@ -27,6 +29,7 @@ import { featureFlags, FEATURES } from "utils/flags";
 import { ActorRef } from "xstate";
 import { UpdateTaskStatusForm } from "..";
 import {
+  AGENT_CARD_TAB,
   DEFINITION_TAB,
   PLUGIN_PANEL_TAB_BASE,
   INPUT_TAB,
@@ -35,6 +38,11 @@ import {
   OUTPUT_TAB,
   SUMMARY_TAB,
 } from "../state/constants";
+import { AgentSnapshotDetails } from "components/features/agents/AgentSnapshotDetails";
+import {
+  createUnresolvedAgentSnapshot,
+  getAgentSnapshot,
+} from "utils/agentMetadata";
 import TaskLogs from "../TaskLogs";
 import TaskSummary from "../TaskSummary";
 import { pluginRegistry } from "plugins/registry";
@@ -59,6 +67,8 @@ export interface RightPanelProps {
   workflowName: string;
   workflowStatus: string;
   doWhileSelection?: DoWhileSelection[];
+  /** Needed to tell a task the engine attached to a node from a step of the workflow. */
+  workflowDefinition?: Partial<WorkflowDef>;
 }
 
 export const RightPanel: FunctionComponent<RightPanelProps> = ({
@@ -66,6 +76,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   workflowName,
   workflowStatus,
   doWhileSelection,
+  workflowDefinition,
 }) => {
   const [containerQueryState, containerRef] = useContainerQuery(
     executionTaskHeaderContainerQuery,
@@ -95,6 +106,14 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   ] = useRightPanelActor(rightPanelActor);
 
   const dfOptions: ExecutionTask[] = maybeSiblings;
+  const isAgentTask = selectedTask?.workflowTask.type === TaskType.AGENT;
+  const agentSnapshot = useMemo(() => {
+    if (!isAgentTask || !selectedTask) return undefined;
+    return (
+      getAgentSnapshot(selectedTask.workflowTask) ??
+      createUnresolvedAgentSnapshot(selectedTask.inputData)
+    );
+  }, [isAgentTask, selectedTask]);
 
   const maybeStatusForm = useMemo(
     () =>
@@ -108,6 +127,17 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
         />
       ) : null,
     [selectedTask, onChangeTaskStatus],
+  );
+
+  /**
+   * A task the engine attached to a node — a guardrail detector — is not a step of the workflow,
+   * so there is nothing to rerun from it. The server refuses this, and offering a button that
+   * always fails is worse than not offering it. Changing its status stays available: that is how a
+   * stuck detector gets unstuck, and it destroys nothing.
+   */
+  const isSideTask = useMemo(
+    () => isSideTaskOf(selectedTask, workflowDefinition),
+    [selectedTask, workflowDefinition],
   );
 
   const maybeRerunTask = useMemo(() => {
@@ -263,11 +293,12 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                   />
                 </Box>
               )}
-              {((selectedTask?.workflowTask?.type !== TaskType.DO_WHILE &&
-                selectedTask?.workflowTask?.type !== TaskType.FORK_JOIN) ||
-                rerunFromForkAndDowhileTasksEnabled) && (
-                <Box>{maybeRerunTask}</Box>
-              )}
+              {!isSideTask &&
+                ((selectedTask?.workflowTask?.type !== TaskType.DO_WHILE &&
+                  selectedTask?.workflowTask?.type !== TaskType.FORK_JOIN) ||
+                  rerunFromForkAndDowhileTasksEnabled) && (
+                  <Box>{maybeRerunTask}</Box>
+                )}
             </Box>
             <Box
               sx={{
@@ -319,29 +350,45 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
           scrollButtons={containerQueryState["small"] ? true : "auto"}
           allowScrollButtonsMobile
         >
-          <Tab label="Summary" onClick={() => changeCurrentTab(SUMMARY_TAB)} />
+          <Tab
+            label="Summary"
+            value={SUMMARY_TAB}
+            onClick={() => changeCurrentTab(SUMMARY_TAB)}
+          />
           <Tab
             label="Input"
+            value={INPUT_TAB}
             onClick={() => changeCurrentTab(INPUT_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="Output"
+            value={OUTPUT_TAB}
             onClick={() => changeCurrentTab(OUTPUT_TAB)}
             disabled={!selectedTask.status}
           />
+          {isAgentTask && (
+            <Tab
+              label="Agent Card"
+              value={AGENT_CARD_TAB}
+              onClick={() => changeCurrentTab(AGENT_CARD_TAB)}
+            />
+          )}
           <Tab
             label="Logs"
+            value={LOGS_TAB}
             onClick={() => changeCurrentTab(LOGS_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="JSON"
+            value={JSON_TAB}
             onClick={() => changeCurrentTab(JSON_TAB)}
             disabled={!selectedTask.status}
           />
           <Tab
             label="Definition"
+            value={DEFINITION_TAB}
             onClick={() => changeCurrentTab(DEFINITION_TAB)}
           />
           {pluginPanels.map((panel, i) => (
@@ -393,6 +440,19 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                 editorHeight="calc(100vh - 280px)"
               />
             ))}
+          {currentTab === AGENT_CARD_TAB && agentSnapshot && (
+            <Box
+              data-testid="agent-card-panel"
+              sx={{
+                p: 3,
+                overflowY: "auto",
+                overflowX: "hidden",
+                maxHeight: "calc(100vh - 200px)",
+              }}
+            >
+              <AgentSnapshotDetails snapshot={agentSnapshot} />
+            </Box>
+          )}
           {currentTab === LOGS_TAB &&
             (isKeptLastNPruned ? (
               prunedNotice

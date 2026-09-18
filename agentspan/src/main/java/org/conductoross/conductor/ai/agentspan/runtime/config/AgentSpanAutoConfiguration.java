@@ -18,26 +18,25 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 
 /**
- * Registers the AgentSpan beans by component-scanning the {@code
+ * Registers the Conductor-Agents beans by component-scanning the {@code
  * org.conductoross.conductor.ai.agentspan.runtime} namespace — agent domain, compilers, services,
  * controllers, system tasks, and whichever SPI implementations are present on the classpath.
  *
  * <p>Loaded via {@code
  * META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports}, so an
  * embedding host (e.g. the Conductor server, orkes-conductor) gets the beans without adding the
- * AgentSpan runtime packages to its own component scan.
+ * Conductor-Agents runtime packages to its own component scan.
  *
  * <p><b>Activation contract.</b> Merely having this library on the classpath must not change a host
- * application's behavior. The configuration activates only when the host explicitly opts in with
- * {@code agentspan.embedded=true} (the Conductor server derives this from {@code
- * conductor.integrations.ai.enabled}). Without the flag, the host runs as stock Conductor — no
- * AgentSpan beans, controllers, or system-task overrides are registered.
+ * application's behavior. The configuration activates only when the host explicitly enables {@code
+ * conductor.integrations.ai.enabled=true}. Without the flag, the host runs as stock Conductor — no
+ * Conductor-Agents beans, controllers, or system-task overrides are registered.
  *
  * <p>Excludes this class from the scan, since it is processed directly as an auto-configuration
  * rather than as a component-scanned candidate.
  */
 @AutoConfiguration
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 @ComponentScan(
         basePackages = "org.conductoross.conductor.ai.agentspan.runtime",
         excludeFilters = {

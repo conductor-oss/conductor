@@ -45,7 +45,7 @@ public class TerminationCompiler {
         String taskName = agentName + "_termination";
         String refName = agentName + "_termination";
         String resultRef = "${" + llmRef + ".output.result}";
-        String iterationRef = "${" + agentName + "_loop.iteration}";
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
 
         // Match local compiler: emit a SIMPLE worker task.
         // The Python runtime registers a worker that evaluates the termination condition.
@@ -76,7 +76,7 @@ public class TerminationCompiler {
         agentName = AgentCompiler.toRef(agentName);
         String refName = agentName + "_stop_when";
         String resultRef = "${" + llmRef + ".output.result}";
-        String iterationRef = "${" + agentName + "_loop.iteration}";
+        String iterationRef = "${" + agentName + "_loop.output.iteration}";
 
         WorkflowTask task = new WorkflowTask();
         task.setName(taskName);
@@ -113,7 +113,7 @@ public class TerminationCompiler {
 
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("result", "${workflow.variables.conversation}");
-        inputs.put("iteration", "${" + loopRef + ".iteration}");
+        inputs.put("iteration", "${" + loopRef + ".output.iteration}");
         task.setInputParameters(inputs);
 
         return task;
@@ -141,7 +141,7 @@ public class TerminationCompiler {
 
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("result", "${workflow.variables.conversation}");
-        inputs.put("iteration", "${" + loopRef + ".iteration}");
+        inputs.put("iteration", "${" + loopRef + ".output.iteration}");
         task.setInputParameters(inputs);
 
         return task;

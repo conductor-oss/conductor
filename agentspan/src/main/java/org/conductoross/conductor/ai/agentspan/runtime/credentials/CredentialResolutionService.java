@@ -47,7 +47,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * os.environ} fallback when {@code secret_strict_mode=false}.
  */
 @Service
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class CredentialResolutionService {
 
     private static final Logger log = LoggerFactory.getLogger(CredentialResolutionService.class);

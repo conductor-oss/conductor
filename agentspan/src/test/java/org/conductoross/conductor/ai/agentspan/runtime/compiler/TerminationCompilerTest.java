@@ -99,7 +99,7 @@ class TerminationCompilerTest {
         assertThat((String) task.getInputParameters().get("result"))
                 .contains("agent_llm.output.result");
         assertThat((String) task.getInputParameters().get("iteration"))
-                .contains("agent_loop.iteration");
+                .contains("agent_loop.output.iteration");
         assertThat((String) task.getInputParameters().get("messages"))
                 .contains("agent_llm.input.messages");
     }

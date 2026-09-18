@@ -13,6 +13,7 @@
 package org.conductoross.conductor.common.metadata.agent;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -35,4 +36,16 @@ public class AgentSummary {
     private Long updateTime;
     private String description;
     private String checksum;
+
+    // These fields mirror the underlying workflow definition so the agent list can use the same
+    // metadata columns as the workflow definition list.
+    private Integer schemaVersion;
+    private Boolean restartable;
+    private Boolean workflowStatusListenerEnabled;
+    private String ownerEmail;
+    private List<String> inputParameters;
+    private Map<String, Object> outputParameters;
+    private String timeoutPolicy;
+    private Long timeoutSeconds;
+    private String failureWorkflow;
 }

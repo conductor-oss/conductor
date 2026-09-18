@@ -1,7 +1,7 @@
 ## 1. Add dependencies
 
 ```groovy
-implementation 'org.conductoross:conductor-ai:5.1.0'
+implementation 'org.conductoross:conductor-ai'
 compileOnly 'com.google.adk:google-adk:1.3.0'
 ```
 
@@ -12,7 +12,7 @@ export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
-export AGENTSPAN_LLM_MODEL=google_gemini/gemini-2.0-flash
+export CONDUCTOR_AGENT_LLM_MODEL=google_gemini/gemini-2.0-flash
 ```
 
 ```java
@@ -33,4 +33,4 @@ try (AgentRuntime runtime = new AgentRuntime()) {
 }
 ```
 
-[Google ADK bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/google-adk.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples)
+[Google ADK bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/google-adk.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples/src/main/java/org/conductoross/conductor/ai/examples/adk)

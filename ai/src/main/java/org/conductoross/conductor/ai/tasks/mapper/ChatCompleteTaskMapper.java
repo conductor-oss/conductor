@@ -200,16 +200,22 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             }
             boolean skipTask = true;
             ChatMessage.Role role = ChatMessage.Role.assistant;
-            if (task.getParentTaskReferenceName() != null
+            // A task inside a DO_WHILE has both a parent loop reference and an iteration. Check
+            // the same-refName loop case first: otherwise it matches the parent branch below and
+            // bypasses the prefill/previousResponseId suppression.
+            boolean sameRefNameLoopIteration =
+                    task.isLoopOverTask()
+                            && task.getWorkflowTask()
+                                    .getTaskReferenceName()
+                                    .equals(
+                                            chatCompleteTask
+                                                    .getWorkflowTask()
+                                                    .getTaskReferenceName());
+            if (sameRefNameLoopIteration) {
+                skipTask = suppressLoopAssistantHistory;
+            } else if (task.getParentTaskReferenceName() != null
                     && task.getParentTaskReferenceName().equals(historyContextTaskRefName)) {
                 skipTask = false;
-            } else if (task.isLoopOverTask()
-                    && task.getWorkflowTask()
-                            .getTaskReferenceName()
-                            .equals(historyContextTaskRefName)) {
-                // Same-refName loop iterations are exactly the assistant-message
-                // duplication the Responses API has already absorbed; skip them.
-                skipTask = suppressLoopAssistantHistory;
             } else if (chatCompletion.getParticipants() != null) {
                 ChatMessage.Role participantRole =
                         chatCompletion

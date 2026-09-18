@@ -68,7 +68,7 @@ const executionFields: LegacyColumn[] = [
           </span>
         );
       }
-      return <strong>{value}</strong>;
+      return value;
     },
   },
   {
@@ -334,12 +334,12 @@ export default function ResultsTable({
             />
           }
           label="Hide sub-agent executions"
-          sx={{ ml: 1, mb: 1 }}
+          sx={{ ml: 1, mb: 1, mt: 3 }}
         />
       )}
       <DataTable
-        expandableRows={!hideSubWorkflows}
-        expandOnRowClicked={!hideSubWorkflows}
+        expandableRows
+        expandOnRowClicked
         expandableRowsComponent={({ data: row }: { data: any }) => {
           const wfId = row.workflowId;
           if (!subAgentCache[wfId]) {

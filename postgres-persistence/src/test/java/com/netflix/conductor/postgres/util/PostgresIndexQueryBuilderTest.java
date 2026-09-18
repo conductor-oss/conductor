@@ -24,6 +24,7 @@ import org.mockito.Mockito;
 import com.netflix.conductor.postgres.config.PostgresProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
@@ -46,6 +47,25 @@ public class PostgresIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldKeepAgentChildrenBelowTheirParent() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index",
+                        "classifier=agent",
+                        "",
+                        0,
+                        15,
+                        List.of("agentHierarchy:DESC", "startTime:DESC"),
+                        properties);
+
+        String query = builder.getQuery();
+        assertTrue(query.startsWith("WITH RECURSIVE workflow_hierarchy"));
+        assertTrue(query.contains("JOIN workflow_hierarchy parent"));
+        assertTrue(query.contains("LEFT JOIN workflow_hierarchy"));
+        assertTrue(query.contains("workflow_hierarchy.hierarchy_path ASC"));
     }
 
     @Test
@@ -701,6 +721,53 @@ public class PostgresIndexQueryBuilderTest {
         builder.addPagingParameters(mockQuery);
         InOrder inOrder = Mockito.inOrder(mockQuery);
         inOrder.verify(mockQuery).addParameter("");
+        inOrder.verify(mockQuery).addParameter(15);
+        inOrder.verify(mockQuery).addParameter(0);
+        verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldSortWorkflowsOnEndTime() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index", "", "", 0, 15, List.of("endTime:DESC"), properties);
+        assertEquals(
+                "SELECT json_data::TEXT FROM workflow_index ORDER BY end_time DESC LIMIT ? OFFSET ?",
+                builder.getQuery());
+    }
+
+    @Test
+    void shouldSortTasksOnEndTime() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "task_index", "", "", 0, 15, List.of("endTime:DESC"), properties);
+        assertEquals(
+                "SELECT json_data::TEXT FROM task_index ORDER BY end_time DESC LIMIT ? OFFSET ?",
+                builder.getQuery());
+    }
+
+    // The End Time date-range picker emits `endTime>`/`endTime<` clauses. Before end_time was an
+    // indexed column these were dropped by the same allow-list that dropped the sort, so the
+    // picker silently returned unfiltered results.
+    @Test
+    void shouldGenerateQueryForEndTimeRangeInCanonicalUtc() throws SQLException {
+        PostgresIndexQueryBuilder builder =
+                new PostgresIndexQueryBuilder(
+                        "workflow_index",
+                        "endTime>1675702498000",
+                        "",
+                        0,
+                        15,
+                        new ArrayList<>(),
+                        properties);
+        assertEquals(
+                "SELECT json_data::TEXT FROM workflow_index WHERE end_time > ?::TIMESTAMPTZ LIMIT ? OFFSET ?",
+                builder.getQuery());
+        Query mockQuery = mock(Query.class);
+        builder.addParameters(mockQuery);
+        builder.addPagingParameters(mockQuery);
+        InOrder inOrder = Mockito.inOrder(mockQuery);
+        inOrder.verify(mockQuery).addParameter("2023-02-06T16:54:58Z");
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);

@@ -45,6 +45,7 @@ public class FileModelConverter {
         handle.setFileHandleId(FileIdToFileHandleIdConverter.toFileHandleId(model.getFileId()));
         handle.setFileName(model.getFileName());
         handle.setContentType(model.getContentType());
+        handle.setFileSize(model.getStorageContentSize());
         handle.setContentHash(model.getStorageContentHash());
         handle.setStorageType(model.getStorageType());
         handle.setUploadStatus(model.getUploadStatus());

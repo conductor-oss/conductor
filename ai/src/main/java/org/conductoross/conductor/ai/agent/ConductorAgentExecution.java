@@ -52,6 +52,12 @@ public class ConductorAgentExecution {
     /** Failure/cancel explanation for terminal non-completed states. */
     private String reasonForIncompletion;
 
+    /** Epoch time when the native Conductor agent execution started. */
+    private Long startTime;
+
+    /** Epoch time when the native Conductor agent execution reached a terminal state. */
+    private Long endTime;
+
     /** Whether the run finished successfully. */
     public boolean isComplete() {
         return state == ConductorAgentState.COMPLETED;

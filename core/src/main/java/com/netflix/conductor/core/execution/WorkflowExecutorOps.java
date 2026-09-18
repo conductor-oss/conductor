@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Predicate;
@@ -24,6 +25,8 @@ import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 import org.conductoross.conductor.common.metadata.agent.ModelParser;
 import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.service.SchemaService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -31,6 +34,7 @@ import org.springframework.stereotype.Component;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.annotations.VisibleForTesting;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
+import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.*;
 import com.netflix.conductor.common.metadata.workflow.*;
 import com.netflix.conductor.common.run.Workflow;
@@ -58,6 +62,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
@@ -96,6 +101,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private long activeWorkerLastPollMs;
     private final ExecutionLockService executionLockService;
     private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
+    private final SchemaService schemaService;
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -115,7 +121,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             SystemTaskRegistry systemTaskRegistry,
             ParametersUtils parametersUtils,
             IDGenerator idGenerator,
-            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO) {
+            Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO,
+            SchemaService schemaService) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -130,6 +137,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.idGenerator = idGenerator;
         this.systemTaskRegistry = systemTaskRegistry;
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
+        this.schemaService = schemaService;
     }
 
     /**
@@ -354,7 +362,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             parentWorkflow.setFailedReferenceTaskNames(new HashSet<>());
             parentWorkflow.setFailedTaskNames(new HashSet<>());
             parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
-            executionDAOFacade.updateWorkflow(parentWorkflow);
+            // Deliberately NOT persisted yet (mirrors OrkesWorkflowExecutor): while the sibling
+            // tasks below are being repaired, the stored parent must stay terminal so any
+            // concurrent decide bounces off the terminal guard instead of evaluating a RUNNING
+            // parent whose CANCELED sibling still points at a not-yet-resumed TERMINATED child
+            // (that stale read terminated the freshly retried parent under CI load).
 
             for (TaskModel task : parentWorkflow.getTasks()) {
                 if (task.getTaskType().equalsIgnoreCase(TaskType.TASK_TYPE_SUB_WORKFLOW)
@@ -365,9 +377,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             executionDAOFacade.getWorkflowModel(task.getSubWorkflowId(), true);
                     if (child != null) {
                         if (child.getStatus() == WorkflowModel.Status.RUNNING) {
-                            // Child was already set RUNNING by an in-progress rerun; surfacing that
-                            // to the parent task without calling retry() avoids creating a spurious
-                            // new task instance that conflicts with the rerun's own finalizeRerun.
+                            // Child was already set RUNNING by an in-progress rerun; surfacing
+                            // that
+                            // to the parent task without calling retry() avoids creating a
+                            // spurious
+                            // new task instance that conflicts with the rerun's own
+                            // finalizeRerun.
                             task.setStatus(IN_PROGRESS);
                             task.setReasonForIncompletion(null);
                             task.setSubworkflowChanged(true);
@@ -402,6 +417,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
 
+            // Persist the RUNNING parent only after every sibling task above has been
+            // repaired, then decide inline (not via the decider queue) so the first evaluation
+            // of the revived parent happens on the fully repaired state — mirrors
+            // OrkesWorkflowExecutor.
+            executionDAOFacade.updateWorkflow(parentWorkflow);
+
             try {
                 WorkflowStatusListener.WorkflowEventType event =
                         WorkflowStatusListener.WorkflowEventType.valueOf(operation.toUpperCase());
@@ -410,7 +431,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 LOGGER.warn("Unknown workflow operation: {}", operation);
             }
 
-            expediteLazyWorkflowEvaluation(parentWorkflowId);
+            decide(parentWorkflowId);
 
             workflow = parentWorkflow;
         }
@@ -555,6 +576,22 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @return new instance of a task with "SCHEDULED" status
      */
     private TaskModel taskToBeRescheduled(WorkflowModel workflow, TaskModel task) {
+        // Container and join tasks are retried in place (same task id), mirroring
+        // OrkesWorkflowExecutor#taskToBeRescheduled. JOIN/EXCLUSIVE_JOIN are included here
+        // because conductor-oss's Join is async (Orkes' is sync and takes the sync-system-task
+        // copy branch there): a JOIN must never be SCHEDULED — the mappers create joins
+        // IN_PROGRESS because the async executor evaluates a JOIN only via execute() (called
+        // for IN_PROGRESS tasks), so a fresh SCHEDULED copy is popped, never evaluated, and
+        // postponed forever, leaving the workflow RUNNING after every branch completes.
+        if (task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.FORK_JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.JOIN.name())
+                || task.getTaskType().equalsIgnoreCase(TaskType.EXCLUSIVE_JOIN.name())) {
+            task.setRetried(false);
+            task.setRetryCount(task.getRetryCount() + 1);
+            task.setStatus(IN_PROGRESS);
+            return task;
+        }
         TaskModel taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(idGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
@@ -675,6 +712,12 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         }
 
         deciderService.updateWorkflowOutput(workflow, null);
+
+        try {
+            validateSchema(outputSchemaOf(workflow.getWorkflowDefinition()), workflow.getOutput());
+        } catch (SchemaValidationException e) {
+            throw new TerminateWorkflowException(e.getMessage(), WorkflowModel.Status.FAILED);
+        }
 
         workflow.setStatus(WorkflowModel.Status.COMPLETED);
 
@@ -841,7 +884,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (workflow.getFailedTaskId() != null) {
                     input.put("failureTaskId", workflow.getFailedTaskId());
                 }
-                input.put("failedWorkflow", workflow);
+                // Convert to a Map: the JsonPath provider used by ParametersUtils cannot traverse
+                // POJOs, so a raw WorkflowModel makes nested references like
+                // ${workflow.input.failedWorkflow.workflowId} silently resolve to null (#1164).
+                input.put(
+                        "failedWorkflow",
+                        OBJECT_MAPPER.convertValue(
+                                workflow, new TypeReference<Map<String, Object>>() {}));
 
                 try {
                     String failureWFId = idGenerator.generate();
@@ -960,6 +1009,19 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (StringUtils.isNotBlank(taskResult.getExternalOutputPayloadStoragePath())) {
             task.setExternalOutputPayloadStoragePath(
                     taskResult.getExternalOutputPayloadStoragePath());
+        }
+
+        // Only check output for COMPLETED tasks. Externalized outputs are skipped: outputData is
+        // empty in that case, so validating it would reject valid large payloads.
+        if (task.getStatus() == COMPLETED
+                && StringUtils.isBlank(task.getExternalOutputPayloadStoragePath())) {
+            try {
+                validateSchema(outputSchemaOf(taskDefinitionOrNull(task)), task.getOutputData());
+            } catch (SchemaValidationException e) {
+                // Terminal: re-running won't fix an invalid output shape.
+                task.setStatus(FAILED_WITH_TERMINAL_ERROR);
+                task.setReasonForIncompletion(e.getMessage());
+            }
         }
 
         if (task.getStatus().isTerminal()) {
@@ -1313,6 +1375,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         if (!workflowSystemTask.isAsync()
                                 && executeSyncSystemTaskWithSecrets(
                                         workflowSystemTask, workflow, task)) {
+                            // Sync system tasks skip the task-update API path, so check here.
+                            validateSystemTaskOutput(task);
                             tasksToBeUpdated.add(task);
                             stateChanged = true;
                         }
@@ -1786,7 +1850,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         startReq.setInput(input);
 
         Set<String> startWorkerNames = def.collectSimpleTaskNames();
-        config.collectDynamicTransferNames(startWorkerNames);
+        config.collectDeclaredWorkerTaskNames(startWorkerNames);
         List<String> requiredWorkers = new ArrayList<>(startWorkerNames);
 
         // Domain-based task routing for stateful agents.
@@ -1812,22 +1876,21 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
         }
 
-        // Idempotency: use the key as correlationId and check for existing executions
+        // The correlation-id lookup uses asynchronous search on Redis-backed deployments. Use a
+        // stable workflow ID as well so immediate and concurrent retries reuse the durable
+        // execution record instead of depending on index visibility.
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isEmpty()) {
             startReq.setCorrelationId(request.getIdempotencyKey());
             startReq.setIdempotencyKey(request.getIdempotencyKey());
-            String existing = findExistingExecution(def.getName(), request.getIdempotencyKey());
-            if (existing != null) {
-                LOGGER.info(
-                        "Idempotent hit: returning existing workflow {} for key '{}'",
-                        existing,
-                        request.getIdempotencyKey());
-                return AgentStartResponse.builder()
-                        .executionId(existing)
-                        .agentName(def.getName())
-                        .requiredWorkers(requiredWorkers)
-                        .build();
-            }
+            StartWorkflowInput idempotentInput = new StartWorkflowInput(startReq);
+            idempotentInput.setWorkflowId(
+                    agentIdempotencyWorkflowId(def.getName(), request.getIdempotencyKey()));
+            WorkflowModel execution = startWorkflowIdempotent(idempotentInput);
+            return AgentStartResponse.builder()
+                    .executionId(execution.getWorkflowId())
+                    .agentName(def.getName())
+                    .requiredWorkers(requiredWorkers)
+                    .build();
         }
         String executionId = startWorkflow(new StartWorkflowInput(startReq));
         LOGGER.debug("Started agent workflow: {} (id={})", def.getName(), executionId);
@@ -1839,10 +1902,11 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 .build();
     }
 
-    private String findExistingExecution(String workflowName, String idempotencyKey) {
-        List<Workflow> existing =
-                executionDAOFacade.getWorkflowsByCorrelationId(workflowName, idempotencyKey, false);
-        return existing.stream().findFirst().map(Workflow::getWorkflowId).orElse(null);
+    private static String agentIdempotencyWorkflowId(String workflowName, String idempotencyKey) {
+        return UUID.nameUUIDFromBytes(
+                        ("agent:" + workflowName + ":" + idempotencyKey)
+                                .getBytes(StandardCharsets.UTF_8))
+                .toString();
     }
 
     private void addTaskToQueue(TaskModel task) {
@@ -1948,6 +2012,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     boolean scheduleTask(WorkflowModel workflow, List<TaskModel> tasks) {
         List<TaskModel> tasksToBeQueued;
         boolean startedSystemTasks = false;
+        final Set<String> rejectedIds = new HashSet<>();
 
         try {
             if (tasks == null || tasks.isEmpty()) {
@@ -1968,22 +2033,29 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 }
             }
 
+            rejectedIds.addAll(rejectTasksFailingInputSchema(tasks));
+
             // metric to track the distribution of number of tasks within a workflow
             Monitors.recordNumTasksInWorkflow(
                     workflow.getTasks().size() + tasks.size(),
                     workflow.getWorkflowName(),
                     String.valueOf(workflow.getWorkflowVersion()));
 
-            // Save the tasks in the DAO
+            // Persist rejected tasks too so the next decide() cycle sees their terminal state.
             executionDAOFacade.createTasks(tasks);
 
-            List<TaskModel> systemTasks =
+            List<TaskModel> acceptedTasks =
                     tasks.stream()
+                            .filter(task -> !rejectedIds.contains(task.getTaskId()))
+                            .collect(Collectors.toList());
+
+            List<TaskModel> systemTasks =
+                    acceptedTasks.stream()
                             .filter(task -> systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
             tasksToBeQueued =
-                    tasks.stream()
+                    acceptedTasks.stream()
                             .filter(task -> !systemTaskRegistry.isSystemTask(task.getTaskType()))
                             .collect(Collectors.toList());
 
@@ -2048,7 +2120,40 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             LOGGER.warn(errorMsg, e);
             Monitors.error(CLASS_NAME, "scheduleTask");
         }
-        return startedSystemTasks;
+        return startedSystemTasks || !rejectedIds.isEmpty();
+    }
+
+    /**
+     * Fails tasks whose input violates their definition's schema, before they are queued. Failures
+     * are terminal — retrying the same payload against the same schema achieves nothing.
+     *
+     * @return ids of rejected tasks, which must not be queued or started
+     */
+    private Set<String> rejectTasksFailingInputSchema(List<TaskModel> tasks) {
+        Set<String> rejected = new HashSet<>();
+        for (TaskModel task : tasks) {
+            try {
+                validateSchema(inputSchemaOf(taskDefinitionOrNull(task)), task.getInputData());
+            } catch (SchemaValidationException e) {
+                LOGGER.info(
+                        "Task {} rejected before scheduling: {}", task.getTaskId(), e.getMessage());
+                task.setStatus(FAILED_WITH_TERMINAL_ERROR);
+                task.setReasonForIncompletion(e.getMessage());
+                task.setEndTime(System.currentTimeMillis());
+                rejected.add(task.getTaskId());
+            }
+        }
+        return rejected;
+    }
+
+    /** Returns the task's definition, or null if absent (no schema to enforce). */
+    private TaskDef taskDefinitionOrNull(TaskModel task) {
+        return task.getTaskDefinition()
+                .orElseGet(
+                        () ->
+                                task.getTaskDefName() == null
+                                        ? null
+                                        : metadataDAO.getTaskDef(task.getTaskDefName()));
     }
 
     /**
@@ -2090,6 +2195,51 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         } finally {
             task.setInputData(literalInput);
         }
+    }
+
+    /**
+     * Validates a synchronous system task's output schema after execute(), before persistence.
+     *
+     * <p>A task that completes during scheduling, in start(), never reaches here, and scheduleTask
+     * checks input only — so its output schema is stored and never enforced. Same for an async
+     * system task. Documented in docs/devguide/how-tos/schema-validation.md.
+     */
+    private void validateSystemTaskOutput(TaskModel task) {
+        if (task.getStatus() != COMPLETED) {
+            return;
+        }
+        try {
+            validateSchema(outputSchemaOf(taskDefinitionOrNull(task)), task.getOutputData());
+        } catch (SchemaValidationException e) {
+            task.setStatus(FAILED_WITH_TERMINAL_ERROR);
+            task.setReasonForIncompletion(e.getMessage());
+        }
+    }
+
+    /** Returns the input schema only when enforcement is on, null otherwise. */
+    private static SchemaDef inputSchemaOf(WorkflowDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getInputSchema();
+    }
+
+    private static SchemaDef inputSchemaOf(TaskDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getInputSchema();
+    }
+
+    private static SchemaDef outputSchemaOf(WorkflowDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getOutputSchema();
+    }
+
+    private static SchemaDef outputSchemaOf(TaskDef def) {
+        return def == null || !def.isEnforceSchema() ? null : def.getOutputSchema();
+    }
+
+    /**
+     * Validates a payload against a schema; does nothing when schema is null. The payload is
+     * supplied lazily because WorkflowModel getInput/getOutput merge inline and external-storage
+     * maps on access, which is wasted work when enforcement is off.
+     */
+    private void validateSchema(SchemaDef schema, Map<String, Object> payload) {
+        schemaService.validate(schema, payload);
     }
 
     private void addTaskToQueue(final List<TaskModel> tasks) {
@@ -2504,6 +2654,25 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             // orphan sub-workflow: parent task was cleared (e.g. parent workflow restarted)
             return;
         }
+        // Generation fence: a rerun replaces the parent's fork generation wholesale — the old
+        // SUB_WORKFLOW task rows survive in the task store but are no longer part of the
+        // parent's task list. A late terminal event from the superseded generation's child
+        // must not propagate through that stale task record, or it fails the parent's fresh
+        // generation (observed in CI: parent FAILED citing a task absent from its own task
+        // list). Retry has an analogous fence via isRetried(); rerun needs list membership.
+        WorkflowModel parentWorkflow =
+                executionDAOFacade.getWorkflowModel(subWorkflowTask.getWorkflowInstanceId(), true);
+        if (parentWorkflow != null
+                && parentWorkflow.getTasks().stream()
+                        .noneMatch(t -> t.getTaskId().equals(subWorkflowTask.getTaskId()))) {
+            LOGGER.info(
+                    "Sub-workflow {} finished but its parent task {} is no longer part of parent {}"
+                            + " (superseded by rerun/restart) — dropping stale propagation",
+                    subWorkflow.getWorkflowId(),
+                    subWorkflowTask.getTaskId(),
+                    subWorkflowTask.getWorkflowInstanceId());
+            return;
+        }
         executeSubworkflowTaskAndSyncData(subWorkflow, subWorkflowTask);
         executionDAOFacade.updateTask(subWorkflowTask);
         if (subWorkflowTask.getStatus().isTerminal()) {
@@ -2552,6 +2721,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         String workflowId =
                 Optional.ofNullable(input.getWorkflowId()).orElseGet(idGenerator::generate);
         WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+
+        validateSchema(inputSchemaOf(workflow.getWorkflowDefinition()), workflow.getInput());
 
         try {
             createAndEvaluate(workflow);
@@ -2604,6 +2775,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
 
             WorkflowModel workflow = createWorkflowModel(input, workflowDefinition, workflowId);
+            validateSchema(inputSchemaOf(workflow.getWorkflowDefinition()), workflow.getInput());
             createAttempted = true;
             createAndQueueEvaluationWithLock(workflow);
 

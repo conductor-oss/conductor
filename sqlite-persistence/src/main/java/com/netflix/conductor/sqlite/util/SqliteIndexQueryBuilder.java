@@ -15,7 +15,6 @@ package com.netflix.conductor.sqlite.util;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -44,6 +43,7 @@ public class SqliteIndexQueryBuilder {
         "correlation_id",
         "workflow_type",
         "start_time",
+        "end_time",
         "status",
         "task_id",
         "task_type",
@@ -61,6 +61,10 @@ public class SqliteIndexQueryBuilder {
         private String operator;
         private List<String> values;
         private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
+
+        /** Must match {@code SqliteIndexDAO}'s write-path format exactly. */
+        private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
         public Condition() {}
 
@@ -103,7 +107,12 @@ public class SqliteIndexQueryBuilder {
                 return "lower(" + attribute + ") LIKE ?";
             } else {
                 if (attribute.endsWith("_time")) {
-                    return attribute + " " + operator + " datetime(?)";
+                    // No datetime() wrapper: it truncates to whole seconds, so
+                    // 'start_time < ?' wrongly excluded a row stored at exactly '...03.000'
+                    // ('...03.000' < '...03' is false -- longer string, same prefix). With
+                    // identical canonical-UTC text on both sides the comparison is exact
+                    // (issue #1497).
+                    return attribute + " " + operator + " ?";
                 } else if (operator.equals("=")
                         && values.size() == 1
                         && values.get(0).contains("*")) {
@@ -151,10 +160,7 @@ public class SqliteIndexQueryBuilder {
         }
 
         private String millisToUtc(String millis) {
-            Long startTimeMilli = Long.parseLong(millis);
-            ZonedDateTime startDate =
-                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTimeMilli), ZoneOffset.UTC);
-            return DateTimeFormatter.ISO_DATE_TIME.format(startDate);
+            return SQLITE_UTC_TIMESTAMP.format(Instant.ofEpochMilli(Long.parseLong(millis)));
         }
 
         private boolean isValid() {
@@ -210,10 +216,12 @@ public class SqliteIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT "
+        return hierarchyCte()
+                + "SELECT "
                 + selectColumn
                 + " FROM "
                 + table
+                + hierarchyJoin()
                 + queryString
                 + getSort()
                 + " LIMIT ? OFFSET ?";
@@ -278,7 +286,10 @@ public class SqliteIndexQueryBuilder {
             if (splitCond.length == 2) {
                 String attribute = camelToSnake(splitCond[0]);
                 String order = splitCond[1].toUpperCase();
-                if (Arrays.asList(VALID_FIELDS).contains(attribute)
+                if ("agent_hierarchy".equals(attribute)
+                        && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
+                    sortConds.add(agentHierarchySort(order));
+                } else if (Arrays.asList(VALID_FIELDS).contains(attribute)
                         && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
                     sortConds.add(attribute + " " + order);
                 }
@@ -289,6 +300,54 @@ public class SqliteIndexQueryBuilder {
             return " ORDER BY " + String.join(", ", sortConds);
         }
         return "";
+    }
+
+    /**
+     * Groups an agent root and every descendant in depth-first order. The recursive CTE makes this
+     * a database operation before pagination, so a nested sub-agent cannot be separated from its
+     * ancestors by another execution page.
+     */
+    private String agentHierarchySort(String order) {
+        return "COALESCE(workflow_hierarchy.root_start_time, "
+                + table
+                + ".start_time) "
+                + order
+                + ", COALESCE(workflow_hierarchy.root_workflow_id, "
+                + table
+                + ".workflow_id) ASC, CASE WHEN workflow_hierarchy.workflow_id IS NULL THEN 1 ELSE 0 END ASC, "
+                + "workflow_hierarchy.hierarchy_path ASC";
+    }
+
+    private boolean hasAgentHierarchySort() {
+        return "workflow_index".equals(table)
+                && sort.stream()
+                        .map(s -> s.split(":", 2)[0])
+                        .map(SqliteIndexQueryBuilder::camelToSnake)
+                        .anyMatch("agent_hierarchy"::equals);
+    }
+
+    private String hierarchyCte() {
+        if (!hasAgentHierarchySort()) {
+            return "";
+        }
+        return "WITH RECURSIVE workflow_hierarchy(workflow_id, root_workflow_id, root_start_time, hierarchy_path) AS ("
+                + " SELECT workflow_id, workflow_id, start_time, '|' || workflow_id || '|'"
+                + " FROM workflow_index WHERE parent_workflow_id IS NULL OR parent_workflow_id = ''"
+                + " UNION ALL"
+                + " SELECT child.workflow_id, parent.root_workflow_id, parent.root_start_time,"
+                + " parent.hierarchy_path || child.workflow_id || '|'"
+                + " FROM workflow_index child JOIN workflow_hierarchy parent"
+                + " ON child.parent_workflow_id = parent.workflow_id"
+                + " WHERE instr(parent.hierarchy_path, '|' || child.workflow_id || '|') = 0"
+                + ") ";
+    }
+
+    private String hierarchyJoin() {
+        return hasAgentHierarchySort()
+                ? " LEFT JOIN workflow_hierarchy ON workflow_hierarchy.workflow_id = "
+                        + table
+                        + ".workflow_id"
+                : "";
     }
 
     private static String camelToSnake(String camel) {

@@ -189,7 +189,10 @@ public @interface WorkflowTaskTypeConstraint {
         private void validateScriptExpression(
                 String expression, Map<String, Object> inputParameters) {
             try {
-                Object returnValue = ScriptEvaluator.eval(expression, inputParameters);
+                // Syntax check only: at registration time inputParameters still holds unresolved
+                // ${...} placeholders, so evaluating the expression would throw ReferenceError
+                // for any runtime-bound variable and reject valid definitions (issue #1311).
+                ScriptEvaluator.validateScriptSyntax(expression);
             } catch (Exception e) {
                 throw new IllegalArgumentException(
                         String.format("Expression is not well formatted: %s", e.getMessage()));

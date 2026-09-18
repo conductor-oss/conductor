@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, Switch } from "@mui/material";
+import { Box, Divider, FormControlLabel, Switch } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
 import PlayIcon from "components/icons/PlayIcon";
 import _isEqual from "lodash/isEqual";
@@ -12,11 +12,14 @@ import { colors } from "theme/tokens/variables";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
 import { RUN_WORKFLOW_URL } from "utils/constants/route";
+import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { tryToJson } from "utils/utils";
+import { featureFlags, FEATURES } from "utils/flags";
 import SplitWorkflowDefinitionButton from "./SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
+import ImportBpmnButton from "./SplitWorkflowDefinitionButton/ImportBpmnButton";
 import AdvancedSearch from "./workflowSearchComponents/AdvancedSearch";
 import BasicSearch from "./workflowSearchComponents/BasicSearch";
 
@@ -150,7 +153,7 @@ export default function WorkflowPanel({
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         <MuiTypography fontWeight={400} fontSize={14}>
-          {results.length} results
+          {pluralizeResults(results.length)}
         </MuiTypography>
         <MuiTypography color={colors.greyText} fontSize={12}>
           of {totalHits}
@@ -159,9 +162,25 @@ export default function WorkflowPanel({
     );
   };
 
+  const isImportBpmnHidden = featureFlags.isEnabled(FEATURES.HIDE_IMPORT_BPMN);
+
   const defaultActions = (
     <SectionHeaderActions
       buttons={[
+        ...(isImportBpmnHidden
+          ? []
+          : [
+              { customButtonElement: <ImportBpmnButton /> },
+              {
+                customButtonElement: (
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ height: 24, alignSelf: "center" }}
+                  />
+                ),
+              },
+            ]),
         {
           label: "Run workflow",
           color: "secondary",

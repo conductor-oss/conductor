@@ -241,41 +241,62 @@ public class AgentConfig {
     }
 
     /**
-     * Collect dynamically-dispatched swarm/hybrid transfer tool task names from the agent config.
-     * These tasks are created at runtime by FORK (based on LLM tool calls) and are not statically
-     * present in the compiled WorkflowDef, so collectSimpleTaskNames misses them.
+     * Recurse through nested agent definitions for compatibility with callers that previously asked
+     * this method to report generated transfer workers. Generated transfer controls are now
+     * compiler-owned INLINE logic for every handoff shape, so none are pollable worker names.
      */
     public void collectDynamicTransferNames(Set<String> names) {
-        // Swarm: {source}_transfer_to_{peer} for each pair
-        if (this.getStrategy() == Strategy.SWARM
-                && this.getAgents() != null
-                && !this.getAgents().isEmpty()) {
-            List<String> allNames = new ArrayList<>();
-            allNames.add(this.getName());
-            for (AgentConfig sub : this.getAgents()) {
-                allNames.add(sub.getName());
-            }
-            for (String src : allNames) {
-                for (String dst : allNames) {
-                    if (!src.equals(dst)) {
-                        names.add(src + "_transfer_to_" + dst);
-                    }
-                }
-            }
-        }
-        // Hybrid: {parent}_transfer_to_{sub} for agents with both tools and sub-agents
-        if (this.getAgents() != null
-                && !this.getAgents().isEmpty()
-                && this.getTools() != null
-                && !this.getTools().isEmpty()) {
-            for (AgentConfig sub : this.getAgents()) {
-                names.add(this.getName() + "_transfer_to_" + sub.getName());
-            }
-        }
-        // Recurse into sub-agents
         if (this.getAgents() != null) {
             for (AgentConfig sub : this.getAgents()) {
                 sub.collectDynamicTransferNames(names);
+            }
+        }
+    }
+
+    /**
+     * Add every user-declared worker task that can be dispatched dynamically and therefore cannot
+     * be discovered by walking a compiled workflow definition. Compiler-generated transfer and
+     * handoff controls are intentionally excluded: they are INLINE/system tasks and never need a
+     * worker poller or task domain.
+     */
+    public void collectDeclaredWorkerTaskNames(Set<String> names) {
+        if (tools != null) {
+            for (ToolConfig tool : tools) {
+                if ("worker".equals(tool.getToolType())
+                        && tool.getName() != null
+                        && !tool.getName().isBlank()) {
+                    names.add(tool.getName());
+                }
+            }
+        }
+        if (handoffs != null) {
+            for (HandoffConfig handoff : handoffs) {
+                if ("on_condition".equals(handoff.getType())
+                        && handoff.getTaskName() != null
+                        && !handoff.getTaskName().isBlank()) {
+                    names.add(handoff.getTaskName());
+                }
+            }
+        }
+        if (guardrails != null) {
+            for (GuardrailConfig guardrail : guardrails) {
+                if ("custom".equals(guardrail.getGuardrailType())
+                        && guardrail.getTaskName() != null
+                        && !guardrail.getTaskName().isBlank()) {
+                    names.add(guardrail.getTaskName());
+                }
+            }
+        }
+        if (callbacks != null) {
+            for (CallbackConfig callback : callbacks) {
+                if (callback.getTaskName() != null && !callback.getTaskName().isBlank()) {
+                    names.add(callback.getTaskName());
+                }
+            }
+        }
+        if (agents != null) {
+            for (AgentConfig agent : agents) {
+                agent.collectDeclaredWorkerTaskNames(names);
             }
         }
     }

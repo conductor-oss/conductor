@@ -15,16 +15,13 @@ package org.conductoross.conductor.ai.agentspan.runtime.credentials;
 import java.util.List;
 
 /**
- * Single source of truth for the well-known LLM/tool provider environment variables that AgentSpan
- * auto-seeds into the credential store on startup.
+ * Single source of truth for the well-known LLM/tool provider environment variables that
+ * Conductor-Agents auto-seeds into the credential store on startup.
  *
  * <p>Shared so every deployment seeds the same set: the standalone server's {@code
  * CredentialEnvSeeder} and any embedding host (e.g. orkes-conductor) reference this list instead of
  * maintaining their own copies. Keeping one list avoids drift between standalone and embedded
  * behavior.
- *
- * <p>{@code AGENTSPAN_MASTER_KEY} is intentionally excluded — it is the encryption master key and
- * must never be stored as a credential.
  */
 public final class KnownProviderEnvVars {
 
@@ -83,6 +80,13 @@ public final class KnownProviderEnvVars {
                     "AWS_SECRET_ACCESS_KEY",
                     "AWS_REGION",
                     "BEDROCK_API_KEY",
+                    "BEDROCK_AGENT_ID",
+                    "BEDROCK_AGENT_ALIAS_ID",
+                    // Azure Foundry / Entra ID
+                    "AZURE_CLIENT_ID",
+                    "AZURE_CLIENT_SECRET",
+                    "AZURE_TENANT_ID",
+                    "AZURE_FOUNDRY_ENDPOINT",
                     // Ollama (local inference) — OLLAMA_BASE_URL is the documented
                     // variable; OLLAMA_HOST is Ollama's bind-address variable and is
                     // deliberately not read (often 0.0.0.0:11434, not a callable URL)

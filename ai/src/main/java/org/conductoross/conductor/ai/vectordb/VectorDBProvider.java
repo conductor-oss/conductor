@@ -37,8 +37,7 @@ public class VectorDBProvider {
 
     /**
      * Initializes the provider with configured vector database instances, then merges in any
-     * auto-configured default instances (e.g. the bundled SQLite/sqlite-vec store) that are not
-     * already provided explicitly.
+     * auto-configured default instances that are not already provided explicitly.
      *
      * @param instanceConfig Configuration containing all vector DB instances
      * @param defaultInstances Auto-configured default VectorDB beans, if any

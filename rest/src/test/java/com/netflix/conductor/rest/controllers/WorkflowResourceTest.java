@@ -293,7 +293,11 @@ public class WorkflowResourceTest {
         workflowResource.search(0, 100, "asc", "*", "status IN (RUNNING)", "agent", false);
         verify(mockWorkflowService)
                 .searchWorkflows(
-                        0, 100, "asc", "*", "status IN (RUNNING) AND classifier IN (agent)");
+                        0,
+                        100,
+                        "agentHierarchy:DESC|asc",
+                        "*",
+                        "status IN (RUNNING) AND classifier IN (agent)");
     }
 
     @Test
@@ -306,7 +310,8 @@ public class WorkflowResourceTest {
     @Test
     public void testSearchV2WithClassifierAppendsToQuery() {
         workflowResource.searchV2(0, 100, "asc", "*", null, "agent", false);
-        verify(mockWorkflowService).searchWorkflowsV2(0, 100, "asc", "*", "classifier IN (agent)");
+        verify(mockWorkflowService)
+                .searchWorkflowsV2(0, 100, "agentHierarchy:DESC|asc", "*", "classifier IN (agent)");
     }
 
     @Test

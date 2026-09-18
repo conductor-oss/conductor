@@ -135,6 +135,44 @@ public class ConductorProperties {
     private int isolatedSystemTaskWorkerThreadCount = 1;
 
     /**
+     * Per-task-type worker overrides, keyed by task type name (e.g. "HTTP", "LLM_TEXT_COMPLETE"). A
+     * positive {@code threadCount} gives the task type its own dedicated pool of that many threads,
+     * which doubles as its in-flight cap: at most {@code threadCount} tasks of the type run
+     * concurrently, and the poller never pops more messages than it has free capacity for. Types
+     * without an entry share the common pool.
+     *
+     * <p>Example (YAML):
+     *
+     * <pre>
+     * conductor:
+     *   app:
+     *     taskWorkerConfigs:
+     *       HTTP:
+     *         threadCount: 20
+     *       LLM_TEXT_COMPLETE:
+     *         threadCount: 4
+     * </pre>
+     */
+    private Map<String, TaskWorkerConfig> taskWorkerConfigs = new HashMap<>();
+
+    public static class TaskWorkerConfig {
+
+        /**
+         * Number of dedicated threads for this task type — also its maximum in-flight task count. 0
+         * = share the common pool.
+         */
+        private int threadCount = 0;
+
+        public int getThreadCount() {
+            return threadCount;
+        }
+
+        public void setThreadCount(int threadCount) {
+            this.threadCount = threadCount;
+        }
+    }
+
+    /**
      * The duration of workflow execution which qualifies a workflow as a short-running workflow
      * when async indexing to elasticsearch is enabled.
      */
@@ -451,6 +489,14 @@ public class ConductorProperties {
 
     public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
         this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
+    }
+
+    public Map<String, TaskWorkerConfig> getTaskWorkerConfigs() {
+        return taskWorkerConfigs;
+    }
+
+    public void setTaskWorkerConfigs(Map<String, TaskWorkerConfig> taskWorkerConfigs) {
+        this.taskWorkerConfigs = taskWorkerConfigs;
     }
 
     public Duration getAsyncUpdateShortRunningWorkflowDuration() {

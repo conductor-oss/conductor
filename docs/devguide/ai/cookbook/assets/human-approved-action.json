@@ -1,0 +1,49 @@
+{
+  "name": "human_approved_external_action",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Derived from ai/examples/32-conductor-agent-human-in-loop.json. An AGENT task pauses for a guarded tool approval, a HUMAN task collects the decision, and a second AGENT task resumes the same run.",
+  "tasks": [
+    {
+      "name": "run_agent",
+      "taskReferenceName": "run_agent_ref",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "name": "guarded-incident-planner",
+        "prompt": "${workflow.input.prompt}"
+      }
+    },
+    {
+      "name": "check_waiting",
+      "taskReferenceName": "check_waiting_ref",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "waiting",
+      "inputParameters": {
+        "waiting": "${run_agent_ref.output.waiting}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "collect_answer",
+            "taskReferenceName": "collect_answer_ref",
+            "type": "HUMAN"
+          },
+          {
+            "name": "resume_agent",
+            "taskReferenceName": "resume_agent_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "guarded-incident-planner",
+              "executionId": "${run_agent_ref.output.executionId}",
+              "prompt": "${collect_answer_ref.output.answer}"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ]
+}

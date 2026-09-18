@@ -25,12 +25,11 @@ import com.netflix.conductor.model.TaskModel;
  * A {@link TaskStatusListener} that fans every callback out to all other {@code TaskStatusListener}
  * beans in the context.
  *
- * <p>The motivation mirrors {@link AgentSpanCompositeWorkflowStatusListener}: Conductor injects a
- * <b>single</b> {@code TaskStatusListener} bean, so the embedded {@code conductor-agentspan}
- * library's {@code @Primary AgentEventListener} would otherwise shadow an operator-configured
- * {@code task_publisher}. Registering this composite as the sole {@code @Primary} listener and
- * re-broadcasting to every registered listener lets agentspan's SSE listener and the configured
- * publisher coexist.
+ * <p>The motivation mirrors the workflow-status composite: Conductor injects a <b>single</b> {@code
+ * TaskStatusListener} bean, so the embedded {@code conductor-agentspan} library's {@code @Primary
+ * AgentEventListener} would otherwise shadow an operator-configured {@code task_publisher}.
+ * Registering this composite as the sole {@code @Primary} listener and re-broadcasting to every
+ * registered listener lets agentspan's SSE listener and the configured publisher coexist.
  *
  * <p>Each callback delegates to the <b>same</b> method on every other listener so each delegate
  * keeps its own gating semantics. The composite excludes itself to avoid recursion and isolates

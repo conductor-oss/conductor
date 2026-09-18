@@ -1,6 +1,7 @@
 import { TaskStatus } from "./TaskStatus";
 import { TaskType, TaskDef } from "./common";
 import { WorkflowDef } from "./WorkflowDef";
+import { WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 export type ExecutedData = {
   status: TaskStatus;
@@ -12,6 +13,12 @@ export type ExecutedData = {
   collapsedTasksStatus?: string[];
   outputData?: Record<string, any>;
   parentLoop?: TaskDef;
+  /**
+   * Tasks that ran inside this workflow for this task without being steps of the definition — a
+   * guardrail detector, say. Drawn beside the task rather than in the flow, because the workflow
+   * never waits on them. See state/detachedTasks.ts.
+   */
+  sideTasks?: ExecutionTask[];
 };
 
 type ForkedExecutionTaskInputData = {
@@ -25,12 +32,19 @@ export interface ExecutionTask<
 > extends TaskDef {
   taskId?: string;
   referenceTaskName: string;
+  /**
+   * The reference name of the task this one was produced for, when the definition did not produce
+   * it on its own: a dynamic fork's children name the fork, and a task scheduled into a running
+   * workflow without being a step of it names the task it is running for.
+   */
+  parentTaskReferenceName?: string;
   taskType: TaskType | string;
   workflowTask: {
     name: string;
     taskReferenceName: string;
     type: string;
     description?: string;
+    metadata?: WorkflowTaskMetadata;
   };
   inputData?: T & {
     subWorkflowName?: string;
@@ -107,6 +121,11 @@ export interface WorkflowExecution {
   event?: string;
   variables?: Record<string, unknown>;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
+  aggregateTokenUsage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 
 export interface DetailedTime {

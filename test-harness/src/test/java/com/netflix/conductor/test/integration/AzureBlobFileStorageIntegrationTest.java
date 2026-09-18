@@ -88,7 +88,8 @@ class AzureBlobFileStorageIntegrationTest extends AbstractFileStorageIntegration
     @Test
     void getMetadataForUnknownFileThrowsNotFoundException() {
         assertThrows(
-                NotFoundException.class, () -> fileStorageService.getFileMetadata("nonexistent"));
+                NotFoundException.class,
+                () -> fileStorageService.getFileMetadata(WORKFLOW_ID, "nonexistent"));
     }
 
     @Test
@@ -100,7 +101,7 @@ class AzureBlobFileStorageIntegrationTest extends AbstractFileStorageIntegration
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fileStorageService.getDownloadUrl(fileId, "wf-test"));
+                () -> fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId));
     }
 
     @Test
@@ -112,8 +113,9 @@ class AzureBlobFileStorageIntegrationTest extends AbstractFileStorageIntegration
 
         putToSasUrl(created.getUploadUrl(), payload);
 
-        FileUploadCompleteResponse confirmed = fileStorageService.confirmUpload(fileId);
-        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(fileId, "wf-test");
+        FileUploadCompleteResponse confirmed =
+                fileStorageService.confirmUpload(WORKFLOW_ID, fileId);
+        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId);
         byte[] fetched = getFromSasUrl(download.getDownloadUrl());
 
         assertEquals(FileUploadStatus.UPLOADED, confirmed.getUploadStatus());

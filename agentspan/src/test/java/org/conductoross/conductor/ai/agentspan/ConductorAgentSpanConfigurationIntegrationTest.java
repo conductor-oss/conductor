@@ -44,8 +44,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
- * Integration coverage for the AgentSpan host configuration and both persistence adapters. The
- * tests cross the complete adapter boundary into a real SQLite database; no DAO is mocked.
+ * Integration coverage for the Conductor-Agents host configuration and both persistence adapters.
+ * The tests cross the complete adapter boundary into a real SQLite database; no DAO is mocked.
  */
 class ConductorAgentSpanConfigurationIntegrationTest {
 

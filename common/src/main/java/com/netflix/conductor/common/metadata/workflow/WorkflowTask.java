@@ -177,6 +177,16 @@ public class WorkflowTask {
     private JoinMode joinMode;
 
     /**
+     * Editor and integration metadata associated with this task.
+     *
+     * <p>This data is descriptive and must not affect task scheduling or execution semantics. It is
+     * intentionally a JSON-shaped map so clients can persist versioned snapshots without requiring
+     * a server release for every metadata schema revision.
+     */
+    @ProtoField(id = 35)
+    private Map<String, Object> metadata = new HashMap<>();
+
+    /**
      * @return the name
      */
     public String getName() {
@@ -624,6 +634,14 @@ public class WorkflowTask {
      */
     public void setJoinMode(JoinMode joinMode) {
         this.joinMode = joinMode;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata != null ? metadata : new HashMap<>();
     }
 
     private Collection<List<WorkflowTask>> children() {

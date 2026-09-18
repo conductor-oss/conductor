@@ -19,11 +19,28 @@ vi.mock("utils/query", () => ({
     isFetching: false,
     refetch: vi.fn(),
   }),
+  useActionWithPath: () => ({ mutate: vi.fn() }),
+}));
+
+vi.mock("utils/hooks/useCustomPagination", () => ({
+  default: () => [
+    { filterParam: "", pageParam: "", searchParam: "" },
+    {
+      setFilterParam: vi.fn(),
+      setSearchParam: vi.fn(),
+      handlePageChange: vi.fn(),
+    },
+  ],
 }));
 
 vi.mock("components", () => ({
+  Button: ({ children, onClick }: any) => (
+    <button onClick={onClick}>{children}</button>
+  ),
   DataTable: ({ columns, data }: any) => {
-    const nameColumn = columns.find((column: any) => column.id === "name");
+    const nameColumn = columns.find(
+      (column: any) => column.id === "workflow_name",
+    );
     return <>{nameColumn.renderer(data[0].name, data[0])}</>;
   },
   NavLink: ({ children, path }: any) => <a href={path}>{children}</a>,

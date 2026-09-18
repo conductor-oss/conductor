@@ -428,7 +428,7 @@ export default function EventDefinitionList() {
                           </RadioGroup>
                         </>
                       }
-                      label="Active?:"
+                      label="Status:"
                       sx={{
                         marginLeft: 0,
                         "& .MuiFormControlLabel-label": {

@@ -373,7 +373,9 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         workflowTask.setType("SWITCH");
         workflowTask.setEvaluatorType("javascript");
-        workflowTask.setExpression("1>abcd");
+        // A genuine syntax error: registration validates syntax only, since expressions
+        // referencing runtime bound values cannot be evaluated at registration time
+        workflowTask.setExpression("1 >");
         WorkflowTask caseTask = new WorkflowTask();
         caseTask.setTaskReferenceName("casetrue");
         caseTask.setName("casetrue");

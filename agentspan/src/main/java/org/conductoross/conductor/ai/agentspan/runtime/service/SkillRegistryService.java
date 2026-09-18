@@ -44,6 +44,7 @@ import org.conductoross.conductor.common.metadata.agent.SkillDetail;
 import org.conductoross.conductor.common.metadata.agent.SkillFileContent;
 import org.conductoross.conductor.common.metadata.agent.SkillFileEntry;
 import org.conductoross.conductor.common.metadata.agent.SkillSummary;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -57,7 +58,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
-@ConditionalOnProperty(name = "agentspan.embedded", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
 public class SkillRegistryService {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -111,17 +112,32 @@ public class SkillRegistryService {
             @Value("${agentspan.skills.max-uncompressed-bytes:209715200}")
                     long maxUncompressedBytes,
             @Value("${agentspan.skills.max-file-count:2000}") int maxFileCount,
-            SkillPackageStore packageStore,
-            SkillMetadataDAO metadataDao) {
+            ObjectProvider<SkillPackageStore> packageStore,
+            ObjectProvider<SkillMetadataDAO> metadataDao) {
         this.maxPackageBytes = maxPackageBytes;
         this.maxPreviewBytes = maxPreviewBytes;
         this.maxUncompressedBytes = maxUncompressedBytes;
         this.maxFileCount = maxFileCount;
-        this.packageStore = packageStore;
-        this.metadataDao = metadataDao;
+        this.packageStore = packageStore.getIfAvailable();
+        this.metadataDao = metadataDao.getIfAvailable();
+    }
+
+    /** Whether a host supplied skill storage. */
+    public boolean isSkillStorageAvailable() {
+        return packageStore != null && metadataDao != null;
+    }
+
+    private void requireSkillStorage() {
+        if (!isSkillStorageAvailable()) {
+            throw new UnsupportedOperationException(
+                    "Skills are unavailable: no SkillPackageStore/SkillMetadataDAO is configured for"
+                            + " this backend. Agents run without skills; supply both beans to enable"
+                            + " skill registration and lookup.");
+        }
     }
 
     public synchronized SkillDetail register(String manifestJson, MultipartFile packageFile) {
+        requireSkillStorage();
         if (packageFile == null || packageFile.isEmpty()) {
             throw new IllegalArgumentException("Skill package is required");
         }
@@ -206,6 +222,9 @@ public class SkillRegistryService {
     }
 
     public List<SkillSummary> list(boolean allVersions) {
+        if (!isSkillStorageAvailable()) {
+            return List.of();
+        }
         List<SkillSummary> summaries = new ArrayList<>();
         for (SkillDetail detail : metadataDao.list(allVersions)) {
             addSummary(summaries, detail);
@@ -217,6 +236,7 @@ public class SkillRegistryService {
     }
 
     public SkillDetail get(String name, String version) {
+        requireSkillStorage();
         String resolvedVersion = resolveVersion(name, version);
         SkillDetail detail =
                 metadataDao
@@ -232,11 +252,13 @@ public class SkillRegistryService {
     }
 
     public byte[] packageBytes(String name, String version) {
+        requireSkillStorage();
         SkillDetail detail = get(name, version);
         return packageBytes(detail);
     }
 
     public SkillFileContent readFile(String name, String version, String path) {
+        requireSkillStorage();
         if (path == null || path.isBlank()) {
             throw new IllegalArgumentException("File path is required");
         }
@@ -280,6 +302,7 @@ public class SkillRegistryService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> resolveRawConfig(Map<String, Object> skillRef) {
+        requireSkillStorage();
         if (skillRef == null) {
             throw new IllegalArgumentException("skillRef is required");
         }
@@ -323,6 +346,7 @@ public class SkillRegistryService {
     }
 
     public synchronized void delete(String name, String version) {
+        requireSkillStorage();
         String resolvedVersion = resolveVersion(name, version);
         metadataDao
                 .find(name, resolvedVersion)

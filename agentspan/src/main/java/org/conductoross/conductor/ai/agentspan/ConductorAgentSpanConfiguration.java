@@ -31,7 +31,8 @@ public class ConductorAgentSpanConfiguration {
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
     /**
-     * Bridges AgentSpan's skill-metadata SPI to Conductor's per-backend {@code SkillMetadataDAO}.
+     * Bridges Conductor-Agents' skill-metadata SPI to Conductor's per-backend {@code
+     * SkillMetadataDAO}.
      */
     @Bean
     public SkillMetadataDAO agentSpanSkillMetadataDAO(

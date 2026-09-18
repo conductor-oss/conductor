@@ -88,6 +88,9 @@ public class A2AWorkflowAgent {
     }
 
     private boolean isExposed(WorkflowDef def) {
+        if (properties.isExposeAll()) {
+            return true;
+        }
         if (properties.getExposedWorkflows().contains(def.getName())) {
             return true;
         }
@@ -510,7 +513,9 @@ public class A2AWorkflowAgent {
         return null;
     }
 
-    /** The agent's JSON-RPC endpoint URL, e.g. {@code https://host/a2a/order_pizza}. */
+    /**
+     * The agent's JSON-RPC endpoint URL, e.g. {@code https://host/api/a2a/workflow/order_pizza}.
+     */
     public String agentUrl(String workflowName, String requestBaseUrl) {
         return baseUrl(requestBaseUrl) + normalizedBasePath() + "/" + workflowName;
     }
@@ -531,7 +536,7 @@ public class A2AWorkflowAgent {
     private String normalizedBasePath() {
         String path = properties.getBasePath();
         if (path == null || path.isBlank()) {
-            return "/a2a";
+            return "/api/a2a/workflow";
         }
         String p = path.startsWith("/") ? path : "/" + path;
         return p.endsWith("/") ? p.substring(0, p.length() - 1) : p;

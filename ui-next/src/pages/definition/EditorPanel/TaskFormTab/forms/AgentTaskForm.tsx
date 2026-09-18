@@ -1,16 +1,36 @@
-import { Box, FormControlLabel, Grid, Switch, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  FormControlLabel,
+  Grid,
+  Switch,
+  Typography,
+} from "@mui/material";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
+import { AgentSnapshotDetails } from "components/features/agents/AgentSnapshotDetails";
 import Button from "components/ui/buttons/MuiButton";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import RadioButtonGroup from "components/ui/inputs/RadioButtonGroup";
 import { path as _path } from "lodash/fp";
-import { useMemo } from "react";
 import { AgentSummary } from "pages/agent/types";
+import { fetchWithContext, useFetchContext } from "plugins/fetch";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AgentTaskInput, TaskDef } from "types";
+import {
+  agentSourceKey,
+  createUnresolvedAgentSnapshot,
+  getAgentSnapshot,
+  isAgentSnapshotCurrent,
+  isDynamicAgentIdentity,
+  resolveAgentSnapshot,
+  withAgentSnapshot,
+} from "utils/agentMetadata";
 import { WORKFLOW_DEFINITION_URL } from "utils/constants/route";
 import { updateField } from "utils/fieldHelpers";
-import { useFetch } from "utils/query";
+import { useAuthHeaders, useFetch } from "utils/query";
 import { ConductorAdditionalHeadersBase } from "./HTTPTaskForm/ConductorAdditionalHeaders";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { Optional } from "./OptionalFieldForm";
@@ -32,9 +52,127 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   const get = (p: string) => _path(p, task);
   const set = (p: string, value: any) => onChange(updateField(p, value, task));
 
+  const latestTaskRef = useRef(task);
+  const lastAutomaticResolutionRef = useRef<string>();
+  const [resolutionWarning, setResolutionWarning] = useState<string>();
+  const [isResolving, setIsResolving] = useState(false);
+  const fetchContext = useFetchContext();
+  const authHeaders = useAuthHeaders();
+
+  useEffect(() => {
+    latestTaskRef.current = task;
+  }, [task]);
+
   const agentType = (get("inputParameters.agentType") as string) || "a2a";
   const isConductor = agentType === "conductor";
   const agentName = get("inputParameters.name") as string | undefined;
+  const taskInput = (task.inputParameters ?? {}) as AgentTaskInput;
+  const sourceKey = agentSourceKey(taskInput);
+  const snapshot = getAgentSnapshot(task as Pick<TaskDef, "metadata">);
+
+  const setSource = useCallback(
+    (path: string, value: unknown) => {
+      const changed = updateField(path, value, task) as Partial<TaskDef>;
+      const input = (changed.inputParameters ?? {}) as AgentTaskInput;
+      setResolutionWarning(undefined);
+      onChange(
+        withAgentSnapshot(
+          changed as Partial<TaskDef> & { metadata?: Record<string, unknown> },
+          createUnresolvedAgentSnapshot(input),
+        ),
+      );
+    },
+    [onChange, task],
+  );
+
+  const resolveSnapshot = useCallback(
+    async (input: AgentTaskInput) => {
+      const requestedSourceKey = agentSourceKey(input);
+      const identity =
+        input.agentType === "conductor" ? input.name : input.agentUrl;
+      if (!identity || isDynamicAgentIdentity(identity)) {
+        const current = latestTaskRef.current;
+        if (agentSourceKey(current.inputParameters) === requestedSourceKey) {
+          onChange(
+            withAgentSnapshot(
+              current as Partial<TaskDef> & {
+                metadata?: Record<string, unknown>;
+              },
+              createUnresolvedAgentSnapshot(input),
+            ),
+          );
+        }
+        return;
+      }
+
+      setIsResolving(true);
+      setResolutionWarning(undefined);
+      try {
+        const resolved = await resolveAgentSnapshot(input, (path, options) =>
+          fetchWithContext(path, fetchContext, {
+            method: options?.method ?? "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...authHeaders,
+            },
+            body: options?.body,
+          }),
+        );
+        const current = latestTaskRef.current;
+        if (agentSourceKey(current.inputParameters) !== requestedSourceKey) {
+          return;
+        }
+        onChange(
+          withAgentSnapshot(
+            current as Partial<TaskDef> & {
+              metadata?: Record<string, unknown>;
+            },
+            resolved,
+          ),
+        );
+      } catch {
+        const current = latestTaskRef.current;
+        if (agentSourceKey(current.inputParameters) !== requestedSourceKey) {
+          return;
+        }
+        onChange(
+          withAgentSnapshot(
+            current as Partial<TaskDef> & {
+              metadata?: Record<string, unknown>;
+            },
+            createUnresolvedAgentSnapshot(input),
+          ),
+        );
+        setResolutionWarning(
+          input.agentType === "conductor"
+            ? "The registered agent details could not be loaded. The agent remains configured and you can retry."
+            : "The Agent Card could not be resolved. You can still save this task and retry.",
+        );
+      } finally {
+        if (
+          agentSourceKey(latestTaskRef.current.inputParameters) ===
+          requestedSourceKey
+        ) {
+          setIsResolving(false);
+        }
+      }
+    },
+    [authHeaders, fetchContext, onChange],
+  );
+
+  useEffect(() => {
+    if (
+      !isConductor ||
+      !agentName ||
+      isDynamicAgentIdentity(agentName) ||
+      lastAutomaticResolutionRef.current === sourceKey ||
+      (isAgentSnapshotCurrent(snapshot, taskInput) && snapshot?.resolved)
+    ) {
+      return;
+    }
+    lastAutomaticResolutionRef.current = sourceKey;
+    void resolveSnapshot(taskInput);
+  }, [agentName, isConductor, resolveSnapshot, snapshot, sourceKey, taskInput]);
 
   const headers: Record<string, string> =
     (get("inputParameters.headers") as Record<string, string>) || {};
@@ -69,7 +207,9 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
             <RadioButtonGroup
               name="agentType"
               value={agentType}
-              onChange={(e) => set("inputParameters.agentType", e.target.value)}
+              onChange={(e) =>
+                setSource("inputParameters.agentType", e.target.value)
+              }
               items={AGENT_TYPES}
             />
           </Grid>
@@ -79,7 +219,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 <ConductorAutocompleteVariables
                   label="Agent name"
                   value={get("inputParameters.name") as string}
-                  onChange={(v) => set("inputParameters.name", v)}
+                  onChange={(v) => setSource("inputParameters.name", v)}
                   otherOptions={agentNameOptions}
                   placeholder="Select a registered agent"
                   openOnFocus
@@ -90,14 +230,11 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                   label="Version (optional)"
                   value={get("inputParameters.version") as number}
                   coerceTo="integer"
-                  onChange={(v) => set("inputParameters.version", v)}
+                  onChange={(v) => setSource("inputParameters.version", v)}
                   placeholder="Latest"
                 />
               </Grid>
-              <Grid
-                size={{ xs: 12, md: "auto" }}
-                alignSelf="center"
-              >
+              <Grid size={{ xs: 12, md: "auto" }} alignSelf="center">
                 <Button
                   disabled={!agentName || agentName.includes("${")}
                   sx={{ fontSize: "12px" }}
@@ -146,7 +283,8 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 <ConductorAutocompleteVariables
                   label="Agent URL"
                   value={get("inputParameters.agentUrl") as string}
-                  onChange={(v) => set("inputParameters.agentUrl", v)}
+                  onChange={(v) => setSource("inputParameters.agentUrl", v)}
+                  onBlur={() => void resolveSnapshot(taskInput)}
                 />
               </Grid>
               <Grid size={12}>
@@ -163,8 +301,48 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
               </Grid>
             </>
           )}
+          <Grid size={12}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={
+                  isResolving ||
+                  !(isConductor
+                    ? taskInput.agentType === "conductor" && taskInput.name
+                    : taskInput.agentType !== "conductor" && taskInput.agentUrl)
+                }
+                onClick={() => void resolveSnapshot(taskInput)}
+              >
+                Refresh agent details
+              </Button>
+              {isResolving && <CircularProgress size={18} />}
+              {!isResolving && snapshot && (
+                <Typography variant="caption" color="text.secondary">
+                  {isConductor
+                    ? snapshot.resolved
+                      ? "Details loaded"
+                      : "Details unavailable"
+                    : snapshot.resolved
+                      ? "Resolved"
+                      : "Unresolved"}
+                </Typography>
+              )}
+            </Box>
+          </Grid>
+          {resolutionWarning && (
+            <Grid size={12}>
+              <Alert severity="warning">{resolutionWarning}</Alert>
+            </Grid>
+          )}
         </Grid>
       </TaskFormSection>
+
+      {snapshot && (
+        <TaskFormSection title="Agent Card">
+          <AgentSnapshotDetails snapshot={snapshot} />
+        </TaskFormSection>
+      )}
 
       {isConductor && (
         <TaskFormSection title="Context">
@@ -279,8 +457,7 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
             <Grid size={12}>
               <Typography variant="body2" color="text.secondary" mb={1}>
                 Use <strong>Message text</strong> above for the common case.
-                These override it for full control over the A2A message
-                payload.
+                These override it for full control over the A2A message payload.
               </Typography>
             </Grid>
             <Grid size={12}>

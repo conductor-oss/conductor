@@ -164,7 +164,7 @@ const columns = [
   {
     id: "startWorkflowRequest",
     name: "startWorkflowRequest",
-    label: "Workflow",
+    label: "Workflow/Agent",
     sortable: true,
     grow: 1.5,
     searchableFunc: (workflow: IStartWorkflowRequest) =>
@@ -177,7 +177,7 @@ const columns = [
       }
     },
     sortFunction: customSortForWorkflowColumn,
-    tooltip: "The workflow associated with the schedule",
+    tooltip: "The workflow or agent associated with the schedule",
   },
   {
     id: "createTime",
@@ -186,14 +186,6 @@ const columns = [
     type: ColumnCustomType.DATE,
     sortable: true,
     tooltip: "The time the schedule was created",
-  },
-  {
-    id: "lastRunTimeInEpoch",
-    name: "lastRunTimeInEpoch",
-    label: "Last Run time",
-    type: ColumnCustomType.DATE,
-    sortable: false,
-    tooltip: "The last time the schedule ran",
   },
   {
     id: "createdBy",

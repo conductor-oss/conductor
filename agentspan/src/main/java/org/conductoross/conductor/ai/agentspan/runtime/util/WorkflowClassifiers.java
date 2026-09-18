@@ -20,15 +20,15 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
  * Derives the <b>classifier</b> of a workflow definition from its {@code metadata} map.
  *
  * <p>The classifier distinguishes kinds of definitions/executions: an untagged def is a plain
- * <b>workflow</b>; AgentSpan-compiled defs are tagged <b>agent</b>. A def may also carry any
+ * <b>workflow</b>; Conductor-Agents-compiled defs are tagged <b>agent</b>. A def may also carry any
  * explicit {@code metadata.classifier} value, enabling future kinds without code changes.
  *
  * <p>Resolution order:
  *
  * <ol>
  *   <li>explicit {@code metadata.classifier} (non-blank) — wins;
- *   <li>otherwise {@code "agent"} when the AgentSpan stamp is present ({@code metadata.agent_sdk}
- *       or {@code metadata.agentDef});
+ *   <li>otherwise {@code "agent"} when the Conductor-Agents stamp is present ({@code
+ *       metadata.agent_sdk} or {@code metadata.agentDef});
  *   <li>otherwise {@code "workflow"} (a normal, untagged workflow).
  * </ol>
  *

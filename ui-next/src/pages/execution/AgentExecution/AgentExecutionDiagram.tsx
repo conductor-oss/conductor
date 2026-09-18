@@ -43,7 +43,10 @@ import { DetailNodeData } from "./AgentDetailPanel";
 import {
   formatTokens,
   formatDuration,
+  agentValuePreview,
   getModelIconPath,
+  timelineItemId,
+  timelineItemLabel,
 } from "./agentExecutionUtils";
 import "components/features/flow/ReaflowOverrides.scss";
 
@@ -127,7 +130,12 @@ interface DiagramNodeData {
   ts: TaskStatus;
   event?: AgentEvent;
   subAgentRun?: AgentRunData;
-  nextTurn?: number;
+  nextTurn?: string;
+  /** For "subagent" kind: own sub-agent count/expansion state (issue #1452) */
+  subAgentCount?: number;
+  expanded?: boolean;
+  expanding?: boolean;
+  expandError?: boolean;
   /** For group nodes */
   groupType?: "agents" | "tools";
   groupAgents?: AgentRunData[];
@@ -229,6 +237,7 @@ function NodeCard({
   selected,
   onSelect,
   onDrillIn,
+  onExpand,
   onBack,
   onToggleGroup,
 }: {
@@ -238,6 +247,7 @@ function NodeCard({
   selected: boolean;
   onSelect: () => void;
   onDrillIn?: (r: AgentRunData) => void;
+  onExpand?: (r: AgentRunData) => void;
   onBack?: () => void;
   onToggleGroup?: () => void;
 }) {
@@ -351,6 +361,10 @@ function NodeCard({
 
   // ── "Next turn" node ─────────────────────────────────────────────────────────
   if (data.kind === "next") {
+    const turnLabel = data.label ?? "Turn";
+    const turnNumber = turnLabel.startsWith("Turn ")
+      ? turnLabel.slice("Turn ".length)
+      : undefined;
     return (
       <div
         onClick={(e) => {
@@ -367,8 +381,8 @@ function NodeCard({
       >
         <div
           style={{
-            width: 44,
-            height: 44,
+            width: 62,
+            height: 62,
             borderRadius: "50%",
             border: "2px dashed #f59e0b",
             backgroundColor: "#fef3c7",
@@ -377,29 +391,37 @@ function NodeCard({
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
+            boxSizing: "border-box",
+            overflow: "hidden",
+            padding: "4px",
           }}
         >
           <span
             style={{
-              fontSize: "0.5rem",
-              color: "#b45309",
-              lineHeight: 1,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Turn
-          </span>
-          <span
-            style={{
-              fontSize: "0.82rem",
+              fontSize: turnNumber ? "0.48rem" : "0.56rem",
               fontWeight: 700,
               color: "#92400e",
-              lineHeight: 1.2,
+              lineHeight: 1.1,
+              textAlign: "center",
+              textTransform: turnNumber ? "uppercase" : undefined,
+              letterSpacing: turnNumber ? "0.05em" : undefined,
+              overflowWrap: "anywhere",
             }}
           >
-            {data.nextTurn}
+            {turnNumber ? "Turn" : turnLabel}
           </span>
+          {turnNumber && (
+            <span
+              style={{
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                color: "#92400e",
+                lineHeight: 1.1,
+              }}
+            >
+              {turnNumber}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -721,25 +743,58 @@ function NodeCard({
 
         {/* "View execution" drill-in for sub-agents */}
         {data.kind === "subagent" && data.subAgentRun && (
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              onDrillIn?.(data.subAgentRun!);
-            }}
-            style={{
-              marginTop: 6,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "3px 10px",
-              borderRadius: "5px",
-              backgroundColor: "#4969e4",
-              cursor: "pointer",
-              fontSize: "0.78em",
-              color: "white",
-            }}
-          >
-            View execution <ArrowRight size={10} />
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onDrillIn?.(data.subAgentRun!);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "3px 10px",
+                borderRadius: "5px",
+                backgroundColor: "#4969e4",
+                cursor: "pointer",
+                fontSize: "0.78em",
+                color: "white",
+              }}
+            >
+              View execution <ArrowRight size={10} />
+            </div>
+
+            {/* Expand in place — reveals this agent's own sub-agents inline
+                instead of navigating away (issue #1452). Only shown when the
+                definition says this agent actually has children. */}
+            {!data.expanded &&
+              !!data.subAgentCount &&
+              data.subAgentCount > 0 && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!data.expanding) onExpand?.(data.subAgentRun!);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "3px 10px",
+                    borderRadius: "5px",
+                    backgroundColor: data.expandError ? "#fef2f2" : "#f3f4f6",
+                    border: data.expandError ? "1px solid #fca5a5" : "none",
+                    cursor: data.expanding ? "default" : "pointer",
+                    fontSize: "0.78em",
+                    color: data.expandError ? "#b91c1c" : "#374151",
+                  }}
+                >
+                  {data.expanding
+                    ? "Loading…"
+                    : data.expandError
+                      ? "Retry expand"
+                      : `Expand (${data.subAgentCount})`}
+                </div>
+              )}
           </div>
         )}
 
@@ -777,8 +832,15 @@ function NodeCard({
 
 // ─── Reaflow node wrapper ─────────────────────────────────────────────────────
 const DiagramNode = (nodeProps: any) => {
-  const { selectedId, onSelect, onDrillIn, onBack, onToggleGroup, properties } =
-    nodeProps;
+  const {
+    selectedId,
+    onSelect,
+    onDrillIn,
+    onExpand,
+    onBack,
+    onToggleGroup,
+    properties,
+  } = nodeProps;
   const data: DiagramNodeData = properties?.data;
   return (
     <Node
@@ -801,6 +863,7 @@ const DiagramNode = (nodeProps: any) => {
               selected={selectedId === properties?.id}
               onSelect={() => onSelect(properties?.id)}
               onDrillIn={onDrillIn}
+              onExpand={onExpand}
               onBack={onBack}
               onToggleGroup={
                 onToggleGroup ? () => onToggleGroup(properties?.id) : undefined
@@ -833,6 +896,7 @@ function buildTurnNodes(
   done: Set<string>,
   prevRef: { id: string },
   expandedGroups: Set<string>,
+  idPrefix = "",
 ) {
   const push = (id: string, data: DiagramNodeData, h = H) => {
     nodes.push({ id, width: W, height: h, data });
@@ -968,11 +1032,27 @@ function buildTurnNodes(
       label: sub.agentName,
       meta: sub.model,
       modelName: sub.model,
-      sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
-      strategy: turn.strategy,
+      sublabel:
+        agentValuePreview(sub.output, 55) ?? sub.failureReason?.slice(0, 55),
+      strategy: sub.strategy,
       ts: toTS(sub.status),
       subAgentRun: sub,
+      subAgentCount: sub.subAgentCount,
+      expanded: sub.expanded,
+      expanding: sub.expanding,
+      expandError: sub.expandError,
     });
+    if (sub.expanded && sub.turns.length > 0) {
+      appendAgentRunTurns(
+        sub,
+        nodes,
+        edges,
+        done,
+        prevRef,
+        expandedGroups,
+        `${idPrefix}${sub.id}-`,
+      );
+    }
     for (const ev of turn.events) {
       if (
         ev.type === EventType.GUARDRAIL_PASS ||
@@ -994,18 +1074,32 @@ function buildTurnNodes(
     return; // Skip normal event + sub-agent processing below
   }
 
-  // Group consecutive TOOL_CALL events so large parallel batches collapse into one node
-  type Grp = AgentEvent | { type: "__toolGroup"; events: AgentEvent[] };
+  // Only explicit FORK/FORK_JOIN groups render as parallel. Adjacent discovery
+  // calls are sequential even when they are both TOOL_CALL events.
+  type Grp =
+    | AgentEvent
+    | { type: "__toolGroup"; id: string; events: AgentEvent[] };
   const groups: Grp[] = [];
   let toolBatch: AgentEvent[] = [];
+  let toolBatchGroup: string | undefined;
   const flushBatch = () => {
     if (toolBatch.length === 0) return;
-    groups.push({ type: "__toolGroup", events: [...toolBatch] });
+    groups.push({
+      type: "__toolGroup",
+      id: toolBatchGroup ?? `tool-${toolBatch[0].id}`,
+      events: [...toolBatch],
+    });
     toolBatch = [];
+    toolBatchGroup = undefined;
   };
   for (const ev of turn.events) {
-    if (ev.type === EventType.TOOL_CALL) {
+    if (ev.type === EventType.TOOL_CALL && ev.parallelGroup) {
+      if (toolBatchGroup && toolBatchGroup !== ev.parallelGroup) flushBatch();
+      toolBatchGroup = ev.parallelGroup;
       toolBatch.push(ev);
+    } else if (ev.type === EventType.TOOL_CALL) {
+      flushBatch();
+      groups.push({ type: "__toolGroup", id: `tool-${ev.id}`, events: [ev] });
     } else {
       flushBatch();
       groups.push(ev);
@@ -1016,7 +1110,7 @@ function buildTurnNodes(
   for (const grp of groups) {
     if ("type" in grp && grp.type === "__toolGroup") {
       const batch = (grp as any).events as AgentEvent[];
-      const groupId = `toolgroup-${turn.turnNumber}`;
+      const groupId = (grp as any).id as string;
       const isExpanded = expandedGroups.has(groupId);
 
       if (batch.length < COLLAPSE_THRESHOLD || isExpanded) {
@@ -1178,7 +1272,12 @@ function buildTurnNodes(
           push(ev.id, {
             kind: "output",
             label: "response",
-            sublabel: txt?.slice(0, 70) + (txt && txt.length > 70 ? "…" : ""),
+            // txt can be undefined (e.g. a tool-call-only turn with no text
+            // response) — `undefined?.slice(...)` is undefined, and
+            // `undefined + ""` stringifies to the literal text "undefined".
+            sublabel: txt
+              ? txt.slice(0, 70) + (txt.length > 70 ? "…" : "")
+              : "",
             ts: TaskStatus.COMPLETED,
             event: ev,
           });
@@ -1244,10 +1343,16 @@ function buildTurnNodes(
 
   // Sub-agents: single node if one; inline if < threshold; collapsed group if >= threshold
   if (turn.subAgents.length > 0) {
-    const subGroupId = `subgroup-${turn.turnNumber}`;
+    const subGroupId = `${idPrefix}subgroup-${timelineItemId(turn)}`;
     const isSubExpanded = expandedGroups.has(subGroupId);
 
     if (turn.subAgents.length < COLLAPSE_THRESHOLD || isSubExpanded) {
+      // NOTE: parallel siblings intentionally don't get subAgentCount/expand
+      // here — expanding a branch inline would need pushParallel's fork/join
+      // layout to support a multi-node chain per branch, which is out of
+      // scope for this pass. Only single-sub-agent turns (below) expand
+      // in place; a parallel sibling with its own children still needs
+      // "View execution" (drill-in) to inspect them.
       const makeSubBranch = (sub: AgentRunData) => ({
         id: `sub-${sub.id}`,
         data: {
@@ -1255,8 +1360,10 @@ function buildTurnNodes(
           label: sub.agentName,
           meta: sub.model,
           modelName: sub.model,
-          sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
-          strategy: turn.strategy,
+          sublabel:
+            agentValuePreview(sub.output, 55) ??
+            sub.failureReason?.slice(0, 55),
+          strategy: sub.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
         },
@@ -1290,11 +1397,28 @@ function buildTurnNodes(
           label: sub.agentName,
           meta: sub.model,
           modelName: sub.model,
-          sublabel: sub.output?.slice(0, 55) ?? sub.failureReason?.slice(0, 55),
-          strategy: turn.strategy,
+          sublabel:
+            agentValuePreview(sub.output, 55) ??
+            sub.failureReason?.slice(0, 55),
+          strategy: sub.strategy,
           ts: toTS(sub.status),
           subAgentRun: sub,
+          subAgentCount: sub.subAgentCount,
+          expanded: sub.expanded,
+          expanding: sub.expanding,
+          expandError: sub.expandError,
         });
+        if (sub.expanded && sub.turns.length > 0) {
+          appendAgentRunTurns(
+            sub,
+            nodes,
+            edges,
+            done,
+            prevRef,
+            expandedGroups,
+            `${idPrefix}${sub.id}-`,
+          );
+        }
       } else {
         pushParallel(
           `${subGroupId}-fork`,
@@ -1331,59 +1455,39 @@ function buildTurnNodes(
   }
 }
 
-function buildDiagram(
+/**
+ * Lay out an agent run's own turn sequence, continuing the chain from
+ * `prevRef`. Shared by the top-level diagram build and by expanding a
+ * collapsed sub-agent node in place (issue #1452) — `idPrefix` keeps node
+ * ids from a nested agent's own turns/groups from colliding with a sibling
+ * or ancestor's turns of the same number (e.g. two different agents both
+ * having a "Turn 1").
+ */
+function appendAgentRunTurns(
   agentRun: AgentRunData,
-  _activeTurnNum: number,
-  hasBack: boolean,
+  nodes: NodeData<DiagramNodeData>[],
+  edges: EdgeData[],
+  done: Set<string>,
+  prevRef: { id: string },
   expandedGroups: Set<string>,
+  idPrefix: string,
 ) {
-  const nodes: NodeData<DiagramNodeData>[] = [];
-  const edges: EdgeData[] = [];
-  const done = new Set<string>();
-  const prevRef = { id: "start" };
-
-  // "Back to parent" node — first in the chain
-  if (hasBack) {
-    nodes.push({
-      id: "back",
-      width: 56,
-      height: 56,
-      data: { kind: "back", label: "", ts: TaskStatus.COMPLETED },
-    });
-    edges.push({ id: "back→start", from: "back", to: "start" });
-    done.add("back");
-  }
-
-  nodes.push({
-    id: "start",
-    width: W,
-    height: H,
-    data: {
-      kind: "start",
-      label: agentRun.agentName,
-      sublabel: agentRun.input?.slice(0, 55),
-      meta: agentRun.model,
-      modelName: agentRun.model,
-      ts: toTS(agentRun.status),
-    },
-  });
-  if (agentRun.status === AgentStatus.COMPLETED) done.add("start");
-
   const allTurns = agentRun.turns;
   for (let i = 0; i < allTurns.length; i++) {
     const turn = allTurns[i];
 
     // Insert orange "Turn N" separator before every turn after the first
     if (i > 0) {
-      const ntId = `turn-sep-${turn.turnNumber}`;
+      const turnId = timelineItemId(turn);
+      const ntId = `${idPrefix}turn-sep-${turnId}`;
       nodes.push({
         id: ntId,
-        width: 56,
-        height: 56,
+        width: 72,
+        height: 72,
         data: {
           kind: "next",
-          label: String(turn.turnNumber),
-          nextTurn: turn.turnNumber,
+          label: timelineItemLabel(turn),
+          nextTurn: `${idPrefix}${turnId}`,
           ts: toTS(turn.status),
         },
       });
@@ -1400,8 +1504,57 @@ function buildDiagram(
       prevRef.id = ntId;
     }
 
-    buildTurnNodes(turn, nodes, edges, done, prevRef, expandedGroups);
+    buildTurnNodes(turn, nodes, edges, done, prevRef, expandedGroups, idPrefix);
   }
+}
+
+function buildDiagram(
+  agentRun: AgentRunData,
+  _activeTurnId: string,
+  hasBack: boolean,
+  expandedGroups: Set<string>,
+) {
+  const nodes: NodeData<DiagramNodeData>[] = [];
+  const edges: EdgeData[] = [];
+  const done = new Set<string>();
+  const prevRef = { id: "start" };
+
+  // "Back to parent" node — first in the chain
+  if (hasBack) {
+    nodes.push({
+      id: "back",
+      width: 72,
+      height: 72,
+      data: { kind: "back", label: "", ts: TaskStatus.COMPLETED },
+    });
+    edges.push({ id: "back→start", from: "back", to: "start" });
+    done.add("back");
+  }
+
+  nodes.push({
+    id: "start",
+    width: W,
+    height: H,
+    data: {
+      kind: "start",
+      label: agentRun.agentName,
+      sublabel: agentValuePreview(agentRun.input, 55),
+      meta: agentRun.model,
+      modelName: agentRun.model,
+      ts: toTS(agentRun.status),
+    },
+  });
+  if (agentRun.status === AgentStatus.COMPLETED) done.add("start");
+
+  appendAgentRunTurns(
+    agentRun,
+    nodes,
+    edges,
+    done,
+    prevRef,
+    expandedGroups,
+    "",
+  );
 
   return { nodes, edges, done };
 }
@@ -1473,11 +1626,13 @@ function DiagramControls({
 // ─── Main component ───────────────────────────────────────────────────────────
 interface AgentExecutionDiagramProps {
   agentRun: AgentRunData;
-  activeTurn: number;
-  onSelectTurn: (n: number) => void;
+  activeTurn: string;
+  onSelectTurn: (id: string) => void;
   selectedId: string | null;
   onNodeSelect: (id: string | null, node: DetailNodeData | null) => void;
   onDrillIn?: (sub: AgentRunData) => void;
+  /** Fetch a collapsed sub-agent's own execution and expand it in place (issue #1452). */
+  onExpand?: (sub: AgentRunData) => void;
   onBack?: () => void;
 }
 
@@ -1488,6 +1643,7 @@ export function AgentExecutionDiagram({
   selectedId,
   onNodeSelect,
   onDrillIn,
+  onExpand,
   onBack,
 }: AgentExecutionDiagramProps) {
   const hasBack = !!onBack;
@@ -1555,7 +1711,7 @@ export function AgentExecutionDiagram({
   }, []);
 
   // Pan to center the selected turn's node when activeTurn changes
-  const prevTurnRef = useRef<number | null>(null);
+  const prevTurnRef = useRef<string | null>(null);
   useEffect(() => {
     if (prevTurnRef.current === null) {
       prevTurnRef.current = activeTurn;
@@ -1566,7 +1722,9 @@ export function AgentExecutionDiagram({
 
     if (!viewportRef.current || nodePositions.size === 0) return;
 
-    const firstTurn = agentRun.turns[0]?.turnNumber ?? 1;
+    const firstTurn = agentRun.turns[0]
+      ? timelineItemId(agentRun.turns[0])
+      : "turn-1";
     const targetId =
       activeTurn === firstTurn ? "start" : `turn-sep-${activeTurn}`;
     const pos = nodePositions.get(targetId);
@@ -1716,6 +1874,7 @@ export function AgentExecutionDiagram({
           kind: "start",
           label: nd.label,
           status,
+          strategy: nd.strategy,
           subAgentRun: agentRun,
         });
         return;
@@ -1726,6 +1885,7 @@ export function AgentExecutionDiagram({
           label: nd.label,
           status,
           groupType: nd.groupType,
+          strategy: nd.strategy,
           groupAgents: nd.groupAgents,
           groupEvents: nd.groupEvents,
         });
@@ -1736,6 +1896,7 @@ export function AgentExecutionDiagram({
         label: nd.label,
         status,
         event: nd.event,
+        strategy: nd.strategy,
         subAgentRun: nd.subAgentRun,
       });
     },
@@ -1850,6 +2011,7 @@ export function AgentExecutionDiagram({
               selectedId={selectedId}
               onSelect={handle}
               onDrillIn={onDrillIn}
+              onExpand={onExpand}
               onBack={onBack}
               onToggleGroup={toggleGroup}
             />

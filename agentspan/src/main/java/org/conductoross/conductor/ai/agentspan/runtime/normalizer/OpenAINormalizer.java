@@ -48,6 +48,10 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
         AgentConfig config = new AgentConfig();
         config.setName(getString(raw, "name", "openai_agent"));
 
+        // OpenAI Agents SDK handoffs transfer control to the specialist. Preserve that behavior
+        // unless the framework payload explicitly asks Conductor to synthesize a parent response.
+        config.setSynthesize(Boolean.TRUE.equals(raw.get("synthesize")));
+
         // Model: prefix with "openai/" if no provider specified
         String model = getString(raw, "model", "gpt-4o");
         config.setModel(ensureProvider(model, "openai"));
@@ -68,6 +72,13 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
             if (!tools.isEmpty()) {
                 config.setTools(tools);
             }
+        }
+
+        // Provider-native web search is configured on LLM_CHAT_COMPLETE.  It is never a
+        // dynamically-dispatched HTTP tool, because no endpoint URL exists for that shape.
+        if (hasToolType(rawTools, "WebSearchTool") || hasToolType(rawTools, "web_search")) {
+            config.setMetadata(new LinkedHashMap<>());
+            config.getMetadata().put("_builtin_web_search", true);
         }
 
         // Code execution — check if any tool is a CodeInterpreterTool
@@ -151,12 +162,7 @@ public class OpenAINormalizer implements AgentConfigNormalizer {
         switch (type) {
             case "WebSearchTool":
             case "web_search":
-                return ToolConfig.builder()
-                        .name("web_search")
-                        .description("Search the web for information")
-                        .toolType("http")
-                        .config(Map.of("builtin", "web_search"))
-                        .build();
+                return null;
 
             case "FileSearchTool":
             case "file_search":

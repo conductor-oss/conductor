@@ -2,7 +2,7 @@
 
 ```groovy
 dependencies {
-    implementation 'org.conductoross:conductor-ai:5.1.0'
+    implementation 'org.conductoross:conductor-ai'
 }
 ```
 
@@ -13,7 +13,7 @@ export CONDUCTOR_SERVER_URL={{CONDUCTOR_SERVER_URL}}
 # For authenticated Conductor servers:
 # export CONDUCTOR_AUTH_KEY=<YOUR_AUTH_KEY>
 # export CONDUCTOR_AUTH_SECRET=<YOUR_AUTH_SECRET>
-export AGENTSPAN_LLM_MODEL=openai/gpt-4o-mini
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
 ```
 
 ## 3. Run an agent
@@ -37,4 +37,4 @@ try (AgentRuntime runtime = new AgentRuntime()) {
 
 Run the class with your project’s normal Gradle or Maven application task, then return to [Agents](/agents).
 
-[Runnable Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples) · [Java agent documentation](https://github.com/conductor-oss/java-sdk/tree/main/docs/agents)
+[Runnable Java examples](https://github.com/conductor-oss/java-sdk/tree/main/examples/agents) · [Java agent documentation](https://github.com/conductor-oss/java-sdk/tree/main/docs/agents)

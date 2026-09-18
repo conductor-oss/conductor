@@ -23,12 +23,14 @@ import static com.netflix.conductor.cassandra.util.Constants.EVENT_HANDLER_NAME_
 import static com.netflix.conductor.cassandra.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.MESSAGE_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.PAYLOAD_KEY;
+import static com.netflix.conductor.cassandra.util.Constants.RATE_LIMIT_BUCKET_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.SHARD_ID_KEY;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_EVENT_HANDLERS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_LOOKUP;
+import static com.netflix.conductor.cassandra.util.Constants.TABLE_TASK_RATE_LIMIT;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOWS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS;
 import static com.netflix.conductor.cassandra.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
@@ -48,6 +50,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
+import static com.datastax.driver.core.querybuilder.QueryBuilder.gte;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
 
 /**
@@ -123,6 +126,15 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
  *       ('handlers',?,?);
  *   <li>SELECT * FROM conductor.event_handlers WHERE handlers=?;
  *   <li>DELETE FROM conductor.event_handlers WHERE handlers='handlers' AND event_handler_name=?;
+ * </ul>
+ *
+ * <em>RateLimitingDAO</em>
+ *
+ * <ul>
+ *   <li>SELECT count(*) FROM conductor.task_rate_limit WHERE task_def_name=? AND
+ *       rate_limit_bucket_id>=?;
+ *   <li>INSERT INTO conductor.task_rate_limit (task_def_name,rate_limit_bucket_id) VALUES (?,?)
+ *       USING TTL ?;
  * </ul>
  */
 public class Statements {
@@ -599,6 +611,36 @@ public class Statements {
                 .from(keyspace, TABLE_EVENT_HANDLERS)
                 .where(eq(HANDLERS_KEY, HANDLERS_KEY))
                 .and(eq(EVENT_HANDLER_NAME_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    // RateLimitingDAO
+    // Select Statements
+
+    /**
+     * @return cql query statement to count rate limit bucket entries for a task def within the rate
+     *     limit frequency window from the "task_rate_limit" table
+     */
+    public String getSelectRateLimitCountStatement() {
+        return QueryBuilder.select()
+                .countAll()
+                .from(keyspace, TABLE_TASK_RATE_LIMIT)
+                .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+                .and(gte(RATE_LIMIT_BUCKET_ID_KEY, bindMarker()))
+                .getQueryString();
+    }
+
+    // Insert Statements
+
+    /**
+     * @return cql query statement to add a rate limit bucket entry, expiring after the rate limit
+     *     frequency window, into the "task_rate_limit" table
+     */
+    public String getInsertRateLimitBucketStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_TASK_RATE_LIMIT)
+                .value(TASK_DEF_NAME_KEY, bindMarker())
+                .value(RATE_LIMIT_BUCKET_ID_KEY, bindMarker())
+                .using(QueryBuilder.ttl(bindMarker()))
                 .getQueryString();
     }
 }

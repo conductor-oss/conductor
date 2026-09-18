@@ -39,7 +39,10 @@ public class A2ACallRequest extends LLMWorkerInput {
      */
     private String agentType = "a2a";
 
-    /** The remote agent's JSON-RPC endpoint URL (the {@code url} from its Agent Card). */
+    /**
+     * The remote agent URL. This may be the JSON-RPC endpoint advertised by the Agent Card or a
+     * discoverable Agent Card URL; the worker resolves discovery URLs before execution.
+     */
     private String agentUrl;
 
     /**
