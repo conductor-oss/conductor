@@ -89,4 +89,36 @@ public class DummyPayloadStorageTest {
         InputStream inputStream = dummyPayloadStorage.download("testPath");
         assertNull(inputStream);
     }
+
+    @Test
+    public void testDownloadRejectsPathTraversal() {
+        assertNull(dummyPayloadStorage.download("../../etc/passwd"));
+        assertNull(dummyPayloadStorage.download("subdir/../../../etc/passwd"));
+    }
+
+    @Test
+    public void testUploadRejectsPathTraversal() throws Exception {
+        String traversalPath = "../escaped-payload.json";
+        byte[] payloadBytes = MOCK_PAYLOAD.getBytes(StandardCharsets.UTF_8);
+
+        dummyPayloadStorage.upload(
+                traversalPath, new ByteArrayInputStream(payloadBytes), payloadBytes.length);
+
+        // The write is rejected, so nothing is readable back at that path.
+        assertNull(dummyPayloadStorage.download(traversalPath));
+    }
+
+    @Test
+    public void testUploadAndDownloadNestedPath() throws Exception {
+        String nestedPath = "nested/dir/payload.json";
+        byte[] payloadBytes = MOCK_PAYLOAD.getBytes(StandardCharsets.UTF_8);
+
+        dummyPayloadStorage.upload(
+                nestedPath, new ByteArrayInputStream(payloadBytes), payloadBytes.length);
+
+        try (InputStream inputStream = dummyPayloadStorage.download(nestedPath)) {
+            assertNotNull("A nested path within payloadDir should be readable", inputStream);
+            assertEquals(MOCK_PAYLOAD, IOUtils.toString(inputStream, StandardCharsets.UTF_8));
+        }
+    }
 }
