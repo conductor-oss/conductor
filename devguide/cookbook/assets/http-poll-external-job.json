@@ -1,0 +1,90 @@
+{
+  "name": "http_poll_external_job",
+  "description": "Submit a job to a slow third-party API, then let a single HTTP_POLL task poll it until it reports a terminal state. No loop task, no worker.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 3600,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "jobApiUrl",
+    "dataset"
+  ],
+  "tasks": [
+    {
+      "name": "submit_job",
+      "taskReferenceName": "submit_job",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "${workflow.input.jobApiUrl}/jobs",
+          "method": "POST",
+          "body": { "dataset": "${workflow.input.dataset}" },
+          "connectionTimeOut": 10000,
+          "readTimeOut": 30000
+        }
+      }
+    },
+    {
+      "name": "await_job",
+      "taskReferenceName": "await_job",
+      "type": "HTTP_POLL",
+      "inputParameters": {
+        "http_request": {
+          "uri": "${workflow.input.jobApiUrl}/jobs/${submit_job.output.response.body.jobId}",
+          "method": "GET",
+          "connectionTimeOut": 10000,
+          "readTimeOut": 30000,
+          "terminationCondition": "(function(){ var s = $.output.response.body.state; return s === 'SUCCEEDED' || s === 'FAILED'; })();",
+          "pollingInterval": 60,
+          "pollingStrategy": "FIXED",
+          "maxPollCount": 60
+        }
+      }
+    },
+    {
+      "name": "route_on_job_state",
+      "taskReferenceName": "route_job",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "state",
+      "inputParameters": {
+        "state": "${await_job.output.response.body.state}"
+      },
+      "decisionCases": {
+        "SUCCEEDED": [
+          {
+            "name": "record_artifact",
+            "taskReferenceName": "record_artifact",
+            "type": "JSON_JQ_TRANSFORM",
+            "inputParameters": {
+              "body": "${await_job.output.response.body}",
+              "queryExpression": "{jobId: .body.jobId, rows: (.body.result.rows // 0), artifact: (.body.result.artifact // \"\")}"
+            }
+          }
+        ],
+        "FAILED": [
+          {
+            "name": "terminate_job_failed",
+            "taskReferenceName": "terminate_job_failed",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "error": "remote_job_failed",
+                "jobId": "${await_job.output.response.body.jobId}",
+                "detail": "${await_job.output.response.body.error}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "jobId": "${submit_job.output.response.body.jobId}",
+    "finalState": "${await_job.output.response.body.state}",
+    "rows": "${record_artifact.output.result.rows}",
+    "artifact": "${record_artifact.output.result.artifact}"
+  }
+}
