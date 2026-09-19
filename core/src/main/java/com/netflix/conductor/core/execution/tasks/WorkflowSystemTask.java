@@ -89,6 +89,19 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * Whether a redelivered {@code SCHEDULED} task should be re-started rather than timed out.
+     *
+     * <p>{@code AsyncSystemTaskExecutor} times out a {@code SCHEDULED} task redelivered past its
+     * {@code responseTimeout}, assuming a blocking {@code start()} overran (#1321). That is wrong
+     * for tasks like {@link SubWorkflow} whose {@code start()} may leave the task {@code SCHEDULED}
+     * on a transient error or be cut short by a worker restart (#1615); those should re-run {@code
+     * start()} instead. Override to {@code true} to opt in; {@code start()} must be idempotent.
+     */
+    public boolean isStartRetriable() {
+        return false;
+    }
+
+    /**
      * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external
      *     message.
      */
