@@ -241,9 +241,7 @@ export function TaskSearch() {
   };
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const sort = `${sortColumn}:${direction.toUpperCase()}`;
+    const sort = `${changedColumn}:${direction.toUpperCase()}`;
     setPage(1);
     setSort(sort);
   };
