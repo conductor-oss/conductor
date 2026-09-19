@@ -223,7 +223,16 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
             return false;
         }
 
-        long current = getInProgressTaskCount(task.getTaskDefName());
+        // DOMAIN scope counts per (task_def_name, domain); TASK_DEF keeps the legacy per-name
+        // count.
+        boolean domainScoped =
+                taskDef.getConcurrencyLimitScope() == TaskDef.ConcurrencyLimitScope.DOMAIN;
+        String domain = domainScoped ? task.getDomain() : null;
+
+        long current =
+                domainScoped
+                        ? getInProgressTaskCount(task.getTaskDefName(), domain)
+                        : getInProgressTaskCount(task.getTaskDefName());
 
         if (current >= limit) {
             Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
@@ -234,12 +243,14 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                 "Task execution count for {}: limit={}, current={}",
                 task.getTaskDefName(),
                 limit,
-                getInProgressTaskCount(task.getTaskDefName()));
+                current);
 
         String taskId = task.getTaskId();
 
         List<String> tasksInProgressInOrderOfArrival =
-                findAllTasksInProgressInOrderOfArrival(task, limit);
+                domainScoped
+                        ? findAllTasksInProgressInOrderOfArrival(task, limit, domain)
+                        : findAllTasksInProgressInOrderOfArrival(task, limit);
 
         boolean rateLimited = !tasksInProgressInOrderOfArrival.contains(taskId);
 
@@ -248,7 +259,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                     "Task execution count limited. {}, limit {}, current {}",
                     task.getTaskDefName(),
                     limit,
-                    getInProgressTaskCount(task.getTaskDefName()));
+                    current);
             Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
         }
 
@@ -444,6 +455,16 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
         return queryWithTransaction(
                 GET_IN_PROGRESS_TASK_COUNT, q -> q.addParameter(taskDefName).executeCount());
+    }
+
+    // Domain-scoped count; IS NOT DISTINCT FROM makes a null domain match only other null domains.
+    private long getInProgressTaskCount(String taskDefName, String domain) {
+        String GET_IN_PROGRESS_TASK_COUNT_BY_DOMAIN =
+                "SELECT COUNT(*) FROM task_in_progress WHERE task_def_name = ? AND domain IS NOT DISTINCT FROM ? AND in_progress_status = true";
+
+        return queryWithTransaction(
+                GET_IN_PROGRESS_TASK_COUNT_BY_DOMAIN,
+                q -> q.addParameter(taskDefName).addParameter(domain).executeCount());
     }
 
     @Override
@@ -880,7 +901,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
 
         if (!exists) {
             String INSERT_IN_PROGRESS_TASK =
-                    "INSERT INTO task_in_progress (task_def_name, task_id, workflow_id) VALUES (?, ?, ?)";
+                    "INSERT INTO task_in_progress (task_def_name, task_id, workflow_id, domain) VALUES (?, ?, ?, ?)";
 
             execute(
                     connection,
@@ -889,6 +910,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                             q.addParameter(task.getTaskDefName())
                                     .addParameter(task.getTaskId())
                                     .addParameter(task.getWorkflowInstanceId())
+                                    .addParameter(task.getDomain())
                                     .executeUpdate());
         }
     }
@@ -1017,6 +1039,21 @@ public class PostgresExecutionDAO extends PostgresBaseDAO
                 GET_IN_PROGRESS_TASKS_WITH_LIMIT,
                 q ->
                         q.addParameter(task.getTaskDefName())
+                                .addParameter(limit)
+                                .executeScalarList(String.class));
+    }
+
+    /** Domain-scoped variant of the order-of-arrival tiebreak for DOMAIN concurrency scope. */
+    private List<String> findAllTasksInProgressInOrderOfArrival(
+            TaskModel task, int limit, String domain) {
+        String GET_IN_PROGRESS_TASKS_WITH_LIMIT_BY_DOMAIN =
+                "SELECT task_id FROM task_in_progress WHERE task_def_name = ? AND domain IS NOT DISTINCT FROM ? ORDER BY created_on LIMIT ?";
+
+        return queryWithTransaction(
+                GET_IN_PROGRESS_TASKS_WITH_LIMIT_BY_DOMAIN,
+                q ->
+                        q.addParameter(task.getTaskDefName())
+                                .addParameter(domain)
                                 .addParameter(limit)
                                 .executeScalarList(String.class));
     }
