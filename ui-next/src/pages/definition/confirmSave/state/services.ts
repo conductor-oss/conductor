@@ -1,6 +1,6 @@
 import { removeCopyFromStorage } from "pages/definition/ConfirmLocalCopyDialog/state";
 import { fetchWithContext } from "plugins/fetch";
-import { WorkflowDef } from "types/WorkflowDef";
+import { WorkflowDef, WorkflowDefSummary } from "types/WorkflowDef";
 import { resolveAgentSnapshotsInWorkflow } from "utils/agentMetadata";
 import { SaveWorkflowMachineContext } from "./types";
 
@@ -44,7 +44,6 @@ export const createWorkflow = async (
           "Content-Type": "application/json",
           ...authHeaders,
         },
-
         body: editorChanges,
       },
     );
@@ -92,9 +91,12 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
   authHeaders: headers,
   workflowName,
 }: SaveWorkflowMachineContext) => {
-  const url = `/metadata/workflow?name=${encodeURIComponent(workflowName)}`;
+  if (!workflowName) {
+    return [];
+  }
+  const url = `/metadata/workflow/${encodeURIComponent(workflowName)}/versions`;
   try {
-    const result: WorkflowDef[] = await fetchWithContext(
+    const result: WorkflowDefSummary[] = await fetchWithContext(
       url,
       {},
       {
@@ -105,8 +107,8 @@ export const refetchAllDefinitionsOfCurrentWorkflow = async ({
         },
       },
     );
-    return result;
+    return Array.isArray(result) ? result : [];
   } catch {
-    return {};
+    return [];
   }
 };
