@@ -4,12 +4,7 @@ description: "Attach JSON Schemas to workflow and task definitions so malformed 
 
 # Input/Output Schema Validation
 
-A schema is a contract on the shape of data crossing a boundary. Without one, a missing field is discovered by whatever task first dereferences it — usually several tasks in, as a `NullPointerException` in a worker or a silently-null `${...}` expression. With one, the execution is rejected at the boundary, before any side effect.
-
-<!-- TODO: verify the enforcement behaviour below against a server once schema
-     enforcement ships. The SchemaDef shape and the definition fields are taken
-     from common/src/main/java/com/netflix/conductor/common/metadata/SchemaDef.java,
-     WorkflowDef.java, and TaskDef.java. -->
+A schema is a contract on the shape of data crossing a boundary. Without one, a missing field is discovered by whatever task first dereferences it — usually several tasks in, as a `NullPointerException` in a worker or a silently-null `${...}` expression. With one, and with [enforcement turned on](#turning-enforcement-on), the execution is rejected at the boundary, before any side effect.
 
 ## Where a schema attaches
 
@@ -45,10 +40,10 @@ The schema is a `SchemaDef`, embedded in the definition:
 | Field | Meaning |
 |---|---|
 | `name` | Identifier for the schema |
-| `version` | Defaults to `1`. Lets a schema evolve alongside the definition that uses it |
+| `version` | Which registered version to validate against. Omit it to follow the registry's latest; name one to pin it. Ignored for an inline `data` schema, which is the document |
 | `type` | `JSON`, `AVRO`, or `PROTOBUF` |
 | `data` | The schema document itself |
-| `externalRef` | Reference to a schema held outside Conductor, instead of inline `data` |
+| `externalRef` | A name for a schema held outside Conductor. Stored and returned unchanged; **nothing dereferences it**, so it is not an alternative to inline `data` |
 
 ## Attaching it to a workflow
 
@@ -75,7 +70,7 @@ The schema is a `SchemaDef`, embedded in the definition:
 }
 ```
 
-Two fields are easy to confuse. `schemaVersion` is unrelated to any of this — it is the workflow definition *format* version and should be `2`. `enforceSchema` is the switch that turns validation on; on `WorkflowDef` it defaults to `true`, so a definition that declares an `inputSchema` is validated unless you explicitly set it to `false`. On `TaskDef` it defaults to `false`.
+Two fields are easy to confuse. `schemaVersion` is unrelated to any of this — it is the workflow definition *format* version and should be `2`. `enforceSchema` is the per-definition switch, and it is the whole of the decision: there is no server-level setting. On `WorkflowDef` it defaults to `true`, so a workflow definition that declares an `inputSchema` is validated unless you explicitly set it to `false`. On `TaskDef` it defaults to `false`, so a task opts in.
 
 Register it the usual way — schemas travel inside the definition, so there is no separate step:
 
@@ -85,16 +80,79 @@ curl -X PUT "$CONDUCTOR_SERVER_URL/metadata/workflow" \
   -d '[ ... definition above ... ]'
 ```
 
+## Referring to a registered schema
+
+Instead of inlining `data`, a definition can name a schema held in the [Schema Registry](schema-registry.md). Whether you also name a `version` decides whether the definition follows the registry or is pinned to one document:
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON" }
+```
+
+Omitting `version` **follows the registry's latest**. Register a new version and this definition validates against it on its next execution, with no edit to the definition. That is what you want for a contract you evolve, and what you do not want if a new version must not change how existing workflows behave.
+
+```json
+"inputSchema": { "name": "customerInput", "type": "JSON", "version": 2 }
+```
+
+Naming a `version` **pins that document**. Later versions are ignored; the definition keeps validating against version 2 until you change the definition. Pin when a definition has been checked against real traffic and should not move underneath you.
+
+Failure messages name the version that was actually applied, not the one requested, so a pinned and a following reference are distinguishable when one rejects a payload.
+
+## Turning enforcement on
+
+Enforcement is decided entirely by the definition. There is no server property to set and nothing to restart. A payload is checked when both of these hold:
+
+1. the definition's own `enforceSchema` is `true`;
+2. a schema is actually attached at that point.
+
+The two defaults differ, and the difference matters when you attach a schema:
+
+- On a **`TaskDef`**, `enforceSchema` defaults to `false`. Attaching a schema changes nothing about how the task executes until you set the flag on the same definition, so a schema can be attached for documentation without rejecting work.
+- On a **`WorkflowDef`**, it defaults to `true`. Attaching an `inputSchema` or `outputSchema` is therefore enough on its own: that definition starts being validated on its next execution. Set `enforceSchema` to `false` explicitly if you want the schema recorded but not enforced.
+
+Either way enforcement arrives one definition at a time, as you edit each one, rather than all at once across a deployment.
+
+!!! warning "Upgrading a server that already has schemas attached"
+    Because `enforceSchema` defaults to `true` on `WorkflowDef`, a workflow definition that already carries an `inputSchema` or `outputSchema` — attached before this server could enforce anything — starts being validated on its next execution after the upgrade, with no edit to the definition. A schema written as documentation, never checked against real traffic, becomes a gate.
+
+    Before upgrading, list the definitions that would be affected and decide about each one:
+
+    ```shell
+    curl -s "$CONDUCTOR_SERVER_URL/metadata/workflow" \
+      | jq -r '.[] | select((.inputSchema != null or .outputSchema != null) and .enforceSchema != false)
+               | "\(.name) v\(.version)"'
+    ```
+
+    Set `enforceSchema` to `false` explicitly on any of those you are not ready to enforce; the schema stays recorded either way. `TaskDef` needs no such review — it defaults to `false`, so attached task schemas stay inert until you opt in.
+
+The corollary is that setting `enforceSchema` takes effect on the next execution of that definition. Set it on a definition whose schema you have not checked against real traffic and that definition starts rejecting payloads immediately, so treat it as the change it is: register the schema, confirm it matches what callers actually send, then turn the flag on.
+
 ## When validation runs
 
 | Point | Effect on failure |
 |---|---|
-| Workflow input | The workflow does not start |
-| Task input | The task fails before the worker sees it |
-| Task output | The task fails after the worker returns |
-| Workflow output | The workflow fails at completion |
+| Workflow input | The workflow does not start, and nothing is created |
+| Task input | The task fails terminally, before the worker sees it |
+| Task output | The task fails terminally after the worker returns |
+| Workflow output | The workflow fails at completion instead of completing |
+
+A workflow-input failure is reported to the caller: the start request is rejected with `400` and the validation message in the body, and no execution is created. The other three happen inside a running execution, so the validation message becomes the `reasonForIncompletion` on the task or the workflow — visible in the UI and the API, without reading server logs.
+
+Both task failures are **terminal**, not retriable. An input that violates a schema violates it identically on the next attempt, and an output the definition refuses is the same shape whenever the task is run again — so in neither case does a retry do anything but spend the task's retry budget on the same outcome. The workflow-level failures end the execution, so retrying does not arise.
 
 Input validation is the valuable one: it rejects the execution before any task has run, so there is nothing to compensate for. Output validation catches a worker returning the wrong shape, which otherwise surfaces as a downstream failure far from its cause.
+
+## Limits, and what happens at them
+
+**An externalized output is not checked.** A worker that returns its output through external payload storage hands the server a storage path rather than the payload, so there is nothing in hand to validate and the check is skipped. Task input, workflow input and workflow output are unaffected; so is a task whose output is small enough to travel inline.
+
+**Some system task output is checked, and some is not.** A synchronous system task that finishes inside its `execute(...)` step — `INLINE`, `SET_VARIABLE` and the like — has its output validated in the decider, and fails terminally like any other task. Two kinds are not covered: an asynchronous system task such as `HTTP` or `SUB_WORKFLOW`, and a synchronous one that completes during scheduling instead. For those, an `outputSchema` on the task definition is stored and never enforced. That and the externalized output above pass quietly, and so does the unresolvable reference described below; the non-`JSON` and typeless schemas below are the ones that fail loudly instead. Every system task's *input* is validated at scheduling like any other task's, and workflow input and workflow output are unaffected.
+
+**A schema that is not `JSON` is refused, not skipped.** An `AVRO` or `PROTOBUF` schema is accepted at registration and returned unchanged, but this server has no validator for it — so rather than let the payload through unchecked, it fails the execution and says why. A definition that both attaches one and opts into enforcement will start failing when you turn enforcement on.
+
+**A schema carrying no `type`, or only an `externalRef`, is refused too.** Neither names a document this server can check against — nothing dereferences `externalRef` — so both fail the execution and say so.
+
+**A reference the registry does not hold stops enforcing, quietly.** A schema attached by name and version is looked up in the [Schema Registry](schema-registry.md); if nothing is registered under that name and version there is no document to validate against, so the payload goes through unchecked rather than failing. The miss increments the `schema_registry_miss` counter, tagged with the schema name — that counter is the only signal, so watch it if you rely on enforcement. A registered document the validator cannot read or use behaves the same way and is logged. The common cause is a missing `$schema` line: without it the validator cannot tell which JSON Schema version to apply, so a document that otherwise looks correct enforces nothing. Both are errors in the definition rather than in the payload, which is why neither is charged to the caller; the cost is that a reference pointing at nothing enforces nothing.
 
 ## Writing schemas that age well
 
@@ -106,6 +164,7 @@ Keep the schema narrow. A schema that restates every optional field becomes some
 
 ## Related pages
 
+- [Schema Registry](schema-registry.md) — storing a schema on the server under a name and version
 - [Task Definition reference](../../documentation/configuration/taskdef.md)
 - [Workflow Definition reference](../../documentation/configuration/workflowdef/index.md)
 - [Task Inputs](Tasks/task-inputs.md)

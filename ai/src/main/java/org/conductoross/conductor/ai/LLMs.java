@@ -24,9 +24,9 @@ import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.conductoross.conductor.ai.model.ImageGenRequest;
 import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.conductoross.conductor.service.SchemaService;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -50,11 +50,11 @@ public class LLMs {
 
     public LLMs(
             List<DocumentLoader> documentLoaders,
-            JsonSchemaValidator jsonSchemaValidator,
+            SchemaService schemaService,
             AIModelProvider modelProvider,
             OkHttpClient conductorAiHttpClient) {
         this.modelProvider = modelProvider;
-        this.helper = new LLMHelper(jsonSchemaValidator, documentLoaders, conductorAiHttpClient);
+        this.helper = new LLMHelper(schemaService, documentLoaders, conductorAiHttpClient);
         this.payloadStoreLocation = modelProvider.getPayloadStoreLocation();
     }
 

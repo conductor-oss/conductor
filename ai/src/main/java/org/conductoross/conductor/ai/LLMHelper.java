@@ -21,10 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.document.DocumentLoader;
@@ -38,8 +36,9 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
-import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.conductoross.conductor.common.utils.StringTemplate;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
+import org.conductoross.conductor.service.SchemaService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -68,8 +67,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.ValidationMessage;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
@@ -90,20 +87,19 @@ public class LLMHelper {
             Map.of("end_turn", "STOP", "tool_use", "TOOL_CALLS", "refusal", "CONTENT_FILTER");
     private final ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
 
-    private final JsonSchemaValidator jsonSchemaValidator;
+    private final SchemaService schemaService;
     private final List<DocumentLoader> documentLoaders;
     private final OkHttpClient httpClient;
 
-    public LLMHelper(
-            JsonSchemaValidator jsonSchemaValidator, List<DocumentLoader> documentLoaders) {
-        this(jsonSchemaValidator, documentLoaders, AIHttpClients.defaultClient());
+    public LLMHelper(SchemaService schemaService, List<DocumentLoader> documentLoaders) {
+        this(schemaService, documentLoaders, AIHttpClients.defaultClient());
     }
 
     public LLMHelper(
-            JsonSchemaValidator jsonSchemaValidator,
+            SchemaService schemaService,
             List<DocumentLoader> documentLoaders,
             OkHttpClient httpClient) {
-        this.jsonSchemaValidator = jsonSchemaValidator;
+        this.schemaService = schemaService;
         this.documentLoaders = documentLoaders;
         this.httpClient = httpClient;
     }
@@ -255,22 +251,12 @@ public class LLMHelper {
                     String responseText = o.toString();
                     var responseObj = tryToConvertToJSON(responseText, input);
                     hasJsonOutput = true;
-                    if (input.getOutputSchema() != null) {
-                        String error = null;
-                        if (!(responseObj instanceof Map)) {
-                            error = "not a JSON response: %s".formatted(responseObj);
-                        } else {
-                            error =
-                                    validateJsonSchema(
-                                            input.getInputSchema(),
-                                            (Map<String, Object>) responseObj);
-                        }
-                        if (error != null) {
-                            errors.add(
-                                    String.format(
-                                            "Output does not confirm to the schema.  errors: %s",
-                                            error));
-                        }
+                    // tryToConvertToJSON already validated JSON content; this catches non-JSON.
+                    if (input.getOutputSchema() != null && !(responseObj instanceof Map)) {
+                        errors.add(
+                                "Output does not confirm to the schema.  errors: %s"
+                                        .formatted(
+                                                "not a JSON response: %s".formatted(responseObj)));
                     }
                     output.add(responseObj);
                 }
@@ -295,7 +281,7 @@ public class LLMHelper {
             }
             Map<String, Object> map = objectMapper.readValue(responseText, MAP_OF_STRING_TO_OBJ);
             if (chatCompletion.getOutputSchema() != null) {
-                String error = validateJsonSchema(chatCompletion.getInputSchema(), map);
+                String error = validateJsonSchema(chatCompletion.getOutputSchema(), map);
                 if (error != null) {
                     throw new RuntimeException(
                             String.format(
@@ -320,33 +306,13 @@ public class LLMHelper {
         }
     }
 
+    /** Validates data against schema; returns the error message or null on success. */
     private String validateJsonSchema(final SchemaDef schema, Map<String, Object> data) {
         try {
-            // Order in which we use the schema
-            // 1. If there is data -- inline schema def, we use that
-            // 2. Else use name + version to lookup
-            // 3. externalRef if present, in future we will use it -- currently not supported
-            String schemaContent = objectMapper.writeValueAsString(schema.getData());
-            if (schemaContent == null) {
-                return null;
-            }
-
-            Set<ValidationMessage> validationMessages =
-                    jsonSchemaValidator.validate(schemaContent, data);
-
-            if (validationMessages != null && !validationMessages.isEmpty()) {
-                return String.format(
-                        "Schema validation failed %s",
-                        validationMessages.stream()
-                                .map(ValidationMessage::getMessage)
-                                .collect(Collectors.joining(", ")));
-            }
+            schemaService.validate(schema, data);
             return null;
-        } catch (JsonSchemaException jpe) {
-            throw new RuntimeException(
-                    "Bad/Unsupported schema? : " + jpe.getValidationMessages().toString());
-        } catch (JsonProcessingException jpe) {
-            throw new RuntimeException("Error parsing the json schema : " + jpe.getMessage(), jpe);
+        } catch (SchemaValidationException e) {
+            return e.getMessage();
         }
     }
 

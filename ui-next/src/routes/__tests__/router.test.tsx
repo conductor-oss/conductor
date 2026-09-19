@@ -66,7 +66,11 @@ vi.mock("utils/constants/route", () => ({
     NEW: "/scheduleDef/new",
   },
   SCHEDULER_EXECUTION_URL: "/schedulerExecs",
-  SCHEMAS_URL: { BASE: "/schemas", EDIT: "/schemas/:id/edit" },
+  SCHEMAS_URL: {
+    BASE: "/schemas",
+    EDIT: "/schemas/:schemaName/:version?",
+    DEF: "/schemas/schemaDef",
+  },
   SECRETS_URL: { BASE: "/secrets" },
   AGENT_DEFINITION_URL: {
     BASE: "/agents",
@@ -191,7 +195,7 @@ vi.mock("react-vis-timeline", () => ({
 }));
 
 import { router } from "../router";
-import { getRoutes } from "../routes";
+import { getRoutes, getSchemaRoutes } from "../routes";
 
 function flattenRoutes(routeList: any[]): any[] {
   const out: any[] = [];
@@ -486,6 +490,35 @@ describe("router (OSS)", () => {
       expect(allPaths).toContain("*");
       expect(allPaths).toContain("/executions");
       expect(allPaths).toContain("/runWorkflow");
+    });
+
+    describe("Schema registry routes", () => {
+      it("registers the schema screens as core OSS routes", () => {
+        const allPaths = collectPaths(getRoutes());
+
+        expect(allPaths).toContain("/schemas");
+        // The editor's route also serves SCHEMAS_URL.DEF ("/schemas/schemaDef"),
+        // which is how a new schema is reached: there is no separate route.
+        expect(allPaths).toContain("/schemas/:schemaName/:version?");
+      });
+
+      it("is withheld when a plugin has claimed either schema path", () => {
+        // Core routes are matched ahead of plugin routes, so registering these
+        // anyway would displace a plugin's own schema screen.
+        expect(getSchemaRoutes([{ path: "/schemas" }])).toEqual([]);
+        expect(
+          getSchemaRoutes([{ path: "/schemas/:schemaName/:version?" }]),
+        ).toEqual([]);
+      });
+
+      it("is registered when a plugin claims unrelated paths", () => {
+        const routes = getSchemaRoutes([{ path: "/secrets" }]);
+
+        expect(routes.map((route) => route.path)).toEqual([
+          "/schemas",
+          "/schemas/:schemaName/:version?",
+        ]);
+      });
     });
 
     it("should include all scheduler routes as core OSS routes", () => {

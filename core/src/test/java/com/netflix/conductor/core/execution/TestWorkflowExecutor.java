@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -227,7 +228,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -2660,6 +2662,19 @@ public class TestWorkflowExecutor {
         // And verify that the failure workflow definition was fetched without version
         verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
         assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+
+        // And the failure workflow input carries failedWorkflow as a Map, not a raw
+        // WorkflowModel POJO, so nested ${workflow.input.failedWorkflow.<field>} references
+        // are resolvable by JsonPath (issue #1164)
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        Object failedWorkflowInput =
+                failureWorkflowCaptor.getValue().getInput().get("failedWorkflow");
+        assertTrue(
+                "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
+                failedWorkflowInput instanceof Map);
+        assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
     }
 
     @Test
