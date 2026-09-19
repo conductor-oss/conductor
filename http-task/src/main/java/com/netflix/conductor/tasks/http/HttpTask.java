@@ -34,6 +34,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
+import com.netflix.conductor.tasks.http.config.HttpTaskProperties;
 import com.netflix.conductor.tasks.http.providers.RestTemplateProvider;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -61,18 +62,26 @@ public class HttpTask extends WorkflowSystemTask {
     private final TypeReference<List<Object>> listOfObj = new TypeReference<List<Object>>() {};
     protected ObjectMapper objectMapper;
     protected RestTemplateProvider restTemplateProvider;
+    private final HttpTaskProperties properties;
     private final String requestParameter;
 
     @Autowired
-    public HttpTask(RestTemplateProvider restTemplateProvider, ObjectMapper objectMapper) {
-        this(TASK_TYPE_HTTP, restTemplateProvider, objectMapper);
+    public HttpTask(
+            RestTemplateProvider restTemplateProvider,
+            ObjectMapper objectMapper,
+            HttpTaskProperties properties) {
+        this(TASK_TYPE_HTTP, restTemplateProvider, objectMapper, properties);
     }
 
     public HttpTask(
-            String name, RestTemplateProvider restTemplateProvider, ObjectMapper objectMapper) {
+            String name,
+            RestTemplateProvider restTemplateProvider,
+            ObjectMapper objectMapper,
+            HttpTaskProperties properties) {
         super(name);
         this.restTemplateProvider = restTemplateProvider;
         this.objectMapper = objectMapper;
+        this.properties = properties;
         this.requestParameter = REQUEST_PARAMETER_NAME;
         LOGGER.info("{} initialized...", getTaskType());
     }
@@ -98,6 +107,16 @@ public class HttpTask extends WorkflowSystemTask {
             String reason = "No HTTP method specified";
             task.setReasonForIncompletion(reason);
             task.setStatus(TaskModel.Status.FAILED);
+            return;
+        }
+
+        if (!isUriAllowed(input.getUri())) {
+            String reason =
+                    String.format(
+                            "URI %s is not allowed by the security policy. Please contact your system administrator.",
+                            input.getUri());
+            task.setReasonForIncompletion(reason);
+            task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
             return;
         }
 
@@ -141,6 +160,14 @@ public class HttpTask extends WorkflowSystemTask {
                     "Failed to invoke " + getTaskType() + " task due to: " + e);
             task.addOutput("response", e.toString());
         }
+    }
+
+    private boolean isUriAllowed(String uri) {
+        List<String> allowList = properties.getUrlAllowList();
+        if (allowList == null || allowList.isEmpty()) {
+            return true;
+        }
+        return allowList.stream().anyMatch(uri::matches);
     }
 
     /**
