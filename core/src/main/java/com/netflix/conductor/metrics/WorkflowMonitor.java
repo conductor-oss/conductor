@@ -53,6 +53,7 @@ public class WorkflowMonitor {
     private final ExecutionDAOFacade executionDAOFacade;
     private final int metadataRefreshInterval;
     private final Set<WorkflowSystemTask> asyncSystemTasks;
+    private final boolean workflowNameTagEnabled;
 
     private List<TaskDef> taskDefs;
     private List<WorkflowDef> workflowDefs;
@@ -64,12 +65,15 @@ public class WorkflowMonitor {
             ExecutionDAOFacade executionDAOFacade,
             @Value("${conductor.workflow-monitor.metadata-refresh-interval:10}")
                     int metadataRefreshInterval,
-            @Qualifier(ASYNC_SYSTEM_TASKS_QUALIFIER) Set<WorkflowSystemTask> asyncSystemTasks) {
+            @Qualifier(ASYNC_SYSTEM_TASKS_QUALIFIER) Set<WorkflowSystemTask> asyncSystemTasks,
+            @Value("${conductor.metrics.workflow-name-tag.enabled:true}")
+                    boolean workflowNameTagEnabled) {
         this.metadataService = metadataService;
         this.queueDAO = queueDAO;
         this.executionDAOFacade = executionDAOFacade;
         this.metadataRefreshInterval = metadataRefreshInterval;
         this.asyncSystemTasks = asyncSystemTasks;
+        this.workflowNameTagEnabled = workflowNameTagEnabled;
         LOGGER.info("{} initialized.", WorkflowMonitor.class.getSimpleName());
     }
 
@@ -84,13 +88,16 @@ public class WorkflowMonitor {
                 refreshCounter = metadataRefreshInterval;
             }
 
-            getPendingWorkflowToOwnerAppMap(workflowDefs)
-                    .forEach(
-                            (workflowName, ownerApp) -> {
-                                long count =
-                                        executionDAOFacade.getPendingWorkflowCount(workflowName);
-                                Monitors.recordRunningWorkflows(count, workflowName, ownerApp);
-                            });
+            if (workflowNameTagEnabled) {
+                getPendingWorkflowToOwnerAppMap(workflowDefs)
+                        .forEach(
+                                (workflowName, ownerApp) -> {
+                                    long count =
+                                            executionDAOFacade.getPendingWorkflowCount(
+                                                    workflowName);
+                                    Monitors.recordRunningWorkflows(count, workflowName, ownerApp);
+                                });
+            }
 
             taskDefs.forEach(
                     taskDef -> {
