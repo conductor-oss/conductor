@@ -36,13 +36,18 @@ public class DateTimeUtils {
 
     public static Duration parseDuration(String text) {
         Matcher m = DURATION_PATTERN.matcher(text);
-        if (!m.matches()) throw new IllegalArgumentException("Not valid duration: " + text);
-
-        int days = (m.start(1) == -1 ? 0 : Integer.parseInt(m.group(1)));
-        int hours = (m.start(2) == -1 ? 0 : Integer.parseInt(m.group(2)));
-        int mins = (m.start(3) == -1 ? 0 : Integer.parseInt(m.group(3)));
-        int secs = (m.start(4) == -1 ? 0 : Integer.parseInt(m.group(4)));
-        return Duration.ofSeconds((days * 86400) + (hours * 60L + mins) * 60L + secs);
+        if (m.matches()) {
+            int days = (m.start(1) == -1 ? 0 : Integer.parseInt(m.group(1)));
+            int hours = (m.start(2) == -1 ? 0 : Integer.parseInt(m.group(2)));
+            int mins = (m.start(3) == -1 ? 0 : Integer.parseInt(m.group(3)));
+            int secs = (m.start(4) == -1 ? 0 : Integer.parseInt(m.group(4)));
+            return Duration.ofSeconds((days * 86400) + (hours * 60L + mins) * 60L + secs);
+        }
+        try {
+            return Duration.parse(text);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Not valid duration: " + text);
+        }
     }
 
     public static Date parseDate(String date) throws ParseException {
