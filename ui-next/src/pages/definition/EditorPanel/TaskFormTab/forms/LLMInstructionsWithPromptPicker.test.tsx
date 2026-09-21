@@ -107,10 +107,10 @@ describe("LLMInstructionsWithPromptPicker", () => {
     expect(screen.getByText("Write custom instructions")).toBeInTheDocument();
   });
 
-  it("auto-expands custom instructions when prompt registry is empty", () => {
+  it("auto-expands custom instructions when prompt registry is empty", async () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
 
-    expect(screen.getByLabelText("Instructions")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Instructions")).toBeVisible();
   });
 
   it("writes custom instructions and sets allowRawPrompts=true", () => {
