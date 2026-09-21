@@ -188,14 +188,6 @@ const columns = [
     tooltip: "The time the schedule was created",
   },
   {
-    id: "lastRunTimeInEpoch",
-    name: "lastRunTimeInEpoch",
-    label: "Last Run time",
-    type: ColumnCustomType.DATE,
-    sortable: false,
-    tooltip: "The last time the schedule ran",
-  },
-  {
     id: "createdBy",
     name: "createdBy",
     label: "Created by",
