@@ -21,7 +21,7 @@ import { ConductorAutocompleteVariables } from "components/FlatMapForm/Conductor
 import MuiTypography from "components/ui/MuiTypography";
 import PromptVariables from "components/PromptVariables";
 import { path as _path } from "lodash/fp";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TaskDef } from "types";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { updateField } from "utils/fieldHelpers";
@@ -30,6 +30,7 @@ import { ActorRef } from "xstate";
 import {
   LLMFormFieldsEvents,
   LLMFormFieldsMachineEventTypes,
+  LLMFormFieldsMachineStates,
 } from "./LLMFormFields/state";
 
 export interface LLMInstructionsWithPromptPickerProps {
@@ -52,6 +53,36 @@ export const LLMInstructionsWithPromptPicker = ({
     [promptNames],
   );
 
+  const machineIsIdle = useSelector(actor, (state) =>
+    state.matches(LLMFormFieldsMachineStates.IDLE),
+  );
+  const isFetchingPromptNames = useSelector(actor, (state) =>
+    state.matches(LLMFormFieldsMachineStates.FETCH_PROMPT_NAMES),
+  );
+  const promptNamesRequested = useRef(false);
+  const promptFetchSeen = useRef(false);
+  const [promptRegistryLoaded, setPromptRegistryLoaded] = useState(false);
+
+  // The registry is otherwise only fetched when the picker is focused, which
+  // leaves the dropdown empty on load. The machine ignores the event until it
+  // settles in IDLE, so wait for that before asking.
+  useEffect(() => {
+    if (!machineIsIdle || promptNamesRequested.current) return;
+    promptNamesRequested.current = true;
+    actor.send({
+      type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
+      task,
+    });
+  }, [machineIsIdle, actor, task]);
+
+  useEffect(() => {
+    if (isFetchingPromptNames) {
+      promptFetchSeen.current = true;
+    } else if (promptFetchSeen.current) {
+      setPromptRegistryLoaded(true);
+    }
+  }, [isFetchingPromptNames]);
+
   const instructions =
     (_path("inputParameters.instructions", task) as string) || "";
   const allowRawPrompts = _path(
@@ -60,16 +91,21 @@ export const LLMInstructionsWithPromptPicker = ({
   ) as boolean;
   const currentVariables = task.inputParameters?.promptVariables || {};
 
-  const isUsingPrompt =
-    !allowRawPrompts && promptOptions.includes(instructions);
+  // The server resolves `instructions` as a registered prompt name unless
+  // allowRawPrompts is set, so the flag — not the lazily fetched option list —
+  // decides which control owns the value. Matching against promptOptions would
+  // show a saved prompt as raw text until the registry finishes loading.
+  const isUsingPrompt = !!instructions && allowRawPrompts !== true;
   const [customExpanded, setCustomExpanded] = useState(false);
 
-  // Auto-expand custom instructions when no prompt registry or using raw text
+  // Auto-expand custom instructions when using raw text, or once the registry
+  // has loaded and turned out to be empty
   useEffect(() => {
-    if (promptOptions.length === 0 || (instructions && !isUsingPrompt)) {
+    if (isUsingPrompt) return;
+    if (instructions || (promptRegistryLoaded && promptOptions.length === 0)) {
       setCustomExpanded(true);
     }
-  }, [promptOptions.length, instructions, isUsingPrompt]);
+  }, [promptRegistryLoaded, promptOptions.length, instructions, isUsingPrompt]);
 
   const handleSelectPrompt = useCallback(
     (value: unknown) => {

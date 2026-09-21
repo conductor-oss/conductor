@@ -46,6 +46,9 @@ export const llmFormFieldsMachine = createMachine<
                 (field) => field === UiIntegrationsFieldType.LLM_PROVIDER,
               ),
           },
+          // Without this a form that renders none of the above fields never
+          // reaches IDLE, so it ignores every event it is sent.
+          { target: LLMFormFieldsMachineStates.IDLE },
         ],
       },
       [LLMFormFieldsMachineStates.IDLE]: {

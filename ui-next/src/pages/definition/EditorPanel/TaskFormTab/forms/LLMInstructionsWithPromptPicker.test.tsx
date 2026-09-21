@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { queryClient } from "queryClient";
 import { TaskDef } from "types";
@@ -163,6 +163,75 @@ describe("LLMInstructionsWithPromptPicker", () => {
     expect(screen.getByLabelText("Instructions")).toHaveValue(
       "You are helpful.",
     );
+  });
+
+  it("shows a saved prompt in the picker instead of the custom instructions area", () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: {
+            instructions: "my-saved-prompt",
+            allowRawPrompts: false,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Prompt Template")).toHaveValue(
+      "my-saved-prompt",
+    );
+    expect(screen.getByLabelText("Instructions")).toHaveValue("");
+  });
+
+  it("treats instructions without allowRawPrompts as a saved prompt", () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: { instructions: "legacy-prompt" },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText("Prompt Template")).toHaveValue(
+      "legacy-prompt",
+    );
+    expect(screen.getByLabelText("Instructions")).toHaveValue("");
+  });
+
+  it("shows prompt variables for a saved prompt loaded from a workflow", () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: {
+            instructions: "my-saved-prompt",
+            allowRawPrompts: false,
+            promptVariables: { topic: "billing" },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId("prompt-variables")).toHaveTextContent(
+      '{"topic":"billing"}',
+    );
+  });
+
+  it("fetches prompt names on load so the picker is populated", async () => {
+    fetchWithContext.mockResolvedValue([{ name: "my-saved-prompt" }]);
+
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: {
+            instructions: "my-saved-prompt",
+            allowRawPrompts: false,
+          },
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
+    expect(fetchWithContext.mock.calls[0][0]).toBe("/prompts");
   });
 
   it("shows the AI Prompt picker with empty value when no prompt is selected", () => {
