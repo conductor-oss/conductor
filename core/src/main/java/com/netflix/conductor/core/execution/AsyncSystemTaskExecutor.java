@@ -44,6 +44,14 @@ public class AsyncSystemTaskExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AsyncSystemTaskExecutor.class);
 
+    /**
+     * Callback cycles' worth of headroom used to size the short reserve for an idempotent {@code
+     * start()}: long enough to cover a callback cycle, short enough that a worker that dies
+     * mid-{@code start()} is redelivered and retried in seconds rather than after {@code
+     * responseTimeout} (#1615).
+     */
+    private static final int SHORT_RESERVE_CALLBACKS = 2;
+
     public AsyncSystemTaskExecutor(
             ExecutionDAOFacade executionDAOFacade,
             QueueDAO queueDAO,
@@ -293,7 +301,7 @@ public class AsyncSystemTaskExecutor {
      */
     private long reserveSeconds(TaskModel task) {
         return isStartIdempotent(task)
-                ? 2 * systemTaskCallbackTime
+                ? SHORT_RESERVE_CALLBACKS * systemTaskCallbackTime
                 : effectiveResponseTimeoutSeconds(task);
     }
 
