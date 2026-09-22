@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -155,11 +156,11 @@ public class AsyncSystemTaskExecutor {
 
             boolean scheduled = task.getStatus() == TaskModel.Status.SCHEDULED;
             if (scheduled || task.getStatus() == TaskModel.Status.IN_PROGRESS) {
-                if (scheduled && hasExceededResponseTimeout(task)) {
+                if (scheduled && hasExceededResponseTimeout(task) && !isStartIdempotent(task)) {
                     // A blocking start() never leaves SCHEDULED, so a redelivered SCHEDULED task
                     // past responseTimeout means its run overran: time it out, don't re-run it
-                    // (#1321). IN_PROGRESS response-timeouts are
-                    // DeciderService.isResponseTimedOut's
+                    // (#1321) — unless start() is idempotent, in which case retry it (#1615).
+                    // IN_PROGRESS response-timeouts are DeciderService.isResponseTimedOut's
                     // job (it budgets responseTimeout + callbackAfterSeconds).
                     task.setStatus(TaskModel.Status.TIMED_OUT);
                     task.setReasonForIncompletion(
@@ -256,16 +257,14 @@ public class AsyncSystemTaskExecutor {
 
     /**
      * Extend the popped message's unack lease so it stays reserved (unacked, not redelivered) for
-     * the duration of the invocation (issue #1321), using the task's {@code responseTimeoutSeconds}
-     * or the default {@link TaskDef#ONE_HOUR} when unset. Returns {@code false} if the reserve
-     * failed, in which case the caller must not start the task: the message is still leased at only
-     * the queue's default unack timeout and would otherwise redeliver and run a second time in
-     * parallel.
+     * the duration of the invocation (issue #1321), sized by {@link #reserveSeconds}. Returns
+     * {@code false} if the reserve failed, in which case the caller must not start the task: the
+     * message is still leased at only the queue's default unack timeout and would otherwise
+     * redeliver and run a second time in parallel.
      */
     private boolean reserveInflightMessage(String queueName, TaskModel task) {
         try {
-            queueDAO.setUnackTimeout(
-                    queueName, task.getTaskId(), effectiveResponseTimeoutSeconds(task) * 1000L);
+            queueDAO.setUnackTimeout(queueName, task.getTaskId(), reserveSeconds(task) * 1000L);
             return true;
         } catch (Exception e) {
             LOGGER.error(
@@ -275,6 +274,27 @@ public class AsyncSystemTaskExecutor {
                     e);
             return false;
         }
+    }
+
+    /**
+     * True if {@code start()} can safely be re-run: {@code SubWorkflow} derives the child id from
+     * parentWorkflowId + taskId + retryCount and {@code startWorkflowIdempotent} locks on it.
+     */
+    private static boolean isStartIdempotent(TaskModel task) {
+        return TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType());
+    }
+
+    /**
+     * How long to reserve the message for while {@code start()} runs. The reserve also bounds how
+     * long a task stays stranded when its worker dies mid-{@code start()}, so an idempotent {@code
+     * start()} gets a short window and recovers in seconds instead of waiting out {@code
+     * responseTimeout} (#1615). Others keep the full timeout so a long run is never redelivered and
+     * executed twice (#1321).
+     */
+    private long reserveSeconds(TaskModel task) {
+        return isStartIdempotent(task)
+                ? 2 * systemTaskCallbackTime
+                : effectiveResponseTimeoutSeconds(task);
     }
 
     /** The task's {@code responseTimeoutSeconds}, or the default {@link TaskDef#ONE_HOUR}. */
