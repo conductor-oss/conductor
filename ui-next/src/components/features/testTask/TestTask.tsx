@@ -51,6 +51,27 @@ const CustomisedTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
+const parseInputParameters = (
+  newValue: string,
+): { model?: Record<string, unknown>; error?: string } => {
+  if (newValue.trim() === "") {
+    return { model: {} };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(newValue);
+  } catch (error) {
+    return { error: `Invalid JSON: ${(error as Error).message}` };
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return { error: "Input parameters must be a JSON object." };
+  }
+
+  return { model: parsed as Record<string, unknown> };
+};
+
 const closeIconStyle = {
   position: "absolute",
   right: 0,
@@ -124,6 +145,7 @@ const JsonSection: FunctionComponent<JsonSectionProps> = ({
   value,
   domain,
   onChangeDomain,
+  inputParametersError,
 }) => {
   return (
     <Box>
@@ -133,6 +155,8 @@ const JsonSection: FunctionComponent<JsonSectionProps> = ({
         value={JSON.stringify({ ...taskModel, ...value }, null, 2)}
         containerStyles={{ borderColor: "#ffffff" }}
         minHeight={150}
+        error={Boolean(inputParametersError)}
+        helperText={inputParametersError}
         options={{
           lineNumbers: "off",
         }}
@@ -161,17 +185,23 @@ const TestControls: FunctionComponent<TestControlsProps> = ({
   showForm,
 }) => {
   const [toggleValue, setToggleValue] = useState(showForm ? "form" : "json");
+  const [inputParametersError, setInputParametersError] = useState<string>();
   const extractedJsonVariables = extractVariablesFromJSON(taskModel);
 
   const handleToggleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // The form only edits the last successfully parsed model, so a pending
+    // JSON error no longer applies once the editor is left behind.
+    setInputParametersError(undefined);
     setToggleValue(e.target.value);
   };
 
   const handleJSONChange = (newValue: string) => {
-    const parsedObject = tryToJson(newValue);
+    const { model, error } = parseInputParameters(newValue);
 
-    if (parsedObject) {
-      onChangeModel(parsedObject as Record<string, unknown>);
+    setInputParametersError(error);
+
+    if (model) {
+      onChangeModel(model);
     }
   };
 
@@ -220,6 +250,7 @@ const TestControls: FunctionComponent<TestControlsProps> = ({
             value={value}
             domain={domain}
             onChangeDomain={onChangeDomain}
+            inputParametersError={inputParametersError}
           />
         ) : (
           <FormSection
@@ -236,7 +267,7 @@ const TestControls: FunctionComponent<TestControlsProps> = ({
           startIcon={<RocketLaunch />}
           color="primary"
           id="run-test-task"
-          disabled={isInProgress}
+          disabled={isInProgress || Boolean(inputParametersError)}
           onClick={handleRunTestTask}
           sx={{
             "& .MuiButton-startIcon": {
