@@ -42,6 +42,9 @@ These workers communicate with the Conductor server via REST/gRPC, allowing them
 
 Conductor handles scheduling, retries, and state persistence. Your worker just focuses on business logic.
 
+!!! Note
+    Workers should be **idempotent**, since Conductor can retry a task after a timeout or failure — executing the same task input more than once should not produce duplicate side effects.
+
 
 ## Worker configuration
 
