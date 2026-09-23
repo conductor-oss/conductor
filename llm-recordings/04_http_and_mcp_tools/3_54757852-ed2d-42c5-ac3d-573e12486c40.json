@@ -1,0 +1,148 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You can reverse strings and format reports. When asked to reverse a string, use reverse_string first, then format_report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"isError\":false,\"content\":[{\"parsed\":{\"result\":\"dlrow olleh\"},\"text\":\"{\\\"result\\\": \\\"dlrow olleh\\\"}\",\"type\":\"text\"}]},\"name\":\"call_q6mH81CJRxTbFNHY8hJKw2fw_\"}]\n[/TOOL RESULTS]\n\nReverse the string 'hello world' and add 33 and 21 append the result to that string, then write a report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "string_reverse",
+        "arguments" : {
+          "method" : "string_reverse",
+          "text" : "hello world"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "string_reverse",
+        "value" : {
+          "content" : [ {
+            "type" : "text",
+            "text" : "{\"result\": \"dlrow olleh\"}",
+            "parsed" : {
+              "result" : "dlrow olleh"
+            }
+          } ],
+          "isError" : false
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "format_report",
+      "description" : "Format a title and body into a structured report.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "title", "body" ]
+      }
+    }, {
+      "name" : "math_add",
+      "description" : "Add two numbers and return the sum.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "string_reverse",
+      "description" : "Reverse a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0a4491b1cfc55d75006aa83c76595087d0a5b40b18eef0d4c7",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 318,
+        "completionTokens" : 62,
+        "totalTokens" : 380,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0a4491b1cfc55d75006aa83c76595087d0a5b40b18eef0d4c7",
+        "reasoning_tokens" : 38
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_HNWq5ZGOjyFmmU43qTxfCemx",
+          "type" : "function",
+          "name" : "math_add",
+          "arguments" : "{\"a\":33,\"b\":21}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
