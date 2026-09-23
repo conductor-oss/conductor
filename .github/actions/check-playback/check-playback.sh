@@ -11,7 +11,7 @@ start=0
 failures=0
 while :; do
     result=$(curl --silent --show-error --fail-with-body --get \
-        --data-urlencode 'query=status IN (RUNNING,PAUSED,FAILED,TERMINATED,TIMED_OUT)' \
+        --data-urlencode 'query=status IN (COMPLETED,RUNNING,PAUSED,FAILED,TERMINATED,TIMED_OUT)' \
         --data-urlencode 'size=100' --data-urlencode "start=$start" \
         "$server_url/workflow/search")
     total=$(printf '%s' "$result" | jq -er '.totalHits')
@@ -38,6 +38,10 @@ while :; do
     start=$((start + rows))
     [ "$start" -lt "$total" ] || break
 done
+if [ "$start" -eq 0 ]; then
+    printf '%s\n' 'FAIL: no workflows found; the SDK examples never ran'
+    exit 1
+fi
 if [ "$failures" -ne 0 ]; then
     printf 'FAIL: %s unexpected workflow outcomes\n' "$failures"
     exit 1

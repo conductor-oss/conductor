@@ -26,10 +26,6 @@ public class ToolSpec {
     private Map<String, Object> inputSchema;
     private Map<String, Object> outputSchema;
 
-    /** An omitted schema describes an object with no declared parameters. */
-    public Map<String, Object> getInputSchema() {
-        return inputSchema == null ? Map.of("type", "object") : inputSchema;
-    }
 
     /**
      * When true, this spec is complete as delivered: pass it to the LLM as-is. Consumers must not
