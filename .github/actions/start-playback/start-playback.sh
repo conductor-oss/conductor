@@ -14,6 +14,7 @@ export CONDUCTOR_RECORDINGS_DIR="$conductor_dir/llm-recordings"
 export CONDUCTOR_SECRET_GITHUB_TOKEN=playback-test-key
 export CONDUCTOR_SECRET_HTTP_TEST_API_KEY=playback-test-key
 export CONDUCTOR_SECRET_MCP_TEST_API_KEY=playback-test-key
+export CONDUCTOR_SECRET_MCP_API_KEY=playback-test-key
 java -Xmx2g -jar "$conductor_dir"/server/build/libs/*-boot.jar \
   --server.port="$port" \
   --spring.datasource.url="jdbc:sqlite:$playback_dir/playback.db" \

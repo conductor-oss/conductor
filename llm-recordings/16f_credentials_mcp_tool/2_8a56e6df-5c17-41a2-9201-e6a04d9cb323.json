@@ -1,0 +1,1044 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You have access to MCP tools. Use them to help the user.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What tools are available?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "math_add",
+      "description" : "Add two numbers and return the sum.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "math_subtract",
+      "description" : "Subtract b from a and return the difference.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "math_multiply",
+      "description" : "Multiply two numbers and return the product.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "math_divide",
+      "description" : "Divide a by b. Returns an error if b is zero.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "math_modulo",
+      "description" : "Return the remainder of a divided by b. Returns an error if b is zero.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "math_power",
+      "description" : "Raise base to the power of exponent.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "base" : {
+            "title" : "Base",
+            "type" : "number"
+          },
+          "exponent" : {
+            "title" : "Exponent",
+            "type" : "number"
+          }
+        },
+        "required" : [ "base", "exponent" ]
+      }
+    }, {
+      "name" : "math_factorial",
+      "description" : "Return n factorial (n!). Returns an error if n is negative.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "n" : {
+            "title" : "N",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "n" ]
+      }
+    }, {
+      "name" : "math_fibonacci",
+      "description" : "Return the nth Fibonacci number (0-indexed). Returns an error if n is negative.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "n" : {
+            "title" : "N",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "n" ]
+      }
+    }, {
+      "name" : "string_reverse",
+      "description" : "Reverse a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "string_uppercase",
+      "description" : "Convert a string to uppercase.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "string_lowercase",
+      "description" : "Convert a string to lowercase.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "string_length",
+      "description" : "Return the character count of a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "string_char_count",
+      "description" : "Count occurrences of a character in a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "char" : {
+            "title" : "Char",
+            "type" : "string"
+          },
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "char" ]
+      }
+    }, {
+      "name" : "string_replace",
+      "description" : "Replace all occurrences of old with new in a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "new" : {
+            "title" : "New",
+            "type" : "string"
+          },
+          "old" : {
+            "title" : "Old",
+            "type" : "string"
+          },
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "old", "new" ]
+      }
+    }, {
+      "name" : "string_split",
+      "description" : "Split a string by a delimiter.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "delimiter" : {
+            "title" : "Delimiter",
+            "type" : "string"
+          },
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "delimiter" ]
+      }
+    }, {
+      "name" : "string_join",
+      "description" : "Join a list of strings with a delimiter.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "delimiter" : {
+            "title" : "Delimiter",
+            "type" : "string"
+          },
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "items", "delimiter" ]
+      }
+    }, {
+      "name" : "collection_sort",
+      "description" : "Sort a list of items.\n\n        Args:\n            items: The list to sort.\n            reverse: If True, sort in descending order.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "reverse" : {
+            "default" : false,
+            "title" : "Reverse",
+            "type" : "boolean"
+          },
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : { }
+          }
+        },
+        "required" : [ "items" ]
+      }
+    }, {
+      "name" : "collection_flatten",
+      "description" : "Recursively flatten nested lists.\n\n        Args:\n            items: A potentially nested list to flatten.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : { }
+          }
+        },
+        "required" : [ "items" ]
+      }
+    }, {
+      "name" : "collection_merge",
+      "description" : "Merge two dictionaries. Values from dict_b win on conflict.\n\n        Args:\n            dict_a: The base dictionary.\n            dict_b: The dictionary to merge in (wins on conflict).\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "dict_b" : {
+            "additionalProperties" : true,
+            "title" : "Dict B",
+            "type" : "object"
+          },
+          "dict_a" : {
+            "additionalProperties" : true,
+            "title" : "Dict A",
+            "type" : "object"
+          }
+        },
+        "required" : [ "dict_a", "dict_b" ]
+      }
+    }, {
+      "name" : "collection_filter_gt",
+      "description" : "Filter numbers greater than a threshold.\n\n        Args:\n            items: List of numbers to filter.\n            threshold: The threshold value.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "threshold" : {
+            "title" : "Threshold",
+            "type" : "number"
+          },
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : {
+              "type" : "number"
+            }
+          }
+        },
+        "required" : [ "items", "threshold" ]
+      }
+    }, {
+      "name" : "collection_unique",
+      "description" : "Remove duplicates from a list, preserving order.\n\n        Uses JSON serialization for dedup keys to handle mixed types.\n\n        Args:\n            items: The list to deduplicate.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : { }
+          }
+        },
+        "required" : [ "items" ]
+      }
+    }, {
+      "name" : "collection_group_by",
+      "description" : "Group a list of objects by a key.\n\n        Args:\n            items: List of dictionaries to group.\n            key: The key to group by.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : {
+              "additionalProperties" : true,
+              "type" : "object"
+            }
+          },
+          "key" : {
+            "title" : "Key",
+            "type" : "string"
+          }
+        },
+        "required" : [ "items", "key" ]
+      }
+    }, {
+      "name" : "collection_zip",
+      "description" : "Zip two lists into a list of pairs.\n\n        Args:\n            list_a: The first list.\n            list_b: The second list.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "list_b" : {
+            "title" : "List B",
+            "type" : "array",
+            "items" : { }
+          },
+          "list_a" : {
+            "title" : "List A",
+            "type" : "array",
+            "items" : { }
+          }
+        },
+        "required" : [ "list_a", "list_b" ]
+      }
+    }, {
+      "name" : "collection_chunk",
+      "description" : "Split a list into chunks of a given size.\n\n        Args:\n            items: The list to split.\n            size: The chunk size.\n        ",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "size" : {
+            "title" : "Size",
+            "type" : "integer"
+          },
+          "items" : {
+            "title" : "Items",
+            "type" : "array",
+            "items" : { }
+          }
+        },
+        "required" : [ "items", "size" ]
+      }
+    }, {
+      "name" : "encoding_base64_encode",
+      "description" : "Base64-encode a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "encoding_base64_decode",
+      "description" : "Base64-decode a string. Returns an error if the input is not valid base64.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "title" : "Data",
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    }, {
+      "name" : "encoding_url_encode",
+      "description" : "URL-encode a string using percent-encoding (spaces become +).",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "encoding_url_decode",
+      "description" : "URL-decode a percent-encoded string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "encoding_hex_encode",
+      "description" : "Hex-encode a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "encoding_hex_decode",
+      "description" : "Hex-decode a string. Returns an error if the input is not valid hex.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "title" : "Data",
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    }, {
+      "name" : "encoding_md5",
+      "description" : "Return the MD5 hash hex digest of a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "encoding_sha256",
+      "description" : "Return the SHA-256 hash hex digest of a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "datetime_parse",
+      "description" : "Parse an ISO date string and return its components {year, month, day, hour, minute, second}.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "date_string" : {
+            "title" : "Date String",
+            "type" : "string"
+          }
+        },
+        "required" : [ "date_string" ]
+      }
+    }, {
+      "name" : "datetime_format",
+      "description" : "Format a date to a string using a strftime format specifier.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "month" : {
+            "title" : "Month",
+            "type" : "integer"
+          },
+          "year" : {
+            "title" : "Year",
+            "type" : "integer"
+          },
+          "format" : {
+            "title" : "Format",
+            "type" : "string"
+          },
+          "day" : {
+            "title" : "Day",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "year", "month", "day", "format" ]
+      }
+    }, {
+      "name" : "datetime_add_days",
+      "description" : "Add N days to a date and return the resulting ISO date string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "days" : {
+            "title" : "Days",
+            "type" : "integer"
+          },
+          "date_string" : {
+            "title" : "Date String",
+            "type" : "string"
+          }
+        },
+        "required" : [ "date_string", "days" ]
+      }
+    }, {
+      "name" : "datetime_diff",
+      "description" : "Return the number of days between two dates (a - b).",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "date_b" : {
+            "title" : "Date B",
+            "type" : "string"
+          },
+          "date_a" : {
+            "title" : "Date A",
+            "type" : "string"
+          }
+        },
+        "required" : [ "date_a", "date_b" ]
+      }
+    }, {
+      "name" : "datetime_day_of_week",
+      "description" : "Return the weekday name (e.g., 'Friday') for a given date.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "date_string" : {
+            "title" : "Date String",
+            "type" : "string"
+          }
+        },
+        "required" : [ "date_string" ]
+      }
+    }, {
+      "name" : "datetime_is_leap_year",
+      "description" : "Return whether the given year is a leap year.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "title" : "Year",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "year" ]
+      }
+    }, {
+      "name" : "datetime_days_in_month",
+      "description" : "Return the number of days in the given month and year.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "month" : {
+            "title" : "Month",
+            "type" : "integer"
+          },
+          "year" : {
+            "title" : "Year",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "year", "month" ]
+      }
+    }, {
+      "name" : "datetime_week_number",
+      "description" : "Return the ISO week number for the given date.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "date_string" : {
+            "title" : "Date String",
+            "type" : "string"
+          }
+        },
+        "required" : [ "date_string" ]
+      }
+    }, {
+      "name" : "validation_is_email",
+      "description" : "Check whether a string is a valid email address format.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_url",
+      "description" : "Check whether a string is a valid URL with http or https scheme.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_ipv4",
+      "description" : "Check whether a string is a valid IPv4 address.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_ipv6",
+      "description" : "Check whether a string is a valid IPv6 address.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_uuid",
+      "description" : "Check whether a string is a valid UUID.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_json",
+      "description" : "Check whether a string is valid JSON.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_is_palindrome",
+      "description" : "Check whether a string is a case-sensitive palindrome.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    }, {
+      "name" : "validation_matches_regex",
+      "description" : "Check whether a string matches a given regular expression pattern.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "pattern" : {
+            "title" : "Pattern",
+            "type" : "string"
+          },
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "pattern" ]
+      }
+    }, {
+      "name" : "conversion_celsius_to_fahrenheit",
+      "description" : "Convert a temperature from Celsius to Fahrenheit.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "title" : "Value",
+            "type" : "number"
+          }
+        },
+        "required" : [ "value" ]
+      }
+    }, {
+      "name" : "conversion_fahrenheit_to_celsius",
+      "description" : "Convert a temperature from Fahrenheit to Celsius.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "title" : "Value",
+            "type" : "number"
+          }
+        },
+        "required" : [ "value" ]
+      }
+    }, {
+      "name" : "conversion_km_to_miles",
+      "description" : "Convert a distance from kilometers to miles.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "title" : "Value",
+            "type" : "number"
+          }
+        },
+        "required" : [ "value" ]
+      }
+    }, {
+      "name" : "conversion_miles_to_km",
+      "description" : "Convert a distance from miles to kilometers.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "title" : "Value",
+            "type" : "number"
+          }
+        },
+        "required" : [ "value" ]
+      }
+    }, {
+      "name" : "conversion_bytes_to_human",
+      "description" : "Convert a byte count to a human-readable string (e.g., '1.00 KB').",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "bytes" : {
+            "title" : "Bytes",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "bytes" ]
+      }
+    }, {
+      "name" : "conversion_rgb_to_hex",
+      "description" : "Convert RGB color values (0-255) to a hex color string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "r" : {
+            "title" : "R",
+            "type" : "integer"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "integer"
+          },
+          "g" : {
+            "title" : "G",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "r", "g", "b" ]
+      }
+    }, {
+      "name" : "conversion_hex_to_rgb",
+      "description" : "Convert a hex color string to RGB values. Supports with or without '#' prefix.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "hex_color" : {
+            "title" : "Hex Color",
+            "type" : "string"
+          }
+        },
+        "required" : [ "hex_color" ]
+      }
+    }, {
+      "name" : "conversion_decimal_to_binary",
+      "description" : "Convert a decimal integer to its binary string representation (without '0b' prefix).",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "value" : {
+            "title" : "Value",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "value" ]
+      }
+    }, {
+      "name" : "echo",
+      "description" : "Return the input message unchanged.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "title" : "Message",
+            "type" : "string"
+          }
+        },
+        "required" : [ "message" ]
+      }
+    }, {
+      "name" : "echo_error",
+      "description" : "Always raises a ToolError with the given message.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "message" : {
+            "title" : "Message",
+            "type" : "string"
+          }
+        },
+        "required" : [ "message" ]
+      }
+    }, {
+      "name" : "echo_large",
+      "description" : "Return deterministic text of approximately N kilobytes.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "size_kb" : {
+            "title" : "Size Kb",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "size_kb" ]
+      }
+    }, {
+      "name" : "echo_nested",
+      "description" : "Return nested JSON structure to the given depth.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "depth" : {
+            "title" : "Depth",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "depth" ]
+      }
+    }, {
+      "name" : "echo_types",
+      "description" : "Return an object containing all JSON types.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : { }
+      }
+    }, {
+      "name" : "echo_empty",
+      "description" : "Return an empty string result.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : { }
+      }
+    }, {
+      "name" : "echo_multiple",
+      "description" : "Return multiple TextContent blocks, one per message.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "messages" : {
+            "title" : "Messages",
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "messages" ]
+      }
+    }, {
+      "name" : "echo_schema",
+      "description" : "Echo all parameters back as JSON.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "int_param" : {
+            "title" : "Int Param",
+            "type" : "integer"
+          },
+          "list_param" : {
+            "title" : "List Param",
+            "type" : "array",
+            "items" : { }
+          },
+          "bool_param" : {
+            "title" : "Bool Param",
+            "type" : "boolean"
+          },
+          "float_param" : {
+            "title" : "Float Param",
+            "type" : "number"
+          },
+          "obj_param" : {
+            "additionalProperties" : true,
+            "title" : "Obj Param",
+            "type" : "object"
+          },
+          "str_param" : {
+            "title" : "Str Param",
+            "type" : "string"
+          }
+        },
+        "required" : [ "str_param", "int_param", "float_param", "bool_param", "list_param", "obj_param" ]
+      }
+    }, {
+      "name" : "get_weather",
+      "description" : "Get weather for a city. Always returns fixed deterministic data (77°F, sunny).",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "city" : {
+            "title" : "City",
+            "type" : "string"
+          }
+        },
+        "required" : [ "city" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_048c2354912062c3006ab44047006887d08074f505572fb53b",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 2296,
+        "completionTokens" : 326,
+        "totalTokens" : 2622,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_048c2354912062c3006ab44047006887d08074f505572fb53b",
+        "reasoning_tokens" : 50
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "Available tools include:\n\n### Math\n- Add, subtract, multiply, divide, modulo\n- Power, factorial, Fibonacci\n\n### Strings\n- Reverse, uppercase, lowercase\n- Length and character counting\n- Replace, split, join\n\n### Collections\n- Sort, flatten, merge dictionaries\n- Filter numbers\n- Remove duplicates\n- Group by key, zip, chunk lists\n\n### Encoding and hashing\n- Base64 encode/decode\n- URL encode/decode\n- Hex encode/decode\n- MD5 and SHA-256 hashes\n\n### Date and time\n- Parse and format dates\n- Add days and calculate date differences\n- Determine weekday and ISO week number\n- Check leap years and month lengths\n\n### Validation\n- Email, URL, IPv4, IPv6, UUID, and JSON validation\n- Palindrome checking\n- Regular-expression matching\n\n### Unit conversions\n- Celsius ↔ Fahrenheit\n- Kilometers ↔ miles\n- Bytes to human-readable format\n- RGB ↔ hex colors\n- Decimal to binary\n\n### Utility tools\n- Echo messages, including empty, large, nested, typed, and multiple-message responses\n- Echo structured parameters\n- Return deliberate tool errors\n- Get deterministic weather data for a city\n\nThere is also a `multi_tool_use.parallel` tool for running independent tools simultaneously.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
