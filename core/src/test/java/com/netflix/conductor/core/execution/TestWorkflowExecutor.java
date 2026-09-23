@@ -840,6 +840,58 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testRestartWorkflowWithLatestDefinitionsSeedsVariables() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(1);
+        workflowDef.setRestartable(true);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("test-workflow-id");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+
+        // version 2 declares a variable that version 1 did not have
+        WorkflowDef latestWorkflowDef = new WorkflowDef();
+        latestWorkflowDef.setName("testDef");
+        latestWorkflowDef.setVersion(2);
+        latestWorkflowDef.setRestartable(true);
+        latestWorkflowDef.getVariables().put("serviceBaseUrl", "https://api.example.com");
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getLatestWorkflowDef("testDef"))
+                .thenReturn(Optional.of(latestWorkflowDef));
+
+        workflowExecutor.restart(workflow.getWorkflowId(), true);
+
+        assertEquals(latestWorkflowDef, workflow.getWorkflowDefinition());
+        assertEquals(Map.of("serviceBaseUrl", "https://api.example.com"), workflow.getVariables());
+    }
+
+    @Test
+    public void testRestartWorkflowResetsVariablesToDefinitionValues() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(1);
+        workflowDef.setRestartable(true);
+        workflowDef.getVariables().put("counter", 0);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("test-workflow-id");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        // values written by SET_VARIABLE tasks during the previous run
+        workflow.getVariables().put("counter", 3);
+        workflow.getVariables().put("cursor", "page-7");
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        workflowExecutor.restart(workflow.getWorkflowId(), false);
+
+        assertEquals(Map.of("counter", 0), workflow.getVariables());
+    }
+
+    @Test
     public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("existing-workflow");
