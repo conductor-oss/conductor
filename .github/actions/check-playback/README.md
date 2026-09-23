@@ -1,26 +1,20 @@
 # Check LLM playback
 
-Did every workflow on the playback server complete? PASS if yes, FAIL if not. Every SDK repository uses this same action after running its examples against a server that plays back the shared LLM recordings.
+Validate SDK examples against a dedicated playback server:
 
 ```yaml
-- name: Check LLM playback
-  uses: conductor-oss/conductor/.github/actions/check-playback@main
+- uses: conductor-oss/conductor/.github/actions/check-playback@main
   with:
     server-url: http://localhost:8080/api
 ```
 
-The CI job starts a fresh server with `conductor.ai.enable-llm-mocks=true` and `conductor.ai.recordings-directory` pointing at the shared `llm-recordings` directory, runs the SDK examples with the model `mock/mockLLM`, then runs this action. The server must be dedicated to the job, because every workflow on it is checked.
+Completed workflows pass. Failed workflows pass only when persisted tasks show
+that a completed guardrail decision rejected the response and directly caused
+the failed termination. Failed LLM tasks, unrelated failures, and unfinished
+workflows fail. No SDK exception lists or example names are used.
 
-The script calls the standard `GET /api/workflow/search` endpoint for workflows whose status is anything other than `COMPLETED`. Zero hits is a pass. Otherwise it lists each workflow with its status and reason and exits 1. A missing recording shows up as a failed workflow whose reason reads "No recorded response matches the LLM request".
-
-Requires `curl` and `jq`, both preinstalled on GitHub-hosted Linux runners. Run it locally with:
+Requires `curl` and `jq`. Run locally with:
 
 ```sh
 sh .github/actions/check-playback/check-playback.sh http://localhost:8080/api
 ```
-
-For negative tests such as guardrail rejection, pass `expected-failures-file`:
-a JSON array of execution IDs whose failure the tests explicitly validated.
-Locally, set `CONDUCTOR_PLAYBACK_EXPECTED_FAILURES` to that file. Only `FAILED`
-rows with those exact IDs are accepted; other statuses and unrelated failures
-still fail the check. Omit the file to require every workflow to complete.

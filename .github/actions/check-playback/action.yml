@@ -1,17 +1,12 @@
 name: Check LLM playback
-description: Require completed workflows or explicitly validated expected failures.
+description: Validate completed workflows and guardrail rejections from persisted server state.
 inputs:
   server-url:
     description: Conductor API URL reachable from this runner, including /api.
     required: true
-  expected-failures-file:
-    description: Optional JSON array of exact execution IDs whose FAILED status was validated by the tests.
-    default: ''
 runs:
   using: composite
   steps:
     - name: Check playback
       shell: sh
-      env:
-        CONDUCTOR_PLAYBACK_EXPECTED_FAILURES: ${{ inputs.expected-failures-file }}
       run: sh "$GITHUB_ACTION_PATH/check-playback.sh" "${{ inputs.server-url }}"

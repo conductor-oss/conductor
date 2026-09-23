@@ -1,36 +1,45 @@
 #!/bin/sh
-# Require completed workflows, except exact FAILED execution IDs validated by the tests.
+# Validate playback outcomes from persisted workflow state, for every SDK.
 set -eu
-
 if [ "$#" -ne 1 ]; then
     printf '%s\n' "Usage: $0 <server-api-url>" >&2
     exit 2
 fi
 server_url=${1%/}
-
-expected='[]'
-if [ -n "${CONDUCTOR_PLAYBACK_EXPECTED_FAILURES:-}" ]; then
-    jq -e 'type == "array" and all(.[]; type == "string" and length > 0)' \
-        "$CONDUCTOR_PLAYBACK_EXPECTED_FAILURES" > /dev/null
-    expected=$(cat "$CONDUCTOR_PLAYBACK_EXPECTED_FAILURES")
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+start=0
+failures=0
+while :; do
+    result=$(curl --silent --show-error --fail-with-body --get \
+        --data-urlencode 'query=status IN (RUNNING,PAUSED,FAILED,TERMINATED,TIMED_OUT)' \
+        --data-urlencode 'size=100' --data-urlencode "start=$start" \
+        "$server_url/workflow/search")
+    total=$(printf '%s' "$result" | jq -er '.totalHits')
+    rows=$(printf '%s' "$result" | jq '.results | length')
+    if [ "$rows" -eq 0 ]; then
+        if [ "$start" -lt "$total" ]; then
+            printf '%s\n' 'FAIL: workflow search returned an incomplete page'
+            exit 1
+        fi
+        break
+    fi
+    for id in $(printf '%s' "$result" | jq -r '.results[].workflowId | @uri'); do
+        workflow=$(curl --silent --show-error --fail-with-body "$server_url/workflow/$id?includeTasks=true")
+        if printf '%s' "$workflow" | jq -e '.status == "COMPLETED"' > /dev/null; then
+            continue
+        fi
+        if printf '%s' "$workflow" | jq -e -f "$script_dir/guardrail-rejection.jq" > /dev/null; then
+            printf 'PASS: %s rejected by its guardrail\n' "$id"
+        else
+            printf '%s' "$workflow" | jq -r '"\(.workflowType) \(.workflowId): \(.status) \(.reasonForIncompletion // "")"'
+            failures=$((failures + 1))
+        fi
+    done
+    start=$((start + rows))
+    [ "$start" -lt "$total" ] || break
+done
+if [ "$failures" -ne 0 ]; then
+    printf 'FAIL: %s unexpected workflow outcomes\n' "$failures"
+    exit 1
 fi
-
-# Only FAILED rows with an explicitly expected execution ID are excluded.
-result=$(curl --silent --show-error --fail-with-body --get \
-    --data-urlencode 'query=status IN (RUNNING,PAUSED,FAILED,TERMINATED,TIMED_OUT)' \
-    --data-urlencode 'size=100' \
-    "$server_url/workflow/search")
-
-unexpected=$(printf '%s' "$result" | jq --argjson expected "$expected" '
-    [.results[] | select(.status == "FAILED" and (.workflowId as $id | $expected | index($id) != null))] as $allowed
-    | .totalHits -= ($allowed | length)
-    | .results -= $allowed')
-count=$(printf '%s' "$unexpected" | jq -r '.totalHits')
-if [ "$count" -eq 0 ]; then
-    printf '%s\n' 'PASS: every workflow completed or matched an expected failure'
-    exit 0
-fi
-
-printf '%s' "$unexpected" | jq -r '.results[] | "\(.workflowType) \(.workflowId): \(.status) \(.reasonForIncompletion // "")"'
-printf 'FAIL: %s workflows did not complete\n' "$count"
-exit 1
+printf '%s\n' 'PASS: every workflow completed or was rejected by its guardrail'
