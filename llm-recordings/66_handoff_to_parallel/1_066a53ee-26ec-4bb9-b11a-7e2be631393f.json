@@ -1,0 +1,64 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a business strategist. Route requests to the right team:\n- quick_check for simple yes/no questions or quick assessments\n- deep_analysis for comprehensive analysis requiring multiple perspectives\n\nYou are a coordinator that delegates tasks to specialized agents.\n\nAvailable agents:\n- quick_check: You provide quick, 1-sentence assessments. Be brief and direct.\n- deep_analysis: deep_analysis\n\nScope of your responsibility:\n- You may have been delegated only PART of a larger request. If the conversation contains a delegation note addressed to your team 'coordinator_66' — a line like '[<sender> -> coordinator_66]: <instructions>' — judge completion against the MOST RECENT such note's instructions, not the entire original request.\n- If the most recent note addressed to you carries no instructions, complete the parts of the request your agents can handle, then respond DONE.\n- A part of the request is OUT OF SCOPE only if NONE of your available agents could plausibly handle it. Out-of-scope parts are NOT your responsibility: never delegate them, and do NOT withhold DONE because of them. When in doubt, delegate to the closest-matching agent.\n\nBased on the conversation so far, decide the next action:\n- Carefully analyze the user's COMPLETE request. It may contain MULTIPLE parts that require DIFFERENT agents.\n- If ANY in-scope part of the request has NOT yet been addressed by an appropriate agent, respond with ONLY the name of the agent that should handle the unaddressed part (one of: quick_check, deep_analysis)\n- ONLY if ALL parts of the request that are in scope have been fully addressed, respond with ONLY the word DONE\n\nImportant: Review the full conversation to check which parts have been handled. Do NOT say DONE until every distinct in-scope part of the request has received a response from a suitable agent.\n\nRespond with a single word — either an agent name or DONE. No other text.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Provide a deep analysis of entering the AI healthcare market.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 4096,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0ee538309f5a1e66006aa82c45b6c887d0bfda991eb1c8dd98",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 410,
+        "completionTokens" : 19,
+        "totalTokens" : 429,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0ee538309f5a1e66006aa82c45b6c887d0bfda991eb1c8dd98",
+        "reasoning_tokens" : 11
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "deep_analysis",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
