@@ -36,6 +36,7 @@ import org.conductoross.conductor.ai.model.LLMResponse;
 import org.conductoross.conductor.ai.model.ToolCall;
 import org.conductoross.conductor.ai.model.ToolSpec;
 import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.recording.LLMCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.service.SchemaService;
@@ -90,6 +91,7 @@ public class LLMHelper {
     private final SchemaService schemaService;
     private final List<DocumentLoader> documentLoaders;
     private final OkHttpClient httpClient;
+    private final LLMCallRecorder recorder;
 
     public LLMHelper(SchemaService schemaService, List<DocumentLoader> documentLoaders) {
         this(schemaService, documentLoaders, AIHttpClients.defaultClient());
@@ -99,9 +101,18 @@ public class LLMHelper {
             SchemaService schemaService,
             List<DocumentLoader> documentLoaders,
             OkHttpClient httpClient) {
+        this(schemaService, documentLoaders, httpClient, null);
+    }
+
+    public LLMHelper(
+            SchemaService schemaService,
+            List<DocumentLoader> documentLoaders,
+            OkHttpClient httpClient,
+            LLMCallRecorder recorder) {
         this.schemaService = schemaService;
         this.documentLoaders = documentLoaders;
         this.httpClient = httpClient;
+        this.recorder = recorder;
     }
 
     public LLMResponse chatComplete(
@@ -111,7 +122,10 @@ public class LLMHelper {
             String payloadStoreLocation,
             Consumer<TokenUsageLog> tokenUsageLogger) {
 
-        ChatModel chatModel = llm.getChatModel();
+        ChatModel chatModel = llm.getChatModel(chatCompletion);
+        if (recorder != null) {
+            chatModel = recorder.wrap(llm, chatCompletion, chatModel);
+        }
         ChatOptions chatOptions = llm.getChatOptions(chatCompletion);
         LLMResponse response = chatComplete(chatModel, chatOptions, chatCompletion);
 
@@ -540,8 +554,16 @@ public class LLMHelper {
         }
     }
 
-    @SneakyThrows
     private Message constructMessage(ChatMessage chatMessage) {
+        Message message = constructMessageContent(chatMessage);
+        if (chatMessage.isLoopHistory()) {
+            message.getMetadata().put(ChatMessage.LOOP_HISTORY, true);
+        }
+        return message;
+    }
+
+    @SneakyThrows
+    private Message constructMessageContent(ChatMessage chatMessage) {
         return switch (chatMessage.getRole()) {
             case user -> getMessage(chatMessage);
             case assistant -> new AssistantMessage(chatMessage.getMessage());
@@ -844,8 +866,7 @@ public class LLMHelper {
      *
      * @param messages The mutable list of messages to check and potentially modify
      */
-    @VisibleForTesting
-    void ensureLastMessageIsFromUser(List<Message> messages) {
+    public static void ensureLastMessageIsFromUser(List<Message> messages) {
         if (messages.isEmpty()) return;
         Message last = messages.getLast();
         if (last instanceof UserMessage) return;
@@ -862,10 +883,18 @@ public class LLMHelper {
                                     + partialText
                                     + "\n\nPlease continue where you left off."
                             : "Please continue where you left off.";
-            messages.add(new UserMessage(continuation));
+            messages.add(
+                    UserMessage.builder()
+                            .text(continuation)
+                            .metadata(assistantMsg.getMetadata())
+                            .build());
         } else {
             // For any other non-user message type (tool_call, system, etc.)
-            messages.add(new UserMessage("Please continue where you left off."));
+            messages.add(
+                    UserMessage.builder()
+                            .text("Please continue where you left off.")
+                            .metadata(last.getMetadata())
+                            .build());
         }
     }
 

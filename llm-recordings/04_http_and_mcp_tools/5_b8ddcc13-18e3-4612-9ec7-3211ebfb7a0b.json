@@ -1,0 +1,198 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You can reverse strings and format reports. When asked to reverse a string, use reverse_string first, then format_report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"isError\":false,\"content\":[{\"parsed\":{\"result\":\"dlrow olleh\"},\"text\":\"{\\\"result\\\": \\\"dlrow olleh\\\"}\",\"type\":\"text\"}]},\"name\":\"call_q6mH81CJRxTbFNHY8hJKw2fw_\"},{\"output\":{\"isError\":false,\"content\":[{\"parsed\":{\"result\":54},\"text\":\"{\\\"result\\\": 54.0}\",\"type\":\"text\"}]},\"name\":\"call_HNWq5ZGOjyFmmU43qTxfCemx_\"},{\"output\":{\"report\":\"=== Reversed String with Sum ===\\ndlrow olleh54\\n================================\"},\"name\":\"call_sqCvdRz7nIdugvaiqPgTAFK2_\"}]\n[/TOOL RESULTS]\n\nReverse the string 'hello world' and add 33 and 21 append the result to that string, then write a report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "string_reverse",
+        "arguments" : {
+          "method" : "string_reverse",
+          "text" : "hello world"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "string_reverse",
+        "value" : {
+          "content" : [ {
+            "type" : "text",
+            "text" : "{\"result\": \"dlrow olleh\"}",
+            "parsed" : {
+              "result" : "dlrow olleh"
+            }
+          } ],
+          "isError" : false
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_1",
+        "name" : "math_add",
+        "arguments" : {
+          "a" : 33,
+          "b" : 21,
+          "method" : "math_add"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_1",
+        "name" : "math_add",
+        "value" : {
+          "content" : [ {
+            "type" : "text",
+            "text" : "{\"result\": 54.0}",
+            "parsed" : {
+              "result" : 54.0
+            }
+          } ],
+          "isError" : false
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_2",
+        "name" : "format_report",
+        "arguments" : {
+          "method" : "format_report",
+          "title" : "Reversed String with Sum",
+          "body" : "dlrow olleh54"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_2",
+        "name" : "format_report",
+        "value" : {
+          "report" : "=== Reversed String with Sum ===\ndlrow olleh54\n================================"
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "format_report",
+      "description" : "Format a title and body into a structured report.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "title", "body" ]
+      }
+    }, {
+      "name" : "math_add",
+      "description" : "Add two numbers and return the sum.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "string_reverse",
+      "description" : "Reverse a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_04fd9ba346a00a47006aa83c7a037c87d09398f51e5f4f5e23",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 551,
+        "completionTokens" : 48,
+        "totalTokens" : 599,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_04fd9ba346a00a47006aa83c7a037c87d09398f51e5f4f5e23",
+        "reasoning_tokens" : 27
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "=== Reversed String with Sum ===  \ndlrow olleh54  \n================================",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

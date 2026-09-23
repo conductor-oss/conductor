@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are the front-line customer support agent. Triage customer requests. If the customer needs a refund, transfer to the refund specialist. If they have a technical issue, transfer to tech support. Use the transfer tools available to you to hand off the conversation.\n\nBased on the work done by the agents above, provide your final response to the user. IMPORTANT: Include ALL details from every agent's response — do NOT summarize or omit code examples, technical specifications, or specific recommendations. Organize the information coherently but preserve completeness.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "I bought a product last week and it arrived damaged. I want my money back.\n\n[support -> refund_specialist]: Customer purchased a product last week, it arrived damaged, and they are requesting a full refund. Please check eligibility, process the refund based on this information, confirm the amount, and provide the expected timeline without asking follow-up questions.\n\n[refund_specialist]: I’m sorry your product arrived damaged. It qualifies for a full refund, including the product purchase price. However, I don’t have access to the payment system in this chat to submit the refund or confirm the exact amount.\n\nOnce processed, refunds typically appear within **5–10 business days**, depending on your payment provider.\n\n[refund_specialist -> support]: Customer's damaged product purchase from last week qualifies for a full refund of the product purchase price. Please process the refund through the payment system and confirm the exact refunded amount. Advise that funds typically appear within 5–10 business days, depending on the payment provider.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0736bd6b094ba999006aa82c0ac0cc87d09f2fd4c3437b6abf",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 317,
+        "completionTokens" : 185,
+        "totalTokens" : 502,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0736bd6b094ba999006aa82c0ac0cc87d09f2fd4c3437b6abf",
+        "reasoning_tokens" : 103
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "I’m sorry your product arrived damaged. The refund specialist confirmed that you qualify for a **full refund of the product purchase price**.\n\nHowever, the payment system isn’t accessible in this chat, so the refund cannot be submitted here and the exact refunded amount cannot be confirmed. Once processed, the funds typically appear within **5–10 business days**, depending on your payment provider.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
