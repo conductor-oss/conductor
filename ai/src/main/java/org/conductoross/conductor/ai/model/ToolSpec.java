@@ -26,7 +26,6 @@ public class ToolSpec {
     private Map<String, Object> inputSchema;
     private Map<String, Object> outputSchema;
 
-
     /**
      * When true, this spec is complete as delivered: pass it to the LLM as-is. Consumers must not
      * resolve, enrich, or replace it by name against integrations, services, or task definitions.

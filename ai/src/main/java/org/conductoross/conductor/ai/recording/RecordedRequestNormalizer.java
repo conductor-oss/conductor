@@ -63,6 +63,9 @@ public final class RecordedRequestNormalizer {
                     "TRACE",
                     "CONNECT");
 
+    /** An omitted tool schema describes an object with no declared parameters. */
+    private static final Map<String, String> DEFAULT_TOOL_INPUT_SCHEMA = Map.of("type", "object");
+
     private static final ObjectMapper MAPPER =
             new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
@@ -114,10 +117,9 @@ public final class RecordedRequestNormalizer {
                         new LLMRecording.Tool(
                                 tool.getName(),
                                 tool.getDescription(),
-                                MAPPER.valueToTree(
-                                        tool.getInputSchema() == null
-                                                ? Map.of("type", "object")
-                                                : tool.getInputSchema())));
+                                tool.getInputSchema() == null
+                                        ? MAPPER.valueToTree(DEFAULT_TOOL_INPUT_SCHEMA)
+                                        : MAPPER.valueToTree(tool.getInputSchema())));
             }
         }
         return new RequestOptions(
@@ -159,7 +161,7 @@ public final class RecordedRequestNormalizer {
                             new LLMRecording.Tool(
                                     definition.name(),
                                     definition.description(),
-                                    parseObject(definition.inputSchema(), "tool input schema")));
+                                    toolInputSchema(definition.inputSchema())));
                 }
             }
         }
@@ -389,6 +391,14 @@ public final class RecordedRequestNormalizer {
                         id, ignored -> new CallIdentity("call_" + callIdentities.size(), name));
         Validate.isTrue(call.name().equals(name), "Tool-call ID was reused for a different tool");
         return call.reference();
+    }
+
+    /** Providers serialize an absent {@code ToolSpec} schema as the JSON literal {@code null}. */
+    private static JsonNode toolInputSchema(String json) {
+        if (StringUtils.isBlank(json) || "null".equals(json.strip())) {
+            return MAPPER.valueToTree(DEFAULT_TOOL_INPUT_SCHEMA);
+        }
+        return parseObject(json, "tool input schema");
     }
 
     private static JsonNode parseObject(String json, String field) {
