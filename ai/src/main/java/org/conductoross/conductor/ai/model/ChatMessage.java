@@ -16,14 +16,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.netflix.conductor.common.config.ObjectMapperProvider;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
+@Slf4j
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChatMessage {
+
+    private static final ObjectMapper mapper = new ObjectMapperProvider().getObjectMapper();
 
     public static final String LOOP_HISTORY = "conductor.loopHistory";
 
@@ -65,5 +72,19 @@ public class ChatMessage {
     public ChatMessage(Role role, ToolCall toolCall) {
         this.role = role;
         this.toolCalls = List.of(toolCall);
+    }
+
+    public void setMessage(Object message) {
+        if (message == null || message instanceof String) {
+            // keep the same behaviour on null and avoid having quotes when it's a String
+            this.message = (String) message;
+            return;
+        }
+        try {
+            this.message = mapper.writeValueAsString(message);
+        } catch (Exception e) {
+            log.error("Failed to deserialize chat message: ", e);
+            this.message = message.toString();
+        }
     }
 }
