@@ -5,6 +5,7 @@ import { useContext, useRef } from "react";
 import { defaultEditorOptions } from "shared/editor";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { configureMonaco } from "utils/monacoUtils/CodeEditorUtils";
+import { tabColumnStyle, tabSurfaceStyle } from "./tabLayout";
 
 type Props = {
   handleEditChanges?: (code: string) => void;
@@ -41,16 +42,15 @@ const EventHandlerEditor = ({
     });
   };
   return (
-    <>
+    <Box sx={{ ...tabSurfaceStyle, height: "100%" }}>
       <Box
         sx={{
-          maxWidth: "820px",
-          flex: "0 0 auto",
+          ...tabColumnStyle,
           position: "relative",
-          width: "100%",
           height: "100%",
-          border: "1px solid #aaaaaa",
-          borderTop: "1px solid rgba(0,0,0,.2)",
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 1,
+          overflow: "hidden",
         }}
       >
         <Box
@@ -99,7 +99,7 @@ const EventHandlerEditor = ({
           )}
         </Box>
       </Box>
-    </>
+    </Box>
   );
 };
 

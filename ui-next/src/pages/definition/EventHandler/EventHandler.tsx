@@ -194,7 +194,10 @@ export default function EventHandlerDefinition() {
                 overflow: "scroll",
                 color: (theme) =>
                   theme.palette?.mode === "dark" ? colors.gray14 : undefined,
-                backgroundColor: (theme) => theme.palette.customBackground.form,
+                // Not `customBackground.form` — that is still grey while the
+                // white-background-form flag is off, which left a grey margin
+                // beside the Code tab's fixed-width editor.
+                backgroundColor: (theme) => theme.palette.background.paper,
               }}
             >
               {isFormMode ? (

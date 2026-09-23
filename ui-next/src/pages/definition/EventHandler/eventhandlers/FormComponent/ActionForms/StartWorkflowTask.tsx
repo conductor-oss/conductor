@@ -1,10 +1,7 @@
 import { Grid } from "@mui/material";
-import IconButton from "components/ui/buttons/MuiIconButton";
-import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { FocusEvent, useMemo } from "react";
@@ -15,7 +12,6 @@ import { IdempotencyStrategyEnum } from "pages/runWorkflow/types";
 import { IdempotencyValuesProp } from "pages/definition/RunWorkflow/state";
 
 export const StartWorkflowActionForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
@@ -69,17 +65,7 @@ export const StartWorkflowActionForm = ({
   };
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Start Workflow
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
       <Grid
         size={{
           xs: 12,
@@ -227,9 +213,6 @@ export const StartWorkflowActionForm = ({
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

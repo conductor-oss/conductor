@@ -1,10 +1,7 @@
 import { Grid } from "@mui/material";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
-import XCloseIcon from "components/icons/XCloseIcon";
-import IconButton from "components/ui/buttons/MuiIconButton";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import MuiTypography from "components/ui/MuiTypography";
 import _isEmpty from "lodash/isEmpty";
 import _isUndefined from "lodash/isUndefined";
 import { AgentSummary } from "pages/agent/types";
@@ -13,7 +10,6 @@ import { useFetch } from "utils/query";
 import { Props } from "./common";
 
 export const StartAgentActionForm = ({
-  onRemove,
   index,
   payload,
   handleChangeAction,
@@ -53,17 +49,7 @@ export const StartAgentActionForm = ({
   const mediaText = (start_agent?.media || []).join("\n");
 
   return (
-    <Grid
-      container
-      spacing={4}
-      my={2}
-      sx={{ width: "100%", position: "relative" }}
-    >
-      <Grid size={12}>
-        <MuiTypography fontWeight={800} fontSize={16}>
-          Start Agent
-        </MuiTypography>
-      </Grid>
+    <Grid container spacing={4} my={2} sx={{ width: "100%" }}>
       <Grid
         size={{
           xs: 12,
@@ -242,9 +228,6 @@ export const StartAgentActionForm = ({
           autoFocusField={false}
         />
       </Grid>
-      <IconButton onClick={onRemove} sx={{ position: "absolute", right: 0 }}>
-        <XCloseIcon size={26} />
-      </IconButton>
     </Grid>
   );
 };

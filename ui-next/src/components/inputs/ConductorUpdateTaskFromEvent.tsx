@@ -34,7 +34,14 @@ export const ConductorUpdateTaskFormEvent = ({
   return (
     <>
       <RadioGroup
-        sx={{ color: "#767676", ">label >span": { fontWeight: 600, mb: 2 } }}
+        sx={{
+          color: "#767676",
+          // The theme's radio padding would push the row down from whatever is
+          // above it, so drop it and space the row from the inputs here.
+          mb: 4,
+          // "& .MuiRadio-root": { py: 0 },
+          // "& .MuiFormControlLabel-label": { fontWeight: 600 },
+        }}
         name="refresh-radio-group-options"
         row
         value={isTaskIdSelected ? "task-id" : "workflow-id-task-ref"}
