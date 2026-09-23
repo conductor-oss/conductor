@@ -212,6 +212,143 @@ class RecordedRequestNormalizerTest {
         assertEquals("dlrow olleh", reversed.value().get("result").textValue());
     }
 
+    @Test
+    void toolResultNumbersMatchByValueAcrossSdks() throws Exception {
+        // Python writes a float with an integral value as 15000.0; Go and JavaScript write
+        // 15000. The same tool run must match the same recording whichever SDK made it.
+        String pythonValue = "{\"account_id\":\"ACC-789\",\"balance\":15000.0}";
+        String goValue = "{\"account_id\":\"ACC-789\",\"balance\":15000}";
+        // The [TOOL RESULTS] text is rendered by the server's JavaScript, which writes 15000
+        // on both sides.
+        String entry = "[{\"name\":\"check_balance\",\"output\":" + goValue + "}]";
+        MockLLM playback =
+                playback(
+                        historyRequest(
+                                List.of("check_balance"), List.of(pythonValue), entry, false));
+        String id = "call_0";
+        Prompt prompt =
+                new Prompt(
+                        List.of(
+                                new UserMessage(summary(entry)),
+                                AssistantMessage.builder()
+                                        .content("{}")
+                                        .toolCalls(
+                                                List.of(
+                                                        new AssistantMessage.ToolCall(
+                                                                id,
+                                                                "function",
+                                                                "check_balance",
+                                                                "{}")))
+                                        .build(),
+                                result(id, "check_balance", goValue)));
+        assertEquals(
+                "saved answer",
+                playback.getChatModel().call(prompt).getResult().getOutput().getText());
+        // A genuinely different value still misses.
+        Prompt other =
+                new Prompt(
+                        List.of(
+                                new UserMessage(summary(entry)),
+                                prompt.getInstructions().get(1),
+                                result(
+                                        id,
+                                        "check_balance",
+                                        "{\"account_id\":\"ACC-789\",\"balance\":15000.5}")));
+        assertThrows(NonRetryableException.class, () -> playback.getChatModel().call(other));
+    }
+
+    @Test
+    void toolCallArgumentNumbersMatchByValue() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        LLMRecording.Request python = argumentRequest(mapper.readTree("{\"amount\":500.0}"));
+        LLMRecording.Request go = argumentRequest(mapper.readTree("{\"amount\":500}"));
+        assertEquals(
+                RecordedRequestNormalizer.normalizeTransportHistory(python),
+                RecordedRequestNormalizer.normalizeTransportHistory(go));
+        assertNotEquals(
+                RecordedRequestNormalizer.normalizeTransportHistory(python),
+                RecordedRequestNormalizer.normalizeTransportHistory(
+                        argumentRequest(mapper.readTree("{\"amount\":500.25}"))));
+    }
+
+    private static LLMRecording.Request argumentRequest(JsonNode arguments) {
+        ObjectMapper mapper = new ObjectMapper();
+        return new LLMRecording.Request(
+                List.of(
+                        new LLMRecording.Message("user", "Transfer money.", List.of(), List.of()),
+                        new LLMRecording.Message(
+                                "assistant",
+                                "{}",
+                                List.of(new LLMRecording.ToolCall("call_0", "transfer", arguments)),
+                                List.of())),
+                List.of(),
+                false,
+                mapper.nullNode(),
+                RecordedRequestNormalizer.options(new ChatCompletion()).generationOptions());
+    }
+
+    @Test
+    void agentToolSummaryPlaysBackAcrossSubWorkflowIds() throws Exception {
+        // An agent tool runs as a sub-workflow. Its structured history keeps only the result,
+        // but the generated [TOOL RESULTS] text carries the sub-workflow's envelope, including
+        // an id that is new on every run. Playback must match across that id.
+        String structured = "{\"result\":\"ECHO_ARGS_RESULT:proof42\"}";
+        String recordedEntry =
+                "[{\"name\":\"go_e2e_skill\",\"output\":" + envelope("run-one") + "}]";
+        MockLLM playback =
+                playback(
+                        historyRequest(
+                                List.of("go_e2e_skill"),
+                                List.of(structured),
+                                recordedEntry,
+                                false));
+        String id = "call_0";
+        Prompt prompt =
+                new Prompt(
+                        List.of(
+                                // The live text names the result by the sub-workflow's task
+                                // reference, not the tool: the fork indexes the call and the
+                                // merge script strips only the last index.
+                                new UserMessage(
+                                        summary(
+                                                "[{\"name\":\"b0da41e6-1a5c-4dc9-8ada-35c94b3adc71_0_0_\",\"output\":"
+                                                        + envelope("run-two")
+                                                        + "}]")),
+                                AssistantMessage.builder()
+                                        .content("{}")
+                                        .toolCalls(
+                                                List.of(
+                                                        new AssistantMessage.ToolCall(
+                                                                id,
+                                                                "function",
+                                                                "go_e2e_skill",
+                                                                "{}")))
+                                        .build(),
+                                result(id, "go_e2e_skill", structured)));
+        assertEquals(
+                "saved answer",
+                playback.getChatModel().call(prompt).getResult().getOutput().getText());
+        // An output with an unknown extra key is not an envelope and is left alone.
+        LLMRecording.Request other =
+                historyRequest(
+                        List.of("go_e2e_skill"),
+                        List.of(structured),
+                        "[{\"name\":\"go_e2e_skill\",\"output\":{\"result\":\"x\",\"extra\":1}}]",
+                        false);
+        assertTrue(
+                RecordedRequestNormalizer.normalizeTransportHistory(other)
+                        .messages()
+                        .getFirst()
+                        .text()
+                        .contains("\"extra\":1"));
+    }
+
+    private static String envelope(String subWorkflowId) {
+        return "{\"result\":\"ECHO_ARGS_RESULT:proof42\",\"subWorkflowId\":\""
+                + subWorkflowId
+                + "\",\"finishReason\":\"STOP\",\"context\":{},\"rejectionReason\":null}";
+    }
+
     @ParameterizedTest
     @ValueSource(
             strings = {
