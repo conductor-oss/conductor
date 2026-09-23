@@ -18,3 +18,9 @@ Requires `curl` and `jq`, both preinstalled on GitHub-hosted Linux runners. Run 
 ```sh
 sh .github/actions/check-playback/check-playback.sh http://localhost:8080/api
 ```
+
+For negative tests such as guardrail rejection, pass `expected-failures-file`:
+a JSON array of execution IDs whose failure the tests explicitly validated.
+Locally, set `CONDUCTOR_PLAYBACK_EXPECTED_FAILURES` to that file. Only `FAILED`
+rows with those exact IDs are accepted; other statuses and unrelated failures
+still fail the check. Omit the file to require every workflow to complete.
