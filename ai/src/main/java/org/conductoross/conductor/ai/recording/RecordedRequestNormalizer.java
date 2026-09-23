@@ -114,7 +114,10 @@ public final class RecordedRequestNormalizer {
                         new LLMRecording.Tool(
                                 tool.getName(),
                                 tool.getDescription(),
-                                MAPPER.valueToTree(tool.getInputSchema())));
+                                MAPPER.valueToTree(
+                                        tool.getInputSchema() == null
+                                                ? Map.of("type", "object")
+                                                : tool.getInputSchema())));
             }
         }
         return new RequestOptions(
