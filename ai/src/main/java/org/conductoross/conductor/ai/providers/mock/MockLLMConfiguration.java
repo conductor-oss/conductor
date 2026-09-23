@@ -15,10 +15,8 @@ package org.conductoross.conductor.ai.providers.mock;
 import java.io.IOException;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
-import org.conductoross.conductor.ai.recording.LLMPlaybackVerifier;
 import org.conductoross.conductor.ai.recording.LLMRecordingProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,11 +31,6 @@ public class MockLLMConfiguration implements ModelConfiguration<MockLLM> {
             throws IOException {
         // Validate during bean creation, before the provider registry's catch-and-log loop.
         this.model = new MockLLM(properties.getRecordingsDirectory(), objectMapper);
-    }
-
-    @Bean
-    public LLMPlaybackVerifier llmPlaybackVerifier() {
-        return model;
     }
 
     @Override

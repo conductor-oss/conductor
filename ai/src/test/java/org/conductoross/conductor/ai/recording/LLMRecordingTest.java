@@ -626,8 +626,7 @@ class LLMRecordingTest {
                                                 List.of(
                                                         new AssistantMessage.ToolCall(
                                                                 id,
-                                                                RecordedRequestNormalizer
-                                                                        .FUNCTION_TOOL_TYPE,
+                                                                "function",
                                                                 WEATHER_TOOL_NAME,
                                                                 "{\"city\":\"Lisbon\"}")))
                                         .build(),

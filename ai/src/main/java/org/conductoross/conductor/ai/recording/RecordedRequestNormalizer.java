@@ -49,7 +49,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
  * Create one instance per request to normalize IDs from its full history.
  */
 public final class RecordedRequestNormalizer {
-    public static final String FUNCTION_TOOL_TYPE = "function";
+    private static final String FUNCTION_TOOL_TYPE = "function";
     private static final Set<String> TRANSPORT_RESULT_NAMES =
             Set.of(
                     "CALL_MCP_TOOL",
@@ -86,10 +86,6 @@ public final class RecordedRequestNormalizer {
     private final Map<String, CallIdentity> callIdentities = new HashMap<>();
 
     private record CallIdentity(String reference, String name) {}
-
-    public LLMRecording.Request normalize(Prompt prompt, ChatCompletion input) {
-        return normalize(prompt, options(input));
-    }
 
     public record RequestOptions(
             boolean jsonOutput,

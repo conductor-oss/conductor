@@ -14,7 +14,6 @@ package org.conductoross.conductor.ai.providers.anthropic;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.conductoross.conductor.ai.AIModel;
 import org.conductoross.conductor.ai.http.AIHttpClients;
@@ -136,11 +135,11 @@ public class Anthropic implements AIModel {
         // Convert Conductor ToolSpecs to Anthropic function tools
         if (input.getTools() != null) {
             for (ToolSpec toolSpec : input.getTools()) {
-                Map<String, Object> schema =
-                        toolSpec.getInputSchema() != null
-                                ? toolSpec.getInputSchema()
-                                : Map.of("type", "object");
-                tools.add(Tool.function(toolSpec.getName(), toolSpec.getDescription(), schema));
+                tools.add(
+                        Tool.function(
+                                toolSpec.getName(),
+                                toolSpec.getDescription(),
+                                toolSpec.getInputSchema()));
             }
         }
 

@@ -110,10 +110,13 @@ class MockLLMResponseValidationTest {
     private void writeRecording(String filename, JsonNode response) throws Exception {
         objectMapper.writeValue(
                 directory.resolve(filename).toFile(),
-                new LLMRecording(LLMRecording.SCHEMA_VERSION, request(), response, null));
+                new LLMRecording(LLMRecording.SCHEMA_VERSION, request(), response));
     }
 
     private static LLMRecording.Request request() {
-        return new RecordedRequestNormalizer().normalize(new Prompt("hello"), new ChatCompletion());
+        return new RecordedRequestNormalizer()
+                .normalize(
+                        new Prompt("hello"),
+                        RecordedRequestNormalizer.options(new ChatCompletion()));
     }
 }

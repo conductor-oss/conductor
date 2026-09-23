@@ -41,7 +41,7 @@ import lombok.Data;
 /** JSON storage for Spring AI responses, including their extensible metadata maps. */
 public final class RecordedResponseJson {
     private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
-    private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper().copy();
+    private static final ObjectMapper MAPPER = new ObjectMapperProvider().getObjectMapper();
 
     public static JsonNode write(ChatResponse response) {
         if (response == null) {

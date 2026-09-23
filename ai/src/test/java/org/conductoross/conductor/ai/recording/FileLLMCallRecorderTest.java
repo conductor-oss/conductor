@@ -60,7 +60,10 @@ class FileLLMCallRecorderTest {
         LLMRecording recording = recording();
         Path path = recorder.writeRecording(recording);
         assertSaved(recording, path);
-        new RecordedRequestNormalizer().normalize(new Prompt("hello"), new ChatCompletion());
+        new RecordedRequestNormalizer()
+                .normalize(
+                        new Prompt("hello"),
+                        RecordedRequestNormalizer.options(new ChatCompletion()));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
         assertFalse(shared.isEnabled(DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
         assertEquals(
@@ -148,7 +151,6 @@ class FileLLMCallRecorderTest {
         LLMRecording actual = objectMapper.readValue(file.toFile(), LLMRecording.class);
         assertEquals(expected.schemaVersion(), actual.schemaVersion());
         assertEquals(expected.request(), actual.request());
-        assertEquals(expected.modelSettings(), actual.modelSettings());
         // Compare persisted JSON values: JSON does not preserve Java integer widths or byte arrays.
         assertEquals(
                 objectMapper.readTree(objectMapper.writeValueAsBytes(expected.response())),
@@ -158,7 +160,9 @@ class FileLLMCallRecorderTest {
     private static LLMRecording recording() {
         RecordedRequestNormalizer normalizer = new RecordedRequestNormalizer();
         LLMRecording.Request request =
-                normalizer.normalize(new Prompt("hello"), new ChatCompletion());
+                normalizer.normalize(
+                        new Prompt("hello"),
+                        RecordedRequestNormalizer.options(new ChatCompletion()));
         ChatResponse response =
                 new ChatResponse(
                         List.of(
@@ -168,6 +172,6 @@ class FileLLMCallRecorderTest {
                                                 .finishReason("STOP")
                                                 .build())));
         return new LLMRecording(
-                LLMRecording.SCHEMA_VERSION, request, RecordedResponseJson.write(response), null);
+                LLMRecording.SCHEMA_VERSION, request, RecordedResponseJson.write(response));
     }
 }

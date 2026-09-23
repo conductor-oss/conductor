@@ -123,9 +123,9 @@ class RecordedResponseJsonTest {
                 .writeRecording(
                         new LLMRecording(
                                 LLMRecording.SCHEMA_VERSION,
-                                normalizer.normalize(prompt, input),
-                                savedResponse,
-                                null));
+                                normalizer.normalize(
+                                        prompt, RecordedRequestNormalizer.options(input)),
+                                savedResponse));
 
         ChatResponse replay = new MockLLM(directory, mapper).getChatModel(input).call(prompt);
         assertEquals("original-response", replay.getMetadata().getId());

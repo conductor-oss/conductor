@@ -866,7 +866,6 @@ public class LLMHelper {
      *
      * @param messages The mutable list of messages to check and potentially modify
      */
-    @VisibleForTesting
     public static void ensureLastMessageIsFromUser(List<Message> messages) {
         if (messages.isEmpty()) return;
         Message last = messages.getLast();

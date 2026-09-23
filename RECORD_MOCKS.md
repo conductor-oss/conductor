@@ -1,74 +1,65 @@
-# Record mocks with the Python SDK
+# Record and replay LLM responses
 
-Use `gpt-4o-mini` for the real run. The server saves the LLM responses automatically.
-
-<!-- TODO: verify against live server -->
+The server records every real LLM response as a JSON file while `conductor.ai.record-mode` is on, and plays those files back instead of calling a provider while `conductor.ai.enable-llm-mocks` is on. No SDK-side code changes are needed for either.
 
 ## 1. Enable recording on the server
 
-Add these settings to the configuration your server loads:
+Add these settings to the configuration your server loads. The paths are relative to the server's working directory; use an absolute path if you prefer.
 
 ```properties
 conductor.integrations.ai.enabled=true
 conductor.ai.record-mode=true
 conductor.ai.enable-llm-mocks=false
-conductor.ai.recordings-directory=/home/nicholascole/IdeaProjects/conductor/llm-recordings/my-agent-run-1
+conductor.ai.recordings-directory=./llm-recordings/my-agent-run-1
 ```
 
-Use a new directory for each recording session. The server creates it for you.
+Use a new directory for each recording session. The server creates it.
 
-Make sure `OPENAI_API_KEY` is set in the server's environment, then restart the server.
+The real provider still needs its credentials. For OpenAI that is `OPENAI_API_KEY` in the server's environment, which `application.properties` maps to `conductor.ai.openai.api-key`. Restart the server after changing the settings.
 
-## 2. Point Python at the server
+## 2. Point the SDK at the server
 
-In the terminal where you run your Python agent:
+For the Python SDK:
 
 ```bash
 export CONDUCTOR_SERVER_URL=http://localhost:8080/api
 ```
 
-Change the address if your server runs elsewhere.
+## 3. Run your agent against a real model
 
-## 3. Run your agent
-
-Set your agent's model to:
+Set the agent's model in `provider/model` form, for example:
 
 ```python
 model="openai/gpt-4o-mini",
 ```
 
-Run your existing Python script normally. Keep its tool workers running and let the agent finish.
-
-Recording makes real OpenAI calls. No special recording code is needed in Python.
+Run the script normally. Keep its tool workers running and let the agent finish. Every LLM response the server receives is written to the recordings directory.
 
 ## 4. Check the recordings
 
-On the server machine, run:
-
 ```bash
-ls -lh /home/nicholascole/IdeaProjects/conductor/llm-recordings/my-agent-run-1/*.json
+ls -lh ./llm-recordings/my-agent-run-1/*.json
 ```
 
-Each returned LLM response creates one JSON file. Keep all the files from your run.
-Avoid unrelated agent runs while recording, because their LLM responses are saved too.
+One file per LLM response, numbered in the order they were saved. Keep all of them. Avoid running unrelated agents while recording, because their responses are saved too.
 
-## 5. Replay later (optional)
+## 5. Replay
 
-Keep the same directory and change these server settings:
+Keep the same directory and flip the two mode settings:
 
 ```properties
 conductor.ai.record-mode=false
 conductor.ai.enable-llm-mocks=true
 ```
 
-Restart the server. In Python, change the agent's model to:
+Restart the server. Change the agent's model to the mock provider:
 
 ```python
 model="mock/mockLLM",
 ```
 
-Run the same agent with the same prompt, instructions, tools, and starting conversation history.
-Use `mock/mockLLM` for every agent you want to replay, regardless of the provider or model used to record it.
+Use `mock/mockLLM` for every agent you replay, whatever provider recorded it. Run the same agent with the same prompt, instructions, tools, and starting conversation history. Tool workers still run, and their outputs must match the recorded run, including any dates or random values, because the server matches each LLM request against the recorded request content.
 
-Tool workers still run. Their outputs must match the recorded run, including any dates or random values.
-Missing matches fail instead of calling OpenAI. Conflicting answers for the same request prevent playback startup.
+A request with no matching recording fails the LLM task with a non-retryable error instead of calling a provider. Two recordings with the same request but different responses stop the server from starting.
+
+Separate per-step output assertions are unnecessary for playback. Request matching already validates the intermediate results that are passed into later LLM calls.

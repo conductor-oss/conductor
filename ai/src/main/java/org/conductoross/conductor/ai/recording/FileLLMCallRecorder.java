@@ -61,9 +61,6 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
             return delegate;
         }
         RecordedRequestNormalizer.RequestOptions options = RecordedRequestNormalizer.options(input);
-        LLMRecording.ModelSettings settings =
-                new LLMRecording.ModelSettings(
-                        input.getModel(), provider.supportsAssistantPrefill());
         return new ChatModel() {
             @Override
             public ChatResponse call(Prompt prompt) {
@@ -75,8 +72,7 @@ public final class FileLLMCallRecorder implements LLMCallRecorder {
                         new LLMRecording(
                                 LLMRecording.SCHEMA_VERSION,
                                 request,
-                                RecordedResponseJson.write(response),
-                                settings);
+                                RecordedResponseJson.write(response));
                 try {
                     writeRecording(saved);
                 } catch (IOException e) {

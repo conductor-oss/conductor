@@ -190,9 +190,7 @@ public class GeminiChatModel implements ChatModel {
             List<GeminiApi.FunctionDeclaration> declarations = new ArrayList<>();
             for (ToolSpec toolSpec : opts.getTools()) {
                 Object schema =
-                        (toolSpec.getInputSchema() != null && !toolSpec.getInputSchema().isEmpty())
-                                ? toolSpec.getInputSchema()
-                                : null;
+                        toolSpec.getInputSchema().isEmpty() ? null : toolSpec.getInputSchema();
                 declarations.add(
                         new GeminiApi.FunctionDeclaration(
                                 toolSpec.getName(),

@@ -23,13 +23,10 @@ import org.springframework.ai.chat.messages.MessageType;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-/** Normalized requests and complete model responses with the original model settings. */
-public record LLMRecording(
-        int schemaVersion, Request request, JsonNode response, ModelSettings modelSettings) {
+/** A normalized request and the complete model response it produced. */
+public record LLMRecording(int schemaVersion, Request request, JsonNode response) {
     private static final String MISMATCHED_MESSAGE_ROLE =
             "Tool calls/results do not match message role";
-
-    public record ModelSettings(String model, boolean supportsAssistantPrefill) {}
 
     public static final int SCHEMA_VERSION = 3;
 

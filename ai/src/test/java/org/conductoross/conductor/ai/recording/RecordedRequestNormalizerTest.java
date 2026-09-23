@@ -46,6 +46,8 @@ import okhttp3.OkHttpClient;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RecordedRequestNormalizerTest {
+    private static final RecordedRequestNormalizer.RequestOptions DEFAULT_OPTIONS =
+            RecordedRequestNormalizer.options(new ChatCompletion());
     private static final String PROMPT_WITH_PROVIDER_ID =
             "  Do not replace provider-a-id in this text.\n";
     private static final String FIRST_TOOL_REFERENCE = "call_0";
@@ -108,8 +110,7 @@ class RecordedRequestNormalizerTest {
                 IllegalArgumentException.class,
                 () ->
                         normalizer.normalize(
-                                new Prompt(call(TOOL_CALL_ID, "{} trailing")),
-                                new ChatCompletion()));
+                                new Prompt(call(TOOL_CALL_ID, "{} trailing")), DEFAULT_OPTIONS));
     }
 
     @Test
@@ -119,8 +120,7 @@ class RecordedRequestNormalizerTest {
                 IllegalArgumentException.class,
                 () ->
                         normalizer.normalize(
-                                new Prompt(result("missing", TOOL_NAME, "{}")),
-                                new ChatCompletion()));
+                                new Prompt(result("missing", TOOL_NAME, "{}")), DEFAULT_OPTIONS));
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
@@ -129,14 +129,14 @@ class RecordedRequestNormalizerTest {
                                         List.of(
                                                 call(TOOL_CALL_ID, "{}"),
                                                 result(TOOL_CALL_ID, "other", "{}"))),
-                                new ChatCompletion()));
+                                DEFAULT_OPTIONS));
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         new RecordedRequestNormalizer()
                                 .normalize(
                                         new Prompt(result("missing", "CALL_MCP_TOOL", "{}")),
-                                        new ChatCompletion()));
+                                        DEFAULT_OPTIONS));
     }
 
     @ParameterizedTest
@@ -160,7 +160,7 @@ class RecordedRequestNormalizerTest {
                         new RecordedRequestNormalizer()
                                 .normalize(
                                         new Prompt(result("missing", resultName, "{}")),
-                                        new ChatCompletion()));
+                                        DEFAULT_OPTIONS));
         AssistantMessage calls =
                 AssistantMessage.builder()
                         .content(StringUtils.EMPTY)
@@ -188,7 +188,7 @@ class RecordedRequestNormalizerTest {
                                                         "reverse-id",
                                                         resultName,
                                                         "{\"result\":\"dlrow olleh\"}"))),
-                                new ChatCompletion());
+                                DEFAULT_OPTIONS);
         LLMRecording.Request named =
                 new RecordedRequestNormalizer()
                         .normalize(
@@ -200,7 +200,7 @@ class RecordedRequestNormalizerTest {
                                                         "reverse-id",
                                                         "string_reverse",
                                                         "{\"result\":\"dlrow olleh\"}"))),
-                                new ChatCompletion());
+                                DEFAULT_OPTIONS);
         assertEquals(named, transport);
         LLMRecording.ToolResult addition = transport.messages().get(1).toolResults().getFirst();
         assertEquals("call_1", addition.reference());
@@ -256,7 +256,7 @@ class RecordedRequestNormalizerTest {
                 "saved answer",
                 playback.getChatModel().call(prompt).getResult().getOutput().getText());
         LLMRecording.Request normalized =
-                new RecordedRequestNormalizer().normalize(prompt, new ChatCompletion());
+                new RecordedRequestNormalizer().normalize(prompt, DEFAULT_OPTIONS);
         assertEquals(RecordedRequestNormalizer.normalizeTransportHistory(legacy), normalized);
         assertEquals(normalized, RecordedRequestNormalizer.normalizeTransportHistory(normalized));
         var changedMessages = new java.util.ArrayList<>(prompt.getInstructions());
@@ -388,8 +388,7 @@ class RecordedRequestNormalizerTest {
                 LLMRecording.SCHEMA_VERSION,
                 request,
                 RecordedResponseJson.write(
-                        new ChatResponse(List.of(new Generation(new AssistantMessage(answer))))),
-                null);
+                        new ChatResponse(List.of(new Generation(new AssistantMessage(answer))))));
     }
 
     private static String summary(String entries) {
@@ -506,7 +505,11 @@ class RecordedRequestNormalizerTest {
         input.setWebSearch(true);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new RecordedRequestNormalizer().normalize(new Prompt("hello"), input));
+                () ->
+                        new RecordedRequestNormalizer()
+                                .normalize(
+                                        new Prompt("hello"),
+                                        RecordedRequestNormalizer.options(input)));
     }
 
     @Test
@@ -522,7 +525,7 @@ class RecordedRequestNormalizerTest {
                                         second,
                                         result(SECOND_CALL_ID, TOOL_NAME, "{\"value\":2}"),
                                         result(FIRST_CALL_ID, TOOL_NAME, "{\"value\":1}"))),
-                        new ChatCompletion());
+                        DEFAULT_OPTIONS);
         assertEquals("call_1", request.messages().get(2).toolResults().getFirst().reference());
         assertEquals(
                 FIRST_TOOL_REFERENCE,
@@ -603,11 +606,12 @@ class RecordedRequestNormalizerTest {
                                         new UserMessage(PROMPT_WITH_PROVIDER_ID),
                                         call(id, LISBON_ARGUMENTS_JSON),
                                         result(id, TOOL_NAME, output))),
-                        new ChatCompletion());
+                        DEFAULT_OPTIONS);
     }
 
     private static LLMRecording.Request normalize(ChatCompletion input) {
-        return new RecordedRequestNormalizer().normalize(new Prompt("hello"), input);
+        return new RecordedRequestNormalizer()
+                .normalize(new Prompt("hello"), RecordedRequestNormalizer.options(input));
     }
 
     private static void assertDifferentRequest(
@@ -631,13 +635,7 @@ class RecordedRequestNormalizerTest {
     private static AssistantMessage call(String id, String args) {
         return AssistantMessage.builder()
                 .content(StringUtils.EMPTY)
-                .toolCalls(
-                        List.of(
-                                new AssistantMessage.ToolCall(
-                                        id,
-                                        RecordedRequestNormalizer.FUNCTION_TOOL_TYPE,
-                                        TOOL_NAME,
-                                        args)))
+                .toolCalls(List.of(new AssistantMessage.ToolCall(id, "function", TOOL_NAME, args)))
                 .build();
     }
 
