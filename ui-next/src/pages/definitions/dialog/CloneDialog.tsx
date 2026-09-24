@@ -11,7 +11,6 @@ import Button from "components/ui/buttons/MuiButton";
 import ReactHookFormDropdown from "components/ui/react-hook-form/ReactHookFormDropdown";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
 import _last from "lodash/last";
-import { useEffect } from "react";
 import {
   DefaultValues,
   Resolver,
@@ -35,7 +34,11 @@ export interface CloneDialogProps {
   title?: string;
   id?: string;
   label?: string;
-  /** Versions to offer as the clone source. Omit for entities without versions. */
+  /**
+   * Versions to offer as the clone source, oldest first. Omit for entities
+   * without versions. Read once when the dialog opens, so a caller that fetches
+   * them must wait for that fetch before mounting.
+   */
   versions?: number[];
 }
 
@@ -74,8 +77,6 @@ const CloneDialog = ({
   const {
     control,
     handleSubmit,
-    getValues,
-    setValue,
     formState: { errors: formErrors, isValid },
   } = useForm<DialogData>({
     mode: "onChange",
@@ -84,14 +85,6 @@ const CloneDialog = ({
     resolver: yupResolver(formSchema) as unknown as Resolver<DialogData>,
     defaultValues,
   });
-
-  // Versions can be fetched per entity, so they may land after the dialog has
-  // opened and react-hook-form has already captured its default values.
-  useEffect(() => {
-    if (isVersioned && getValues("version") == null) {
-      setValue("version", _last(versions), { shouldValidate: true });
-    }
-  }, [versions, isVersioned, getValues, setValue]);
 
   const onSubmit: SubmitHandler<DialogData> = (data) => {
     onSuccess(data);
