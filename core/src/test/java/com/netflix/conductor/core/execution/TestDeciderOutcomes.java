@@ -51,6 +51,7 @@ import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.StartWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SwitchTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -78,6 +79,7 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.FORK_JOIN_DYN
 import static com.netflix.conductor.common.metadata.tasks.TaskType.HTTP;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.JOIN;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SIMPLE;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.START_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.SWITCH;
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DECISION;
@@ -174,6 +176,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(SIMPLE.name(), new SimpleTaskMapper(parametersUtils));
         taskMappers.put(
                 SUB_WORKFLOW.name(), new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put(START_WORKFLOW.name(), new StartWorkflowTaskMapper());
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
         taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
@@ -685,5 +688,82 @@ public class TestDeciderOutcomes {
         assertEquals(
                 Collections.singletonList("odd"),
                 outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+    }
+
+    @Test
+    public void testDynamicForkPassesForkedTaskInputThroughUnresolved() {
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork_children");
+        fork.setWorkflowTaskType(TaskType.FORK_JOIN_DYNAMIC);
+        fork.setTaskReferenceName("fork_children");
+        fork.setDynamicForkTasksParam("tasks");
+        fork.setDynamicForkTasksInputParamName("tasks_input");
+        fork.getInputParameters().put("tasks", "${workflow.input.tasks}");
+        fork.getInputParameters().put("tasks_input", "${workflow.input.tasks_input}");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setName("join_children");
+        join.setType("JOIN");
+        join.setTaskReferenceName("join_children");
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("parent_workflow");
+        def.setSchemaVersion(2);
+        def.getTasks().add(fork);
+        def.getTasks().add(join);
+
+        WorkflowTask startChild = new WorkflowTask();
+        startChild.setName("start_child");
+        startChild.setTaskReferenceName("child_1");
+        startChild.setWorkflowTaskType(TaskType.START_WORKFLOW);
+        // The forked task's own input parameters are still evaluated against the parent.
+        startChild.getInputParameters().put("parentWorkflowId", "${workflow.workflowId}");
+
+        // The fork input carries an inline child definition whose expression must be left for
+        // the child workflow to evaluate against its own input.
+        Map<String, Object> childTask =
+                Map.of(
+                        "name", "do_something",
+                        "taskReferenceName", "do_something",
+                        "type", "SIMPLE",
+                        "inputParameters", Map.of("items", "${workflow.input.items}"));
+        Map<String, Object> startWorkflow =
+                Map.of(
+                        "name", "child_workflow",
+                        "input", Map.of("items", List.of("a", "b")),
+                        "workflowDef",
+                                Map.of("name", "child_workflow", "tasks", List.of(childTask)));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("parent_workflow_id");
+        workflow.setWorkflowDefinition(def);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.getInput().put("items", "parent items");
+        workflow.getInput().put("tasks", List.of(startChild));
+        workflow.getInput()
+                .put("tasks_input", Map.of("child_1", Map.of("startWorkflow", startWorkflow)));
+
+        DeciderOutcome outcome = deciderService.decide(workflow);
+        assertEquals(3, outcome.tasksToBeScheduled.size());
+        TaskModel childStarter = outcome.tasksToBeScheduled.get(1);
+        assertEquals("child_1", childStarter.getReferenceTaskName());
+        assertEquals(startWorkflow, childStarter.getInputData().get("startWorkflow"));
+        assertEquals("parent_workflow_id", childStarter.getInputData().get("parentWorkflowId"));
+
+        // A retry evaluates the forked task's input parameters again.
+        childStarter.setStatus(TaskModel.Status.FAILED);
+        for (TaskModel task : outcome.tasksToBeScheduled) {
+            task.setUpdateTime(System.currentTimeMillis());
+        }
+        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+
+        outcome = deciderService.decide(workflow);
+        TaskModel retried =
+                outcome.tasksToBeScheduled.stream()
+                        .filter(t -> "child_1".equals(t.getReferenceTaskName()))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals(childStarter.getTaskId(), retried.getRetriedTaskId());
+        assertEquals(startWorkflow, retried.getInputData().get("startWorkflow"));
     }
 }
