@@ -38,7 +38,9 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
@@ -374,6 +376,104 @@ public class PostgresMetadataDAOTest {
         assertTrue(names.contains("names_wf_alpha"));
         assertTrue(names.contains("names_wf_beta"));
         assertTrue(names.indexOf("names_wf_alpha") < names.indexOf("names_wf_beta"));
+    }
+
+    @Test
+    public void testGetWorkflowDefListItems() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("listA");
+        def.setVersion(1);
+        def.setDescription("v1 desc");
+        def.setOwnerEmail("a@example.com");
+        def.setCreateTime(1L);
+        WorkflowTask ta = new WorkflowTask();
+        ta.setName("t");
+        ta.setTaskReferenceName("t");
+        ta.setType("SIMPLE");
+        def.setTasks(java.util.List.of(ta));
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(2);
+        def.setDescription("v2 desc");
+        WorkflowTask tb = new WorkflowTask();
+        tb.setName("h");
+        tb.setTaskReferenceName("h");
+        tb.setType("HTTP");
+        def.setTasks(java.util.List.of(ta, tb));
+        metadataDAO.createWorkflowDef(def);
+
+        def.setVersion(3);
+        def.setCreateTime(4200L);
+        def.setInputParameters(java.util.List.of("p1", "p2"));
+        def.setFailureWorkflow("cleanup_flow");
+        java.util.Map<String, Object> out = new java.util.HashMap<>();
+        out.put("res", "${t.output.x}");
+        def.setOutputParameters(out);
+        metadataDAO.createWorkflowDef(def);
+
+        WorkflowDef other = new WorkflowDef();
+        other.setName("listB");
+        other.setVersion(1);
+        other.setCreateTime(1L);
+        other.setTasks(java.util.List.of(ta));
+        metadataDAO.createWorkflowDef(other);
+
+        WorkflowDef agent = new WorkflowDef();
+        agent.setName("listAgent");
+        agent.setVersion(1);
+        agent.setCreateTime(1L);
+        agent.setTasks(java.util.List.of(ta));
+        agent.setMetadata(java.util.Map.of("agent_sdk", "x"));
+        metadataDAO.createWorkflowDef(agent);
+
+        List<WorkflowDefListItem> items = metadataDAO.getWorkflowDefListItems();
+
+        Map<String, WorkflowDefListItem> byName =
+                items.stream().collect(Collectors.toMap(WorkflowDefListItem::getName, i -> i));
+        assertTrue(byName.containsKey("listA"));
+        assertTrue(byName.containsKey("listB"));
+
+        WorkflowDefListItem a = byName.get("listA");
+        assertEquals(3, a.getVersion()); // latest version only
+        assertEquals("v2 desc", a.getDescription());
+        assertEquals(2, a.getTaskCount());
+        assertTrue(a.getTaskTypes().contains("SIMPLE"));
+        assertTrue(a.getTaskTypes().contains("HTTP"));
+        // taskTypes must iterate alphabetically (TreeSet / array_agg ORDER BY),
+        // regardless of task declaration order (SIMPLE was declared before HTTP).
+        assertEquals(
+                java.util.List.of("HTTP", "SIMPLE"), new java.util.ArrayList<>(a.getTaskTypes()));
+        // createTime comes from json_data (Auditable), not the server-side created_on column
+        assertEquals(Long.valueOf(4200L), a.getCreateTime());
+        assertEquals(java.util.List.of("p1", "p2"), a.getInputParameters());
+        assertEquals("${t.output.x}", a.getOutputParameters().get("res"));
+        // failureWorkflow projected from json_data
+        assertEquals("cleanup_flow", a.getFailureWorkflow());
+        // plain (untagged) defs resolve to the "workflow" classifier
+        assertEquals("workflow", a.getClassifier());
+        assertEquals("workflow", byName.get("listB").getClassifier());
+        // agent-stamped metadata resolves to the "agent" classifier
+        assertTrue(byName.containsKey("listAgent"));
+        assertEquals("agent", byName.get("listAgent").getClassifier());
+    }
+
+    @Test
+    public void testGetWorkflowDefListItemsNoTasks() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("noTasksWf");
+        def.setVersion(1);
+        def.setCreateTime(1L);
+        // tasks left unset/empty — exercises the string_agg NULL branch
+        metadataDAO.createWorkflowDef(def);
+
+        List<WorkflowDefListItem> items = metadataDAO.getWorkflowDefListItems();
+        Map<String, WorkflowDefListItem> byName =
+                items.stream().collect(Collectors.toMap(WorkflowDefListItem::getName, i -> i));
+
+        WorkflowDefListItem item = byName.get("noTasksWf");
+        assertNotNull(item);
+        assertEquals(0, item.getTaskCount());
+        assertTrue(item.getTaskTypes().isEmpty());
     }
 
     @Test
