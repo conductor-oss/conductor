@@ -3,7 +3,22 @@ description: "Viewing Workflow Executions — inspect Conductor workflow runs wi
 ---
 # Viewing Workflow Executions
 
-The Conductor UI provides a convenient interface for viewing workflow executions as visual diagrams. You can view workflow executions:
+Use the workflow ID returned at start time to inspect the exact execution.
+
+## Inspect with the CLI
+
+```bash
+conductor workflow status <workflow-id>
+conductor workflow get-execution <workflow-id> -c
+```
+
+The compact execution view should show the workflow name/version, current status, input/output, and every task attempt. For API automation, use `GET /api/workflow/{workflowId}?includeTasks=true`; the [Workflow API](../../../documentation/api/workflow.md) owns the response contract.
+
+Success means the execution's identity, status, and task state match the run you intended to inspect. For failures, record the failed task's `reasonForIncompletion`, retry count, and worker ID before recovery.
+
+## Inspect with the UI
+
+The Conductor UI presents the same durable execution as a diagram and timeline. You can open it:
 
 - In **[Executions](http://localhost:8080/executions)**, after [searching for workflows](searching-workflows.md).
 - In **[Workbench](http://localhost:8080/workbench)** > **Execution History**
@@ -55,3 +70,7 @@ This action opens a left-side panel that contains the following tabs:
 | **Logs**        | View of the log messages logged by the task, if any.                                                                        |
 | **JSON**        | View of the full task execution JSON, including retry count, start time, worker ID, and so on.                                                 |
 | **Definition**  | View of the task configuration used when executing the task.                                                                       |
+
+## Limitations and next step
+
+The execution view reports what Conductor persisted; detailed application logs remain in the worker's logging system unless the worker added task logs. Continue with [Search executions](searching-workflows.md) when the workflow ID is unknown, or [Debug and recover](debugging-workflows.md) for a failed run.

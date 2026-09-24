@@ -17,13 +17,7 @@ vi.mock("utils/query", () => ({
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({
-    label,
-    value,
-    onTextInputChange,
-    helperText,
-    tooltip,
-  }: any) => (
+  default: ({ label, value, onTextInputChange, helperText, tooltip }: any) => (
     <div>
       <textarea
         aria-label={label}
@@ -146,9 +140,7 @@ describe("LLMChatCompleteTaskForm — Instructions field", () => {
   it("renders a tooltip and helper text explaining the Instructions field", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
 
-    expect(
-      screen.getByTestId("Instructions-helperText"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("Instructions-helperText")).toBeInTheDocument();
     expect(screen.getByTestId("Instructions-tooltip")).toBeInTheDocument();
     expect(screen.getByTestId("Instructions-tooltip").textContent).toContain(
       "Instructions",

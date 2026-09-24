@@ -1,37 +1,10 @@
 ---
 description: "Build Conductor workers in Rust with type-safe task definitions and async workflow management."
+source_repo: "https://github.com/conductor-oss/rust-sdk"
+sdk_page: rust
 ---
 
 # Rust SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/rust-sdk](https://github.com/conductor-oss/rust-sdk) | Report issues and contribute on GitHub.
-
-## Start Conductor server
-
-If you don't already have a Conductor server running, pick one:
-
-**Docker Compose (recommended, includes UI):**
-
-```shell
-docker run -p 8080:8080 conductoross/conductor:latest
-```
-The UI will be available at `http://localhost:8080` and the API at `http://localhost:8080/api`
-
-**MacOS / Linux (one-liner):** (If you don't want to use docker, you can install and run the binary directly)
-```shell
-curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
-```
-
-**Conductor CLI**
-```shell
-# Installs conductor cli
-npm install -g @conductor-oss/conductor-cli
-
-# Start the open source conductor server
-conductor server start
-# see conductor server --help for all the available commands
-```
 
 ## Install the SDK
 
@@ -39,7 +12,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-conductor = "0.1"
+conductor = "VERSION"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -47,8 +20,8 @@ For the `#[worker]` macro (similar to Python's `@worker_task` decorator):
 
 ```toml
 [dependencies]
-conductor = { version = "0.1", features = ["macros"] }
-conductor-macros = "0.1"
+conductor = { version = "VERSION", features = ["macros"] }
+conductor-macros = "VERSION"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -156,20 +129,9 @@ Run it:
 cargo run
 ```
 
-> ### Using Orkes Conductor / Remote Server?
-> Export your authentication credentials as well:
->
-> ```shell
-> export CONDUCTOR_SERVER_URL="https://your-cluster.orkesconductor.io/api"
->
-> # If using Orkes Conductor that requires auth key/secret
-> export CONDUCTOR_AUTH_KEY="your-key"
-> export CONDUCTOR_AUTH_SECRET="your-secret"
-> ```
-> See the [rust-sdk README](https://github.com/conductor-oss/rust-sdk) for details.
+See the [rust-sdk README](https://github.com/conductor-oss/rust-sdk) for details.
 
-That's it -- you just defined a worker, built a workflow, and executed it. Open the Conductor UI (default:
-[http://localhost:8080](http://localhost:8080)) to see the execution.
+That's it -- you just defined a worker, built a workflow, and executed it. Open the UI for the Conductor server you configured to inspect the execution.
 
 ## Comprehensive worker example
 
@@ -421,52 +383,6 @@ End-to-end examples covering all APIs for each domain:
 - [Open an issue (Conductor server)](https://github.com/conductor-oss/conductor/issues) for Conductor OSS server issues
 - [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) for community discussion and help
 - [Orkes Community Forum](https://community.orkes.io/) for Q&A
-
-## Frequently Asked Questions
-
-**Is this the same as Netflix Conductor?**
-
-Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https://github.com/Netflix/conductor) repository after Netflix contributed the project to the open-source foundation.
-
-**Is this project actively maintained?**
-
-Yes. [Orkes](https://orkes.io) is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.
-
-**Can Conductor scale to handle my workload?**
-
-Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.
-
-**Does Conductor support durable code execution?**
-
-Yes. Conductor ensures workflows complete reliably even in the face of infrastructure failures, process crashes, or network issues.
-
-**Are workflows always asynchronous?**
-
-No. While Conductor excels at asynchronous orchestration, it also supports synchronous workflow execution when immediate results are required.
-
-**Do I need to use a Conductor-specific framework?**
-
-No. Conductor is language and framework agnostic. Use your preferred language and framework -- the [SDKs](https://github.com/conductor-oss/conductor#conductor-sdks) provide native integration for Python, Java, JavaScript, Go, C#, Rust, and more.
-
-**Can I mix workers written in different languages?**
-
-Yes. A single workflow can have workers written in Rust, Python, Java, Go, or any other supported language. Workers communicate through the Conductor server, not directly with each other.
-
-**What Rust versions are supported?**
-
-Rust 1.75 and above (2021 edition).
-
-**Should I use `async fn` or regular `fn` for my workers?**
-
-Use `async fn` for I/O-bound tasks (API calls, database queries) — the SDK uses async runtime for high concurrency with low overhead. Use regular functions for CPU-bound or blocking work. The SDK handles both patterns efficiently.
-
-**How do I run workers in production?**
-
-Workers are standard Rust applications. Deploy them as you would any Rust application -- in containers, VMs, or bare metal. Workers poll the Conductor server for tasks, so no inbound ports need to be opened.
-
-**How do I test workflows without running a full Conductor server?**
-
-The SDK provides a test framework that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs. See the [rust-sdk examples](https://github.com/conductor-oss/rust-sdk/blob/main/examples/test_workflows.rs) for details.
 
 ## License
 

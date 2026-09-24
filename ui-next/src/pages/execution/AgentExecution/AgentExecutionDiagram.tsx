@@ -1275,7 +1275,9 @@ function buildTurnNodes(
             // txt can be undefined (e.g. a tool-call-only turn with no text
             // response) — `undefined?.slice(...)` is undefined, and
             // `undefined + ""` stringifies to the literal text "undefined".
-            sublabel: txt ? txt.slice(0, 70) + (txt.length > 70 ? "…" : "") : "",
+            sublabel: txt
+              ? txt.slice(0, 70) + (txt.length > 70 ? "…" : "")
+              : "",
             ts: TaskStatus.COMPLETED,
             event: ev,
           });

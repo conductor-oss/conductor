@@ -3,7 +3,28 @@ description: "Learn about workers in Conductor — the code that executes tasks 
 ---
 
 # Workers
-A worker is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
+
+<section class="concept-hero concept-hero--workers">
+  <svg class="concept-hero__graphic" viewBox="0 28 440 145" role="img" aria-label="Conductor queues a task for a worker, which executes it and reports a result">
+    <defs><marker id="worker-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
+    <rect x="14" y="68" width="102" height="54" rx="10" class="concept-hero__node concept-hero__node--accent" />
+    <text x="65" y="91" text-anchor="middle" class="concept-hero__label">Conductor</text>
+    <text x="65" y="108" text-anchor="middle" class="concept-hero__detail">dispatch</text>
+    <path d="M116 95 H161" class="concept-hero__line" marker-end="url(#worker-arrow)" />
+    <rect x="169" y="68" width="99" height="54" rx="10" class="concept-hero__node" />
+    <text x="218" y="91" text-anchor="middle" class="concept-hero__label">Task queue</text>
+    <text x="218" y="108" text-anchor="middle" class="concept-hero__detail">poll</text>
+    <path d="M268 95 H311" class="concept-hero__line" marker-end="url(#worker-arrow)" />
+    <rect x="319" y="36" width="106" height="54" rx="10" class="concept-hero__node" />
+    <text x="372" y="59" text-anchor="middle" class="concept-hero__label">Worker</text>
+    <text x="372" y="76" text-anchor="middle" class="concept-hero__detail">execute</text>
+    <path d="M372 90 V139 H268" class="concept-hero__line" marker-end="url(#worker-arrow)" />
+    <rect x="169" y="123" width="99" height="42" rx="10" class="concept-hero__outcome-box" />
+    <text x="218" y="149" text-anchor="middle" class="concept-hero__label">Result</text>
+  </svg>
+</section>
+
+A **worker** is responsible for executing a task in a workflow. Each type of worker implements the core functionality of each task, handling the logic as defined in its code.
 
 System task workers are managed by Conductor within its JVM, while `SIMPLE` task workers are to be implemented by yourself. These workers can be implemented in any programming language of your choice (Python, Java, JavaScript, C#, Go, and Clojure) and hosted anywhere outside the Conductor environment.
 

@@ -19,7 +19,9 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
+import org.conductoross.conductor.sqlite.dao.SqliteSchemaDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillPackageDAO;
 import org.flywaydb.core.Flyway;
@@ -273,6 +275,14 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn("flywayForPrimaryDb")
+    public SchemaDAO sqliteSchemaDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

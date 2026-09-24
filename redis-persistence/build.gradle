@@ -30,4 +30,5 @@ dependencies {
     testImplementation 'org.springframework:spring-web'
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation project(':conductor-common-persistence').sourceSets.test.output
 }
