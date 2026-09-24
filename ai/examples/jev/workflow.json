@@ -1,0 +1,24 @@
+{
+  "name": "jev_decision_example",
+  "description": "Evaluate state using Jev typed questions through an external worker.",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "example@example.invalid",
+  "timeoutSeconds": 120,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "tasks": [
+    {
+      "name": "jev_decision",
+      "taskReferenceName": "decision",
+      "type": "SIMPLE",
+      "inputParameters": {
+        "model": "${workflow.input.model}",
+        "state": "${workflow.input.state}",
+        "questions": "${workflow.input.questions}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "decision": "${decision.output}"
+  }
+}
