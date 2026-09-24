@@ -60,7 +60,7 @@ nav:
     - Agent Concepts: devguide/concepts/agents.md
     - Durable Agents: devguide/ai/durable-agents.md
     - Why Conductor for Agents: devguide/ai/why-conductor.md
-    - Your First Agent: /conductor/quickstart/first-agent.html?nav=agents-ai
+    - Your First Agent: quickstart/first-agent.html?nav=agents-ai
     - Build:
       - Conductor Agents: devguide/ai/conductor-agents.md
       - Framework Agents: devguide/ai/agent-framework-recipes.md

@@ -321,7 +321,7 @@ Conductor supports restart, rerun, and retry controls. Execution-history retenti
 <details>
 <summary><strong>Can Conductor orchestrate AI agents and LLMs?</strong></summary>
 
-Yes. Conductor provides native LLM tasks, MCP tool discovery and calls, human approval, and vector workflows for RAG. See the maintained <a href="https://docs.conductor-oss.org/conductor/devguide/ai/llm-orchestration.html">LLM orchestration guide</a> for provider and capability details.
+Yes. Conductor provides native LLM tasks, MCP tool discovery and calls, human approval, and vector workflows for RAG. See the maintained <a href="https://docs.conductor-oss.org/devguide/ai/llm-orchestration.html">LLM orchestration guide</a> for provider and capability details.
 </details>
 
 <details>
@@ -369,7 +369,7 @@ You gain flexibility. Because workflows are JSON, LLMs can generate and modify t
 <details>
 <summary><strong>What does Conductor provide for adaptive agents?</strong></summary>
 
-Conductor combines native AI and MCP tasks with durable loops, branches, fan-out, approval, retry, cancellation, and an inspectable execution history. Start with the <a href="https://docs.conductor-oss.org/conductor/devguide/ai/dynamic-workflows.html">governed adaptive graph</a>.
+Conductor combines native AI and MCP tasks with durable loops, branches, fan-out, approval, retry, cancellation, and an inspectable execution history. Start with the <a href="https://docs.conductor-oss.org/devguide/ai/dynamic-workflows.html">governed adaptive graph</a>.
 </details>
 
 <details>
