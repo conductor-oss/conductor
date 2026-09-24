@@ -4,12 +4,18 @@ import argparse
 import json
 import math
 import os
+import signal
 from pathlib import Path
 import time
 from typing import Protocol
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+from conductor.client.automator.task_handler import TaskHandler
+from conductor.client.configuration.configuration import Configuration
+from conductor.client.http.models.task_result_status import TaskResultStatus
+from conductor.client.worker.worker_interface import WorkerInterface
 
 
 class ConnectionError(ValueError):
@@ -41,8 +47,7 @@ def request(url, payload=None, token=None):
             try:
                 return json.loads(raw)
             except (ValueError, UnicodeError):
-                # Conductor's task-update endpoint returns a plain task ID.
-                return raw.decode(errors="replace")
+                raise ConnectionError("invalid_json_response") from None
     except HTTPError as error:
         code = error.code
         error.close()
@@ -147,27 +152,44 @@ class JevClient:
         }
 
 
-def work_once(api, provider: DecisionProvider, worker_id, domain=None):
+class JevWorker(WorkerInterface):
+    def __init__(self, provider: DecisionProvider, worker_id="jev-worker", domain=None):
+        super().__init__("jev_decision")
+        self.provider = provider
+        self.worker_id = worker_id
+        self.domain = domain
+        self.poll_interval = 1000
+
+    def get_identity(self):
+        return self.worker_id
+
+    def execute(self, task):
+        # Return typed, sanitized failures; the SDK owns polling and result delivery.
+        result = self.get_task_result_from_task(task)
+        result.output_data = {}
+        try:
+            result.output_data = self.provider.decide(task.input_data)
+            result.status = TaskResultStatus.COMPLETED
+        except ConnectionError as error:
+            result.status = TaskResultStatus.FAILED
+            result.reason_for_incompletion = str(error)
+        except (ValueError, TypeError, KeyError):
+            result.status = TaskResultStatus.FAILED_WITH_TERMINAL_ERROR
+            result.reason_for_incompletion = "invalid_decision_input_or_response"
+        return result
+
+
+def conductor_configuration(api=None):
+    configuration = Configuration(server_api_url=api, log_level="WARNING")
     token = os.environ.get("CONDUCTOR_AUTH_TOKEN")
-    query = {"workerid": worker_id}
-    if domain:
-        query["domain"] = domain
-    task = request(api + "/tasks/poll/jev_decision?" + urlencode(query), token=token)
-    if not task:
-        return False
-    try:
-        output = provider.decide(task.get("inputData"))
-        status, reason = "COMPLETED", None
-    except ConnectionError as error:
-        output, status, reason = {}, "FAILED", str(error)
-    except (ValueError, TypeError, KeyError):
-        output, status, reason = {}, "FAILED_WITH_TERMINAL_ERROR", "invalid_decision_input_or_response"
-    request(api + "/tasks", {
-        "workflowInstanceId": task["workflowInstanceId"], "taskId": task["taskId"],
-        "workerId": worker_id, "status": status, "outputData": output,
-        "reasonForIncompletion": reason,
-    }, token)
-    return True
+    if token:
+        configuration.update_token(token)
+    return configuration
+
+
+def stop_worker(signum, frame):
+    # Unwind the TaskHandler context on SIGTERM as well as Ctrl-C.
+    raise KeyboardInterrupt
 
 
 def main():
@@ -176,13 +198,10 @@ def main():
     parser.add_argument("--route", choices=tuple(JevClient.ENDPOINTS), default="openrouter")
     parser.add_argument("--key-file", type=Path)
     parser.add_argument("--request", type=Path, default=Path(__file__).with_name("request.json"))
-    parser.add_argument("--api", default="http://localhost:8080/api")
+    parser.add_argument("--api", help="Conductor API URL; otherwise use SDK environment/defaults")
     parser.add_argument("--worker-id", default="jev-worker")
     parser.add_argument("--domain")
-    parser.add_argument("--polls", type=int, default=60)
     args = parser.parse_args()
-    if not 1 <= args.polls <= 3600:
-        parser.error("polls must be between 1 and 3600")
     try:
         key = (args.key_file.read_text().strip() if args.key_file else os.environ.get(
             "OPENROUTER_API_KEY" if args.route == "openrouter" else "TYPESAFE_API_KEY"))
@@ -191,9 +210,16 @@ def main():
             result = client.decide(json.loads(args.request.read_text()))
             print(json.dumps(result, indent=2))
         else:
-            for _ in range(args.polls):
-                work_once(args.api.rstrip("/"), client, args.worker_id, args.domain)
-                time.sleep(1)
+            signal.signal(signal.SIGTERM, stop_worker)
+            with TaskHandler(
+                workers=[JevWorker(client, args.worker_id, args.domain)],
+                configuration=conductor_configuration(args.api),
+                scan_for_annotated_workers=False,
+            ) as handler:
+                handler.start_processes()
+                handler.join_processes()
+    except KeyboardInterrupt:
+        pass
     except (ValueError, OSError, TypeError, KeyError):
         # Do not print file contents, authentication headers, or provider response bodies.
         parser.exit(1, "Jev operation failed; check credentials, request format, endpoint access, and Conductor task status.\n")

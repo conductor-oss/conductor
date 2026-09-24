@@ -5,9 +5,19 @@ It supports Choice, Score, and Noul questions through OpenRouter or TypeSafe,
 with an optional Vercel Connect credential bridge. It uses a standard `SIMPLE`
 task and does not require changes to Conductor's server or chat providers.
 
-Python 3.10+ is sufficient for the worker; it uses only the standard library.
-Run commands below from this directory with a local Conductor server available
-at `http://localhost:8080/api`.
+The worker uses Python 3.10+ and `conductor-python` 2.0.0. Run commands below
+from this directory with a local Conductor server available at
+`http://localhost:8080/api`.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+```
+
+`JevWorker` implements the SDK's `WorkerInterface`; `TaskHandler` manages its
+worker process, polling, and task-result delivery. The custom HTTP client is
+used only for Jev's System One endpoint.
 
 ## Connect through OpenRouter
 
@@ -45,7 +55,7 @@ paths and bodies were checked against `MetadataResource`, `TaskResource`, and
 Start the worker in one terminal:
 
 ```bash
-python3 worker.py worker --key-file /path/to/openrouter-key.txt --polls 60
+python3 worker.py worker --key-file /path/to/openrouter-key.txt
 ```
 
 Submit the example in another terminal:
@@ -60,13 +70,22 @@ The start response is the workflow ID. Inspect its execution in Conductor;
 request latency. The worker validates answer types and allowed choices before
 completing the task. A typed response is not proof that the decision is correct.
 
-The worker defaults to 60 polling rounds; `--polls` accepts 1–3600. Task retries
+The worker runs until Ctrl-C or SIGTERM, which closes the SDK's `TaskHandler`.
+It uses one execution thread and a one-second polling interval. Task retries
 are zero, the provider request timeout is 20 seconds, and the workflow timeout is
-120 seconds. The worker exits on a task-update transport failure rather than
-silently retrying inference after an ambiguous result. Set `--api`, `--worker-id`,
-and `--domain` as needed. For bearer-authenticated Conductor servers, set
-`CONDUCTOR_AUTH_TOKEN` for the worker and configure authentication on registration
-and start requests separately. Use TLS for remote servers carrying credentials.
+120 seconds. The SDK handles Conductor transport retries and result delivery;
+Jev calls have no automatic HTTP retries. This is not an exactly-once inference
+guarantee: a worker crash or explicit workflow retry can cause another call.
+
+Set `--api`, `--worker-id`, and `--domain` as needed. Without `--api`, SDK
+configuration reads `CONDUCTOR_SERVER_URL`, defaulting to
+`http://localhost:8080/api`. Authentication supports the SDK's
+`CONDUCTOR_AUTH_KEY` / `CONDUCTOR_AUTH_SECRET` environment variables or an
+existing token supplied through `CONDUCTOR_AUTH_TOKEN` (sent by the SDK in
+`X-Authorization`). Configure
+authentication on registration and start requests separately. Use TLS for remote
+servers carrying credentials. SDK logging is set to WARNING to avoid logging
+task payloads at DEBUG level.
 
 ## Direct TypeSafe access
 
@@ -98,6 +117,9 @@ npm ci --ignore-scripts
 node --env-file=.env.local with-vercel.mjs worker
 ```
 
+Keep the Python virtual environment activated when running the bridge so its
+`python3` child has the Conductor SDK installed.
+
 The bridge uses `@vercel/connect` version 2.3.2, obtains one token, and passes it
 to the Python worker's environment as `TYPESAFE_API_KEY`. It never prints the
 token. Restart with fresh OIDC access when credentials expire. Select a
@@ -112,7 +134,8 @@ node --check with-vercel.mjs
 ```
 
 Tests use a real loopback HTTP server to check requests, bearer authentication,
-typed responses, error redaction, redirect rejection, and Conductor task updates.
+typed responses, error redaction, redirect rejection, and the real SDK
+`TaskRunner` polling and reporting completed, failed, and terminally failed tasks.
 They make no paid model requests.
 
 - [TypeSafe API quickstart](https://docs.typesafe.ai/introduction/quickstart)
