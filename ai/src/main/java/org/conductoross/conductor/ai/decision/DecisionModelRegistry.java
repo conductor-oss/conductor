@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-/** Immutable provider registry; provider-specific configuration stays with each implementation. */
+/** Registered decision providers. */
 @Component
 public class DecisionModelRegistry {
     private final Map<String, DecisionModel> providers;

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Bound server settings. Deliberately has no generated toString containing the API key. */
+/** Server configuration for Jev. */
 @Getter
 @Setter
 @Component

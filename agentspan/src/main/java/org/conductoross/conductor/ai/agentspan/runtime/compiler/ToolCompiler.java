@@ -468,8 +468,7 @@ public class ToolCompiler {
                     mediaEntry.put("defaults", cfgCopy);
                     mediaConfig.put(tool.getName(), mediaEntry);
                 } else if ("decision_model".equals(toolType)) {
-                    // Reuse the configured model-task dispatch channel; credentials never
-                    // enter this map and generated arguments cannot override routing.
+                    // Decision tools use the shared model-task dispatch map.
                     ragConfig.put(
                             tool.getName(),
                             Map.of(
@@ -1673,8 +1672,7 @@ public class ToolCompiler {
                     mediaEntry.put("defaults", cfgCopy);
                     mediaConfig.put(tool.getName(), mediaEntry);
                 } else if ("decision_model".equals(toolType)) {
-                    // Reuse the configured model-task dispatch channel; credentials never
-                    // enter this map and generated arguments cannot override routing.
+                    // Decision tools use the shared model-task dispatch map.
                     ragConfig.put(
                             tool.getName(),
                             Map.of(

@@ -14,6 +14,5 @@ package org.conductoross.conductor.ai.decision;
 
 import java.util.Map;
 
-/** Credentials and endpoints are server configuration, never decision input. */
 public record DecisionRequest(
         String provider, String model, String state, Map<String, DecisionQuestion> questions) {}

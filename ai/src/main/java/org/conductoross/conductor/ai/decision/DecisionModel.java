@@ -12,7 +12,7 @@
  */
 package org.conductoross.conductor.ai.decision;
 
-/** A provider of bounded, typed decisions, independent of chat completion. */
+/** Decision provider. The worker validates requests and results. */
 public interface DecisionModel {
     String provider();
 

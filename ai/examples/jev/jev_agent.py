@@ -13,19 +13,26 @@ class SupportAgent:
     @agent(
         name="jev_decision_agent",
         max_turns=3,
-        tools=[DecisionModelTool(
-            name="choose_department",
-            description="Use Jev to decide which team should handle the observed support issue.",
-            provider="jev",
-            model="jev-1.13",
-            questions={"department": {
-                "type": "choice",
-                "instructions": "Which team should handle this issue?",
-                "choices": {"billing": "Payment and invoice issues",
-                            "technical": "Bugs and software issues", "other": "Other requests"},
-            }},
-            max_calls=1,
-        )],
+        tools=[
+            DecisionModelTool(
+                name="choose_department",
+                description="Use Jev to decide which team should handle the observed support issue.",
+                provider="jev",
+                model="jev-1.13",
+                questions={
+                    "department": {
+                        "type": "choice",
+                        "instructions": "Which team should handle this issue?",
+                        "choices": {
+                            "billing": "Payment and invoice issues",
+                            "technical": "Bugs and software issues",
+                            "other": "Other requests",
+                        },
+                    }
+                },
+                max_calls=1,
+            )
+        ],
     )
     def assistant(self):
         """Call choose_department once with the supplied state unchanged.
@@ -60,8 +67,16 @@ def main():
         if not isinstance(state, str) or not state.strip():
             parser.error("request must contain nonempty text state")
         result = runtime.run(definition, state, timeout=120)
-        print(json.dumps({"executionId": result.execution_id, "status": result.status,
-                          "output": result.output}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "executionId": result.execution_id,
+                    "status": result.status,
+                    "output": result.output,
+                },
+                indent=2,
+            )
+        )
         if not result.is_success:
             parser.exit(1, "Agent failed; inspect its Conductor execution.\n")
 

@@ -17,7 +17,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/** Provider-neutral answers and reported usage. Unknown costs remain null, never zero. */
+/** Decision answers and usage. Unreported usage fields remain null. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record DecisionResult(
         String model, Map<String, Answer> answers, Usage usage, long latencyMs, String requestId) {
