@@ -49,6 +49,20 @@ Here is the task configuration for a Kafka Publish task.
 }
 ```
 
+## Producer configuration
+
+Kafka producer settings that are not part of `kafka_request`, such as the security settings of a secured cluster, are configured on the Conductor server beneath `conductor.tasks.kafka-publish.producer`. Each key after that prefix is a Kafka producer configuration name, and the settings apply to every producer the Kafka Publish task creates, so credentials stay out of workflow definitions and task input.
+
+For example, to publish to a cluster that requires SASL/PLAIN authentication over `SASL_PLAINTEXT`:
+
+```properties
+conductor.tasks.kafka-publish.producer.security.protocol=SASL_PLAINTEXT
+conductor.tasks.kafka-publish.producer.sasl.mechanism=PLAIN
+conductor.tasks.kafka-publish.producer.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="<username>" password="<password>";
+```
+
+The task always sets `bootstrap.servers`, `key.serializer`, `value.serializer`, `request.timeout.ms`, and `max.block.ms` itself, so those keys are ignored here. Use `kafka_request` for the bootstrap servers, key serializer, and per-task timeouts. The server-wide timeout defaults are `conductor.tasks.kafka-publish.requestTimeout` (default `100ms`) and `conductor.tasks.kafka-publish.maxBlock` (default `500ms`).
+
 ## Output
 
 The task transitions to COMPLETED if the message has been successfully published to the Kafka queue, or marked as FAILED if the message could not be published.
