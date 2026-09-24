@@ -62,8 +62,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
             Monitors.recordDaoRequests(
                     CLASS_NAME, "addTaskToLimit", task.getTaskType(), task.getWorkflowType());
             String taskId = task.getTaskId();
-            String taskDefName = task.getTaskDefName();
-            String keyName = createKeyName(taskDefName);
+            String keyName = createKeyName(task);
 
             stringRedisTemplate.opsForSet().add(keyName, taskId);
 
@@ -90,9 +89,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
             Monitors.recordDaoRequests(
                     CLASS_NAME, "removeTaskFromLimit", task.getTaskType(), task.getWorkflowType());
             String taskId = task.getTaskId();
-            String taskDefName = task.getTaskDefName();
-
-            String keyName = createKeyName(taskDefName);
+            String keyName = createKeyName(task);
 
             stringRedisTemplate.opsForSet().remove(keyName, taskId);
 
@@ -131,8 +128,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
             Monitors.recordDaoRequests(
                     CLASS_NAME, "exceedsLimit", task.getTaskType(), task.getWorkflowType());
             String taskId = task.getTaskId();
-            String taskDefName = task.getTaskDefName();
-            String keyName = createKeyName(taskDefName);
+            String keyName = createKeyName(task);
 
             boolean isMember =
                     ObjectUtils.defaultIfNull(
@@ -160,7 +156,7 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
         }
     }
 
-    private String createKeyName(String taskDefName) {
+    private String createKeyName(TaskModel task) {
         StringBuilder builder = new StringBuilder();
         String namespace = properties.getNamespace();
 
@@ -168,6 +164,16 @@ public class RedisConcurrentExecutionLimitDAO implements ConcurrentExecutionLimi
             builder.append(namespace).append(':');
         }
 
-        return builder.append(taskDefName).toString();
+        builder.append(task.getTaskDefName());
+
+        // DOMAIN scope keeps a separate set per domain; TASK_DEF keeps the legacy per-name key.
+        TaskDef taskDef = task.getTaskDefinition().orElse(null);
+        if (taskDef != null
+                && taskDef.getConcurrencyLimitScope() == TaskDef.ConcurrencyLimitScope.DOMAIN
+                && task.getDomain() != null) {
+            builder.append(':').append(task.getDomain());
+        }
+
+        return builder.toString();
     }
 }
