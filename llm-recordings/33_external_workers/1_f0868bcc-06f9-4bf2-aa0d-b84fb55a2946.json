@@ -1,0 +1,124 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a customer support agent. Use the available tools to look up customers, check inventory, process orders, and format responses for the customer.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Customer C-1234 wants to cancel order ORD-5678. Look up the customer, check if we have the product in stock, and process the cancellation.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "format_response",
+      "description" : "Format a data dictionary into a human-readable string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    }, {
+      "name" : "get_customer",
+      "description" : "Look up customer details from the CRM system.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "customer_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "customer_id" ]
+      }
+    }, {
+      "name" : "check_inventory",
+      "description" : "Check product availability in a warehouse.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "product_id" : {
+            "type" : "string"
+          },
+          "warehouse" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "product_id" ]
+      }
+    }, {
+      "name" : "process_order",
+      "description" : "Process a customer order. Actions: refund, cancel, update.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id", "action" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_07cbd9b0a64f2933006aa83038dec487d0b8b798fb8755bb68",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 201,
+        "completionTokens" : 64,
+        "totalTokens" : 265,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_07cbd9b0a64f2933006aa83038dec487d0b8b798fb8755bb68",
+        "reasoning_tokens" : 40
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_ok1w9nzzDThwhh8xQtJQZQ0F",
+          "type" : "function",
+          "name" : "get_customer",
+          "arguments" : "{\"customer_id\":\"C-1234\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

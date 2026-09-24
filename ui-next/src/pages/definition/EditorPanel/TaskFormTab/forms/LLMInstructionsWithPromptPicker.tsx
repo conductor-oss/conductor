@@ -21,7 +21,7 @@ import { ConductorAutocompleteVariables } from "components/FlatMapForm/Conductor
 import MuiTypography from "components/ui/MuiTypography";
 import PromptVariables from "components/PromptVariables";
 import { path as _path } from "lodash/fp";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { TaskDef } from "types";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
 import { updateField } from "utils/fieldHelpers";
@@ -47,6 +47,10 @@ export const LLMInstructionsWithPromptPicker = ({
     actor,
     (state) => state.context.promptNameOptions,
   );
+  const promptNamesFetched = useSelector(
+    actor,
+    (state) => state.context.promptNamesFetched,
+  );
   const promptOptions = useMemo(
     () => promptNames.map(({ name }: { name: string }) => name),
     [promptNames],
@@ -60,20 +64,21 @@ export const LLMInstructionsWithPromptPicker = ({
   ) as boolean;
   const currentVariables = task.inputParameters?.promptVariables || {};
 
-  const isUsingPrompt =
-    !allowRawPrompts && promptOptions.includes(instructions);
-  const [customExpanded, setCustomExpanded] = useState(false);
-
-  // Auto-expand custom instructions when no prompt registry or using raw text
-  useEffect(() => {
-    if (promptOptions.length === 0 || (instructions && !isUsingPrompt)) {
-      setCustomExpanded(true);
-    }
-  }, [promptOptions.length, instructions, isUsingPrompt]);
+  // The server resolves `instructions` as a registered prompt name unless
+  // allowRawPrompts is set, so the flag — not the lazily fetched option list —
+  // decides which control owns the value.
+  const isUsingPrompt = !!instructions && allowRawPrompts !== true;
+  const defaultCustomExpanded =
+    !isUsingPrompt &&
+    (!!instructions || (promptNamesFetched && promptOptions.length === 0));
+  const [customExpandedOverride, setCustomExpandedOverride] = useState<
+    boolean | undefined
+  >(undefined);
+  const customExpanded = customExpandedOverride ?? defaultCustomExpanded;
 
   const handleSelectPrompt = useCallback(
     (value: unknown) => {
-      setCustomExpanded(false);
+      setCustomExpandedOverride(false);
       actor.send({
         type: LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS,
         task: updateField(
@@ -97,8 +102,8 @@ export const LLMInstructionsWithPromptPicker = ({
   );
 
   const toggleCustom = useCallback(() => {
-    setCustomExpanded((prev) => !prev);
-  }, []);
+    setCustomExpandedOverride((prev) => !(prev ?? defaultCustomExpanded));
+  }, [defaultCustomExpanded]);
 
   return (
     <Grid container spacing={3} sx={{ width: "100%" }}>

@@ -101,6 +101,11 @@ public interface AIModel {
      */
     ChatModel getChatModel();
 
+    /** Request-scoped model selection, used by playback to capture output constraints. */
+    default ChatModel getChatModel(ChatCompletion input) {
+        return getChatModel();
+    }
+
     /**
      * @param input request to do chat completion
      * @return Options
