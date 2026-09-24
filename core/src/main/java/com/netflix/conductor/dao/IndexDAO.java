@@ -247,4 +247,18 @@ public interface IndexDAO {
      * @return Number of matches for the query
      */
     long getWorkflowCount(String query, String freeText);
+
+    /**
+     * Report whether the underlying index backend is healthy enough to accept a bulk rebuild.
+     *
+     * <p>Implementations should surface conditions that would cause bulk ingest to fail or worsen
+     * (e.g. cluster status not green, disk watermarks exceeded). Non-clustered backends that cannot
+     * fail in this way should return true. Default returns true so existing implementations remain
+     * compatible until they explicitly opt in.
+     *
+     * @return true if the backend is ready for heavy write load, false otherwise
+     */
+    default boolean isClusterHealthy() {
+        return true;
+    }
 }
