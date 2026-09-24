@@ -1,0 +1,98 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a customer support assistant. Use the available tools to answer questions about orders and customers. Always include all details from the tool results in your response.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "I need a full summary: What's the status of order ORD-42, and what's the profile for customer CUST-7?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "get_order_status",
+      "description" : "Look up the current status of an order.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id" ]
+      }
+    }, {
+      "name" : "get_customer_info",
+      "description" : "Retrieve customer details including payment info on file.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "customer_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "customer_id" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0d768db236b0de88006aa82b696ab887d0af86ef6118c52d29",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 133,
+        "completionTokens" : 69,
+        "totalTokens" : 202,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0d768db236b0de88006aa82b696ab887d0af86ef6118c52d29",
+        "reasoning_tokens" : 10
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_me6cUsC4UzO2nwDtvv8hZwi9",
+          "type" : "function",
+          "name" : "get_order_status",
+          "arguments" : "{\"order_id\":\"ORD-42\"}"
+        }, {
+          "id" : "call_nzwEi3szcvnGyk2HMaGH8WVn",
+          "type" : "function",
+          "name" : "get_customer_info",
+          "arguments" : "{\"customer_id\":\"CUST-7\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
