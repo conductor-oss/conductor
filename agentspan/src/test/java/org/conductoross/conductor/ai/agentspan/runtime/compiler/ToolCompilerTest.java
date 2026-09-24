@@ -599,4 +599,20 @@ class ToolCompilerTest {
         assertThat(script).contains("\"url\":\"https://api.weather.com\"");
         assertThat(script).doesNotContain("\"weather\":{\"pathTemplate\"");
     }
+
+    @Test
+    void decisionToolIsServerExecutedAndRejectsCredentialsInConfig() {
+        ToolConfig tool =
+                ToolConfig.builder()
+                        .name("decide")
+                        .toolType("decision_model")
+                        .config(Map.of("provider", "jev", "model", "v1"))
+                        .build();
+        assertThat(new ToolCompiler().compileToolSpecs(List.of(tool)).get(0))
+                .containsEntry("type", "DECISION_MODEL");
+        assertThat(ToolCompiler.COMPILED_TOOL_TASK_TYPES).contains("DECISION_MODEL");
+        tool.setConfig(Map.of("provider", "jev", "model", "v1", "apiKey", "secret"));
+        assertThatThrownBy(() -> new ToolCompiler().compileToolSpecs(List.of(tool)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

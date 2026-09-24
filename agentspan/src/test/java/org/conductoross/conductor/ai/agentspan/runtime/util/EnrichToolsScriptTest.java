@@ -669,4 +669,43 @@ class EnrichToolsScriptTest {
                         httpCfg, "{}", "{}", "{}", "{}", "{}", "{\"weather\": true}");
         assertThat(dynScript).doesNotContain("${workflow.secrets.");
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void decisionModelRoutingPinsProviderAndQuestionsInBothDispatchPaths() throws Exception {
+        String cfg =
+                """
+            {"decide":{"taskType":"DECISION_MODEL","defaults":{"provider":"jev","model":"v1",
+            "questions":{"ready":{"type":"boolean","instructions":"Ready?"}}}}}
+            """;
+        String known = "{\"decide\":true}";
+        List<String> scripts =
+                List.of(
+                        JavaScriptBuilder.enrichToolsScript(
+                                "{}", "{}", "{}", "{}", cfg, "{}", "{}", "{}", known),
+                        JavaScriptBuilder.enrichToolsScriptDynamic(
+                                "{}", "{}", "{}", cfg, "{}", "{}", known));
+        for (String script : scripts) {
+            String wrapped =
+                    """
+                var $ = {toolCalls:[{name:'decide',inputParameters:{state:'Observed state',
+                provider:'attacker',model:'wrong',questions:{},apiKey:'do-not-forward'}}],
+                agentState:{},userPrompt:'test',mcpConfig:{},apiConfig:{}}; JSON.stringify(
+                """
+                            + script
+                            + ");";
+            Map<String, Object> result =
+                    MAPPER.readValue(graalCtx.eval("js", wrapped).asString(), Map.class);
+            Map<String, Object> task =
+                    ((List<Map<String, Object>>) result.get("dynamicTasks")).get(0);
+            assertThat(task).containsEntry("type", "DECISION_MODEL").containsEntry("retryCount", 0);
+            Map<String, Object> input = (Map<String, Object>) task.get("inputParameters");
+            assertThat(input)
+                    .containsEntry("provider", "jev")
+                    .containsEntry("model", "v1")
+                    .containsEntry("state", "Observed state")
+                    .doesNotContainKey("apiKey");
+            assertThat((Map<?, ?>) input.get("questions")).hasSize(1);
+        }
+    }
 }

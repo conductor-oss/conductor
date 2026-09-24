@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.GuardrailCompiler;
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.ToolCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.ai.agentspan.runtime.util.SafeConditionInterpreter;
 import org.conductoross.conductor.ai.agentspan.runtime.util.SafeConditionParseException;
@@ -1831,6 +1832,24 @@ public class PlanAndCompileTask extends WorkflowSystemTask {
                     task.put("retryCount", 1);
                     task.put("retryLogic", "FIXED");
                     task.put("retryDelaySeconds", 2);
+                    return task;
+                }
+            case "decision_model":
+                {
+                    Map<String, Object> fixed = ToolCompiler.decisionModelConfig(cfg);
+                    task.put("name", "decision_model");
+                    task.put("type", "DECISION_MODEL");
+                    Map<String, Object> inputs = new LinkedHashMap<>();
+                    inputs.put("provider", fixed.get("provider"));
+                    inputs.put("model", fixed.get("model"));
+                    inputs.put("state", args.get("state"));
+                    inputs.put(
+                            "questions",
+                            fixed.containsKey("questions")
+                                    ? fixed.get("questions")
+                                    : args.get("questions"));
+                    task.put("inputParameters", inputs);
+                    task.put("retryCount", 0);
                     return task;
                 }
             case "rag_index":

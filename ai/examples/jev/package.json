@@ -1,8 +1,0 @@
-{
-  "name": "conductor-jev-example",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@vercel/connect": "2.3.2"
-  }
-}

@@ -2302,4 +2302,47 @@ class PlanAndCompileTaskTest {
         sb.append('"');
         return sb.toString();
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void decisionPlanUsesServerTaskAndFixedProvider() {
+        String plan =
+                """
+            {"steps":[{"id":"s1","operations":[{"tool":"decide","args":{
+            "state":"Observed", "provider":"untrusted", "apiKey":"do-not-forward"}}]}]}
+            """;
+        Map<String, Object> config =
+                Map.of(
+                        "provider",
+                        "jev",
+                        "model",
+                        "v1",
+                        "questions",
+                        Map.of("ready", Map.of("type", "boolean", "instructions", "Ready?")));
+        Map<String, Object> output =
+                runWithParentTools(
+                        plan,
+                        null,
+                        List.of("decide"),
+                        List.of(
+                                Map.of(
+                                        "name",
+                                        "decide",
+                                        "toolType",
+                                        "decision_model",
+                                        "config",
+                                        config)));
+        assertThat(output.get("error")).isNull();
+        var task =
+                allTasks((Map<String, Object>) output.get("workflowDef")).stream()
+                        .filter(t -> "DECISION_MODEL".equals(t.get("type")))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(task).containsEntry("retryCount", 0);
+        assertThat((Map<String, Object>) task.get("inputParameters"))
+                .containsEntry("provider", "jev")
+                .containsEntry("model", "v1")
+                .containsEntry("state", "Observed")
+                .doesNotContainKey("apiKey");
+    }
 }

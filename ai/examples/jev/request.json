@@ -1,15 +1,3 @@
 {
-  "model": "jev-1.13",
-  "state": "The customer reports a duplicate charge on the latest invoice.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Select the team responsible for resolving this request.",
-      "criteria": {
-        "billing": "Invoice, payment, and refund issues.",
-        "technical": "Software failures and connectivity issues.",
-        "other": "Requests outside billing and technical support."
-      }
-    }
-  }
+  "state": "The customer reports a duplicate charge on the latest invoice."
 }

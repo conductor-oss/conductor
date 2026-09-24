@@ -151,6 +151,7 @@ public class ToolCompiler {
                     Map.entry("generate_image", "GENERATE_IMAGE"),
                     Map.entry("generate_audio", "GENERATE_AUDIO"),
                     Map.entry("generate_video", "GENERATE_VIDEO"),
+                    Map.entry("decision_model", "DECISION_MODEL"),
                     Map.entry("rag_index", "LLM_INDEX_TEXT"),
                     Map.entry("rag_search", "LLM_SEARCH_INDEX"),
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
@@ -166,6 +167,21 @@ public class ToolCompiler {
                             MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
                     .filter(taskType -> !"SIMPLE".equals(taskType))
                     .collect(Collectors.toUnmodifiableSet());
+
+    /** Validate fixed decision routing shared by agent loops and compiled plans. */
+    public static Map<String, Object> decisionModelConfig(Map<String, Object> config) {
+        if (config == null
+                || !Set.of("provider", "model", "questions").containsAll(config.keySet())
+                || !(config.get("provider") instanceof String provider)
+                || provider.isBlank()
+                || !(config.get("model") instanceof String model)
+                || model.isBlank()
+                || (config.containsKey("questions") && !(config.get("questions") instanceof Map))) {
+            throw new IllegalArgumentException(
+                    "Decision tool requires provider/model and optional questions; credentials belong on the server");
+        }
+        return new LinkedHashMap<>(config);
+    }
 
     // ── Public API ───────────────────────────────────────────────────────
 
@@ -185,6 +201,7 @@ public class ToolCompiler {
         for (ToolConfig tool : tools) {
             String toolType = tool.getToolType() != null ? tool.getToolType() : "worker";
             String conductorType = TYPE_MAP.getOrDefault(toolType, "SIMPLE");
+            if ("decision_model".equals(toolType)) decisionModelConfig(tool.getConfig());
 
             Map<String, Object> spec = new LinkedHashMap<>();
             spec.put("name", tool.getName());
@@ -394,6 +411,7 @@ public class ToolCompiler {
                                     "generate_audio",
                                     "generate_video",
                                     "generate_pdf",
+                                    "decision_model",
                                     "rag_index",
                                     "rag_search",
                                     "human",
@@ -449,6 +467,16 @@ public class ToolCompiler {
                     mediaEntry.put("taskType", taskType);
                     mediaEntry.put("defaults", cfgCopy);
                     mediaConfig.put(tool.getName(), mediaEntry);
+                } else if ("decision_model".equals(toolType)) {
+                    // Reuse the configured model-task dispatch channel; credentials never
+                    // enter this map and generated arguments cannot override routing.
+                    ragConfig.put(
+                            tool.getName(),
+                            Map.of(
+                                    "taskType",
+                                    "DECISION_MODEL",
+                                    "defaults",
+                                    decisionModelConfig(cfg)));
                 } else if (RAG_TOOL_TYPES.contains(toolType)) {
                     Map<String, Object> cfgCopy = new LinkedHashMap<>(cfg);
                     String taskType =
@@ -1644,6 +1672,16 @@ public class ToolCompiler {
                     mediaEntry.put("taskType", taskType);
                     mediaEntry.put("defaults", cfgCopy);
                     mediaConfig.put(tool.getName(), mediaEntry);
+                } else if ("decision_model".equals(toolType)) {
+                    // Reuse the configured model-task dispatch channel; credentials never
+                    // enter this map and generated arguments cannot override routing.
+                    ragConfig.put(
+                            tool.getName(),
+                            Map.of(
+                                    "taskType",
+                                    "DECISION_MODEL",
+                                    "defaults",
+                                    decisionModelConfig(cfg)));
                 } else if (RAG_TOOL_TYPES.contains(toolType)) {
                     Map<String, Object> cfgCopy = new LinkedHashMap<>(cfg);
                     String taskType =
