@@ -186,6 +186,7 @@ nav:
       - documentation/configuration/workflowdef/systemtasks/noop-task.md
       - documentation/configuration/workflowdef/systemtasks/jdbc-task.md
       - documentation/configuration/workflowdef/systemtasks/wait-task.md
+      - documentation/configuration/workflowdef/systemtasks/wait-for-webhook-task.md
       - documentation/configuration/workflowdef/systemtasks/pull-workflow-messages-task.md
       - documentation/configuration/workflowdef/systemtasks/ai-tasks.md
     - Event Handlers: documentation/configuration/eventhandlers.md
