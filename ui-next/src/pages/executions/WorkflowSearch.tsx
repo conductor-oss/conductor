@@ -1,10 +1,11 @@
 import { Box, Divider, FormControlLabel, Switch } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
 import PlayIcon from "components/icons/PlayIcon";
+import _isEmpty from "lodash/isEmpty";
 import _isEqual from "lodash/isEqual";
+import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import { ReactNode, useEffect, useState } from "react";
 import { Helmet } from "react-helmet";
-import { useQueryState } from "react-router-use-location-state";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import SectionHeader from "components/layout/SectionHeader";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
@@ -14,7 +15,7 @@ import { DoSearchProps } from "types/WorkflowExecution";
 import { RUN_WORKFLOW_URL } from "utils/constants/route";
 import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
-import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
+import { getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
@@ -22,13 +23,19 @@ import SplitWorkflowDefinitionButton from "./SplitWorkflowDefinitionButton/Split
 import ImportBpmnButton from "./SplitWorkflowDefinitionButton/ImportBpmnButton";
 import AdvancedSearch from "./workflowSearchComponents/AdvancedSearch";
 import BasicSearch from "./workflowSearchComponents/BasicSearch";
+import {
+  ParsedBasicFilters,
+  basicFieldsAfterQueryFormat,
+  parseQueryToBasicFilters,
+} from "./workflowSearchComponents/basicFilterQuery";
+import { useWorkflowSearchFilters } from "./useWorkflowSearchFilters";
 
 const SwitchComponent = ({
   asQuery,
-  setAsQuery,
+  onToggle,
 }: {
   asQuery: boolean;
-  setAsQuery: (value: boolean) => void;
+  onToggle: () => void;
 }) => (
   <Box
     sx={{
@@ -46,7 +53,7 @@ const SwitchComponent = ({
         },
       }}
       checked={asQuery}
-      control={<Switch color="primary" onChange={() => setAsQuery(!asQuery)} />}
+      control={<Switch color="primary" onChange={onToggle} />}
       label="SQL format"
     />
   </Box>
@@ -75,19 +82,35 @@ export default function WorkflowPanel({
   headerActions,
   excludeSubLabel,
 }: WorkflowSearchProps = {}) {
-  const [asQuery, setAsQuery] = useQueryState("asQuery", false);
-  const [freeText, setFreeText] = useQueryState("freeText", "");
-  const [status, setStatus] = useQueryState<string[]>("status", []);
+  const {
+    asQuery,
+    setAsQuery,
+    freeText,
+    setFreeText,
+    status,
+    setStatus,
+    setWorkflowType,
+    setWorkflowId,
+    setCorrelationIds,
+    setIdempotencyKey,
+    setModifiedFrom,
+    setModifiedTo,
+    setExcludeSubExecutions,
+    startTimeFrom,
+    setStartTimeFrom,
+    startTimeTo,
+    setStartTimeTo,
+    endTimeFrom,
+    setEndTimeFrom,
+    endTimeTo,
+    setEndTimeTo,
+    authoredQuery,
+    clearQuery,
+  } = useWorkflowSearchFilters();
+  const [discardQueryOpen, setDiscardQueryOpen] = useState(false);
   const [openDateSelect, setOpenDateSelect] = useState(false);
   const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
   const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
-  const [startTimeFrom, setStartTimeFrom] = useQueryState(
-    "startFrom",
-    commonlyUsedDateTime("last72Hours").rangeStart,
-  );
-  const [startTimeTo, setStartTimeTo] = useQueryState("startTo", "");
-  const [endTimeFrom, setEndTimeFrom] = useQueryState("endTimeFrom", "");
-  const [endTimeTo, setEndTimeTo] = useQueryState("endTimeTo", "");
   const [fromDisplayTime, setFromDisplayTime] = useState(
     startTimeFrom
       ? getSearchDateTime(startTimeFrom, startTimeTo)
@@ -96,6 +119,67 @@ export default function WorkflowPanel({
   const [toDisplayTime, setToDisplayTime] = useState(
     endTimeTo ? getSearchDateTime(endTimeFrom, endTimeTo) : "Select time range",
   );
+
+  const leaveQueryFormat = () => {
+    // Drop the param too, so a discarded query cannot reappear the next time
+    // SQL format is switched on.
+    clearQuery();
+    setAsQuery(false);
+  };
+
+  const applyParsedFilters = (parsed: ParsedBasicFilters) => {
+    const next = basicFieldsAfterQueryFormat(parsed, {
+      status,
+      startTimeFrom,
+      startTimeTo,
+      endTimeFrom,
+      endTimeTo,
+    });
+    setWorkflowType(next.workflowType);
+    setWorkflowId(next.workflowId);
+    setCorrelationIds(next.correlationIds);
+    setIdempotencyKey(next.idempotencyKey);
+    setModifiedFrom(next.modifiedFrom);
+    setModifiedTo(next.modifiedTo);
+    setExcludeSubExecutions(next.excludeSubExecutions);
+    setStatus(next.status);
+    setStartTimeFrom(next.startTimeFrom);
+    setStartTimeTo(next.startTimeTo);
+    setEndTimeFrom(next.endTimeFrom);
+    setEndTimeTo(next.endTimeTo);
+    // Mirror how these labels are derived on mount.
+    setFromDisplayTime(
+      next.startTimeFrom
+        ? getSearchDateTime(next.startTimeFrom, next.startTimeTo)
+        : "Last 72 Hours",
+    );
+    setToDisplayTime(
+      next.endTimeTo
+        ? getSearchDateTime(next.endTimeFrom, next.endTimeTo)
+        : "Select time range",
+    );
+  };
+
+  const handleToggleQueryFormat = () => {
+    if (!asQuery) {
+      setAsQuery(true);
+      return;
+    }
+    // An empty box means nothing was authored here — the seeded text is shown
+    // without being written to the URL — so leave the fields as they were.
+    if (_isEmpty(authoredQuery)) {
+      leaveQueryFormat();
+      return;
+    }
+    const parsed = parseQueryToBasicFilters(authoredQuery);
+    if (parsed) {
+      applyParsedFilters(parsed);
+      leaveQueryFormat();
+      return;
+    }
+    // Nothing basic search can express; ask before dropping it.
+    setDiscardQueryOpen(true);
+  };
 
   const last72HoursTimestamp = Date.now() - 72 * 60 * 60 * 1000;
 
@@ -212,7 +296,10 @@ export default function WorkflowPanel({
             classifier={classifier}
             doSearch={doSearch}
             SwitchComponent={
-              <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+              <SwitchComponent
+                asQuery={asQuery}
+                onToggle={handleToggleQueryFormat}
+              />
             }
             getTableTitle={getTableTitle}
             freeText={freeText}
@@ -226,10 +313,8 @@ export default function WorkflowPanel({
             setStartTimeTo={setStartTimeTo}
             onStartToChange={onStartToChange}
             endTimeFrom={endTimeFrom}
-            setEndTimeFrom={setEndTimeFrom}
             onEndFromChange={onEndFromChange}
             endTimeTo={endTimeTo}
-            setEndTimeTo={setEndTimeTo}
             onEndToChange={onEndToChange}
             fromDisplayTime={fromDisplayTime}
             setFromDisplayTime={setFromDisplayTime}
@@ -250,7 +335,10 @@ export default function WorkflowPanel({
             excludeSubLabel={excludeSubLabel}
             doSearch={doSearch}
             SwitchComponent={
-              <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+              <SwitchComponent
+                asQuery={asQuery}
+                onToggle={handleToggleQueryFormat}
+              />
             }
             getTableTitle={getTableTitle}
             freeText={freeText}
@@ -264,10 +352,8 @@ export default function WorkflowPanel({
             setStartTimeTo={setStartTimeTo}
             onStartToChange={onStartToChange}
             endTimeFrom={endTimeFrom}
-            setEndTimeFrom={setEndTimeFrom}
             onEndFromChange={onEndFromChange}
             endTimeTo={endTimeTo}
-            setEndTimeTo={setEndTimeTo}
             onEndToChange={onEndToChange}
             fromDisplayTime={fromDisplayTime}
             setFromDisplayTime={setFromDisplayTime}
@@ -283,6 +369,21 @@ export default function WorkflowPanel({
           />
         )}
       </SectionContainer>
+      {discardQueryOpen && (
+        <ConfirmChoiceDialog
+          id="discard-sql-query-dialog"
+          header="Discard SQL query?"
+          message="Basic search cannot represent this query, so switching will discard it and search with the fields above instead."
+          cancelBtnLabel="Keep editing"
+          confirmBtnLabel="Discard and switch"
+          handleConfirmationValue={(confirmed: boolean) => {
+            setDiscardQueryOpen(false);
+            if (confirmed) {
+              leaveQueryFormat();
+            }
+          }}
+        />
+      )}
     </>
   );
 }

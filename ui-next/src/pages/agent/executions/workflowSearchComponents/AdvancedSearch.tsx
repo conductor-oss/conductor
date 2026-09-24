@@ -23,6 +23,7 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
+import { useAgentSearchFilters } from "../useAgentSearchFilters";
 import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";
 import { IObject } from "types/common";
@@ -65,10 +66,8 @@ export interface AdvancedSearchProps {
   setStartTimeTo: (val: string) => void;
   onStartToChange: (val: string) => void;
   endTimeFrom: string;
-  setEndTimeFrom: (val: string) => void;
   onEndFromChange: (val: string) => void;
   endTimeTo: string;
-  setEndTimeTo: (val: string) => void;
   onEndToChange: (val: string) => void;
   fromDisplayTime: string;
   setFromDisplayTime: (val: string) => void;
@@ -98,10 +97,8 @@ export default function AdvancedSearch({
   setStartTimeTo,
   onStartToChange,
   endTimeFrom,
-  setEndTimeFrom,
   onEndFromChange,
   endTimeTo,
-  setEndTimeTo,
   onEndToChange,
   fromDisplayTime,
   setFromDisplayTime,
@@ -116,7 +113,14 @@ export default function AdvancedSearch({
   recentSearches,
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
-  const [queryText, setQueryText] = useQueryState("query", "");
+  // Every url-backed filter is declared once in useAgentSearchFilters,
+  // including the seeding of the query box from the filters that only basic
+  // search has a control for.
+  const {
+    effectiveQuery: queryText,
+    setQuery: setQueryText,
+    resetFilters,
+  } = useAgentSearchFilters();
   const [page, setPage] = useQueryState("page", 1);
   const [rowsPerPage, setRowsPerPage] = useQueryState(
     "rowsPerPage",
@@ -312,15 +316,11 @@ export default function AdvancedSearch({
   };
 
   const clearAllFields = () => {
-    setStatus([]);
-    setStartTimeFrom("");
-    setStartTimeTo("");
-    setEndTimeFrom("");
-    setEndTimeTo("");
+    // Clears every filter, not just the ones this mode renders, so the
+    // basic-only filters do not survive a reset done here.
+    resetFilters();
     setToDisplayTime("");
     setFromDisplayTime("Last 72 Hours");
-    setFreeText("");
-    setQueryText("");
   };
 
   const handleReset = () => {
