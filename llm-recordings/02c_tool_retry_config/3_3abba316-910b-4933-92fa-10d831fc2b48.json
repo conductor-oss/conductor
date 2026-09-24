@@ -1,0 +1,187 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You help users fetch and process data. Use the appropriate tool for each request.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"result\":\"Data for: Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases.\",\"source\":\"external_api\"},\"name\":\"call_external_api\"},{\"output\":{\"result\":\"Data for: GET https://www.python.org/api/v2/downloads/release/?is_published=true and identify the newest stable Python 3 release, excluding alpha, beta, release candidate, and prerelease entries. Return name/version, release date, release page URL, and exact API URL.\",\"source\":\"external_api\"},\"name\":\"call_external_api\"},{\"output\":{\"result\":\"Data for: Query Python.org's downloads/release API for the latest final (non-prerelease) Python release. Return the raw latest matching record with version/name, release date, and URL.\",\"source\":\"external_api\"},\"name\":\"call_external_api\"}]\n[/TOOL RESULTS]\n\nLook up the latest Python release info from the API.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "call_external_api",
+        "arguments" : {
+          "method" : "call_external_api",
+          "query" : "Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases."
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "call_external_api",
+        "value" : {
+          "result" : "Data for: Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases.",
+          "source" : "external_api"
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_1",
+        "name" : "call_external_api",
+        "arguments" : {
+          "method" : "call_external_api",
+          "query" : "GET https://www.python.org/api/v2/downloads/release/?is_published=true and identify the newest stable Python 3 release, excluding alpha, beta, release candidate, and prerelease entries. Return name/version, release date, release page URL, and exact API URL."
+        }
+      }, {
+        "reference" : "call_2",
+        "name" : "call_external_api",
+        "arguments" : {
+          "method" : "call_external_api",
+          "query" : "Query Python.org's downloads/release API for the latest final (non-prerelease) Python release. Return the raw latest matching record with version/name, release date, and URL."
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_1",
+        "name" : "call_external_api",
+        "value" : {
+          "result" : "Data for: GET https://www.python.org/api/v2/downloads/release/?is_published=true and identify the newest stable Python 3 release, excluding alpha, beta, release candidate, and prerelease entries. Return name/version, release date, release page URL, and exact API URL.",
+          "source" : "external_api"
+        }
+      } ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_2",
+        "name" : "call_external_api",
+        "value" : {
+          "result" : "Data for: Query Python.org's downloads/release API for the latest final (non-prerelease) Python release. Return the raw latest matching record with version/name, release date, and URL.",
+          "source" : "external_api"
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "call_external_api",
+      "description" : "Call an unreliable external API that may need aggressive retries.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "query" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "query" ]
+      }
+    }, {
+      "name" : "query_database",
+      "description" : "Run a database query with fixed-interval retries for transient connection issues.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "sql" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "sql" ]
+      }
+    }, {
+      "name" : "process_data",
+      "description" : "Process data locally — light retries with linear backoff.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_031e27c25b0e5357006aa831c7488087d0ae9b90555168bd3c",
+      "model" : "gpt-5.6-sol",
+      "usage" : {
+        "promptTokens" : 763,
+        "completionTokens" : 230,
+        "totalTokens" : 993,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_031e27c25b0e5357006aa831c7488087d0ae9b90555168bd3c",
+        "reasoning_tokens" : 24
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_1zAJhi1fU85wl1Er8nKf9DVZ",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"Directly request and parse JSON from https://www.python.org/api/v2/downloads/release/?is_published=true . Sort final Python 3 releases by release date/version, exclude any name containing alpha, beta, candidate, a, b, or rc, and return the single newest record's exact fields.\"}"
+        }, {
+          "id" : "call_UsLzerKhLNbspwfAUudYoTW0",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"Fetch https://www.python.org/downloads/ and report the latest stable Python version, release date, and release/download URL. Exclude prereleases. Include the source URL.\"}"
+        }, {
+          "id" : "call_UXcZcTeWZXVCBCMzorZ9il5Q",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"Use the endoflife.date Python API at https://endoflife.date/api/python.json as a fallback cross-check. Return the newest stable release value and release date, plus Python.org's corresponding release URL if identifiable.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
