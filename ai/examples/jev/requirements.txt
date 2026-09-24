@@ -1,1 +1,1 @@
-conductor-python==2.0.0
+conductor-python[agents]==2.0.0

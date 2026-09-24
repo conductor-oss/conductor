@@ -8,7 +8,7 @@ try {
   if (!connector?.startsWith('jev/')) throw new Error('Missing connector');
   const token = await getToken(connector, { subject: { type: 'app' } });
   const child = spawn('python3', [
-    fileURLToPath(new URL('./worker.py', import.meta.url)),
+    fileURLToPath(new URL('./jev_agent.py', import.meta.url)),
     ...process.argv.slice(2), '--route', 'typesafe',
   ], {
     env: { ...process.env, TYPESAFE_API_KEY: token },
@@ -18,7 +18,7 @@ try {
     process.on(signal, () => child.kill(signal));
   }
   child.on('error', () => {
-    console.error('Unable to start the Jev worker.');
+    console.error('Unable to start the Jev agent.');
     process.exitCode = 1;
   });
   child.on('exit', code => { process.exitCode = code ?? 1; });
