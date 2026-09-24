@@ -2,6 +2,7 @@
 
 `DECISION_MODEL` runs typed decisions on the server. Providers implement
 `DecisionModel`; Jev supports OpenRouter and TypeSafe.
+See the [Jev API reference](https://docs.typesafe.ai/api) for the provider protocol.
 
 Set `JEV_API_KEY` on the server. The default route is OpenRouter; use
 `JEV_ROUTE=typesafe` for TypeSafe credentials. AI integrations must be enabled.
@@ -39,8 +40,26 @@ Answers may include `confidence`. Usage reports `inputTokens`, `outputTokens`,
 
 Agent tools use `toolType: "decision_model"` with fixed `config.provider`,
 `config.model`, and optional `config.questions`. Only `state` and unfixed
-`questions` come from tool arguments. See the [Python example](examples/jev/README.md).
+`questions` come from tool arguments. The [Python example](examples/jev/jev_agent.py)
+uses `DecisionModelTool` in an `@agent`; no Python worker is needed.
 
 Agent decision tasks default to zero retries. Explicit task policies may retry
 transport failures, HTTP 429, or HTTP 5xx. Invalid requests and responses fail
 terminally. The HTTP client does not retry or follow redirects.
+
+To run the example, use Python 3.10+ and the SDK checkout from
+[python-sdk #511](https://github.com/conductor-oss/python-sdk/pull/511).
+Configure an orchestration chat model on the server, then run from the repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -e '/path/to/python-sdk[agents]'
+export CONDUCTOR_SERVER_URL=http://localhost:8080/api
+export CONDUCTOR_AGENT_LLM_MODEL=openai/gpt-4o-mini
+python3 ai/examples/jev/jev_agent.py run
+```
+
+Use `plan` to compile without inference, or `--request` to supply another state file.
+Both the chat model and Jev incur inference costs. Read the `DECISION_MODEL` task
+output for exact answers and usage.
