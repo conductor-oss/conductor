@@ -54,6 +54,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
     private final QueueDAO queueDAO;
 
     private volatile ExecutorService sharedExecutorService;
+    private volatile SemaphoreUtil sharedSemaphoreUtil;
     private final int systemTaskWorkerThreadCount;
     private final AsyncSystemTaskExecutor asyncSystemTaskExecutor;
     private final ConductorProperties properties;
@@ -69,10 +70,12 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         this.properties = properties;
         int threadCount = properties.getSystemTaskWorkerThreadCount();
         this.systemTaskWorkerThreadCount = threadCount;
-        // All non-isolated queues share one thread pool. Each queue gets its own semaphore (see
-        // getExecutionConfig) so one slow/busy queue cannot starve other queues' polling.
+        // All non-isolated queues without a dedicated pool share one thread pool AND one
+        // semaphore with permits == threads, so admission across all of them is bounded by the
+        // pool's threads (issue #1649).
         this.sharedExecutorService =
                 ExecutionConfig.newThreadPool(threadCount, "system-task-worker-%d");
+        this.sharedSemaphoreUtil = new SemaphoreUtil(threadCount);
         this.asyncSystemTaskExecutor = asyncSystemTaskExecutor;
         this.queueDAO = queueDAO;
         this.pollInterval = properties.getSystemTaskWorkerPollInterval().toMillis();
@@ -95,6 +98,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                 sharedExecutorService =
                         ExecutionConfig.newThreadPool(
                                 systemTaskWorkerThreadCount, "system-task-worker-%d");
+                sharedSemaphoreUtil = new SemaphoreUtil(systemTaskWorkerThreadCount);
                 queueExecutionConfigMap.clear();
             }
         } finally {
@@ -205,15 +209,17 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
 
-        // Use available permits as a backpressure hint: never request more tasks than we can
-        // immediately dispatch. Cap at systemTaskMaxPollCount (the batch size knob); values < 1
-        // historically mean "no explicit cap" — do not stall polling for such configs.
+        // Take permits BEFORE popping. Pollers of all shared-pool queues draw from one semaphore,
+        // so a check → pop → take sequence could pop messages it then has no permits for. Cap at
+        // systemTaskMaxPollCount (the batch size knob); values < 1 historically mean "no explicit
+        // cap" — do not stall polling for such configs.
         int maxPollCount = properties.getSystemTaskMaxPollCount();
         int batchSize = semaphoreUtil.availableSlots();
         if (maxPollCount > 0) {
             batchSize = Math.min(batchSize, maxPollCount);
         }
-        if (batchSize <= 0) {
+        if (batchSize <= 0 || !semaphoreUtil.acquireSlots(batchSize)) {
+            // No permits, or another poller took them first: don't pop.
             Monitors.recordSystemTaskWorkerPollingLimited(queueName);
             return false;
         }
@@ -222,7 +228,7 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
         try {
             polledTaskIds = queueDAO.pop(queueName, batchSize, queuePopTimeout);
         } catch (Exception e) {
-            // Poll failed — no permits were held, nothing to release.
+            semaphoreUtil.completeProcessing(batchSize);
             Monitors.recordTaskPollError(taskName, e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
             return false;
@@ -237,32 +243,11 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
 
         polledTaskIds = polledTaskIds.stream().filter(StringUtils::isNotBlank).toList();
         int taskCount = polledTaskIds.size();
-        if (taskCount == 0) {
-            return false;
+        // Give back the permits for messages the queue did not return.
+        if (taskCount < batchSize) {
+            semaphoreUtil.completeProcessing(batchSize - taskCount);
         }
-
-        // Acquire exactly as many permits as tasks received. Since this is the only thread that
-        // decrements this queue's semaphore and taskCount <= batchSize <= availableSlots at the
-        // time of the check above, tryAcquire should always succeed. If it doesn't (e.g. due to a
-        // bug or future code change violating the single-poller invariant), reset the tasks so
-        // they become re-deliverable as soon as the queue implementation allows (some impls only
-        // redeliver popped messages after the unack sweep), instead of silently dropping them.
-        if (!semaphoreUtil.acquireSlots(taskCount)) {
-            LOGGER.warn(
-                    "Could not acquire {} permits for queue {} — resetting tasks for immediate retry",
-                    taskCount,
-                    queueName);
-            for (String taskId : polledTaskIds) {
-                try {
-                    queueDAO.resetOffsetTime(queueName, taskId);
-                } catch (Throwable e) {
-                    LOGGER.error(
-                            "Failed to reset offset for task {} in queue {} — will retry after unack timeout",
-                            taskId,
-                            queueName,
-                            e);
-                }
-            }
+        if (taskCount == 0) {
             return false;
         }
 
@@ -338,10 +323,8 @@ public class SystemTaskWorker extends LifecycleAwareComponent {
                     taskType);
         }
 
-        // Shared pool, but own semaphore, so one slow/busy queue cannot starve other queues'
-        // polling. Permits default to the shared pool width — the same effective cap the old
-        // single shared semaphore imposed.
-        return new ExecutionConfig(sharedExecutorService, systemTaskWorkerThreadCount);
+        // Shared pool and shared semaphore: see the constructor.
+        return new ExecutionConfig(sharedExecutorService, sharedSemaphoreUtil);
     }
 
     private ConductorProperties.TaskWorkerConfig findTaskWorkerConfig(String taskType) {
