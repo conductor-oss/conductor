@@ -8,14 +8,22 @@ import {
 } from "@mui/material";
 import ActionButton from "components/ui/buttons/ActionButton";
 import Button from "components/ui/buttons/MuiButton";
+import ReactHookFormDropdown from "components/ui/react-hook-form/ReactHookFormDropdown";
 import ReactHookFormInput from "components/ui/react-hook-form/ReactHookFormInput";
-import { DefaultValues, SubmitHandler, useForm } from "react-hook-form";
+import _last from "lodash/last";
+import {
+  DefaultValues,
+  Resolver,
+  SubmitHandler,
+  useForm,
+} from "react-hook-form";
 import { WORKFLOW_NAME_ERROR_MESSAGE } from "utils/constants/common";
 import { WORKFLOW_NAME_REGEX } from "utils/constants/regex";
 import * as yup from "yup";
 
 interface DialogData {
   name: string;
+  version?: number;
 }
 export interface CloneDialogProps {
   name: string;
@@ -26,6 +34,12 @@ export interface CloneDialogProps {
   title?: string;
   id?: string;
   label?: string;
+  /**
+   * Versions to offer as the clone source, oldest first. Omit for entities
+   * without versions. Read once when the dialog opens, so a caller that fetches
+   * them must wait for that fetch before mounting.
+   */
+  versions?: number[];
 }
 
 const CloneDialog = ({
@@ -37,17 +51,27 @@ const CloneDialog = ({
   title,
   id,
   label,
+  versions,
 }: CloneDialogProps) => {
+  const isVersioned = !!versions?.length;
+
   const formSchema = yup.object().shape({
     name: yup
       .string()
       .required("Name cannot be blank.")
       .matches(WORKFLOW_NAME_REGEX, WORKFLOW_NAME_ERROR_MESSAGE)
       .notOneOf(namesList, "This name is existing."),
+    version: isVersioned
+      ? yup
+          .number()
+          .required("Version cannot be blank.")
+          .typeError("Version cannot be blank.")
+      : yup.number().notRequired(),
   });
 
   const defaultValues: DefaultValues<DialogData> = {
     name: name,
+    version: _last(versions),
   };
 
   const {
@@ -56,7 +80,9 @@ const CloneDialog = ({
     formState: { errors: formErrors, isValid },
   } = useForm<DialogData>({
     mode: "onChange",
-    resolver: yupResolver(formSchema),
+    // yup widens an optional number to Maybe<number>, which does not line up
+    // with version being plainly optional here.
+    resolver: yupResolver(formSchema) as unknown as Resolver<DialogData>,
     defaultValues,
   });
 
@@ -82,6 +108,23 @@ const CloneDialog = ({
               spellCheck={false}
             />
           </Grid>
+
+          {isVersioned && (
+            <Grid size={12}>
+              <ReactHookFormDropdown
+                id="clone-version-field"
+                name="version"
+                control={control as any}
+                fullWidth
+                label="Version"
+                required
+                getOptionLabel={(option) => option?.toString()}
+                options={versions}
+                error={!!formErrors?.version?.message}
+                helperText={formErrors?.version?.message}
+              />
+            </Grid>
+          )}
         </Grid>
       </DialogContent>
       <DialogActions>

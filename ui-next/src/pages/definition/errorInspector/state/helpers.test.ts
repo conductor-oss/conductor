@@ -660,6 +660,27 @@ describe("jakatraPathToPropertyPath", () => {
     );
     expect(result).toEqual("[1].defaultCase[0]");
   });
+
+  it("Should preserve adjacent brackets when a marker sits directly between them", () => {
+    const result = jakatraPathToPropertyPath(
+      "update.workflowDefs[0].tasks[1].forkTasks[0]<list element>[0]",
+    );
+    // "[0]<list element>[0]" collapses to nested bracket access "[0][0]",
+    // which is valid lodash path syntax and must be left untouched.
+    expect(result).toEqual("[1].forkTasks[0][0]");
+  });
+
+  it("Should preserve adjacent brackets after removing a map value marker", () => {
+    const result = jakatraPathToPropertyPath(
+      "update.workflowDefs[0].tasks[1].decisionCases[switch_case]<map value>[0]",
+    );
+    expect(result).toEqual("[1].decisionCases[switch_case][0]");
+  });
+
+  it("Should return an empty string for an empty path", () => {
+    expect(jakatraPathToPropertyPath("")).toEqual("");
+    expect(jakatraPathToPropertyPath(undefined)).toEqual("");
+  });
 });
 
 describe("serverValidationErrorToIndexMessage", () => {
