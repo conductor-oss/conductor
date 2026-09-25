@@ -11,25 +11,6 @@ OpenRouter; set `JEV_ROUTE=typesafe` for TypeSafe credentials. Optional server
 properties are `conductor.ai.jev.endpoint` and `conductor.ai.jev.timeout` (default
 `20s`). Credentials remain on the server.
 
-The [example agent definition](examples/jev/agent.json) routes support requests.
-The Python example uses the standard library to submit that definition through
-`POST /api/agent/compile` or `POST /api/agent/start`. No SDK checkout, chat model,
-or Python worker is required.
-
-```bash
-export CONDUCTOR_SERVER_URL=http://localhost:8080/api
-python3 ai/examples/jev/jev_agent.py plan
-python3 ai/examples/jev/jev_agent.py run
-```
-
-`run` starts the agent and prints the start response; inspect the returned
-execution in Agent Executions for its result. Use `--request` to supply another
-JSON file containing a nonempty `state` string.
-
-<!-- TODO: verify against live server -->
-The example's HTTP requests are covered by a local test server; live Jev inference
-requires a configured Conductor server and provider credentials.
-
 Each question requires `type` and `instructions`:
 
 | Type | Options | Answer |
