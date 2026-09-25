@@ -80,6 +80,9 @@ public class A2AService {
     /** Selects the AWS Bedrock Agent runtime. */
     public static final String AGENT_TYPE_BEDROCK = "bedrock";
 
+    /** Selects the AWS Bedrock AgentCore runtime (agent runtimes, not classic Bedrock Agents). */
+    public static final String AGENT_TYPE_BEDROCK_AGENTCORE = "bedrock-agentcore";
+
     /** Selects the Microsoft Foundry runtime (Entra ID auth, A2A protocol). */
     public static final String AGENT_TYPE_MICROSOFT_FOUNDRY = "microsoft-foundry";
 

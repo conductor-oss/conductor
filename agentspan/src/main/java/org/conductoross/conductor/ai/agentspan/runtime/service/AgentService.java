@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.MultiAgentCompiler;
 import org.conductoross.conductor.ai.agentspan.runtime.normalizer.NormalizerRegistry;
@@ -80,6 +81,7 @@ public class AgentService {
     private final MetadataService metadataService;
     private final AzureFoundryAgentClient azureFoundryAgentClient;
     private final BedrockAgentClient bedrockAgentClient;
+    private final BedrockAgentCoreAgentClient bedrockAgentCoreClient;
     private final SecretsDAO secretsDAO;
 
     /**
@@ -442,6 +444,7 @@ public class AgentService {
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
                         String region = secretJson.path("region").asText(null);
+                        String type = secretJson.path("type").asText(null);
                         // Discovery is a control-plane scan with no task behind it, so this is the
                         // one place that reads secrets directly — the clients are handed values.
                         Map<String, String> credentials = credentialValues(secretJson);
@@ -451,6 +454,12 @@ public class AgentService {
                             agents.addAll(
                                     azureFoundryAgentClient.listExternalAgents(
                                             credentials, endpoint));
+                        } else if (region != null
+                                && !region.isBlank()
+                                && A2AService.AGENT_TYPE_BEDROCK_AGENTCORE.equals(type)
+                                && bedrockAgentCoreClient != null) {
+                            agents.addAll(
+                                    bedrockAgentCoreClient.listExternalAgents(credentials, region));
                         } else if (region != null
                                 && !region.isBlank()
                                 && bedrockAgentClient != null) {
