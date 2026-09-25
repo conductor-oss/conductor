@@ -103,7 +103,7 @@ Conductor applies the same durable execution model to adaptive agents and ordina
   <div class="agent-overview-card"><strong>Policy and guardrails</strong><span>Validate model proposals and constrain tools, inputs, fan-out, time, and cost before execution.</span></div>
   <div class="agent-overview-card"><strong>Turn-by-turn observability</strong><span>Inspect the durable record of decisions, policy outcomes, task data, timing, and failures.</span></div>
   <div class="agent-overview-card"><strong>Human control</strong><span>Pause without losing state, collect review or input, then resume the same execution.</span></div>
-  <div class="agent-overview-card"><strong>Framework and protocol interoperability</strong><span>Use supported framework bridges, MCP tools, and remote A2A agents behind stable workflow boundaries.</span></div>
+  <div class="agent-overview-card"><strong>Framework and protocol interoperability</strong><span>Use supported agent frameworks, MCP tools, and remote A2A agents behind stable workflow boundaries.</span></div>
   <div class="agent-overview-card"><strong>Ordinary workflow composition</strong><span>Place agents beside APIs, workers, branching, schedules, notifications, and compensation logic.</span></div>
 </div>
 

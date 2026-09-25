@@ -45,13 +45,37 @@ class RedisSentinelConfigurationTest {
     }
 
     @Test
-    void createSentinelClientConfig_preservesLegacySentinelAuth() {
-        properties.setUser("sentinel-user");
+    void createSentinelClientConfig_doesNotSendAuthByDefault() {
+        // Even when a data-node user is configured, the sentinel connection sends no credentials
+        // when sentinelPassword is empty
+        properties.setUser("data-user");
 
-        JedisClientConfig config = configuration.createSentinelClientConfig(properties, "secret");
+        JedisClientConfig config = configuration.createSentinelClientConfig(properties);
+
+        assertNull(config.getUser());
+        assertNull(config.getPassword());
+    }
+
+    @Test
+    void createSentinelClientConfig_treatsBlankPasswordAsNoAuth() {
+        properties.setUser("sentinel-user");
+        properties.setSentinelPassword("  ");
+
+        JedisClientConfig config = configuration.createSentinelClientConfig(properties);
+
+        assertNull(config.getUser());
+        assertNull(config.getPassword());
+    }
+
+    @Test
+    void createSentinelClientConfig_usesSentinelPasswordWhenSet() {
+        properties.setUser("sentinel-user");
+        properties.setSentinelPassword("sentinel-secret");
+
+        JedisClientConfig config = configuration.createSentinelClientConfig(properties);
 
         assertEquals("sentinel-user", config.getUser());
-        assertEquals("secret", config.getPassword());
+        assertEquals("sentinel-secret", config.getPassword());
     }
 
     @Test
@@ -59,7 +83,7 @@ class RedisSentinelConfigurationTest {
         properties.setSsl(true);
         properties.setIgnoreSsl(true);
 
-        JedisClientConfig config = configuration.createSentinelClientConfig(properties, "secret");
+        JedisClientConfig config = configuration.createSentinelClientConfig(properties);
 
         assertTrue(config.isSsl());
         assertNotNull(config.getSslSocketFactory());

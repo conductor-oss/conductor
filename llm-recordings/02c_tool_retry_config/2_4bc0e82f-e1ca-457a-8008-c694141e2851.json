@@ -1,0 +1,139 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You help users fetch and process data. Use the appropriate tool for each request.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"result\":\"Data for: Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases.\",\"source\":\"external_api\"},\"name\":\"call_external_api\"}]\n[/TOOL RESULTS]\n\nLook up the latest Python release info from the API.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "call_external_api",
+        "arguments" : {
+          "method" : "call_external_api",
+          "query" : "Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases."
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "call_external_api",
+        "value" : {
+          "result" : "Data for: Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases.",
+          "source" : "external_api"
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "call_external_api",
+      "description" : "Call an unreliable external API that may need aggressive retries.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "query" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "query" ]
+      }
+    }, {
+      "name" : "query_database",
+      "description" : "Run a database query with fixed-interval retries for transient connection issues.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "sql" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "sql" ]
+      }
+    }, {
+      "name" : "process_data",
+      "description" : "Process data locally — light retries with linear backoff.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_077c79c03b586d80006aa831c3424087d092465602e582ee91",
+      "model" : "gpt-5.6-sol",
+      "usage" : {
+        "promptTokens" : 339,
+        "completionTokens" : 218,
+        "totalTokens" : 557,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_077c79c03b586d80006aa831c3424087d092465602e582ee91",
+        "reasoning_tokens" : 74
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_AXJDonhbXtvTDeMwhLU4qzcw",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"GET https://www.python.org/api/v2/downloads/release/?is_published=true and identify the newest stable Python 3 release, excluding alpha, beta, release candidate, and prerelease entries. Return name/version, release date, release page URL, and exact API URL.\"}"
+        }, {
+          "id" : "call_Z372rAr9Ga0QvQExrL2tuhdJ",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"Query Python.org's downloads/release API for the latest final (non-prerelease) Python release. Return the raw latest matching record with version/name, release date, and URL.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

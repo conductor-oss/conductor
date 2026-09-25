@@ -21,7 +21,7 @@ The following tab views or fields in the task details are useful for debugging:
 
 | Field or Tab Name                                      | Description                                                                                                                   |
 |-------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| _Reason for Incompletion_ in **Task Detail** > **Summary**  | Contains the exception message thrown by the task worker.                    |
+| _Reason for Incompletion_ in **Task Detail** > **Summary**  | The worker's error message, or the engine's message when the task timed out or was terminated. See [Understanding reasonForIncompletion](#understanding-reasonforincompletion). |
 | _Worker_ in **Task Detail** > **Summary**                   | Contains the worker instance ID where the failure occurred. Useful for digging up detailed logs, if it has not already captured by Conductor.                    |
 | **Task Detail** > **Input**                           | Useful for verifying if the task inputs were correctly computed and provided to the task.                       |
 | **Task Detail** > **Output**                        | Useful for verifying what the task produced as output.                         |
@@ -30,6 +30,42 @@ The following tab views or fields in the task details are useful for debugging:
 
 
 ![Debugging Workflow Execution](workflow_debugging.png)
+
+## Understanding reasonForIncompletion
+
+`reasonForIncompletion` is a free-text field on both task and workflow executions. It is empty while an execution is healthy and is filled in when the execution stops without succeeding. The UI shows it as **Reason for Incompletion** in the task summary and at the top of the workflow execution view, and search results (`WorkflowSummary`, `TaskSummary`) include it.
+
+### Who writes it
+
+| Writer | What it contains |
+|---|---|
+| Your worker | Whatever the worker sets in `TaskResult.reasonForIncompletion` when it returns `FAILED` or `FAILED_WITH_TERMINAL_ERROR`. The SDKs set it to the exception message when a worker throws. |
+| Event handler `fail_task` action | The action's `reasonForIncompletion` value; empty if the action does not set one. |
+| System tasks | Their own error text. For example the HTTP task records the response body on a non-2xx response, `No response from the remote service`, `Missing HTTP URI.  See documentation for HttpTask for required input parameters`, or `Failed to invoke HTTP task due to: <exception>`. |
+| The engine | Timeouts, terminations, and definition errors, using the templates below. |
+
+### Engine-generated messages
+
+| Situation | Message |
+|---|---|
+| Task exceeded `timeoutSeconds` | `Task timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Task not polled within `pollTimeoutSeconds` | `Task poll timed out after {elapsed} seconds. Poll timeout configured as {pollTimeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| Worker stopped updating the task (`responseTimeoutSeconds`) | `responseTimeout: {responseTimeoutSeconds} exceeded for the taskId: {taskId} with Task Definition: {taskDefName}` |
+| Retries exhausted the total budget (`totalTimeoutSeconds`) | `Task {taskDefName}/{taskId} exceeded total timeout of {totalTimeoutSeconds} seconds (elapsed {elapsed} seconds across all attempts including retry delays). Timeout policy: {timeoutPolicy}` |
+| Workflow exceeded its `timeoutSeconds` | `Workflow timed out after {elapsed} seconds. Timeout configured as {timeoutSeconds} seconds. Timeout policy configured to {timeoutPolicy}` |
+| A task failure fails the workflow | On the workflow: `Task {taskId} failed with status: {status} and reason: '{task reasonForIncompletion}'`. A failed `JOIN` carries the concatenated reasons of its failed forked tasks. |
+| Sub-workflow ended unsuccessfully | On the `SUB_WORKFLOW` task: `Sub workflow {subWorkflowId} failure reason: {sub-workflow reasonForIncompletion}` |
+| `TERMINATE` task | The task's `terminationReason` input, or `Workflow is {terminationStatus} by TERMINATE task: {taskId}` when none is given. Set even when `terminationStatus` is `COMPLETED`. |
+| Terminate API | The `reason` query parameter of `DELETE /api/workflow/{workflowId}`. |
+| Task definition missing | `Invalid task specified. Cannot find task by name {name} in the task definitions` |
+
+Timeout fields are described in [Task Lifecycle](../../architecture/tasklifecycle.md#timeout-scenarios).
+
+### Lifecycle and limits
+
+* Retry, restart, and rerun clear the workflow's reason and start the new task attempt with an empty reason. The original attempt keeps its reason; open it from **Retried Task** in the task details.
+* On tasks the value is capped at 500 characters; longer messages are cut. Workflow-level reasons are not capped.
+* The field is stored with the execution and returned by `GET /api/workflow/{workflowId}`, `GET /api/tasks/{taskId}`, and the search APIs.
 
 ## Recovering from failure
 

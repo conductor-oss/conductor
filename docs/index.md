@@ -31,22 +31,22 @@ description: Conductor is an open-source platform for building production-grade 
       <span>Get started with a free hosted version of Conductor.</span>
       <span class="home-card-cta">Start for free &rarr;</span>
     </a>
-    <a class="integration-action-card" href="quickstart/connect.html">
-      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2.2-.7-3 .8Z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A12.7 12.7 0 0 1 21.5 2.5c0 2.7-.8 7.5-5.6 10.5a22.4 22.4 0 0 1-3.9 2Z"/><path d="M9 12H4s.5-3 2-4c1.6-1.1 5 0 5 0"/><path d="M12 15v5s3-.5 4-2c1.1-1.6 0-5 0-5"/></svg></span>
-      <span class="integration-action-card__title">Deploy Conductor in minutes</span>
-      <span>Install conductor and quickly deploy your first agents and workflows.</span>
-      <span class="home-card-cta">Set up Conductor &rarr;</span>
+    <a class="integration-action-card" href="devguide/how-tos/conductor-skills.html">
+      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/></svg></span>
+      <span class="integration-action-card__title">Conductor Skills</span>
+      <span>Using an AI coding agent? Install Conductor Skills so it can build and operate workflows.</span>
+      <span class="home-card-cta">Install skills &rarr;</span>
     </a>
-    <a class="integration-action-card" href="https://github.com/conductor-oss/conductor/releases">
-      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
-      <span class="integration-action-card__title">Download Conductor OSS</span>
-      <span>Download and install the latest release from the official GitHub repo.</span>
-      <span class="home-card-cta">Install Conductor &rarr;</span>
+    <a class="integration-action-card" href="devguide/ai/cookbook/index.html">
+      <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      <span class="integration-action-card__title">AI Cookbook</span>
+      <span>Complete, runnable AI workflow recipes: agents, tools, approvals, and delivery.</span>
+      <span class="home-card-cta">Open the cookbook &rarr;</span>
     </a>
     <a class="integration-action-card" href="devguide/running/deploy.html">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></span>
       <span class="integration-action-card__title">Self-hosting</span>
-      <span>Deploy Conductor OSS with Docker, shared persistence, and production-ready topology.</span>
+      <span>Install the latest release and deploy Conductor OSS with Docker, shared persistence, and production-ready topology.</span>
       <span class="home-card-cta">Deploy OSS &rarr;</span>
     </a>
     <a class="integration-action-card" href="devguide/cookbook/index.html">

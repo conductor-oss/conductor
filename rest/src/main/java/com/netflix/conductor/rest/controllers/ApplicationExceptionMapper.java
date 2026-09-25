@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.conductoross.conductor.core.exception.FileStorageException;
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -56,6 +57,9 @@ public class ApplicationExceptionMapper {
         EXCEPTION_STATUS_MAP.put(NoResourceFoundException.class, HttpStatus.NOT_FOUND);
         EXCEPTION_STATUS_MAP.put(FileStorageException.class, HttpStatus.PAYLOAD_TOO_LARGE);
         EXCEPTION_STATUS_MAP.put(AccessForbiddenException.class, HttpStatus.FORBIDDEN);
+        // A payload that does not match its definition's schema is the caller's to fix, so it
+        // reads as a bad request rather than a server fault.
+        EXCEPTION_STATUS_MAP.put(SchemaValidationException.class, HttpStatus.BAD_REQUEST);
         EXCEPTION_STATUS_MAP.put(
                 HttpRequestMethodNotSupportedException.class, HttpStatus.METHOD_NOT_ALLOWED);
     }

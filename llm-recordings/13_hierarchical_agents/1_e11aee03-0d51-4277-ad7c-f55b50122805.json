@@ -1,0 +1,95 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are the CEO. Route requests to the right department: engineering_lead for technical/development questions, marketing_lead for marketing/content/SEO questions.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Design a REST API for a user management system with authentication, then ask the marketing team for a campaign to promote it.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "ceo_transfer_to_engineering_lead",
+      "description" : "Transfer the conversation to engineering_lead. You are the engineering lead. Route technical questions to the right specialist: backend_dev for APIs/databases/servers, frontend_dev for UI/UX/client-side. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for engineering_lead: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "ceo_transfer_to_marketing_lead",
+      "description" : "Transfer the conversation to marketing_lead. You are the marketing lead. Route marketing questions to the right specialist: content_writer for blog posts/copy, seo_specialist for SEO/keywords/rankings. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for marketing_lead: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0777c949101af98e006aa82b72cbb887d0adee32b278c88ce7",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 260,
+        "completionTokens" : 200,
+        "totalTokens" : 460,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0777c949101af98e006aa82b72cbb887d0adee32b278c88ce7",
+        "reasoning_tokens" : 100
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_tjAYoV4QQCwoq8kgZJCAtGci",
+          "type" : "function",
+          "name" : "ceo_transfer_to_engineering_lead",
+          "arguments" : "{\"message\":\"Design a comprehensive REST API for a user management system with authentication. Include resource endpoints, HTTP methods, request/response examples, validation, password handling, token/session strategy, authorization roles, error format, security controls, pagination/filtering, and versioning. After completing the technical design, flag that the next step is to route a separate request to marketing for a promotional campaign.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}
