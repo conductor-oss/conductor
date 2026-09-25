@@ -41,6 +41,7 @@ import {
 } from "./types";
 import { DetailNodeData } from "./AgentDetailPanel";
 import {
+  jevInferenceOutput,
   formatTokens,
   formatDuration,
   agentValuePreview,
@@ -60,7 +61,7 @@ const MAX_ZOOM = 2.5;
 type Kind =
   | "start"
   | "llm"
-  | "jev"
+  | "jev_decision"
   | "tool"
   | "handoff"
   | "subagent"
@@ -77,7 +78,7 @@ const KIND_TYPE: Record<Kind, TaskType> = {
   subagent: TaskType.SUB_WORKFLOW,
   handoff: TaskType.SET_VARIABLE,
   llm: TaskType.LLM_CHAT_COMPLETE,
-  jev: TaskType.SIMPLE,
+  jev_decision: TaskType.LLM_CHAT_COMPLETE,
   tool: TaskType.SIMPLE,
   output: TaskType.SIMPLE,
   error: TaskType.TERMINATE,
@@ -93,7 +94,7 @@ const KIND_LABEL: Record<Kind, string> = {
   subagent: "AGENT",
   handoff: "HANDOFF",
   llm: "LLM CALL",
-  jev: "JEV",
+  jev_decision: "jev_decision",
   tool: "TOOL",
   output: "OUTPUT",
   error: "ERROR",
@@ -1238,11 +1239,15 @@ function buildTurnNodes(
         case EventType.JEV:
         case EventType.THINKING: {
           const tok = ev.tokens;
+          const model =
+            ev.type === EventType.JEV
+              ? (jevInferenceOutput(ev)?.model ?? ev.toolName)
+              : ev.toolName;
           push(ev.id, {
-            kind: ev.type === EventType.JEV ? "jev" : "llm",
-            label: ev.type === EventType.JEV ? "Jev" : "LLM",
-            sublabel: ev.toolName,
-            modelName: ev.toolName,
+            kind: ev.type === EventType.JEV ? "jev_decision" : "llm",
+            label: ev.type === EventType.JEV ? "jev_decision" : "LLM",
+            sublabel: model,
+            modelName: model,
             meta: tok
               ? `${formatTokens(tok.promptTokens)}↑  ${formatTokens(tok.completionTokens)}↓`
               : undefined,

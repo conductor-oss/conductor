@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.compiler;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agentspan.runtime.jev.JevQuestion;
 import org.conductoross.conductor.ai.agentspan.runtime.jev.JevValidation;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
@@ -24,6 +25,7 @@ import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -270,15 +272,9 @@ public class AgentCompiler {
 
     /** Jev agents perform one inference through the agent runtime. */
     WorkflowDef compileJev(AgentConfig config) {
-        if (config.getModel() == null || config.getModel().isBlank())
+        if (StringUtils.isBlank(config.getModel()))
             throw new IllegalArgumentException("Jev agent requires a model");
-        if ((config.getTools() != null && !config.getTools().isEmpty())
-                || (config.getAgents() != null && !config.getAgents().isEmpty())
-                || config.getPlanner() != null
-                || config.getFallback() != null
-                || config.getMemory() != null
-                || config.getOutputType() != null
-                || (config.getGuardrails() != null && !config.getGuardrails().isEmpty()))
+        if (containsNonJevSupportedConfigs(config))
             throw new IllegalArgumentException(
                     "Jev agents cannot contain chat tools, agents, memory, output schemas or guardrails");
         if (config.getQuestions() != null) {
@@ -315,6 +311,16 @@ public class AgentCompiler {
         wf.setOutputParameters(Map.of("result", "${" + task.getTaskReferenceName() + ".output}"));
         applyTimeout(wf, config);
         return wf;
+    }
+
+    private boolean containsNonJevSupportedConfigs(AgentConfig config) {
+        return !CollectionUtils.isEmpty(config.getTools())
+                || !CollectionUtils.isEmpty(config.getAgents())
+                || config.getPlanner() != null
+                || config.getFallback() != null
+                || config.getMemory() != null
+                || config.getOutputType() != null
+                || !CollectionUtils.isEmpty(config.getGuardrails());
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────

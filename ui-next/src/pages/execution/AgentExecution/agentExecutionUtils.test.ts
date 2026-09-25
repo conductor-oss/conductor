@@ -664,49 +664,58 @@ describe("replaceAgentRunNode", () => {
 });
 
 describe("jev agents", () => {
-  it("shows structured jevs and usage as an agent turn", () => {
-    const output = {
-      model: "jev-1.13",
-      answers: { action: { type: "choice", choice: "a", confidence: 0.9 } },
-      usage: { inputTokens: 12, outputTokens: 2, cost: 0.001 },
-      latencyMs: 25,
-      requestId: "request",
-    };
-    const run = transformWorkflowExecutionToAgentRun(
-      execution(
-        [
-          task({
-            taskId: "jev",
-            referenceTaskName: "decide",
-            taskType: "JEV_AGENT",
-            inputData: {
-              provider: "jev",
-              model: "jev-1.13",
-              state: "state",
-              questions: { action: {} },
-            },
-            outputData: output,
-          }),
-        ],
-        {
-          workflowDefinition: {
-            metadata: {
-              classifier: "agent",
-              agentDef: { kind: "jev", model: "jev-1.13" },
+  it.each([false, true])(
+    "keeps Jev inference out of tools (loop: %s)",
+    (loopOverTask) => {
+      const output = {
+        model: "jev-1.13",
+        answers: { action: { type: "choice", choice: "a", confidence: 0.9 } },
+        usage: { inputTokens: 12, outputTokens: 2, cost: 0.001 },
+        latencyMs: 25,
+        requestId: "request",
+      };
+      const run = transformWorkflowExecutionToAgentRun(
+        execution(
+          [
+            task({
+              taskId: "jev",
+              referenceTaskName: loopOverTask ? "decide__1" : "decide",
+              loopOverTask,
+              taskType: "JEV_AGENT",
+              inputData: {
+                provider: "jev",
+                model: "jev-1.13",
+                state: "state",
+                questions: { action: {} },
+              },
+              outputData: output,
+            }),
+          ],
+          {
+            workflowDefinition: {
+              metadata: {
+                classifier: "agent",
+                agentDef: { kind: "jev", model: "jev-1.13" },
+              },
             },
           },
-        },
-      ),
-    );
-    const event = run.turns
-      .flatMap((t) => t.events)
-      .find((e) => e.type === EventType.JEV);
-    expect(run.agentType).toBe("jev");
-    expect(event?.tokens?.totalTokens).toBe(14);
-    expect(
-      run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
-    ).toBe(14);
-    expect(event?.detail).toMatchObject({ output });
-    expect(event?.success).toBe(true);
-  });
+        ),
+      );
+      const event = run.turns
+        .flatMap((t) => t.events)
+        .find((e) => e.type === EventType.JEV);
+      expect(run.agentType).toBe("jev");
+      expect(event?.tokens?.totalTokens).toBe(14);
+      expect(
+        run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
+      ).toBe(14);
+      expect(event?.detail).toMatchObject({ output });
+      expect(event?.success).toBe(true);
+      expect(
+        run.turns
+          .flatMap((turn) => turn.events)
+          .filter((event) => event.type === EventType.TOOL_CALL),
+      ).toHaveLength(0);
+    },
+  );
 });

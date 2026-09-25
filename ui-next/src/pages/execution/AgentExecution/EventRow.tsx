@@ -15,6 +15,7 @@ import {
   Scissors,
 } from "@phosphor-icons/react";
 import { AgentEvent, EventType } from "./types";
+import { jevInferenceOutput } from "./agentExecutionUtils";
 
 // ─── Visual config ─────────────────────────────────────────────────────────
 
@@ -29,8 +30,8 @@ function getEventVisual(event: AgentEvent): EventVisual {
     case EventType.JEV:
       return {
         icon: <Brain size={15} weight="regular" />,
-        color: "#1976d2",
-        label: "Jev",
+        color: "#9e9e9e",
+        label: "jev_decision",
       };
     case EventType.THINKING:
       // Use model name as label when this is an LLM call
@@ -158,6 +159,38 @@ function JsonBlock({ value, label }: { value: unknown; label: string }) {
 /** Renders expanded detail. For combined tool calls (detail.input + detail.output), shows two sections. */
 function ExpandedDetail({ event }: { event: AgentEvent }) {
   const { detail, type } = event;
+  if (type === EventType.JEV) {
+    const input = (
+      detail as
+        | { input?: { state?: unknown; questions?: unknown; model?: string } }
+        | undefined
+    )?.input;
+    const output = jevInferenceOutput(event);
+    return (
+      <Box>
+        <JsonBlock
+          label="Model"
+          value={output?.model ?? event.toolName ?? input?.model}
+        />
+        {input?.state != null && (
+          <JsonBlock label="State" value={input.state} />
+        )}
+        {input?.questions != null && (
+          <JsonBlock label="Questions and choices" value={input.questions} />
+        )}
+        <JsonBlock label="Answers" value={output?.answers} />
+        {output?.usage != null && (
+          <JsonBlock label="Usage and cost" value={output.usage} />
+        )}
+        {output?.latencyMs != null && (
+          <JsonBlock label="latencyMs" value={output.latencyMs} />
+        )}
+        {output?.requestId && (
+          <JsonBlock label="Request ID" value={output.requestId} />
+        )}
+      </Box>
+    );
+  }
   if (detail === null || detail === undefined) return null;
 
   // Combined input/output block (tool call or LLM call)
@@ -168,33 +201,6 @@ function ExpandedDetail({ event }: { event: AgentEvent }) {
     "output" in (detail as object)
   ) {
     const d = detail as { input: unknown; output: unknown };
-    if (type === EventType.JEV) {
-      const input = d.input as
-        | { state?: unknown; questions?: unknown }
-        | undefined;
-      const output = d.output as
-        | {
-            answers?: unknown;
-            usage?: unknown;
-            latencyMs?: number;
-            requestId?: string;
-          }
-        | undefined;
-      return (
-        <Box>
-          <JsonBlock label="State" value={input?.state} />
-          <JsonBlock label="Questions and choices" value={input?.questions} />
-          <JsonBlock label="Answers" value={output?.answers} />
-          {output?.usage != null && (
-            <JsonBlock label="Usage and cost" value={output.usage} />
-          )}
-          <Typography variant="caption">
-            {output?.latencyMs != null ? `${output.latencyMs} ms` : ""}
-            {output?.requestId ? ` · Request ${output.requestId}` : ""}
-          </Typography>
-        </Box>
-      );
-    }
     return (
       <Box>
         <JsonBlock value={d.input} label="Input" />
@@ -263,7 +269,9 @@ export function EventRow({ event }: EventRowProps) {
     return <CondensedSeparator event={event} />;
   }
   const visual = getEventVisual(event);
-  const hasDetail = event.detail !== undefined && event.detail !== null;
+  const hasDetail =
+    event.detail != null ||
+    (event.type === EventType.JEV && event.result != null);
 
   const tokenLabel =
     event.tokens && event.tokens.totalTokens > 0

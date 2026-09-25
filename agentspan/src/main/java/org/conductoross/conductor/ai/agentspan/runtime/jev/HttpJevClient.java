@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -58,7 +59,7 @@ public class HttpJevClient implements JevClient {
     @Override
     public JevResult decide(JevRequest input) {
         JevValidation.request(input);
-        require(JevValidation.text(config.getApiKey()), "Jev API key is not configured");
+        require(StringUtils.isNotBlank(config.getApiKey()), "Jev API key is not configured");
         require(
                 config.getApiKey().chars().allMatch(c -> c > 32 && c < 127),
                 "invalid Jev credential format");

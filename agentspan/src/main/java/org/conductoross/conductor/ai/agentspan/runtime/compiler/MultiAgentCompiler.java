@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.ai.agentspan.runtime.jev.JevQuestion;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlanAndCompileTask;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlannerContextFetchTask;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
@@ -824,6 +825,13 @@ public class MultiAgentCompiler {
     // ── Router strategy ─────────────────────────────────────────────
 
     private WorkflowDef compileRouter(AgentConfig config) {
+        Object selector = config.getRouter();
+        if (selector instanceof Map<?, ?> map && !map.containsKey("taskName")) {
+            selector = MAPPER.convertValue(map, AgentConfig.class);
+        }
+        if (selector instanceof AgentConfig agent && agent.getKind() == AgentConfig.Kind.JEV) {
+            return compileJevRouter(config, agent);
+        }
         ParsedModel parsed = ModelParser.parse(config.getModel());
         WorkflowDef wf = agentCompiler.createWorkflow(config);
         wf.setDescription("Router agent: " + config.getName());
@@ -1031,11 +1039,96 @@ public class MultiAgentCompiler {
                         "result",
                         config.isSynthesize()
                                 ? ref(toRef(config.getName()) + "_final.output.result")
-                                : "${workflow.variables.conversation}",
+                                : maxTurns == 1
+                                        ? "${workflow.variables.selectedResult}"
+                                        : "${workflow.variables.conversation}",
                         "context",
                         "${workflow.variables._agent_state}"));
         agentCompiler.applyTimeout(wf, config);
         return wf;
+    }
+
+    /** Route one Jev choice to its named child and preserve the child's structured result. */
+    private WorkflowDef compileJevRouter(AgentConfig config, AgentConfig selector) {
+        List<AgentConfig> agents = config.getAgents();
+        rejectReservedAgentNames(config, agents);
+        Set<String> names = agents.stream().map(AgentConfig::getName).collect(Collectors.toSet());
+        if (selector.getQuestions() == null || selector.getQuestions().size() != 1) {
+            throw new IllegalArgumentException("Jev router requires one fixed choice question");
+        }
+        var entry = selector.getQuestions().entrySet().iterator().next();
+        var question = MAPPER.convertValue(entry.getValue(), JevQuestion.class);
+        if (question.type() != JevQuestion.Type.CHOICE
+                || question.choices() == null
+                || !question.choices().keySet().equals(names)) {
+            throw new IllegalArgumentException("Jev router choices must match child agent names");
+        }
+
+        String routerRef = toRef(config.getName()) + "_router";
+        WorkflowTask route =
+                agentCompiler.compileSubAgent(
+                        selector,
+                        routerRef,
+                        "${workflow.input.prompt}",
+                        "${workflow.input.media}",
+                        "${workflow.input.context}");
+        WorkflowTask dispatch = new WorkflowTask();
+        dispatch.setType("SWITCH");
+        dispatch.setTaskReferenceName(toRef(config.getName()) + "_switch");
+        dispatch.setEvaluatorType("graaljs");
+        dispatch.setExpression("$.answers[$.question].choice");
+        dispatch.setInputParameters(
+                Map.of(
+                        "answers",
+                        ref(routerRef + ".output.result.answers"),
+                        "question",
+                        entry.getKey()));
+        Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
+        for (int i = 0; i < agents.size(); i++) {
+            AgentConfig child = agents.get(i);
+            String childRef = toRef(config.getName()) + "_selected_" + i;
+            WorkflowTask run =
+                    agentCompiler.compileSubAgent(
+                            child,
+                            childRef,
+                            "${workflow.input.prompt}",
+                            "${workflow.input.media}",
+                            "${workflow.input.context}");
+            WorkflowTask save = new WorkflowTask();
+            save.setType("SET_VARIABLE");
+            save.setTaskReferenceName(childRef + "_result");
+            save.setInputParameters(
+                    Map.of(
+                            "result",
+                            ref(childRef + ".output.result"),
+                            "selectedAgent",
+                            child.getName()));
+            cases.put(child.getName(), List.of(run, save));
+        }
+        dispatch.setDecisionCases(cases);
+        WorkflowTask invalid = new WorkflowTask();
+        invalid.setType("TERMINATE");
+        invalid.setTaskReferenceName(toRef(config.getName()) + "_invalid_route");
+        invalid.setInputParameters(
+                Map.of(
+                        "terminationStatus",
+                        "FAILED",
+                        "terminationReason",
+                        "Jev selected an unknown agent"));
+        dispatch.setDefaultCase(List.of(invalid));
+
+        WorkflowDef workflow = agentCompiler.createWorkflow(config);
+        workflow.setTasks(List.of(route, dispatch));
+        workflow.setOutputParameters(
+                Map.of(
+                        "result",
+                        "${workflow.variables.result}",
+                        "selectedAgent",
+                        "${workflow.variables.selectedAgent}",
+                        "routing",
+                        ref(routerRef + ".output.result")));
+        agentCompiler.applyTimeout(workflow, config);
+        return workflow;
     }
 
     // ── Round-robin / Random (shared rotation) ──────────────────────
@@ -2508,6 +2601,11 @@ public class MultiAgentCompiler {
                 "conversation",
                 ref(parent.getName() + "_hconcat_" + idx + suffix + ".output.result"));
         setParams.put("_agent_state", "${" + hCtxMergeRef + ".output.result}");
+        if (parent.getStrategy() == AgentConfig.Strategy.ROUTER
+                && parent.getMaxTurns() == 1
+                && !parent.isSynthesize()) {
+            setParams.put("selectedResult", responseRef);
+        }
         setVar.setInputParameters(setParams);
         caseTasks.add(setVar);
 

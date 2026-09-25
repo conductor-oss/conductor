@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
 import java.time.Duration;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +33,7 @@ public class JevConfiguration {
     private Duration timeout = Duration.ofSeconds(20);
 
     public String endpoint() {
-        if (endpoint != null && !endpoint.isBlank()) return endpoint;
+        if (StringUtils.isNotBlank(endpoint)) return endpoint;
         return switch (route) {
             case "openrouter" -> "https://openrouter.ai/api/v1/systemone";
             case "typesafe" -> "https://api.typesafe.ai/v1/systemone";

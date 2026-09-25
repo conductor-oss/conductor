@@ -26,6 +26,7 @@ import {
   TaskAttempt,
 } from "./types";
 import {
+  jevInferenceOutput,
   formatTokens,
   formatDuration,
   getModelIconPath,
@@ -38,7 +39,7 @@ import { WorkflowExecution } from "types/Execution";
 export interface DetailNodeData {
   kind:
     | "llm"
-    | "jev"
+    | "jev_decision"
     | "tool"
     | "handoff"
     | "subagent"
@@ -1096,23 +1097,10 @@ function SummaryContent({
     );
   }
 
-  if (node.kind === "llm" || node.kind === "jev") {
+  if (node.kind === "llm" || node.kind === "jev_decision") {
     const tok = ev?.tokens;
     const jev =
-      node.kind === "jev"
-        ? (
-            ev?.detail as
-              | {
-                  output?: {
-                    answers?: unknown;
-                    usage?: unknown;
-                    latencyMs?: number;
-                    requestId?: string;
-                  };
-                }
-              | undefined
-          )?.output
-        : undefined;
+      node.kind === "jev_decision" && ev ? jevInferenceOutput(ev) : undefined;
     return (
       <Box>
         {ev?.condensationInfo && (
@@ -1121,7 +1109,7 @@ function SummaryContent({
         <SummaryTable>
           <SummaryRow
             label="Kind"
-            value={node.kind === "jev" ? "Jev" : "LLM Call"}
+            value={node.kind === "jev_decision" ? "jev_decision" : "LLM Call"}
           />
           {jev?.answers != null && (
             <SummaryRow label="Answers" value={JSON.stringify(jev.answers)} />
@@ -1145,10 +1133,10 @@ function SummaryContent({
             label="Status"
             value={<StatusBadgeInline status={node.status} />}
           />
-          {ev?.toolName && (
+          {(jev?.model ?? ev?.toolName) && (
             <SummaryRow
               label="Model"
-              value={<ModelValue model={ev.toolName} />}
+              value={<ModelValue model={(jev?.model ?? ev?.toolName)!} />}
             />
           )}
           {ev?.baseUrl && <SummaryRow label="Base URL" value={ev.baseUrl} />}
@@ -1693,7 +1681,7 @@ const KIND_DISPLAY: Record<DetailNodeData["kind"], string> = {
   start: "Agent",
   subagent: "Sub-agent",
   llm: "LLM Call",
-  jev: "Jev",
+  jev_decision: "jev_decision",
   tool: "Tool Call",
   handoff: "Handoff",
   output: "Output",

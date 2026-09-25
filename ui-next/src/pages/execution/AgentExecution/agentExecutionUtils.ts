@@ -17,6 +17,55 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 
+/** Jev SSE events carry result; persisted task events carry detail.output. */
+export function jevInferenceOutput(event: AgentEvent) {
+  return (event.result ??
+    (event.detail as { output?: unknown } | undefined)?.output) as
+    | {
+        model?: string;
+        answers?: unknown;
+        usage?: unknown;
+        latencyMs?: number;
+        requestId?: string;
+      }
+    | undefined;
+}
+
+function jevTaskEvent(task: ExecutionTask): AgentEvent {
+  const usage = task.outputData?.usage as
+    | { inputTokens?: number; outputTokens?: number }
+    | undefined;
+  const promptTokens = usage?.inputTokens ?? 0;
+  const completionTokens = usage?.outputTokens ?? 0;
+  const model = (task.outputData?.model ?? task.inputData?.model) as
+    | string
+    | undefined;
+  return {
+    id: `${task.taskId}-jev`,
+    type: EventType.JEV,
+    toolName: model,
+    timestamp: task.startTime ?? 0,
+    summary: model ?? "jev_decision",
+    detail: { input: task.inputData, output: task.outputData },
+    tokens: {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
+    },
+    durationMs:
+      task.endTime && task.startTime ? task.endTime - task.startTime : 0,
+    success: taskSuccess(task.status),
+    taskMeta: {
+      taskId: task.taskId,
+      taskType: task.taskType,
+      referenceTaskName: task.referenceTaskName,
+      startTime: task.startTime ?? undefined,
+      endTime: task.endTime ?? undefined,
+      seq: task.seq,
+    },
+  };
+}
+
 /** Map a model name to its provider icon path in /integrations-icons/ */
 export function getModelIconPath(model: string | undefined): string | null {
   if (!model) return null;
@@ -869,7 +918,8 @@ export function transformWorkflowExecutionToAgentRun(
           (t) =>
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
-            t.taskType !== "LLM_CHAT_COMPLETE",
+            t.taskType !== "LLM_CHAT_COMPLETE" &&
+            t.taskType !== "JEV_AGENT",
         ),
       );
 
@@ -1187,6 +1237,12 @@ export function transformWorkflowExecutionToAgentRun(
         }
       }
 
+      const { tasks: jevTasks } = deduplicateRetriedTasks(
+        iterTasks.filter((task) => task.taskType === "JEV_AGENT"),
+      );
+      const jevEvents = jevTasks.map(jevTaskEvent);
+      events.push(...jevEvents);
+
       // Tool worker events — ONE combined block per call showing input + output
       // Track whether a HANDOFF was already emitted this turn to avoid duplicates.
       let handoffEmittedThisTurn = false;
@@ -1406,11 +1462,14 @@ export function transformWorkflowExecutionToAgentRun(
       // Token counts from LLM tasks in this iteration
       const turnPromptTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.promptTokens as number) || 0),
-        0,
+        jevEvents.reduce((sum, event) => sum + event.tokens!.promptTokens, 0),
       );
       const turnCompletionTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.completionTokens as number) || 0),
-        0,
+        jevEvents.reduce(
+          (sum, event) => sum + event.tokens!.completionTokens,
+          0,
+        ),
       );
 
       const subStatuses = subAgents.map((s) => s.status);
@@ -1553,7 +1612,7 @@ export function transformWorkflowExecutionToAgentRun(
     attemptCounts: rootAttemptCounts,
     attemptGroups: rootAttemptGroups,
   } = deduplicateRetriedTasks(sortTasksChronologically(rootActiveTasks));
-  let finalOutput: string | undefined;
+  let finalOutput: unknown;
   if (dedupedRootTasks.length > 0) {
     const rootEvents: AgentEvent[] = [];
     let rootPrompt = 0,
@@ -1565,41 +1624,11 @@ export function transformWorkflowExecutionToAgentRun(
       if (task.referenceTaskName === "_fw_task") continue;
 
       if (task.taskType === "JEV_AGENT") {
-        const usage = task.outputData?.usage as
-          | { inputTokens?: number; outputTokens?: number }
-          | undefined;
-        const promptTokens = usage?.inputTokens ?? 0;
-        const completionTokens = usage?.outputTokens ?? 0;
-        rootPrompt += promptTokens;
-        rootCompletion += completionTokens;
-        const answers = task.outputData?.answers as
-          | Record<string, unknown>
-          | undefined;
-        rootEvents.push({
-          id: `${task.taskId}-jev`,
-          type: EventType.JEV,
-          toolName: task.inputData?.model as string | undefined,
-          timestamp: task.startTime ?? 0,
-          summary: `${task.inputData?.model ?? "Jev agent"} · ${Object.keys(answers ?? {}).length} answers`,
-          detail: { input: task.inputData, output: task.outputData },
-          tokens: {
-            promptTokens,
-            completionTokens,
-            totalTokens: promptTokens + completionTokens,
-          },
-          durationMs:
-            task.endTime && task.startTime ? task.endTime - task.startTime : 0,
-          success: taskSuccess(task.status),
-          taskMeta: {
-            taskId: task.taskId,
-            taskType: task.taskType,
-            referenceTaskName: task.referenceTaskName,
-            startTime: task.startTime ?? undefined,
-            endTime: task.endTime ?? undefined,
-            seq: task.seq,
-          },
-        });
-        if (answers) finalOutput = JSON.stringify(answers, null, 2);
+        const event = jevTaskEvent(task);
+        rootEvents.push(event);
+        rootPrompt += event.tokens!.promptTokens;
+        rootCompletion += event.tokens!.completionTokens;
+        finalOutput = task.outputData;
       } else if (task.taskType === "LLM_CHAT_COMPLETE") {
         const condensed = maybeCondensationEvent(task);
         if (condensed) rootEvents.push(condensed);
