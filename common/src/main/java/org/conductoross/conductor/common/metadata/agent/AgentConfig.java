@@ -38,7 +38,7 @@ public class AgentConfig {
     /** Execution semantics are independent of the orchestration strategy. */
     public enum Kind {
         CHAT,
-        DECISION;
+        JEV;
 
         @JsonValue
         public String toValue() {
@@ -50,9 +50,6 @@ public class AgentConfig {
             return Kind.valueOf(value.toUpperCase(Locale.ROOT));
         }
     }
-
-    /** Server decision provider; credentials remain server-side. */
-    private String decisionProvider;
 
     /** Fixed question contract, or null to read context.questions per execution. */
     private Map<String, Object> questions;

@@ -35,12 +35,12 @@ class AgentCompilerTest {
     }
 
     @Test
-    void compilesDecisionAgentWithoutChatAndPreservesTypedOutput() {
+    void compilesJevAgentWithoutChatAndPreservesTypedOutput() {
         AgentConfig config =
                 AgentConfig.builder()
                         .name("routing")
-                        .kind(AgentConfig.Kind.DECISION)
-                        .decisionProvider("jev")
+                        .timeoutSeconds(123)
+                        .kind(AgentConfig.Kind.JEV)
                         .model("jev-1.13")
                         .questions(
                                 Map.of(
@@ -54,11 +54,12 @@ class AgentCompilerTest {
                                                 Map.of("a", "First", "b", "Second"))))
                         .build();
         WorkflowDef wf = compiler.compile(config);
+        assertThat(wf.getTimeoutSeconds()).isEqualTo(123);
+        assertThat(wf.getTimeoutPolicy()).isEqualTo(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         assertThat(wf.getTasks()).hasSize(1);
         var task = wf.getTasks().get(0);
-        assertThat(task.getType()).isEqualTo("DECISION_MODEL");
+        assertThat(task.getType()).isEqualTo("JEV_AGENT");
         assertThat(task.getInputParameters())
-                .containsEntry("provider", "jev")
                 .containsEntry("state", "${workflow.input.prompt}")
                 .containsEntry("questions", config.getQuestions());
         assertThat(task.getTaskDefinition().getRetryCount()).isEqualTo(3);
@@ -70,10 +71,8 @@ class AgentCompilerTest {
                                 .EXPONENTIAL_BACKOFF);
         assertThat(wf.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT)
-                .containsEntry("agent_capabilities", List.of("decision"));
-        assertThat(wf.getOutputParameters())
-                .containsEntry("result", "${routing_decision.output}")
-                .containsEntry("agentKind", "decision");
+                .containsEntry("agent_capabilities", List.of("jev"));
+        assertThat(wf.getOutputParameters()).containsEntry("result", "${routing_jev.output}");
         config.setQuestions(null);
         assertThat(compiler.compile(config).getTasks().get(0).getInputParameters())
                 .containsEntry("questions", "${workflow.input.context.questions}");
@@ -83,12 +82,11 @@ class AgentCompilerTest {
     }
 
     @Test
-    void decisionAgentCompilesAsAChildAgent() {
+    void jevAgentCompilesAsAChildAgent() {
         AgentConfig child =
                 AgentConfig.builder()
                         .name("chooser")
-                        .kind(AgentConfig.Kind.DECISION)
-                        .decisionProvider("jev")
+                        .kind(AgentConfig.Kind.JEV)
                         .model("jev-1.13")
                         .build();
         WorkflowDef workflow =
@@ -105,7 +103,7 @@ class AgentCompilerTest {
                         .orElseThrow();
         var childWorkflow = childTask.getSubWorkflowParam().getWorkflowDef();
         assertThat(childWorkflow.getTasks()).hasSize(1);
-        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("DECISION_MODEL");
+        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("JEV_AGENT");
         assertThat(childWorkflow.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT);
         assertThat(childTask.getInputParameters())
@@ -134,8 +132,8 @@ class AgentCompilerTest {
         WorkflowTask llmTask = wf.getTasks().get(0);
         assertThat(llmTask.getType()).isEqualTo("LLM_CHAT_COMPLETE");
         assertThat(llmTask.getTaskDefinition().getRetryCount()).isEqualTo(3);
-        assertThat(llmTask.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(1);
-        assertThat(llmTask.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(5);
+        assertThat(llmTask.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(2);
+        assertThat(llmTask.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(0);
         assertThat(llmTask.getTaskDefinition().getRetryLogic())
                 .isEqualTo(
                         com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic

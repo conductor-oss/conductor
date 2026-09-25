@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.decision;
+package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -19,11 +19,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /** Decision answers and usage. Unreported usage fields remain null. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record DecisionResult(
+public record JevResult(
         String model, Map<String, Answer> answers, Usage usage, long latencyMs, String requestId) {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Answer(
-            DecisionQuestion.Type type,
+            JevQuestion.Type type,
             String choice,
             Double score,
             Double probability,

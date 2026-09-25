@@ -26,11 +26,11 @@ interface EventVisual {
 
 function getEventVisual(event: AgentEvent): EventVisual {
   switch (event.type) {
-    case EventType.DECISION:
+    case EventType.JEV:
       return {
         icon: <Brain size={15} weight="regular" />,
         color: "#1976d2",
-        label: "Decision",
+        label: "Jev",
       };
     case EventType.THINKING:
       // Use model name as label when this is an LLM call
@@ -168,7 +168,7 @@ function ExpandedDetail({ event }: { event: AgentEvent }) {
     "output" in (detail as object)
   ) {
     const d = detail as { input: unknown; output: unknown };
-    if (type === EventType.DECISION) {
+    if (type === EventType.JEV) {
       const input = d.input as
         | { state?: unknown; questions?: unknown }
         | undefined;

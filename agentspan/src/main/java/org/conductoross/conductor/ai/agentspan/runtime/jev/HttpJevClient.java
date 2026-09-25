@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.decision;
+package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -31,18 +31,17 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
-import static org.conductoross.conductor.ai.decision.DecisionValidation.require;
+import static org.conductoross.conductor.ai.agentspan.runtime.jev.JevValidation.require;
 
 /** Jev System One provider. */
 @Component
-public class JevDecisionModel implements DecisionModel {
+public class HttpJevClient implements JevClient {
     private static final int MAX_RESPONSE_BYTES = 2_000_000;
-    private final JevDecisionConfiguration config;
+    private final JevConfiguration config;
     private final ObjectMapper mapper;
     private final OkHttpClient client;
 
-    public JevDecisionModel(
-            JevDecisionConfiguration config, ObjectMapper mapper, OkHttpClient client) {
+    public HttpJevClient(JevConfiguration config, ObjectMapper mapper, OkHttpClient client) {
         this.config = config;
         this.mapper = mapper;
         // Conductor owns retries. Redirects must not forward the API key.
@@ -57,13 +56,9 @@ public class JevDecisionModel implements DecisionModel {
     }
 
     @Override
-    public String provider() {
-        return "jev";
-    }
-
-    @Override
-    public DecisionResult decide(DecisionRequest input) {
-        require(DecisionValidation.text(config.getApiKey()), "Jev API key is not configured");
+    public JevResult decide(JevRequest input) {
+        JevValidation.request(input);
+        require(JevValidation.text(config.getApiKey()), "Jev API key is not configured");
         require(
                 config.getApiKey().chars().allMatch(c -> c > 32 && c < 127),
                 "invalid Jev credential format");
@@ -96,8 +91,11 @@ public class JevDecisionModel implements DecisionModel {
                 byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
                 require(bytes.length <= MAX_RESPONSE_BYTES, "Jev response too large");
                 JsonNode data = mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
-                return decodeResponse(
-                        data, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
+                JevResult result =
+                        decodeResponse(
+                                data, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
+                JevValidation.result(input, result);
+                return result;
             }
         } catch (JsonProcessingException e) {
             throw new NonRetryableException("Invalid Jev JSON response");
@@ -107,10 +105,10 @@ public class JevDecisionModel implements DecisionModel {
         }
     }
 
-    private Map<String, Object> encodeQuestions(Map<String, DecisionQuestion> questions) {
+    private Map<String, Object> encodeQuestions(Map<String, JevQuestion> questions) {
         Map<String, Object> encoded = new LinkedHashMap<>();
         for (var entry : questions.entrySet()) {
-            DecisionQuestion question = entry.getValue();
+            JevQuestion question = entry.getValue();
             Map<String, Object> wire = new LinkedHashMap<>();
             wire.put("instructions", question.instructions());
             switch (question.type()) {
@@ -129,19 +127,19 @@ public class JevDecisionModel implements DecisionModel {
         return encoded;
     }
 
-    private DecisionResult decodeResponse(JsonNode data, long latencyMs) {
+    private JevResult decodeResponse(JsonNode data, long latencyMs) {
         require(
                 data != null
                         && data.isObject()
                         && data.path("model").isTextual()
                         && data.path("answers").isObject(),
                 "invalid Jev response");
-        Map<String, DecisionResult.Answer> answers = new LinkedHashMap<>();
+        Map<String, JevResult.Answer> answers = new LinkedHashMap<>();
         data.path("answers")
                 .fields()
                 .forEachRemaining(
                         entry -> answers.put(entry.getKey(), decodeAnswer(entry.getValue())));
-        return new DecisionResult(
+        return new JevResult(
                 data.get("model").textValue(),
                 answers,
                 decodeUsage(data.path("usage")),
@@ -149,15 +147,15 @@ public class JevDecisionModel implements DecisionModel {
                 data.path("id").isTextual() ? data.get("id").textValue() : null);
     }
 
-    private DecisionResult.Answer decodeAnswer(JsonNode answer) {
-        DecisionQuestion.Type type =
+    private JevResult.Answer decodeAnswer(JsonNode answer) {
+        JevQuestion.Type type =
                 switch (answer.path("type").asText()) {
-                    case "choice" -> DecisionQuestion.Type.CHOICE;
-                    case "score" -> DecisionQuestion.Type.SCORE;
-                    case "noul" -> DecisionQuestion.Type.BOOLEAN;
+                    case "choice" -> JevQuestion.Type.CHOICE;
+                    case "score" -> JevQuestion.Type.SCORE;
+                    case "noul" -> JevQuestion.Type.BOOLEAN;
                     default -> throw new NonRetryableException("Invalid Jev answer type");
                 };
-        return new DecisionResult.Answer(
+        return new JevResult.Answer(
                 type,
                 answer.path("choice").isTextual() ? answer.get("choice").textValue() : null,
                 number(answer, "score"),
@@ -165,14 +163,14 @@ public class JevDecisionModel implements DecisionModel {
                 number(answer, "confidence"));
     }
 
-    private DecisionResult.Usage decodeUsage(JsonNode usage) {
+    private JevResult.Usage decodeUsage(JsonNode usage) {
         require(usage.isMissingNode() || usage.isObject(), "invalid Jev usage");
         require(
                 !usage.has("cost")
                         || (usage.get("cost").isNumber()
                                 && usage.get("cost").decimalValue().signum() >= 0),
                 "invalid Jev cost");
-        return new DecisionResult.Usage(
+        return new JevResult.Usage(
                 tokens(usage, "input_tokens"),
                 tokens(usage, "output_tokens"),
                 usage.has("cost") ? usage.get("cost").decimalValue() : null,

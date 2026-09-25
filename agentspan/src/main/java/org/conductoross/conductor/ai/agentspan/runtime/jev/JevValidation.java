@@ -10,26 +10,26 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.decision;
+package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
 import java.util.Map;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 /** Reject invalid questions before inference and invalid answers before completing a task. */
-public final class DecisionValidation {
-    private DecisionValidation() {}
+public final class JevValidation {
+    private JevValidation() {}
 
-    public static void request(DecisionRequest request) {
+    public static void request(JevRequest request) {
         require(request != null, "request required");
-        require(
-                text(request.provider()) && text(request.model()) && text(request.state()),
-                "provider, model and state required");
-        require(
-                request.questions() != null && !request.questions().isEmpty(),
-                "questions required");
-        for (var entry : request.questions().entrySet()) {
-            DecisionQuestion q = entry.getValue();
+        require(text(request.model()) && text(request.state()), "model and state required");
+        questions(request.questions());
+    }
+
+    public static void questions(Map<String, JevQuestion> questions) {
+        require(questions != null && !questions.isEmpty(), "questions required");
+        for (var entry : questions.entrySet()) {
+            JevQuestion q = entry.getValue();
             require(
                     text(entry.getKey()) && q != null && q.type() != null && text(q.instructions()),
                     "invalid question");
@@ -54,7 +54,7 @@ public final class DecisionValidation {
                                         && q.scale() != null
                                         && q.scale().size() >= 2
                                         && q.scale().size() <= 10
-                                        && q.scale().stream().allMatch(DecisionValidation::text),
+                                        && q.scale().stream().allMatch(JevValidation::text),
                                 "invalid score scale");
                 case BOOLEAN ->
                         require(
@@ -64,14 +64,14 @@ public final class DecisionValidation {
         }
     }
 
-    public static void result(DecisionRequest request, DecisionResult result) {
+    public static void result(JevRequest request, JevResult result) {
         require(
                 result != null
                         && text(result.model())
                         && result.answers() != null
                         && result.answers().keySet().equals(request.questions().keySet()),
                 "invalid response answers");
-        for (Map.Entry<String, DecisionQuestion> entry : request.questions().entrySet()) {
+        for (Map.Entry<String, JevQuestion> entry : request.questions().entrySet()) {
             var q = entry.getValue();
             var answer = result.answers().get(entry.getKey());
             require(answer != null && answer.type() == q.type(), "invalid answer type");
@@ -111,6 +111,6 @@ public final class DecisionValidation {
     }
 
     static void require(boolean condition, String message) {
-        if (!condition) throw new NonRetryableException("Decision model: " + message);
+        if (!condition) throw new NonRetryableException("Jev agent: " + message);
     }
 }

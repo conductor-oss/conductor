@@ -38,7 +38,7 @@ import { WorkflowExecution } from "types/Execution";
 export interface DetailNodeData {
   kind:
     | "llm"
-    | "decision"
+    | "jev"
     | "tool"
     | "handoff"
     | "subagent"
@@ -1096,10 +1096,10 @@ function SummaryContent({
     );
   }
 
-  if (node.kind === "llm" || node.kind === "decision") {
+  if (node.kind === "llm" || node.kind === "jev") {
     const tok = ev?.tokens;
-    const decision =
-      node.kind === "decision"
+    const jev =
+      node.kind === "jev"
         ? (
             ev?.detail as
               | {
@@ -1121,28 +1121,25 @@ function SummaryContent({
         <SummaryTable>
           <SummaryRow
             label="Kind"
-            value={node.kind === "decision" ? "Decision" : "LLM Call"}
+            value={node.kind === "jev" ? "Jev" : "LLM Call"}
           />
-          {decision?.answers != null && (
-            <SummaryRow
-              label="Answers"
-              value={JSON.stringify(decision.answers)}
-            />
+          {jev?.answers != null && (
+            <SummaryRow label="Answers" value={JSON.stringify(jev.answers)} />
           )}
-          {decision?.usage != null && (
+          {jev?.usage != null && (
             <SummaryRow
               label="Usage and cost"
-              value={JSON.stringify(decision.usage)}
+              value={JSON.stringify(jev.usage)}
             />
           )}
-          {decision?.latencyMs != null && (
+          {jev?.latencyMs != null && (
             <SummaryRow
               label="Provider latency"
-              value={`${decision.latencyMs} ms`}
+              value={`${jev.latencyMs} ms`}
             />
           )}
-          {decision?.requestId && (
-            <SummaryRow label="Request ID" value={decision.requestId} />
+          {jev?.requestId && (
+            <SummaryRow label="Request ID" value={jev.requestId} />
           )}
           <SummaryRow
             label="Status"
@@ -1696,7 +1693,7 @@ const KIND_DISPLAY: Record<DetailNodeData["kind"], string> = {
   start: "Agent",
   subagent: "Sub-agent",
   llm: "LLM Call",
-  decision: "Decision",
+  jev: "Jev",
   tool: "Tool Call",
   handoff: "Handoff",
   output: "Output",

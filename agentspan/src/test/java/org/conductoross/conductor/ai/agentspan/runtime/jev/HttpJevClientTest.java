@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.decision;
+package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
 import java.util.List;
 import java.util.Map;
@@ -30,11 +30,11 @@ import okhttp3.mockwebserver.MockWebServer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class JevDecisionModelTest {
+class HttpJevClientTest {
     private MockWebServer server;
     private final ObjectMapper mapper = new ObjectMapper();
-    private JevDecisionConfiguration config;
-    private DecisionModelWorker worker;
+    private JevConfiguration config;
+    private JevClient client;
     private static final String RESPONSE =
             """
         {"model":"typesafe/jev-test", "id":"decision-1",
@@ -46,13 +46,10 @@ class JevDecisionModelTest {
     void setup() throws Exception {
         server = new MockWebServer();
         server.start();
-        config = new JevDecisionConfiguration();
+        config = new JevConfiguration();
         config.setApiKey("test-key");
         config.setEndpoint(server.url("/v1/systemone").toString());
-        worker =
-                new DecisionModelWorker(
-                        new DecisionModelRegistry(
-                                List.of(new JevDecisionModel(config, mapper, new OkHttpClient()))));
+        client = new HttpJevClient(config, mapper, new OkHttpClient());
     }
 
     @AfterEach
@@ -60,15 +57,14 @@ class JevDecisionModelTest {
         server.shutdown();
     }
 
-    private DecisionRequest request() {
-        return new DecisionRequest(
-                "jev",
+    private JevRequest request() {
+        return new JevRequest(
                 "jev-1.13",
                 "Duplicate charge",
                 Map.of(
                         "team",
-                        new DecisionQuestion(
-                                DecisionQuestion.Type.CHOICE,
+                        new JevQuestion(
+                                JevQuestion.Type.CHOICE,
                                 "Choose team",
                                 Map.of("billing", "Payments", "technical", "Software"),
                                 null)));
@@ -80,9 +76,9 @@ class JevDecisionModelTest {
     }
 
     @Test
-    void serverWorkerMapsRequestAndReportsValidatedUsage() throws Exception {
+    void clientMapsRequestAndReportsValidatedUsage() throws Exception {
         response(RESPONSE);
-        DecisionResult result = worker.decide(request());
+        JevResult result = client.decide(request());
         var sent = server.takeRequest(1, TimeUnit.SECONDS);
         assertNotNull(sent);
         assertEquals("Bearer test-key", sent.getHeader("Authorization"));
@@ -99,22 +95,18 @@ class JevDecisionModelTest {
     }
 
     @Test
-    void booleanAndScoreAreProviderNeutral() throws Exception {
-        DecisionRequest input =
-                new DecisionRequest(
-                        "jev",
+    void mapsBooleanAndScoreAnswers() throws Exception {
+        JevRequest input =
+                new JevRequest(
                         "jev-1.13",
                         "State",
                         Map.of(
                                 "urgent",
-                                        new DecisionQuestion(
-                                                DecisionQuestion.Type.BOOLEAN,
-                                                "Urgent?",
-                                                null,
-                                                null),
+                                        new JevQuestion(
+                                                JevQuestion.Type.BOOLEAN, "Urgent?", null, null),
                                 "severity",
-                                        new DecisionQuestion(
-                                                DecisionQuestion.Type.SCORE,
+                                        new JevQuestion(
+                                                JevQuestion.Type.SCORE,
                                                 "Rate",
                                                 null,
                                                 List.of("Low", "High"))));
@@ -123,7 +115,7 @@ class JevDecisionModelTest {
             {"model":"jev-test","answers":{"urgent":{"type":"noul","noul":0.8},
             "severity":{"type":"score","score":0.4}}}
             """);
-        DecisionResult result = worker.decide(input);
+        JevResult result = client.decide(input);
         assertEquals(0.8, result.answers().get("urgent").probability());
         assertEquals(0.4, result.answers().get("severity").score());
         assertNull(result.usage().cost());
@@ -135,16 +127,10 @@ class JevDecisionModelTest {
     }
 
     @Test
-    void invalidInputAndUnconfiguredProviderDoNotSendRequests() {
+    void invalidInputDoesNotSendRequests() {
         assertThrows(
                 NonRetryableException.class,
-                () -> worker.decide(new DecisionRequest("jev", "m", "", Map.of())));
-        assertThrows(
-                NonRetryableException.class,
-                () ->
-                        worker.decide(
-                                new DecisionRequest(
-                                        "missing", "m", "State", request().questions())));
+                () -> client.decide(new JevRequest("m", "", Map.of())));
         assertEquals(0, server.getRequestCount());
     }
 
@@ -157,7 +143,7 @@ class JevDecisionModelTest {
                         RESPONSE.replace("\"team\":", "\"other\":"),
                         "{broken")) {
             response(body);
-            assertThrows(NonRetryableException.class, () -> worker.decide(request()));
+            assertThrows(NonRetryableException.class, () -> client.decide(request()));
         }
     }
 
@@ -170,7 +156,7 @@ class JevDecisionModelTest {
                             .setHeader("Location", server.url("/redirect"))
                             .setBody("private-provider-error test-key"));
             RuntimeException error =
-                    assertThrows(RuntimeException.class, () -> worker.decide(request()));
+                    assertThrows(RuntimeException.class, () -> client.decide(request()));
             assertEquals("Jev HTTP status " + code, error.getMessage());
             assertNull(error.getCause());
         }
@@ -182,8 +168,8 @@ class JevDecisionModelTest {
         response(RESPONSE);
         response(RESPONSE);
         try (var executor = Executors.newFixedThreadPool(2)) {
-            var first = executor.submit(() -> worker.decide(request()));
-            var second = executor.submit(() -> worker.decide(request()));
+            var first = executor.submit(() -> client.decide(request()));
+            var second = executor.submit(() -> client.decide(request()));
             assertEquals("billing", first.get(5, TimeUnit.SECONDS).answers().get("team").choice());
             assertEquals("billing", second.get(5, TimeUnit.SECONDS).answers().get("team").choice());
         }
@@ -191,13 +177,8 @@ class JevDecisionModelTest {
     }
 
     @Test
-    void genericJsonRoundTripAndRegistryRejectsDuplicates() throws Exception {
+    void genericJsonRoundTrip() throws Exception {
         assertEquals(
-                request(),
-                mapper.readValue(mapper.writeValueAsBytes(request()), DecisionRequest.class));
-        var model = new JevDecisionModel(config, mapper, new OkHttpClient());
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new DecisionModelRegistry(List.of(model, model)));
+                request(), mapper.readValue(mapper.writeValueAsBytes(request()), JevRequest.class));
     }
 }

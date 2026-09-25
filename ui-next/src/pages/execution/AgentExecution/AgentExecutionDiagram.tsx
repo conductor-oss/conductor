@@ -60,7 +60,7 @@ const MAX_ZOOM = 2.5;
 type Kind =
   | "start"
   | "llm"
-  | "decision"
+  | "jev"
   | "tool"
   | "handoff"
   | "subagent"
@@ -77,7 +77,7 @@ const KIND_TYPE: Record<Kind, TaskType> = {
   subagent: TaskType.SUB_WORKFLOW,
   handoff: TaskType.SET_VARIABLE,
   llm: TaskType.LLM_CHAT_COMPLETE,
-  decision: TaskType.SIMPLE,
+  jev: TaskType.SIMPLE,
   tool: TaskType.SIMPLE,
   output: TaskType.SIMPLE,
   error: TaskType.TERMINATE,
@@ -93,7 +93,7 @@ const KIND_LABEL: Record<Kind, string> = {
   subagent: "AGENT",
   handoff: "HANDOFF",
   llm: "LLM CALL",
-  decision: "DECISION",
+  jev: "JEV",
   tool: "TOOL",
   output: "OUTPUT",
   error: "ERROR",
@@ -1235,12 +1235,12 @@ function buildTurnNodes(
     } else {
       const ev = grp as AgentEvent;
       switch (ev.type) {
-        case EventType.DECISION:
+        case EventType.JEV:
         case EventType.THINKING: {
           const tok = ev.tokens;
           push(ev.id, {
-            kind: ev.type === EventType.DECISION ? "decision" : "llm",
-            label: ev.type === EventType.DECISION ? "Decision" : "LLM",
+            kind: ev.type === EventType.JEV ? "jev" : "llm",
+            label: ev.type === EventType.JEV ? "Jev" : "LLM",
             sublabel: ev.toolName,
             modelName: ev.toolName,
             meta: tok

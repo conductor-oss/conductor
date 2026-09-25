@@ -663,8 +663,8 @@ describe("replaceAgentRunNode", () => {
   });
 });
 
-describe("decision agents", () => {
-  it("shows structured decisions and usage as an agent turn", () => {
+describe("jev agents", () => {
+  it("shows structured jevs and usage as an agent turn", () => {
     const output = {
       model: "jev-1.13",
       answers: { action: { type: "choice", choice: "a", confidence: 0.9 } },
@@ -676,9 +676,9 @@ describe("decision agents", () => {
       execution(
         [
           task({
-            taskId: "decision",
+            taskId: "jev",
             referenceTaskName: "decide",
-            taskType: "DECISION_MODEL",
+            taskType: "JEV_AGENT",
             inputData: {
               provider: "jev",
               model: "jev-1.13",
@@ -692,7 +692,7 @@ describe("decision agents", () => {
           workflowDefinition: {
             metadata: {
               classifier: "agent",
-              agentDef: { kind: "decision", model: "jev-1.13" },
+              agentDef: { kind: "jev", model: "jev-1.13" },
             },
           },
         },
@@ -700,8 +700,8 @@ describe("decision agents", () => {
     );
     const event = run.turns
       .flatMap((t) => t.events)
-      .find((e) => e.type === EventType.DECISION);
-    expect(run.agentType).toBe("decision");
+      .find((e) => e.type === EventType.JEV);
+    expect(run.agentType).toBe("jev");
     expect(event?.tokens?.totalTokens).toBe(14);
     expect(
       run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),

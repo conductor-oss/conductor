@@ -10,11 +10,22 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.decision;
+package org.conductoross.conductor.ai.agentspan.runtime.jev;
 
-/** Decision provider. The worker validates requests and results. */
-public interface DecisionModel {
-    String provider();
+import java.util.List;
+import java.util.Map;
 
-    DecisionResult decide(DecisionRequest request);
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/** Choice uses named choices; score uses an ordered scale; boolean returns a probability. */
+public record JevQuestion(
+        Type type, String instructions, Map<String, String> choices, List<String> scale) {
+    public enum Type {
+        @JsonProperty("choice")
+        CHOICE,
+        @JsonProperty("score")
+        SCORE,
+        @JsonProperty("boolean")
+        BOOLEAN
+    }
 }

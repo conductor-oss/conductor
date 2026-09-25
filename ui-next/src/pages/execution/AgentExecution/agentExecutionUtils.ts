@@ -733,8 +733,8 @@ function transformChainWorkflowToAgentRun(
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
     agentType:
-      agentDef?.kind === "decision"
-        ? "decision"
+      agentDef?.kind === "jev"
+        ? "jev"
         : (execution.workflowDefinition?.metadata?.agent_sdk as
             | string
             | undefined),
@@ -1564,7 +1564,7 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "DECISION_MODEL") {
+      if (task.taskType === "JEV_AGENT") {
         const usage = task.outputData?.usage as
           | { inputTokens?: number; outputTokens?: number }
           | undefined;
@@ -1576,11 +1576,11 @@ export function transformWorkflowExecutionToAgentRun(
           | Record<string, unknown>
           | undefined;
         rootEvents.push({
-          id: `${task.taskId}-decision`,
-          type: EventType.DECISION,
+          id: `${task.taskId}-jev`,
+          type: EventType.JEV,
           toolName: task.inputData?.model as string | undefined,
           timestamp: task.startTime ?? 0,
-          summary: `${task.inputData?.model ?? "Decision agent"} · ${Object.keys(answers ?? {}).length} answers`,
+          summary: `${task.inputData?.model ?? "Jev agent"} · ${Object.keys(answers ?? {}).length} answers`,
           detail: { input: task.inputData, output: task.outputData },
           tokens: {
             promptTokens,
@@ -1902,7 +1902,7 @@ export function transformWorkflowExecutionToAgentRun(
         .filter(
           (event) =>
             (event.type === EventType.THINKING ||
-              event.type === EventType.DECISION) &&
+              event.type === EventType.JEV) &&
             event.tokens,
         )
         .reduce(
@@ -2022,8 +2022,8 @@ export function transformWorkflowExecutionToAgentRun(
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
     agentType:
-      agentDef?.kind === "decision"
-        ? "decision"
+      agentDef?.kind === "jev"
+        ? "jev"
         : (execution.workflowDefinition?.metadata?.agent_sdk as
             | string
             | undefined),

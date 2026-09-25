@@ -51,7 +51,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
     /** Conductor AI task types that consume LLM/generation API calls. */
     private static final Set<String> AI_TASK_TYPES =
             Set.of(
-                    "DECISION_MODEL",
+                    "JEV_AGENT",
                     "LLM_CHAT_COMPLETE",
                     "GENERATE_IMAGE",
                     "GENERATE_AUDIO",
@@ -82,7 +82,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         String taskRef = task.getReferenceTaskName();
         logger.debug("onTaskScheduled: wfId={}, type={}, ref={}", wfId, taskType, taskRef);
 
-        if ("LLM_CHAT_COMPLETE".equals(taskType) || "DECISION_MODEL".equals(taskType)) {
+        if ("LLM_CHAT_COMPLETE".equals(taskType) || "JEV_AGENT".equals(taskType)) {
             emit(wfId, AgentSSEEvent.thinking(wfId, taskRef));
         } else if ("PULL_WORKFLOW_MESSAGES".equals(taskType)) {
             emit(wfId, AgentSSEEvent.waiting(wfId, Map.of("taskRefName", taskRef)));
@@ -119,8 +119,8 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         if (output == null) output = Map.of();
 
         // Tool dispatch — SIMPLE tasks that are tool invocations
-        if ("DECISION_MODEL".equals(task.getTaskType())) {
-            emit(wfId, AgentSSEEvent.decision(wfId, taskRef, output));
+        if ("JEV_AGENT".equals(task.getTaskType())) {
+            emit(wfId, AgentSSEEvent.jev(wfId, taskRef, output));
         } else if (isToolTask(task)) {
             String toolName = resolveToolName(task);
             Object args = task.getInputData();
@@ -326,7 +326,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             String provider =
                     input.get("llmProvider") != null
                             ? String.valueOf(input.get("llmProvider"))
-                            : String.valueOf(input.getOrDefault("provider", "unknown"));
+                            : "JEV_AGENT".equals(taskType) ? "jev" : "unknown";
 
             String taskLabel =
                     switch (taskType) {
@@ -351,8 +351,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             int promptTokens = toInt(output.get("promptTokens"));
             int completionTokens = toInt(output.get("completionTokens"));
             int totalTokens = toInt(output.get("tokenUsed"));
-            if ("DECISION_MODEL".equals(taskType)
-                    && output.get("usage") instanceof Map<?, ?> usage) {
+            if ("JEV_AGENT".equals(taskType) && output.get("usage") instanceof Map<?, ?> usage) {
                 promptTokens = toInt(usage.get("inputTokens"));
                 completionTokens = toInt(usage.get("outputTokens"));
                 totalTokens = promptTokens + completionTokens;

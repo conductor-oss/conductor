@@ -36,7 +36,7 @@ public class ToolConfig {
 
     /**
      * Tool type: worker, http, api, mcp, generate_image, generate_audio, generate_video,
-     * generate_pdf, rag_index, rag_search, decision_model.
+     * generate_pdf, rag_index, rag_search.
      */
     @Builder.Default private String toolType = "worker";
 

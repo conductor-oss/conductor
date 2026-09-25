@@ -42,11 +42,11 @@ class AgentEventListenerTest {
     private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     @Test
-    void decisionPublishesStructuredResultThroughAgentStream() {
+    void jevPublishesStructuredResultThroughAgentStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         AgentEventListener listener = listener(registry);
-        AgentEventStream stream = registry.openStream("decision-agent", null);
-        TaskModel task = task("decision-agent", "DECISION_MODEL", "choose_decision");
+        AgentEventStream stream = registry.openStream("jev-agent", null);
+        TaskModel task = task("jev-agent", "JEV_AGENT", "choose_jev");
         task.setOutputData(
                 Map.of(
                         "answers",
@@ -59,7 +59,7 @@ class AgentEventListenerTest {
         listener.onTaskCompleted(task);
         assertThat(next(stream).getType()).isEqualTo("thinking");
         var result = next(stream);
-        assertThat(result.getType()).isEqualTo("decision");
+        assertThat(result.getType()).isEqualTo("jev");
         assertThat(result.getResult()).isEqualTo(task.getOutputData());
         stream.close();
     }
