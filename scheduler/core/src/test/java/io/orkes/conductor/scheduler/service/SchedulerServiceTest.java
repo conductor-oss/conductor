@@ -211,6 +211,27 @@ class SchedulerServiceTest {
     // -------------------------------------------------------------------------
 
     @Test
+    @DisplayName("createOrUpdateWorkflowSchedule rejects a missing or blank name")
+    void testCreateScheduleRequiresName() {
+        SchedulerService service = createServiceWithRedisHealthy(new SchedulerTimeProvider());
+
+        for (String name : Arrays.asList(null, "", "   ")) {
+            WorkflowSchedule schedule = new WorkflowSchedule();
+            schedule.setName(name);
+            schedule.setCronExpression("@daily");
+            schedule.setStartWorkflowRequest(new StartWorkflowRequest());
+            schedule.getStartWorkflowRequest().setName("test_workflow");
+
+            IllegalArgumentException e =
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () -> service.createOrUpdateWorkflowSchedule(schedule));
+            assertEquals("Schedule name is required", e.getMessage());
+        }
+        assertEquals(0, queueDAO.getCounter("pushWithPriority"));
+    }
+
+    @Test
     @DisplayName("basic schedule: create, execute on poll, produce archival message")
     void testSchedulerBasics() {
         SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);
