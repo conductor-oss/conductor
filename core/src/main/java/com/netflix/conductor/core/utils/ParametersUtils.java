@@ -57,6 +57,7 @@ public class ParametersUtils {
             Pattern.compile("\\$\\{workflow\\.secrets\\.([^}]+)\\}");
     private static final String SECRETS_PREFIX = "workflow.secrets.";
     private static final String ENV_PREFIX = "workflow.env.";
+    private static final int MAX_EXPRESSION_DEPTH = 32;
 
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};
@@ -251,13 +252,26 @@ public class ParametersUtils {
 
     private Object replaceVariables(
             String paramString, DocumentContext documentContext, String taskId, int depth) {
+        if (depth >= MAX_EXPRESSION_DEPTH) {
+            LOGGER.warn(
+                    "Expression nesting depth limit exceeded ({}) for: {}. Resolving to null.",
+                    MAX_EXPRESSION_DEPTH,
+                    paramString);
+            return null;
+        }
         var replacements = new LinkedList<Replacement>();
         for (int[] expression : findExpressions(paramString)) {
             var start = expression[0];
             var end = expression[1];
             var match = paramString.substring(start, end);
             String paramPath = match.substring(2, match.length() - 1);
-            paramPath = replaceVariables(paramPath, documentContext, taskId, depth + 1).toString();
+            Object resolvedParamPath =
+                    replaceVariables(paramPath, documentContext, taskId, depth + 1);
+            if (resolvedParamPath == null) {
+                replacements.add(new Replacement(null, start, end));
+                continue;
+            }
+            paramPath = resolvedParamPath.toString();
             // if the paramPath is blank, meaning no value in between ${ and }
             // like ${}, ${  } etc, set the value to empty string
             if (StringUtils.isBlank(paramPath)) {
