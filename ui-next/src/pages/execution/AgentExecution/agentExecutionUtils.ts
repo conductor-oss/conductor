@@ -732,9 +732,12 @@ function transformChainWorkflowToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
-    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
-      | string
-      | undefined,
+    agentType:
+      agentDef?.kind === "decision"
+        ? "decision"
+        : (execution.workflowDefinition?.metadata?.agent_sdk as
+            | string
+            | undefined),
     model: chainModel,
     turns,
     status: mapWorkflowStatus(execution.status),
@@ -1561,7 +1564,43 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "LLM_CHAT_COMPLETE") {
+      if (task.taskType === "DECISION_MODEL") {
+        const usage = task.outputData?.usage as
+          | { inputTokens?: number; outputTokens?: number }
+          | undefined;
+        const promptTokens = usage?.inputTokens ?? 0;
+        const completionTokens = usage?.outputTokens ?? 0;
+        rootPrompt += promptTokens;
+        rootCompletion += completionTokens;
+        const answers = task.outputData?.answers as
+          | Record<string, unknown>
+          | undefined;
+        rootEvents.push({
+          id: `${task.taskId}-decision`,
+          type: EventType.DECISION,
+          toolName: task.inputData?.model as string | undefined,
+          timestamp: task.startTime ?? 0,
+          summary: `${task.inputData?.model ?? "Decision agent"} · ${Object.keys(answers ?? {}).length} answers`,
+          detail: { input: task.inputData, output: task.outputData },
+          tokens: {
+            promptTokens,
+            completionTokens,
+            totalTokens: promptTokens + completionTokens,
+          },
+          durationMs:
+            task.endTime && task.startTime ? task.endTime - task.startTime : 0,
+          success: taskSuccess(task.status),
+          taskMeta: {
+            taskId: task.taskId,
+            taskType: task.taskType,
+            referenceTaskName: task.referenceTaskName,
+            startTime: task.startTime ?? undefined,
+            endTime: task.endTime ?? undefined,
+            seq: task.seq,
+          },
+        });
+        if (answers) finalOutput = JSON.stringify(answers, null, 2);
+      } else if (task.taskType === "LLM_CHAT_COMPLETE") {
         const condensed = maybeCondensationEvent(task);
         if (condensed) rootEvents.push(condensed);
 
@@ -1860,7 +1899,12 @@ export function transformWorkflowExecutionToAgentRun(
         ),
       ].filter((time) => time > 0);
       const tokens = orderedEvents
-        .filter((event) => event.type === EventType.THINKING && event.tokens)
+        .filter(
+          (event) =>
+            (event.type === EventType.THINKING ||
+              event.type === EventType.DECISION) &&
+            event.tokens,
+        )
         .reduce(
           (total, event) => ({
             promptTokens:
@@ -1977,9 +2021,12 @@ export function transformWorkflowExecutionToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
-    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
-      | string
-      | undefined,
+    agentType:
+      agentDef?.kind === "decision"
+        ? "decision"
+        : (execution.workflowDefinition?.metadata?.agent_sdk as
+            | string
+            | undefined),
     model: agentModel,
     turns,
     status: mapWorkflowStatus(execution.status),

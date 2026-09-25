@@ -46,6 +46,12 @@ export default function RunAgent() {
   const [agentVersion, setAgentVersion] = useState<number | undefined>(
     selectedAgent?.agentVersion,
   );
+  const { data: definition } = useFetch<Record<string, unknown>>(
+    `/agent/${encodeURIComponent(agentName)}${agentVersion ? `?version=${agentVersion}` : ""}`,
+    { when: Boolean(agentName) },
+  );
+  const isDecision = definition?.kind === "decision";
+  const [questions, setQuestions] = useState("");
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
   const [started, setStarted] = useState<AgentStartResponse>();
@@ -90,6 +96,7 @@ export default function RunAgent() {
     setAgentName("");
     setAgentVersion(undefined);
     setModel("");
+    setQuestions("");
     setPrompt("");
     setStarted(undefined);
     setError("");
@@ -100,9 +107,27 @@ export default function RunAgent() {
       return;
     }
     setStarted(undefined);
+    let context: Record<string, unknown> | undefined;
+    if (isDecision && !definition?.questions) {
+      try {
+        const parsed: unknown = JSON.parse(questions);
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          Array.isArray(parsed) ||
+          !Object.keys(parsed).length
+        )
+          throw new Error();
+        context = { questions: parsed };
+      } catch {
+        setError("Enter a nonempty JSON object of decision questions.");
+        return;
+      }
+    }
     startAgent({
       body: JSON.stringify({
         name: agentName,
+        ...(context ? { context } : {}),
         version: agentVersion,
         model: model.trim() || undefined,
         prompt,
@@ -208,7 +233,7 @@ export default function RunAgent() {
                     label="Model override (optional)"
                     placeholder="Use the deployed agent model"
                     value={model}
-                    options={modelOptions}
+                    options={isDecision ? [] : modelOptions}
                     groupBy={(option: string) => option.split("/")[0]}
                     onChange={(_: unknown, newValue: string | null) => {
                       setModel(newValue ?? "");
@@ -226,12 +251,41 @@ export default function RunAgent() {
                     required
                     multiline
                     minRows={8}
-                    label="Input text"
-                    placeholder="What should this agent do?"
+                    label={isDecision ? "Decision state" : "Input text"}
+                    placeholder={
+                      isDecision
+                        ? "State to evaluate (text or JSON)"
+                        : "What should this agent do?"
+                    }
                     value={prompt}
                     onTextInputChange={setPrompt}
                   />
                 </Grid>
+                {isDecision && definition?.questions != null && (
+                  <Grid size={12}>
+                    <Box
+                      component="pre"
+                      sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                      aria-label="Configured decision questions"
+                    >
+                      {JSON.stringify(definition.questions, null, 2)}
+                    </Box>
+                  </Grid>
+                )}
+                {isDecision && !definition?.questions && (
+                  <Grid size={12}>
+                    <ConductorInput
+                      id="run-agent-questions"
+                      fullWidth
+                      required
+                      multiline
+                      minRows={6}
+                      label="Decision questions (JSON)"
+                      value={questions}
+                      onTextInputChange={setQuestions}
+                    />
+                  </Grid>
+                )}
               </Grid>
             </Paper>
           </Grid>

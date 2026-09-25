@@ -26,6 +26,12 @@ interface EventVisual {
 
 function getEventVisual(event: AgentEvent): EventVisual {
   switch (event.type) {
+    case EventType.DECISION:
+      return {
+        icon: <Brain size={15} weight="regular" />,
+        color: "#1976d2",
+        label: "Decision",
+      };
     case EventType.THINKING:
       // Use model name as label when this is an LLM call
       return {
@@ -162,6 +168,33 @@ function ExpandedDetail({ event }: { event: AgentEvent }) {
     "output" in (detail as object)
   ) {
     const d = detail as { input: unknown; output: unknown };
+    if (type === EventType.DECISION) {
+      const input = d.input as
+        | { state?: unknown; questions?: unknown }
+        | undefined;
+      const output = d.output as
+        | {
+            answers?: unknown;
+            usage?: unknown;
+            latencyMs?: number;
+            requestId?: string;
+          }
+        | undefined;
+      return (
+        <Box>
+          <JsonBlock label="State" value={input?.state} />
+          <JsonBlock label="Questions and choices" value={input?.questions} />
+          <JsonBlock label="Answers" value={output?.answers} />
+          {output?.usage != null && (
+            <JsonBlock label="Usage and cost" value={output.usage} />
+          )}
+          <Typography variant="caption">
+            {output?.latencyMs != null ? `${output.latencyMs} ms` : ""}
+            {output?.requestId ? ` · Request ${output.requestId}` : ""}
+          </Typography>
+        </Box>
+      );
+    }
     return (
       <Box>
         <JsonBlock value={d.input} label="Input" />

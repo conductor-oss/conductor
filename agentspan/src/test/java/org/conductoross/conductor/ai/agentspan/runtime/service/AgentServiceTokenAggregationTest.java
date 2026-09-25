@@ -35,6 +35,19 @@ import static org.mockito.Mockito.when;
 class AgentServiceTokenAggregationTest {
 
     @Test
+    void includesDecisionUsageAlongsideChatUsage() {
+        Task decision = new Task();
+        decision.setTaskType("DECISION_MODEL");
+        decision.setOutputData(
+                Map.of("usage", Map.of("inputTokens", 12, "outputTokens", 3, "cost", 0.001)));
+        assertThat(
+                        aggregatorWith(Map.of())
+                                .aggregate(workflow("root", decision, llmTask(7, 2, 9)))
+                                .getTotalTokens())
+                .isEqualTo(24);
+    }
+
+    @Test
     void aggregatesTokensAcrossSiblingAndNestedSubWorkflowsOnce() {
         Workflow root =
                 workflow(

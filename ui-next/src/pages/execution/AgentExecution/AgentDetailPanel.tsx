@@ -38,6 +38,7 @@ import { WorkflowExecution } from "types/Execution";
 export interface DetailNodeData {
   kind:
     | "llm"
+    | "decision"
     | "tool"
     | "handoff"
     | "subagent"
@@ -1095,15 +1096,54 @@ function SummaryContent({
     );
   }
 
-  if (node.kind === "llm") {
+  if (node.kind === "llm" || node.kind === "decision") {
     const tok = ev?.tokens;
+    const decision =
+      node.kind === "decision"
+        ? (
+            ev?.detail as
+              | {
+                  output?: {
+                    answers?: unknown;
+                    usage?: unknown;
+                    latencyMs?: number;
+                    requestId?: string;
+                  };
+                }
+              | undefined
+          )?.output
+        : undefined;
     return (
       <Box>
         {ev?.condensationInfo && (
           <CondensationBanner info={ev.condensationInfo} />
         )}
         <SummaryTable>
-          <SummaryRow label="Kind" value="LLM Call" />
+          <SummaryRow
+            label="Kind"
+            value={node.kind === "decision" ? "Decision" : "LLM Call"}
+          />
+          {decision?.answers != null && (
+            <SummaryRow
+              label="Answers"
+              value={JSON.stringify(decision.answers)}
+            />
+          )}
+          {decision?.usage != null && (
+            <SummaryRow
+              label="Usage and cost"
+              value={JSON.stringify(decision.usage)}
+            />
+          )}
+          {decision?.latencyMs != null && (
+            <SummaryRow
+              label="Provider latency"
+              value={`${decision.latencyMs} ms`}
+            />
+          )}
+          {decision?.requestId && (
+            <SummaryRow label="Request ID" value={decision.requestId} />
+          )}
           <SummaryRow
             label="Status"
             value={<StatusBadgeInline status={node.status} />}
@@ -1656,6 +1696,7 @@ const KIND_DISPLAY: Record<DetailNodeData["kind"], string> = {
   start: "Agent",
   subagent: "Sub-agent",
   llm: "LLM Call",
+  decision: "Decision",
   tool: "Tool Call",
   handoff: "Handoff",
   output: "Output",

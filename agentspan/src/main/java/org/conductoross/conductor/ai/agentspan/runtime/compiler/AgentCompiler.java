@@ -118,7 +118,9 @@ public class AgentCompiler {
 
         // Passthrough check MUST be first — passthrough configs have null model.
         // Any other branch would crash on null model.
-        if (isFrameworkPassthrough(config)) {
+        if (config.getKind() == AgentConfig.Kind.DECISION) {
+            wf = compileDecision(config);
+        } else if (isFrameworkPassthrough(config)) {
             wf = compileFrameworkPassthrough(config);
         } else if (isGraphStructure(config)) {
             // Graph-structure: custom StateGraph with node/edge workflow
@@ -262,6 +264,65 @@ public class AgentCompiler {
                     e.getMessage());
         }
         wf.setMetadata(metadata);
+    }
+
+    /** Decision agents make one typed inference; they do not run a chat or tool loop. */
+    WorkflowDef compileDecision(AgentConfig config) {
+        if (config.getDecisionProvider() == null
+                || config.getDecisionProvider().isBlank()
+                || config.getModel() == null
+                || config.getModel().isBlank())
+            throw new IllegalArgumentException("Decision agent requires provider and model");
+        if ((config.getTools() != null && !config.getTools().isEmpty())
+                || (config.getAgents() != null && !config.getAgents().isEmpty())
+                || config.getPlanner() != null
+                || config.getFallback() != null
+                || config.getMemory() != null
+                || config.getOutputType() != null
+                || (config.getGuardrails() != null && !config.getGuardrails().isEmpty()))
+            throw new IllegalArgumentException(
+                    "Decision agents cannot contain chat tools, agents, memory, output schemas or guardrails");
+        if (config.getQuestions() != null) {
+            var request =
+                    MAPPER.convertValue(
+                            Map.of(
+                                    "provider",
+                                    config.getDecisionProvider(),
+                                    "model",
+                                    config.getModel(),
+                                    "state",
+                                    "compile validation",
+                                    "questions",
+                                    config.getQuestions()),
+                            org.conductoross.conductor.ai.decision.DecisionRequest.class);
+            org.conductoross.conductor.ai.decision.DecisionValidation.request(request);
+        }
+        WorkflowDef wf = createWorkflow(config);
+        WorkflowTask task = new WorkflowTask();
+        task.setName("DECISION_MODEL");
+        task.setType("DECISION_MODEL");
+        task.setTaskReferenceName(toRef(config.getName()) + "_decision");
+        task.setInputParameters(
+                Map.of(
+                        "provider",
+                        config.getDecisionProvider(),
+                        "model",
+                        config.getModel(),
+                        "state",
+                        "${workflow.input.prompt}",
+                        "questions",
+                        config.getQuestions() != null
+                                ? config.getQuestions()
+                                : "${workflow.input.context.questions}"));
+        task.setTaskDefinition(modelRetryDefinition("DECISION_MODEL"));
+        wf.setTasks(new ArrayList<>(List.of(task)));
+        wf.setOutputParameters(
+                Map.of(
+                        "result",
+                        "${" + task.getTaskReferenceName() + ".output}",
+                        "agentKind",
+                        "decision"));
+        return wf;
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────
@@ -1563,13 +1624,7 @@ public class AgentCompiler {
         // retry policy makes Conductor re-issue the call with exponential
         // backoff before the failure bubbles up and aborts the agent's turn
         // (which would otherwise kill a whole retrieval/reasoning round).
-        TaskDef llmRetryDef = new TaskDef();
-        llmRetryDef.setName("LLM_CHAT_COMPLETE");
-        llmRetryDef.setRetryCount(3);
-        llmRetryDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
-        llmRetryDef.setRetryDelaySeconds(2);
-        llmRetryDef.setBackoffScaleFactor(2);
-        llm.setTaskDefinition(llmRetryDef);
+        llm.setTaskDefinition(modelRetryDefinition("LLM_CHAT_COMPLETE"));
 
         return llm;
     }
@@ -1634,6 +1689,18 @@ public class AgentCompiler {
 
         return new ResolvedInstructions(
                 List.of(workerTask, normalizeTask), ref(refName + ".output.result"));
+    }
+
+    /** Three transient retries at 1, 2, and 4 seconds; both agent kinds use the same cap. */
+    private static TaskDef modelRetryDefinition(String name) {
+        TaskDef retry = new TaskDef();
+        retry.setName(name);
+        retry.setRetryCount(3);
+        retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        retry.setRetryDelaySeconds(1);
+        retry.setBackoffScaleFactor(2);
+        retry.setMaxRetryDelaySeconds(5);
+        return retry;
     }
 
     /**
@@ -2701,6 +2768,7 @@ public class AgentCompiler {
     /** Recursively walk the config tree and collect capability tags. */
     static Set<String> collectCapabilities(AgentConfig config) {
         Set<String> caps = new LinkedHashSet<>();
+        if (config.getKind() == AgentConfig.Kind.DECISION) return Set.of("decision");
         // Mirror the dispatch-site definition of ``hasAgents`` — named
         // PLAN_EXECUTE slots count as sub-agents for capability purposes
         // too. Without this, a PLAN_EXECUTE coordinator built with

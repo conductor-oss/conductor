@@ -43,9 +43,19 @@ Agent tools use `toolType: "decision_model"` with fixed `config.provider`,
 `questions` come from tool arguments. The [Python example](examples/jev/jev_agent.py)
 uses `DecisionModelTool` in an `@agent`; no Python worker is needed.
 
-Agent decision tasks default to zero retries. Explicit task policies may retry
-transport failures, HTTP 429, or HTTP 5xx. Invalid requests and responses fail
-terminally. The HTTP client does not retry or follow redirects.
+Standalone decision agents compile directly to one `DECISION_MODEL` task, with
+`classifier=agent` metadata so they appear in Agent Executions. Set `kind` to
+`decision`, `decisionProvider` to `jev`, and `model` to the Jev model. Fixed
+`questions` belong in the agent definition; otherwise supply `context.questions`
+when starting an execution. The execution prompt supplies the observed state.
+Results retain answers and provider usage, and decision events appear in the UI.
+Decision agents can also run as child agents.
+
+Compiled decision agents and chat agents use three retries with exponential
+delays of 1, 2, and 4 seconds, capped at 5 seconds. The existing
+`DecisionModelTool` keeps its zero-retry default. Explicit task policies may retry
+transport failures, HTTP 429, or HTTP 5xx. Invalid decision requests and responses
+fail terminally. The HTTP client does not retry or follow redirects.
 
 To run the example, use Python 3.10+ and the SDK checkout from
 [python-sdk #511](https://github.com/conductor-oss/python-sdk/pull/511).

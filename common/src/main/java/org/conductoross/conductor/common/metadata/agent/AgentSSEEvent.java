@@ -54,6 +54,13 @@ public class AgentSSEEvent {
 
     // ── Factory methods ──────────────────────────────────────────────
 
+    public static AgentSSEEvent decision(String executionId, String taskRef, Object result) {
+        AgentSSEEvent event = new AgentSSEEvent("decision", executionId);
+        event.content = taskRef;
+        event.result = result;
+        return event;
+    }
+
     public static AgentSSEEvent thinking(String executionId, String taskRef) {
         AgentSSEEvent e = new AgentSSEEvent("thinking", executionId);
         e.content = taskRef;

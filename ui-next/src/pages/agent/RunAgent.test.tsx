@@ -149,6 +149,59 @@ describe("RunAgent", () => {
     useFetch.mockReturnValue({ data: [{ name: "researcher", version: 2 }] });
   });
 
+  it("starts a decision agent with structured questions and state", () => {
+    locationState.current = { agentName: "chooser", agentVersion: 1 };
+    useFetch.mockImplementation((path: string) => ({
+      data:
+        path === "/agent/list" ? [{ name: "chooser" }] : { kind: "decision" },
+    }));
+    render(<RunAgent />);
+    const questions = {
+      action: {
+        type: "choice",
+        instructions: "Choose",
+        choices: { go: "Go", wait: "Wait" },
+      },
+    };
+    fireEvent.change(screen.getByLabelText("Decision state"), {
+      target: { value: '{"ready":true}' },
+    });
+    fireEvent.change(screen.getByLabelText("Decision questions (JSON)"), {
+      target: { value: JSON.stringify(questions) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
+    expect(JSON.parse(startAgent.mock.calls[0][0].body)).toEqual({
+      name: "chooser",
+      version: 1,
+      prompt: '{"ready":true}',
+      context: { questions },
+    });
+    expect(screen.getByLabelText("Model override (optional)")).toHaveAttribute(
+      "data-options",
+      "[]",
+    );
+  });
+
+  it("rejects malformed dynamic decision questions before starting", () => {
+    locationState.current = { agentName: "chooser" };
+    useFetch.mockImplementation((path: string) => ({
+      data:
+        path === "/agent/list" ? [{ name: "chooser" }] : { kind: "decision" },
+    }));
+    render(<RunAgent />);
+    fireEvent.change(screen.getByLabelText("Decision state"), {
+      target: { value: "Ready" },
+    });
+    fireEvent.change(screen.getByLabelText("Decision questions (JSON)"), {
+      target: { value: "[]" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
+    expect(startAgent).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Enter a nonempty JSON object of decision questions."),
+    ).toBeInTheDocument();
+  });
+
   it("shows the plain model helper text when no AI models are configured", () => {
     useAiModelOptions.mockReturnValue([]);
 

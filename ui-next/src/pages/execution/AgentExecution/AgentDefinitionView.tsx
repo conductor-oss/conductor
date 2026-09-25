@@ -525,6 +525,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
   const allSubAgents = [
     ...agentsList.map((a) => ({
       name: getItemName(a),
+      agentKind: a.kind,
       model: a.model as string | undefined,
       instructions: a.instructions,
       strategy: a.strategy as string | undefined,
@@ -534,6 +535,10 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
     })),
     ...agentToolList.map((t) => ({
       name: getItemName(t),
+      agentKind:
+        isRecord(t.config) && isRecord(t.config.agentConfig)
+          ? t.config.agentConfig.kind
+          : undefined,
       model: ((t.config as any)?.agentConfig?.model ?? t.model) as
         | string
         | undefined,
@@ -559,7 +564,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
       kind: "agent",
       label: agentName,
       sublabel: defModel ?? instSnippet,
-      badge: "AGENT",
+      badge: agentDef.kind === "decision" ? "DECISION AGENT" : "AGENT",
       badgeColor: "#3d5fc0",
       badgeBg: "#e8eeff",
       borderColor: "#93c5fd",
@@ -594,7 +599,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
           kind: "subagent",
           label: sa.name,
           sublabel: instSub ?? sa.model,
-          badge: "AGENT",
+          badge: sa.agentKind === "decision" ? "DECISION AGENT" : "AGENT",
           badgeColor: "#3d5fc0",
           badgeBg: "#e8eeff",
           borderColor: "#93c5fd",

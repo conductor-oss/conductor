@@ -17,7 +17,7 @@ import java.util.Map;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 /** Reject invalid questions before inference and invalid answers before completing a task. */
-final class DecisionValidation {
+public final class DecisionValidation {
     private DecisionValidation() {}
 
     public static void request(DecisionRequest request) {

@@ -35,6 +35,85 @@ class AgentCompilerTest {
     }
 
     @Test
+    void compilesDecisionAgentWithoutChatAndPreservesTypedOutput() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("routing")
+                        .kind(AgentConfig.Kind.DECISION)
+                        .decisionProvider("jev")
+                        .model("jev-1.13")
+                        .questions(
+                                Map.of(
+                                        "route",
+                                        Map.of(
+                                                "type",
+                                                "choice",
+                                                "instructions",
+                                                "Choose a route",
+                                                "choices",
+                                                Map.of("a", "First", "b", "Second"))))
+                        .build();
+        WorkflowDef wf = compiler.compile(config);
+        assertThat(wf.getTasks()).hasSize(1);
+        var task = wf.getTasks().get(0);
+        assertThat(task.getType()).isEqualTo("DECISION_MODEL");
+        assertThat(task.getInputParameters())
+                .containsEntry("provider", "jev")
+                .containsEntry("state", "${workflow.input.prompt}")
+                .containsEntry("questions", config.getQuestions());
+        assertThat(task.getTaskDefinition().getRetryCount()).isEqualTo(3);
+        assertThat(task.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(1);
+        assertThat(task.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(5);
+        assertThat(task.getTaskDefinition().getRetryLogic())
+                .isEqualTo(
+                        com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic
+                                .EXPONENTIAL_BACKOFF);
+        assertThat(wf.getMetadata())
+                .containsEntry("classifier", WorkflowClassifier.AGENT)
+                .containsEntry("agent_capabilities", List.of("decision"));
+        assertThat(wf.getOutputParameters())
+                .containsEntry("result", "${routing_decision.output}")
+                .containsEntry("agentKind", "decision");
+        config.setQuestions(null);
+        assertThat(compiler.compile(config).getTasks().get(0).getInputParameters())
+                .containsEntry("questions", "${workflow.input.context.questions}");
+        config.setTools(List.of(ToolConfig.builder().name("unexpected").build()));
+        assertThatThrownBy(() -> compiler.compile(config))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void decisionAgentCompilesAsAChildAgent() {
+        AgentConfig child =
+                AgentConfig.builder()
+                        .name("chooser")
+                        .kind(AgentConfig.Kind.DECISION)
+                        .decisionProvider("jev")
+                        .model("jev-1.13")
+                        .build();
+        WorkflowDef workflow =
+                compiler.compile(
+                        AgentConfig.builder()
+                                .name("parent")
+                                .strategy(AgentConfig.Strategy.SEQUENTIAL)
+                                .agents(List.of(child))
+                                .build());
+        var childTask =
+                workflow.getTasks().stream()
+                        .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        var childWorkflow = childTask.getSubWorkflowParam().getWorkflowDef();
+        assertThat(childWorkflow.getTasks()).hasSize(1);
+        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("DECISION_MODEL");
+        assertThat(childWorkflow.getMetadata())
+                .containsEntry("classifier", WorkflowClassifier.AGENT);
+        assertThat(childTask.getInputParameters())
+                .containsEntry("context", "${workflow.variables.context}");
+        assertThat(workflow.getMetadata()).containsEntry("classifier", WorkflowClassifier.AGENT);
+    }
+
+    @Test
     void testCompileSimple() {
         AgentConfig config =
                 AgentConfig.builder()
@@ -54,6 +133,13 @@ class AgentCompilerTest {
 
         WorkflowTask llmTask = wf.getTasks().get(0);
         assertThat(llmTask.getType()).isEqualTo("LLM_CHAT_COMPLETE");
+        assertThat(llmTask.getTaskDefinition().getRetryCount()).isEqualTo(3);
+        assertThat(llmTask.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(1);
+        assertThat(llmTask.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(5);
+        assertThat(llmTask.getTaskDefinition().getRetryLogic())
+                .isEqualTo(
+                        com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic
+                                .EXPONENTIAL_BACKOFF);
         assertThat(llmTask.getTaskReferenceName()).isEqualTo("test_agent_llm");
         assertThat(llmTask.getInputParameters().get("llmProvider")).isEqualTo("openai");
         assertThat(llmTask.getInputParameters().get("model")).isEqualTo("gpt-4o");

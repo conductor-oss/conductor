@@ -33,6 +33,30 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AgentConfig {
 
+    @Builder.Default private Kind kind = Kind.CHAT;
+
+    /** Execution semantics are independent of the orchestration strategy. */
+    public enum Kind {
+        CHAT,
+        DECISION;
+
+        @JsonValue
+        public String toValue() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+
+        @JsonCreator
+        public static Kind fromValue(String value) {
+            return Kind.valueOf(value.toUpperCase(Locale.ROOT));
+        }
+    }
+
+    /** Server decision provider; credentials remain server-side. */
+    private String decisionProvider;
+
+    /** Fixed question contract, or null to read context.questions per execution. */
+    private Map<String, Object> questions;
+
     private String name;
     private String description;
     private String model;
