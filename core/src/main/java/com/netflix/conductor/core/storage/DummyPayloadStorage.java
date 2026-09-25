@@ -96,34 +96,35 @@ public class DummyPayloadStorage implements ExternalPayloadStorage {
         return file;
     }
 
+    /** Visible for testing: the temp directory that all payloads are confined to. */
+    File getPayloadDir() {
+        return payloadDir;
+    }
+
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
         try {
             File file = validateAndResolvePath(path);
             String filePath = file.getAbsolutePath();
-            try {
-                if (!file.exists()) {
-                    file.getParentFile().mkdirs();
-                    file.createNewFile();
-                    LOGGER.debug("Created file: {}", filePath);
-                }
-                IOUtils.copy(payload, new FileOutputStream(file));
-                LOGGER.debug("Written to {}", filePath);
-            } catch (IOException e) {
-                // just handle this exception here and return empty map so that test will fail in
-                // case this exception is thrown
-                LOGGER.error("Error writing to {}", filePath);
-            } finally {
-                try {
-                    if (payload != null) {
-                        payload.close();
-                    }
-                } catch (IOException e) {
-                    LOGGER.warn("Unable to close input stream when writing to file");
-                }
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+                LOGGER.debug("Created file: {}", filePath);
             }
+            IOUtils.copy(payload, new FileOutputStream(file));
+            LOGGER.debug("Written to {}", filePath);
         } catch (SecurityException | IOException e) {
-            LOGGER.error("Security validation failed for path: {}", path, e);
+            // just handle this exception here so that the test will fail in case it is thrown
+            LOGGER.error("Error writing payload for path: {}", path, e);
+        } finally {
+            // Always close the payload stream, including when validation rejects the path.
+            try {
+                if (payload != null) {
+                    payload.close();
+                }
+            } catch (IOException e) {
+                LOGGER.warn("Unable to close input stream when writing to file");
+            }
         }
     }
 
