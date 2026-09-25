@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import RunAgent from "./RunAgent";
 
 const navigate = vi.fn();
@@ -10,6 +10,10 @@ const useLocalStorage = vi.hoisted(() => vi.fn());
 const locationState = vi.hoisted(() => ({
   current: null as { agentName?: string; agentVersion?: number } | null,
 }));
+// Lets the tests drive onError, which is where the start failure is reported.
+const actionOptions = vi.hoisted(() => ({
+  current: null as { onError: (response: unknown) => Promise<void> } | null,
+}));
 
 vi.mock("react-router", () => ({
   useNavigate: () => navigate,
@@ -18,7 +22,10 @@ vi.mock("react-router", () => ({
 
 vi.mock("utils/query", () => ({
   useFetch: (...args: unknown[]) => useFetch(...args),
-  useAction: () => ({ mutate: startAgent, isLoading: false }),
+  useAction: (_path: unknown, _method: unknown, options: any) => {
+    actionOptions.current = options;
+    return { mutate: startAgent, isLoading: false };
+  },
 }));
 
 vi.mock("utils", () => ({
@@ -157,8 +164,61 @@ describe("RunAgent", () => {
     const modelField = screen.getByLabelText("Model override (optional)");
     expect(modelField).toHaveAttribute("data-options", "[]");
     expect(
-      screen.getByText("This applies only to this execution."),
+      screen.getByText(
+        "Use the format provider/model, e.g. openai/gpt-4o. Applies to this execution only.",
+      ),
     ).toBeInTheDocument();
+  });
+
+  describe("when the start request fails", () => {
+    const fail = async (body: unknown) => {
+      render(<RunAgent />);
+      await act(async () => {
+        await actionOptions.current?.onError({
+          json: async () => {
+            if (body instanceof Error) throw body;
+            return body;
+          },
+        });
+      });
+    };
+
+    it("reports the reason /agent/start gives, which it puts in `error`", async () => {
+      await fail({
+        error: "Invalid model format: 'gpt-4o'. Expected 'provider/model'.",
+        status: 400,
+      });
+
+      expect(
+        screen.getByText(
+          "Invalid model format: 'gpt-4o'. Expected 'provider/model'.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("prefers `message` where the rest of the API keeps `error` for a code", async () => {
+      await fail({
+        message: "Token cannot be null or empty",
+        error: "INVALID_TOKEN",
+      });
+
+      expect(
+        screen.getByText("Token cannot be null or empty"),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("INVALID_TOKEN")).not.toBeInTheDocument();
+    });
+
+    it("falls back when the body carries no reason", async () => {
+      await fail({ status: 500 });
+
+      expect(screen.getByText("Unable to start agent.")).toBeInTheDocument();
+    });
+
+    it("falls back when the body is not JSON", async () => {
+      await fail(new Error("not json"));
+
+      expect(screen.getByText("Unable to start agent.")).toBeInTheDocument();
+    });
   });
 
   it("loads sorted provider/model options into the model override autocomplete", () => {
@@ -175,7 +235,9 @@ describe("RunAgent", () => {
       ["anthropic/claude-sonnet", "openai/gpt-4o", "openai/gpt-5"],
     );
     expect(
-      screen.getByText("This applies only to this execution."),
+      screen.getByText(
+        "Use the format provider/model, e.g. openai/gpt-4o. Applies to this execution only.",
+      ),
     ).toBeInTheDocument();
   });
 

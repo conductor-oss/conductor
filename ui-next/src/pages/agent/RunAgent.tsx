@@ -79,7 +79,14 @@ export default function RunAgent() {
     onError: async (response) => {
       try {
         const body = await response.json();
-        setError(body?.message || "Unable to start agent.");
+        // /agent/start puts the reason in `error`; the rest of the API puts the
+        // text in `message` and an error code in `error`, so `message` wins.
+        const detail = body?.message || body?.error;
+        setError(
+          typeof detail === "string" && detail
+            ? detail
+            : "Unable to start agent.",
+        );
       } catch {
         setError("Unable to start agent.");
       }
@@ -216,7 +223,7 @@ export default function RunAgent() {
                     onInputChange={(_: unknown, newValue: string) => {
                       setModel(newValue);
                     }}
-                    helperText="This applies only to this execution."
+                    helperText="Use the format provider/model, e.g. openai/gpt-4o. Applies to this execution only."
                   />
                 </Grid>
                 <Grid size={12}>
