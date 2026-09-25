@@ -3,7 +3,7 @@ version: '2.3'
 services:
   conductor-server:
     environment:
-      - CONFIG_PROP=config-redis-es8.properties
+      - CONFIG_PROP=config-redis.properties
       - JAVA_OPTS=-Dpolyglot.engine.WarnInterpreterOnly=false
       - conductor.app.ownerEmailMandatory=false
     image: conductor:server
@@ -13,6 +13,8 @@ services:
       dockerfile: docker/server/Dockerfile
       args:
         YARN_OPTS: ${YARN_OPTS}
+        # ES7 is no longer the build default; pin it so this legacy stack keeps building es7-persistence.
+        INDEXING_BACKEND: elasticsearch7
     networks:
       - internal
     ports:
@@ -47,7 +49,7 @@ services:
       test: [ "CMD", "redis-cli","ping" ]
 
   conductor-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.11
     environment:
       - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
       - xpack.security.enabled=false
