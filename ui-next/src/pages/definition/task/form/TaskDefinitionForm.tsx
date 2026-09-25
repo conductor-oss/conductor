@@ -574,15 +574,7 @@ const TaskDefinitionForm = ({ formActor }: TaskDefinitionFormProps) => {
           </MuiTypography>
           <MuiTypography>
             These values act as the task's default input when added to the
-            workflow and can be overridden within a workflow.{" "}
-            <Link
-              sx={{ fontWeight: 400 }}
-              target="_blank"
-              href={`https://orkes.io/content/developer-guides/task-input-templates`}
-              rel="noreferrer"
-            >
-              Learn more.
-            </Link>
+            workflow and can be overridden within a workflow.
           </MuiTypography>
         </Grid>
 
