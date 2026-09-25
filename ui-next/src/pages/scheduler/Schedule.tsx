@@ -46,6 +46,7 @@ import {
   getDateFromField,
   JSONParse,
 } from "./utils/scheduleTransformers";
+import { validateScheduleNameRequired } from "./utils/scheduleValidation";
 
 export type ScheduleType = {
   name: string;
@@ -283,8 +284,26 @@ export function Schedule() {
     setErrors(null);
   }, [timeoutHandler]);
 
+  // Flags a missing name on the field and in the banner. Returns true if the save should stop.
+  const rejectMissingName = useCallback((name: string | null | undefined) => {
+    const nameError = validateScheduleNameRequired(name);
+    if (nameError) {
+      setErrors((prevErrors: IObject | null) => ({
+        ...prevErrors,
+        name: nameError,
+      }));
+      setErrorMessage(nameError);
+      return true;
+    }
+    return false;
+  }, []);
+
   const saveScheduleSubmit = useCallback(() => {
     clearErrors();
+
+    if (rejectMissingName(scheduleState.name)) {
+      return;
+    }
 
     const start = getDateFromField(scheduleState.scheduleStartTime);
     const to = getDateFromField(scheduleState.scheduleEndTime);
@@ -333,6 +352,7 @@ export function Schedule() {
   }, [
     scheduleState,
     clearErrors,
+    rejectMissingName,
     setErrorMessage,
     saveSchedule,
     isNewScheduleDef,
@@ -385,6 +405,15 @@ export function Schedule() {
   };
 
   const setSaveConfirmationOpen = useCallback(() => {
+    // Edits in the code tab are not yet in scheduleState, so check the name from there.
+    const nameToSave =
+      interimString !== ""
+        ? codeToFormData(interimString, scheduleState).name
+        : scheduleState.name;
+    if (rejectMissingName(nameToSave)) {
+      return;
+    }
+
     setIsConfirmingSave(true);
     setIsInFormView(0);
     if (interimString !== "") {
@@ -442,7 +471,13 @@ export function Schedule() {
       );
       setNewData(body);
     }
-  }, [interimString, scheduleState, setErrorMessage, setScheduleState]);
+  }, [
+    interimString,
+    scheduleState,
+    rejectMissingName,
+    setErrorMessage,
+    setScheduleState,
+  ]);
 
   const cancelConfirmSave = useCallback(() => {
     const body = JSON.parse(newData);
