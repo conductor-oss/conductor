@@ -118,6 +118,6 @@ public final class JevValidation {
     }
 
     static void require(boolean condition, String message) {
-        if (!condition) throw new NonRetryableException("Jev agent: " + message);
+        if (!condition) throw new NonRetryableException("Jev: " + message);
     }
 }
