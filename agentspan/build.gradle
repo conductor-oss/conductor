@@ -19,9 +19,6 @@ dependencies {
     // AWS STS — for AssumeRole
     implementation "software.amazon.awssdk:sts:${revAwsSdk}"
 
-    // Azure Identity SDK — service principal, managed identity, and default credential chain
-    implementation "com.azure:azure-identity:${revAzureIdentitySdk}"
-
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
     // conductor-sqlite-persistence keeps the driver on its own implementation classpath, so the

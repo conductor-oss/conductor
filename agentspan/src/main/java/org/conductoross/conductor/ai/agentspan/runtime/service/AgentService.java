@@ -78,10 +78,6 @@ public class AgentService {
     private final AgentStreamRegistry streamRegistry;
     private final SkillRegistryService skillRegistryService;
     private final MetadataService metadataService;
-    private final AzureFoundryAgentClient azureFoundryAgentClient;
-    private final BedrockAgentClient bedrockAgentClient;
-    private final BedrockAgentCoreAgentClient bedrockAgentCoreClient;
-    private final SecretsDAO secretsDAO;
 
     /**
      * Compile an agent config into a WorkflowDef and return it. Supports both native AgentConfig
@@ -413,54 +409,6 @@ public class AgentService {
                             .timeoutSeconds(def.getTimeoutSeconds())
                             .failureWorkflow(def.getFailureWorkflow())
                             .build());
-        }
-
-        // Discover external agents by scanning all credential secrets.
-        // Any secret whose JSON value contains an "endpoint" key is treated as an Microsoft Foundry
-        // credential; one with a "region" key is treated as an AWS Bedrock credential.
-        if (secretsDAO != null) {
-            try {
-                List<String> secretNames = secretsDAO.listSecretNames();
-                for (String secretName : secretNames) {
-                    try {
-                        String secretValue = secretsDAO.getSecret(secretName);
-                        if (secretValue == null || secretValue.isBlank()) continue;
-                        com.fasterxml.jackson.databind.JsonNode secretJson =
-                                MAPPER.readTree(secretValue);
-                        String endpoint = secretJson.path("endpoint").asText(null);
-                        String region = secretJson.path("region").asText(null);
-                        String type = secretJson.path("type").asText(null);
-                        // Discovery is a control-plane scan with no task behind it, so this is the
-                        // one place that reads secrets directly — the clients are handed values.
-                        Map<String, String> credentials = credentialValues(secretJson);
-                        if (endpoint != null
-                                && !endpoint.isBlank()
-                                && azureFoundryAgentClient != null) {
-                            agents.addAll(
-                                    azureFoundryAgentClient.listExternalAgents(
-                                            credentials, endpoint));
-                        } else if (region != null
-                                && !region.isBlank()
-                                && A2AService.AGENT_TYPE_BEDROCK_AGENTCORE.equals(type)
-                                && bedrockAgentCoreClient != null) {
-                            agents.addAll(
-                                    bedrockAgentCoreClient.listExternalAgents(credentials, region));
-                        } else if (region != null
-                                && !region.isBlank()
-                                && bedrockAgentClient != null) {
-                            agents.addAll(
-                                    bedrockAgentClient.listExternalAgents(credentials, region));
-                        }
-                    } catch (Exception e) {
-                        log.debug(
-                                "Skipping secret '{}' for external agent discovery: {}",
-                                secretName,
-                                e.getMessage());
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Failed to scan secrets for external agent discovery: {}", e.getMessage());
-            }
         }
 
         return agents;
