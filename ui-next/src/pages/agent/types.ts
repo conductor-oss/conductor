@@ -1,5 +1,5 @@
 /**
- * Wire types for the embedded AgentSpan REST API (conductor-agentspan).
+ * Wire types for the embedded Conductor-Agents REST API (conductor-agentspan).
  * Kept local to the agent pages; mirror the server DTOs.
  */
 
@@ -12,6 +12,15 @@ export interface AgentSummary {
   updateTime?: number;
   description?: string;
   checksum?: string;
+  schemaVersion?: number;
+  restartable?: boolean;
+  workflowStatusListenerEnabled?: boolean;
+  ownerEmail?: string;
+  inputParameters?: string[];
+  outputParameters?: Record<string, unknown>;
+  timeoutPolicy?: string;
+  timeoutSeconds?: number;
+  failureWorkflow?: string;
 }
 
 export interface AgentExecutionSummary {

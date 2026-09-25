@@ -17,6 +17,9 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
+import org.springframework.validation.annotation.Validated;
+
+import jakarta.validation.constraints.AssertTrue;
 
 /**
  * Configuration for the server-side file-storage feature. Bound to {@code
@@ -24,13 +27,14 @@ import org.springframework.boot.convert.DurationUnit;
  * {@code /api/files} endpoints return 404.
  */
 @ConfigurationProperties("conductor.file-storage")
+@Validated
 public class FileStorageProperties {
 
     /** Feature flag — entire file-storage feature gated on this. Default: {@code false}. */
     private boolean enabled = false;
 
-    /** Storage backend selector: {@code local}, {@code s3}, {@code azure-blob}, {@code gcs}. */
-    private String type = "local";
+    /** Storage backend selector: {@code conductor}, {@code s3}, {@code azure-blob}, {@code gcs}. */
+    private String type = "conductor";
 
     /** Presigned URL TTL. Default: 60 seconds. */
     @DurationUnit(ChronoUnit.SECONDS)
@@ -58,5 +62,13 @@ public class FileStorageProperties {
 
     public void setSignedUrlExpiration(Duration signedUrlExpiration) {
         this.signedUrlExpiration = signedUrlExpiration;
+    }
+
+    /** Rejects the removed local backend with a clear configuration binding error. */
+    @AssertTrue(
+            message =
+                    "conductor.file-storage.type=local is no longer supported; use conductor.file-storage.type=conductor")
+    public boolean isStorageTypeSupported() {
+        return type == null || !"local".equalsIgnoreCase(type.trim());
     }
 }

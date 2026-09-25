@@ -89,6 +89,7 @@ export enum Action {
   UPDATE_WORKFLOW_VARIABLES = "update_workflow_variables",
   FAIL_TASK = "fail_task",
   START_WORKFLOW = "start_workflow",
+  START_AGENT = "start_agent",
 }
 
 export type AddActionEvent = {
@@ -102,6 +103,7 @@ export const actionLabel = {
   update_workflow_variables: "Update Variables",
   fail_task: "Fail Task",
   start_workflow: "Start Workflow",
+  start_agent: "Start Agent",
 } as { [key: string]: string };
 
 export interface EventFormMachineContext {

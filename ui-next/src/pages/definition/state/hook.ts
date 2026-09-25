@@ -124,23 +124,30 @@ export const useWorkflowDefinition = (currentUser: User) => {
         workflow: workflowData,
       };
     } catch (error: any) {
+      const status = error?.status;
       const errorMessage = (await getErrors(error))?.message;
 
-      if (errorMessage) {
-        return Promise.reject({ message: errorMessage });
-      }
-
-      const status = error.status;
-
       if (status === 403) {
-        return Promise.reject({ message: WORKFLOW_FETCH_FORBIDDEN });
+        return Promise.reject({
+          message: WORKFLOW_FETCH_FORBIDDEN,
+          status,
+        });
       }
 
       if (status === 404) {
-        return Promise.reject({ message: "Workflow was not found" });
+        const notFoundMessage = currentVersion
+          ? `Version ${currentVersion} was not found`
+          : "Workflow was not found";
+        return Promise.reject({
+          message: errorMessage || notFoundMessage,
+          status,
+        });
       }
 
-      return Promise.reject({ message: WORKFLOW_FETCH_FAILED });
+      return Promise.reject({
+        message: errorMessage || WORKFLOW_FETCH_FAILED,
+        status,
+      });
     }
   };
 
@@ -252,6 +259,17 @@ export const useWorkflowDefinition = (currentUser: User) => {
     (state) => state.context.workflowVersions,
   );
 
+  const isNotFound = useSelector(service, (state) => state.matches("notFound"));
+
+  const isErrorFetching = useSelector(service, (state) =>
+    state.matches("errorFetchingWorkflow"),
+  );
+
+  const currentVersion = useSelector(
+    service,
+    (state) => state.context.currentVersion,
+  );
+
   useEffect(() => {
     if (isNewWorkflowUrl || templateIdMaybe || workflowName || version) {
       service.send({
@@ -298,10 +316,13 @@ export const useWorkflowDefinition = (currentUser: User) => {
       isNewWorkflow,
       workflowName,
       workflowVersions,
+      currentVersion,
       message,
       definitionActor: service,
       leftPanelExpanded,
       blogUrl,
+      isNotFound,
+      isErrorFetching,
     },
   ] as const;
 };

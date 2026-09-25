@@ -238,6 +238,28 @@ public class ScriptEvaluator {
     }
 
     /**
+     * Validates that the script is syntactically well formed WITHOUT executing it. Registration
+     * time validation must not evaluate expressions: the input bindings still hold unresolved
+     * {@code ${...}} placeholders, so any expression referencing a runtime-bound value would throw
+     * a ReferenceError and wrongly reject a valid definition (issue #1311).
+     *
+     * @param script Script whose syntax should be checked.
+     * @throws IllegalArgumentException if the script has a syntax error.
+     */
+    public static void validateScriptSyntax(String script) {
+        ensureInitialized();
+        try (Context context = createNewContext()) {
+            context.parse(getSource(script));
+        } catch (PolyglotException e) {
+            if (e.isSyntaxError()) {
+                throw new IllegalArgumentException(e.getMessage());
+            }
+            // Anything non-syntactic (e.g. resource limits) is not a validation failure
+            LOGGER.debug("Ignoring non-syntax error while validating script: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Returns a cached compiled {@link Source} for the given script, creating it on first use.
      * Bounded by {@link #sourceCacheMaxSize}; on overflow the cache is cleared (workflow scripts
      * are typically a small, stable set, so the simplest strategy suffices).

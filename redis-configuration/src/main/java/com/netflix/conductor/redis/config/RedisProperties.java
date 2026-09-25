@@ -64,6 +64,13 @@ public class RedisProperties {
      */
     private String sentinelMasterName = "mymaster";
 
+    /**
+     * Password used when connecting to the Sentinel nodes themselves. When empty (default), no AUTH
+     * command is sent to Sentinels — matching Spring/Lettuce sentinel.password semantics. The data
+     * node (master) password is still taken from the 4th segment of conductor.redis.hosts.
+     */
+    private String sentinelPassword;
+
     /** The time to live in seconds for which the event execution will be persisted */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration eventExecutionPersistenceTTL = Duration.ofSeconds(60);
@@ -418,6 +425,14 @@ public class RedisProperties {
 
     public void setSentinelMasterName(String sentinelMasterName) {
         this.sentinelMasterName = sentinelMasterName;
+    }
+
+    public String getSentinelPassword() {
+        return sentinelPassword;
+    }
+
+    public void setSentinelPassword(String sentinelPassword) {
+        this.sentinelPassword = sentinelPassword;
     }
 
     public Duration getEventExecutionPersistenceTTL() {

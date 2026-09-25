@@ -45,6 +45,7 @@ public class PostgresIndexQueryBuilder {
         "correlation_id",
         "workflow_type",
         "start_time",
+        "end_time",
         "status",
         "task_id",
         "task_type",
@@ -59,16 +60,17 @@ public class PostgresIndexQueryBuilder {
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
 
     private static class Condition {
+        private static final Pattern CONDITION_PATTERN =
+                Pattern.compile("^([a-zA-Z]++)\\s*(=|>|<|IN)\\s*(.*)$");
+
         private String attribute;
         private String operator;
         private List<String> values;
-        private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
 
         public Condition() {}
 
         public Condition(String query) {
-            Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
-            Matcher conditionMatcher = conditionRegex.matcher(query);
+            Matcher conditionMatcher = CONDITION_PATTERN.matcher(query);
             if (conditionMatcher.find()) {
                 String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));
@@ -195,8 +197,10 @@ public class PostgresIndexQueryBuilder {
                                             .map(c -> c.getQueryFragment())
                                             .collect(Collectors.toList()));
         }
-        return "SELECT json_data::TEXT FROM "
+        return hierarchyCte()
+                + "SELECT json_data::TEXT FROM "
                 + table
+                + hierarchyJoin()
                 + queryString
                 + getSort()
                 + " LIMIT ? OFFSET ?";
@@ -265,7 +269,10 @@ public class PostgresIndexQueryBuilder {
             if (splitCond.length == 2) {
                 String attribute = camelToSnake(splitCond[0]);
                 String order = splitCond[1].toUpperCase();
-                if (Arrays.asList(VALID_FIELDS).contains(attribute)
+                if ("agent_hierarchy".equals(attribute)
+                        && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
+                    sortConds.add(agentHierarchySort(order));
+                } else if (Arrays.asList(VALID_FIELDS).contains(attribute)
                         && Arrays.asList(VALID_SORT_ORDER).contains(order)) {
                     sortConds.add(attribute + " " + order);
                 }
@@ -276,6 +283,55 @@ public class PostgresIndexQueryBuilder {
             return " ORDER BY " + String.join(", ", sortConds);
         }
         return "";
+    }
+
+    /**
+     * Groups an agent root and every descendant in depth-first order. The recursive CTE makes this
+     * a database operation before pagination, so a nested sub-agent cannot be separated from its
+     * ancestors by another execution page.
+     */
+    private String agentHierarchySort(String order) {
+        return "COALESCE(workflow_hierarchy.root_start_time, "
+                + table
+                + ".start_time) "
+                + order
+                + ", COALESCE(workflow_hierarchy.root_workflow_id, "
+                + table
+                + ".workflow_id) ASC, CASE WHEN "
+                + "workflow_hierarchy.workflow_id IS NULL THEN 1 ELSE 0 END ASC, "
+                + "workflow_hierarchy.hierarchy_path ASC";
+    }
+
+    private boolean hasAgentHierarchySort() {
+        return "workflow_index".equals(table)
+                && sort.stream()
+                        .map(s -> s.split(":", 2)[0])
+                        .map(PostgresIndexQueryBuilder::camelToSnake)
+                        .anyMatch("agent_hierarchy"::equals);
+    }
+
+    private String hierarchyCte() {
+        if (!hasAgentHierarchySort()) {
+            return "";
+        }
+        return "WITH RECURSIVE workflow_hierarchy(workflow_id, root_workflow_id, root_start_time, hierarchy_path) AS ("
+                + " SELECT workflow_id, workflow_id, start_time, '|' || workflow_id || '|'"
+                + " FROM workflow_index WHERE parent_workflow_id IS NULL OR parent_workflow_id = ''"
+                + " UNION ALL"
+                + " SELECT child.workflow_id, parent.root_workflow_id, parent.root_start_time,"
+                + " parent.hierarchy_path || child.workflow_id || '|'"
+                + " FROM workflow_index child JOIN workflow_hierarchy parent"
+                + " ON child.parent_workflow_id = parent.workflow_id"
+                + " WHERE strpos(parent.hierarchy_path, '|' || child.workflow_id || '|') = 0"
+                + ") ";
+    }
+
+    private String hierarchyJoin() {
+        return hasAgentHierarchySort()
+                ? " LEFT JOIN workflow_hierarchy ON workflow_hierarchy.workflow_id = "
+                        + table
+                        + ".workflow_id"
+                : "";
     }
 
     private static String camelToSnake(String camel) {

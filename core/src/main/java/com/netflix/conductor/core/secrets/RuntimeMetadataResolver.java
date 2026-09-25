@@ -16,12 +16,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.dao.EnvironmentDAO;
-import com.netflix.conductor.dao.SecretsDAO;
 
 @Component
 public class RuntimeMetadataResolver {

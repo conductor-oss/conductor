@@ -2,6 +2,7 @@ import {
   CompleteActionType,
   ConductorEvent,
   FailActionType,
+  StartAgentAction,
   StartWorkflowAction,
   TerminateWorkflowAction,
   UpdateWorkFlowVariableType,
@@ -71,5 +72,17 @@ export const TERMINATE_WORKFLOW_ACTION: TerminateWorkflowAction = {
   terminate_workflow: {
     workflowId: "",
     terminationReason: "",
+  },
+};
+
+export const START_AGENT_ACTION: StartAgentAction = {
+  action: "start_agent",
+  expandInlineJSON: false,
+  start_agent: {
+    name: "",
+    version: "",
+    prompt: "",
+    sessionId: "",
+    idempotencyKey: "",
   },
 };

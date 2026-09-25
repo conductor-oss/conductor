@@ -44,6 +44,8 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -329,6 +331,40 @@ public class ExecutionServiceTest {
         // once in poll() via tasks.forEach(this::ackTaskReceived), and again
         // redundantly in getLastPollTask() after poll() returned.
         verify(queueDAO, times(1)).ack(queueName, taskId);
+    }
+
+    /*
+     * When a worker polls a task (SCHEDULED -> IN_PROGRESS), adjustDeciderQueuePostpone() moves the
+     * workflow's DECIDER_QUEUE re-evaluation out to responseTimeoutSeconds via setUnackTimeoutIfShorter.
+     * This is normally harmless (task completion fires an expedited decide), but it is why a missed
+     * post-completion decide leaves the workflow parked for responseTimeoutSeconds — the multi-minute
+     * pause that the decide() re-queue fix addresses.
+     */
+    @Test
+    public void testPollPostponesDeciderQueueToResponseTimeout() {
+        String taskType = "simple_task";
+        String workerId = "worker1";
+        String domain = null;
+        String taskId = "task-123";
+        String queueName = taskType;
+        String workflowId = "wf-123";
+
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType(taskType);
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        taskModel.setWorkflowInstanceId(workflowId);
+        taskModel.setResponseTimeoutSeconds(600);
+
+        when(queueDAO.pop(eq(queueName), eq(1), anyInt()))
+                .thenReturn(Collections.singletonList(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(executionDAOFacade.exceedsInProgressLimit(taskModel)).thenReturn(false);
+        when(queueDAO.ack(eq(queueName), eq(taskId))).thenReturn(true);
+
+        executionService.poll(taskType, workerId, domain, 1, 100);
+
+        verify(queueDAO).setUnackTimeoutIfShorter(DECIDER_QUEUE, workflowId, 600L * 1000);
     }
 
     @Test

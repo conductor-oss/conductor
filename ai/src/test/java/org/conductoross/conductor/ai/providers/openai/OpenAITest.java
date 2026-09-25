@@ -13,6 +13,8 @@
 package org.conductoross.conductor.ai.providers.openai;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
@@ -23,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
 
 import okhttp3.OkHttpClient;
 
@@ -212,6 +216,45 @@ class OpenAITest {
             assertNotNull(response.getResult());
             assertNotNull(response.getResult().getOutput());
             assertFalse(response.getResult().getOutput().getText().isEmpty());
+        }
+
+        @Test
+        void testChatCompletionWithImageMedia() throws Exception {
+            // Live lock for OpenAI media input (Responses API input_image parts).
+            // The image embeds a machine-unguessable token, so a correct transcription
+            // can only come from the image actually reaching the model.
+            byte[] png =
+                    Objects.requireNonNull(
+                                    getClass().getResourceAsStream("/media/melon7391.png"),
+                                    "test asset /media/melon7391.png missing")
+                            .readAllBytes();
+
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("gpt-4o-mini");
+            input.setMaxTokens(100);
+
+            UserMessage userMsg =
+                    UserMessage.builder()
+                            .text(
+                                    "Transcribe the exact text shown in the image. Reply with"
+                                            + " only that text and nothing else.")
+                            .media(
+                                    List.of(
+                                            Media.builder()
+                                                    .data(png)
+                                                    .mimeType(MimeTypeUtils.IMAGE_PNG)
+                                                    .build()))
+                            .build();
+
+            var response =
+                    openAI.getChatModel()
+                            .call(new Prompt(List.of(userMsg), openAI.getChatOptions(input)));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").contains("MELON7391"),
+                    "vision model must transcribe the embedded token MELON7391; got: " + text);
         }
 
         @Test

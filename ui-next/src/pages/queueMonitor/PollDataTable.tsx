@@ -1,21 +1,16 @@
 import { Box, Grid, Radio } from "@mui/material";
 import { useActor, useSelector } from "@xstate/react";
 import { DataTable } from "components";
-import { first, last, omit, path } from "lodash/fp";
 import { useContext } from "react";
-import { Entries } from "types/helperTypes";
 import useCustomPagination from "utils/hooks/useCustomPagination";
-import { State } from "xstate";
 import { QuickSearchRefresh } from "./QuickSearchAndRefresh";
 import { FilterSection } from "./filter";
-import { lastPollTimeColumnRenderer } from "./helpers";
 import {
-  PollData,
-  QueueMachineEventTypes,
-  QueueMonitorContext,
-  QueueMonitorMachineContext,
-} from "./state";
-import { QueueData, QueueSizeCount } from "./state/types";
+  createQueueSummaries,
+  lastPollTimeColumnRenderer,
+  QueueSummary,
+} from "./helpers";
+import { QueueMachineEventTypes, QueueMonitorContext } from "./state";
 
 const dataColumns: any = [
   {
@@ -47,11 +42,6 @@ const dataColumns: any = [
   },
 ];
 
-type SelectablePollDataSummary = Partial<PollData> & {
-  size: number;
-  pollerCount: number;
-};
-
 export const PollDataTable = () => {
   const { queueMachineActor } = useContext(QueueMonitorContext);
   const [
@@ -59,60 +49,10 @@ export const PollDataTable = () => {
     { handleSearchTermChange, handlePageChange },
   ] = useCustomPagination();
 
-  const data: any = useSelector(
+  const data = useSelector(
     queueMachineActor!,
-    ({
-      context: { pollDataByQueueName = {}, queueData = {} },
-    }: State<QueueMonitorMachineContext>) => {
-      const [usedKeys, activeWorkers] = (
-        Object.entries(pollDataByQueueName) as unknown as Array<
-          [string, PollData[]]
-        >
-      ).reduce(
-        (
-          acc: [string[], SelectablePollDataSummary[]],
-          [itemName, pollData]: [string, PollData[]],
-        ): [string[], SelectablePollDataSummary[]] => {
-          const { size = 0, pollerCount = 0 } = path(itemName, queueData) || {};
-
-          const lastUpdatedPollDataBetweenWorkers =
-            first(pollData.sort((pd) => pd.lastPollTime)) || {};
-
-          const usedKeysAcc = (first(acc) as string[]).concat(itemName);
-
-          const selectablePollData: SelectablePollDataSummary = {
-            ...lastUpdatedPollDataBetweenWorkers,
-            ...{ size, pollerCount },
-          };
-
-          const activeWorkeresAcc = (
-            last(acc) as SelectablePollDataSummary[]
-          ).concat(selectablePollData);
-
-          return [usedKeysAcc, activeWorkeresAcc];
-        },
-        [[], []],
-      );
-
-      const queueDataWithoutPollData: QueueData = omit(
-        usedKeys,
-        queueData,
-      ) as QueueData;
-      const inactiveWorkers = (
-        Object.entries(queueDataWithoutPollData) as Entries<QueueData>
-      ).map(
-        // @ts-ignore
-        ([k, val = {}]: [
-          string,
-          QueueSizeCount,
-        ]): SelectablePollDataSummary => ({
-          queueName: k!,
-          pollerCount: 0,
-          ...val,
-        }),
-      );
-      return activeWorkers.concat(inactiveWorkers);
-    },
+    ({ context: { pollDataByQueueName = {}, queueData = {} } }) =>
+      createQueueSummaries(pollDataByQueueName, queueData),
   );
 
   const selectedQueueName = useSelector(
@@ -133,31 +73,19 @@ export const PollDataTable = () => {
     label: "Select",
     maxWidth: "150px",
     tooltip: "Select the queue",
-    renderer: (_id: any, rowData: SelectablePollDataSummary) => {
+    renderer: (_id: any, rowData: QueueSummary) => {
       return (
         <Radio
           value={rowData.queueName}
+          inputProps={{ "aria-label": `Select queue ${rowData.queueName}` }}
           onChange={(_event) => {
-            handleSelectRow(rowData.queueName!);
+            handleSelectRow(rowData.queueName);
           }}
           checked={rowData.queueName === selectedQueueName}
         />
       );
     },
-    sortFunction: (
-      rowA: SelectablePollDataSummary,
-      rowB: SelectablePollDataSummary,
-    ) => {
-      if (rowA.queueName === selectedQueueName) {
-        return 1;
-      }
-
-      if (rowB.queueName === selectedQueueName) {
-        return -1;
-      }
-
-      return 0;
-    },
+    sortable: false,
   };
 
   const columns: any = [selectColumn].concat(dataColumns);

@@ -128,7 +128,11 @@ const ApiSearchModal = ({
                         fontWeight={600}
                         textTransform="capitalize"
                       >
-                        {language}
+                        {language === "cli"
+                          ? "CLI"
+                          : language === "curl"
+                            ? "cURL"
+                            : language}
                       </MuiTypography>
                     </Box>
                   }
@@ -152,7 +156,9 @@ const ApiSearchModal = ({
                 value={code}
                 saveViewState
                 language={
-                  displayLanguage === "curl" ? "shell" : displayLanguage
+                  displayLanguage === "curl" || displayLanguage === "cli"
+                    ? "shell"
+                    : displayLanguage
                 }
                 options={editorOption}
               />

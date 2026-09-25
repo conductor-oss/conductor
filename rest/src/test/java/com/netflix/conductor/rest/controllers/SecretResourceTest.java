@@ -14,10 +14,9 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.List;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.netflix.conductor.dao.SecretsDAO;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;

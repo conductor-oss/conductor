@@ -104,7 +104,7 @@ public class TaskTest {
         // NOTE: `runtimeMetadata` (wire-only resolved secret values, injected at poll time) is
         // intentionally NOT propagated by copy()/deepCopy() - see
         // testRuntimeMetadataExcludedFromCopy.
-        final int expectedTaskFieldsNumber = 44;
+        final int expectedTaskFieldsNumber = 45;
         final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
 
         final ExecutionMetadata executionMetadata = new ExecutionMetadata();
@@ -155,10 +155,15 @@ public class TaskTest {
         task.setWorkerId("");
         task.setSubWorkflowId("");
         task.setSubworkflowChanged(false);
+        task.setParentTaskReferenceName("parent_ref_task_name");
         task.setExecutionMetadata(executionMetadata);
 
         final Task copy = task.deepCopy();
         assertEquals(task, copy);
+
+        // equals() compares a curated subset that excludes the newest fields, so a field missing
+        // from copy()/deepCopy() would slip past assertEquals above. Assert this one outright.
+        assertEquals("parent_ref_task_name", copy.getParentTaskReferenceName());
 
         // Verify execution metadata is copied
         assertNotNull(copy.getExecutionMetadata());
@@ -243,6 +248,33 @@ public class TaskTest {
         task.setRuntimeMetadata(runtimeMetadata);
 
         assertFalse(task.toString().contains("sk-super-secret-value"));
+    }
+
+    @Test
+    public void testExecutionMetadataHelperGettersNotSerialized() throws Exception {
+        Task task = new Task();
+        task.setTaskId("task-1");
+
+        ExecutionMetadata executionMetadata = new ExecutionMetadata();
+        executionMetadata.setServerSendTime(1000L);
+        executionMetadata.setClientReceiveTime(2000L);
+        task.setExecutionMetadata(executionMetadata);
+
+        String json = objectMapper.writeValueAsString(task);
+
+        // The convenience/helper getters must NOT leak as JSON properties.
+        assertFalse(json.contains("orCreateExecutionMetadata"));
+        assertFalse(json.contains("executionMetadataIfHasData"));
+
+        // The real executionMetadata property is still serialized and round-trips.
+        assertTrue(json.contains("\"executionMetadata\""));
+        assertTrue(json.contains("\"serverSendTime\""));
+
+        Task deserialized = objectMapper.readValue(json, Task.class);
+        assertNotNull(deserialized.getExecutionMetadata());
+        assertEquals(Long.valueOf(1000L), deserialized.getExecutionMetadata().getServerSendTime());
+        assertEquals(
+                Long.valueOf(2000L), deserialized.getExecutionMetadata().getClientReceiveTime());
     }
 
     @Test

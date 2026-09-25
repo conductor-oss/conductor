@@ -84,7 +84,16 @@ The Do While task will return the following parameters.
 
 In addition, a map will be created for each iteration, keyed by its iteration number (e.g., 1, 2, 3), and will contain the task outputs for all of the `loopOver` tasks.
 
-Furthermore, if `loopCondition` declares any parameter, it will also appear in the output. For example, `storage` will appear in the output if `loopCondition` is `if ($.LoopTask['iteration'] <= 10) {$.LoopTask.storage = 3; true } else {false}`.
+### Reading state in `loopCondition`
+
+The loop condition receives the loop task's output under its `taskReferenceName`, and each task in the current loop iteration directly under that task's `taskReferenceName`. Loop-body task values are their output data maps; they are not wrapped in an additional `output` object.
+
+```javascript
+// `loop` is the DO_WHILE reference; `check` is a loop-body task reference.
+if ($.check['done'] == true || $.loop['iteration'] >= 10) { false; } else { true; }
+```
+
+In the completed task output, iteration data remains available under numeric keys such as `loop.output.1.check`. The direct bindings above apply only while evaluating `loopCondition`.
 
 ## Execution
 

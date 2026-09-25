@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.a2a;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.conductoross.conductor.ai.a2a.A2AService.SendResult;
@@ -97,22 +98,57 @@ class A2AServiceTest {
                         {
                           "name": "Currency Agent",
                           "description": "Converts currency",
-                          "url": "http://agent",
                           "version": "1.0.0",
-                          "capabilities": { "streaming": true },
-                          "skills": [ { "id": "convert", "name": "Convert" } ]
+                          "supportedInterfaces": [
+                            {
+                              "url": "https://agent.example/rpc",
+                              "protocolBinding": "JSONRPC",
+                              "protocolVersion": "1.0"
+                            }
+                          ],
+                          "capabilities": {
+                            "streaming": true,
+                            "extendedAgentCard": true,
+                            "extensions": [
+                              {
+                                "uri": "urn:conductor:agent-details:v1",
+                                "description": "Advertised UI details",
+                                "params": { "model": "openai/gpt-5", "tools": ["fx"] }
+                              }
+                            ]
+                          },
+                          "skills": [
+                            {
+                              "id": "convert",
+                              "name": "Convert",
+                              "securityRequirements": [ { "schemes": { "oauth": ["fx.read"] } } ]
+                            }
+                          ],
+                          "signatures": [
+                            { "protected": "header", "signature": "value", "header": { "kid": "key-1" } }
+                          ]
                         }
                         """));
 
-        AgentCard card = service.getAgentCard(endpoint(), null);
+        AgentCard card =
+                service.getAgentCard(
+                        endpoint(), Map.of("Authorization", "Bearer discovery-secret"));
 
         assertEquals("Currency Agent", card.getName());
         assertTrue(card.getCapabilities().isStreaming());
         assertEquals(1, card.getSkills().size());
         assertEquals("convert", card.getSkills().get(0).getId());
+        assertEquals("JSONRPC", card.getSupportedInterfaces().get(0).getProtocolBinding());
+        assertTrue(card.getCapabilities().isExtendedAgentCard());
+        assertEquals(
+                "openai/gpt-5",
+                card.getCapabilities().getExtensions().get(0).getParams().get("model"));
+        assertEquals("header", card.getSignatures().get(0).getProtectedHeader());
 
         RecordedRequest request = server.takeRequest();
         assertEquals("/.well-known/agent-card.json", request.getPath());
+        assertEquals("Bearer discovery-secret", request.getHeader("Authorization"));
+        assertFalse(card.toString().contains("discovery-secret"));
     }
 
     @Test
@@ -123,6 +159,17 @@ class A2AServiceTest {
         AgentCard card = service.getAgentCard(endpoint(), null);
 
         assertEquals("Legacy Agent", card.getName());
+        assertEquals("/.well-known/agent-card.json", server.takeRequest().getPath());
+        assertEquals("/.well-known/agent.json", server.takeRequest().getPath());
+    }
+
+    @Test
+    void getAgentCard_surfacesFailureAfterAllDiscoveryPathsFail() throws Exception {
+        server.enqueue(new MockResponse().setResponseCode(500).setBody("unavailable"));
+        server.enqueue(new MockResponse().setResponseCode(404).setBody("missing"));
+
+        assertThrows(RuntimeException.class, () -> service.getAgentCard(endpoint(), null));
+
         assertEquals("/.well-known/agent-card.json", server.takeRequest().getPath());
         assertEquals("/.well-known/agent.json", server.takeRequest().getPath());
     }

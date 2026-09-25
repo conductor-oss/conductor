@@ -3,6 +3,7 @@ import { curlHeaders } from "shared/CodeModal/curlHeader";
 import { toCodeT, useParamsToSdk } from "shared/CodeModal/hook";
 import { SupportedDisplayTypes } from "shared/CodeModal/types";
 import { BuildQueryOutput } from "./ApiSearchModalIntegration";
+import { buildSchedulerSearchCli } from "./cliSearch";
 
 interface SchedulerApiSearchModalProps {
   buildQueryOutput: BuildQueryOutput;
@@ -70,6 +71,7 @@ searchSchedule();
 
 const toCodeMap: toCodeT<BuildQueryOutput> = {
   curl: buildCurlCode,
+  cli: buildSchedulerSearchCli,
   javascript: buildJsCode,
 };
 

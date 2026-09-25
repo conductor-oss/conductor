@@ -70,6 +70,7 @@ import _isEmpty from "lodash/isEmpty";
 import { CommonTaskDef } from "types/TaskType";
 import { ImportSummary } from "utils/cloudTemplates";
 import { SWITCH_CASE_PREFIX } from "utils/constants/switch";
+import { hasWorkflowInputParams } from "./guards";
 import {
   LocalCopyMachineEventTypes,
   UseLocalCopyChangesEvent,
@@ -125,6 +126,11 @@ export const persistWorkflowAttribs = assign<
       workflowTemplateId,
       // Keep agent collapsed by default to improve initial page load performance
       isAgentExpanded: context.isAgentExpanded ?? false,
+      // Clear any prior fetch error toast when loading a different name/version
+      message: {
+        text: undefined,
+        severity: undefined,
+      },
     };
   },
 );
@@ -272,10 +278,18 @@ export const changeTab = assign<
   previousTab: ({ openedTab }, _) => openedTab,
   // Collapse assistant on any tab click (Workflow, Task, Code, Run, Dependencies, …)
   isAgentExpanded: false,
+  // Reaching the run tab by hand shouldn't steal focus into the input editor.
+  runWithInputs: false,
 });
 
 export const changeToCodeTab = assign({
   openedTab: CODE_TAB,
+  previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
+  isAgentExpanded: false,
+});
+
+export const changeToRunTab = assign({
+  openedTab: RUN_TAB,
   previousTab: ({ openedTab }: DefinitionMachineContext, _event) => openedTab,
   isAgentExpanded: false,
 });
@@ -966,6 +980,22 @@ export const justExecute = sendTo<
   },
   { delay: 200 },
 );
+
+export const setRunWithInputs = assign<DefinitionMachineContext>({
+  runWithInputs: true,
+});
+
+// After a save triggered from Execute, open the run tab when the workflow
+// declares inputParameters; otherwise start the run immediately.
+export const runOrOpenRunTab = choose<DefinitionMachineContext, any>([
+  {
+    cond: (context) => hasWorkflowInputParams(context),
+    actions: ["setRunWithInputs", "changeToRunTab"],
+  },
+  {
+    actions: ["justExecute"],
+  },
+]);
 
 export const raiseSaveAndCreateNewEvent = raise<
   DefinitionMachineContext,

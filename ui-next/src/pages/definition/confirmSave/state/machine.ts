@@ -31,10 +31,9 @@ export const saveMachine = createMachine<
     states: {
       confirmSave: {
         on: {
-          [SaveWorkflowMachineEventTypes.CONFIRM_SAVE_EVT]: [
-            { target: "removeWorkflowFromStorage", cond: "isNewOrNameChanged" },
-            { target: "updateWorkflow" },
-          ],
+          [SaveWorkflowMachineEventTypes.CONFIRM_SAVE_EVT]: {
+            target: "resolveAgentSnapshots",
+          },
           [SaveWorkflowMachineEventTypes.CANCEL_SAVE_EVT]: {
             target: "savedCancelled",
           },
@@ -45,6 +44,23 @@ export const saveMachine = createMachine<
             actions: ["cancelDebounceEditChanges", "debounceEditEvent"],
           },
         },
+      },
+      resolveAgentSnapshots: {
+        invoke: {
+          src: "resolveAgentSnapshots",
+          id: "resolve-agent-snapshots",
+          onDone: {
+            actions: "storeResolvedAgentSnapshots",
+            target: "selectSaveOperation",
+          },
+          onError: { target: "confirmSave", actions: "reportServerErrors" },
+        },
+      },
+      selectSaveOperation: {
+        always: [
+          { target: "removeWorkflowFromStorage", cond: "isNewOrNameChanged" },
+          { target: "updateWorkflow" },
+        ],
       },
       confirmOverride: {
         on: {

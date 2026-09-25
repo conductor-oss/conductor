@@ -35,11 +35,27 @@ public class A2AServerProperties {
     /** Master switch (also enforced by {@code A2AServerEnabledCondition}). */
     private boolean enabled = false;
 
-    /** URL path prefix under which agents are served. Each workflow is at {basePath}/{name}. */
-    private String basePath = "/a2a";
+    /**
+     * URL path prefix under which workflow agents are served. Each workflow is at
+     * {basePath}/{name}.
+     */
+    private String basePath = "/api/a2a/workflow";
+
+    /**
+     * URL path prefix under which native Conductor agents are served. Each agent is at
+     * {agentBasePath}/{name}.
+     */
+    private String agentBasePath = "/api/a2a/agent";
 
     /** Workflow names explicitly exposed as agents (in addition to metadata opt-in). */
     private List<String> exposedWorkflows = new ArrayList<>();
+
+    /**
+     * When true, every workflow definition is automatically exposed as an A2A agent without
+     * requiring {@code a2a.enabled=true} metadata or an explicit {@link #exposedWorkflows} entry.
+     * Convenient for development and single-tenant deployments; use opt-in exposure in production.
+     */
+    private boolean exposeAll = false;
 
     /**
      * Externally-reachable base URL (scheme://host[:port]) advertised in the Agent Card's {@code

@@ -19,6 +19,7 @@ export enum RightPanelStates {
   SUMMARY = "SUMMARY",
   INPUT = "INPUT",
   OUTPUT = "OUTPUT",
+  AGENT_CARD = "AGENT_CARD",
   LOGS = "LOGS",
   JSON = "JSON",
   DEFINITION = "DEFINITION",

@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.annotations.VisibleForTesting;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -38,18 +40,11 @@ public class Join extends WorkflowSystemTask {
     @VisibleForTesting static final double EVALUATION_OFFSET_BASE = 1.2;
 
     /**
-     * Marker key present in an AgentSpan agent execution's workflow input/variables. When set, the
-     * embedded AgentSpan runtime owns the workflow and the JOIN output is kept compact (see {@link
-     * #AGENT_PROPAGATED_KEYS}).
-     */
-    private static final String AGENTSPAN_CTX = "__agentspan_ctx__";
-
-    /**
-     * Keys propagated from fork-branch outputs into the JOIN output for AgentSpan agent executions.
-     * Only these are copied so the JOIN payload stays small for multi-agent merges — full fork
-     * outputs are read directly from the individual tool tasks by the agent message builder, so
-     * duplicating them in JOIN is unnecessary. This mirrors AgentSpan's own JOIN task; for
-     * non-agent workflows the full fork output is copied as before.
+     * Keys propagated from fork-branch outputs into the JOIN output for Conductor-Agents agent
+     * executions. Only these are copied so the JOIN payload stays small for multi-agent merges —
+     * full fork outputs are read directly from the individual tool tasks by the agent message
+     * builder, so duplicating them in JOIN is unnecessary. This mirrors the Conductor-Agents JOIN
+     * task; for non-agent workflows the full fork output is copied as before.
      */
     private static final Set<String> AGENT_PROPAGATED_KEYS = Set.of("_state_updates", "state");
 
@@ -90,18 +85,13 @@ public class Join extends WorkflowSystemTask {
 
             TaskModel.Status taskStatus = forkedTask.getStatus();
 
-            // Only add to task output if it's not empty. For AgentSpan agent executions, copy
-            // only the agent merge keys (compact) to keep the JOIN payload small; otherwise copy
-            // the full fork output (default Conductor behavior).
+            // Only add to task output if it's not empty.
             if (!forkedTask.getOutputData().isEmpty()) {
+                Map<String, Object> forkOutput = forkedTask.getOutputData();
                 if (agentExecution) {
-                    Map<String, Object> compact = compactAgentOutput(forkedTask.getOutputData());
-                    if (!compact.isEmpty()) {
-                        task.addOutput(joinOnRef, compact);
-                    }
-                } else {
-                    task.addOutput(joinOnRef, forkedTask.getOutputData());
+                    forkOutput = prepareAgentOutput(forkedTask);
                 }
+                task.addOutput(joinOnRef, forkOutput);
             }
 
             // Determine if the join task fails immediately due to a non-optional, non-permissive
@@ -118,10 +108,26 @@ public class Join extends WorkflowSystemTask {
                                 .filter(Objects::nonNull)
                                 .filter(t -> !t.getStatus().isSuccessful())
                                 .map(TaskModel::getReasonForIncompletion)
+                                .filter(Objects::nonNull)
                                 .collect(Collectors.joining(" "));
                 failureReason.append(failureReasons);
                 task.setReasonForIncompletion(failureReason.toString());
-                task.setStatus(TaskModel.Status.FAILED);
+                // A canceled forked task (e.g. a manually terminated sub-workflow) is a
+                // cancellation, not a failure: surface CANCELED so the decider maps the
+                // workflow to TERMINATED. Any genuinely failed non-optional forked task
+                // still wins and fails the join.
+                boolean hasNonCanceledFailure =
+                        joinOn.stream()
+                                .map(workflow::getTaskByRefName)
+                                .filter(Objects::nonNull)
+                                .filter(t -> t.getStatus().isTerminal())
+                                .filter(t -> !t.getStatus().isSuccessful())
+                                .filter(t -> !t.getWorkflowTask().isOptional())
+                                .anyMatch(t -> t.getStatus() != TaskModel.Status.CANCELED);
+                task.setStatus(
+                        hasNonCanceledFailure
+                                ? TaskModel.Status.FAILED
+                                : TaskModel.Status.CANCELED);
                 return true;
             }
 
@@ -153,17 +159,50 @@ public class Join extends WorkflowSystemTask {
         return false;
     }
 
-    /**
-     * True when this workflow is an embedded AgentSpan agent execution, detected via the {@code
-     * __agentspan_ctx__} marker on the workflow input or variables. Inert for all other workflows.
-     */
     private static boolean isAgentExecution(WorkflowModel workflow) {
-        return (workflow.getInput() != null && workflow.getInput().containsKey(AGENTSPAN_CTX))
-                || (workflow.getVariables() != null
-                        && workflow.getVariables().containsKey(AGENTSPAN_CTX));
+        WorkflowDef def = workflow.getWorkflowDefinition();
+        return def != null && def.isAgent();
     }
 
-    /** Returns a copy of {@code output} containing only {@link #AGENT_PROPAGATED_KEYS}. */
+    /** True when the fork branch carries state intended for a multi-agent state merge. */
+    private static boolean carriesAgentState(Map<String, Object> output) {
+        return output != null && AGENT_PROPAGATED_KEYS.stream().anyMatch(output::containsKey);
+    }
+
+    /**
+     * Shapes a fork branch's output for a Conductor-Agents JOIN:
+     *
+     * <ul>
+     *   <li>Branches marked with {@code _agent_tool_name} keep their tool identity: the full output
+     *       is wrapped under {@code _agent_tool_output}. Identity takes precedence because a tool
+     *       output may also contain state updates.
+     *   <li>State-bearing branches (any {@link #AGENT_PROPAGATED_KEYS}) are compacted to just the
+     *       merge keys to keep the JOIN payload small.
+     *   <li>Unmarked outputs (e.g. MCP or HTTP tool results) pass through untouched for the ReAct
+     *       state merge.
+     * </ul>
+     *
+     * <p>Constructed maps are unmodifiable; the pass-through branch intentionally returns the
+     * task's live output map to preserve default JOIN behavior.
+     */
+    private static Map<String, Object> prepareAgentOutput(TaskModel forkedTask) {
+        Map<String, Object> output = forkedTask.getOutputData();
+
+        Object agentToolName = forkedTask.getInputData().get("_agent_tool_name");
+        if (agentToolName != null) {
+            // LinkedHashMap (not Map.of): tool outputs may legitimately contain null values.
+            Map<String, Object> toolOutput = new LinkedHashMap<>();
+            toolOutput.put("_agent_tool_name", agentToolName);
+            toolOutput.put("_agent_tool_output", output);
+            return Collections.unmodifiableMap(toolOutput);
+        }
+
+        if (carriesAgentState(output)) {
+            return compactAgentOutput(output);
+        }
+        return output;
+    }
+
     private static Map<String, Object> compactAgentOutput(Map<String, Object> output) {
         Map<String, Object> compact = new LinkedHashMap<>();
         if (output != null) {
@@ -173,7 +212,7 @@ public class Join extends WorkflowSystemTask {
                 }
             }
         }
-        return compact;
+        return Collections.unmodifiableMap(compact);
     }
 
     @Override

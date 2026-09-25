@@ -19,7 +19,9 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteFileMetadataDAO;
+import org.conductoross.conductor.sqlite.dao.SqliteSchemaDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillMetadataDAO;
 import org.conductoross.conductor.sqlite.dao.SqliteSkillPackageDAO;
 import org.flywaydb.core.Flyway;
@@ -101,6 +103,10 @@ public class SqliteConfiguration {
                         .sqlMigrationSeparator("__") // V1__description
                         .mixed(true) // Allow mixed migrations (both versioned and repeatable)
                         .validateOnMigrate(true)
+                        // scheduler flyway shares this db (own history table, baseline 0) —
+                        // baseline-0 keeps boot independent of migration order
+                        .baselineOnMigrate(true)
+                        .baselineVersion("0")
                         .cleanDisabled(false);
 
         return new Flyway(config);
@@ -225,6 +231,14 @@ public class SqliteConfiguration {
             @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new SqliteSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn("flywayForPrimaryDb")
+    public SchemaDAO sqliteSchemaDAO(
+            @Qualifier("sqliteRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new SqliteSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     public static class CustomRetryPolicy extends SimpleRetryPolicy {

@@ -1,7 +1,6 @@
 import { Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { DataTable } from "components";
-import _path from "lodash/fp/path";
 import { useContext, useEffect, useRef } from "react";
 import { lastPollTimeColumnRenderer } from "./helpers";
 import { QueueMonitorContext } from "./state";
@@ -31,9 +30,12 @@ export const PollWorkerDetailsDataTable = () => {
     state.context.selectedQueueName,
     state.context.noWorkers,
   ]);
-  const data = useSelector(queueMachineActor!, (state) =>
-    _path(state.context.selectedQueueName, state.context.pollDataByQueueName),
-  );
+  const data = useSelector(queueMachineActor!, (state) => {
+    const queueName = state.context.selectedQueueName;
+    return queueName
+      ? (state.context.pollDataByQueueName?.[queueName] ?? [])
+      : [];
+  });
   useEffect(() => {
     if (divRef?.current !== null) {
       divRef.current.scrollIntoView({ behavior: "smooth" });

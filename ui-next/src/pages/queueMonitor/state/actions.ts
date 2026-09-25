@@ -12,7 +12,6 @@ import {
 import { UpdateDurationEvent } from "../refresher";
 import _groupBy from "lodash/groupBy";
 import _isNil from "lodash/isNil";
-import _path from "lodash/fp/path";
 
 export const persistFetchRequestParams = assign<
   QueueMonitorMachineContext,
@@ -40,7 +39,7 @@ export const persistQueueSelection = assign<
   SelectQueueEvent
 >((context, { queueName }) => ({
   selectedQueueName: queueName,
-  noWorkers: _isNil(_path(queueName, context.pollDataByQueueName)),
+  noWorkers: _isNil(context.pollDataByQueueName?.[queueName]),
 }));
 
 export const persistQueueOption = assign<

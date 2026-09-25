@@ -173,14 +173,23 @@ public class SetVariableTests {
         for (Future<?> f : futures) {
             f.get();
         }
-        log.info("all requests sent to server - sleep briefly before collecting results");
+        log.info("all requests sent to server - await completion before collecting results");
 
-        // Give 5 second to complete any pending workflows
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // Await all workflows completing instead of a fixed sleep: under CI load the batch
+        // regularly needs more than a few seconds and a hard sleep turns load into failures.
+        org.awaitility.Awaitility.await()
+                .atMost(180, java.util.concurrent.TimeUnit.SECONDS)
+                .pollInterval(java.time.Duration.ofSeconds(2))
+                .until(
+                        () ->
+                                expectedValues.keySet().stream()
+                                        .allMatch(
+                                                id ->
+                                                        workflowClient
+                                                                        .getWorkflow(id, false)
+                                                                        .getStatus()
+                                                                == Workflow.WorkflowStatus
+                                                                        .COMPLETED));
 
         // 2) Collect results concurrently (still using HTTP API)
         AtomicBoolean hasFailures = new AtomicBoolean(false);

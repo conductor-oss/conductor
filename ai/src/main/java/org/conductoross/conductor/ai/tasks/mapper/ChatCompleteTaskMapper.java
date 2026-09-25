@@ -200,16 +200,22 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
             }
             boolean skipTask = true;
             ChatMessage.Role role = ChatMessage.Role.assistant;
-            if (task.getParentTaskReferenceName() != null
+            // A task inside a DO_WHILE has both a parent loop reference and an iteration. Check
+            // the same-refName loop case first: otherwise it matches the parent branch below and
+            // bypasses the prefill/previousResponseId suppression.
+            boolean sameRefNameLoopIteration =
+                    task.isLoopOverTask()
+                            && task.getWorkflowTask()
+                                    .getTaskReferenceName()
+                                    .equals(
+                                            chatCompleteTask
+                                                    .getWorkflowTask()
+                                                    .getTaskReferenceName());
+            if (sameRefNameLoopIteration) {
+                skipTask = suppressLoopAssistantHistory;
+            } else if (task.getParentTaskReferenceName() != null
                     && task.getParentTaskReferenceName().equals(historyContextTaskRefName)) {
                 skipTask = false;
-            } else if (task.isLoopOverTask()
-                    && task.getWorkflowTask()
-                            .getTaskReferenceName()
-                            .equals(historyContextTaskRefName)) {
-                // Same-refName loop iterations are exactly the assistant-message
-                // duplication the Responses API has already absorbed; skip them.
-                skipTask = suppressLoopAssistantHistory;
             } else if (chatCompletion.getParticipants() != null) {
                 ChatMessage.Role participantRole =
                         chatCompletion
@@ -236,6 +242,7 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                 response = LLMResponse.builder().result(task.getOutputData()).build();
             }
 
+            int historyStart = history.size();
             if (toolTaskTypes.contains(task.getWorkflowTask().getType())) {
                 // This is a tool call
                 ToolCall toolCall =
@@ -320,6 +327,12 @@ public class ChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletion> {
                         msg.setMedia(response.getMedia().stream().map(Media::getLocation).toList());
                     }
                     history.add(msg);
+                }
+            }
+            // Playback can omit exactly the history a source provider would suppress.
+            if (sameRefNameLoopIteration) {
+                for (int i = historyStart; i < history.size(); i++) {
+                    history.get(i).setLoopHistory(true);
                 }
             }
         }

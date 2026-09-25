@@ -22,7 +22,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +37,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.dao.EnvironmentDAO;
-import com.netflix.conductor.dao.SecretsDAO;
 import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -512,5 +515,95 @@ public class ParametersUtilsTest {
         Map<String, Object> out = pu.substituteSecrets(input);
 
         assertSame(input, out);
+    }
+
+    @Test
+    public void testFindExpressions() {
+        assertEquals("", expressions("no expressions here"));
+        assertEquals("[0-4]", expressions("${a}"));
+        assertEquals("[2-6][9-13]", expressions("x ${a} y ${b} z"));
+        // nested expressions belong to the outer one
+        assertEquals("[0-9]", expressions("${a.${b}}"));
+        assertEquals("[0-12]", expressions("${a{b{c}d}e}"));
+        assertEquals("[0-3]", expressions("${}"));
+        // $${ is the escape for a literal ${
+        assertEquals("", expressions("$${a}"));
+        assertEquals("[6-10]", expressions("$${a} ${b}"));
+        // braces that do not belong to an expression are ignored
+        assertEquals("[4-8]", expressions("{}} ${a} {"));
+        // an expression that is never closed hides everything after it
+        assertEquals("", expressions("${a"));
+        assertEquals("[0-4]", expressions("${a} ${b ${c}"));
+        assertEquals("", expressions("$"));
+        assertEquals("", expressions(""));
+    }
+
+    @Test
+    public void testFindExpressionsMatchesLegacyPattern() {
+        // The pattern findExpressions replaced; kept here only as the reference for its semantics.
+        Pattern legacyPattern =
+                Pattern.compile(
+                        "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)",
+                        Pattern.DOTALL);
+        char[] alphabet = {'$', '{', '}', 'a', '\n'};
+        int maxLength = 6;
+        for (int length = 0; length <= maxLength; length++) {
+            int[] indexes = new int[length];
+            boolean exhausted = false;
+            while (!exhausted) {
+                StringBuilder input = new StringBuilder();
+                for (int index : indexes) {
+                    input.append(alphabet[index]);
+                }
+
+                StringBuilder expected = new StringBuilder();
+                Matcher matcher = legacyPattern.matcher(input);
+                while (matcher.find()) {
+                    expected.append('[').append(matcher.start()).append('-').append(matcher.end());
+                    expected.append(']');
+                }
+                assertEquals(
+                        "Input: " + input.toString().replace("\n", "\\n"),
+                        expected.toString(),
+                        expressions(input.toString()));
+
+                int position = length - 1;
+                while (position >= 0 && ++indexes[position] == alphabet.length) {
+                    indexes[position--] = 0;
+                }
+                exhausted = position < 0;
+            }
+        }
+    }
+
+    @Test(timeout = 10_000)
+    public void testReplaceIsNotVulnerableToReDoS() {
+        Map<String, Object> io = new HashMap<>();
+        io.put("name", "conductor");
+
+        // deeply nested expressions made the previous regex based matching take minutes
+        int depth = 1_000;
+        String nested = "${".repeat(depth) + "name" + "}".repeat(depth);
+        Map<String, Object> input = new HashMap<>();
+        input.put("nested", nested);
+        input.put("unclosed", "${" + "{".repeat(100_000));
+        input.put("many", "${name} ".repeat(50_000));
+        input.put("closingOnly", "}".repeat(100_000) + "${name}");
+
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+
+        assertNotNull(replaced);
+        assertEquals(input.get("unclosed"), replaced.get("unclosed"));
+        assertEquals("conductor ".repeat(50_000), replaced.get("many"));
+        assertEquals("}".repeat(100_000) + "conductor", replaced.get("closingOnly"));
+        // every level resolves to a path that does not exist, which yields null
+        assertTrue(replaced.containsKey("nested"));
+        assertNull(replaced.get("nested"));
+    }
+
+    private static String expressions(String value) {
+        return ParametersUtils.findExpressions(value).stream()
+                .map(range -> "[" + range[0] + "-" + range[1] + "]")
+                .collect(Collectors.joining());
     }
 }

@@ -97,7 +97,7 @@ Every message is a JSON object with the following fields:
 - The target workflow must exist.
 - The workflow must be in `RUNNING` status. Pushes to workflows in `PAUSED`, `COMPLETED`, `FAILED`, `TIMED_OUT`, or `TERMINATED` states are rejected with an appropriate HTTP error.
 
-**Feature flag guard:** The REST controller bean is only registered when the WMQ feature is enabled (see [Feature flag](#feature-flag)). When disabled, the endpoint does not exist at all — it is absent from Swagger UI and returns 404.
+**Feature flag guard:** The REST controller bean is only registered when the WMQ feature is enabled (see [Feature flag](#6-feature-flag)). When disabled, the endpoint does not exist at all — it is absent from Swagger UI and returns 404.
 
 **Side effect after push:** After storing the message in Redis, the endpoint calls `workflowExecutor.decide(workflowId)`. This triggers an immediate workflow evaluation cycle, allowing an in-progress `PULL_WORKFLOW_MESSAGES` task to be woken up without waiting for the next SystemTaskWorker poll interval. See [Interaction with WorkflowSweeper](#interaction-with-workflowsweeper).
 

@@ -58,6 +58,13 @@ export interface SearchObj {
    * hand-typed it in the Advanced search editor.
    */
   classifier?: string;
+  /**
+   * When true, restricts agent execution search to top-level agents only
+   * (server maps this to parentWorkflowId = ""). Sent by the "Hide sub-agent
+   * executions" toggle on the agent executions page. Unknown request params
+   * are dropped harmlessly by older backends that don't yet support it.
+   */
+  topLevelOnly?: boolean;
 }
 
 export interface TaskSearchObj extends Omit<SearchObj, "page"> {
@@ -271,6 +278,11 @@ export function useSearch<T = any>(
       if (classifier) {
         params = { ...params, classifier };
       }
+      if (searchObj.topLevelOnly) {
+        // Restrict to top-level agents (server maps to parentWorkflowId = "").
+        // Older backends drop this unknown request param harmlessly.
+        params = { ...params, topLevelOnly: searchObj.topLevelOnly };
+      }
       if (searchObj.queryId) {
         params = { queryId: searchObj.queryId, ...params };
       }
@@ -383,16 +395,16 @@ export function useTaskQueueInfo(taskName: string): {
   };
 }
 
-export function useAction(
+export function useAction<TData = any, TVariables = any>(
   path: string,
   method = "post",
-  callbacks?: any,
+  callbacks?: UseMutationOptions<TData, FetchError, TVariables>,
   isText?: boolean,
 ) {
   const fetchContext = useFetchContext();
   const authHeaders = useAuthHeaders();
 
-  return useMutation(
+  return useMutation<TData, FetchError, TVariables>(
     (mutateParams) =>
       fetchWithContext(
         path,
@@ -451,8 +463,12 @@ export function useUsersListing(includeApps = false) {
 
 export function useWorkflowDefs(
   optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
+  classifier?: "workflow" | "agent",
 ): UseQueryResult<WorkflowDef[], FetchError> {
-  return useFetch<WorkflowDef[]>(WORKFLOW_METADATA_SHORT_URL, {
+  const path = classifier
+    ? `${WORKFLOW_METADATA_SHORT_URL}&classifier=${classifier}`
+    : WORKFLOW_METADATA_SHORT_URL;
+  return useFetch<WorkflowDef[]>(path, {
     staleTime: DEFAULT_STALE_TIME,
     ...optionsOverride,
   });
@@ -473,6 +489,23 @@ export function useWorkflowNames(
   return useMemo(
     () => (workflows ? workflows.map((def) => def.name) : []),
     [workflows],
+  );
+}
+
+/** Registered AgentSpan definitions, used anywhere an agent—not a workflow—is selectable. */
+export function useAgentNames(
+  optionsOverride: Partial<
+    UseQueryOptions<{ name: string }[], FetchError>
+  > = {},
+): string[] {
+  const { data } = useFetch<{ name: string }[]>("/agent/list", {
+    staleTime: DEFAULT_STALE_TIME,
+    ...optionsOverride,
+  });
+
+  return useMemo(
+    () => (data ? data.map((agent) => agent.name).filter(Boolean) : []),
+    [data],
   );
 }
 
@@ -503,7 +536,6 @@ export const usePrefetchWorkflows = (): void => {
 
 // Version numbers do not necessarily start, or run contiguously from 1. Could arbitrary integers e.g. 52335678.
 // By convention they should be monotonic (ever increasing) wrt time.
-// @Deprecated use useWorkflowNamesAndVersionsQuery instead
 export function useWorkflowNamesAndVersions(): Map<string, number[]> {
   const { url } = useSharedQueryContext();
   const { data } = useFetch<WorkflowDef[]>(url, {
@@ -765,9 +797,6 @@ export const useAPIReleaseVersion = ({
           return false;
         }
         return failureCount - 2 > 0;
-      },
-      onSuccess: (data: string) => {
-        localStorage.setItem("version", data);
       },
       ...option,
     },

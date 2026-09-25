@@ -1,6 +1,7 @@
 import {
   UPDATE_VARIABLES_ACTION,
   START_WORKFLOW_ACTION,
+  START_AGENT_ACTION,
   TERMINATE_WORKFLOW_ACTION,
   COMPLETE_TASK_ACTION,
   FAIL_TASK_ACTION,
@@ -50,6 +51,11 @@ export const persistNewAction = assign({
         return {
           ...context.eventAsJson,
           actions: [START_WORKFLOW_ACTION, ...actions],
+        };
+      case Action.START_AGENT:
+        return {
+          ...context.eventAsJson,
+          actions: [START_AGENT_ACTION, ...actions],
         };
       default:
         return context.eventAsJson;

@@ -15,6 +15,7 @@ package com.netflix.conductor.core.secrets;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +23,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import com.netflix.conductor.dao.EnvironmentDAO;
-import com.netflix.conductor.dao.SecretsDAO;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

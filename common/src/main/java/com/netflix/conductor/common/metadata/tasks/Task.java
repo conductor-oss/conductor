@@ -24,6 +24,7 @@ import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.protobuf.Any;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -214,12 +215,25 @@ public class Task {
     private String parentTaskId;
 
     /**
+     * The reference name of the task this one was produced for, when it was not produced by the
+     * workflow definition on its own: a dynamic fork's children name the fork, and a task scheduled
+     * into a running workflow without being a step of it names the task it is running for.
+     *
+     * <p>Distinct from {@link #parentTaskId}, which identifies an event task's owner by id. This is
+     * a reference name, so it resolves against the workflow definition and survives a retry, which
+     * gives the task a new id under the same reference.
+     */
+    @ProtoField(id = 47)
+    private String parentTaskReferenceName;
+
+    /**
      * Resolved secret/environment name to value map, injected at poll time from the task
      * definition's declared {@code runtimeMetadata} names. Wire-only (REST/JSON): never persisted
      * on {@code TaskModel}, not given a {@code @ProtoField} id, and intentionally excluded from
      * {@link #toString()}, {@link #equals(Object)}, {@link #hashCode()}, and {@link #copy()}.
      */
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @ProtoField(id = 46)
     private Map<String, String> runtimeMetadata = new HashMap<>();
 
     public Task() {}
@@ -785,6 +799,18 @@ public class Task {
     }
 
     /**
+     * @return the reference name of the task this one was produced for, or null when the workflow
+     *     definition produced it on its own
+     */
+    public String getParentTaskReferenceName() {
+        return parentTaskReferenceName;
+    }
+
+    public void setParentTaskReferenceName(String parentTaskReferenceName) {
+        this.parentTaskReferenceName = parentTaskReferenceName;
+    }
+
+    /**
      * @return the resolved secret/environment name to value map, injected at poll time
      */
     public Map<String, String> getRuntimeMetadata() {
@@ -827,6 +853,7 @@ public class Task {
     /**
      * @return the execution metadata, creating it if it doesn't exist (for setting timing data)
      */
+    @JsonIgnore
     public ExecutionMetadata getOrCreateExecutionMetadata() {
         if (executionMetadata == null) {
             executionMetadata = new ExecutionMetadata();
@@ -838,6 +865,7 @@ public class Task {
      * @return the execution metadata only if it has data, null otherwise (for protobuf
      *     serialization)
      */
+    @JsonIgnore
     public ExecutionMetadata getExecutionMetadataIfHasData() {
         if (executionMetadata != null && executionMetadata.hasData()) {
             return executionMetadata;
@@ -892,6 +920,7 @@ public class Task {
         copy.setSubWorkflowId(getSubWorkflowId());
         copy.setSubworkflowChanged(subworkflowChanged);
         copy.setParentTaskId(parentTaskId);
+        copy.setParentTaskReferenceName(parentTaskReferenceName);
         copy.setFirstStartTime(firstStartTime);
         copy.setExecutionMetadata(executionMetadata);
         return copy;
@@ -915,6 +944,7 @@ public class Task {
         deepCopy.setReasonForIncompletion(reasonForIncompletion);
         deepCopy.setSeq(seq);
         deepCopy.setParentTaskId(parentTaskId);
+        deepCopy.setParentTaskReferenceName(parentTaskReferenceName);
         deepCopy.setFirstStartTime(firstStartTime);
         return deepCopy;
     }

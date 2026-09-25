@@ -136,7 +136,7 @@ class A2AWorkflowAgentTest {
 
         assertEquals("order_pizza", card.getName());
         assertEquals("3", card.getVersion());
-        assertEquals("http://host:8080/a2a/order_pizza", card.getUrl());
+        assertEquals("http://host:8080/api/a2a/workflow/order_pizza", card.getUrl());
         assertEquals(1, card.getSkills().size());
         assertEquals("order_pizza", card.getSkills().get(0).getId());
     }

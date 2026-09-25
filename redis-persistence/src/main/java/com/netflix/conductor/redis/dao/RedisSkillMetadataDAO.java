@@ -31,9 +31,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Redis {@link SkillMetadataDAO}. Per owner, versions live in a {@code SKILL_META} hash keyed by
- * {@code name<SEP>version}; the latest-version pointer lives in a {@code SKILL_LATEST} hash keyed
- * by {@code name}. Also serves {@code conductor.db.type=memory}.
+ * Redis {@link SkillMetadataDAO}. Versions live in a single {@code SKILL_META} hash keyed by {@code
+ * name<SEP>version}; the latest-version pointer lives in a {@code SKILL_LATEST} hash keyed by
+ * {@code name}. Skills share one global namespace (OSS Conductor is single-tenant). Also serves
+ * {@code conductor.db.type=memory}.
  */
 @Component
 @Conditional(AnyRedisCondition.class)
@@ -58,36 +59,33 @@ public class RedisSkillMetadataDAO extends BaseDynoDAO implements SkillMetadataD
 
     @Override
     public void save(
-            String ownerId,
             String name,
             String version,
             boolean makeLatest,
             String detailJson,
             Long createdAt,
             Long updatedAt) {
-        jedisProxy.hset(nsKey(SKILL_META, ownerId), field(name, version), detailJson);
+        jedisProxy.hset(nsKey(SKILL_META), field(name, version), detailJson);
         if (makeLatest) {
-            jedisProxy.hset(nsKey(SKILL_LATEST, ownerId), name, version);
+            jedisProxy.hset(nsKey(SKILL_LATEST), name, version);
         }
     }
 
     @Override
-    public Optional<String> find(String ownerId, String name, String version) {
-        return Optional.ofNullable(
-                jedisProxy.hget(nsKey(SKILL_META, ownerId), field(name, version)));
+    public Optional<String> find(String name, String version) {
+        return Optional.ofNullable(jedisProxy.hget(nsKey(SKILL_META), field(name, version)));
     }
 
     @Override
-    public Optional<String> latestVersion(String ownerId, String name) {
-        return Optional.ofNullable(jedisProxy.hget(nsKey(SKILL_LATEST, ownerId), name));
+    public Optional<String> latestVersion(String name) {
+        return Optional.ofNullable(jedisProxy.hget(nsKey(SKILL_LATEST), name));
     }
 
     @Override
-    public List<String> listVersions(String ownerId, String name) {
+    public List<String> listVersions(String name) {
         String prefix = name + SEP;
         List<String> out = new ArrayList<>();
-        for (Map.Entry<String, String> entry :
-                jedisProxy.hgetAll(nsKey(SKILL_META, ownerId)).entrySet()) {
+        for (Map.Entry<String, String> entry : jedisProxy.hgetAll(nsKey(SKILL_META)).entrySet()) {
             if (entry.getKey().startsWith(prefix)) {
                 out.add(entry.getValue());
             }
@@ -96,14 +94,14 @@ public class RedisSkillMetadataDAO extends BaseDynoDAO implements SkillMetadataD
     }
 
     @Override
-    public List<String> list(String ownerId, boolean allVersions) {
-        Map<String, String> all = jedisProxy.hgetAll(nsKey(SKILL_META, ownerId));
+    public List<String> list(boolean allVersions) {
+        Map<String, String> all = jedisProxy.hgetAll(nsKey(SKILL_META));
         if (allVersions) {
             return new ArrayList<>(all.values());
         }
         List<String> out = new ArrayList<>();
         for (Map.Entry<String, String> latest :
-                jedisProxy.hgetAll(nsKey(SKILL_LATEST, ownerId)).entrySet()) {
+                jedisProxy.hgetAll(nsKey(SKILL_LATEST)).entrySet()) {
             String detail = all.get(field(latest.getKey(), latest.getValue()));
             if (detail != null) {
                 out.add(detail);
@@ -113,21 +111,20 @@ public class RedisSkillMetadataDAO extends BaseDynoDAO implements SkillMetadataD
     }
 
     @Override
-    public void delete(String ownerId, String name, String version) {
-        jedisProxy.hdel(nsKey(SKILL_META, ownerId), field(name, version));
-        String latest = jedisProxy.hget(nsKey(SKILL_LATEST, ownerId), name);
+    public void delete(String name, String version) {
+        jedisProxy.hdel(nsKey(SKILL_META), field(name, version));
+        String latest = jedisProxy.hget(nsKey(SKILL_LATEST), name);
         if (version.equals(latest)) {
-            recomputeLatest(ownerId, name);
+            recomputeLatest(name);
         }
     }
 
     /** Re-point the latest version for a skill to its newest remaining version (by updatedAt). */
-    private void recomputeLatest(String ownerId, String name) {
+    private void recomputeLatest(String name) {
         String prefix = name + SEP;
         String newestVersion = null;
         long newestUpdatedAt = Long.MIN_VALUE;
-        for (Map.Entry<String, String> entry :
-                jedisProxy.hgetAll(nsKey(SKILL_META, ownerId)).entrySet()) {
+        for (Map.Entry<String, String> entry : jedisProxy.hgetAll(nsKey(SKILL_META)).entrySet()) {
             if (!entry.getKey().startsWith(prefix)) {
                 continue;
             }
@@ -139,9 +136,9 @@ public class RedisSkillMetadataDAO extends BaseDynoDAO implements SkillMetadataD
             }
         }
         if (newestVersion != null) {
-            jedisProxy.hset(nsKey(SKILL_LATEST, ownerId), name, newestVersion);
+            jedisProxy.hset(nsKey(SKILL_LATEST), name, newestVersion);
         } else {
-            jedisProxy.hdel(nsKey(SKILL_LATEST, ownerId), name);
+            jedisProxy.hdel(nsKey(SKILL_LATEST), name);
         }
     }
 

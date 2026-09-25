@@ -105,7 +105,7 @@ public class WorkflowSummary {
 
     /**
      * Classifier of the workflow definition this execution was started from (e.g. {@code workflow}
-     * for a plain workflow, {@code agent} for AgentSpan agents). Derived via {@link
+     * for a plain workflow, {@code agent} for Conductor-Agents agents). Derived via {@link
      * WorkflowClassifier} at index time.
      */
     @ProtoField(id = 23)
