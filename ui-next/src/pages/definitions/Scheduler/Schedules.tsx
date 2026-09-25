@@ -809,7 +809,7 @@ export default function ScheduleDefinitions() {
                   "workflowExecutionsLink",
                   "schedulerExecutionsLink",
                   ...(tagsEnabled ? ["tags"] : []),
-                  "cronTabExpression",
+                  "cronExpression",
                   "startWorkflowRequest",
                   "createTime",
                   "paused",
