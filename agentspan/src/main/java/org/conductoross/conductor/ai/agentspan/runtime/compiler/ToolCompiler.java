@@ -18,9 +18,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.common.metadata.agent.GuardrailConfig;
@@ -151,6 +154,18 @@ public class ToolCompiler {
                     Map.entry("rag_index", "LLM_INDEX_TEXT"),
                     Map.entry("rag_search", "LLM_SEARCH_INDEX"),
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
+
+    /**
+     * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
+     * tool's own name as its type. A floor, not a closed set: a media or RAG tool's config may name
+     * its own task type.
+     */
+    public static final Set<String> COMPILED_TOOL_TASK_TYPES =
+            Stream.concat(
+                            TYPE_MAP.values().stream(),
+                            MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
+                    .filter(taskType -> !"SIMPLE".equals(taskType))
+                    .collect(Collectors.toUnmodifiableSet());
 
     // ── Public API ───────────────────────────────────────────────────────
 
