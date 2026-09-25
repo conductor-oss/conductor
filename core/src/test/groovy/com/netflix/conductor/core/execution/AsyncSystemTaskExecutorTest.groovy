@@ -359,6 +359,56 @@ class AsyncSystemTaskExecutorTest extends Specification {
         task.status == TaskModel.Status.TIMED_OUT
     }
 
+    def "Re-runs start() instead of timing out a redelivered SCHEDULED SUB_WORKFLOW past responseTimeout"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // Same stale timing as the overrun-timeout test above; only the task type differs.
+        // SUB_WORKFLOW's start() is idempotent, so a redelivery must retry rather than force the
+        // task TIMED_OUT and strand the branch (#1615).
+        long stale = System.currentTimeMillis() - 20_000
+        TaskModel task = new TaskModel(taskType: SUB_WORKFLOW.name(), status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 10, startTime: stale, updateTime: stale)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // re-reserved and re-started (self-healing retry), NOT timed out
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 2_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor)
+        0 * workflowSystemTask.execute(*_)
+
+        task.status != TaskModel.Status.TIMED_OUT
+        task.status == TaskModel.Status.SCHEDULED
+    }
+
+    def "Reserves a SUB_WORKFLOW's message for a short window rather than its responseTimeout"() {
+        given:
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        // The reserve bounds how long a branch stays stranded when its worker dies mid-start(),
+        // so an idempotent start() must not inherit the 3600s responseTimeout (#1615).
+        TaskModel task = new TaskModel(taskType: SUB_WORKFLOW.name(), status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 3600)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // 2 x systemTaskWorkerCallbackDuration (1s in this spec), not the 3600s responseTimeout
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 2_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+    }
+
     def "Does not time out an IN_PROGRESS task waiting for its callback even when the callback interval exceeds responseTimeout"() {
         given:
         String workflowId = "workflowId"
