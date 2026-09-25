@@ -11,6 +11,16 @@ dependencies {
 
     // AWS Bedrock Agent Runtime — for BedrockAgentClient
     implementation "software.amazon.awssdk:bedrockagentruntime:${revAwsSdk}"
+    // AWS Bedrock Agent management client — for listing agents
+    implementation "software.amazon.awssdk:bedrockagent:${revAwsSdk}"
+    // AWS Bedrock AgentCore — invoke and list agent runtimes (available from SDK 2.33.11+)
+    implementation "software.amazon.awssdk:bedrockagentcore:${revAwsSdk}"
+    implementation "software.amazon.awssdk:bedrockagentcorecontrol:${revAwsSdk}"
+    // AWS STS — for AssumeRole
+    implementation "software.amazon.awssdk:sts:${revAwsSdk}"
+
+    // Azure Identity SDK — service principal, managed identity, and default credential chain
+    implementation "com.azure:azure-identity:${revAzureIdentitySdk}"
 
     // Exercise the adapters against a real persisted backend rather than mocked DAOs.
     testImplementation project(':conductor-sqlite-persistence')
