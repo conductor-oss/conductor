@@ -31,7 +31,9 @@ export function jevInferenceOutput(event: AgentEvent) {
     | undefined;
 }
 
-function jevTaskEvent(task: ExecutionTask): AgentEvent {
+function jevTaskEvent(
+  task: ExecutionTask<Record<string, unknown>>,
+): AgentEvent {
   const usage = task.outputData?.usage as
     | { inputTokens?: number; outputTokens?: number }
     | undefined;
@@ -64,6 +66,126 @@ function jevTaskEvent(task: ExecutionTask): AgentEvent {
       seq: task.seq,
     },
   };
+}
+
+function embeddedAgentDef(task: ExecutionTask) {
+  const definition = task.inputData?.subWorkflowDefinition as
+    | WorkflowExecution["workflowDefinition"]
+    | undefined;
+  return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
+}
+
+function childJevEvent(task: ExecutionTask): AgentEvent {
+  const definition = embeddedAgentDef(task);
+  return jevTaskEvent({
+    ...task,
+    inputData: {
+      model: definition?.model,
+      questions: definition?.questions,
+      ...(task.inputData?.workflowInput as Record<string, unknown>),
+    },
+    outputData: task.outputData?.result as ExecutionTask["outputData"],
+  });
+}
+
+/** A selector is inference by the parent. Its selected child acts in the next turn. */
+function routerTimeline(
+  tasks: ExecutionTask[],
+  turns: AgentTurn[],
+): AgentTurn[] {
+  const calls = deduplicateRetriedTasks(
+    sortTasksChronologically(tasks),
+  ).tasks.filter(isAgentSubWorkflow);
+  const isSelector = (task: ExecutionTask) =>
+    /_router(?:__\d+)?$/.test(task.referenceTaskName);
+  if (!calls.some(isSelector)) return turns;
+  const children = turns.flatMap((turn) => turn.subAgents);
+  const routed: AgentTurn[] = [];
+  for (const task of calls) {
+    const definition = embeddedAgentDef(task);
+    const durationMs =
+      task.endTime && task.startTime ? task.endTime - task.startTime : 0;
+    let events: AgentEvent[] = [];
+    let subAgents: AgentRunData[] = [];
+    if (isSelector(task)) {
+      const result = task.outputData?.result;
+      const event: AgentEvent =
+        definition?.kind === "jev"
+          ? childJevEvent(task)
+          : {
+              id: `${task.taskId}-router`,
+              type: EventType.THINKING,
+              timestamp: task.startTime ?? 0,
+              summary: "Routing decision",
+              toolName: definition?.model as string | undefined,
+              detail: { input: task.inputData?.workflowInput, output: result },
+              success: taskSuccess(task.status),
+              durationMs,
+            };
+      const answers = (
+        result as { answers?: Record<string, { choice?: string }> } | undefined
+      )?.answers;
+      const choice =
+        definition?.kind === "jev"
+          ? Object.values(answers ?? {})[0]?.choice
+          : typeof result === "string"
+            ? result
+            : undefined;
+      if (choice) {
+        event.targetAgent = choice;
+        event.summary = `Selected: ${choice}`;
+      }
+      events = [event];
+    } else {
+      const child = children.find(
+        (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
+      );
+      if (!child) continue;
+      const event =
+        definition?.kind === "jev" ? childJevEvent(task) : undefined;
+      subAgents = [
+        {
+          ...child,
+          agentName: (definition?.name as string) ?? child.agentName,
+          agentDef: definition ?? child.agentDef,
+          model: definition?.model as string | undefined,
+          output: task.outputData?.result ?? child.output,
+          ...(event
+            ? {
+                expanded: true,
+                totalTokens: event.tokens ?? ZERO_TOKENS,
+                turns: [
+                  {
+                    turnNumber: 1,
+                    status: child.status,
+                    durationMs,
+                    tokens: event.tokens ?? ZERO_TOKENS,
+                    events: [event],
+                    subAgents: [],
+                  },
+                ],
+              }
+            : {}),
+        },
+      ];
+    }
+    routed.push({
+      id: `route-${task.taskId}`,
+      kind: AgentTimelineKind.TURN,
+      turnNumber: routed.length + 1,
+      status: mapTaskStatus(task.status),
+      durationMs,
+      tokens: events[0]?.tokens ?? ZERO_TOKENS,
+      events,
+      subAgents,
+      strategy: AgentStrategy.SEQUENTIAL,
+    });
+  }
+  return [
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.PREPARATION),
+    ...routed,
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.FINALIZATION),
+  ];
 }
 
 /** Map a model name to its provider icon path in /integrations-icons/ */
@@ -2016,6 +2138,11 @@ export function transformWorkflowExecutionToAgentRun(
   }
 
   const agentInput = execution.input ?? undefined;
+
+  if (agentDefMeta?.strategy === "router") {
+    const routed = routerTimeline(tasks, turns);
+    if (routed !== turns) turns.splice(0, turns.length, ...routed);
+  }
 
   // Accumulate total tokens from all turns
   const totalPromptTokens = turns.reduce(

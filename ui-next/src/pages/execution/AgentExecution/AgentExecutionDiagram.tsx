@@ -1246,7 +1246,7 @@ function buildTurnNodes(
           push(ev.id, {
             kind: ev.type === EventType.JEV ? "jev_decision" : "llm",
             label: ev.type === EventType.JEV ? "jev_decision" : "LLM",
-            sublabel: model,
+            sublabel: ev.targetAgent ? `Selected: ${ev.targetAgent}` : model,
             modelName: model,
             meta: tok
               ? `${formatTokens(tok.promptTokens)}↑  ${formatTokens(tok.completionTokens)}↓`

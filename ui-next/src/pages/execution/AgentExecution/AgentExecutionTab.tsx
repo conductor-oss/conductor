@@ -14,7 +14,7 @@ import {
   MOCK_SCENARIOS,
   MockScenarioKey,
 } from "./mockData";
-import { AgentRunData, AgentStatus } from "./types";
+import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
 import { WorkflowExecution, WorkflowExecutionStatus } from "types/Execution";
 import { HumanInputPanel } from "./HumanInputPanel";
 
@@ -134,6 +134,26 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
       );
     }
   }, []);
+
+  useEffect(() => {
+    const expandRouters = (run: AgentRunData) => {
+      for (const turn of run.turns) {
+        for (const child of turn.subAgents) {
+          if (
+            child.strategy === AgentStrategy.ROUTER &&
+            !child.expanded &&
+            !child.expanding &&
+            !child.expandError
+          ) {
+            void handleExpandSubAgent(child);
+          } else if (child.expanded) {
+            expandRouters(child);
+          }
+        }
+      }
+    };
+    if (rootRun.strategy === AgentStrategy.ROUTER) expandRouters(rootRun);
+  }, [rootRun, handleExpandSubAgent]);
 
   const navigate = usePushHistory();
 

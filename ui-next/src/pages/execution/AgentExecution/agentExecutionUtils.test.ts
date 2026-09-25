@@ -719,3 +719,89 @@ describe("jev agents", () => {
     },
   );
 });
+
+it.each([false, true])(
+  "renders router inference before its selected child (Jev=%s)",
+  (jev) => {
+    const selectorResult = jev
+      ? {
+          model: "jev-1.13",
+          answers: { agent: { type: "choice", choice: "billing" } },
+          usage: { inputTokens: 10, outputTokens: 2 },
+        }
+      : "billing";
+    const childResult = {
+      model: "jev-1.13",
+      answers: { action: { type: "choice", choice: "check_transactions" } },
+    };
+    const selector = task({
+      taskId: "selector",
+      taskType: "SUB_WORKFLOW",
+      referenceTaskName: jev ? "triage_router" : "triage_router__1",
+      loopOverTask: !jev,
+      startTime: 10,
+      endTime: 20,
+      inputData: {
+        subWorkflowName: "triage_selector",
+        subWorkflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: "triage_selector",
+              kind: jev ? "jev" : "chat",
+              model: jev ? "jev-1.13" : "openai/gpt-6-luna",
+            },
+          },
+        },
+      },
+      outputData: { subWorkflowId: "selector-run", result: selectorResult },
+    });
+    const selected = task({
+      taskId: "billing",
+      taskType: "SUB_WORKFLOW",
+      referenceTaskName: jev
+        ? "triage_selected_0"
+        : "triage_handoff_0_billing__1",
+      loopOverTask: !jev,
+      startTime: 20,
+      endTime: 40,
+      inputData: {
+        subWorkflowName: "billing",
+        subWorkflowDefinition: {
+          metadata: {
+            agentDef: { name: "billing", kind: "jev", model: "jev-1.13" },
+          },
+        },
+      },
+      outputData: { subWorkflowId: "billing-run", result: childResult },
+    });
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([selector, selected], {
+        workflowName: "triage",
+        workflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: "triage",
+              strategy: "router",
+              agents: [{ name: "billing", kind: "jev" }],
+            },
+          },
+        },
+      }),
+    );
+    expect(run.turns).toHaveLength(2);
+    expect(run.turns[0].subAgents).toEqual([]);
+    expect(run.turns[0].events[0]).toMatchObject({
+      type: jev ? EventType.JEV : EventType.THINKING,
+      targetAgent: "billing",
+    });
+    expect(run.turns[1].subAgents.map((sub) => sub.agentName)).toEqual([
+      "billing",
+    ]);
+    expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
+    expect(run.turns[1].subAgents[0].turns[0].events[0]).toMatchObject({
+      type: EventType.JEV,
+      detail: { output: childResult },
+    });
+    expect(run.turns[1].subAgents[0].expanded).toBe(true);
+  },
+);
