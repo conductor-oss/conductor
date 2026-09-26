@@ -26,7 +26,7 @@ import {
   TaskAttempt,
 } from "./types";
 import {
-  jevInferenceOutput,
+  decisionInferenceOutput,
   formatTokens,
   formatDuration,
   getModelIconPath,
@@ -39,7 +39,7 @@ import { WorkflowExecution } from "types/Execution";
 export interface DetailNodeData {
   kind:
     | "llm"
-    | "jev_decision"
+    | "decision"
     | "tool"
     | "handoff"
     | "subagent"
@@ -1097,10 +1097,10 @@ function SummaryContent({
     );
   }
 
-  if (node.kind === "llm" || node.kind === "jev_decision") {
+  if (node.kind === "llm" || node.kind === "decision") {
     const tok = ev?.tokens;
-    const jev =
-      node.kind === "jev_decision" && ev ? jevInferenceOutput(ev) : undefined;
+    const decision =
+      node.kind === "decision" && ev ? decisionInferenceOutput(ev) : undefined;
     return (
       <Box>
         {ev?.condensationInfo && (
@@ -1109,34 +1109,37 @@ function SummaryContent({
         <SummaryTable>
           <SummaryRow
             label="Kind"
-            value={node.kind === "jev_decision" ? "jev_decision" : "LLM Call"}
+            value={node.kind === "decision" ? "decision" : "LLM Call"}
           />
-          {jev?.answers != null && (
-            <SummaryRow label="Answers" value={JSON.stringify(jev.answers)} />
+          {decision?.answers != null && (
+            <SummaryRow
+              label="Answers"
+              value={JSON.stringify(decision.answers)}
+            />
           )}
-          {jev?.usage != null && (
+          {decision?.usage != null && (
             <SummaryRow
               label="Usage and cost"
-              value={JSON.stringify(jev.usage)}
+              value={JSON.stringify(decision.usage)}
             />
           )}
-          {jev?.latencyMs != null && (
+          {decision?.latencyMs != null && (
             <SummaryRow
               label="Provider latency"
-              value={`${jev.latencyMs} ms`}
+              value={`${decision.latencyMs} ms`}
             />
           )}
-          {jev?.requestId && (
-            <SummaryRow label="Request ID" value={jev.requestId} />
+          {decision?.requestId && (
+            <SummaryRow label="Request ID" value={decision.requestId} />
           )}
           <SummaryRow
             label="Status"
             value={<StatusBadgeInline status={node.status} />}
           />
-          {(jev?.model ?? ev?.toolName) && (
+          {(decision?.model ?? ev?.toolName) && (
             <SummaryRow
               label="Model"
-              value={<ModelValue model={(jev?.model ?? ev?.toolName)!} />}
+              value={<ModelValue model={(decision?.model ?? ev?.toolName)!} />}
             />
           )}
           {ev?.baseUrl && <SummaryRow label="Base URL" value={ev.baseUrl} />}
@@ -1681,7 +1684,7 @@ const KIND_DISPLAY: Record<DetailNodeData["kind"], string> = {
   start: "Agent",
   subagent: "Sub-agent",
   llm: "LLM Call",
-  jev_decision: "jev_decision",
+  decision: "decision",
   tool: "Tool Call",
   handoff: "Handoff",
   output: "Output",

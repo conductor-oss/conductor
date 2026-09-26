@@ -16,8 +16,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.ai.agentspan.runtime.jev.JevQuestion;
-import org.conductoross.conductor.ai.agentspan.runtime.jev.JevValidation;
+import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionQuestion;
+import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowTaskUtils;
 import org.conductoross.conductor.common.metadata.agent.*;
@@ -121,9 +121,10 @@ public class AgentCompiler {
     public WorkflowDef compile(AgentConfig config) {
         WorkflowDef wf;
 
-        // Jev has its own execution path; framework passthrough must precede chat model parsing.
-        if (config.getKind() == AgentConfig.Kind.JEV) {
-            wf = compileJev(config);
+        // Decision has its own execution path; framework passthrough must precede chat model
+        // parsing.
+        if (config.getKind() == AgentConfig.Kind.DECISION) {
+            wf = compileDecision(config);
         } else if (isFrameworkPassthrough(config)) {
             wf = compileFrameworkPassthrough(config);
         } else if (isGraphStructure(config)) {
@@ -270,25 +271,25 @@ public class AgentCompiler {
         wf.setMetadata(metadata);
     }
 
-    /** Jev agents perform one inference through the agent runtime. */
-    WorkflowDef compileJev(AgentConfig config) {
+    /** Decision agents perform one inference through the agent runtime. */
+    WorkflowDef compileDecision(AgentConfig config) {
         if (StringUtils.isBlank(config.getModel()))
-            throw new IllegalArgumentException("Jev agent requires a model");
-        if (containsNonJevSupportedConfigs(config))
+            throw new IllegalArgumentException("Decision agent requires a model");
+        if (containsNonDecisionSupportedConfigs(config))
             throw new IllegalArgumentException(
-                    "Jev agents cannot contain chat tools, agents, memory, output schemas or guardrails");
+                    "Decision agents cannot contain chat tools, agents, memory, output schemas or guardrails");
         if (config.getQuestions() != null) {
-            JevValidation.questions(
+            DecisionValidation.questions(
                     MAPPER.convertValue(
                             config.getQuestions(),
-                            new TypeReference<Map<String, JevQuestion>>() {}));
+                            new TypeReference<Map<String, DecisionQuestion>>() {}));
         }
 
         WorkflowDef wf = createWorkflow(config);
         WorkflowTask task = new WorkflowTask();
-        task.setName("JEV_AGENT");
-        task.setType("JEV_AGENT");
-        task.setTaskReferenceName(toRef(config.getName()) + "_jev");
+        task.setName("DECISION_AGENT");
+        task.setType("DECISION_AGENT");
+        task.setTaskReferenceName(toRef(config.getName()) + "_decision");
         task.setInputParameters(
                 Map.of(
                         "model",
@@ -299,8 +300,13 @@ public class AgentCompiler {
                         config.getQuestions() != null
                                 ? config.getQuestions()
                                 : "${workflow.input.context.questions}"));
+        if (StringUtils.isNotBlank(config.getProvider())) {
+            Map<String, Object> input = new LinkedHashMap<>(task.getInputParameters());
+            input.put("provider", config.getProvider());
+            task.setInputParameters(input);
+        }
         TaskDef retry = new TaskDef();
-        retry.setName("JEV_AGENT");
+        retry.setName("DECISION_AGENT");
         retry.setRetryCount(3);
         retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
         retry.setRetryDelaySeconds(1);
@@ -313,7 +319,7 @@ public class AgentCompiler {
         return wf;
     }
 
-    private boolean containsNonJevSupportedConfigs(AgentConfig config) {
+    private boolean containsNonDecisionSupportedConfigs(AgentConfig config) {
         return !CollectionUtils.isEmpty(config.getTools())
                 || !CollectionUtils.isEmpty(config.getAgents())
                 || config.getPlanner() != null
@@ -2760,7 +2766,7 @@ public class AgentCompiler {
     /** Recursively walk the config tree and collect capability tags. */
     static Set<String> collectCapabilities(AgentConfig config) {
         Set<String> caps = new LinkedHashSet<>();
-        if (config.getKind() == AgentConfig.Kind.JEV) return Set.of("jev");
+        if (config.getKind() == AgentConfig.Kind.DECISION) return Set.of("decision");
         // Mirror the dispatch-site definition of ``hasAgents`` — named
         // PLAN_EXECUTE slots count as sub-agents for capability purposes
         // too. Without this, a PLAN_EXECUTE coordinator built with

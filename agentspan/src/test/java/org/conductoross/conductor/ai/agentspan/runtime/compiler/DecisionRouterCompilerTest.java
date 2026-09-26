@@ -24,13 +24,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.*;
 
-class JevRouterCompilerTest {
+class DecisionRouterCompilerTest {
     private final AgentCompiler compiler = new AgentCompiler();
 
     private AgentConfig leaf(String name) {
         return AgentConfig.builder()
                 .name(name)
-                .kind(AgentConfig.Kind.JEV)
+                .kind(AgentConfig.Kind.DECISION)
                 .model("jev-1.13")
                 .questions(Map.of("ready", Map.of("type", "boolean", "instructions", "Ready?")))
                 .build();
@@ -43,7 +43,7 @@ class JevRouterCompilerTest {
         AgentConfig selector =
                 AgentConfig.builder()
                         .name(name + "_selector")
-                        .kind(AgentConfig.Kind.JEV)
+                        .kind(AgentConfig.Kind.DECISION)
                         .model("jev-1.13")
                         .questions(
                                 Map.of(
@@ -75,7 +75,9 @@ class JevRouterCompilerTest {
                 .containsExactly("SUB_WORKFLOW", "SWITCH");
         var route = workflow.getTasks().get(0);
         var selector = route.getSubWorkflowParam().getWorkflowDef();
-        assertThat(selector.getTasks()).extracting(t -> t.getType()).containsExactly("JEV_AGENT");
+        assertThat(selector.getTasks())
+                .extracting(t -> t.getType())
+                .containsExactly("DECISION_AGENT");
         assertThat(selector.getMetadata().get("classifier")).isEqualTo("agent");
         assertThat(route.getInputParameters())
                 .containsEntry("context", "${workflow.input.context}");
@@ -119,13 +121,15 @@ class JevRouterCompilerTest {
                         .get(0)
                         .getSubWorkflowParam()
                         .getWorkflowDef();
-        assertThat(specialist.getTasks()).extracting(t -> t.getType()).containsExactly("JEV_AGENT");
+        assertThat(specialist.getTasks())
+                .extracting(t -> t.getType())
+                .containsExactly("DECISION_AGENT");
         assertThat(child.getOutputParameters())
                 .containsEntry("result", "${workflow.variables.result}");
     }
 
     @Test
-    void singleChatRouterPreservesSelectedJevResult() {
+    void singleChatRouterPreservesSelectedDecisionResult() {
         var config = team("triage", leaf("billing"), leaf("technical"));
         config.setModel("configured/luna-6");
         config.setRouter(

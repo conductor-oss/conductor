@@ -663,9 +663,9 @@ describe("replaceAgentRunNode", () => {
   });
 });
 
-describe("jev agents", () => {
+describe("decision agents", () => {
   it.each([false, true])(
-    "keeps Jev inference out of tools (loop: %s)",
+    "keeps Decision inference out of tools (loop: %s)",
     (loopOverTask) => {
       const output = {
         model: "jev-1.13",
@@ -678,12 +678,12 @@ describe("jev agents", () => {
         execution(
           [
             task({
-              taskId: "jev",
+              taskId: "decision",
               referenceTaskName: loopOverTask ? "decide__1" : "decide",
               loopOverTask,
-              taskType: "JEV_AGENT",
+              taskType: "DECISION_AGENT",
               inputData: {
-                provider: "jev",
+                provider: "decision",
                 model: "jev-1.13",
                 state: "state",
                 questions: { action: {} },
@@ -695,7 +695,7 @@ describe("jev agents", () => {
             workflowDefinition: {
               metadata: {
                 classifier: "agent",
-                agentDef: { kind: "jev", model: "jev-1.13" },
+                agentDef: { kind: "decision", model: "jev-1.13" },
               },
             },
           },
@@ -703,8 +703,8 @@ describe("jev agents", () => {
       );
       const event = run.turns
         .flatMap((t) => t.events)
-        .find((e) => e.type === EventType.JEV);
-      expect(run.agentType).toBe("jev");
+        .find((e) => e.type === EventType.DECISION);
+      expect(run.agentType).toBe("decision");
       expect(event?.tokens?.totalTokens).toBe(14);
       expect(
         run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
@@ -721,9 +721,9 @@ describe("jev agents", () => {
 });
 
 it.each([false, true])(
-  "renders router inference before its selected child (Jev=%s)",
-  (jev) => {
-    const selectorResult = jev
+  "renders router inference before its selected child (Decision=%s)",
+  (decision) => {
+    const selectorResult = decision
       ? {
           model: "jev-1.13",
           answers: { agent: { type: "choice", choice: "billing" } },
@@ -737,8 +737,8 @@ it.each([false, true])(
     const selector = task({
       taskId: "selector",
       taskType: "SUB_WORKFLOW",
-      referenceTaskName: jev ? "triage_router" : "triage_router__1",
-      loopOverTask: !jev,
+      referenceTaskName: decision ? "triage_router" : "triage_router__1",
+      loopOverTask: !decision,
       startTime: 10,
       endTime: 20,
       inputData: {
@@ -747,8 +747,8 @@ it.each([false, true])(
           metadata: {
             agentDef: {
               name: "triage_selector",
-              kind: jev ? "jev" : "chat",
-              model: jev ? "jev-1.13" : "openai/gpt-6-luna",
+              kind: decision ? "decision" : "chat",
+              model: decision ? "jev-1.13" : "openai/gpt-6-luna",
             },
           },
         },
@@ -758,17 +758,17 @@ it.each([false, true])(
     const selected = task({
       taskId: "billing",
       taskType: "SUB_WORKFLOW",
-      referenceTaskName: jev
+      referenceTaskName: decision
         ? "triage_selected_0"
         : "triage_handoff_0_billing__1",
-      loopOverTask: !jev,
+      loopOverTask: !decision,
       startTime: 20,
       endTime: 40,
       inputData: {
         subWorkflowName: "billing",
         subWorkflowDefinition: {
           metadata: {
-            agentDef: { name: "billing", kind: "jev", model: "jev-1.13" },
+            agentDef: { name: "billing", kind: "decision", model: "jev-1.13" },
           },
         },
       },
@@ -782,7 +782,7 @@ it.each([false, true])(
             agentDef: {
               name: "triage",
               strategy: "router",
-              agents: [{ name: "billing", kind: "jev" }],
+              agents: [{ name: "billing", kind: "decision" }],
             },
           },
         },
@@ -791,7 +791,7 @@ it.each([false, true])(
     expect(run.turns).toHaveLength(2);
     expect(run.turns[0].subAgents).toEqual([]);
     expect(run.turns[0].events[0]).toMatchObject({
-      type: jev ? EventType.JEV : EventType.THINKING,
+      type: decision ? EventType.DECISION : EventType.THINKING,
       targetAgent: "billing",
     });
     expect(run.turns[1].subAgents.map((sub) => sub.agentName)).toEqual([
@@ -799,7 +799,7 @@ it.each([false, true])(
     ]);
     expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
     expect(run.turns[1].subAgents[0].turns[0].events[0]).toMatchObject({
-      type: EventType.JEV,
+      type: EventType.DECISION,
       detail: { output: childResult },
     });
     expect(run.turns[1].subAgents[0].expanded).toBe(true);

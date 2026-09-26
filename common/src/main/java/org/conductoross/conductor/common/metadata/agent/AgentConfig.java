@@ -38,7 +38,7 @@ public class AgentConfig {
     /** Execution semantics are independent of the orchestration strategy. */
     public enum Kind {
         CHAT,
-        JEV;
+        DECISION;
 
         @JsonValue
         public String toValue() {
@@ -57,6 +57,9 @@ public class AgentConfig {
     private String name;
     private String description;
     private String model;
+
+    /** Provider for decision inference; null uses the server default. */
+    private String provider;
 
     /** Custom base URL for the LLM provider (per-agent override). */
     private String baseUrl;

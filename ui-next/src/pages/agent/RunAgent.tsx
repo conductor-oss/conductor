@@ -50,7 +50,7 @@ export default function RunAgent() {
     `/agent/${encodeURIComponent(agentName)}${agentVersion ? `?version=${agentVersion}` : ""}`,
     { when: Boolean(agentName) },
   );
-  const isJev = definition?.kind === "jev";
+  const isDecision = definition?.kind === "decision";
   const [questions, setQuestions] = useState("");
   const [model, setModel] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -108,7 +108,7 @@ export default function RunAgent() {
     }
     setStarted(undefined);
     let context: Record<string, unknown> | undefined;
-    if (isJev && !definition?.questions) {
+    if (isDecision && !definition?.questions) {
       try {
         const parsed: unknown = JSON.parse(questions);
         if (
@@ -120,7 +120,7 @@ export default function RunAgent() {
           throw new Error();
         context = { questions: parsed };
       } catch {
-        setError("Enter a nonempty JSON object of jev questions.");
+        setError("Enter a nonempty JSON object of decision questions.");
         return;
       }
     }
@@ -233,7 +233,7 @@ export default function RunAgent() {
                     label="Model override (optional)"
                     placeholder="Use the deployed agent model"
                     value={model}
-                    options={isJev ? [] : modelOptions}
+                    options={isDecision ? [] : modelOptions}
                     groupBy={(option: string) => option.split("/")[0]}
                     onChange={(_: unknown, newValue: string | null) => {
                       setModel(newValue ?? "");
@@ -251,9 +251,9 @@ export default function RunAgent() {
                     required
                     multiline
                     minRows={8}
-                    label={isJev ? "Jev state" : "Input text"}
+                    label={isDecision ? "Decision state" : "Input text"}
                     placeholder={
-                      isJev
+                      isDecision
                         ? "State to evaluate (text or JSON)"
                         : "What should this agent do?"
                     }
@@ -261,18 +261,18 @@ export default function RunAgent() {
                     onTextInputChange={setPrompt}
                   />
                 </Grid>
-                {isJev && definition?.questions != null && (
+                {isDecision && definition?.questions != null && (
                   <Grid size={12}>
                     <Box
                       component="pre"
                       sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-                      aria-label="Configured jev questions"
+                      aria-label="Configured decision questions"
                     >
                       {JSON.stringify(definition.questions, null, 2)}
                     </Box>
                   </Grid>
                 )}
-                {isJev && !definition?.questions && (
+                {isDecision && !definition?.questions && (
                   <Grid size={12}>
                     <ConductorInput
                       id="run-agent-questions"
@@ -280,7 +280,7 @@ export default function RunAgent() {
                       required
                       multiline
                       minRows={6}
-                      label="Jev questions (JSON)"
+                      label="Decision questions (JSON)"
                       value={questions}
                       onTextInputChange={setQuestions}
                     />

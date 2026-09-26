@@ -35,12 +35,12 @@ class AgentCompilerTest {
     }
 
     @Test
-    void compilesJevAgentWithoutChatAndPreservesTypedOutput() {
+    void compilesDecisionAgentWithoutChatAndPreservesTypedOutput() {
         AgentConfig config =
                 AgentConfig.builder()
                         .name("routing")
                         .timeoutSeconds(123)
-                        .kind(AgentConfig.Kind.JEV)
+                        .kind(AgentConfig.Kind.DECISION)
                         .model("jev-1.13")
                         .questions(
                                 Map.of(
@@ -58,7 +58,7 @@ class AgentCompilerTest {
         assertThat(wf.getTimeoutPolicy()).isEqualTo(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         assertThat(wf.getTasks()).hasSize(1);
         var task = wf.getTasks().get(0);
-        assertThat(task.getType()).isEqualTo("JEV_AGENT");
+        assertThat(task.getType()).isEqualTo("DECISION_AGENT");
         assertThat(task.getInputParameters())
                 .containsEntry("state", "${workflow.input.prompt}")
                 .containsEntry("questions", config.getQuestions());
@@ -71,8 +71,8 @@ class AgentCompilerTest {
                                 .EXPONENTIAL_BACKOFF);
         assertThat(wf.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT)
-                .containsEntry("agent_capabilities", List.of("jev"));
-        assertThat(wf.getOutputParameters()).containsEntry("result", "${routing_jev.output}");
+                .containsEntry("agent_capabilities", List.of("decision"));
+        assertThat(wf.getOutputParameters()).containsEntry("result", "${routing_decision.output}");
         config.setQuestions(null);
         assertThat(compiler.compile(config).getTasks().get(0).getInputParameters())
                 .containsEntry("questions", "${workflow.input.context.questions}");
@@ -82,11 +82,11 @@ class AgentCompilerTest {
     }
 
     @Test
-    void jevAgentCompilesAsAChildAgent() {
+    void decisionAgentCompilesAsAChildAgent() {
         AgentConfig child =
                 AgentConfig.builder()
                         .name("chooser")
-                        .kind(AgentConfig.Kind.JEV)
+                        .kind(AgentConfig.Kind.DECISION)
                         .model("jev-1.13")
                         .build();
         WorkflowDef workflow =
@@ -103,7 +103,7 @@ class AgentCompilerTest {
                         .orElseThrow();
         var childWorkflow = childTask.getSubWorkflowParam().getWorkflowDef();
         assertThat(childWorkflow.getTasks()).hasSize(1);
-        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("JEV_AGENT");
+        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("DECISION_AGENT");
         assertThat(childWorkflow.getMetadata())
                 .containsEntry("classifier", WorkflowClassifier.AGENT);
         assertThat(childTask.getInputParameters())

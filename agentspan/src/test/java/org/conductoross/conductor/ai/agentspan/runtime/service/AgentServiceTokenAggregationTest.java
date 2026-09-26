@@ -37,7 +37,7 @@ class AgentServiceTokenAggregationTest {
     @Test
     void includesDecisionUsageAlongsideChatUsage() {
         Task decision = new Task();
-        decision.setTaskType("JEV_AGENT");
+        decision.setTaskType("DECISION_AGENT");
         decision.setOutputData(
                 Map.of("usage", Map.of("inputTokens", 12, "outputTokens", 3, "cost", 0.001)));
         assertThat(

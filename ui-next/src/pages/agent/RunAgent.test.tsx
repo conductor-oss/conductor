@@ -149,10 +149,11 @@ describe("RunAgent", () => {
     useFetch.mockReturnValue({ data: [{ name: "researcher", version: 2 }] });
   });
 
-  it("starts a jev agent with structured questions and state", () => {
+  it("starts a decision agent with structured questions and state", () => {
     locationState.current = { agentName: "chooser", agentVersion: 1 };
     useFetch.mockImplementation((path: string) => ({
-      data: path === "/agent/list" ? [{ name: "chooser" }] : { kind: "jev" },
+      data:
+        path === "/agent/list" ? [{ name: "chooser" }] : { kind: "decision" },
     }));
     render(<RunAgent />);
     const questions = {
@@ -162,10 +163,10 @@ describe("RunAgent", () => {
         choices: { go: "Go", wait: "Wait" },
       },
     };
-    fireEvent.change(screen.getByLabelText("Jev state"), {
+    fireEvent.change(screen.getByLabelText("Decision state"), {
       target: { value: '{"ready":true}' },
     });
-    fireEvent.change(screen.getByLabelText("Jev questions (JSON)"), {
+    fireEvent.change(screen.getByLabelText("Decision questions (JSON)"), {
       target: { value: JSON.stringify(questions) },
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
@@ -181,22 +182,23 @@ describe("RunAgent", () => {
     );
   });
 
-  it("rejects malformed dynamic jev questions before starting", () => {
+  it("rejects malformed dynamic decision questions before starting", () => {
     locationState.current = { agentName: "chooser" };
     useFetch.mockImplementation((path: string) => ({
-      data: path === "/agent/list" ? [{ name: "chooser" }] : { kind: "jev" },
+      data:
+        path === "/agent/list" ? [{ name: "chooser" }] : { kind: "decision" },
     }));
     render(<RunAgent />);
-    fireEvent.change(screen.getByLabelText("Jev state"), {
+    fireEvent.change(screen.getByLabelText("Decision state"), {
       target: { value: "Ready" },
     });
-    fireEvent.change(screen.getByLabelText("Jev questions (JSON)"), {
+    fireEvent.change(screen.getByLabelText("Decision questions (JSON)"), {
       target: { value: "[]" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
     expect(startAgent).not.toHaveBeenCalled();
     expect(
-      screen.getByText("Enter a nonempty JSON object of jev questions."),
+      screen.getByText("Enter a nonempty JSON object of decision questions."),
     ).toBeInTheDocument();
   });
 

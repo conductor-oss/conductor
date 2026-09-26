@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.jev;
+package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.List;
 import java.util.Map;
@@ -148,11 +148,17 @@ class AiDecisionTaskTest {
     }
 
     private AiDecisionTask runtime(MockWebServer server) {
-        JevConfiguration config = new JevConfiguration();
+        DecisionConfiguration config = new DecisionConfiguration();
         config.setApiKey("test-key");
         config.setEndpoint(server.url("/v1/systemone").toString());
         ObjectMapper mapper = new ObjectMapper();
-        return new AiDecisionTask(new HttpJevClient(config, mapper, new OkHttpClient()), mapper);
+        return new AiDecisionTask(
+                new HttpDecisionClient(
+                        config,
+                        mapper,
+                        new OkHttpClient(),
+                        java.util.List.of(new SystemOneDecisionApiAdapter())),
+                mapper);
     }
 
     private TaskModel task() {

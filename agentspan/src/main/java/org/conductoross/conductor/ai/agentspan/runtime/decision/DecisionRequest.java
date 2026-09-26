@@ -10,8 +10,13 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.jev;
+package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.Map;
 
-public record JevRequest(String model, String state, Map<String, JevQuestion> questions) {}
+public record DecisionRequest(
+        String provider, String model, String state, Map<String, DecisionQuestion> questions) {
+    public DecisionRequest(String model, String state, Map<String, DecisionQuestion> questions) {
+        this(null, model, state, questions);
+    }
+}

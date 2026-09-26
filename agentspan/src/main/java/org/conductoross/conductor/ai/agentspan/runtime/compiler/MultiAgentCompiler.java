@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.conductoross.conductor.ai.agentspan.runtime.jev.JevQuestion;
+import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionQuestion;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlanAndCompileTask;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlannerContextFetchTask;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
@@ -829,8 +829,8 @@ public class MultiAgentCompiler {
         if (selector instanceof Map<?, ?> map && !map.containsKey("taskName")) {
             selector = MAPPER.convertValue(map, AgentConfig.class);
         }
-        if (selector instanceof AgentConfig agent && agent.getKind() == AgentConfig.Kind.JEV) {
-            return compileJevRouter(config, agent);
+        if (selector instanceof AgentConfig agent && agent.getKind() == AgentConfig.Kind.DECISION) {
+            return compileDecisionRouter(config, agent);
         }
         ParsedModel parsed = ModelParser.parse(config.getModel());
         WorkflowDef wf = agentCompiler.createWorkflow(config);
@@ -1048,20 +1048,22 @@ public class MultiAgentCompiler {
         return wf;
     }
 
-    /** Route one Jev choice to its named child and preserve the child's structured result. */
-    private WorkflowDef compileJevRouter(AgentConfig config, AgentConfig selector) {
+    /** Route one Decision choice to its named child and preserve the child's structured result. */
+    private WorkflowDef compileDecisionRouter(AgentConfig config, AgentConfig selector) {
         List<AgentConfig> agents = config.getAgents();
         rejectReservedAgentNames(config, agents);
         Set<String> names = agents.stream().map(AgentConfig::getName).collect(Collectors.toSet());
         if (selector.getQuestions() == null || selector.getQuestions().size() != 1) {
-            throw new IllegalArgumentException("Jev router requires one fixed choice question");
+            throw new IllegalArgumentException(
+                    "Decision router requires one fixed choice question");
         }
         var entry = selector.getQuestions().entrySet().iterator().next();
-        var question = MAPPER.convertValue(entry.getValue(), JevQuestion.class);
-        if (question.type() != JevQuestion.Type.CHOICE
+        var question = MAPPER.convertValue(entry.getValue(), DecisionQuestion.class);
+        if (question.type() != DecisionQuestion.Type.CHOICE
                 || question.choices() == null
                 || !question.choices().keySet().equals(names)) {
-            throw new IllegalArgumentException("Jev router choices must match child agent names");
+            throw new IllegalArgumentException(
+                    "Decision router choices must match child agent names");
         }
 
         String routerRef = toRef(config.getName()) + "_router";
@@ -1114,7 +1116,7 @@ public class MultiAgentCompiler {
                         "terminationStatus",
                         "FAILED",
                         "terminationReason",
-                        "Jev selected an unknown agent"));
+                        "Decision selected an unknown agent"));
         dispatch.setDefaultCase(List.of(invalid));
 
         WorkflowDef workflow = agentCompiler.createWorkflow(config);

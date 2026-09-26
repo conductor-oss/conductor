@@ -15,25 +15,25 @@ const output = {
   requestId: "request-1",
 };
 
-describe("Jev inference rendering", () => {
-  it.each(["task", "jev event"])(
-    "renders %s as jev_decision with structured inference details",
+describe("Decision inference rendering", () => {
+  it.each(["task", "decision event"])(
+    "renders %s as decision with structured inference details",
     (source) => {
       const run = transformWorkflowExecutionToAgentRun({
         workflowId: "run-1",
-        workflowName: "jev_support_agent",
+        workflowName: "decision_support_agent",
         status: "COMPLETED",
         tasks: [
           {
             taskId: "task-1",
-            referenceTaskName: "support_jev",
-            taskType: "JEV_AGENT",
+            referenceTaskName: "support_decision",
+            taskType: "DECISION_AGENT",
             status: "COMPLETED",
             inputData: { model: "jev-1.13", state: "Duplicate charge" },
             outputData: output,
           },
         ],
-        workflowDefinition: { metadata: { agentDef: { kind: "jev" } } },
+        workflowDefinition: { metadata: { agentDef: { kind: "decision" } } },
       } as unknown as WorkflowExecution);
       const events = run.turns.flatMap((turn) => turn.events);
       expect(
@@ -43,17 +43,17 @@ describe("Jev inference rendering", () => {
       // The server's existing SSE payload puts structured answers in result.
       const event: AgentEvent =
         source === "task"
-          ? events.find((event) => event.type === EventType.JEV)!
+          ? events.find((event) => event.type === EventType.DECISION)!
           : {
               id: "event-1",
-              type: EventType.JEV,
+              type: EventType.DECISION,
               timestamp: 0,
               summary: "",
               result: output,
             };
-      expect(event.type).toBe("jev");
+      expect(event.type).toBe("decision");
       render(<EventRow event={event} />);
-      const label = screen.getByText("jev_decision");
+      const label = screen.getByText("decision");
       expect(label.closest(".MuiChip-root")).toHaveStyle({ color: "#9e9e9e" });
       expect(screen.queryByText("Tool")).not.toBeInTheDocument();
       fireEvent.click(label);
@@ -80,14 +80,14 @@ describe("Jev inference rendering", () => {
       <EventRow
         event={{
           id: "event-2",
-          type: EventType.JEV,
+          type: EventType.DECISION,
           timestamp: 0,
           summary: "",
           result: { ...output, requestId: undefined },
         }}
       />,
     );
-    fireEvent.click(screen.getByText("jev_decision"));
+    fireEvent.click(screen.getByText("decision"));
     expect(screen.queryByText("Request ID")).not.toBeInTheDocument();
   });
 });

@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.jev;
+package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.Map;
 
@@ -20,10 +20,10 @@ import org.springframework.util.CollectionUtils;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 /** Reject invalid questions before inference and invalid answers before completing a task. */
-public final class JevValidation {
-    private JevValidation() {}
+public final class DecisionValidation {
+    private DecisionValidation() {}
 
-    public static void request(JevRequest request) {
+    public static void request(DecisionRequest request) {
         require(request != null, "request required");
         require(
                 StringUtils.isNotBlank(request.model()) && StringUtils.isNotBlank(request.state()),
@@ -31,12 +31,12 @@ public final class JevValidation {
         questions(request.questions());
     }
 
-    public static void questions(Map<String, JevQuestion> questions) {
+    public static void questions(Map<String, DecisionQuestion> questions) {
         require(!CollectionUtils.isEmpty(questions), "questions required");
-        questions.forEach(JevValidation::validateQuestion);
+        questions.forEach(DecisionValidation::validateQuestion);
     }
 
-    private static void validateQuestion(String name, JevQuestion q) {
+    private static void validateQuestion(String name, DecisionQuestion q) {
         require(
                 StringUtils.isNotBlank(name)
                         && q != null
@@ -74,7 +74,7 @@ public final class JevValidation {
         }
     }
 
-    public static void result(JevRequest request, JevResult result) {
+    public static void result(DecisionRequest request, DecisionResult result) {
         require(
                 result != null
                         && StringUtils.isNotBlank(result.model())
@@ -85,7 +85,7 @@ public final class JevValidation {
                 .forEach((name, question) -> validateAnswer(question, result.answers().get(name)));
     }
 
-    private static void validateAnswer(JevQuestion q, JevResult.Answer answer) {
+    private static void validateAnswer(DecisionQuestion q, DecisionResult.Answer answer) {
         require(answer != null && answer.type() == q.type(), "invalid answer type");
         require(
                 answer.confidence() == null || bounded(answer.confidence(), 1),
@@ -118,6 +118,6 @@ public final class JevValidation {
     }
 
     static void require(boolean condition, String message) {
-        if (!condition) throw new NonRetryableException("Jev: " + message);
+        if (!condition) throw new NonRetryableException("Decision: " + message);
     }
 }

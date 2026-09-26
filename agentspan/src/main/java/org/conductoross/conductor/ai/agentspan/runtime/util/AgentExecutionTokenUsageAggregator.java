@@ -63,7 +63,7 @@ public final class AgentExecutionTokenUsageAggregator {
 
     private static void addLlmTaskTokenUsage(AggregateTokenUsage aggregate, Task task) {
         Map<String, Object> output = task.getOutputData();
-        if ("JEV_AGENT".equalsIgnoreCase(task.getTaskType())
+        if ("DECISION_AGENT".equalsIgnoreCase(task.getTaskType())
                 && output != null
                 && output.get("usage") instanceof Map<?, ?> usage) {
             long input = toLong(usage.get("inputTokens")),

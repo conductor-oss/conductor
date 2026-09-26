@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.jev;
+package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,9 +33,9 @@ import okhttp3.mockwebserver.MockWebServer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class JevAgentTaskTest {
+class DecisionAgentTaskTest {
     private MockWebServer server;
-    private JevAgentTask runtime;
+    private DecisionAgentTask runtime;
     private WorkflowModel workflow;
     private TaskModel task;
 
@@ -43,16 +43,22 @@ class JevAgentTaskTest {
     void setup() throws Exception {
         server = new MockWebServer();
         server.start();
-        JevConfiguration properties = new JevConfiguration();
+        DecisionConfiguration properties = new DecisionConfiguration();
         properties.setApiKey("test-key");
         properties.setEndpoint(server.url("/v1/systemone").toString());
         ObjectMapper mapper = new ObjectMapper();
         runtime =
-                new JevAgentTask(new HttpJevClient(properties, mapper, new OkHttpClient()), mapper);
+                new DecisionAgentTask(
+                        new HttpDecisionClient(
+                                properties,
+                                mapper,
+                                new OkHttpClient(),
+                                java.util.List.of(new SystemOneDecisionApiAdapter())),
+                        mapper);
         AgentConfig config =
                 AgentConfig.builder()
                         .name("chooser")
-                        .kind(AgentConfig.Kind.JEV)
+                        .kind(AgentConfig.Kind.DECISION)
                         .model("jev-1.13")
                         .questions(
                                 Map.of(
@@ -62,8 +68,8 @@ class JevAgentTaskTest {
         workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(new AgentCompiler().compile(config));
         task = new TaskModel();
-        task.setTaskType("JEV_AGENT");
-        task.setReferenceTaskName("chooser_jev");
+        task.setTaskType("DECISION_AGENT");
+        task.setReferenceTaskName("chooser_decision");
         task.setStatus(TaskModel.Status.SCHEDULED);
         task.setInputData(
                 Map.of(
@@ -112,7 +118,7 @@ class JevAgentTaskTest {
             assertThat(task.getStatus()).isEqualTo(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
         }
         compiled.setMetadata(metadata);
-        // A task inserted into a larger workflow is not a compiled Jev agent either.
+        // A task inserted into a larger workflow is not a compiled Decision agent either.
         compiled.setTasks(List.of(compiled.getTasks().get(0), compiled.getTasks().get(0)));
         task.setStatus(TaskModel.Status.SCHEDULED);
         runtime.start(workflow, task, null);

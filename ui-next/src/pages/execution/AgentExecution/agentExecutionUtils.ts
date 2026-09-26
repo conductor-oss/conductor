@@ -17,8 +17,8 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 
-/** Jev SSE events carry result; persisted task events carry detail.output. */
-export function jevInferenceOutput(event: AgentEvent) {
+/** Decision SSE events carry result; persisted task events carry detail.output. */
+export function decisionInferenceOutput(event: AgentEvent) {
   return (event.result ??
     (event.detail as { output?: unknown } | undefined)?.output) as
     | {
@@ -31,7 +31,7 @@ export function jevInferenceOutput(event: AgentEvent) {
     | undefined;
 }
 
-function jevTaskEvent(
+function decisionTaskEvent(
   task: ExecutionTask<Record<string, unknown>>,
 ): AgentEvent {
   const usage = task.outputData?.usage as
@@ -43,11 +43,11 @@ function jevTaskEvent(
     | string
     | undefined;
   return {
-    id: `${task.taskId}-jev`,
-    type: EventType.JEV,
+    id: `${task.taskId}-decision`,
+    type: EventType.DECISION,
     toolName: model,
     timestamp: task.startTime ?? 0,
-    summary: model ?? "jev_decision",
+    summary: model ?? "decision",
     detail: { input: task.inputData, output: task.outputData },
     tokens: {
       promptTokens,
@@ -75,9 +75,9 @@ function embeddedAgentDef(task: ExecutionTask) {
   return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
 }
 
-function childJevEvent(task: ExecutionTask): AgentEvent {
+function childDecisionEvent(task: ExecutionTask): AgentEvent {
   const definition = embeddedAgentDef(task);
-  return jevTaskEvent({
+  return decisionTaskEvent({
     ...task,
     inputData: {
       model: definition?.model,
@@ -110,8 +110,8 @@ function routerTimeline(
     if (isSelector(task)) {
       const result = task.outputData?.result;
       const event: AgentEvent =
-        definition?.kind === "jev"
-          ? childJevEvent(task)
+        definition?.kind === "decision"
+          ? childDecisionEvent(task)
           : {
               id: `${task.taskId}-router`,
               type: EventType.THINKING,
@@ -126,7 +126,7 @@ function routerTimeline(
         result as { answers?: Record<string, { choice?: string }> } | undefined
       )?.answers;
       const choice =
-        definition?.kind === "jev"
+        definition?.kind === "decision"
           ? Object.values(answers ?? {})[0]?.choice
           : typeof result === "string"
             ? result
@@ -142,7 +142,7 @@ function routerTimeline(
       );
       if (!child) continue;
       const event =
-        definition?.kind === "jev" ? childJevEvent(task) : undefined;
+        definition?.kind === "decision" ? childDecisionEvent(task) : undefined;
       subAgents = [
         {
           ...child,
@@ -904,8 +904,8 @@ function transformChainWorkflowToAgentRun(
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
     agentType:
-      agentDef?.kind === "jev"
-        ? "jev"
+      agentDef?.kind === "decision"
+        ? "decision"
         : (execution.workflowDefinition?.metadata?.agent_sdk as
             | string
             | undefined),
@@ -1041,7 +1041,7 @@ export function transformWorkflowExecutionToAgentRun(
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
             t.taskType !== "LLM_CHAT_COMPLETE" &&
-            t.taskType !== "JEV_AGENT",
+            t.taskType !== "DECISION_AGENT",
         ),
       );
 
@@ -1359,11 +1359,11 @@ export function transformWorkflowExecutionToAgentRun(
         }
       }
 
-      const { tasks: jevTasks } = deduplicateRetriedTasks(
-        iterTasks.filter((task) => task.taskType === "JEV_AGENT"),
+      const { tasks: decisionTasks } = deduplicateRetriedTasks(
+        iterTasks.filter((task) => task.taskType === "DECISION_AGENT"),
       );
-      const jevEvents = jevTasks.map(jevTaskEvent);
-      events.push(...jevEvents);
+      const decisionEvents = decisionTasks.map(decisionTaskEvent);
+      events.push(...decisionEvents);
 
       // Tool worker events — ONE combined block per call showing input + output
       // Track whether a HANDOFF was already emitted this turn to avoid duplicates.
@@ -1584,11 +1584,14 @@ export function transformWorkflowExecutionToAgentRun(
       // Token counts from LLM tasks in this iteration
       const turnPromptTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.promptTokens as number) || 0),
-        jevEvents.reduce((sum, event) => sum + event.tokens!.promptTokens, 0),
+        decisionEvents.reduce(
+          (sum, event) => sum + event.tokens!.promptTokens,
+          0,
+        ),
       );
       const turnCompletionTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.completionTokens as number) || 0),
-        jevEvents.reduce(
+        decisionEvents.reduce(
           (sum, event) => sum + event.tokens!.completionTokens,
           0,
         ),
@@ -1745,8 +1748,8 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "JEV_AGENT") {
-        const event = jevTaskEvent(task);
+      if (task.taskType === "DECISION_AGENT") {
+        const event = decisionTaskEvent(task);
         rootEvents.push(event);
         rootPrompt += event.tokens!.promptTokens;
         rootCompletion += event.tokens!.completionTokens;
@@ -2053,7 +2056,7 @@ export function transformWorkflowExecutionToAgentRun(
         .filter(
           (event) =>
             (event.type === EventType.THINKING ||
-              event.type === EventType.JEV) &&
+              event.type === EventType.DECISION) &&
             event.tokens,
         )
         .reduce(
@@ -2178,8 +2181,8 @@ export function transformWorkflowExecutionToAgentRun(
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
     agentType:
-      agentDef?.kind === "jev"
-        ? "jev"
+      agentDef?.kind === "decision"
+        ? "decision"
         : (execution.workflowDefinition?.metadata?.agent_sdk as
             | string
             | undefined),

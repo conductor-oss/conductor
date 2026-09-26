@@ -15,7 +15,7 @@ import {
   Scissors,
 } from "@phosphor-icons/react";
 import { AgentEvent, EventType } from "./types";
-import { jevInferenceOutput } from "./agentExecutionUtils";
+import { decisionInferenceOutput } from "./agentExecutionUtils";
 
 // ─── Visual config ─────────────────────────────────────────────────────────
 
@@ -27,11 +27,11 @@ interface EventVisual {
 
 function getEventVisual(event: AgentEvent): EventVisual {
   switch (event.type) {
-    case EventType.JEV:
+    case EventType.DECISION:
       return {
         icon: <Brain size={15} weight="regular" />,
         color: "#9e9e9e",
-        label: "jev_decision",
+        label: "decision",
       };
     case EventType.THINKING:
       // Use model name as label when this is an LLM call
@@ -159,13 +159,13 @@ function JsonBlock({ value, label }: { value: unknown; label: string }) {
 /** Renders expanded detail. For combined tool calls (detail.input + detail.output), shows two sections. */
 function ExpandedDetail({ event }: { event: AgentEvent }) {
   const { detail, type } = event;
-  if (type === EventType.JEV) {
+  if (type === EventType.DECISION) {
     const input = (
       detail as
         | { input?: { state?: unknown; questions?: unknown; model?: string } }
         | undefined
     )?.input;
-    const output = jevInferenceOutput(event);
+    const output = decisionInferenceOutput(event);
     return (
       <Box>
         <JsonBlock
@@ -271,7 +271,7 @@ export function EventRow({ event }: EventRowProps) {
   const visual = getEventVisual(event);
   const hasDetail =
     event.detail != null ||
-    (event.type === EventType.JEV && event.result != null);
+    (event.type === EventType.DECISION && event.result != null);
 
   const tokenLabel =
     event.tokens && event.tokens.totalTokens > 0

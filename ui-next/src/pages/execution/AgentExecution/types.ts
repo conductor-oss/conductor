@@ -1,6 +1,6 @@
 export enum EventType {
   THINKING = "THINKING",
-  JEV = "jev",
+  DECISION = "decision",
   TOOL_CALL = "TOOL_CALL",
   TOOL_RESULT = "TOOL_RESULT",
   GUARDRAIL_PASS = "GUARDRAIL_PASS",
