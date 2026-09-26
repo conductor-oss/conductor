@@ -84,6 +84,22 @@ class ToolCompilerTest {
     }
 
     @Test
+    void testCompileToolSpecs_Decision() {
+        ToolConfig tool =
+                ToolConfig.builder()
+                        .name("classify")
+                        .description("Classify the request")
+                        .toolType("decision")
+                        .config(Map.of("model", "openai/gpt-4o-mini"))
+                        .build();
+
+        Map<String, Object> spec = new ToolCompiler().compileToolSpecs(List.of(tool)).get(0);
+
+        assertThat(spec.get("name")).isEqualTo("classify");
+        assertThat(spec.get("type")).isEqualTo("AI_DECISION");
+    }
+
+    @Test
     void buildApiDiscoveryTasksUsesListApiToolsForEachUniqueSpec() {
         ToolConfig first = apiTool("https://api.example.test/openapi.json");
         ToolConfig duplicate = apiTool("https://api.example.test/openapi.json");

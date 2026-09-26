@@ -662,3 +662,149 @@ describe("replaceAgentRunNode", () => {
     expect(updated.turns[0].subAgents[1]).toBe(untouchedSibling);
   });
 });
+
+describe("decision tasks", () => {
+  it.each([false, true])(
+    "keeps Decision inference out of tools (loop: %s)",
+    (loopOverTask) => {
+      const output = {
+        model: "jev-1.13",
+        answers: { action: { type: "choice", choice: "a", confidence: 0.9 } },
+        usage: { inputTokens: 12, outputTokens: 2, cost: 0.001 },
+        latencyMs: 25,
+        requestId: "request",
+      };
+      const run = transformWorkflowExecutionToAgentRun(
+        execution(
+          [
+            task({
+              taskId: "decision",
+              referenceTaskName: loopOverTask ? "decide__1" : "decide",
+              loopOverTask,
+              taskType: "AI_DECISION",
+              inputData: {
+                provider: "decision",
+                model: "jev-1.13",
+                state: "state",
+                questions: { action: {} },
+              },
+              outputData: output,
+            }),
+          ],
+          {
+            workflowDefinition: {
+              metadata: {
+                classifier: "agent",
+                agentDef: { model: "jev-1.13" },
+              },
+            },
+          },
+        ),
+      );
+      const event = run.turns
+        .flatMap((t) => t.events)
+        .find((e) => e.type === EventType.DECISION);
+      expect(run.agentType).toBeUndefined();
+      expect(event?.tokens?.totalTokens).toBe(14);
+      expect(
+        run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
+      ).toBe(14);
+      expect(event?.detail).toMatchObject({ output });
+      expect(event?.success).toBe(true);
+      expect(
+        run.turns
+          .flatMap((turn) => turn.events)
+          .filter((event) => event.type === EventType.TOOL_CALL),
+      ).toHaveLength(0);
+    },
+  );
+});
+
+it.each([
+  { decision: false, childName: "billing" },
+  { decision: true, childName: "billing" },
+  { decision: false, childName: "router" },
+])(
+  "renders router inference before child '$childName' (Decision=$decision)",
+  ({ decision, childName }) => {
+    const selectorResult = decision
+      ? {
+          model: "jev-1.13",
+          answers: { agent: { type: "choice", choice: childName } },
+          usage: { inputTokens: 10, outputTokens: 2 },
+        }
+      : childName;
+    const selector = task({
+      taskId: "selector",
+      taskType: decision ? "AI_DECISION" : "SUB_WORKFLOW",
+      referenceTaskName: decision ? "triage_router" : "triage_router__1",
+      loopOverTask: !decision,
+      startTime: 10,
+      endTime: 20,
+      inputData: decision
+        ? { model: "jev-1.13", state: "route this", questions: { agent: {} } }
+        : {
+            subWorkflowName: "triage_selector",
+            subWorkflowDefinition: {
+              metadata: {
+                agentDef: {
+                  name: "triage_selector",
+                  kind: "chat",
+                  model: "openai/gpt-6-luna",
+                },
+              },
+            },
+          },
+      outputData: decision
+        ? selectorResult
+        : { subWorkflowId: "selector-run", result: selectorResult },
+    });
+    const selected = task({
+      taskId: childName,
+      taskType: "SUB_WORKFLOW",
+      referenceTaskName: decision
+        ? "triage_selected_0"
+        : `triage_handoff_0_${childName}__1`,
+      loopOverTask: !decision,
+      startTime: 20,
+      endTime: 40,
+      inputData: {
+        subWorkflowName: childName,
+        subWorkflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: childName,
+              kind: "chat",
+              model: "openai/gpt-6-luna",
+            },
+          },
+        },
+      },
+      outputData: { subWorkflowId: "billing-run", result: "handled" },
+    });
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([selector, selected], {
+        workflowName: "triage",
+        workflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: "triage",
+              strategy: "router",
+              agents: [{ name: childName, kind: "chat" }],
+            },
+          },
+        },
+      }),
+    );
+    expect(run.turns).toHaveLength(2);
+    expect(run.turns[0].subAgents).toEqual([]);
+    expect(run.turns[0].events[0]).toMatchObject({
+      type: decision ? EventType.DECISION : EventType.THINKING,
+      targetAgent: childName,
+    });
+    expect(run.turns[1].subAgents.map((sub) => sub.agentName)).toEqual([
+      childName,
+    ]);
+    expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
+  },
+);

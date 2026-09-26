@@ -14,7 +14,7 @@ import {
   MOCK_SCENARIOS,
   MockScenarioKey,
 } from "./mockData";
-import { AgentRunData, AgentStatus } from "./types";
+import { AgentRunData, AgentStatus, AgentStrategy } from "./types";
 import { WorkflowExecution, WorkflowExecutionStatus } from "types/Execution";
 import { HumanInputPanel } from "./HumanInputPanel";
 
@@ -89,9 +89,11 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
   // place — see handleExpandSubAgent — and resets whenever a genuinely new
   // execution/scenario loads.
   const [rootRun, setRootRun] = useState<AgentRunData>(baseRun);
-  useEffect(() => {
+  const [resetSource, setResetSource] = useState<AgentRunData>(baseRun);
+  if (baseRun !== resetSource) {
+    setResetSource(baseRun);
     setRootRun(baseRun);
-  }, [baseRun]);
+  }
 
   // Fetch a collapsed sub-agent's own execution and splice its real
   // turns/subAgents into the tree in place, instead of navigating away like
@@ -134,6 +136,26 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
       );
     }
   }, []);
+
+  useEffect(() => {
+    const expandRouters = (run: AgentRunData) => {
+      for (const turn of run.turns) {
+        for (const child of turn.subAgents) {
+          if (
+            child.strategy === AgentStrategy.ROUTER &&
+            !child.expanded &&
+            !child.expanding &&
+            !child.expandError
+          ) {
+            void handleExpandSubAgent(child);
+          } else if (child.expanded) {
+            expandRouters(child);
+          }
+        }
+      }
+    };
+    if (rootRun.strategy === AgentStrategy.ROUTER) expandRouters(rootRun);
+  }, [rootRun, handleExpandSubAgent]);
 
   const navigate = usePushHistory();
 

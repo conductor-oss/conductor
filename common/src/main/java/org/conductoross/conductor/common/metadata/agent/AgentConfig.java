@@ -33,9 +33,33 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AgentConfig {
 
+    @Builder.Default private Kind kind = Kind.CHAT;
+
+    /** DECISION is retained as the configuration marker for a ROUTER selector. */
+    public enum Kind {
+        CHAT,
+        DECISION;
+
+        @JsonValue
+        public String toValue() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+
+        @JsonCreator
+        public static Kind fromValue(String value) {
+            return Kind.valueOf(value.toUpperCase(Locale.ROOT));
+        }
+    }
+
+    /** Fixed question contract for a decision-backed ROUTER selector. */
+    private Map<String, Object> questions;
+
     private String name;
     private String description;
     private String model;
+
+    /** Provider for a decision-backed ROUTER selector; null uses the server default. */
+    private String provider;
 
     /** Custom base URL for the LLM provider (per-agent override). */
     private String baseUrl;

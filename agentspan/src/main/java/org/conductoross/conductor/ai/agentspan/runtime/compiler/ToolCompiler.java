@@ -146,6 +146,7 @@ public class ToolCompiler {
                     Map.entry("http", "HTTP"),
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
                     Map.entry("mcp", "CALL_MCP_TOOL"),
+                    Map.entry("decision", "AI_DECISION"),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),
@@ -381,6 +382,7 @@ public class ToolCompiler {
         Map<String, Object> cliConfig = new LinkedHashMap<>();
         Map<String, Object> humanConfig = new LinkedHashMap<>();
         Map<String, Object> wmqConfig = new LinkedHashMap<>();
+        Map<String, Object> decisionConfig = new LinkedHashMap<>();
 
         if (tools != null) {
             Set<String> serverSideTypes =
@@ -397,6 +399,7 @@ public class ToolCompiler {
                                     "rag_index",
                                     "rag_search",
                                     "human",
+                                    "decision",
                                     "pull_workflow_messages"));
 
             for (ToolConfig tool : tools) {
@@ -464,6 +467,8 @@ public class ToolCompiler {
                     humanEntry.put("displayName", agentName + " — " + tool.getName());
                     humanEntry.put("description", tool.getDescription());
                     humanConfig.put(tool.getName(), humanEntry);
+                } else if ("decision".equals(toolType)) {
+                    decisionConfig.put(tool.getName(), new LinkedHashMap<>(cfg));
                 } else if ("pull_workflow_messages".equals(toolType)) {
                     Map<String, Object> wmqEntry = new LinkedHashMap<>();
                     wmqEntry.put("batchSize", cfg.getOrDefault("batchSize", 1));
@@ -480,6 +485,7 @@ public class ToolCompiler {
         String cliJson = JavaScriptBuilder.toJson(cliConfig);
         String humanJson = JavaScriptBuilder.toJson(humanConfig);
         String wmqJson = JavaScriptBuilder.toJson(wmqConfig);
+        String decisionJson = JavaScriptBuilder.toJson(decisionConfig);
 
         // Build the set of all known tool names so the enrich script can
         // catch hallucinated tool names (LLM emits e.g. "find" when only
@@ -503,6 +509,7 @@ public class ToolCompiler {
                         cliJson,
                         humanJson,
                         wmqJson,
+                        decisionJson,
                         knownToolNamesJson);
 
         String enrichRef = agentName + "_" + p + "enrich_tools";

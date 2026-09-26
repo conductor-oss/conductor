@@ -26,6 +26,7 @@ import {
   TaskAttempt,
 } from "./types";
 import {
+  decisionInferenceOutput,
   formatTokens,
   formatDuration,
   getModelIconPath,
@@ -38,6 +39,7 @@ import { WorkflowExecution } from "types/Execution";
 export interface DetailNodeData {
   kind:
     | "llm"
+    | "decision"
     | "tool"
     | "handoff"
     | "subagent"
@@ -1095,24 +1097,51 @@ function SummaryContent({
     );
   }
 
-  if (node.kind === "llm") {
+  if (node.kind === "llm" || node.kind === "decision") {
     const tok = ev?.tokens;
+    const decision =
+      node.kind === "decision" && ev ? decisionInferenceOutput(ev) : undefined;
+    const { answers, usage, latencyMs, requestId } = decision ?? {};
+    const decisionRows = [
+      {
+        label: "Answers",
+        value: answers == null ? null : JSON.stringify(answers),
+      },
+      {
+        label: "Usage and cost",
+        value: usage == null ? null : JSON.stringify(usage),
+      },
+      {
+        label: "Provider latency",
+        value: latencyMs == null ? null : `${latencyMs} ms`,
+      },
+      { label: "Request ID", value: requestId },
+    ];
     return (
       <Box>
         {ev?.condensationInfo && (
           <CondensationBanner info={ev.condensationInfo} />
         )}
         <SummaryTable>
-          <SummaryRow label="Kind" value="LLM Call" />
+          <SummaryRow
+            label="Kind"
+            value={node.kind === "decision" ? "decision" : "LLM Call"}
+          />
+          {decisionRows.map((row) => (
+            <SummaryRow key={row.label} label={row.label} value={row.value} />
+          ))}
           <SummaryRow
             label="Status"
             value={<StatusBadgeInline status={node.status} />}
           />
-          {ev?.toolName && (
+          {(decision?.model ?? ev?.toolName) && (
             <SummaryRow
               label="Model"
-              value={<ModelValue model={ev.toolName} />}
+              value={<ModelValue model={(decision?.model ?? ev?.toolName)!} />}
             />
+          )}
+          {decision?.provider && (
+            <SummaryRow label="Provider" value={decision.provider} />
           )}
           {ev?.baseUrl && <SummaryRow label="Base URL" value={ev.baseUrl} />}
           {tok && tok.promptTokens + tok.completionTokens > 0 && (
@@ -1656,6 +1685,7 @@ const KIND_DISPLAY: Record<DetailNodeData["kind"], string> = {
   start: "Agent",
   subagent: "Sub-agent",
   llm: "LLM Call",
+  decision: "decision",
   tool: "Tool Call",
   handoff: "Handoff",
   output: "Output",

@@ -9,6 +9,7 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { useState } from "react";
 import { Helmet } from "react-helmet";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { useAction, useFetch } from "utils/query";
@@ -31,6 +32,13 @@ type AgentRunHistory = {
   executionTime: number;
 };
 
+type RunAgentForm = {
+  agentName: string;
+  agentVersion?: number;
+  model: string;
+  prompt: string;
+};
+
 /** Starts a deployed agent through POST /api/agent/start. */
 export default function RunAgent() {
   const navigate = useNavigate();
@@ -42,12 +50,22 @@ export default function RunAgent() {
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
   const modelOptions = useAiModelOptions();
 
-  const [agentName, setAgentName] = useState(selectedAgent?.agentName || "");
-  const [agentVersion, setAgentVersion] = useState<number | undefined>(
-    selectedAgent?.agentVersion,
-  );
-  const [model, setModel] = useState("");
-  const [prompt, setPrompt] = useState("");
+  const {
+    control,
+    handleSubmit,
+    reset: resetForm,
+    setValue,
+    watch,
+  } = useForm<RunAgentForm>({
+    mode: "onChange",
+    defaultValues: {
+      agentName: selectedAgent?.agentName ?? "",
+      agentVersion: selectedAgent?.agentVersion,
+      model: "",
+      prompt: "",
+    },
+  });
+  const { agentName, model, prompt } = watch();
   const [started, setStarted] = useState<AgentStartResponse>();
   const [error, setError] = useState("");
   const [agentHistory, setAgentHistory] = useLocalStorage(
@@ -87,25 +105,24 @@ export default function RunAgent() {
   });
 
   const reset = () => {
-    setAgentName("");
-    setAgentVersion(undefined);
-    setModel("");
-    setPrompt("");
+    resetForm({
+      agentName: "",
+      agentVersion: undefined,
+      model: "",
+      prompt: "",
+    });
     setStarted(undefined);
     setError("");
   };
 
-  const run = () => {
-    if (!agentName || !prompt.trim()) {
-      return;
-    }
+  const run: SubmitHandler<RunAgentForm> = (values) => {
     setStarted(undefined);
     startAgent({
       body: JSON.stringify({
-        name: agentName,
-        version: agentVersion,
-        model: model.trim() || undefined,
-        prompt,
+        name: values.agentName,
+        version: values.agentVersion,
+        model: values.model.trim() || undefined,
+        prompt: values.prompt,
       }),
     });
   };
@@ -115,9 +132,12 @@ export default function RunAgent() {
     .sort((a, b) => a.localeCompare(b));
 
   const restoreHistory = (entry: AgentRunHistory) => {
-    setAgentName(entry.agentName);
-    setModel(entry.model);
-    setPrompt(entry.prompt);
+    resetForm({
+      agentName: entry.agentName,
+      agentVersion: undefined,
+      model: entry.model,
+      prompt: entry.prompt,
+    });
     setStarted(undefined);
     setError("");
   };
@@ -151,7 +171,7 @@ export default function RunAgent() {
                 <Button
                   id="run-agent-btn"
                   color="secondary"
-                  onClick={run}
+                  onClick={handleSubmit(run)}
                   disabled={!agentName || !prompt.trim() || isLoading}
                   startIcon={<PlayIcon />}
                 >
@@ -186,50 +206,75 @@ export default function RunAgent() {
             <Paper variant="outlined" sx={{ p: 4 }}>
               <Grid container spacing={3}>
                 <Grid size={12}>
-                  <ConductorAutoComplete
-                    id="run-agent-name"
-                    fullWidth
-                    label="Agent"
-                    options={agentNames}
-                    value={agentName}
-                    onChange={(_: unknown, value: string | null) => {
-                      setAgentName(value || "");
-                      setAgentVersion(undefined);
-                    }}
-                    required
-                    autoFocus
+                  <Controller
+                    name="agentName"
+                    control={control}
+                    rules={{ required: "Select an agent." }}
+                    render={({ field }) => (
+                      <ConductorAutoComplete
+                        id="run-agent-name"
+                        fullWidth
+                        label="Agent"
+                        options={agentNames}
+                        value={field.value}
+                        onChange={(_: unknown, value: string | null) => {
+                          field.onChange(value ?? "");
+                          setValue("agentVersion", undefined);
+                        }}
+                        required
+                        autoFocus
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorAutoComplete
-                    id="run-agent-model"
-                    fullWidth
-                    freeSolo
-                    label="Model override (optional)"
-                    placeholder="Use the deployed agent model"
-                    value={model}
-                    options={modelOptions}
-                    groupBy={(option: string) => option.split("/")[0]}
-                    onChange={(_: unknown, newValue: string | null) => {
-                      setModel(newValue ?? "");
-                    }}
-                    onInputChange={(_: unknown, newValue: string) => {
-                      setModel(newValue);
-                    }}
-                    helperText="This applies only to this execution."
+                  <Controller
+                    name="model"
+                    control={control}
+                    render={({ field }) => (
+                      <ConductorAutoComplete
+                        id="run-agent-model"
+                        fullWidth
+                        freeSolo
+                        label="Model override (optional)"
+                        placeholder="Use the deployed agent model"
+                        value={field.value}
+                        options={modelOptions}
+                        groupBy={(option: string) => option.split("/")[0]}
+                        onChange={(_: unknown, newValue: string | null) => {
+                          field.onChange(newValue ?? "");
+                        }}
+                        onInputChange={(_: unknown, newValue: string) => {
+                          field.onChange(newValue);
+                        }}
+                        helperText="This applies only to this execution."
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorInput
-                    id="run-agent-prompt"
-                    fullWidth
-                    required
-                    multiline
-                    minRows={8}
-                    label="Input text"
-                    placeholder="What should this agent do?"
-                    value={prompt}
-                    onTextInputChange={setPrompt}
+                  <Controller
+                    name="prompt"
+                    control={control}
+                    rules={{
+                      validate: (value) =>
+                        value.trim().length > 0 || "Input cannot be blank.",
+                    }}
+                    render={({ field, fieldState }) => (
+                      <ConductorInput
+                        id="run-agent-prompt"
+                        fullWidth
+                        required
+                        multiline
+                        minRows={8}
+                        label="Input text"
+                        placeholder="What should this agent do?"
+                        value={field.value}
+                        onTextInputChange={field.onChange}
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                      />
+                    )}
                   />
                 </Grid>
               </Grid>

@@ -116,9 +116,13 @@ public class AgentCompiler {
     public WorkflowDef compile(AgentConfig config) {
         WorkflowDef wf;
 
-        // Passthrough check MUST be first — passthrough configs have null model.
-        // Any other branch would crash on null model.
-        if (isFrameworkPassthrough(config)) {
+        // A Decision config is valid only as a ROUTER selector. Decision inference for workflows
+        // and agent tools uses the shared AI_DECISION task.
+        if (config.getKind() == AgentConfig.Kind.DECISION) {
+            throw new IllegalArgumentException(
+                    "Decision configurations are router selectors, not standalone agents; "
+                            + "use an AI_DECISION workflow task or a decision tool");
+        } else if (isFrameworkPassthrough(config)) {
             wf = compileFrameworkPassthrough(config);
         } else if (isGraphStructure(config)) {
             // Graph-structure: custom StateGraph with node/edge workflow

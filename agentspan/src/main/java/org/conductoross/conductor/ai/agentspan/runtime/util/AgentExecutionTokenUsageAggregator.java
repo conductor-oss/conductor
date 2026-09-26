@@ -63,6 +63,16 @@ public final class AgentExecutionTokenUsageAggregator {
 
     private static void addLlmTaskTokenUsage(AggregateTokenUsage aggregate, Task task) {
         Map<String, Object> output = task.getOutputData();
+        if ("AI_DECISION".equalsIgnoreCase(task.getTaskType())
+                && output != null
+                && output.get("usage") instanceof Map<?, ?> usage) {
+            long input = toLong(usage.get("inputTokens")),
+                    completion = toLong(usage.get("outputTokens"));
+            aggregate.setPromptTokens(aggregate.getPromptTokens() + input);
+            aggregate.setCompletionTokens(aggregate.getCompletionTokens() + completion);
+            aggregate.setTotalTokens(aggregate.getTotalTokens() + input + completion);
+            return;
+        }
         if (!TaskType.LLM_CHAT_COMPLETE.name().equalsIgnoreCase(task.getTaskType())
                 || output == null) {
             return;

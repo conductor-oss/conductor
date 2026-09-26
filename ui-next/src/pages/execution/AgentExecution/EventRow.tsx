@@ -15,6 +15,7 @@ import {
   Scissors,
 } from "@phosphor-icons/react";
 import { AgentEvent, EventType } from "./types";
+import { decisionInferenceOutput } from "./agentExecutionUtils";
 
 // ─── Visual config ─────────────────────────────────────────────────────────
 
@@ -26,6 +27,12 @@ interface EventVisual {
 
 function getEventVisual(event: AgentEvent): EventVisual {
   switch (event.type) {
+    case EventType.DECISION:
+      return {
+        icon: <Brain size={15} weight="regular" />,
+        color: "#9e9e9e",
+        label: "decision",
+      };
     case EventType.THINKING:
       // Use model name as label when this is an LLM call
       return {
@@ -152,6 +159,38 @@ function JsonBlock({ value, label }: { value: unknown; label: string }) {
 /** Renders expanded detail. For combined tool calls (detail.input + detail.output), shows two sections. */
 function ExpandedDetail({ event }: { event: AgentEvent }) {
   const { detail, type } = event;
+  if (type === EventType.DECISION) {
+    const input = (
+      detail as
+        | { input?: { state?: unknown; questions?: unknown; model?: string } }
+        | undefined
+    )?.input;
+    const output = decisionInferenceOutput(event);
+    const blocks = [
+      {
+        label: "Model",
+        value: output?.model ?? event.toolName ?? input?.model,
+      },
+      { label: "Provider", value: output?.provider },
+      { label: "State", value: input?.state },
+      { label: "Questions and choices", value: input?.questions },
+      { label: "Answers", value: output?.answers },
+      { label: "Usage and cost", value: output?.usage },
+      { label: "latencyMs", value: output?.latencyMs },
+      { label: "Request ID", value: output?.requestId },
+    ].filter((block) => block.value != null && block.value !== "");
+    return (
+      <Box>
+        {blocks.map((block) => (
+          <JsonBlock
+            key={block.label}
+            label={block.label}
+            value={block.value}
+          />
+        ))}
+      </Box>
+    );
+  }
   if (detail === null || detail === undefined) return null;
 
   // Combined input/output block (tool call or LLM call)
@@ -230,7 +269,9 @@ export function EventRow({ event }: EventRowProps) {
     return <CondensedSeparator event={event} />;
   }
   const visual = getEventVisual(event);
-  const hasDetail = event.detail !== undefined && event.detail !== null;
+  const hasDetail =
+    event.detail != null ||
+    (event.type === EventType.DECISION && event.result != null);
 
   const tokenLabel =
     event.tokens && event.tokens.totalTokens > 0

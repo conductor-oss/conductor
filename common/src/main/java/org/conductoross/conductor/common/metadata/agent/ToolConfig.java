@@ -35,7 +35,7 @@ public class ToolConfig {
     private Map<String, Object> outputSchema;
 
     /**
-     * Tool type: worker, http, api, mcp, generate_image, generate_audio, generate_video,
+     * Tool type: worker, http, api, mcp, decision, generate_image, generate_audio, generate_video,
      * generate_pdf, rag_index, rag_search.
      */
     @Builder.Default private String toolType = "worker";

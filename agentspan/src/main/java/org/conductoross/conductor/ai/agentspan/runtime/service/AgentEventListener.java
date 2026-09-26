@@ -50,7 +50,12 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
 
     /** Conductor AI task types that consume LLM/generation API calls. */
     private static final Set<String> AI_TASK_TYPES =
-            Set.of("LLM_CHAT_COMPLETE", "GENERATE_IMAGE", "GENERATE_AUDIO", "GENERATE_VIDEO");
+            Set.of(
+                    "AI_DECISION",
+                    "LLM_CHAT_COMPLETE",
+                    "GENERATE_IMAGE",
+                    "GENERATE_AUDIO",
+                    "GENERATE_VIDEO");
 
     /**
      * Input key naming the tool a task was dispatched for, set by {@code
@@ -317,9 +322,13 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             String model =
                     input.get("model") != null ? String.valueOf(input.get("model")) : "unknown";
             String provider =
-                    input.get("llmProvider") != null
-                            ? String.valueOf(input.get("llmProvider"))
-                            : "unknown";
+                    output.get("provider") != null
+                            ? String.valueOf(output.get("provider"))
+                            : input.get("provider") != null
+                                    ? String.valueOf(input.get("provider"))
+                                    : input.get("llmProvider") != null
+                                            ? String.valueOf(input.get("llmProvider"))
+                                            : "unknown";
 
             String taskLabel =
                     switch (taskType) {
@@ -344,6 +353,11 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             int promptTokens = toInt(output.get("promptTokens"));
             int completionTokens = toInt(output.get("completionTokens"));
             int totalTokens = toInt(output.get("tokenUsed"));
+            if ("AI_DECISION".equals(taskType) && output.get("usage") instanceof Map<?, ?> usage) {
+                promptTokens = toInt(usage.get("inputTokens"));
+                completionTokens = toInt(usage.get("outputTokens"));
+                totalTokens = promptTokens + completionTokens;
+            }
 
             if (promptTokens > 0) {
                 Counter.builder("agentspan.ai.tokens")
