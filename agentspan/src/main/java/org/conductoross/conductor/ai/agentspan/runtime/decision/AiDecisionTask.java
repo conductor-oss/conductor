@@ -12,6 +12,8 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
+import java.util.Map;
+
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -21,7 +23,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-/** Asynchronous Decision inference exposing a decision for a downstream SWITCH task. */
+/** Structured decision inference shared by workflows, routers, and agent tools. */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
 public class AiDecisionTask extends WorkflowSystemTask {
@@ -44,24 +46,16 @@ public class AiDecisionTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        return decisionSupport.execute(
-                task,
-                () -> {},
-                request -> {
-                    DecisionQuestion question =
-                            request.questions() != null && request.questions().size() == 1
-                                    ? request.questions().values().iterator().next()
-                                    : null;
-                    if (question == null || question.type() != DecisionQuestion.Type.CHOICE) {
-                        throw new IllegalArgumentException(
-                                "AI_DECISION requires exactly one choice question");
-                    }
-                },
-                (output, result) ->
-                        // Keep the full response plus a value directly consumable by SWITCH.
-                        output.put(
-                                "selectedCase",
-                                result.answers().values().iterator().next().choice()));
+        return decisionSupport.execute(task, () -> {}, request -> {}, this::addSelectedCase);
+    }
+
+    /** A single choice remains directly consumable by SWITCH; other question sets stay generic. */
+    private void addSelectedCase(Map<String, Object> output, DecisionResult result) {
+        if (result.answers().size() != 1) return;
+        DecisionResult.Answer answer = result.answers().values().iterator().next();
+        if (answer.type() == DecisionQuestion.Type.CHOICE) {
+            output.put("selectedCase", answer.choice());
+        }
     }
 
     @Override

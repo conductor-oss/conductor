@@ -32,6 +32,7 @@ import org.conductoross.conductor.common.metadata.agent.WorkerRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -1067,24 +1068,33 @@ public class MultiAgentCompiler {
         }
 
         String routerRef = toRef(config.getName()) + "_router";
-        WorkflowTask route =
-                agentCompiler.compileSubAgent(
-                        selector,
-                        routerRef,
-                        "${workflow.input.prompt}",
-                        "${workflow.input.media}",
-                        "${workflow.input.context}");
+        WorkflowTask route = new WorkflowTask();
+        route.setName("AI_DECISION");
+        route.setType("AI_DECISION");
+        route.setTaskReferenceName(routerRef);
+        Map<String, Object> routeInput = new LinkedHashMap<>();
+        routeInput.put("model", selector.getModel());
+        routeInput.put("state", "${workflow.input.prompt}");
+        routeInput.put("questions", selector.getQuestions());
+        if (selector.getProvider() != null && !selector.getProvider().isBlank()) {
+            routeInput.put("provider", selector.getProvider());
+        }
+        route.setInputParameters(routeInput);
+        TaskDef retry = new TaskDef();
+        retry.setName("AI_DECISION");
+        retry.setRetryCount(3);
+        retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        retry.setRetryDelaySeconds(1);
+        retry.setBackoffScaleFactor(2);
+        retry.setMaxRetryDelaySeconds(5);
+        route.setTaskDefinition(retry);
         WorkflowTask dispatch = new WorkflowTask();
         dispatch.setType("SWITCH");
         dispatch.setTaskReferenceName(toRef(config.getName()) + "_switch");
         dispatch.setEvaluatorType("graaljs");
         dispatch.setExpression("$.answers[$.question].choice");
         dispatch.setInputParameters(
-                Map.of(
-                        "answers",
-                        ref(routerRef + ".output.result.answers"),
-                        "question",
-                        entry.getKey()));
+                Map.of("answers", ref(routerRef + ".output.answers"), "question", entry.getKey()));
         Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
         for (int i = 0; i < agents.size(); i++) {
             AgentConfig child = agents.get(i);
@@ -1128,7 +1138,7 @@ public class MultiAgentCompiler {
                         "selectedAgent",
                         "${workflow.variables.selectedAgent}",
                         "routing",
-                        ref(routerRef + ".output.result")));
+                        ref(routerRef + ".output")));
         agentCompiler.applyTimeout(workflow, config);
         return workflow;
     }

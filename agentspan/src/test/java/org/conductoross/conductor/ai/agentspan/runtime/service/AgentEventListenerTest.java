@@ -42,34 +42,19 @@ class AgentEventListenerTest {
     private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     @Test
-    void recordsBothDecisionTaskTypesWithResolvedProviderAndUsage() {
+    void recordsDecisionTaskWithResolvedProviderAndUsage() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         SimpleMeterRegistry meters = new SimpleMeterRegistry();
         AgentEventListener listener = new AgentEventListener(registry, meters);
-        WorkflowModel workflow = workflow("decision-metrics", "decision_agent");
-        TaskModel agent = task("decision-metrics", "DECISION_AGENT", "agent_decision");
-        agent.setInputData(Map.of("model", "jev-1.13"));
-        agent.setOutputData(
-                Map.of(
-                        "provider",
-                        "openrouter",
-                        "usage",
-                        Map.of("inputTokens", 4, "outputTokens", 2)));
+        WorkflowModel workflow = workflow("decision-metrics", "workflow");
         TaskModel workflowDecision = task("decision-metrics", "AI_DECISION", "workflow_decision");
         workflowDecision.setInputData(Map.of("model", "jev-1.13", "provider", "typesafe"));
         workflowDecision.setOutputData(
                 Map.of("usage", Map.of("inputTokens", 3, "outputTokens", 1)));
-        workflow.setTasks(List.of(agent, workflowDecision));
+        workflow.setTasks(List.of(workflowDecision));
 
         listener.onWorkflowCompletedIfEnabled(workflow);
 
-        assertThat(
-                        meters.find("agentspan.ai.requests")
-                                .tag("task_type", "decision_agent")
-                                .tag("provider", "openrouter")
-                                .counter()
-                                .count())
-                .isEqualTo(1);
         assertThat(
                         meters.find("agentspan.ai.requests")
                                 .tag("task_type", "ai_decision")

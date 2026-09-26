@@ -52,7 +52,6 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
     private static final Set<String> AI_TASK_TYPES =
             Set.of(
                     "AI_DECISION",
-                    "DECISION_AGENT",
                     "LLM_CHAT_COMPLETE",
                     "GENERATE_IMAGE",
                     "GENERATE_AUDIO",
@@ -83,7 +82,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         String taskRef = task.getReferenceTaskName();
         logger.debug("onTaskScheduled: wfId={}, type={}, ref={}", wfId, taskType, taskRef);
 
-        if ("LLM_CHAT_COMPLETE".equals(taskType) || "DECISION_AGENT".equals(taskType)) {
+        if ("LLM_CHAT_COMPLETE".equals(taskType)) {
             emit(wfId, AgentSSEEvent.thinking(wfId, taskRef));
         } else if ("PULL_WORKFLOW_MESSAGES".equals(taskType)) {
             emit(wfId, AgentSSEEvent.waiting(wfId, Map.of("taskRefName", taskRef)));
@@ -354,8 +353,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             int promptTokens = toInt(output.get("promptTokens"));
             int completionTokens = toInt(output.get("completionTokens"));
             int totalTokens = toInt(output.get("tokenUsed"));
-            if (("DECISION_AGENT".equals(taskType) || "AI_DECISION".equals(taskType))
-                    && output.get("usage") instanceof Map<?, ?> usage) {
+            if ("AI_DECISION".equals(taskType) && output.get("usage") instanceof Map<?, ?> usage) {
                 promptTokens = toInt(usage.get("inputTokens"));
                 completionTokens = toInt(usage.get("outputTokens"));
                 totalTokens = promptTokens + completionTokens;

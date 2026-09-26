@@ -35,120 +35,18 @@ class AgentCompilerTest {
     }
 
     @Test
-    void compilesDecisionAgentWithoutChatAndPreservesTypedOutput() {
-        AgentConfig config =
-                AgentConfig.builder()
-                        .name("routing")
-                        .timeoutSeconds(123)
-                        .kind(AgentConfig.Kind.DECISION)
-                        .model("jev-1.13")
-                        .questions(
-                                Map.of(
-                                        "route",
-                                        Map.of(
-                                                "type",
-                                                "choice",
-                                                "instructions",
-                                                "Choose a route",
-                                                "choices",
-                                                Map.of("a", "First", "b", "Second"))))
-                        .build();
-        WorkflowDef wf = compiler.compile(config);
-        assertThat(wf.getTimeoutSeconds()).isEqualTo(123);
-        assertThat(wf.getTimeoutPolicy()).isEqualTo(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
-        assertThat(wf.getTasks()).hasSize(1);
-        var task = wf.getTasks().get(0);
-        assertThat(task.getType()).isEqualTo("DECISION_AGENT");
-        assertThat(task.getInputParameters())
-                .containsEntry("state", "${workflow.input.prompt}")
-                .containsEntry("questions", config.getQuestions());
-        assertThat(task.getTaskDefinition().getRetryCount()).isEqualTo(3);
-        assertThat(task.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(1);
-        assertThat(task.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(5);
-        assertThat(task.getTaskDefinition().getRetryLogic())
-                .isEqualTo(
-                        com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic
-                                .EXPONENTIAL_BACKOFF);
-        assertThat(wf.getMetadata())
-                .containsEntry("classifier", WorkflowClassifier.AGENT)
-                .containsEntry("agent_capabilities", List.of("decision"));
-        assertThat(wf.getOutputParameters()).containsEntry("result", "${routing_decision.output}");
-        config.setQuestions(null);
-        assertThat(compiler.compile(config).getTasks().get(0).getInputParameters())
-                .containsEntry("questions", "${workflow.input.context.questions}");
-        config.setTools(List.of(ToolConfig.builder().name("unexpected").build()));
-        assertThatThrownBy(() -> compiler.compile(config))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    void rejectsInvalidQuestionsAndIgnoredChatFieldsAsClientErrors() {
+    void rejectsStandaloneDecisionConfiguration() {
         AgentConfig config =
                 AgentConfig.builder()
                         .name("routing")
                         .kind(AgentConfig.Kind.DECISION)
                         .model("jev-1.13")
-                        .questions(
-                                Map.of(
-                                        "route",
-                                        Map.of(
-                                                "type",
-                                                "choice",
-                                                "instructions",
-                                                "Choose",
-                                                "choices",
-                                                Map.of("only", "Only option"))))
                         .build();
+
         assertThatThrownBy(() -> compiler.compile(config))
                 .isExactlyInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("invalid choice options");
-
-        config.setQuestions(
-                Map.of(
-                        "route",
-                        Map.of(
-                                "type",
-                                "choice",
-                                "instructions",
-                                "Choose",
-                                "choices",
-                                Map.of("a", "First", "b", "Second"))));
-        config.setInstructions("This must not be silently ignored");
-        config.setTemperature(0.2);
-        assertThatThrownBy(() -> compiler.compile(config))
-                .isExactlyInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("instructions")
-                .hasMessageContaining("temperature");
-    }
-
-    @Test
-    void decisionAgentCompilesAsAChildAgent() {
-        AgentConfig child =
-                AgentConfig.builder()
-                        .name("chooser")
-                        .kind(AgentConfig.Kind.DECISION)
-                        .model("jev-1.13")
-                        .build();
-        WorkflowDef workflow =
-                compiler.compile(
-                        AgentConfig.builder()
-                                .name("parent")
-                                .strategy(AgentConfig.Strategy.SEQUENTIAL)
-                                .agents(List.of(child))
-                                .build());
-        var childTask =
-                workflow.getTasks().stream()
-                        .filter(task -> "SUB_WORKFLOW".equals(task.getType()))
-                        .findFirst()
-                        .orElseThrow();
-        var childWorkflow = childTask.getSubWorkflowParam().getWorkflowDef();
-        assertThat(childWorkflow.getTasks()).hasSize(1);
-        assertThat(childWorkflow.getTasks().get(0).getType()).isEqualTo("DECISION_AGENT");
-        assertThat(childWorkflow.getMetadata())
-                .containsEntry("classifier", WorkflowClassifier.AGENT);
-        assertThat(childTask.getInputParameters())
-                .containsEntry("context", "${workflow.variables.context}");
-        assertThat(workflow.getMetadata()).containsEntry("classifier", WorkflowClassifier.AGENT);
+                .hasMessageContaining("router selectors")
+                .hasMessageContaining("decision tool");
     }
 
     @Test

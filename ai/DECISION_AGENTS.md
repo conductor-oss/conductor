@@ -1,61 +1,123 @@
-# Decision agents
+# Decision inference
 
-A decision agent uses `kind: "decision"` and performs one inference per execution. The definition supplies `model` and optionally fixed `questions`;
-the execution `prompt` supplies the observed state. If questions are not fixed,
-provide them in `context.questions` when starting the agent. Decision agents can also
-be child agents.
+Decision inference is an `AI_DECISION` system task. It is not a separate agent
+runtime.
 
-Set `DECISION_API_KEY` on the server and enable AI integrations. The default
-provider is OpenRouter; `DECISION_PROVIDER` selects the default provider.
-An agent definition or AI_DECISION task may set `provider` explicitly. Credentials
-remain on the server. The default API shape is `system-one`, with a `20s` timeout.
+There are three ways to use the same task:
 
-Configuration lives under `conductor.ai.decision`. `api-shape` selects a registered
-`DecisionApiAdapter`. Resolution is model override, then provider override, then
-the global default. Model keys are exact model identifiers. Provider credentials
-never fall back to another provider's credentials.
+1. Add `AI_DECISION` directly to a workflow.
+2. Use a decision-backed router, which compiles to `AI_DECISION` followed by
+   `SWITCH`.
+3. Give an agent a `decision` tool, which the tool mapper executes as
+   `AI_DECISION`.
 
-```yaml
-conductor:
-  ai:
-    decision:
-      provider: openrouter
-      api-key: ${DECISION_API_KEY}
-      api-shape: system-one
-      providers:
-        typesafe:
-          api-key: ${TYPESAFE_API_KEY}
-          models:
-            "[jev-1.13]":
-              api-shape: system-one
+## Workflow task
+
+```json
+{
+  "name": "AI_DECISION",
+  "taskReferenceName": "classify_request",
+  "type": "AI_DECISION",
+  "inputParameters": {
+    "model": "jev-1.13",
+    "state": "${workflow.input.request}",
+    "questions": {
+      "route": {
+        "type": "choice",
+        "instructions": "Choose the team that should handle this request.",
+        "choices": {
+          "billing": "Billing and payment requests",
+          "support": "Product support requests"
+        }
+      }
+    }
+  }
+}
 ```
 
-Provider and model entries can override `endpoint`; provider entries can also set
-`api-key` and `api-shape`. The System One adapter supplies default endpoints for
-OpenRouter and TypeSafe. Other API shapes require an endpoint and a registered
-adapter bean implementing request encoding and response decoding. Unknown shapes
-fail before sending a request. System One is the only built-in adapter.
+For exactly one `choice` question, the task copies the chosen value to
+`selectedCase`. A following `SWITCH` can use:
 
-Canonical agent kind, task type, and SSE event type are `decision`,
-`DECISION_AGENT`, and `decision`. The UI renders inference as `decision`.
-`AI_DECISION` uses the same inference client and provider/model selection for
-traditional workflows. Its output includes `selectedCase`, so a downstream SWITCH task can
-route on `${<ref>.output.selectedCase}`.
+```text
+${classify_request.output.selectedCase}
+```
 
-Each question requires `type` and `instructions`:
+Other question combinations return `answers` without `selectedCase`.
 
-| Type | Options | Answer |
-| --- | --- | --- |
-| `choice` | `choices`: 2–255 named descriptions | `choice`: selected name |
-| `score` | `scale`: 2–10 ordered descriptions | `score`: 0 to scale length minus one |
-| `boolean` | None | `probability`: 0 to 1 |
+## Agent tool
 
-The agent result contains the resolved `provider`, `model`, `answers`, `usage`,
-`latencyMs`, and optional `requestId`. Answers may include `confidence`. Usage contains `inputTokens`,
-`outputTokens`, `cost`, and `currency` when reported by the provider.
+An agent declares a normal tool with `toolType: "decision"`:
 
-The runtime retries transport errors, HTTP 429, and HTTP 5xx up to three times
-with exponential backoff capped at five seconds. Invalid requests and responses
-fail terminally. The HTTP client does not retry or follow redirects. Agent
-`timeoutSeconds` follows the same policy as other agents. Chat retry settings
-are unchanged.
+```json
+{
+  "name": "classify_request",
+  "description": "Classify the request.",
+  "toolType": "decision",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "state": { "type": "string" }
+    },
+    "required": ["state"]
+  },
+  "config": {
+    "provider": "typesafe",
+    "model": "jev-1.13",
+    "questions": {
+      "urgency": {
+        "type": "score",
+        "instructions": "Rate the urgency.",
+        "scale": ["low", "medium", "high"]
+      }
+    }
+  }
+}
+```
+
+The mapper emits an `AI_DECISION` task. Server-owned values in `config` override
+model-supplied arguments, and the completed output returns to the model under the
+declared tool name. No worker is required.
+
+## Router
+
+A decision-backed router compiles to:
+
+```text
+AI_DECISION -> SWITCH -> selected child agent
+```
+
+The selector must contain one `choice` question whose choice keys match the
+router's child-agent names. `kind: "decision"` remains in router configuration as
+the selector marker; it cannot be deployed or run as a standalone agent.
+
+## Questions and output
+
+Every question has `instructions` and one of these types:
+
+| Type      | Configuration                       | Answer                                 |
+| --------- | ----------------------------------- | -------------------------------------- |
+| `choice`  | `choices`: 2-255 named descriptions | `choice`: one supplied name            |
+| `score`   | `scale`: 2-10 descriptions          | `score`: zero-based index into `scale` |
+| `boolean` | none                                | `probability`: number from 0 through 1 |
+
+Output contains `provider`, `model`, `answers`, `latencyMs`, optional `requestId`,
+and provider-reported `usage`. Generated router and agent-tool tasks use three
+exponential-backoff retries; a hand-written workflow task uses its configured
+Conductor retry policy.
+
+## Server configuration
+
+Configuration uses the `conductor.ai.decision` prefix. The default provider is
+`openrouter`; the server properties also accept `DECISION_API_KEY` and
+`DECISION_PROVIDER`.
+
+```properties
+conductor.integrations.ai.enabled=true
+conductor.ai.decision.api-key=${DECISION_API_KEY}
+conductor.ai.decision.provider=openrouter
+```
+
+Provider-specific credentials, endpoints, and model overrides are configured
+under `conductor.ai.decision.providers`. The built-in `system-one` adapter has
+default endpoints for `openrouter` and `typesafe`; other adapters require an
+explicit endpoint and a registered `DecisionApiAdapter` bean.

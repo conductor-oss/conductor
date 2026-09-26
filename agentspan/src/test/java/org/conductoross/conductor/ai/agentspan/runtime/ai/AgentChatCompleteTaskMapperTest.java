@@ -160,6 +160,63 @@ class AgentChatCompleteTaskMapperTest {
         assertThat(result.getMessage()).isEqualTo("Alice");
     }
 
+    @Test
+    void decisionSystemTaskResultKeepsTheDeclaredToolName() throws Exception {
+        String llmRef = "agent_llm";
+        String logicalToolRef = "toolu_classify";
+
+        TaskModel priorLlm = new TaskModel();
+        WorkflowTask priorLlmTask = workflowTask(llmRef);
+        priorLlmTask.setType("LLM_CHAT_COMPLETE");
+        priorLlm.setWorkflowTask(priorLlmTask);
+        priorLlm.setTaskType("LLM_CHAT_COMPLETE");
+        priorLlm.setStatus(TaskModel.Status.COMPLETED);
+        priorLlm.setIteration(1);
+        priorLlm.setOutputData(
+                Map.of(
+                        "toolCalls",
+                        List.of(
+                                Map.of(
+                                        "name",
+                                        "classify",
+                                        "taskReferenceName",
+                                        logicalToolRef,
+                                        "type",
+                                        "AI_DECISION",
+                                        "inputParameters",
+                                        Map.of("state", "customer message")))));
+
+        TaskModel decision = new TaskModel();
+        WorkflowTask decisionWorkflowTask = workflowTask(logicalToolRef + "_0");
+        decisionWorkflowTask.setType("AI_DECISION");
+        decision.setWorkflowTask(decisionWorkflowTask);
+        decision.setTaskType("AI_DECISION");
+        decision.setTaskDefName("AI_DECISION");
+        decision.setStatus(TaskModel.Status.COMPLETED);
+        decision.setInputData(Map.of("_agent_tool_name", "classify", "state", "customer message"));
+        decision.setOutputData(Map.of("answers", Map.of("category", "billing")));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setTasks(List.of(priorLlm, decision));
+        TaskModel currentLlm = new TaskModel();
+        currentLlm.setWorkflowTask(workflowTask(llmRef));
+
+        ChatCompletion completion = new ChatCompletion();
+        invokeGetHistory(workflow, currentLlm, completion);
+
+        assertThat(completion.getMessages()).hasSize(2);
+        ChatMessage result = completion.getMessages().get(1);
+        assertThat(result.getRole()).isEqualTo(ChatMessage.Role.tool);
+        assertThat(result.getToolCalls())
+                .singleElement()
+                .satisfies(
+                        call -> {
+                            assertThat(call.getName()).isEqualTo("classify");
+                            assertThat(call.getType()).isEqualTo("AI_DECISION");
+                        });
+        assertThat(result.getMessage()).contains("billing");
+    }
+
     // ── Context condensation tests ─────────────────────────────────
 
     @Test

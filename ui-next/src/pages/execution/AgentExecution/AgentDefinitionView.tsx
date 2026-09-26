@@ -564,7 +564,7 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
       kind: "agent",
       label: agentName,
       sublabel: defModel ?? instSnippet,
-      badge: agentDef.kind === "decision" ? "DECISION AGENT" : "AGENT",
+      badge: "AGENT",
       badgeColor: "#3d5fc0",
       badgeBg: "#e8eeff",
       borderColor: "#93c5fd",

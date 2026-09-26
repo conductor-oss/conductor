@@ -27,13 +27,13 @@ describe("Decision inference rendering", () => {
           {
             taskId: "task-1",
             referenceTaskName: "support_decision",
-            taskType: "DECISION_AGENT",
+            taskType: "AI_DECISION",
             status: "COMPLETED",
             inputData: { model: "jev-1.13", state: "Duplicate charge" },
             outputData: output,
           },
         ],
-        workflowDefinition: { metadata: { agentDef: { kind: "decision" } } },
+        workflowDefinition: { metadata: { agentDef: {} } },
       } as unknown as WorkflowExecution);
       const events = run.turns.flatMap((turn) => turn.events);
       expect(

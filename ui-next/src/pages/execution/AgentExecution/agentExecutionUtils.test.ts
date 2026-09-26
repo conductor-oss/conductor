@@ -663,7 +663,7 @@ describe("replaceAgentRunNode", () => {
   });
 });
 
-describe("decision agents", () => {
+describe("decision tasks", () => {
   it.each([false, true])(
     "keeps Decision inference out of tools (loop: %s)",
     (loopOverTask) => {
@@ -681,7 +681,7 @@ describe("decision agents", () => {
               taskId: "decision",
               referenceTaskName: loopOverTask ? "decide__1" : "decide",
               loopOverTask,
-              taskType: "DECISION_AGENT",
+              taskType: "AI_DECISION",
               inputData: {
                 provider: "decision",
                 model: "jev-1.13",
@@ -695,7 +695,7 @@ describe("decision agents", () => {
             workflowDefinition: {
               metadata: {
                 classifier: "agent",
-                agentDef: { kind: "decision", model: "jev-1.13" },
+                agentDef: { model: "jev-1.13" },
               },
             },
           },
@@ -704,7 +704,7 @@ describe("decision agents", () => {
       const event = run.turns
         .flatMap((t) => t.events)
         .find((e) => e.type === EventType.DECISION);
-      expect(run.agentType).toBe("decision");
+      expect(run.agentType).toBeUndefined();
       expect(event?.tokens?.totalTokens).toBe(14);
       expect(
         run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
@@ -734,30 +734,30 @@ it.each([
           usage: { inputTokens: 10, outputTokens: 2 },
         }
       : childName;
-    const childResult = {
-      model: "jev-1.13",
-      answers: { action: { type: "choice", choice: "check_transactions" } },
-    };
     const selector = task({
       taskId: "selector",
-      taskType: "SUB_WORKFLOW",
+      taskType: decision ? "AI_DECISION" : "SUB_WORKFLOW",
       referenceTaskName: decision ? "triage_router" : "triage_router__1",
       loopOverTask: !decision,
       startTime: 10,
       endTime: 20,
-      inputData: {
-        subWorkflowName: "triage_selector",
-        subWorkflowDefinition: {
-          metadata: {
-            agentDef: {
-              name: "triage_selector",
-              kind: decision ? "decision" : "chat",
-              model: decision ? "jev-1.13" : "openai/gpt-6-luna",
+      inputData: decision
+        ? { model: "jev-1.13", state: "route this", questions: { agent: {} } }
+        : {
+            subWorkflowName: "triage_selector",
+            subWorkflowDefinition: {
+              metadata: {
+                agentDef: {
+                  name: "triage_selector",
+                  kind: "chat",
+                  model: "openai/gpt-6-luna",
+                },
+              },
             },
           },
-        },
-      },
-      outputData: { subWorkflowId: "selector-run", result: selectorResult },
+      outputData: decision
+        ? selectorResult
+        : { subWorkflowId: "selector-run", result: selectorResult },
     });
     const selected = task({
       taskId: childName,
@@ -774,13 +774,13 @@ it.each([
           metadata: {
             agentDef: {
               name: childName,
-              kind: "decision",
-              model: "jev-1.13",
+              kind: "chat",
+              model: "openai/gpt-6-luna",
             },
           },
         },
       },
-      outputData: { subWorkflowId: "billing-run", result: childResult },
+      outputData: { subWorkflowId: "billing-run", result: "handled" },
     });
     const run = transformWorkflowExecutionToAgentRun(
       execution([selector, selected], {
@@ -790,7 +790,7 @@ it.each([
             agentDef: {
               name: "triage",
               strategy: "router",
-              agents: [{ name: childName, kind: "decision" }],
+              agents: [{ name: childName, kind: "chat" }],
             },
           },
         },
@@ -806,10 +806,5 @@ it.each([
       childName,
     ]);
     expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
-    expect(run.turns[1].subAgents[0].turns[0].events[0]).toMatchObject({
-      type: EventType.DECISION,
-      detail: { output: childResult },
-    });
-    expect(run.turns[1].subAgents[0].expanded).toBe(true);
   },
 );

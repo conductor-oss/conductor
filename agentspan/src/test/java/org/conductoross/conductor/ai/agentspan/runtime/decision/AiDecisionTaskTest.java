@@ -111,17 +111,24 @@ class AiDecisionTaskTest {
     }
 
     @Test
-    void rejectsNonChoiceBeforeInference() throws Exception {
+    void supportsNonChoiceQuestionsWithoutAddingSelectedCase() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.start();
+            server.enqueue(
+                    new MockResponse()
+                            .setBody(
+                                    """
+                {"model":"jev-1.13","answers":{"ready":{"type":"noul","noul":0.8}}}
+                """));
             TaskModel task = task();
             task.getInputData()
                     .put(
                             "questions",
                             Map.of("ready", Map.of("type", "boolean", "instructions", "Ready?")));
             runtime(server).execute(new WorkflowModel(), task, null);
-            assertThat(task.getStatus()).isEqualTo(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-            assertThat(server.getRequestCount()).isZero();
+            assertThat(task.getStatus()).isEqualTo(TaskModel.Status.COMPLETED);
+            assertThat(task.getOutputData()).doesNotContainKey("selectedCase");
+            assertThat(server.getRequestCount()).isEqualTo(1);
         }
     }
 

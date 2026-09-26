@@ -76,32 +76,19 @@ function embeddedAgentDef(task: ExecutionTask) {
   return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
 }
 
-function childDecisionEvent(task: ExecutionTask): AgentEvent {
-  const definition = embeddedAgentDef(task);
-  return decisionTaskEvent({
-    ...task,
-    inputData: {
-      model: definition?.model,
-      questions: definition?.questions,
-      ...(task.inputData?.workflowInput as Record<string, unknown>),
-    },
-    outputData: task.outputData?.result as ExecutionTask["outputData"],
-  });
-}
-
 /** A selector is inference by the parent. Its selected child acts in the next turn. */
 function routerTimeline(
   tasks: ExecutionTask[],
   turns: AgentTurn[],
   routerReference: string,
 ): AgentTurn[] {
-  const calls = deduplicateRetriedTasks(
-    sortTasksChronologically(tasks),
-  ).tasks.filter(isAgentSubWorkflow);
-  // The compiler owns one exact selector reference. Matching only a suffix
-  // misclassifies valid selected agents named "router" as another selector.
   const isSelector = (task: ExecutionTask) =>
     task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
+  const calls = deduplicateRetriedTasks(
+    sortTasksChronologically(tasks),
+  ).tasks.filter((task) => isAgentSubWorkflow(task) || isSelector(task));
+  // The compiler owns one exact selector reference. Matching only a suffix
+  // misclassifies valid selected agents named "router" as another selector.
   if (!calls.some(isSelector)) return turns;
   const children = turns.flatMap((turn) => turn.subAgents);
   const routed: AgentTurn[] = [];
@@ -112,10 +99,13 @@ function routerTimeline(
     let events: AgentEvent[] = [];
     let subAgents: AgentRunData[] = [];
     if (isSelector(task)) {
-      const result = task.outputData?.result;
+      const result =
+        task.taskType === "AI_DECISION"
+          ? task.outputData
+          : task.outputData?.result;
       const event: AgentEvent =
-        definition?.kind === "decision"
-          ? childDecisionEvent(task)
+        task.taskType === "AI_DECISION"
+          ? decisionTaskEvent(task)
           : {
               id: `${task.taskId}-router`,
               type: EventType.THINKING,
@@ -130,7 +120,7 @@ function routerTimeline(
         result as { answers?: Record<string, { choice?: string }> } | undefined
       )?.answers;
       const choice =
-        definition?.kind === "decision"
+        task.taskType === "AI_DECISION"
           ? Object.values(answers ?? {})[0]?.choice
           : typeof result === "string"
             ? result
@@ -145,8 +135,6 @@ function routerTimeline(
         (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
       );
       if (!child) continue;
-      const event =
-        definition?.kind === "decision" ? childDecisionEvent(task) : undefined;
       subAgents = [
         {
           ...child,
@@ -154,22 +142,6 @@ function routerTimeline(
           agentDef: definition ?? child.agentDef,
           model: definition?.model as string | undefined,
           output: task.outputData?.result ?? child.output,
-          ...(event
-            ? {
-                expanded: true,
-                totalTokens: event.tokens ?? ZERO_TOKENS,
-                turns: [
-                  {
-                    turnNumber: 1,
-                    status: child.status,
-                    durationMs,
-                    tokens: event.tokens ?? ZERO_TOKENS,
-                    events: [event],
-                    subAgents: [],
-                  },
-                ],
-              }
-            : {}),
         },
       ];
     }
@@ -907,12 +879,9 @@ function transformChainWorkflowToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
-    agentType:
-      agentDef?.kind === "decision"
-        ? "decision"
-        : (execution.workflowDefinition?.metadata?.agent_sdk as
-            | string
-            | undefined),
+    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
+      | string
+      | undefined,
     model: chainModel,
     turns,
     status: mapWorkflowStatus(execution.status),
@@ -1040,6 +1009,11 @@ export function transformWorkflowExecutionToAgentRun(
         iterTasks.filter((t) => t.taskType === "LLM_CHAT_COMPLETE"),
       );
 
+      const { tasks: decisionTasks } = deduplicateRetriedTasks(
+        iterTasks.filter((t) => t.taskType === "AI_DECISION"),
+      );
+      const decisionEvents = decisionTasks.map(decisionTaskEvent);
+
       // Tool worker tasks — any non-infra, non-subworkflow, non-LLM task
       const {
         tasks: toolWorkerTasks,
@@ -1051,7 +1025,7 @@ export function transformWorkflowExecutionToAgentRun(
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
             t.taskType !== "LLM_CHAT_COMPLETE" &&
-            t.taskType !== "DECISION_AGENT",
+            t.taskType !== "AI_DECISION",
         ),
       );
 
@@ -1073,6 +1047,7 @@ export function transformWorkflowExecutionToAgentRun(
         events.push(pendingIncomingHandoff);
         pendingIncomingHandoff = null;
       }
+      events.push(...decisionEvents);
 
       // The swarm's own handoff_check task (a sibling INLINE task in this
       // same iteration) records whether a *condition-based* handoff
@@ -1368,12 +1343,6 @@ export function transformWorkflowExecutionToAgentRun(
           });
         }
       }
-
-      const { tasks: decisionTasks } = deduplicateRetriedTasks(
-        iterTasks.filter((task) => task.taskType === "DECISION_AGENT"),
-      );
-      const decisionEvents = decisionTasks.map(decisionTaskEvent);
-      events.push(...decisionEvents);
 
       // Tool worker events — ONE combined block per call showing input + output
       // Track whether a HANDOFF was already emitted this turn to avoid duplicates.
@@ -1758,7 +1727,7 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "DECISION_AGENT") {
+      if (task.taskType === "AI_DECISION") {
         const event = decisionTaskEvent(task);
         rootEvents.push(event);
         rootPrompt += event.tokens!.promptTokens;
@@ -2190,12 +2159,9 @@ export function transformWorkflowExecutionToAgentRun(
   return {
     id: execution.workflowId,
     agentName: execution.workflowName ?? execution.workflowType ?? "agent",
-    agentType:
-      agentDef?.kind === "decision"
-        ? "decision"
-        : (execution.workflowDefinition?.metadata?.agent_sdk as
-            | string
-            | undefined),
+    agentType: execution.workflowDefinition?.metadata?.agent_sdk as
+      | string
+      | undefined,
     model: agentModel,
     turns,
     status: mapWorkflowStatus(execution.status),

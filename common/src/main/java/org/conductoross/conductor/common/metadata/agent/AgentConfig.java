@@ -35,7 +35,7 @@ public class AgentConfig {
 
     @Builder.Default private Kind kind = Kind.CHAT;
 
-    /** Execution semantics are independent of the orchestration strategy. */
+    /** DECISION is retained as the configuration marker for a ROUTER selector. */
     public enum Kind {
         CHAT,
         DECISION;
@@ -51,14 +51,14 @@ public class AgentConfig {
         }
     }
 
-    /** Fixed question contract, or null to read context.questions per execution. */
+    /** Fixed question contract for a decision-backed ROUTER selector. */
     private Map<String, Object> questions;
 
     private String name;
     private String description;
     private String model;
 
-    /** Provider for decision inference; null uses the server default. */
+    /** Provider for a decision-backed ROUTER selector; null uses the server default. */
     private String provider;
 
     /** Custom base URL for the LLM provider (per-agent override). */

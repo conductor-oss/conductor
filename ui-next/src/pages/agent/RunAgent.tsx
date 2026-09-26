@@ -37,23 +37,7 @@ type RunAgentForm = {
   agentVersion?: number;
   model: string;
   prompt: string;
-  questions: string;
 };
-
-const QUESTIONS_ERROR = "Enter a nonempty JSON object of decision questions.";
-
-function parseDecisionQuestions(value: string): Record<string, unknown> {
-  const parsed: unknown = JSON.parse(value);
-  if (
-    !parsed ||
-    typeof parsed !== "object" ||
-    Array.isArray(parsed) ||
-    !Object.keys(parsed).length
-  ) {
-    throw new Error(QUESTIONS_ERROR);
-  }
-  return parsed as Record<string, unknown>;
-}
 
 /** Starts a deployed agent through POST /api/agent/start. */
 export default function RunAgent() {
@@ -79,19 +63,9 @@ export default function RunAgent() {
       agentVersion: selectedAgent?.agentVersion,
       model: "",
       prompt: "",
-      questions: "",
     },
   });
-  const { agentName, agentVersion, model, prompt } = watch();
-  const {
-    data: definition,
-    isError: definitionError,
-    isFetching: definitionLoading,
-  } = useFetch<Record<string, unknown>>(
-    `/agent/${encodeURIComponent(agentName)}${agentVersion ? `?version=${agentVersion}` : ""}`,
-    { when: Boolean(agentName) },
-  );
-  const isDecision = !definitionLoading && definition?.kind === "decision";
+  const { agentName, model, prompt } = watch();
   const [started, setStarted] = useState<AgentStartResponse>();
   const [error, setError] = useState("");
   const [agentHistory, setAgentHistory] = useLocalStorage(
@@ -136,7 +110,6 @@ export default function RunAgent() {
       agentVersion: undefined,
       model: "",
       prompt: "",
-      questions: "",
     });
     setStarted(undefined);
     setError("");
@@ -144,21 +117,9 @@ export default function RunAgent() {
 
   const run: SubmitHandler<RunAgentForm> = (values) => {
     setStarted(undefined);
-    let context: Record<string, unknown> | undefined;
-    if (isDecision && !definition?.questions) {
-      try {
-        context = { questions: parseDecisionQuestions(values.questions) };
-      } catch {
-        // The Controller validates this first; keep submission safe if its
-        // mounted state changes between validation and this callback.
-        setError(QUESTIONS_ERROR);
-        return;
-      }
-    }
     startAgent({
       body: JSON.stringify({
         name: values.agentName,
-        ...(context ? { context } : {}),
         version: values.agentVersion,
         model: values.model.trim() || undefined,
         prompt: values.prompt,
@@ -176,7 +137,6 @@ export default function RunAgent() {
       agentVersion: undefined,
       model: entry.model,
       prompt: entry.prompt,
-      questions: "",
     });
     setStarted(undefined);
     setError("");
@@ -212,13 +172,7 @@ export default function RunAgent() {
                   id="run-agent-btn"
                   color="secondary"
                   onClick={handleSubmit(run)}
-                  disabled={
-                    !agentName ||
-                    !prompt.trim() ||
-                    isLoading ||
-                    definitionLoading ||
-                    definitionError
-                  }
+                  disabled={!agentName || !prompt.trim() || isLoading}
                   startIcon={<PlayIcon />}
                 >
                   Run agent
@@ -231,12 +185,6 @@ export default function RunAgent() {
         {error && (
           <Alert sx={{ mb: 3 }} severity="error" onClose={() => setError("")}>
             {error}
-          </Alert>
-        )}
-        {agentName && definitionError && (
-          <Alert sx={{ mb: 3 }} severity="error">
-            Unable to load this agent definition. Select the agent again or
-            retry later.
           </Alert>
         )}
         {started && (
@@ -272,7 +220,6 @@ export default function RunAgent() {
                         onChange={(_: unknown, value: string | null) => {
                           field.onChange(value ?? "");
                           setValue("agentVersion", undefined);
-                          setValue("questions", "");
                         }}
                         required
                         autoFocus
@@ -292,7 +239,7 @@ export default function RunAgent() {
                         label="Model override (optional)"
                         placeholder="Use the deployed agent model"
                         value={field.value}
-                        options={isDecision ? [] : modelOptions}
+                        options={modelOptions}
                         groupBy={(option: string) => option.split("/")[0]}
                         onChange={(_: unknown, newValue: string | null) => {
                           field.onChange(newValue ?? "");
@@ -320,12 +267,8 @@ export default function RunAgent() {
                         required
                         multiline
                         minRows={8}
-                        label={isDecision ? "Decision state" : "Input text"}
-                        placeholder={
-                          isDecision
-                            ? "State to evaluate (text or JSON)"
-                            : "What should this agent do?"
-                        }
+                        label="Input text"
+                        placeholder="What should this agent do?"
                         value={field.value}
                         onTextInputChange={field.onChange}
                         error={!!fieldState.error}
@@ -334,51 +277,6 @@ export default function RunAgent() {
                     )}
                   />
                 </Grid>
-                {isDecision && (
-                  <Grid size={12}>
-                    {definition?.questions != null ? (
-                      <Box
-                        component="pre"
-                        sx={{
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "anywhere",
-                        }}
-                        aria-label="Configured decision questions"
-                      >
-                        {JSON.stringify(definition.questions, null, 2)}
-                      </Box>
-                    ) : (
-                      <Controller
-                        name="questions"
-                        control={control}
-                        rules={{
-                          validate: (value) => {
-                            try {
-                              parseDecisionQuestions(value);
-                              return true;
-                            } catch {
-                              return QUESTIONS_ERROR;
-                            }
-                          },
-                        }}
-                        render={({ field, fieldState }) => (
-                          <ConductorInput
-                            id="run-agent-questions"
-                            fullWidth
-                            required
-                            multiline
-                            minRows={6}
-                            label="Decision questions (JSON)"
-                            value={field.value}
-                            onTextInputChange={field.onChange}
-                            error={!!fieldState.error}
-                            helperText={fieldState.error?.message}
-                          />
-                        )}
-                      />
-                    )}
-                  </Grid>
-                )}
               </Grid>
             </Paper>
           </Grid>

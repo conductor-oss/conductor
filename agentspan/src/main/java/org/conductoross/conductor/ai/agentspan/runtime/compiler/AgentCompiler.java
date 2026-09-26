@@ -15,9 +15,6 @@ package org.conductoross.conductor.ai.agentspan.runtime.compiler;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionQuestion;
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
 import org.conductoross.conductor.ai.agentspan.runtime.util.WorkflowTaskUtils;
 import org.conductoross.conductor.common.metadata.agent.*;
@@ -25,7 +22,6 @@ import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -33,7 +29,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -121,10 +116,12 @@ public class AgentCompiler {
     public WorkflowDef compile(AgentConfig config) {
         WorkflowDef wf;
 
-        // Decision has its own execution path; framework passthrough must precede chat model
-        // parsing.
+        // A Decision config is valid only as a ROUTER selector. Decision inference for workflows
+        // and agent tools uses the shared AI_DECISION task.
         if (config.getKind() == AgentConfig.Kind.DECISION) {
-            wf = compileDecision(config);
+            throw new IllegalArgumentException(
+                    "Decision configurations are router selectors, not standalone agents; "
+                            + "use an AI_DECISION workflow task or a decision tool");
         } else if (isFrameworkPassthrough(config)) {
             wf = compileFrameworkPassthrough(config);
         } else if (isGraphStructure(config)) {
@@ -269,111 +266,6 @@ public class AgentCompiler {
                     e.getMessage());
         }
         wf.setMetadata(metadata);
-    }
-
-    /** Decision agents perform one inference through the agent runtime. */
-    WorkflowDef compileDecision(AgentConfig config) {
-        if (StringUtils.isBlank(config.getModel()))
-            throw new IllegalArgumentException("Decision agent requires a model");
-        List<String> unsupportedFields = nonDecisionFields(config);
-        if (!unsupportedFields.isEmpty())
-            throw new IllegalArgumentException(
-                    "Decision agent contains unsupported fields: "
-                            + String.join(", ", unsupportedFields));
-        if (config.getQuestions() != null) {
-            DecisionValidation.questions(
-                    MAPPER.convertValue(
-                            config.getQuestions(),
-                            new TypeReference<Map<String, DecisionQuestion>>() {}));
-        }
-
-        WorkflowDef wf = createWorkflow(config);
-        WorkflowTask task = new WorkflowTask();
-        task.setName("DECISION_AGENT");
-        task.setType("DECISION_AGENT");
-        task.setTaskReferenceName(toRef(config.getName()) + "_decision");
-        task.setInputParameters(
-                Map.of(
-                        "model",
-                        config.getModel(),
-                        "state",
-                        "${workflow.input.prompt}",
-                        "questions",
-                        config.getQuestions() != null
-                                ? config.getQuestions()
-                                : "${workflow.input.context.questions}"));
-        if (StringUtils.isNotBlank(config.getProvider())) {
-            Map<String, Object> input = new LinkedHashMap<>(task.getInputParameters());
-            input.put("provider", config.getProvider());
-            task.setInputParameters(input);
-        }
-        TaskDef retry = new TaskDef();
-        retry.setName("DECISION_AGENT");
-        retry.setRetryCount(3);
-        retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
-        retry.setRetryDelaySeconds(1);
-        retry.setBackoffScaleFactor(2);
-        retry.setMaxRetryDelaySeconds(5);
-        task.setTaskDefinition(retry);
-        wf.setTasks(new ArrayList<>(List.of(task)));
-        wf.setOutputParameters(Map.of("result", "${" + task.getTaskReferenceName() + ".output}"));
-        applyTimeout(wf, config);
-        return wf;
-    }
-
-    /**
-     * Decision definitions deliberately expose a narrow contract. Reject chat/orchestration fields
-     * rather than silently accepting configuration that cannot affect the compiled workflow.
-     */
-    private List<String> nonDecisionFields(AgentConfig config) {
-        List<String> fields = new ArrayList<>();
-        addIf(fields, "baseUrl", StringUtils.isNotBlank(config.getBaseUrl()));
-        addIf(fields, "instructions", config.getInstructions() != null);
-        addIf(fields, "tools", !CollectionUtils.isEmpty(config.getTools()));
-        addIf(fields, "agents", !CollectionUtils.isEmpty(config.getAgents()));
-        addIf(
-                fields,
-                "strategy",
-                config.getStrategy() != null
-                        && config.getStrategy() != AgentConfig.Strategy.HANDOFF);
-        addIf(fields, "router", config.getRouter() != null);
-        addIf(fields, "outputType", config.getOutputType() != null);
-        addIf(fields, "guardrails", !CollectionUtils.isEmpty(config.getGuardrails()));
-        addIf(fields, "memory", config.getMemory() != null);
-        addIf(fields, "maxTurns", config.getMaxTurns() != 100);
-        addIf(fields, "maxTokens", config.getMaxTokens() != null);
-        addIf(fields, "contextWindowBudget", config.getContextWindowBudget() != null);
-        addIf(fields, "temperature", config.getTemperature() != null);
-        addIf(fields, "reasoningEffort", StringUtils.isNotBlank(config.getReasoningEffort()));
-        addIf(fields, "stopWhen", config.getStopWhen() != null);
-        addIf(fields, "termination", config.getTermination() != null);
-        addIf(fields, "handoffs", !CollectionUtils.isEmpty(config.getHandoffs()));
-        addIf(fields, "callbacks", !CollectionUtils.isEmpty(config.getCallbacks()));
-        addIf(
-                fields,
-                "allowedTransitions",
-                !CollectionUtils.isEmpty(config.getAllowedTransitions()));
-        addIf(fields, "introduction", StringUtils.isNotBlank(config.getIntroduction()));
-        addIf(fields, "codeExecution", config.getCodeExecution() != null);
-        addIf(fields, "cliConfig", config.getCliConfig() != null);
-        addIf(fields, "thinkingConfig", config.getThinkingConfig() != null);
-        addIf(fields, "enablePlanning", config.getEnablePlanning() != null);
-        addIf(fields, "planner", config.getPlanner() != null);
-        addIf(fields, "fallback", config.getFallback() != null);
-        addIf(fields, "requiredTools", !CollectionUtils.isEmpty(config.getRequiredTools()));
-        addIf(fields, "prefillTools", !CollectionUtils.isEmpty(config.getPrefillTools()));
-        addIf(fields, "gate", !CollectionUtils.isEmpty(config.getGate()));
-        addIf(fields, "credentials", !CollectionUtils.isEmpty(config.getCredentials()));
-        addIf(fields, "fallbackMaxTurns", config.getFallbackMaxTurns() != null);
-        addIf(fields, "planSource", !CollectionUtils.isEmpty(config.getPlanSource()));
-        addIf(fields, "plannerContext", !CollectionUtils.isEmpty(config.getPlannerContext()));
-        addIf(fields, "external", config.isExternal());
-        addIf(fields, "synthesize", config.getSynthesize() != null);
-        return fields;
-    }
-
-    private static void addIf(List<String> fields, String name, boolean condition) {
-        if (condition) fields.add(name);
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────
@@ -2813,7 +2705,6 @@ public class AgentCompiler {
     /** Recursively walk the config tree and collect capability tags. */
     static Set<String> collectCapabilities(AgentConfig config) {
         Set<String> caps = new LinkedHashSet<>();
-        if (config.getKind() == AgentConfig.Kind.DECISION) return Set.of("decision");
         // Mirror the dispatch-site definition of ``hasAgents`` — named
         // PLAN_EXECUTE slots count as sub-agents for capability purposes
         // too. Without this, a PLAN_EXECUTE coordinator built with

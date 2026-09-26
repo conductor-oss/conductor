@@ -30,9 +30,8 @@ class DecisionRouterCompilerTest {
     private AgentConfig leaf(String name) {
         return AgentConfig.builder()
                 .name(name)
-                .kind(AgentConfig.Kind.DECISION)
-                .model("jev-1.13")
-                .questions(Map.of("ready", Map.of("type", "boolean", "instructions", "Ready?")))
+                .model("openai/gpt-4o")
+                .instructions("Handle " + name + " requests")
                 .build();
     }
 
@@ -72,15 +71,11 @@ class DecisionRouterCompilerTest {
         var workflow = compiler.compile(config);
         assertThat(workflow.getTasks())
                 .extracting(t -> t.getType())
-                .containsExactly("SUB_WORKFLOW", "SWITCH");
+                .containsExactly("AI_DECISION", "SWITCH");
         var route = workflow.getTasks().get(0);
-        var selector = route.getSubWorkflowParam().getWorkflowDef();
-        assertThat(selector.getTasks())
-                .extracting(t -> t.getType())
-                .containsExactly("DECISION_AGENT");
-        assertThat(selector.getMetadata().get("classifier")).isEqualTo("agent");
         assertThat(route.getInputParameters())
-                .containsEntry("context", "${workflow.input.context}");
+                .containsEntry("state", "${workflow.input.prompt}")
+                .containsEntry("model", "jev-1.13");
         var dispatch = workflow.getTasks().get(1);
         assertThat(dispatch.getDecisionCases()).containsOnlyKeys("billing", "technical");
         try (Context context = Context.create("js")) {
@@ -123,7 +118,7 @@ class DecisionRouterCompilerTest {
                         .getWorkflowDef();
         assertThat(specialist.getTasks())
                 .extracting(t -> t.getType())
-                .containsExactly("DECISION_AGENT");
+                .containsExactly("LLM_CHAT_COMPLETE");
         assertThat(child.getOutputParameters())
                 .containsEntry("result", "${workflow.variables.result}");
     }
