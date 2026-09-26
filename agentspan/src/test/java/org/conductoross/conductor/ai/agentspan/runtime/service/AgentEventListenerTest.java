@@ -42,29 +42,6 @@ class AgentEventListenerTest {
     private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     @Test
-    void decisionPublishesStructuredResultThroughAgentStream() {
-        AgentStreamRegistry registry = new AgentStreamRegistry();
-        AgentEventListener listener = listener(registry);
-        AgentEventStream stream = registry.openStream("decision-agent", null);
-        TaskModel task = task("decision-agent", "DECISION_AGENT", "choose_decision");
-        task.setOutputData(
-                Map.of(
-                        "answers",
-                        Map.of("action", Map.of("choice", "a", "confidence", 0.9)),
-                        "latencyMs",
-                        25,
-                        "requestId",
-                        "provider-request"));
-        listener.onTaskScheduled(task);
-        listener.onTaskCompleted(task);
-        assertThat(next(stream).getType()).isEqualTo("thinking");
-        var result = next(stream);
-        assertThat(result.getType()).isEqualTo("decision");
-        assertThat(result.getResult()).isEqualTo(task.getOutputData());
-        stream.close();
-    }
-
-    @Test
     void recordsBothDecisionTaskTypesWithResolvedProviderAndUsage() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         SimpleMeterRegistry meters = new SimpleMeterRegistry();

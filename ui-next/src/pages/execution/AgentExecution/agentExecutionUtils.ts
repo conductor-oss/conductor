@@ -93,12 +93,15 @@ function childDecisionEvent(task: ExecutionTask): AgentEvent {
 function routerTimeline(
   tasks: ExecutionTask[],
   turns: AgentTurn[],
+  routerReference: string,
 ): AgentTurn[] {
   const calls = deduplicateRetriedTasks(
     sortTasksChronologically(tasks),
   ).tasks.filter(isAgentSubWorkflow);
+  // The compiler owns one exact selector reference. Matching only a suffix
+  // misclassifies valid selected agents named "router" as another selector.
   const isSelector = (task: ExecutionTask) =>
-    /_router(?:__\d+)?$/.test(task.referenceTaskName);
+    task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
   if (!calls.some(isSelector)) return turns;
   const children = turns.flatMap((turn) => turn.subAgents);
   const routed: AgentTurn[] = [];
@@ -966,6 +969,12 @@ export function transformWorkflowExecutionToAgentRun(
     | undefined;
   const strategyIndex = indexAgentDefStrategies(agentDefMeta);
   const childCountIndex = indexAgentDefChildCounts(agentDefMeta);
+  const agentNameForReference = String(
+    agentDefMeta?.name ?? execution.workflowName ?? execution.workflowType,
+  );
+  const routerReference = `${agentNameForReference.replace(/[^a-zA-Z0-9_]/g, "_")}_router`;
+  const isRouterSelectorReference = (reference: string) =>
+    reference.replace(/__\d+$/, "") === routerReference;
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -1056,7 +1065,7 @@ export function transformWorkflowExecutionToAgentRun(
       const subAgentTasks = agentTasks.filter(
         (t) =>
           extractAgentName(t.referenceTaskName) !== rootAgentName &&
-          !t.referenceTaskName.includes("_router_"),
+          !isRouterSelectorReference(t.referenceTaskName),
       );
 
       const events: AgentEvent[] = [];
@@ -2144,7 +2153,7 @@ export function transformWorkflowExecutionToAgentRun(
   const agentInput = execution.input ?? undefined;
 
   if (agentDefMeta?.strategy === "router") {
-    const routed = routerTimeline(tasks, turns);
+    const routed = routerTimeline(tasks, turns, routerReference);
     if (routed !== turns) turns.splice(0, turns.length, ...routed);
   }
 

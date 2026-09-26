@@ -14,7 +14,11 @@ package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.Map;
 
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentStreamRegistry;
+import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +32,16 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
 public class DecisionAgentTask extends WorkflowSystemTask {
-    private final DecisionTaskSupport decisionSupport;
+    private static final Logger log = LoggerFactory.getLogger(DecisionAgentTask.class);
 
-    public DecisionAgentTask(DecisionTaskSupport decisionSupport) {
+    private final DecisionTaskSupport decisionSupport;
+    private final AgentStreamRegistry streamRegistry;
+
+    public DecisionAgentTask(
+            DecisionTaskSupport decisionSupport, AgentStreamRegistry streamRegistry) {
         super("DECISION_AGENT");
         this.decisionSupport = decisionSupport;
+        this.streamRegistry = streamRegistry;
     }
 
     @Override
@@ -47,11 +56,33 @@ public class DecisionAgentTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        return decisionSupport.execute(
-                task,
-                () -> validateCompiledDecision(workflow, task),
-                request -> {},
-                (output, result) -> {});
+        boolean executed =
+                decisionSupport.execute(
+                        task,
+                        () -> validateCompiledDecision(workflow, task),
+                        request -> {},
+                        (output, result) -> {});
+        if (executed && task.getStatus() == TaskModel.Status.COMPLETED) {
+            publishDecision(task);
+        }
+        return executed;
+    }
+
+    /** Async system tasks bypass TaskStatusListener completion callbacks, so publish at source. */
+    private void publishDecision(TaskModel task) {
+        String workflowId = task.getWorkflowInstanceId();
+        try {
+            streamRegistry.send(
+                    workflowId,
+                    AgentSSEEvent.decision(
+                            workflowId, task.getReferenceTaskName(), task.getOutputData()));
+        } catch (RuntimeException e) {
+            // Streaming is observational and must never change the durable task result.
+            log.warn(
+                    "Failed to emit Decision event for workflow {}: {}",
+                    workflowId,
+                    e.getMessage());
+        }
     }
 
     private void validateCompiledDecision(WorkflowModel workflow, TaskModel task) {

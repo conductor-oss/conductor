@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler;
+import org.conductoross.conductor.ai.agentspan.runtime.service.AgentStreamRegistry;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class DecisionAgentTaskTest {
     private MockWebServer server;
+    private AgentStreamRegistry streamRegistry;
     private DecisionAgentTask runtime;
     private WorkflowModel workflow;
     private TaskModel task;
@@ -47,6 +49,7 @@ class DecisionAgentTaskTest {
         properties.setApiKey("test-key");
         properties.setEndpoint(server.url("/v1/systemone").toString());
         ObjectMapper mapper = new ObjectMapper();
+        streamRegistry = new AgentStreamRegistry();
         runtime =
                 new DecisionAgentTask(
                         new DecisionTaskSupport(
@@ -55,7 +58,8 @@ class DecisionAgentTaskTest {
                                         mapper,
                                         new OkHttpClient(),
                                         java.util.List.of(new SystemOneDecisionApiAdapter())),
-                                mapper));
+                                mapper),
+                        streamRegistry);
         AgentConfig config =
                 AgentConfig.builder()
                         .name("chooser")
@@ -69,6 +73,7 @@ class DecisionAgentTaskTest {
         workflow = new WorkflowModel();
         workflow.setWorkflowDefinition(new AgentCompiler().compile(config));
         task = new TaskModel();
+        task.setWorkflowInstanceId("decision-agent");
         task.setTaskType("DECISION_AGENT");
         task.setReferenceTaskName("chooser_decision");
         task.setStatus(TaskModel.Status.SCHEDULED);
@@ -101,6 +106,11 @@ class DecisionAgentTaskTest {
         assertThat(task.getOutputData()).containsEntry("requestId", "request-1");
         assertThat(((Map<?, ?>) task.getOutputData().get("answers")).get("ready"))
                 .isEqualTo(Map.of("type", "boolean", "probability", 0.9));
+        try (var stream = streamRegistry.openStream("decision-agent", null)) {
+            var event = stream.nextEvent();
+            assertThat(event.getType()).isEqualTo("decision");
+            assertThat(event.getResult()).isEqualTo(task.getOutputData());
+        }
         assertThat(runtime.execute(workflow, task, null)).isFalse();
         assertThat(server.getRequestCount()).isEqualTo(1);
     }

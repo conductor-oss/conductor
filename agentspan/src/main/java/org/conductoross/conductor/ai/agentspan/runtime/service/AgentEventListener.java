@@ -120,9 +120,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         if (output == null) output = Map.of();
 
         // Tool dispatch — SIMPLE tasks that are tool invocations
-        if ("DECISION_AGENT".equals(task.getTaskType())) {
-            emit(wfId, AgentSSEEvent.decision(wfId, taskRef, output));
-        } else if (isToolTask(task)) {
+        if (isToolTask(task)) {
             String toolName = resolveToolName(task);
             Object args = task.getInputData();
             Object result = output.get("result");

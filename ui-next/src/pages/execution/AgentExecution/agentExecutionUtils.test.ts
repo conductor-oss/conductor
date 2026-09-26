@@ -720,16 +720,20 @@ describe("decision agents", () => {
   );
 });
 
-it.each([false, true])(
-  "renders router inference before its selected child (Decision=%s)",
-  (decision) => {
+it.each([
+  { decision: false, childName: "billing" },
+  { decision: true, childName: "billing" },
+  { decision: false, childName: "router" },
+])(
+  "renders router inference before child '$childName' (Decision=$decision)",
+  ({ decision, childName }) => {
     const selectorResult = decision
       ? {
           model: "jev-1.13",
-          answers: { agent: { type: "choice", choice: "billing" } },
+          answers: { agent: { type: "choice", choice: childName } },
           usage: { inputTokens: 10, outputTokens: 2 },
         }
-      : "billing";
+      : childName;
     const childResult = {
       model: "jev-1.13",
       answers: { action: { type: "choice", choice: "check_transactions" } },
@@ -756,19 +760,23 @@ it.each([false, true])(
       outputData: { subWorkflowId: "selector-run", result: selectorResult },
     });
     const selected = task({
-      taskId: "billing",
+      taskId: childName,
       taskType: "SUB_WORKFLOW",
       referenceTaskName: decision
         ? "triage_selected_0"
-        : "triage_handoff_0_billing__1",
+        : `triage_handoff_0_${childName}__1`,
       loopOverTask: !decision,
       startTime: 20,
       endTime: 40,
       inputData: {
-        subWorkflowName: "billing",
+        subWorkflowName: childName,
         subWorkflowDefinition: {
           metadata: {
-            agentDef: { name: "billing", kind: "decision", model: "jev-1.13" },
+            agentDef: {
+              name: childName,
+              kind: "decision",
+              model: "jev-1.13",
+            },
           },
         },
       },
@@ -782,7 +790,7 @@ it.each([false, true])(
             agentDef: {
               name: "triage",
               strategy: "router",
-              agents: [{ name: "billing", kind: "decision" }],
+              agents: [{ name: childName, kind: "decision" }],
             },
           },
         },
@@ -792,10 +800,10 @@ it.each([false, true])(
     expect(run.turns[0].subAgents).toEqual([]);
     expect(run.turns[0].events[0]).toMatchObject({
       type: decision ? EventType.DECISION : EventType.THINKING,
-      targetAgent: "billing",
+      targetAgent: childName,
     });
     expect(run.turns[1].subAgents.map((sub) => sub.agentName)).toEqual([
-      "billing",
+      childName,
     ]);
     expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
     expect(run.turns[1].subAgents[0].turns[0].events[0]).toMatchObject({

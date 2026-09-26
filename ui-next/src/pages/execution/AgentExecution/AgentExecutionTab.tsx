@@ -89,9 +89,11 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
   // place — see handleExpandSubAgent — and resets whenever a genuinely new
   // execution/scenario loads.
   const [rootRun, setRootRun] = useState<AgentRunData>(baseRun);
-  useEffect(() => {
+  const [resetSource, setResetSource] = useState<AgentRunData>(baseRun);
+  if (baseRun !== resetSource) {
+    setResetSource(baseRun);
     setRootRun(baseRun);
-  }, [baseRun]);
+  }
 
   // Fetch a collapsed sub-agent's own execution and splice its real
   // turns/subAgents into the tree in place, instead of navigating away like

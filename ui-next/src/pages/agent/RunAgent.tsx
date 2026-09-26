@@ -9,6 +9,7 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import { useState } from "react";
 import { Helmet } from "react-helmet";
+import { Controller, SubmitHandler, useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
 import { useAction, useFetch } from "utils/query";
@@ -31,6 +32,29 @@ type AgentRunHistory = {
   executionTime: number;
 };
 
+type RunAgentForm = {
+  agentName: string;
+  agentVersion?: number;
+  model: string;
+  prompt: string;
+  questions: string;
+};
+
+const QUESTIONS_ERROR = "Enter a nonempty JSON object of decision questions.";
+
+function parseDecisionQuestions(value: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(value);
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed) ||
+    !Object.keys(parsed).length
+  ) {
+    throw new Error(QUESTIONS_ERROR);
+  }
+  return parsed as Record<string, unknown>;
+}
+
 /** Starts a deployed agent through POST /api/agent/start. */
 export default function RunAgent() {
   const navigate = useNavigate();
@@ -42,18 +66,32 @@ export default function RunAgent() {
   const { data: agents = [] } = useFetch<AgentSummary[]>("/agent/list");
   const modelOptions = useAiModelOptions();
 
-  const [agentName, setAgentName] = useState(selectedAgent?.agentName || "");
-  const [agentVersion, setAgentVersion] = useState<number | undefined>(
-    selectedAgent?.agentVersion,
-  );
-  const { data: definition } = useFetch<Record<string, unknown>>(
+  const {
+    control,
+    handleSubmit,
+    reset: resetForm,
+    setValue,
+    watch,
+  } = useForm<RunAgentForm>({
+    mode: "onChange",
+    defaultValues: {
+      agentName: selectedAgent?.agentName ?? "",
+      agentVersion: selectedAgent?.agentVersion,
+      model: "",
+      prompt: "",
+      questions: "",
+    },
+  });
+  const { agentName, agentVersion, model, prompt } = watch();
+  const {
+    data: definition,
+    isError: definitionError,
+    isFetching: definitionLoading,
+  } = useFetch<Record<string, unknown>>(
     `/agent/${encodeURIComponent(agentName)}${agentVersion ? `?version=${agentVersion}` : ""}`,
     { when: Boolean(agentName) },
   );
-  const isDecision = definition?.kind === "decision";
-  const [questions, setQuestions] = useState("");
-  const [model, setModel] = useState("");
-  const [prompt, setPrompt] = useState("");
+  const isDecision = !definitionLoading && definition?.kind === "decision";
   const [started, setStarted] = useState<AgentStartResponse>();
   const [error, setError] = useState("");
   const [agentHistory, setAgentHistory] = useLocalStorage(
@@ -93,44 +131,37 @@ export default function RunAgent() {
   });
 
   const reset = () => {
-    setAgentName("");
-    setAgentVersion(undefined);
-    setModel("");
-    setQuestions("");
-    setPrompt("");
+    resetForm({
+      agentName: "",
+      agentVersion: undefined,
+      model: "",
+      prompt: "",
+      questions: "",
+    });
     setStarted(undefined);
     setError("");
   };
 
-  const run = () => {
-    if (!agentName || !prompt.trim()) {
-      return;
-    }
+  const run: SubmitHandler<RunAgentForm> = (values) => {
     setStarted(undefined);
     let context: Record<string, unknown> | undefined;
     if (isDecision && !definition?.questions) {
       try {
-        const parsed: unknown = JSON.parse(questions);
-        if (
-          !parsed ||
-          typeof parsed !== "object" ||
-          Array.isArray(parsed) ||
-          !Object.keys(parsed).length
-        )
-          throw new Error();
-        context = { questions: parsed };
+        context = { questions: parseDecisionQuestions(values.questions) };
       } catch {
-        setError("Enter a nonempty JSON object of decision questions.");
+        // The Controller validates this first; keep submission safe if its
+        // mounted state changes between validation and this callback.
+        setError(QUESTIONS_ERROR);
         return;
       }
     }
     startAgent({
       body: JSON.stringify({
-        name: agentName,
+        name: values.agentName,
         ...(context ? { context } : {}),
-        version: agentVersion,
-        model: model.trim() || undefined,
-        prompt,
+        version: values.agentVersion,
+        model: values.model.trim() || undefined,
+        prompt: values.prompt,
       }),
     });
   };
@@ -140,9 +171,13 @@ export default function RunAgent() {
     .sort((a, b) => a.localeCompare(b));
 
   const restoreHistory = (entry: AgentRunHistory) => {
-    setAgentName(entry.agentName);
-    setModel(entry.model);
-    setPrompt(entry.prompt);
+    resetForm({
+      agentName: entry.agentName,
+      agentVersion: undefined,
+      model: entry.model,
+      prompt: entry.prompt,
+      questions: "",
+    });
     setStarted(undefined);
     setError("");
   };
@@ -176,8 +211,14 @@ export default function RunAgent() {
                 <Button
                   id="run-agent-btn"
                   color="secondary"
-                  onClick={run}
-                  disabled={!agentName || !prompt.trim() || isLoading}
+                  onClick={handleSubmit(run)}
+                  disabled={
+                    !agentName ||
+                    !prompt.trim() ||
+                    isLoading ||
+                    definitionLoading ||
+                    definitionError
+                  }
                   startIcon={<PlayIcon />}
                 >
                   Run agent
@@ -190,6 +231,12 @@ export default function RunAgent() {
         {error && (
           <Alert sx={{ mb: 3 }} severity="error" onClose={() => setError("")}>
             {error}
+          </Alert>
+        )}
+        {agentName && definitionError && (
+          <Alert sx={{ mb: 3 }} severity="error">
+            Unable to load this agent definition. Select the agent again or
+            retry later.
           </Alert>
         )}
         {started && (
@@ -211,79 +258,125 @@ export default function RunAgent() {
             <Paper variant="outlined" sx={{ p: 4 }}>
               <Grid container spacing={3}>
                 <Grid size={12}>
-                  <ConductorAutoComplete
-                    id="run-agent-name"
-                    fullWidth
-                    label="Agent"
-                    options={agentNames}
-                    value={agentName}
-                    onChange={(_: unknown, value: string | null) => {
-                      setAgentName(value || "");
-                      setAgentVersion(undefined);
-                    }}
-                    required
-                    autoFocus
+                  <Controller
+                    name="agentName"
+                    control={control}
+                    rules={{ required: "Select an agent." }}
+                    render={({ field }) => (
+                      <ConductorAutoComplete
+                        id="run-agent-name"
+                        fullWidth
+                        label="Agent"
+                        options={agentNames}
+                        value={field.value}
+                        onChange={(_: unknown, value: string | null) => {
+                          field.onChange(value ?? "");
+                          setValue("agentVersion", undefined);
+                          setValue("questions", "");
+                        }}
+                        required
+                        autoFocus
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorAutoComplete
-                    id="run-agent-model"
-                    fullWidth
-                    freeSolo
-                    label="Model override (optional)"
-                    placeholder="Use the deployed agent model"
-                    value={model}
-                    options={isDecision ? [] : modelOptions}
-                    groupBy={(option: string) => option.split("/")[0]}
-                    onChange={(_: unknown, newValue: string | null) => {
-                      setModel(newValue ?? "");
-                    }}
-                    onInputChange={(_: unknown, newValue: string) => {
-                      setModel(newValue);
-                    }}
-                    helperText="This applies only to this execution."
+                  <Controller
+                    name="model"
+                    control={control}
+                    render={({ field }) => (
+                      <ConductorAutoComplete
+                        id="run-agent-model"
+                        fullWidth
+                        freeSolo
+                        label="Model override (optional)"
+                        placeholder="Use the deployed agent model"
+                        value={field.value}
+                        options={isDecision ? [] : modelOptions}
+                        groupBy={(option: string) => option.split("/")[0]}
+                        onChange={(_: unknown, newValue: string | null) => {
+                          field.onChange(newValue ?? "");
+                        }}
+                        onInputChange={(_: unknown, newValue: string) => {
+                          field.onChange(newValue);
+                        }}
+                        helperText="This applies only to this execution."
+                      />
+                    )}
                   />
                 </Grid>
                 <Grid size={12}>
-                  <ConductorInput
-                    id="run-agent-prompt"
-                    fullWidth
-                    required
-                    multiline
-                    minRows={8}
-                    label={isDecision ? "Decision state" : "Input text"}
-                    placeholder={
-                      isDecision
-                        ? "State to evaluate (text or JSON)"
-                        : "What should this agent do?"
-                    }
-                    value={prompt}
-                    onTextInputChange={setPrompt}
+                  <Controller
+                    name="prompt"
+                    control={control}
+                    rules={{
+                      validate: (value) =>
+                        value.trim().length > 0 || "Input cannot be blank.",
+                    }}
+                    render={({ field, fieldState }) => (
+                      <ConductorInput
+                        id="run-agent-prompt"
+                        fullWidth
+                        required
+                        multiline
+                        minRows={8}
+                        label={isDecision ? "Decision state" : "Input text"}
+                        placeholder={
+                          isDecision
+                            ? "State to evaluate (text or JSON)"
+                            : "What should this agent do?"
+                        }
+                        value={field.value}
+                        onTextInputChange={field.onChange}
+                        error={!!fieldState.error}
+                        helperText={fieldState.error?.message}
+                      />
+                    )}
                   />
                 </Grid>
-                {isDecision && definition?.questions != null && (
+                {isDecision && (
                   <Grid size={12}>
-                    <Box
-                      component="pre"
-                      sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-                      aria-label="Configured decision questions"
-                    >
-                      {JSON.stringify(definition.questions, null, 2)}
-                    </Box>
-                  </Grid>
-                )}
-                {isDecision && !definition?.questions && (
-                  <Grid size={12}>
-                    <ConductorInput
-                      id="run-agent-questions"
-                      fullWidth
-                      required
-                      multiline
-                      minRows={6}
-                      label="Decision questions (JSON)"
-                      value={questions}
-                      onTextInputChange={setQuestions}
-                    />
+                    {definition?.questions != null ? (
+                      <Box
+                        component="pre"
+                        sx={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                        }}
+                        aria-label="Configured decision questions"
+                      >
+                        {JSON.stringify(definition.questions, null, 2)}
+                      </Box>
+                    ) : (
+                      <Controller
+                        name="questions"
+                        control={control}
+                        rules={{
+                          validate: (value) => {
+                            try {
+                              parseDecisionQuestions(value);
+                              return true;
+                            } catch {
+                              return QUESTIONS_ERROR;
+                            }
+                          },
+                        }}
+                        render={({ field, fieldState }) => (
+                          <ConductorInput
+                            id="run-agent-questions"
+                            fullWidth
+                            required
+                            multiline
+                            minRows={6}
+                            label="Decision questions (JSON)"
+                            value={field.value}
+                            onTextInputChange={field.onChange}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                        )}
+                      />
+                    )}
                   </Grid>
                 )}
               </Grid>

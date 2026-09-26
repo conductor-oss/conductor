@@ -1101,6 +1101,22 @@ function SummaryContent({
     const tok = ev?.tokens;
     const decision =
       node.kind === "decision" && ev ? decisionInferenceOutput(ev) : undefined;
+    const { answers, usage, latencyMs, requestId } = decision ?? {};
+    const decisionRows = [
+      {
+        label: "Answers",
+        value: answers == null ? null : JSON.stringify(answers),
+      },
+      {
+        label: "Usage and cost",
+        value: usage == null ? null : JSON.stringify(usage),
+      },
+      {
+        label: "Provider latency",
+        value: latencyMs == null ? null : `${latencyMs} ms`,
+      },
+      { label: "Request ID", value: requestId },
+    ];
     return (
       <Box>
         {ev?.condensationInfo && (
@@ -1111,27 +1127,9 @@ function SummaryContent({
             label="Kind"
             value={node.kind === "decision" ? "decision" : "LLM Call"}
           />
-          {decision?.answers != null && (
-            <SummaryRow
-              label="Answers"
-              value={JSON.stringify(decision.answers)}
-            />
-          )}
-          {decision?.usage != null && (
-            <SummaryRow
-              label="Usage and cost"
-              value={JSON.stringify(decision.usage)}
-            />
-          )}
-          {decision?.latencyMs != null && (
-            <SummaryRow
-              label="Provider latency"
-              value={`${decision.latencyMs} ms`}
-            />
-          )}
-          {decision?.requestId && (
-            <SummaryRow label="Request ID" value={decision.requestId} />
-          )}
+          {decisionRows.map((row) => (
+            <SummaryRow key={row.label} label={row.label} value={row.value} />
+          ))}
           <SummaryRow
             label="Status"
             value={<StatusBadgeInline status={node.status} />}

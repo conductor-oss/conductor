@@ -166,31 +166,28 @@ function ExpandedDetail({ event }: { event: AgentEvent }) {
         | undefined
     )?.input;
     const output = decisionInferenceOutput(event);
+    const blocks = [
+      {
+        label: "Model",
+        value: output?.model ?? event.toolName ?? input?.model,
+      },
+      { label: "Provider", value: output?.provider },
+      { label: "State", value: input?.state },
+      { label: "Questions and choices", value: input?.questions },
+      { label: "Answers", value: output?.answers },
+      { label: "Usage and cost", value: output?.usage },
+      { label: "latencyMs", value: output?.latencyMs },
+      { label: "Request ID", value: output?.requestId },
+    ].filter((block) => block.value != null && block.value !== "");
     return (
       <Box>
-        <JsonBlock
-          label="Model"
-          value={output?.model ?? event.toolName ?? input?.model}
-        />
-        {output?.provider && (
-          <JsonBlock label="Provider" value={output.provider} />
-        )}
-        {input?.state != null && (
-          <JsonBlock label="State" value={input.state} />
-        )}
-        {input?.questions != null && (
-          <JsonBlock label="Questions and choices" value={input.questions} />
-        )}
-        <JsonBlock label="Answers" value={output?.answers} />
-        {output?.usage != null && (
-          <JsonBlock label="Usage and cost" value={output.usage} />
-        )}
-        {output?.latencyMs != null && (
-          <JsonBlock label="latencyMs" value={output.latencyMs} />
-        )}
-        {output?.requestId && (
-          <JsonBlock label="Request ID" value={output.requestId} />
-        )}
+        {blocks.map((block) => (
+          <JsonBlock
+            key={block.label}
+            label={block.label}
+            value={block.value}
+          />
+        ))}
       </Box>
     );
   }

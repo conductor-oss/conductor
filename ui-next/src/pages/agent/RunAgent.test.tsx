@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import RunAgent from "./RunAgent";
 
 const navigate = vi.fn();
@@ -121,7 +121,7 @@ vi.mock("components/ui/inputs/ConductorAutoComplete", () => ({
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ id, label, value, onTextInputChange }: any) => (
+  default: ({ id, label, value, onTextInputChange, helperText }: any) => (
     <div>
       <label htmlFor={id}>{label}</label>
       <textarea
@@ -130,6 +130,7 @@ vi.mock("components/ui/inputs/ConductorInput", () => ({
         value={value ?? ""}
         onChange={(event) => onTextInputChange?.(event.target.value)}
       />
+      {helperText ? <span>{helperText}</span> : null}
     </div>
   ),
 }));
@@ -149,7 +150,7 @@ describe("RunAgent", () => {
     useFetch.mockReturnValue({ data: [{ name: "researcher", version: 2 }] });
   });
 
-  it("starts a decision agent with structured questions and state", () => {
+  it("starts a decision agent with structured questions and state", async () => {
     locationState.current = { agentName: "chooser", agentVersion: 1 };
     useFetch.mockImplementation((path: string) => ({
       data:
@@ -170,6 +171,7 @@ describe("RunAgent", () => {
       target: { value: JSON.stringify(questions) },
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
+    await waitFor(() => expect(startAgent).toHaveBeenCalledTimes(1));
     expect(JSON.parse(startAgent.mock.calls[0][0].body)).toEqual({
       name: "chooser",
       version: 1,
@@ -182,7 +184,7 @@ describe("RunAgent", () => {
     );
   });
 
-  it("rejects malformed dynamic decision questions before starting", () => {
+  it("rejects malformed dynamic decision questions before starting", async () => {
     locationState.current = { agentName: "chooser" };
     useFetch.mockImplementation((path: string) => ({
       data:
@@ -196,10 +198,30 @@ describe("RunAgent", () => {
       target: { value: "[]" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
-    expect(startAgent).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(startAgent).not.toHaveBeenCalled();
+      expect(
+        screen.getByText("Enter a nonempty JSON object of decision questions."),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("reports an agent-definition fetch failure and prevents starting", () => {
+    locationState.current = { agentName: "chooser" };
+    useFetch.mockImplementation((path: string) =>
+      path === "/agent/list"
+        ? { data: [{ name: "chooser" }] }
+        : { isError: true },
+    );
+
+    render(<RunAgent />);
+
     expect(
-      screen.getByText("Enter a nonempty JSON object of decision questions."),
+      screen.getByText(
+        "Unable to load this agent definition. Select the agent again or retry later.",
+      ),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run agent" })).toBeDisabled();
   });
 
   it("shows the plain model helper text when no AI models are configured", () => {
@@ -256,7 +278,7 @@ describe("RunAgent", () => {
     expect(screen.getByRole("button", { name: "Run agent" })).toBeEnabled();
   });
 
-  it("starts the agent with a selected model override", () => {
+  it("starts the agent with a selected model override", async () => {
     useAiModelOptions.mockReturnValue(["openai/gpt-5"]);
 
     render(<RunAgent />);
@@ -272,17 +294,19 @@ describe("RunAgent", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
 
-    expect(startAgent).toHaveBeenCalledWith({
-      body: JSON.stringify({
-        name: "researcher",
-        version: undefined,
-        model: "openai/gpt-5",
-        prompt: "Find citations",
-      }),
+    await waitFor(() => {
+      expect(startAgent).toHaveBeenCalledWith({
+        body: JSON.stringify({
+          name: "researcher",
+          version: undefined,
+          model: "openai/gpt-5",
+          prompt: "Find citations",
+        }),
+      });
     });
   });
 
-  it("omits blank model from the start payload", () => {
+  it("omits blank model from the start payload", async () => {
     locationState.current = { agentName: "researcher", agentVersion: 3 };
 
     render(<RunAgent />);
@@ -295,13 +319,15 @@ describe("RunAgent", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
 
-    expect(startAgent).toHaveBeenCalledWith({
-      body: JSON.stringify({
-        name: "researcher",
-        version: 3,
-        model: undefined,
-        prompt: "  go  ",
-      }),
+    await waitFor(() => {
+      expect(startAgent).toHaveBeenCalledWith({
+        body: JSON.stringify({
+          name: "researcher",
+          version: 3,
+          model: undefined,
+          prompt: "  go  ",
+        }),
+      });
     });
   });
 
