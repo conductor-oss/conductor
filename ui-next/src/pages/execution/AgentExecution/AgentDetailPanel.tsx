@@ -1142,6 +1142,9 @@ function SummaryContent({
               value={<ModelValue model={(decision?.model ?? ev?.toolName)!} />}
             />
           )}
+          {decision?.provider && (
+            <SummaryRow label="Provider" value={decision.provider} />
+          )}
           {ev?.baseUrl && <SummaryRow label="Base URL" value={ev.baseUrl} />}
           {tok && tok.promptTokens + tok.completionTokens > 0 && (
             <SummaryRow

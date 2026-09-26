@@ -20,7 +20,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 /** Decision answers and usage. Unreported usage fields remain null. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record DecisionResult(
-        String model, Map<String, Answer> answers, Usage usage, long latencyMs, String requestId) {
+        String provider,
+        String model,
+        Map<String, Answer> answers,
+        Usage usage,
+        long latencyMs,
+        String requestId) {
+    public DecisionResult(
+            String model,
+            Map<String, Answer> answers,
+            Usage usage,
+            long latencyMs,
+            String requestId) {
+        this(null, model, answers, usage, latencyMs, requestId);
+    }
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Answer(
             DecisionQuestion.Type type,

@@ -83,6 +83,18 @@ class HttpDecisionClientTest {
                         return Map.of("selectedModel", input.model(), "observation", input.state());
                     }
 
+                    public DecisionHttpRequest createRequest(
+                            DecisionRequest input,
+                            DecisionConfiguration.Route route,
+                            byte[] encodedBody) {
+                        return new DecisionHttpRequest(
+                                route.endpoint(),
+                                "PUT",
+                                Map.of("X-Decision-Key", route.apiKey()),
+                                "application/json",
+                                encodedBody);
+                    }
+
                     public DecisionResult decode(
                             com.fasterxml.jackson.databind.JsonNode data,
                             long latencyMs,
@@ -120,10 +132,13 @@ class HttpDecisionClientTest {
                                 original.questions()));
         var sent = server.takeRequest(1, TimeUnit.SECONDS);
         assertEquals("/model", sent.getPath());
-        assertEquals("Bearer provider-key", sent.getHeader("Authorization"));
+        assertEquals("PUT", sent.getMethod());
+        assertEquals("provider-key", sent.getHeader("X-Decision-Key"));
+        assertNull(sent.getHeader("Authorization"));
         assertEquals(
                 "Duplicate charge",
                 mapper.readTree(sent.getBody().readUtf8()).path("observation").asText());
+        assertEquals("custom", result.provider());
         assertEquals("billing", result.answers().get("team").choice());
         assertEquals("system-one", config.resolve("custom", "another-model").apiShape());
         assertEquals(
@@ -186,6 +201,7 @@ class HttpDecisionClientTest {
         assertEquals("jev-1.13", payload.path("model").asText());
         assertEquals("Payments", payload.at("/questions/team/criteria/billing").asText());
         assertFalse(payload.has("provider"));
+        assertEquals("openrouter", result.provider());
         assertEquals("billing", result.answers().get("team").choice());
         assertEquals("typesafe/jev-test", result.model());
         assertEquals(40L, result.usage().inputTokens());
@@ -232,7 +248,7 @@ class HttpDecisionClientTest {
     @Test
     void invalidInputDoesNotSendRequests() {
         assertThrows(
-                NonRetryableException.class,
+                IllegalArgumentException.class,
                 () -> client.decide(new DecisionRequest("m", "", Map.of())));
         assertEquals(0, server.getRequestCount());
     }

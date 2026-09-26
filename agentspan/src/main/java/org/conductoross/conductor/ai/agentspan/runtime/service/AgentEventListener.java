@@ -51,6 +51,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
     /** Conductor AI task types that consume LLM/generation API calls. */
     private static final Set<String> AI_TASK_TYPES =
             Set.of(
+                    "AI_DECISION",
                     "DECISION_AGENT",
                     "LLM_CHAT_COMPLETE",
                     "GENERATE_IMAGE",
@@ -324,9 +325,13 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             String model =
                     input.get("model") != null ? String.valueOf(input.get("model")) : "unknown";
             String provider =
-                    input.get("llmProvider") != null
-                            ? String.valueOf(input.get("llmProvider"))
-                            : "DECISION_AGENT".equals(taskType) ? "decision" : "unknown";
+                    output.get("provider") != null
+                            ? String.valueOf(output.get("provider"))
+                            : input.get("provider") != null
+                                    ? String.valueOf(input.get("provider"))
+                                    : input.get("llmProvider") != null
+                                            ? String.valueOf(input.get("llmProvider"))
+                                            : "unknown";
 
             String taskLabel =
                     switch (taskType) {
@@ -351,7 +356,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             int promptTokens = toInt(output.get("promptTokens"));
             int completionTokens = toInt(output.get("completionTokens"));
             int totalTokens = toInt(output.get("tokenUsed"));
-            if ("DECISION_AGENT".equals(taskType)
+            if (("DECISION_AGENT".equals(taskType) || "AI_DECISION".equals(taskType))
                     && output.get("usage") instanceof Map<?, ?> usage) {
                 promptTokens = toInt(usage.get("inputTokens"));
                 completionTokens = toInt(usage.get("outputTokens"));

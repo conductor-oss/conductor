@@ -153,12 +153,13 @@ class AiDecisionTaskTest {
         config.setEndpoint(server.url("/v1/systemone").toString());
         ObjectMapper mapper = new ObjectMapper();
         return new AiDecisionTask(
-                new HttpDecisionClient(
-                        config,
-                        mapper,
-                        new OkHttpClient(),
-                        java.util.List.of(new SystemOneDecisionApiAdapter())),
-                mapper);
+                new DecisionTaskSupport(
+                        new HttpDecisionClient(
+                                config,
+                                mapper,
+                                new OkHttpClient(),
+                                java.util.List.of(new SystemOneDecisionApiAdapter())),
+                        mapper));
     }
 
     private TaskModel task() {

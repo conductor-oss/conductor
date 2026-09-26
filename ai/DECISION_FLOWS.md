@@ -64,7 +64,7 @@ flowchart TD
         E4 -- 2xx --> E5[DecisionApiAdapter.decode<br/>DecisionValidation.result]
     end
 
-    E5 --> G[Task output = DecisionResult<br/>model, answers, usage, latencyMs<br/>+ selectedCase = answers.route.choice]
+    E5 --> G[Task output = DecisionResult<br/>provider, model, answers, usage, latencyMs<br/>+ selectedCase = answers.route.choice]
     G --> H[SWITCH task<br/>evaluatorType: value-param<br/>expression: selectedCase]
     H --> I{selectedCase}
     I -- billing --> J1[billing branch tasks]

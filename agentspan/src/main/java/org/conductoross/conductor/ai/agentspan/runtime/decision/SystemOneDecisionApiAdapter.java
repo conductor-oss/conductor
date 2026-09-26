@@ -15,13 +15,14 @@ package org.conductoross.conductor.ai.agentspan.runtime.decision;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.require;
+import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.requireResponse;
 
 /** Default System One wire contract, isolated from provider selection and transport. */
 @Component
@@ -40,6 +41,22 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
                 request.state(),
                 "questions",
                 encodeQuestions(request.questions()));
+    }
+
+    @Override
+    public DecisionHttpRequest createRequest(
+            DecisionRequest request, DecisionConfiguration.Route route, byte[] encodedBody) {
+        requireResponse(
+                StringUtils.isNotBlank(route.apiKey()), "Decision API key is not configured");
+        requireResponse(
+                route.apiKey().chars().allMatch(c -> c > 32 && c < 127),
+                "invalid Decision credential format");
+        return new DecisionHttpRequest(
+                route.endpoint(),
+                "POST",
+                Map.of("Authorization", "Bearer " + route.apiKey()),
+                "application/json",
+                encodedBody);
     }
 
     private Map<String, Object> encodeQuestions(Map<String, DecisionQuestion> questions) {
@@ -66,7 +83,7 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
 
     @Override
     public DecisionResult decode(JsonNode data, long latencyMs, String provider) {
-        require(
+        requireResponse(
                 data != null
                         && data.isObject()
                         && data.path("model").isTextual()
@@ -78,6 +95,7 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
                 .forEachRemaining(
                         entry -> answers.put(entry.getKey(), decodeAnswer(entry.getValue())));
         return new DecisionResult(
+                provider,
                 data.get("model").textValue(),
                 answers,
                 decodeUsage(data.path("usage"), provider),
@@ -102,8 +120,8 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
     }
 
     private DecisionResult.Usage decodeUsage(JsonNode usage, String provider) {
-        require(usage.isMissingNode() || usage.isObject(), "invalid Decision usage");
-        require(
+        requireResponse(usage.isMissingNode() || usage.isObject(), "invalid Decision usage");
+        requireResponse(
                 !usage.has("cost")
                         || (usage.get("cost").isNumber()
                                 && usage.get("cost").decimalValue().signum() >= 0),
@@ -119,7 +137,7 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
         if (!node.has(field)) {
             return null;
         }
-        require(node.get(field).isNumber(), "invalid Decision numeric answer");
+        requireResponse(node.get(field).isNumber(), "invalid Decision numeric answer");
         return node.get(field).doubleValue();
     }
 
@@ -127,7 +145,7 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
         if (!node.has(field)) {
             return null;
         }
-        require(
+        requireResponse(
                 node.get(field).isIntegralNumber()
                         && node.get(field).canConvertToLong()
                         && node.get(field).longValue() >= 0,

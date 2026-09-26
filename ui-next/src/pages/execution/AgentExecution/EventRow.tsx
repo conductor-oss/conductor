@@ -172,6 +172,9 @@ function ExpandedDetail({ event }: { event: AgentEvent }) {
           label="Model"
           value={output?.model ?? event.toolName ?? input?.model}
         />
+        {output?.provider && (
+          <JsonBlock label="Provider" value={output.provider} />
+        )}
         {input?.state != null && (
           <JsonBlock label="State" value={input.state} />
         )}

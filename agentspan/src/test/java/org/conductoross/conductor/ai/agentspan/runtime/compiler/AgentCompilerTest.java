@@ -82,6 +82,46 @@ class AgentCompilerTest {
     }
 
     @Test
+    void rejectsInvalidQuestionsAndIgnoredChatFieldsAsClientErrors() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("routing")
+                        .kind(AgentConfig.Kind.DECISION)
+                        .model("jev-1.13")
+                        .questions(
+                                Map.of(
+                                        "route",
+                                        Map.of(
+                                                "type",
+                                                "choice",
+                                                "instructions",
+                                                "Choose",
+                                                "choices",
+                                                Map.of("only", "Only option"))))
+                        .build();
+        assertThatThrownBy(() -> compiler.compile(config))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("invalid choice options");
+
+        config.setQuestions(
+                Map.of(
+                        "route",
+                        Map.of(
+                                "type",
+                                "choice",
+                                "instructions",
+                                "Choose",
+                                "choices",
+                                Map.of("a", "First", "b", "Second"))));
+        config.setInstructions("This must not be silently ignored");
+        config.setTemperature(0.2);
+        assertThatThrownBy(() -> compiler.compile(config))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("instructions")
+                .hasMessageContaining("temperature");
+    }
+
+    @Test
     void decisionAgentCompilesAsAChildAgent() {
         AgentConfig child =
                 AgentConfig.builder()

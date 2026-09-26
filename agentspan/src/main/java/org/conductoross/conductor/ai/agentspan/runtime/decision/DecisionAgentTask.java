@@ -24,20 +24,15 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /** Internal execution step for a compiled Decision agent definition. */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
 public class DecisionAgentTask extends WorkflowSystemTask {
-    private final DecisionClient client;
-    private final ObjectMapper mapper;
+    private final DecisionTaskSupport decisionSupport;
 
-    public DecisionAgentTask(DecisionClient client, ObjectMapper mapper) {
+    public DecisionAgentTask(DecisionTaskSupport decisionSupport) {
         super("DECISION_AGENT");
-        this.client = client;
-        this.mapper = mapper;
+        this.decisionSupport = decisionSupport;
     }
 
     @Override
@@ -52,42 +47,32 @@ public class DecisionAgentTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        if (task.getStatus() != null && task.getStatus().isTerminal()) return false;
-        try {
-            // Require the agent definition and compiler shape, so this internal step cannot be
-            // used as a standalone workflow task or dispatched as a tool in a chat agent.
-            var definition = workflow.getWorkflowDefinition();
-            var metadata = definition != null ? definition.getMetadata() : null;
-            if (metadata == null
-                    || !"agent".equals(metadata.get("classifier"))
-                    || !(metadata.get("agentDef") instanceof Map<?, ?> agent)
-                    || !"decision".equals(agent.get("kind"))
-                    || definition.getTasks().size() != 1
-                    || !getTaskType().equals(definition.getTasks().get(0).getType())
-                    || !definition
-                            .getTasks()
-                            .get(0)
-                            .getTaskReferenceName()
-                            .equals(task.getReferenceTaskName())) {
-                throw new NonRetryableException(
-                        "Decision requires a compiled Decision agent definition");
-            }
-            DecisionRequest request =
-                    mapper.convertValue(task.getInputData(), DecisionRequest.class);
-            DecisionValidation.request(request);
-            DecisionResult result = client.decide(request);
-            DecisionValidation.result(request, result);
-            task.setOutputData(
-                    mapper.convertValue(result, new TypeReference<Map<String, Object>>() {}));
-            task.setStatus(TaskModel.Status.COMPLETED);
-        } catch (NonRetryableException | IllegalArgumentException e) {
-            task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-            task.setReasonForIncompletion(e.getMessage());
-        } catch (RuntimeException e) {
-            task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion(e.getMessage());
+        return decisionSupport.execute(
+                task,
+                () -> validateCompiledDecision(workflow, task),
+                request -> {},
+                (output, result) -> {});
+    }
+
+    private void validateCompiledDecision(WorkflowModel workflow, TaskModel task) {
+        // Require the compiler-owned definition shape; this prevents accidental direct use of the
+        // internal task type, but is not intended to be an authorization boundary.
+        var definition = workflow.getWorkflowDefinition();
+        var metadata = definition != null ? definition.getMetadata() : null;
+        if (metadata == null
+                || !"agent".equals(metadata.get("classifier"))
+                || !(metadata.get("agentDef") instanceof Map<?, ?> agent)
+                || !"decision".equals(agent.get("kind"))
+                || definition.getTasks().size() != 1
+                || !getTaskType().equals(definition.getTasks().get(0).getType())
+                || !definition
+                        .getTasks()
+                        .get(0)
+                        .getTaskReferenceName()
+                        .equals(task.getReferenceTaskName())) {
+            throw new NonRetryableException(
+                    "Decision requires a compiled Decision agent definition");
         }
-        return true;
     }
 
     @Override

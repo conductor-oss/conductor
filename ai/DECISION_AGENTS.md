@@ -50,8 +50,8 @@ Each question requires `type` and `instructions`:
 | `score` | `scale`: 2–10 ordered descriptions | `score`: 0 to scale length minus one |
 | `boolean` | None | `probability`: 0 to 1 |
 
-The agent result contains `model`, `answers`, `usage`, `latencyMs`, and optional
-`requestId`. Answers may include `confidence`. Usage contains `inputTokens`,
+The agent result contains the resolved `provider`, `model`, `answers`, `usage`,
+`latencyMs`, and optional `requestId`. Answers may include `confidence`. Usage contains `inputTokens`,
 `outputTokens`, `cost`, and `currency` when reported by the provider.
 
 The runtime retries transport errors, HTTP 429, and HTTP 5xx up to three times

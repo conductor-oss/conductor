@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -34,7 +33,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
-import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.require;
+import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.requireResponse;
 
 /** Provider-neutral HTTP transport for structured decision inference. */
 @Component
@@ -73,20 +72,31 @@ public class HttpDecisionClient implements DecisionClient {
         DecisionValidation.request(input);
         DecisionConfiguration.Route route = config.resolve(input.provider(), input.model());
         DecisionApiAdapter adapter = adapters.get(route.apiShape());
-        require(adapter != null, "Unknown decision API shape: " + route.apiShape());
-        require(StringUtils.isNotBlank(route.apiKey()), "Decision API key is not configured");
-        require(
-                route.apiKey().chars().allMatch(c -> c > 32 && c < 127),
-                "invalid Decision credential format");
+        requireResponse(adapter != null, "Unknown decision API shape: " + route.apiShape());
         long started = System.nanoTime();
         try {
             byte[] payload = mapper.writeValueAsBytes(adapter.encode(input));
-            Request request =
-                    new Request.Builder()
-                            .url(route.endpoint())
-                            .header("Authorization", "Bearer " + route.apiKey())
-                            .post(RequestBody.create(payload, MediaType.get("application/json")))
-                            .build();
+            DecisionHttpRequest providerRequest = adapter.createRequest(input, route, payload);
+            requireResponse(
+                    providerRequest != null
+                            && providerRequest.endpoint() != null
+                            && !providerRequest.endpoint().isBlank()
+                            && providerRequest.method() != null
+                            && !providerRequest.method().isBlank()
+                            && providerRequest.headers() != null
+                            && (providerRequest.body() == null
+                                    || (providerRequest.mediaType() != null
+                                            && !providerRequest.mediaType().isBlank())),
+                    "invalid provider HTTP request");
+            Request.Builder requestBuilder = new Request.Builder().url(providerRequest.endpoint());
+            providerRequest.headers().forEach(requestBuilder::header);
+            RequestBody body =
+                    providerRequest.body() == null
+                            ? null
+                            : RequestBody.create(
+                                    providerRequest.body(),
+                                    MediaType.get(providerRequest.mediaType()));
+            Request request = requestBuilder.method(providerRequest.method(), body).build();
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     String error = "Decision HTTP status " + response.code();
@@ -95,15 +105,25 @@ public class HttpDecisionClient implements DecisionClient {
                     }
                     throw new NonRetryableException(error);
                 }
-                require(response.body() != null, "empty Decision response");
+                requireResponse(response.body() != null, "empty Decision response");
                 byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
-                require(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
+                requireResponse(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
                 JsonNode data = mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
-                DecisionResult result =
+                DecisionResult decoded =
                         adapter.decode(
                                 data,
                                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started),
                                 route.provider());
+                DecisionResult result =
+                        decoded.provider() != null
+                                ? decoded
+                                : new DecisionResult(
+                                        route.provider(),
+                                        decoded.model(),
+                                        decoded.answers(),
+                                        decoded.usage(),
+                                        decoded.latencyMs(),
+                                        decoded.requestId());
                 DecisionValidation.result(input, result);
                 return result;
             }

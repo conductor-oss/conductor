@@ -49,12 +49,13 @@ class DecisionAgentTaskTest {
         ObjectMapper mapper = new ObjectMapper();
         runtime =
                 new DecisionAgentTask(
-                        new HttpDecisionClient(
-                                properties,
-                                mapper,
-                                new OkHttpClient(),
-                                java.util.List.of(new SystemOneDecisionApiAdapter())),
-                        mapper);
+                        new DecisionTaskSupport(
+                                new HttpDecisionClient(
+                                        properties,
+                                        mapper,
+                                        new OkHttpClient(),
+                                        java.util.List.of(new SystemOneDecisionApiAdapter())),
+                                mapper));
         AgentConfig config =
                 AgentConfig.builder()
                         .name("chooser")

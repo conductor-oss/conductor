@@ -275,9 +275,11 @@ public class AgentCompiler {
     WorkflowDef compileDecision(AgentConfig config) {
         if (StringUtils.isBlank(config.getModel()))
             throw new IllegalArgumentException("Decision agent requires a model");
-        if (containsNonDecisionSupportedConfigs(config))
+        List<String> unsupportedFields = nonDecisionFields(config);
+        if (!unsupportedFields.isEmpty())
             throw new IllegalArgumentException(
-                    "Decision agents cannot contain chat tools, agents, memory, output schemas or guardrails");
+                    "Decision agent contains unsupported fields: "
+                            + String.join(", ", unsupportedFields));
         if (config.getQuestions() != null) {
             DecisionValidation.questions(
                     MAPPER.convertValue(
@@ -319,14 +321,59 @@ public class AgentCompiler {
         return wf;
     }
 
-    private boolean containsNonDecisionSupportedConfigs(AgentConfig config) {
-        return !CollectionUtils.isEmpty(config.getTools())
-                || !CollectionUtils.isEmpty(config.getAgents())
-                || config.getPlanner() != null
-                || config.getFallback() != null
-                || config.getMemory() != null
-                || config.getOutputType() != null
-                || !CollectionUtils.isEmpty(config.getGuardrails());
+    /**
+     * Decision definitions deliberately expose a narrow contract. Reject chat/orchestration fields
+     * rather than silently accepting configuration that cannot affect the compiled workflow.
+     */
+    private List<String> nonDecisionFields(AgentConfig config) {
+        List<String> fields = new ArrayList<>();
+        addIf(fields, "baseUrl", StringUtils.isNotBlank(config.getBaseUrl()));
+        addIf(fields, "instructions", config.getInstructions() != null);
+        addIf(fields, "tools", !CollectionUtils.isEmpty(config.getTools()));
+        addIf(fields, "agents", !CollectionUtils.isEmpty(config.getAgents()));
+        addIf(
+                fields,
+                "strategy",
+                config.getStrategy() != null
+                        && config.getStrategy() != AgentConfig.Strategy.HANDOFF);
+        addIf(fields, "router", config.getRouter() != null);
+        addIf(fields, "outputType", config.getOutputType() != null);
+        addIf(fields, "guardrails", !CollectionUtils.isEmpty(config.getGuardrails()));
+        addIf(fields, "memory", config.getMemory() != null);
+        addIf(fields, "maxTurns", config.getMaxTurns() != 100);
+        addIf(fields, "maxTokens", config.getMaxTokens() != null);
+        addIf(fields, "contextWindowBudget", config.getContextWindowBudget() != null);
+        addIf(fields, "temperature", config.getTemperature() != null);
+        addIf(fields, "reasoningEffort", StringUtils.isNotBlank(config.getReasoningEffort()));
+        addIf(fields, "stopWhen", config.getStopWhen() != null);
+        addIf(fields, "termination", config.getTermination() != null);
+        addIf(fields, "handoffs", !CollectionUtils.isEmpty(config.getHandoffs()));
+        addIf(fields, "callbacks", !CollectionUtils.isEmpty(config.getCallbacks()));
+        addIf(
+                fields,
+                "allowedTransitions",
+                !CollectionUtils.isEmpty(config.getAllowedTransitions()));
+        addIf(fields, "introduction", StringUtils.isNotBlank(config.getIntroduction()));
+        addIf(fields, "codeExecution", config.getCodeExecution() != null);
+        addIf(fields, "cliConfig", config.getCliConfig() != null);
+        addIf(fields, "thinkingConfig", config.getThinkingConfig() != null);
+        addIf(fields, "enablePlanning", config.getEnablePlanning() != null);
+        addIf(fields, "planner", config.getPlanner() != null);
+        addIf(fields, "fallback", config.getFallback() != null);
+        addIf(fields, "requiredTools", !CollectionUtils.isEmpty(config.getRequiredTools()));
+        addIf(fields, "prefillTools", !CollectionUtils.isEmpty(config.getPrefillTools()));
+        addIf(fields, "gate", !CollectionUtils.isEmpty(config.getGate()));
+        addIf(fields, "credentials", !CollectionUtils.isEmpty(config.getCredentials()));
+        addIf(fields, "fallbackMaxTurns", config.getFallbackMaxTurns() != null);
+        addIf(fields, "planSource", !CollectionUtils.isEmpty(config.getPlanSource()));
+        addIf(fields, "plannerContext", !CollectionUtils.isEmpty(config.getPlannerContext()));
+        addIf(fields, "external", config.isExternal());
+        addIf(fields, "synthesize", config.getSynthesize() != null);
+        return fields;
+    }
+
+    private static void addIf(List<String> fields, String name, boolean condition) {
+        if (condition) fields.add(name);
     }
 
     // ── Simple agent (no tools) ─────────────────────────────────────

@@ -14,20 +14,10 @@ package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-/** Maps a provider API shape to the shared structured decision contract. */
-public interface DecisionApiAdapter {
-    String name();
-
-    Map<String, Object> encode(DecisionRequest request);
-
-    /**
-     * Builds the complete provider request. Authentication, headers, HTTP method and media type are
-     * part of the wire contract and therefore belong to the adapter rather than the shared client.
-     */
-    DecisionHttpRequest createRequest(
-            DecisionRequest request, DecisionConfiguration.Route route, byte[] encodedBody);
-
-    DecisionResult decode(JsonNode response, long latencyMs, String provider);
-}
+/** Transport-neutral HTTP request produced by a Decision API adapter. */
+public record DecisionHttpRequest(
+        String endpoint,
+        String method,
+        Map<String, String> headers,
+        String mediaType,
+        byte[] body) {}

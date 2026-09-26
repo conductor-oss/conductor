@@ -75,7 +75,7 @@ public final class DecisionValidation {
     }
 
     public static void result(DecisionRequest request, DecisionResult result) {
-        require(
+        requireResponse(
                 result != null
                         && StringUtils.isNotBlank(result.model())
                         && result.answers() != null
@@ -86,26 +86,26 @@ public final class DecisionValidation {
     }
 
     private static void validateAnswer(DecisionQuestion q, DecisionResult.Answer answer) {
-        require(answer != null && answer.type() == q.type(), "invalid answer type");
-        require(
+        requireResponse(answer != null && answer.type() == q.type(), "invalid answer type");
+        requireResponse(
                 answer.confidence() == null || bounded(answer.confidence(), 1),
                 "invalid confidence");
         switch (q.type()) {
             case CHOICE ->
-                    require(
+                    requireResponse(
                             answer.choice() != null
                                     && q.choices().containsKey(answer.choice())
                                     && answer.score() == null
                                     && answer.probability() == null,
                             "invalid choice answer");
             case SCORE ->
-                    require(
+                    requireResponse(
                             bounded(answer.score(), q.scale().size() - 1)
                                     && answer.choice() == null
                                     && answer.probability() == null,
                             "invalid score answer");
             case BOOLEAN ->
-                    require(
+                    requireResponse(
                             bounded(answer.probability(), 1)
                                     && answer.choice() == null
                                     && answer.score() == null,
@@ -118,6 +118,10 @@ public final class DecisionValidation {
     }
 
     static void require(boolean condition, String message) {
+        if (!condition) throw new IllegalArgumentException("Decision: " + message);
+    }
+
+    static void requireResponse(boolean condition, String message) {
         if (!condition) throw new NonRetryableException("Decision: " + message);
     }
 }

@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import lombok.Getter;
 import lombok.Setter;
 
-import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.require;
+import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.requireResponse;
 
 /** Server-owned provider credentials and model-specific wire contracts. */
 @Getter
@@ -58,7 +58,7 @@ public class DecisionConfiguration {
 
     public Route resolve(String requestedProvider, String model) {
         String selected = StringUtils.defaultIfBlank(requestedProvider, provider);
-        require(StringUtils.isNotBlank(selected), "Decision provider is required");
+        requireResponse(StringUtils.isNotBlank(selected), "Decision provider is required");
         Provider settings = providers.getOrDefault(selected, new Provider());
         Model modelSettings = settings.getModels().getOrDefault(model, new Model());
         // Model overrides provider; provider overrides the global API-shape default. Global
@@ -71,7 +71,7 @@ public class DecisionConfiguration {
                         modelSettings.getEndpoint(),
                         settings.getEndpoint(),
                         selected.equals(provider) ? endpoint : null);
-        require(StringUtils.isNotBlank(shape), "Decision API shape is required");
+        requireResponse(StringUtils.isNotBlank(shape), "Decision API shape is required");
         if (StringUtils.isBlank(url) && "system-one".equals(shape)) {
             url =
                     switch (selected) {
@@ -80,7 +80,7 @@ public class DecisionConfiguration {
                         default -> null;
                     };
         }
-        require(
+        requireResponse(
                 StringUtils.isNotBlank(url),
                 "No endpoint configured for decision provider: " + selected);
         String key =

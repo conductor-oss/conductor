@@ -12,8 +12,6 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.decision;
 
-import java.util.Map;
-
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -22,22 +20,16 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
-import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /** Asynchronous Decision inference exposing a decision for a downstream SWITCH task. */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
 public class AiDecisionTask extends WorkflowSystemTask {
-    private final DecisionClient client;
-    private final ObjectMapper mapper;
+    private final DecisionTaskSupport decisionSupport;
 
-    public AiDecisionTask(DecisionClient client, ObjectMapper mapper) {
+    public AiDecisionTask(DecisionTaskSupport decisionSupport) {
         super("AI_DECISION");
-        this.client = client;
-        this.mapper = mapper;
+        this.decisionSupport = decisionSupport;
     }
 
     @Override
@@ -52,32 +44,24 @@ public class AiDecisionTask extends WorkflowSystemTask {
 
     @Override
     public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
-        if (task.getStatus() != null && task.getStatus().isTerminal()) return false;
-        try {
-            DecisionRequest request =
-                    mapper.convertValue(task.getInputData(), DecisionRequest.class);
-            DecisionValidation.request(request);
-            if (request.questions().size() != 1
-                    || request.questions().values().iterator().next().type()
-                            != DecisionQuestion.Type.CHOICE) {
-                throw new NonRetryableException("AI_DECISION requires exactly one choice question");
-            }
-            DecisionResult result = client.decide(request);
-            DecisionValidation.result(request, result);
-            task.setOutputData(
-                    mapper.convertValue(result, new TypeReference<Map<String, Object>>() {}));
-            // Keep the full structured response, with a selectedCase field for a downstream SWITCH.
-            task.getOutputData()
-                    .put("selectedCase", result.answers().values().iterator().next().choice());
-            task.setStatus(TaskModel.Status.COMPLETED);
-        } catch (NonRetryableException | IllegalArgumentException e) {
-            task.setStatus(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
-            task.setReasonForIncompletion(e.getMessage());
-        } catch (RuntimeException e) {
-            task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion(e.getMessage());
-        }
-        return true;
+        return decisionSupport.execute(
+                task,
+                () -> {},
+                request -> {
+                    DecisionQuestion question =
+                            request.questions() != null && request.questions().size() == 1
+                                    ? request.questions().values().iterator().next()
+                                    : null;
+                    if (question == null || question.type() != DecisionQuestion.Type.CHOICE) {
+                        throw new IllegalArgumentException(
+                                "AI_DECISION requires exactly one choice question");
+                    }
+                },
+                (output, result) ->
+                        // Keep the full response plus a value directly consumable by SWITCH.
+                        output.put(
+                                "selectedCase",
+                                result.answers().values().iterator().next().choice()));
     }
 
     @Override

@@ -22,6 +22,7 @@ export function decisionInferenceOutput(event: AgentEvent) {
   return (event.result ??
     (event.detail as { output?: unknown } | undefined)?.output) as
     | {
+        provider?: string;
         model?: string;
         answers?: unknown;
         usage?: unknown;
