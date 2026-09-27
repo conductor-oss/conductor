@@ -177,6 +177,36 @@ describe("getCoreSidebarItems", () => {
     });
   });
 
+  describe("task execution item", () => {
+    it("is present in the executionsSubMenu", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe).toBeDefined();
+    });
+
+    it("links to the task executions page", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe?.linkTo).toBe("/taskExecutions");
+      expect(taskExe?.activeRoutes).toEqual(["/taskExecutions"]);
+    });
+
+    it("is visible and positioned between workflow and scheduler executions", () => {
+      const execMenu = findItem(items, "executionsSubMenu");
+      const taskExe = execMenu?.items?.find((i) => i.id === "taskExeItem");
+      const workflowExe = execMenu?.items?.find(
+        (i) => i.id === "workflowExeItem",
+      );
+      const schedulerExe = execMenu?.items?.find(
+        (i) => i.id === "schedulerExeItem",
+      );
+
+      expect(taskExe?.hidden).toBe(false);
+      expect(taskExe?.position).toBeGreaterThan(workflowExe?.position ?? 0);
+      expect(taskExe?.position).toBeLessThan(
+        schedulerExe?.position ?? Infinity,
+      );
+    });
+  });
+
   describe("scheduler definition item", () => {
     it("is present in the definitionsSubMenu", () => {
       const schedulerDef = findNestedItem(
@@ -239,10 +269,11 @@ describe("getCoreSidebarItems", () => {
   });
 
   describe("overall structure", () => {
-    it("returns executionsSubMenu with workflow, scheduler, and queue monitor", () => {
+    it("returns executionsSubMenu with workflow, task, scheduler, and queue monitor", () => {
       const execMenu = findItem(items, "executionsSubMenu");
       const childIds = execMenu?.items?.map((i) => i.id) ?? [];
       expect(childIds).toContain("workflowExeItem");
+      expect(childIds).toContain("taskExeItem");
       expect(childIds).toContain("schedulerExeItem");
       expect(childIds).toContain("queueMonitorItem");
     });

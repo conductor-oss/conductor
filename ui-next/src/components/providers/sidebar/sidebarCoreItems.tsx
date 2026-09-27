@@ -59,6 +59,7 @@ const CORE_SIDEBAR_POSITIONS = {
   // Executions submenu children
   EXECUTIONS: {
     workflowExeItem: 100,
+    taskExeItem: 150,
     schedulerExeItem: 185,
     queueMonitorItem: 200,
   },
@@ -112,6 +113,17 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: E.workflowExeItem,
+        },
+        {
+          id: "taskExeItem",
+          title: "Task",
+          icon: null,
+          linkTo: "/taskExecutions",
+          activeRoutes: ["/taskExecutions"],
+          shortcuts: [],
+          hotkeys: "",
+          hidden: false,
+          position: E.taskExeItem,
         },
         {
           id: "schedulerExeItem",

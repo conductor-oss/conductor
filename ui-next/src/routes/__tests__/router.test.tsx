@@ -479,8 +479,8 @@ describe("router (OSS)", () => {
       const getStartedPaths = allPaths.filter((path) =>
         path.includes("/get-started"),
       );
-      const taskExecutionPaths = allPaths.filter((path) =>
-        path.includes("/taskExecution"),
+      const taskExecutionPaths = allPaths.filter(
+        (path) => path === "/taskExecution",
       );
 
       expect(hubPaths.length).toBe(0);
@@ -489,6 +489,7 @@ describe("router (OSS)", () => {
 
       expect(allPaths).toContain("*");
       expect(allPaths).toContain("/executions");
+      expect(allPaths).toContain("/taskExecutions");
       expect(allPaths).toContain("/runWorkflow");
     });
 

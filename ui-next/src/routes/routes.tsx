@@ -30,6 +30,7 @@
  */
 
 import { App } from "components/App";
+
 import DefaultAuthGuard from "components/features/auth/AuthGuard";
 import ApiReferencePage from "pages/apiDocs/ApiReferencePage";
 import { CreatorFlags } from "pages/creatorFlags/CreatorFlags";
@@ -44,7 +45,11 @@ import {
 import ErrorPage from "pages/error/ErrorPage";
 import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
-import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
+import {
+  SchedulerExecutions,
+  TaskSearch,
+  WorkflowSearch,
+} from "pages/executions";
 import { SchemaEditPage, SchemaList } from "pages/schema";
 import { pluginRegistry } from "plugins/registry";
 import { Navigate, RouteObject } from "react-router-dom";
@@ -92,6 +97,10 @@ const getCoreAuthenticatedRoutes = () => [
   {
     path: "/executions",
     element: <WorkflowSearch />,
+  },
+  {
+    path: "/taskExecutions",
+    element: <TaskSearch />,
   },
   {
     path: "/schedulerExecs",
