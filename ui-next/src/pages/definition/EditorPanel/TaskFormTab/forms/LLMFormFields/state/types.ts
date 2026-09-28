@@ -64,6 +64,7 @@ export interface LLMFormFieldsMachineContext {
   authHeaders?: AuthHeaders;
   llmProviderOptions: [];
   promptNameOptions: PromptDef[];
+  promptNamesFetched: boolean;
   modelOptions: [];
   vectorDbOptions: [];
   indexOptions: [];

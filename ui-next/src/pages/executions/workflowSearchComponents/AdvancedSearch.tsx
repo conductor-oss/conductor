@@ -266,9 +266,7 @@ export default function AdvancedSearch({
   };
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const newSort = `${sortColumn}:${direction.toUpperCase()}`;
+    const newSort = `${changedColumn}:${direction.toUpperCase()}`;
 
     // Only refetch if sort actually changed
     if (sort !== newSort) {

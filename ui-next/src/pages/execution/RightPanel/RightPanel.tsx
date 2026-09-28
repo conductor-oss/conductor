@@ -17,6 +17,8 @@ import { FunctionComponent, useMemo } from "react";
 import { useContainerQuery } from "react-container-query";
 import { colors } from "theme/tokens/variables";
 import { TaskType } from "types/common";
+import { WorkflowDef } from "types/WorkflowDef";
+import { isSideTaskOf } from "pages/execution/state/detachedTasks";
 import {
   DoWhileSelection,
   ExecutionTask,
@@ -65,6 +67,8 @@ export interface RightPanelProps {
   workflowName: string;
   workflowStatus: string;
   doWhileSelection?: DoWhileSelection[];
+  /** Needed to tell a task the engine attached to a node from a step of the workflow. */
+  workflowDefinition?: Partial<WorkflowDef>;
 }
 
 export const RightPanel: FunctionComponent<RightPanelProps> = ({
@@ -72,6 +76,7 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
   workflowName,
   workflowStatus,
   doWhileSelection,
+  workflowDefinition,
 }) => {
   const [containerQueryState, containerRef] = useContainerQuery(
     executionTaskHeaderContainerQuery,
@@ -122,6 +127,17 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
         />
       ) : null,
     [selectedTask, onChangeTaskStatus],
+  );
+
+  /**
+   * A task the engine attached to a node — a guardrail detector — is not a step of the workflow,
+   * so there is nothing to rerun from it. The server refuses this, and offering a button that
+   * always fails is worse than not offering it. Changing its status stays available: that is how a
+   * stuck detector gets unstuck, and it destroys nothing.
+   */
+  const isSideTask = useMemo(
+    () => isSideTaskOf(selectedTask, workflowDefinition),
+    [selectedTask, workflowDefinition],
   );
 
   const maybeRerunTask = useMemo(() => {
@@ -277,11 +293,12 @@ export const RightPanel: FunctionComponent<RightPanelProps> = ({
                   />
                 </Box>
               )}
-              {((selectedTask?.workflowTask?.type !== TaskType.DO_WHILE &&
-                selectedTask?.workflowTask?.type !== TaskType.FORK_JOIN) ||
-                rerunFromForkAndDowhileTasksEnabled) && (
-                <Box>{maybeRerunTask}</Box>
-              )}
+              {!isSideTask &&
+                ((selectedTask?.workflowTask?.type !== TaskType.DO_WHILE &&
+                  selectedTask?.workflowTask?.type !== TaskType.FORK_JOIN) ||
+                  rerunFromForkAndDowhileTasksEnabled) && (
+                  <Box>{maybeRerunTask}</Box>
+                )}
             </Box>
             <Box
               sx={{

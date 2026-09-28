@@ -23,6 +23,7 @@ import {
   StatusMap,
   TypeStatusMap,
 } from "./StatusMapTypes";
+import { detachedTasksByParent } from "./detachedTasks";
 import { TaskDefExecutionContext, WorkflowDefExecutionContext } from "./types";
 
 export const relatedNamesToTaskDef = (
@@ -172,6 +173,7 @@ export const taskStatusUpdater = (
   tasks: TaskDef[] = [],
   statusMap: StatusMap,
   expandDynamic: string[],
+  sideTasks: Record<string, ExecutionTask[]> = {},
 ): TaskDefExecutionContext[] => {
   return tasks.map((task) => {
     const { type, taskReferenceName } = task;
@@ -191,12 +193,15 @@ export const taskStatusUpdater = (
       attempts: executionDataRaw.loopOver.length,
       outputData: executionTask?.outputData,
       parentLoop: executionTask?.parentLoop,
+      sideTasks: sideTasks[taskReferenceName],
     };
 
     if (type === TaskType.FORK_JOIN) {
       const forkTasks: Array<TaskDefExecutionContext[]> = (
         task.forkTasks || []
-      ).map((taa) => taskStatusUpdater(taa, statusMap, expandDynamic));
+      ).map((taa) =>
+        taskStatusUpdater(taa, statusMap, expandDynamic, sideTasks),
+      );
       return {
         ...task,
         forkTasks,
@@ -205,7 +210,7 @@ export const taskStatusUpdater = (
     } else if (type === TaskType.DECISION || type === TaskType.SWITCH) {
       const decisionCases: Record<string, TaskDefExecutionContext[]> =
         _mapValues(task.decisionCases, (decisionTasks: TaskDef[]) =>
-          taskStatusUpdater(decisionTasks, statusMap, expandDynamic),
+          taskStatusUpdater(decisionTasks, statusMap, expandDynamic, sideTasks),
         );
       return {
         ...task,
@@ -214,6 +219,7 @@ export const taskStatusUpdater = (
           task.defaultCase!,
           statusMap,
           expandDynamic,
+          sideTasks,
         ),
         executionData,
       } as TaskDefExecutionContext;
@@ -233,7 +239,12 @@ export const taskStatusUpdater = (
     } else if (type === TaskType.DO_WHILE) {
       return {
         ...task,
-        loopOver: taskStatusUpdater(task.loopOver!, statusMap, expandDynamic),
+        loopOver: taskStatusUpdater(
+          task.loopOver!,
+          statusMap,
+          expandDynamic,
+          sideTasks,
+        ),
         executionData,
       } as TaskDefExecutionContext;
     } else if (
@@ -483,6 +494,7 @@ export const executionToWorkflowDef = (
         execution.workflowDefinition.tasks,
         taskExecutionMap,
         expandDynamic,
+        detachedTasksByParent(execution.tasks, execution.workflowDefinition),
       ),
     },
     taskExecutionMap,

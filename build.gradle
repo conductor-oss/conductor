@@ -83,6 +83,15 @@ allprojects {
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
                 }
+                // #1534/#964: micrometer-registry-otlp 1.15.x requests opentelemetry-proto
+                // 1.5.0-alpha (protobuf 4.x). Force it back to the 1.3.2-alpha line (protobuf 3.x,
+                // GeneratedMessageV3) so the protobuf 3.x pin (#964, GraalVM polyglot) holds.
+                // micrometer's OTLP serializer only uses metrics/common/resource messages, all
+                // present in 1.3.2-alpha. See dependencies.gradle (revOpenTelemetryProto).
+                if (details.requested.group == 'io.opentelemetry.proto'
+                        && details.requested.name == 'opentelemetry-proto') {
+                    details.useVersion revOpenTelemetryProto
+                }
             }
             // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
             // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
