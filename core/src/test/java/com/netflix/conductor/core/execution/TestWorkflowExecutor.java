@@ -2586,6 +2586,9 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testResumeWorkflow() {
+        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
+        doNothing().when(executionLockService).releaseLock(anyString());
+
         String workflowId = "testResumeWorkflowId";
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
@@ -2600,6 +2603,14 @@ public class TestWorkflowExecutor {
             verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
             verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         }
+
+        // if workflow is already RUNNING (e.g. a racing resume call already resumed it)
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.resumeWorkflow(workflowId);
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
 
         // if workflow is in PAUSED state
         workflow.setStatus(WorkflowModel.Status.PAUSED);
@@ -2662,6 +2673,19 @@ public class TestWorkflowExecutor {
         // And verify that the failure workflow definition was fetched without version
         verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
         assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+
+        // And the failure workflow input carries failedWorkflow as a Map, not a raw
+        // WorkflowModel POJO, so nested ${workflow.input.failedWorkflow.<field>} references
+        // are resolvable by JsonPath (issue #1164)
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        Object failedWorkflowInput =
+                failureWorkflowCaptor.getValue().getInput().get("failedWorkflow");
+        assertTrue(
+                "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
+                failedWorkflowInput instanceof Map);
+        assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
     }
 
     @Test
