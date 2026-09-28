@@ -11,6 +11,7 @@ import { Dispatch } from "react";
 import { QueryDispatch, SetStateAction } from "react-router-use-location-state";
 import { TaskType } from "types/common";
 import { TaskStatus } from "types/TaskStatus";
+import { FEATURES, featureFlags } from "utils";
 import { DateControlComponent } from "../DateControlComponent";
 
 const taskTypes = Object.values(TaskType).filter(
@@ -98,6 +99,9 @@ export const BasicSearch = ({
   onStartToChange,
   recentSearches,
 }: BasicSearchComponentProps) => {
+  const showTaskReferenceName = featureFlags.isEnabled(
+    FEATURES.SHOW_TASK_REFERENCE_NAME,
+  );
   return (
     <Grid container sx={{ width: "100%" }} spacing={3} px={6} pb={6} pt={2}>
       <Grid
@@ -146,20 +150,22 @@ export const BasicSearch = ({
           value={taskExecutionId}
         />
       </Grid>
-      <Grid
-        size={{
-          xs: 6,
-          md: 4,
-          lg: 2,
-        }}
-      >
-        <ConductorInput
-          fullWidth
-          label="Task reference name"
-          onTextInputChange={setTaskRefName}
-          value={taskRefName}
-        />
-      </Grid>
+      {showTaskReferenceName && (
+        <Grid
+          size={{
+            xs: 6,
+            md: 4,
+            lg: 2,
+          }}
+        >
+          <ConductorInput
+            fullWidth
+            label="Task reference name"
+            onTextInputChange={setTaskRefName}
+            value={taskRefName}
+          />
+        </Grid>
+      )}
       <Grid
         size={{
           xs: 6,
