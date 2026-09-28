@@ -117,11 +117,11 @@ public class AgentCompiler {
         WorkflowDef wf;
 
         // A Decision config is valid only as a ROUTER selector. Decision inference for workflows
-        // and agent tools uses the shared AI_DECISION task.
+        // and agent tools uses a SWITCH with evaluatorType=decision.
         if (config.getKind() == AgentConfig.Kind.DECISION) {
             throw new IllegalArgumentException(
                     "Decision configurations are router selectors, not standalone agents; "
-                            + "use an AI_DECISION workflow task or a decision tool");
+                            + "use a decision-backed SWITCH workflow task or a decision tool");
         } else if (isFrameworkPassthrough(config)) {
             wf = compileFrameworkPassthrough(config);
         } else if (isGraphStructure(config)) {

@@ -66,7 +66,7 @@ public class WorkflowRepairService {
                 if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
                     WorkflowSystemTask workflowSystemTask =
                             systemTaskRegistry.get(task.getTaskType());
-                    return workflowSystemTask.isAsync()
+                    return workflowSystemTask.isAsync(task)
                             && (!workflowSystemTask.isAsyncComplete(task)
                                     || (workflowSystemTask.isAsyncComplete(task)
                                             && task.getStatus() == TaskModel.Status.SCHEDULED))

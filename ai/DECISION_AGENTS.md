@@ -1,23 +1,29 @@
 # Decision inference
 
-Decision inference is an `AI_DECISION` system task. It is not a separate agent
-runtime.
+Decision inference is a `SWITCH` evaluator. The provider call runs on the system-task
+worker, and the completed task selects its branch.
 
-There are three ways to use the same task:
+There are three ways to use it:
 
-1. Add `AI_DECISION` directly to a workflow.
-2. Use a decision-backed router, which compiles to `AI_DECISION` followed by
+1. Add a `SWITCH` with `evaluatorType: "decision"` to a workflow.
+2. Use a decision-backed router, which compiles to that same `SWITCH`.
+3. Give an agent a `decision` tool, which the tool mapper also executes as that
    `SWITCH`.
-3. Give an agent a `decision` tool, which the tool mapper executes as
-   `AI_DECISION`.
 
 ## Workflow task
 
 ```json
 {
-  "name": "AI_DECISION",
+  "name": "decision_switch",
   "taskReferenceName": "classify_request",
-  "type": "AI_DECISION",
+  "type": "SWITCH",
+  "evaluatorType": "decision",
+  "expression": "route",
+  "retryCount": 3,
+  "retryLogic": "EXPONENTIAL_BACKOFF",
+  "retryDelaySeconds": 1,
+  "backoffScaleFactor": 2,
+  "maxRetryDelaySeconds": 5,
   "inputParameters": {
     "model": "jev-1.13",
     "state": "${workflow.input.request}",
@@ -31,18 +37,18 @@ There are three ways to use the same task:
         }
       }
     }
-  }
+  },
+  "decisionCases": {
+    "billing": [],
+    "support": []
+  },
+  "defaultCase": []
 }
 ```
 
-For exactly one `choice` question, the task copies the chosen value to
-`selectedCase`. A following `SWITCH` can use:
-
-```text
-${classify_request.output.selectedCase}
-```
-
-Other question combinations return `answers` without `selectedCase`.
+`expression` names the `choice` question used for routing. The task writes the
+chosen value to `selectedCase`, preserves the full provider response in its
+output, and runs the matching `decisionCases` branch.
 
 ## Agent tool
 
@@ -64,26 +70,29 @@ An agent declares a normal tool with `toolType: "decision"`:
     "provider": "typesafe",
     "model": "jev-1.13",
     "questions": {
-      "urgency": {
-        "type": "score",
-        "instructions": "Rate the urgency.",
-        "scale": ["low", "medium", "high"]
+      "route": {
+        "type": "choice",
+        "instructions": "Choose the handling path.",
+        "choices": {
+          "normal": "Handle through the normal path.",
+          "urgent": "Escalate for urgent handling."
+        }
       }
     }
   }
 }
 ```
 
-The mapper emits an `AI_DECISION` task. Server-owned values in `config` override
-model-supplied arguments, and the completed output returns to the model under the
-declared tool name. No worker is required.
+The mapper emits a branchless decision-backed `SWITCH`. Server-owned values in
+`config` override model-supplied arguments, and the completed output returns to
+the model under the declared tool name. No user worker is required.
 
 ## Router
 
-A decision-backed router compiles to:
+A decision-backed router compiles to one task:
 
 ```text
-AI_DECISION -> SWITCH -> selected child agent
+SWITCH (evaluatorType: decision) -> selected child agent
 ```
 
 The selector must contain one `choice` question whose choice keys match the
@@ -92,7 +101,8 @@ the selector marker; it cannot be deployed or run as a standalone agent.
 
 ## Questions and output
 
-Every question has `instructions` and one of these types:
+The decision protocol supports the following question types, but routing and
+decision tools require a `choice` question because the answer selects a case:
 
 | Type      | Configuration                       | Answer                                 |
 | --------- | ----------------------------------- | -------------------------------------- |
@@ -100,10 +110,10 @@ Every question has `instructions` and one of these types:
 | `score`   | `scale`: 2-10 descriptions          | `score`: zero-based index into `scale` |
 | `boolean` | none                                | `probability`: number from 0 through 1 |
 
-Output contains `provider`, `model`, `answers`, `latencyMs`, optional `requestId`,
-and provider-reported `usage`. Generated router and agent-tool tasks use three
-exponential-backoff retries; a hand-written workflow task uses its configured
-Conductor retry policy.
+Output contains `provider`, `model`, `answers`, `selectedCase`, `latencyMs`,
+optional `requestId`, and provider-reported `usage`. Generated router and
+agent-tool tasks use three exponential-backoff retries; a hand-written workflow
+task uses its configured Conductor retry policy.
 
 ## Server configuration
 

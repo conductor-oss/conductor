@@ -6,9 +6,16 @@
   "timeoutPolicy": "ALERT_ONLY",
   "tasks": [
     {
-      "name": "ai_decision",
+      "name": "decision_switch",
       "taskReferenceName": "decision",
-      "type": "AI_DECISION",
+      "type": "SWITCH",
+      "evaluatorType": "decision",
+      "expression": "route",
+      "retryCount": 3,
+      "retryLogic": "EXPONENTIAL_BACKOFF",
+      "retryDelaySeconds": 1,
+      "backoffScaleFactor": 2,
+      "maxRetryDelaySeconds": 5,
       "inputParameters": {
         "model": "jev-1.13",
         "state": "${workflow.input.request}",
@@ -22,16 +29,6 @@
             }
           }
         }
-      }
-    },
-    {
-      "name": "route_request",
-      "taskReferenceName": "route_request",
-      "type": "SWITCH",
-      "evaluatorType": "value-param",
-      "expression": "switchCaseValue",
-      "inputParameters": {
-        "switchCaseValue": "${decision.output.selectedCase}"
       },
       "decisionCases": {
         "billing": [

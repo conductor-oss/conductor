@@ -50,12 +50,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
 
     /** Conductor AI task types that consume LLM/generation API calls. */
     private static final Set<String> AI_TASK_TYPES =
-            Set.of(
-                    "AI_DECISION",
-                    "LLM_CHAT_COMPLETE",
-                    "GENERATE_IMAGE",
-                    "GENERATE_AUDIO",
-                    "GENERATE_VIDEO");
+            Set.of("LLM_CHAT_COMPLETE", "GENERATE_IMAGE", "GENERATE_AUDIO", "GENERATE_VIDEO");
 
     /**
      * Input key naming the tool a task was dispatched for, set by {@code
@@ -312,12 +307,15 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
 
         for (TaskModel task : workflow.getTasks()) {
             String taskType = task.getTaskType();
-            if (taskType == null || !AI_TASK_TYPES.contains(taskType)) continue;
-
             Map<String, Object> input = task.getInputData();
             Map<String, Object> output = task.getOutputData();
             if (input == null) input = Map.of();
             if (output == null) output = Map.of();
+            boolean decisionSwitch =
+                    "SWITCH".equals(taskType)
+                            && Boolean.TRUE.equals(input.get("_conductorDeferredEvaluator"));
+            if (taskType == null || (!AI_TASK_TYPES.contains(taskType) && !decisionSwitch))
+                continue;
 
             String model =
                     input.get("model") != null ? String.valueOf(input.get("model")) : "unknown";
@@ -336,6 +334,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
                         case "GENERATE_IMAGE" -> "image";
                         case "GENERATE_AUDIO" -> "audio";
                         case "GENERATE_VIDEO" -> "video";
+                        case "SWITCH" -> "decision";
                         default -> taskType.toLowerCase();
                     };
 
@@ -353,7 +352,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             int promptTokens = toInt(output.get("promptTokens"));
             int completionTokens = toInt(output.get("completionTokens"));
             int totalTokens = toInt(output.get("tokenUsed"));
-            if ("AI_DECISION".equals(taskType) && output.get("usage") instanceof Map<?, ?> usage) {
+            if (decisionSwitch && output.get("usage") instanceof Map<?, ?> usage) {
                 promptTokens = toInt(usage.get("inputTokens"));
                 completionTokens = toInt(usage.get("outputTokens"));
                 totalTokens = promptTokens + completionTokens;
@@ -430,6 +429,11 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         if (input != null && input.containsKey(AGENT_TOOL_NAME_KEY)) {
             // Covers tool kinds whose own config names the task type, which no allowlist can list.
             return true;
+        }
+        if (TaskType.TASK_TYPE_SWITCH.equals(taskType)) {
+            // SWITCH is also orchestration. Only the dynamic task marker above identifies one as
+            // a decision tool invocation.
+            return false;
         }
         if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskType)) {
             // SUB_WORKFLOW is also the multi-agent handoff. Unmarked means handoff, not a tool.

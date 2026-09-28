@@ -1,6 +1,6 @@
 {
   "name": "support_router",
-  "description": "Routes a support request to the billing or technical agent using one AI_DECISION call.",
+  "description": "Routes a support request to the billing or technical agent using one decision-backed SWITCH.",
   "strategy": "router",
   "router": {
     "name": "support_router_selector",

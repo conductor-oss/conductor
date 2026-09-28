@@ -172,6 +172,17 @@ class HttpDecisionClientTest {
         assertEquals(0, server.getRequestCount());
     }
 
+    @Test
+    void missingDefaultJevCredentialFailsBeforeHttp() {
+        config.setApiKey(null);
+
+        NonRetryableException error =
+                assertThrows(NonRetryableException.class, () -> client.decide(request()));
+
+        assertEquals("Decision: Decision API key is not configured", error.getMessage());
+        assertEquals(0, server.getRequestCount());
+    }
+
     private DecisionRequest request() {
         return new DecisionRequest(
                 "jev-1.13",

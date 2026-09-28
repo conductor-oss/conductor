@@ -38,6 +38,7 @@ import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -46,7 +47,15 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(
@@ -343,5 +352,109 @@ public class SwitchTaskMapperTest {
         assertEquals(1, mappedTasks.size());
         assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
         assertEquals(TaskModel.Status.FAILED, mappedTasks.get(0).getStatus());
+    }
+
+    // ── Category 1: existing evaluators keep the synchronous, in-decider path ────────
+
+    @Test
+    public void noBuiltInEvaluatorIsDeferred() {
+        assertFalse(evaluators.isEmpty());
+        evaluators.forEach(
+                (name, evaluator) ->
+                        assertFalse(name + " must stay synchronous", evaluator.isDeferred()));
+    }
+
+    @Test
+    public void valueParamSwitchIsEvaluatedInTheMapperAndBranchScheduledInTheSameCall() {
+        WorkflowTask switchTask = switchTask(ValueParamEvaluator.NAME, "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "even");
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        switchTask.getInputParameters(), workflowModel, null, null);
+        TaskModel branchTask = new TaskModel();
+        branchTask.setReferenceTaskName("t2");
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
+                .thenReturn(Collections.singletonList(branchTask));
+
+        List<TaskModel> mapped =
+                switchTaskMapper.getMappedTasks(context(switchTask, workflowModel, input));
+
+        assertEquals(2, mapped.size());
+        TaskModel sw = mapped.get(0);
+        assertEquals(TaskModel.Status.IN_PROGRESS, sw.getStatus());
+        assertEquals("even", sw.getOutputData().get("selectedCase"));
+        assertEquals("true", sw.getInputData().get("hasChildren"));
+        assertEquals("t2", mapped.get(1).getReferenceTaskName());
+        assertFalse("regular SWITCH is never async", new Switch(evaluators).isAsync(sw));
+    }
+
+    // ── Category 2: a deferred evaluator is not run by the mapper ────────────────────
+
+    @Test
+    public void deferredEvaluatorSwitchIsScheduledWithoutEvaluationOrBranch() {
+        Evaluator deferred = org.mockito.Mockito.mock(Evaluator.class);
+        when(deferred.isDeferred()).thenReturn(true);
+        Map<String, Evaluator> withDeferred = new HashMap<>(evaluators);
+        withDeferred.put("decision", deferred);
+        SwitchTaskMapper mapper = new SwitchTaskMapper(withDeferred);
+        WorkflowTask switchTask = switchTask("decision", "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "ignored");
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        switchTask.getInputParameters(), workflowModel, null, null);
+
+        List<TaskModel> mapped = mapper.getMappedTasks(context(switchTask, workflowModel, input));
+
+        assertEquals(1, mapped.size());
+        TaskModel sw = mapped.get(0);
+        assertEquals(TaskModel.Status.SCHEDULED, sw.getStatus());
+        assertEquals(TaskType.TASK_TYPE_SWITCH, sw.getTaskType());
+        assertNull(sw.getOutputData().get("selectedCase"));
+        assertNull(sw.getInputData().get("hasChildren"));
+        assertEquals("ignored", sw.getInputData().get("route"));
+        assertEquals(Boolean.TRUE, sw.getInputData().get(Switch.DEFERRED_EVALUATOR));
+        verify(deferred, never()).evaluate(anyString(), any());
+        verify(deciderService, never()).getTasksToBeScheduled(any(), any(), anyInt(), any());
+        assertTrue("deferred SWITCH is async", new Switch(withDeferred).isAsync(sw));
+    }
+
+    private WorkflowTask switchTask(String evaluatorType, String expression) {
+        WorkflowTask switchTask = new WorkflowTask();
+        switchTask.setType(TaskType.SWITCH.name());
+        switchTask.setName("Switch");
+        switchTask.setTaskReferenceName("switchTask");
+        switchTask.getInputParameters().put("route", "${workflow.input.route}");
+        switchTask.setEvaluatorType(evaluatorType);
+        switchTask.setExpression(expression);
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("even", Collections.singletonList(task2));
+        decisionCases.put("odd", Collections.singletonList(task3));
+        switchTask.setDecisionCases(decisionCases);
+        switchTask.setDefaultCase(Collections.singletonList(task1));
+        return switchTask;
+    }
+
+    private WorkflowModel workflowWithInput(String key, String value) {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put(key, value);
+        workflowModel.setInput(workflowInput);
+        return workflowModel;
+    }
+
+    private TaskMapperContext context(
+            WorkflowTask switchTask, WorkflowModel workflowModel, Map<String, Object> input) {
+        return TaskMapperContext.newBuilder()
+                .withWorkflowModel(workflowModel)
+                .withTaskDefinition(new TaskDef())
+                .withWorkflowTask(switchTask)
+                .withTaskInput(input)
+                .withRetryCount(0)
+                .withTaskId(idGenerator.generate())
+                .withDeciderService(deciderService)
+                .build();
     }
 }

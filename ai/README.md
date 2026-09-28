@@ -62,7 +62,7 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 | **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
 | **Generate PDF** | `GENERATE_PDF` | Convert markdown to PDF document |
 | **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
-| **AI Decision** | `AI_DECISION` | One structured choice question; route on `selectedCase` with a `SWITCH` |
+| **AI Decision** | `SWITCH` with `evaluatorType: decision` | One structured choice question and its matching branch |
 
 ---
 
@@ -417,9 +417,9 @@ Call a specific tool on an MCP server.
 | `content` | Array | Result content items with `type` and `text` |
 | `isError` | Boolean | Whether the call resulted in an error |
 
-### AI_DECISION
+### Decision-backed SWITCH
 
-Ask one `choice` question and route on the answer with a downstream `SWITCH`. See [DECISION_AGENTS.md](DECISION_AGENTS.md).
+Ask one `choice` question and route on the answer in the same `SWITCH`. See [DECISION_AGENTS.md](DECISION_AGENTS.md).
 
 **Inputs:**
 
@@ -434,7 +434,7 @@ Ask one `choice` question and route on the answer with a downstream `SWITCH`. Se
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `selectedCase` | String | Chosen choice name, for `SWITCH` with `evaluatorType: value-param` |
+| `selectedCase` | String | Chosen choice name used by the task to select a branch |
 | `answers` | Object | Per-question answer with optional `confidence` |
 | `usage` | Object | `inputTokens`, `outputTokens`, `cost`, `currency` when reported |
 | `latencyMs` | Long | Provider round-trip time |
@@ -679,7 +679,7 @@ conductor.ai.stabilityai.api-key=${STABILITY_API_KEY}
 | `api-key` | Yes | - | Stability AI API key |
 
 Supported models: `sd3.5-large`, `sd3.5-large-turbo`, `sd3.5-medium`, `sd3-large`, `sd3-medium`, `core` (Stable Image Core), `ultra` (Stable Image Ultra). The endpoint is selected automatically based on the model name.
-#### Decision (AI_DECISION)
+#### Decision evaluator
 
 ```properties
 conductor.ai.decision.api-key=${DECISION_API_KEY}
@@ -724,7 +724,7 @@ The AI module reads from standard environment variables automatically. Set the e
 | Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`, Vertex AI path only) |
 | Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (Vertex AI path only) |
 | Ollama | `OLLAMA_BASE_URL` | Ollama server URL, e.g. `http://10.0.0.105:11434` (default: `http://localhost:11434`). `OLLAMA_HOST` is honored as a fallback. |
-| Decision | `DECISION_API_KEY` | API key for `AI_DECISION` (`JEV_API_KEY` still honored) |
+| Decision | `DECISION_API_KEY` | API key for the decision evaluator (`JEV_API_KEY` still honored) |
 | Decision | `DECISION_PROVIDER` | Default decision provider (default: `openrouter`) |
 
 ### Usage

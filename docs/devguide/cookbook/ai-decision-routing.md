@@ -1,16 +1,16 @@
 ---
-description: "Conductor cookbook — route a request with one AI_DECISION task and a SWITCH on selectedCase."
+description: "Conductor cookbook — route a request with a decision-backed SWITCH."
 ---
 
 # AI decision routing
 
-One `AI_DECISION` task answers a fixed choice question. A `SWITCH` routes on `selectedCase`. The choices live in the definition, so the model can only pick a branch you declared.
+One `SWITCH` asks a fixed choice question and routes to the selected branch. The choices live in the definition, so the model can only pick a branch you declared.
 
 ## The shape
 
 ```text
-decision (AI_DECISION)  ──>  route_request (SWITCH)  ──>  billing   ──> selected_result (INLINE)
-                                                     └──>  technical ──┘
+decision (SWITCH, evaluatorType: decision)  ──>  billing   ──> selected_result (INLINE)
+                                             └──>  technical ──┘
 ```
 
 ## Prerequisites

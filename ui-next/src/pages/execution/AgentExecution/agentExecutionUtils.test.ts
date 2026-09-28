@@ -681,8 +681,9 @@ describe("decision tasks", () => {
               taskId: "decision",
               referenceTaskName: loopOverTask ? "decide__1" : "decide",
               loopOverTask,
-              taskType: "AI_DECISION",
+              taskType: "SWITCH",
               inputData: {
+                _conductorDeferredEvaluator: true,
                 provider: "decision",
                 model: "jev-1.13",
                 state: "state",
@@ -736,13 +737,18 @@ it.each([
       : childName;
     const selector = task({
       taskId: "selector",
-      taskType: decision ? "AI_DECISION" : "SUB_WORKFLOW",
+      taskType: decision ? "SWITCH" : "SUB_WORKFLOW",
       referenceTaskName: decision ? "triage_router" : "triage_router__1",
       loopOverTask: !decision,
       startTime: 10,
       endTime: 20,
       inputData: decision
-        ? { model: "jev-1.13", state: "route this", questions: { agent: {} } }
+        ? {
+            _conductorDeferredEvaluator: true,
+            model: "jev-1.13",
+            state: "route this",
+            questions: { agent: {} },
+          }
         : {
             subWorkflowName: "triage_selector",
             subWorkflowDefinition: {

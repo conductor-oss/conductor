@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
-import org.graalvm.polyglot.Context;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,28 +68,21 @@ class DecisionRouterCompilerTest {
         // Exercise the JSON representation sent by SDKs.
         config.setRouter(new ObjectMapper().convertValue(config.getRouter(), Map.class));
         var workflow = compiler.compile(config);
-        assertThat(workflow.getTasks())
-                .extracting(t -> t.getType())
-                .containsExactly("AI_DECISION", "SWITCH");
+        assertThat(workflow.getTasks()).extracting(t -> t.getType()).containsExactly("SWITCH");
         var route = workflow.getTasks().get(0);
+        assertThat(route.getEvaluatorType()).isEqualTo("decision");
+        assertThat(route.getExpression()).isEqualTo("agent.name");
         assertThat(route.getInputParameters())
                 .containsEntry("state", "${workflow.input.prompt}")
                 .containsEntry("model", "jev-1.13");
-        var dispatch = workflow.getTasks().get(1);
-        assertThat(dispatch.getDecisionCases()).containsOnlyKeys("billing", "technical");
-        try (Context context = Context.create("js")) {
-            context.eval(
-                    "js",
-                    "var $ = {question: 'agent.name', answers: {'agent.name': {choice: 'technical'}}}");
-            String selected = context.eval("js", dispatch.getExpression()).asString();
-            var tasks = dispatch.getDecisionCases().get(selected);
-            assertThat(tasks.get(0).getSubWorkflowParam().getName()).isEqualTo("technical");
-            assertThat(tasks.get(0).getInputParameters())
-                    .containsEntry("prompt", "${workflow.input.prompt}");
-            assertThat(tasks.get(1).getInputParameters())
-                    .containsEntry("result", "${triage_selected_1.output.result}");
-        }
-        assertThat(dispatch.getDefaultCase().get(0).getInputParameters())
+        assertThat(route.getDecisionCases()).containsOnlyKeys("billing", "technical");
+        var tasks = route.getDecisionCases().get("technical");
+        assertThat(tasks.get(0).getSubWorkflowParam().getName()).isEqualTo("technical");
+        assertThat(tasks.get(0).getInputParameters())
+                .containsEntry("prompt", "${workflow.input.prompt}");
+        assertThat(tasks.get(1).getInputParameters())
+                .containsEntry("result", "${triage_selected_1.output.result}");
+        assertThat(route.getDefaultCase().get(0).getInputParameters())
                 .containsEntry("terminationStatus", "FAILED");
         assertThat(workflow.getOutputParameters())
                 .containsEntry("result", "${workflow.variables.result}");
@@ -102,7 +94,7 @@ class DecisionRouterCompilerTest {
         var workflow = compiler.compile(team("triage", department, leaf("technical")));
         var child =
                 workflow.getTasks()
-                        .get(1)
+                        .get(0)
                         .getDecisionCases()
                         .get("billing")
                         .get(0)
@@ -110,7 +102,7 @@ class DecisionRouterCompilerTest {
                         .getWorkflowDef();
         var specialist =
                 child.getTasks()
-                        .get(1)
+                        .get(0)
                         .getDecisionCases()
                         .get("refunds")
                         .get(0)

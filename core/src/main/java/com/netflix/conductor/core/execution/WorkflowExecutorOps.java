@@ -1372,7 +1372,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             && NON_TERMINAL_TASK.test(task)) {
                         WorkflowSystemTask workflowSystemTask =
                                 systemTaskRegistry.get(task.getTaskType());
-                        if (!workflowSystemTask.isAsync()
+                        if (!workflowSystemTask.isAsync(task)
                                 && executeSyncSystemTaskWithSecrets(
                                         workflowSystemTask, workflow, task)) {
                             // Sync system tasks skip the task-update API path, so check here.
@@ -2073,7 +2073,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         && task.getStartTime() == 0) {
                     task.setStartTime(System.currentTimeMillis());
                 }
-                if (!workflowSystemTask.isAsync()) {
+                if (!workflowSystemTask.isAsync(task)) {
                     try {
                         // start execution of synchronous system tasks
                         startSyncSystemTaskWithSecrets(workflowSystemTask, workflow, task);
@@ -2489,7 +2489,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     rerunFromTask.setInputData(taskInput);
                 }
                 if (systemTaskRegistry.isSystemTask(rerunFromTask.getTaskType())
-                        && !systemTaskRegistry.get(rerunFromTask.getTaskType()).isAsync()) {
+                        && !systemTaskRegistry
+                                .get(rerunFromTask.getTaskType())
+                                .isAsync(rerunFromTask)) {
                     // Start the synchronous system task directly
                     systemTaskRegistry
                             .get(rerunFromTask.getTaskType())
@@ -2579,7 +2581,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                     task.setStatus(IN_PROGRESS);
                                 } else if (systemTaskRegistry.isSystemTask(task.getTaskType())
                                         && systemTaskRegistry.get(task.getTaskType()) != null
-                                        && !systemTaskRegistry.get(task.getTaskType()).isAsync()) {
+                                        && !systemTaskRegistry
+                                                .get(task.getTaskType())
+                                                .isAsync(task)) {
                                     task.setStatus(IN_PROGRESS);
                                 } else {
                                     task.setStatus(SCHEDULED);

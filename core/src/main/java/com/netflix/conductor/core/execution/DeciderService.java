@@ -518,6 +518,14 @@ public class DeciderService {
             if (task.getInputData().get("hasChildren") != null) {
                 return Collections.emptyList();
             }
+            // A SWITCH evaluated at execution time (deferred evaluator) completes with
+            // selectedCase in its output and no branch scheduled yet; schedule it now.
+            if (isDeferredSwitch(task) && task.getStatus() == TaskModel.Status.COMPLETED) {
+                List<TaskModel> branchTasks = scheduleSelectedCase(workflow, task);
+                if (branchTasks != null) {
+                    return branchTasks;
+                }
+            }
         }
 
         String taskReferenceName =
@@ -578,9 +586,10 @@ public class DeciderService {
                         : Optional.ofNullable(workflowTask)
                                 .map(WorkflowTask::getRetryCount)
                                 .orElse(taskDefinition.getRetryCount());
-        if (!task.getStatus().isRetriable()
-                || TaskType.isBuiltIn(task.getTaskType())
-                || expectedRetryCount <= retryCount) {
+        // Built-in operators do their work in the decider and cannot be re-run, except a SWITCH
+        // with a deferred evaluator, which is executed by the system task worker like any task.
+        boolean builtIn = TaskType.isBuiltIn(task.getTaskType()) && !isDeferredSwitch(task);
+        if (!task.getStatus().isRetriable() || builtIn || expectedRetryCount <= retryCount) {
             if (workflowTask != null
                     && (workflowTask.isOptional() || workflowTask.isPermissive())) {
                 return Optional.empty();
@@ -1018,6 +1027,41 @@ public class DeciderService {
                 .stream()
                 .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
+    }
+
+    /** A SWITCH whose evaluator runs on the system task worker rather than in the decider. */
+    private boolean isDeferredSwitch(TaskModel task) {
+        return TaskType.TASK_TYPE_SWITCH.equals(task.getTaskType())
+                && systemTaskRegistry.isSystemTask(task.getTaskType())
+                && systemTaskRegistry.get(task.getTaskType()).isAsync(task);
+    }
+
+    /**
+     * Schedule the first task of the case selected by a completed deferred SWITCH. Returns null
+     * when the selected case (or the default case) has no tasks, so the caller continues with the
+     * task following the SWITCH.
+     */
+    private List<TaskModel> scheduleSelectedCase(WorkflowModel workflow, TaskModel switchTask) {
+        WorkflowTask workflowTask = switchTask.getWorkflowTask();
+        if (workflowTask == null) {
+            workflowTask =
+                    workflow.getWorkflowDefinition()
+                            .getTaskByRefName(switchTask.getReferenceTaskName());
+        }
+        Object selectedCase = switchTask.getOutputData().get("selectedCase");
+        if (workflowTask == null || selectedCase == null) {
+            return null;
+        }
+        List<WorkflowTask> selectedTasks =
+                workflowTask.getDecisionCases().get(String.valueOf(selectedCase));
+        if (selectedTasks == null) {
+            selectedTasks = workflowTask.getDefaultCase();
+        }
+        if (selectedTasks == null || selectedTasks.isEmpty()) {
+            return null;
+        }
+        switchTask.getInputData().put("hasChildren", "true");
+        return getTasksToBeScheduled(workflow, selectedTasks.get(0), 0);
     }
 
     private int applyMaxRetryDelayCap(int delaySeconds, TaskDef taskDef) {

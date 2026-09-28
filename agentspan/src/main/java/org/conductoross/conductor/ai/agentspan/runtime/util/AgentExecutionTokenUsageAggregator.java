@@ -63,7 +63,7 @@ public final class AgentExecutionTokenUsageAggregator {
 
     private static void addLlmTaskTokenUsage(AggregateTokenUsage aggregate, Task task) {
         Map<String, Object> output = task.getOutputData();
-        if ("AI_DECISION".equalsIgnoreCase(task.getTaskType())
+        if ("SWITCH".equalsIgnoreCase(task.getTaskType())
                 && output != null
                 && output.get("usage") instanceof Map<?, ?> usage) {
             long input = toLong(usage.get("inputTokens")),

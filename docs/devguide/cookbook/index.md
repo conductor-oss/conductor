@@ -73,7 +73,7 @@ description: "Complete, runnable Conductor workflow definitions for common orche
 
   <a class="cookbook-card" href="ai-decision-routing.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h6"/><path d="M10 12l4-6h6"/><path d="M10 12l4 6h6"/></svg></span>
-    <span class="cookbook-card__body"><strong>AI decision routing</strong><span>Answer one fixed choice question with AI_DECISION, then SWITCH on the selected case.</span></span>
+    <span class="cookbook-card__body"><strong>AI decision routing</strong><span>Answer one fixed choice question and route with a decision-backed SWITCH.</span></span>
     <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
   </a>
 

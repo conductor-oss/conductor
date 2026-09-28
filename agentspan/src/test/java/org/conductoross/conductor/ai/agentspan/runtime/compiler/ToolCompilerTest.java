@@ -96,7 +96,7 @@ class ToolCompilerTest {
         Map<String, Object> spec = new ToolCompiler().compileToolSpecs(List.of(tool)).get(0);
 
         assertThat(spec.get("name")).isEqualTo("classify");
-        assertThat(spec.get("type")).isEqualTo("AI_DECISION");
+        assertThat(spec.get("type")).isEqualTo("SWITCH");
     }
 
     @Test

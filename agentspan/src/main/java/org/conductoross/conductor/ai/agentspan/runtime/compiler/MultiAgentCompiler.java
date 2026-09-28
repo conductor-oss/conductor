@@ -1069,9 +1069,11 @@ public class MultiAgentCompiler {
 
         String routerRef = toRef(config.getName()) + "_router";
         WorkflowTask route = new WorkflowTask();
-        route.setName("AI_DECISION");
-        route.setType("AI_DECISION");
+        route.setName("decision_switch");
+        route.setType("SWITCH");
         route.setTaskReferenceName(routerRef);
+        route.setEvaluatorType("decision");
+        route.setExpression(entry.getKey());
         Map<String, Object> routeInput = new LinkedHashMap<>();
         routeInput.put("model", selector.getModel());
         routeInput.put("state", "${workflow.input.prompt}");
@@ -1081,20 +1083,13 @@ public class MultiAgentCompiler {
         }
         route.setInputParameters(routeInput);
         TaskDef retry = new TaskDef();
-        retry.setName("AI_DECISION");
+        retry.setName("decision_switch");
         retry.setRetryCount(3);
         retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
         retry.setRetryDelaySeconds(1);
         retry.setBackoffScaleFactor(2);
         retry.setMaxRetryDelaySeconds(5);
         route.setTaskDefinition(retry);
-        WorkflowTask dispatch = new WorkflowTask();
-        dispatch.setType("SWITCH");
-        dispatch.setTaskReferenceName(toRef(config.getName()) + "_switch");
-        dispatch.setEvaluatorType("graaljs");
-        dispatch.setExpression("$.answers[$.question].choice");
-        dispatch.setInputParameters(
-                Map.of("answers", ref(routerRef + ".output.answers"), "question", entry.getKey()));
         Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
         for (int i = 0; i < agents.size(); i++) {
             AgentConfig child = agents.get(i);
@@ -1117,7 +1112,7 @@ public class MultiAgentCompiler {
                             child.getName()));
             cases.put(child.getName(), List.of(run, save));
         }
-        dispatch.setDecisionCases(cases);
+        route.setDecisionCases(cases);
         WorkflowTask invalid = new WorkflowTask();
         invalid.setType("TERMINATE");
         invalid.setTaskReferenceName(toRef(config.getName()) + "_invalid_route");
@@ -1127,10 +1122,10 @@ public class MultiAgentCompiler {
                         "FAILED",
                         "terminationReason",
                         "Decision selected an unknown agent"));
-        dispatch.setDefaultCase(List.of(invalid));
+        route.setDefaultCase(List.of(invalid));
 
         WorkflowDef workflow = agentCompiler.createWorkflow(config);
-        workflow.setTasks(List.of(route, dispatch));
+        workflow.setTasks(List.of(route));
         workflow.setOutputParameters(
                 Map.of(
                         "result",

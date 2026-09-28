@@ -182,16 +182,16 @@ class AgentChatCompleteTaskMapperTest {
                                         "taskReferenceName",
                                         logicalToolRef,
                                         "type",
-                                        "AI_DECISION",
+                                        "SWITCH",
                                         "inputParameters",
                                         Map.of("state", "customer message")))));
 
         TaskModel decision = new TaskModel();
         WorkflowTask decisionWorkflowTask = workflowTask(logicalToolRef + "_0");
-        decisionWorkflowTask.setType("AI_DECISION");
+        decisionWorkflowTask.setType("SWITCH");
         decision.setWorkflowTask(decisionWorkflowTask);
-        decision.setTaskType("AI_DECISION");
-        decision.setTaskDefName("AI_DECISION");
+        decision.setTaskType("SWITCH");
+        decision.setTaskDefName("SWITCH");
         decision.setStatus(TaskModel.Status.COMPLETED);
         decision.setInputData(Map.of("_agent_tool_name", "classify", "state", "customer message"));
         decision.setOutputData(Map.of("answers", Map.of("category", "billing")));
@@ -211,8 +211,8 @@ class AgentChatCompleteTaskMapperTest {
                 .singleElement()
                 .satisfies(
                         call -> {
-                            assertThat(call.getName()).isEqualTo("AI_DECISION");
-                            assertThat(call.getType()).isEqualTo("AI_DECISION");
+                            assertThat(call.getName()).isEqualTo("classify");
+                            assertThat(call.getType()).isEqualTo("SWITCH");
                         });
         assertThat(result.getMessage()).contains("billing");
     }

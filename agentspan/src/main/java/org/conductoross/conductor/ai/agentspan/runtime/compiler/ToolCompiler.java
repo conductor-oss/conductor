@@ -146,7 +146,7 @@ public class ToolCompiler {
                     Map.entry("http", "HTTP"),
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
                     Map.entry("mcp", "CALL_MCP_TOOL"),
-                    Map.entry("decision", "AI_DECISION"),
+                    Map.entry("decision", "SWITCH"),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),

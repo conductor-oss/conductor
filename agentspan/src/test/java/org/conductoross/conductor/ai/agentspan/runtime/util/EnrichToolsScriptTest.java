@@ -121,7 +121,7 @@ class EnrichToolsScriptTest {
     }
 
     @Test
-    void decisionToolBecomesAiDecisionTaskWithServerOwnedDefaults() throws Exception {
+    void decisionToolBecomesDeferredSwitchWithServerOwnedDefaults() throws Exception {
         List<Map<String, Object>> tasks =
                 enrichWithDecision(
                         "{}",
@@ -136,8 +136,10 @@ class EnrichToolsScriptTest {
 
         assertThat(tasks).singleElement();
         assertThat(tasks.get(0))
-                .containsEntry("name", "AI_DECISION")
-                .containsEntry("type", "AI_DECISION");
+                .containsEntry("name", "decision_switch")
+                .containsEntry("type", "SWITCH")
+                .containsEntry("evaluatorType", "decision")
+                .containsEntry("expression", "route");
         @SuppressWarnings("unchecked")
         Map<String, Object> input = (Map<String, Object>) tasks.get(0).get("inputParameters");
         assertThat(input)

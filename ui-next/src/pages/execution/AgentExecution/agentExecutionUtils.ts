@@ -69,6 +69,14 @@ function decisionTaskEvent(
   };
 }
 
+function isDecisionTask(task: ExecutionTask): boolean {
+  return (
+    task.taskType === "SWITCH" &&
+    (task.inputData?._conductorDeferredEvaluator === true ||
+      task.outputData?.answers !== undefined)
+  );
+}
+
 function embeddedAgentDef(task: ExecutionTask) {
   const definition = task.inputData?.subWorkflowDefinition as
     | WorkflowExecution["workflowDefinition"]
@@ -99,32 +107,29 @@ function routerTimeline(
     let events: AgentEvent[] = [];
     let subAgents: AgentRunData[] = [];
     if (isSelector(task)) {
-      const result =
-        task.taskType === "AI_DECISION"
-          ? task.outputData
-          : task.outputData?.result;
-      const event: AgentEvent =
-        task.taskType === "AI_DECISION"
-          ? decisionTaskEvent(task)
-          : {
-              id: `${task.taskId}-router`,
-              type: EventType.THINKING,
-              timestamp: task.startTime ?? 0,
-              summary: "Routing decision",
-              toolName: definition?.model as string | undefined,
-              detail: { input: task.inputData?.workflowInput, output: result },
-              success: taskSuccess(task.status),
-              durationMs,
-            };
+      const result = isDecisionTask(task)
+        ? task.outputData
+        : task.outputData?.result;
+      const event: AgentEvent = isDecisionTask(task)
+        ? decisionTaskEvent(task)
+        : {
+            id: `${task.taskId}-router`,
+            type: EventType.THINKING,
+            timestamp: task.startTime ?? 0,
+            summary: "Routing decision",
+            toolName: definition?.model as string | undefined,
+            detail: { input: task.inputData?.workflowInput, output: result },
+            success: taskSuccess(task.status),
+            durationMs,
+          };
       const answers = (
         result as { answers?: Record<string, { choice?: string }> } | undefined
       )?.answers;
-      const choice =
-        task.taskType === "AI_DECISION"
-          ? Object.values(answers ?? {})[0]?.choice
-          : typeof result === "string"
-            ? result
-            : undefined;
+      const choice = isDecisionTask(task)
+        ? Object.values(answers ?? {})[0]?.choice
+        : typeof result === "string"
+          ? result
+          : undefined;
       if (choice) {
         event.targetAgent = choice;
         event.summary = `Selected: ${choice}`;
@@ -973,7 +978,7 @@ export function transformWorkflowExecutionToAgentRun(
     if (iter !== null) {
       if (!iterMap.has(iter)) iterMap.set(iter, []);
       iterMap.get(iter)!.push(task);
-    } else if (!ITER_INFRA.has(task.taskType)) {
+    } else if (!ITER_INFRA.has(task.taskType) || isDecisionTask(task)) {
       // Root-level non-infrastructure: final LLM tasks, or entire simple agents
       rootActiveTasks.push(task);
     }
@@ -1010,7 +1015,7 @@ export function transformWorkflowExecutionToAgentRun(
       );
 
       const { tasks: decisionTasks } = deduplicateRetriedTasks(
-        iterTasks.filter((t) => t.taskType === "AI_DECISION"),
+        iterTasks.filter(isDecisionTask),
       );
       const decisionEvents = decisionTasks.map(decisionTaskEvent);
 
@@ -1025,7 +1030,7 @@ export function transformWorkflowExecutionToAgentRun(
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
             t.taskType !== "LLM_CHAT_COMPLETE" &&
-            t.taskType !== "AI_DECISION",
+            !isDecisionTask(t),
         ),
       );
 
@@ -1727,7 +1732,7 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "AI_DECISION") {
+      if (isDecisionTask(task)) {
         const event = decisionTaskEvent(task);
         rootEvents.push(event);
         rootPrompt += event.tokens!.promptTokens;
