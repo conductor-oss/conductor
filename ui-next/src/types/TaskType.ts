@@ -427,6 +427,8 @@ export interface LLMTextCompleteTaskDef extends CommonTaskDef {
     llmProvider?: string;
     model?: string;
     promptName?: string;
+    /** Pins the referenced prompt; omit to resolve to its latest version at run time. */
+    promptVersion?: number;
     promptVariables?: Record<string, unknown>;
     temperature?: number;
     topP?: number;
@@ -537,6 +539,8 @@ export interface LLMChatComplete extends CommonTaskDef {
     llmProvider: string;
     model?: string;
     instructions?: string;
+    /** Pins the referenced prompt; omit to resolve to its latest version at run time. */
+    promptVersion?: number;
     messages?: string;
   };
 }

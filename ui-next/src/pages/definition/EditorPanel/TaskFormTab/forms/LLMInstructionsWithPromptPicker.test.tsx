@@ -17,6 +17,8 @@ vi.mock("plugins/fetch", () => ({
 
 vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({}),
+  // PromptVersionSelect looks up the selected prompt's versions.
+  useFetch: () => ({ data: undefined }),
 }));
 
 vi.mock("components/FlatMapForm/ConductorAutocompleteVariables", () => ({
@@ -125,6 +127,61 @@ describe("LLMInstructionsWithPromptPicker", () => {
       "You are a concise assistant.",
     );
     expect(task.inputParameters?.allowRawPrompts).toBe(true);
+  });
+
+  it("clears the version pin when the prompt is cleared", async () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: { instructions: "greeting", promptVersion: 2 },
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText("Prompt Template"), {
+      target: { value: "" },
+    });
+
+    const task = savedTask();
+    expect("promptVersion" in (task.inputParameters ?? {})).toBe(false);
+  });
+
+  it("clears the version pin when a different prompt is chosen", async () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: { instructions: "greeting", promptVersion: 2 },
+        }}
+      />,
+    );
+
+    await waitFor(() => expect(fetchWithContext).toHaveBeenCalled());
+    // v2 of one prompt means nothing for another.
+    fireEvent.change(screen.getByLabelText("Prompt Template"), {
+      target: { value: "farewell" },
+    });
+
+    const task = savedTask();
+    expect(task.inputParameters?.instructions).toBe("farewell");
+    expect("promptVersion" in (task.inputParameters ?? {})).toBe(false);
+  });
+
+  it("clears the version pin when custom instructions replace the prompt", () => {
+    render(
+      <Harness
+        initialTask={{
+          inputParameters: { instructions: "greeting", promptVersion: 2 },
+        }}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Instructions"), {
+      target: { value: "You are a concise assistant." },
+    });
+
+    const task = savedTask();
+    expect("promptVersion" in (task.inputParameters ?? {})).toBe(false);
   });
 
   it("clears promptVariables when writing custom instructions", () => {
