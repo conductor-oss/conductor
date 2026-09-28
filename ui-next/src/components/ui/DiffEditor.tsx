@@ -13,6 +13,16 @@ const defaultOptions: DiffEditorOptions = {
 
 export const DiffEditor = ({ options = {}, ...rest }) => {
   return (
-    <MonacoDiffEditor options={{ ...defaultOptions, ...options }} {...rest} />
+    <MonacoDiffEditor
+      // Keep the underlying text models alive across unmount. The diff editor is
+      // toggled off when a confirm-save flow closes (e.g. after the backend
+      // rejects a save); without this, Monaco disposes the models while the
+      // widget still references them and throws the uncaught
+      // "TextModel got disposed before DiffEditorWidget model got reset".
+      keepCurrentOriginalModel
+      keepCurrentModifiedModel
+      options={{ ...defaultOptions, ...options }}
+      {...rest}
+    />
   );
 };

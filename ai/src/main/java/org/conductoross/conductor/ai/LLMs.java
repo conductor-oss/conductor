@@ -18,21 +18,25 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.conductoross.conductor.ai.document.DocumentLoader;
-import org.conductoross.conductor.ai.models.AudioGenRequest;
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
-import org.conductoross.conductor.ai.models.ImageGenRequest;
-import org.conductoross.conductor.ai.models.LLMResponse;
-import org.conductoross.conductor.ai.models.VideoGenRequest;
-import org.conductoross.conductor.common.JsonSchemaValidator;
+import org.conductoross.conductor.ai.model.AudioGenRequest;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.ImageGenRequest;
+import org.conductoross.conductor.ai.model.LLMResponse;
+import org.conductoross.conductor.ai.model.VideoGenRequest;
+import org.conductoross.conductor.ai.recording.LLMCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.conductoross.conductor.service.SchemaService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
@@ -49,10 +53,22 @@ public class LLMs {
 
     public LLMs(
             List<DocumentLoader> documentLoaders,
-            JsonSchemaValidator jsonSchemaValidator,
-            AIModelProvider modelProvider) {
+            SchemaService schemaService,
+            AIModelProvider modelProvider,
+            OkHttpClient conductorAiHttpClient) {
+        this(documentLoaders, schemaService, modelProvider, conductorAiHttpClient, null);
+    }
+
+    @Autowired
+    public LLMs(
+            List<DocumentLoader> documentLoaders,
+            SchemaService schemaService,
+            AIModelProvider modelProvider,
+            OkHttpClient conductorAiHttpClient,
+            @Nullable LLMCallRecorder recorder) {
         this.modelProvider = modelProvider;
-        this.helper = new LLMHelper(jsonSchemaValidator, documentLoaders);
+        this.helper =
+                new LLMHelper(schemaService, documentLoaders, conductorAiHttpClient, recorder);
         this.payloadStoreLocation = modelProvider.getPayloadStoreLocation();
     }
 

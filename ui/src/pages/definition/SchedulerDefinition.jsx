@@ -106,8 +106,7 @@ export default function SchedulerDefinition() {
     <>
       <Helmet>
         <title>
-          Conductor UI - Schedule Definition -{" "}
-          {schedulerName || "New Schedule"}
+          Conductor UI - Schedule Definition - {schedulerName || "New Schedule"}
         </title>
       </Helmet>
 
@@ -127,53 +126,53 @@ export default function SchedulerDefinition() {
       {isSchedulerDisabled(error) ? (
         <SchedulerDisabledBanner />
       ) : (
-      <div className={classes.wrapper}>
-        <Toolbar>
-          <Text className={classes.name}>{schedulerName || "NEW"}</Text>
+        <div className={classes.wrapper}>
+          <Toolbar>
+            <Text className={classes.name}>{schedulerName || "NEW"}</Text>
 
-          {isModified ? (
-            <Pill color="yellow" label="Modified" />
-          ) : (
-            <Pill label="Unmodified" />
-          )}
-          {!_.isEmpty(jsonErrors) && <Pill color="red" label="Validation" />}
+            {isModified ? (
+              <Pill color="yellow" label="Modified" />
+            ) : (
+              <Pill label="Unmodified" />
+            )}
+            {!_.isEmpty(jsonErrors) && <Pill color="red" label="Validation" />}
 
-          <div className={classes.rightButtons}>
-            <Button
-              disabled={!_.isEmpty(jsonErrors) || !isModified}
-              onClick={handleOpenSave}
-            >
-              Save
-            </Button>
-            <Button
-              disabled={!isModified}
-              onClick={() => setResetDialog(true)}
-              variant="secondary"
-            >
-              Reset
-            </Button>
-          </div>
-        </Toolbar>
+            <div className={classes.rightButtons}>
+              <Button
+                disabled={!_.isEmpty(jsonErrors) || !isModified}
+                onClick={handleOpenSave}
+              >
+                Save
+              </Button>
+              <Button
+                disabled={!isModified}
+                onClick={() => setResetDialog(true)}
+                variant="secondary"
+              >
+                Reset
+              </Button>
+            </div>
+          </Toolbar>
 
-        <Editor
-          height="100%"
-          width="100%"
-          theme="vs-light"
-          language="json"
-          value={schedulerJson}
-          autoIndent={true}
-          beforeMount={handleEditorWillMount}
-          onMount={handleEditorDidMount}
-          onValidate={handleValidate}
-          onChange={handleChange}
-          options={{
-            selectOnLineNumbers: true,
-            minimap: {
-              enabled: false,
-            },
-          }}
-        />
-      </div>
+          <Editor
+            height="100%"
+            width="100%"
+            theme="vs-light"
+            language="json"
+            value={schedulerJson}
+            autoIndent={true}
+            beforeMount={handleEditorWillMount}
+            onMount={handleEditorDidMount}
+            onValidate={handleValidate}
+            onChange={handleChange}
+            options={{
+              selectOnLineNumbers: true,
+              minimap: {
+                enabled: false,
+              },
+            }}
+          />
+        </div>
       )}
     </>
   );

@@ -6,7 +6,10 @@ import { Button, LinearProgress, Pill, Text } from "../../components";
 import _ from "lodash";
 import Editor from "@monaco-editor/react";
 import { Toolbar } from "@material-ui/core";
-import { configureMonaco, NEW_EVENT_HANDLER_TEMPLATE } from "../../schema/eventHandler";
+import {
+  configureMonaco,
+  NEW_EVENT_HANDLER_TEMPLATE,
+} from "../../schema/eventHandler";
 import { useEventHandler } from "../../data/eventHandler";
 import ResetConfirmationDialog from "./ResetConfirmationDialog";
 import { usePushHistory } from "../../components/NavLink";
@@ -48,7 +51,11 @@ export default function EventHandlerDefinition() {
     eventHandler: eventHandlerDef,
     isFetching,
     refetch,
-  } = useEventHandler(eventHandlerEvent, eventHandlerName, NEW_EVENT_HANDLER_TEMPLATE);
+  } = useEventHandler(
+    eventHandlerEvent,
+    eventHandlerName,
+    NEW_EVENT_HANDLER_TEMPLATE
+  );
 
   console.log(eventHandlerDef);
 
@@ -74,7 +81,7 @@ export default function EventHandlerDefinition() {
     } else {
       navigate(`/eventHandlerDef/${event}/${name}`);
     }
-  }
+  };
 
   // Reset
   const doReset = () => {
@@ -105,7 +112,8 @@ export default function EventHandlerDefinition() {
     <>
       <Helmet>
         <title>
-          Conductor UI - Event Handler Definition - {eventHandlerName || "New Event Handler"}
+          Conductor UI - Event Handler Definition -{" "}
+          {eventHandlerName || "New Event Handler"}
         </title>
       </Helmet>
 

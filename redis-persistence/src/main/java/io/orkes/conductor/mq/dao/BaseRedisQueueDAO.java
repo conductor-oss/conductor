@@ -105,6 +105,12 @@ public abstract class BaseRedisQueueDAO implements QueueDAO {
     }
 
     @Override
+    public List<String> peekFirstIds(String queueName, int count) {
+        String queueKey = queueNamespace + ".QUEUE." + queueName + "." + queueShard;
+        return jedisCommands.zrangeByScore(queueKey, 0, Double.POSITIVE_INFINITY, 0, count);
+    }
+
+    @Override
     public final void push(String queueName, String id, long offsetTimeInSecond) {
         QueueMessage message = new QueueMessage(id, "", offsetTimeInSecond * 1000);
         get(queueName).push(Arrays.asList(message));

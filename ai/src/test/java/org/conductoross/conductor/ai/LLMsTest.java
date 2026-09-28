@@ -14,7 +14,7 @@ package org.conductoross.conductor.ai;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.EmbeddingGenRequest;
+import org.conductoross.conductor.ai.model.EmbeddingGenRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +36,7 @@ class LLMsTest {
         when(mockModelProvider.getPayloadStoreLocation()).thenReturn("/tmp/test-payload");
         when(mockModelProvider.getModel(any())).thenReturn(mockModel);
 
-        llms = new LLMs(List.of(), null, mockModelProvider);
+        llms = new LLMs(List.of(), null, mockModelProvider, new okhttp3.OkHttpClient());
     }
 
     @Test

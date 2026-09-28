@@ -23,7 +23,7 @@ Conductor provides native system tasks for LLM orchestration and integration. No
 | Grok (xAI) | ✓ | ✓ | — |
 | StabilityAI | — | — | — |
 
-No other open source workflow engine provides native LLM orchestration at this breadth. Each provider is a configuration — switch models by changing a parameter, not your code.
+Each provider is configured on the task, so a workflow can select the model appropriate for that step without changing the surrounding orchestration.
 
 
 ## Built-in tools & advanced capabilities
@@ -220,12 +220,15 @@ Ready-to-use workflow definitions for every AI task type. Each example is a comp
 | [Extended Thinking](https://github.com/conductor-oss/conductor/blob/main/ai/examples/20-extended-thinking.json) | `LLM_CHAT_COMPLETE` (thinking) |
 | [Web Research Agent](https://github.com/conductor-oss/conductor/blob/main/ai/examples/21-web-search-research-agent.json) | `LLM_CHAT_COMPLETE` (web search + thinking), `GENERATE_PDF` |
 | [Multi-Turn Chain](https://github.com/conductor-oss/conductor/blob/main/ai/examples/22-multi-turn-chain.json) | `LLM_CHAT_COMPLETE` (previousResponseId) |
+| [Dynamic Workflows with AI](https://github.com/conductor-oss/conductor/blob/main/ai/examples/36-ai-workflow-routing.json) | `LLM_CHAT_COMPLETE`, dynamic `SUB_WORKFLOW` |
 
 Browse all examples: [`ai/examples/`](https://github.com/conductor-oss/conductor/tree/main/ai/examples)
 
 
 ## Next steps
 
-- **[Durable Agents](durable-agents.md)** &mdash; What persists, what gets retried, and why JSON is AI-native.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; add governance, evaluation, deployment, recovery, and operations around these tasks.
+- **[Durable Adaptive Graphs](dynamic-workflows.md)** &mdash; Govern runtime-generated plans, bounded fan-out, approval, and recovery.
+- **[Production Agent Architecture](production-agent-architecture.md)** &mdash; Place LLM orchestration in a durable, observable production boundary.
 - **[Dynamic Workflows](dynamic-workflows.md)** &mdash; Agents that build their own execution plans at runtime.
-- **[AI & LLM Recipes](../cookbook/ai-llm.md)** &mdash; Practical recipes for common LLM workflow patterns.
+- **[AI Cookbook](cookbook/index.md)** &mdash; Production starters for common LLM, tool, and agent workflow patterns.

@@ -14,7 +14,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import MuiButton from "components/ui/buttons/MuiButton";
 import MuiButtonGroup from "components/ui/buttons/MuiButtonGroup";
 import DocsIcon from "components/icons/DocsIcon";
-import SlackIcon from "images/svg/slack-logo-transparent.svg?react";
+import SlackIcon from "components/icons/SlackIcon";
 import { useRef, useState } from "react";
 import { colors } from "theme/tokens/variables";
 import { featureFlags, FEATURES } from "utils/flags";

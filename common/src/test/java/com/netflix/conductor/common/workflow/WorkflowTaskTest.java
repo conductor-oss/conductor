@@ -14,10 +14,12 @@ package com.netflix.conductor.common.workflow;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
 
+import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -75,5 +77,62 @@ public class WorkflowTaskTest {
         assertTrue(
                 validationErrors.contains(
                         "WorkflowTask taskReferenceName name cannot be empty or null"));
+    }
+
+    @Test
+    public void testAgentMetadataJsonRoundTrip() throws Exception {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("invoke_agent");
+        task.setTaskReferenceName("invoke_agent_ref");
+        task.setType(TaskType.AGENT.name());
+        task.setMetadata(
+                Map.of(
+                        "agent",
+                        Map.of(
+                                "schemaVersion",
+                                1,
+                                "agentType",
+                                "conductor",
+                                "resolved",
+                                true,
+                                "conductor",
+                                Map.of(
+                                        "name",
+                                        "researcher",
+                                        "resolvedVersion",
+                                        7,
+                                        "agentConfig",
+                                        Map.of(
+                                                "model",
+                                                "openai/gpt-5",
+                                                "tools",
+                                                List.of(Map.of("name", "search")))))));
+
+        ObjectMapperProvider provider = new ObjectMapperProvider();
+        String json = provider.getObjectMapper().writeValueAsString(task);
+        WorkflowTask decoded = provider.getObjectMapper().readValue(json, WorkflowTask.class);
+
+        assertEquals(task.getMetadata(), decoded.getMetadata());
+    }
+
+    @Test
+    public void testWorkflowTaskWithoutMetadataRemainsValid() throws Exception {
+        String json =
+                "{\"name\":\"legacy\",\"taskReferenceName\":\"legacy_ref\",\"type\":\"SIMPLE\"}";
+
+        WorkflowTask decoded =
+                new ObjectMapperProvider().getObjectMapper().readValue(json, WorkflowTask.class);
+
+        assertNotNull(decoded.getMetadata());
+        assertTrue(decoded.getMetadata().isEmpty());
+
+        WorkflowTask explicitlyNull =
+                new ObjectMapperProvider()
+                        .getObjectMapper()
+                        .readValue(
+                                "{\"name\":\"legacy\",\"taskReferenceName\":\"legacy_ref\",\"type\":\"SIMPLE\",\"metadata\":null}",
+                                WorkflowTask.class);
+        assertNotNull(explicitlyNull.getMetadata());
+        assertTrue(explicitlyNull.getMetadata().isEmpty());
     }
 }

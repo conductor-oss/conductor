@@ -116,8 +116,8 @@
     {
       "name": "conductor.file-storage.type",
       "type": "java.lang.String",
-      "description": "Storage backend: local, s3, gcs, or azure-blob.",
-      "defaultValue": "local"
+      "description": "Storage backend: conductor, s3, gcs, or azure-blob.",
+      "defaultValue": "conductor"
     },
     {
       "name": "conductor.file-storage.signed-url-expiration",

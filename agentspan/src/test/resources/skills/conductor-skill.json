@@ -1,0 +1,11 @@
+{
+  "model": "anthropic/claude-sonnet-4-6",
+  "agentModels": {},
+  "skillMd": "---\nname: conductor-skill\ndescription: Manage Conductor workflows.\n---\n# Conductor\n\nUse conductor_api to manage workflows. See references/api-reference.md for details.",
+  "agentFiles": {},
+  "scripts": {
+    "conductor_api": {"filename": "conductor_api.py", "language": "python"}
+  },
+  "resourceFiles": ["references/api-reference.md", "references/workflow-definition.md"],
+  "crossSkillRefs": {}
+}

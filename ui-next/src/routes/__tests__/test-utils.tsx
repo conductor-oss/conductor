@@ -126,7 +126,6 @@ export const mockPageComponents = () => {
     "enterprise/pages/getStarted/GetStarted": "get-started",
     "enterprise/pages/metrics": "metrics-page",
     "enterprise/pages/secrets/Secrets": "secrets",
-    "enterprise/pages/workflowExplorer/Explorer": "explorer",
 
     // Remote services
     "enterprise/pages/remoteServices/edit/ServiceEdit": "service-edit",
@@ -152,12 +151,6 @@ export const mockPageComponents = () => {
     "enterprise/pages/webhooks/edit/WebhookEdit": {
       WebhookEditPage: "webhook-edit-page",
     },
-
-    // Kitchen sink
-    "../pages/kitchensink/Examples": "examples",
-    "../pages/kitchensink/Gantt": "gantt",
-    "../pages/kitchensink/KitchenSink": "kitchen-sink",
-    "../pages/kitchensink/ThemeSampler": "theme-sampler",
 
     // Queue and scheduler
     "../pages/queueMonitor/TaskQueue": "task-queue",

@@ -47,9 +47,17 @@ public class EventClientTests {
             eventClient.registerEventHandler(eventHandler);
             eventClient.updateEventHandler(eventHandler);
 
-            // Verify registration
-            List<EventHandler> events = eventClient.getEventHandlers(EVENT, false);
-            assertEquals(1, events.size(), "Expected exactly 1 event handler");
+            // Verify registration. Await: on slower backends (e.g. cassandra) the handler is not
+            // immediately visible to the list call after registration.
+            final List<EventHandler> events = new java.util.ArrayList<>();
+            org.awaitility.Awaitility.await()
+                    .atMost(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .untilAsserted(
+                            () -> {
+                                events.clear();
+                                events.addAll(eventClient.getEventHandlers(EVENT, false));
+                                assertEquals(1, events.size(), "Expected exactly 1 event handler");
+                            });
 
             events.forEach(
                     event -> {

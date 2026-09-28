@@ -10,8 +10,13 @@ export const persistSelectedService = assign<
   ServiceMethodsMachineContext,
   DoneInvokeEvent<any>
 >((_context, { data }) => {
+  // For gRPC services, pre-select serviceURI as the host so the dropdown
+  // always shows a value on first selection (gRPC has no multi-env discovery).
+  const selectedHost =
+    data?.type === "gRPC" ? (data?.serviceURI ?? null) : null;
   return {
     selectedService: data,
+    selectedHost,
   };
 });
 

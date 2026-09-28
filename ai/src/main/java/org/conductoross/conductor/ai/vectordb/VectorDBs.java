@@ -15,7 +15,7 @@ package org.conductoross.conductor.ai.vectordb;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.IndexedDoc;
+import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;

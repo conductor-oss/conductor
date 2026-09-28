@@ -5,7 +5,10 @@ import { Button, LinearProgress, Pill, Text } from "../../components";
 import { DiffEditor } from "@monaco-editor/react";
 import { makeStyles } from "@material-ui/styles";
 import _ from "lodash";
-import { useEventHandlerNames, useSaveEventHandler } from "../../data/eventHandler";
+import {
+  useEventHandlerNames,
+  useSaveEventHandler,
+} from "../../data/eventHandler";
 
 const useStyles = makeStyles({
   rightButtons: {
@@ -19,9 +22,14 @@ const useStyles = makeStyles({
   },
 });
 
-const EVENT_HANDLER_SAVE_FAILED = "Failed to save the event handler definition.";
+const EVENT_HANDLER_SAVE_FAILED =
+  "Failed to save the event handler definition.";
 
-export default function SaveEventHandlerDialog({ onSuccess, onCancel, document }) {
+export default function SaveEventHandlerDialog({
+  onSuccess,
+  onCancel,
+  document,
+}) {
   const classes = useStyles();
   const diffMonacoRef = useRef(null);
   const [errorMsg, setErrorMsg] = useState();
@@ -50,9 +58,10 @@ export default function SaveEventHandlerDialog({ onSuccess, onCancel, document }
     onError: (err) => {
       console.log("onerror", err);
       const errObj = JSON.parse(err);
-      let errStr = errObj.validationErrors && errObj.validationErrors.length > 0
-        ? `${errObj.validationErrors[0].message}: ${errObj.validationErrors[0].path}`
-        : errObj.message;
+      let errStr =
+        errObj.validationErrors && errObj.validationErrors.length > 0
+          ? `${errObj.validationErrors[0].message}: ${errObj.validationErrors[0].path}`
+          : errObj.message;
       setErrorMsg({
         message: `${EVENT_HANDLER_SAVE_FAILED} ${errStr}`,
         dismissible: true,
@@ -63,7 +72,8 @@ export default function SaveEventHandlerDialog({ onSuccess, onCancel, document }
   useEffect(() => {
     if (modified.isClash) {
       setErrorMsg({
-        message: "Cannot save event handler definition. Event handler name already in use.",
+        message:
+          "Cannot save event handler definition. Event handler name already in use.",
         dismissible: false,
       });
     } else {

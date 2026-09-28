@@ -168,6 +168,51 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testIndexWorkflowStoresEndTimeOnceItIsSet() throws SQLException {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-end-time");
+
+        // Still running: no end time on the summary, so the column holds the epoch sentinel
+        // rather than NULL, which is what keeps endTime ordering the same on Postgres and SQLite.
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "Unfinished workflow should store the epoch",
+                Timestamp.from(Instant.EPOCH),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+
+        // Terminal: the end time must reach the column through the ON CONFLICT update path too,
+        // since the row already exists by the time the workflow finishes.
+        wfs.setEndTime("2023-02-07T08:44:45Z");
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "End time does not match",
+                Timestamp.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getEndTime()))),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+    }
+
+    @Test
+    public void testIndexTaskStoresEndTime() throws SQLException {
+        TaskSummary ts = getMockTaskSummary("task-id-end-time");
+        ts.setEndTime("2023-02-07T09:43:45Z");
+
+        indexDAO.indexTask(ts);
+
+        assertEquals(
+                "End time does not match",
+                Timestamp.from(Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getEndTime()))),
+                queryEndTime("task_index", "task_id", "task-id-end-time"));
+    }
+
+    private Object queryEndTime(String table, String idColumn, String id) throws SQLException {
+        List<Map<String, Object>> result =
+                queryDb(
+                        String.format(
+                                "SELECT end_time FROM %s WHERE %s = '%s'", table, idColumn, id));
+        assertEquals("Wrong number of rows returned", 1, result.size());
+        return result.get(0).get("end_time");
+    }
+
+    @Test
     public void testIndexNewWorkflow() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-new");
 
@@ -365,6 +410,54 @@ public class PostgresIndexDAOTest {
                 results.getResults().get(0).getWorkflowId());
 
         indexDAO.removeWorkflow(wfs.getWorkflowId());
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryByClassifier() {
+        String correlationId = "classifier-search-correlation-id";
+
+        WorkflowSummary agentWfs = getMockWorkflowSummary("workflow-id-classifier-agent");
+        agentWfs.setCorrelationId(correlationId);
+        agentWfs.setClassifier("agent");
+        indexDAO.indexWorkflow(agentWfs);
+
+        WorkflowSummary plainWfs = getMockWorkflowSummary("workflow-id-classifier-plain");
+        plainWfs.setCorrelationId(correlationId);
+        plainWfs.setClassifier("workflow");
+        indexDAO.indexWorkflow(plainWfs);
+
+        // Simulates a row indexed before the classifier column existed (NULL classifier).
+        WorkflowSummary legacyWfs = getMockWorkflowSummary("workflow-id-classifier-legacy");
+        legacyWfs.setCorrelationId(correlationId);
+        indexDAO.indexWorkflow(legacyWfs);
+
+        String agentQuery =
+                String.format("correlationId='%s' AND classifier='agent'", correlationId);
+        SearchResult<WorkflowSummary> agentResults =
+                indexDAO.searchWorkflowSummary(agentQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of agent results", 1, agentResults.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                agentWfs.getWorkflowId(),
+                agentResults.getResults().get(0).getWorkflowId());
+
+        // The untagged token must match both explicitly tagged plain workflows and legacy
+        // NULL rows.
+        String workflowQuery =
+                String.format("correlationId='%s' AND classifier='workflow'", correlationId);
+        SearchResult<WorkflowSummary> workflowResults =
+                indexDAO.searchWorkflowSummary(workflowQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of untagged results", 2, workflowResults.getResults().size());
+
+        String inQuery =
+                String.format("correlationId='%s' AND classifier IN (agent,other)", correlationId);
+        SearchResult<WorkflowSummary> inResults =
+                indexDAO.searchWorkflowSummary(inQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of IN clause results", 1, inResults.getResults().size());
+
+        indexDAO.removeWorkflow(agentWfs.getWorkflowId());
+        indexDAO.removeWorkflow(plainWfs.getWorkflowId());
+        indexDAO.removeWorkflow(legacyWfs.getWorkflowId());
     }
 
     @Test

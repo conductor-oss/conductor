@@ -19,7 +19,11 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.postgres.dao.PostgresFileMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSchemaDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSkillMetadataDAO;
+import org.conductoross.conductor.postgres.dao.PostgresSkillPackageDAO;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,6 +36,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.postgres.dao.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,6 +82,9 @@ public class PostgresConfiguration {
                 .dataSource(dataSource)
                 .outOfOrder(true)
                 .baselineOnMigrate(true)
+                // default baseline version 1 would skip V1 when the scheduler flyway
+                // (same schema, own history table) migrates first
+                .baselineVersion("0")
                 .load();
     }
 
@@ -93,8 +101,9 @@ public class PostgresConfiguration {
     @DependsOn({"flywayForPrimaryDb"})
     public PostgresExecutionDAO postgresExecutionDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
-            ObjectMapper objectMapper) {
-        return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource);
+            ObjectMapper objectMapper,
+            QueueDAO queueDAO) {
+        return new PostgresExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
@@ -108,7 +117,7 @@ public class PostgresConfiguration {
 
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
-    public PostgresQueueDAO postgresQueueDAO(
+    public QueueDAO postgresQueueDAO(
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             PostgresProperties properties) {
@@ -143,6 +152,32 @@ public class PostgresConfiguration {
             @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper) {
         return new PostgresFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public PostgresSkillMetadataDAO postgresSkillMetadataDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSkillMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flywayForPrimaryDb"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public PostgresSkillPackageDAO postgresSkillPackageDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn("flywayForPrimaryDb")
+    public SchemaDAO postgresSchemaDAO(
+            @Qualifier("postgresRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper) {
+        return new PostgresSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

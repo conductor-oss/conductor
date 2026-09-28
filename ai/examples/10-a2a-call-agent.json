@@ -1,0 +1,21 @@
+{
+  "name": "a2a_agent",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "call_currency_agent",
+      "taskReferenceName": "agent",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "a2a",
+        "agentUrl": "http://localhost:9999",
+        "text": "convert 100 USD to EUR",
+        "pollIntervalSeconds": 5,
+        "headers": {
+          "Authorization": "Bearer ${workflow.input.agentToken}"
+        }
+      }
+    }
+  ]
+}

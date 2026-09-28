@@ -176,4 +176,17 @@ public class ExecutorUtils {
                 workflowModel.getWorkflowId());
         return Duration.ofSeconds(Math.max(0, unackSeconds));
     }
+
+    /**
+     * Returns true when the workflow has at least one IN_PROGRESS HUMAN task. Such a workflow is
+     * blocked on external human input and may remain in this state indefinitely, so it should be
+     * removed from the decider queue rather than re-swept on every offset.
+     */
+    public static boolean hasInProgressHumanTask(WorkflowModel workflow) {
+        return workflow.getTasks().stream()
+                .anyMatch(
+                        task ->
+                                TaskType.TASK_TYPE_HUMAN.equals(task.getTaskType())
+                                        && task.getStatus() == TaskModel.Status.IN_PROGRESS);
+    }
 }

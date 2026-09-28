@@ -20,7 +20,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.IndexedDoc;
+import org.conductoross.conductor.ai.model.IndexedDoc;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresConfig;
 import org.conductoross.conductor.ai.vectordb.postgres.PostgresVectorDB;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,0 +1,15 @@
+{
+  "name": "a2a_get_agent_card_workflow",
+  "version": 1,
+  "schemaVersion": 2,
+  "tasks": [
+    {
+      "name": "discover_agent",
+      "taskReferenceName": "discover",
+      "type": "GET_AGENT_CARD",
+      "inputParameters": {
+        "agentUrl": "http://localhost:9999"
+      }
+    }
+  ]
+}

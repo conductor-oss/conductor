@@ -3,8 +3,7 @@ plugins {
 }
 
 dependencies {
-    testImplementation 'org.conductoross:conductor-client:5.0.1'
-    testImplementation 'org.conductoross:java-sdk:5.0.1'
+    testImplementation 'org.conductoross:conductor-client:6.0.0.rc3'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly  'org.junit.jupiter:junit-jupiter-engine'
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
@@ -30,6 +29,12 @@ test {
     // Forward SERVER_ROOT_URI if explicitly set via -D
     if (System.getProperty('SERVER_ROOT_URI')) {
         systemProperty 'SERVER_ROOT_URI', System.getProperty('SERVER_ROOT_URI')
+    }
+    // Capabilities the target server does NOT provide (comma-separated, e.g. "ai,filestorage").
+    // Set by flavor run scripts whose backend lacks a feature stack, so the suites covering that
+    // feature are skipped instead of failing against endpoints that do not exist.
+    if (System.getProperty('E2E_DISABLED_CAPABILITIES')) {
+        systemProperty 'E2E_DISABLED_CAPABILITIES', System.getProperty('E2E_DISABLED_CAPABILITIES')
     }
 
     // Skip during normal ./gradlew build

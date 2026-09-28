@@ -1,5 +1,6 @@
 import { AlertColor } from "@mui/material";
 import { TaskDefinitionDto } from "./TaskDefinition";
+import { WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 export interface IObject {
   [key: string]: any;
@@ -85,11 +86,21 @@ export enum TaskType {
   GET_WORKFLOW = "GET_WORKFLOW",
   LLM_CHAT_COMPLETE = "LLM_CHAT_COMPLETE",
   GRPC = "GRPC",
-  MCP = "MCP",
+  INTEGRATION = "INTEGRATION",
   MCP_REMOTE = "MCP_REMOTE",
   CHUNK_TEXT = "CHUNK_TEXT",
   LIST_FILES = "LIST_FILES",
   PARSE_DOCUMENT = "PARSE_DOCUMENT",
+  AGENT = "AGENT",
+  GET_AGENT_CARD = "GET_AGENT_CARD",
+  CANCEL_AGENT = "CANCEL_AGENT",
+  LLM_SEARCH_EMBEDDINGS = "LLM_SEARCH_EMBEDDINGS",
+  LIST_MCP_TOOLS = "LIST_MCP_TOOLS",
+  CALL_MCP_TOOL = "CALL_MCP_TOOL",
+  GENERATE_IMAGE = "GENERATE_IMAGE",
+  GENERATE_AUDIO = "GENERATE_AUDIO",
+  GENERATE_VIDEO = "GENERATE_VIDEO",
+  GENERATE_PDF = "GENERATE_PDF",
 }
 
 export interface TaskDef {
@@ -135,6 +146,7 @@ export interface TaskDef {
   taskOutput?: Record<string, string>;
   iteration?: number;
   taskDefinition?: TaskDefinitionDto;
+  metadata?: WorkflowTaskMetadata;
 }
 
 export interface TaskDto extends TaskDef {

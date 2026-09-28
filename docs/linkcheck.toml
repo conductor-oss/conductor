@@ -1,0 +1,34 @@
+# Local documentation link-check configuration. Run via scripts/check-doc-links.sh.
+# Deliberately no CI workflow: third-party documentation and live services are
+# validated on demand, without making the docs build depend on their availability.
+max_concurrency = 8
+timeout = 20
+max_retries = 2
+retry_wait_time = 2
+
+# Local development endpoints, placeholder domains, and template expressions are
+# examples rather than public documentation destinations.
+exclude = [
+  "^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(?::\\d+)?(?:/|$)",
+  "^https?://([A-Za-z0-9-]+\\.)?example\\.(com|org|net)(?:/|$)",
+  "^https?://your-[^/]+(?:/|$)",
+  "^https?://[^/]*\\{[^/]*\\}",
+  "^\\$\\{.*\\}$",
+  "^https://join\\.slack\\.com/t/orkes-conductor/shared_invite/"
+]
+
+# MkDocs pages outside the public navigation and implementation assets have
+# separate ownership. Public Markdown remains in scope.
+exclude_path = [
+  "^docs/assets/",
+  "^docs/css/",
+  "^docs/design/",
+  "^docs/devguide/architecture/directed-acyclic-graph\\.md$",
+  "^docs/devguide/cookbook/files-api-usecase\\.md$",
+  "^docs/devguide/labs/",
+  "^docs/documentation/advanced/annotation-processor\\.md$",
+  "^docs/overrides/",
+  "^docs/resources/(contributing|license|related)\\.md$",
+  "^docs/robots\\.txt$",
+  "^docs/wmq/"
+]

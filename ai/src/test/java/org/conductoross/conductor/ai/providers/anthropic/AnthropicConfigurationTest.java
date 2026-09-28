@@ -46,7 +46,7 @@ class AnthropicConfigurationTest {
     void testAllArgsConstructor() {
         AnthropicConfiguration config =
                 new AnthropicConfiguration(
-                        "api-key", "https://custom.url", "v1", "beta", "/completions");
+                        "api-key", "https://custom.url", "v1", "beta", "/completions", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.url", config.getBaseURL());

@@ -32,6 +32,8 @@ import io.orkes.conductor.dao.scheduler.NoOpSchedulerCacheDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerCacheDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.health.RedisMonitor;
+import io.orkes.conductor.scheduler.listener.ScheduleChangeListener;
+import io.orkes.conductor.scheduler.listener.ScheduleChangeListenerStub;
 import io.orkes.conductor.scheduler.service.SchedulerService;
 import io.orkes.conductor.scheduler.service.SchedulerServiceExecutor;
 import io.orkes.conductor.scheduler.service.SchedulerTimeProvider;
@@ -69,7 +71,8 @@ public class SchedulerOssConfiguration {
             SchedulerProperties properties,
             SchedulerTimeProvider schedulerTimeProvider,
             Lock lock,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            ScheduleChangeListener scheduleChangeListener) {
         return new SchedulerService(
                 schedulerArchivalDAO,
                 schedulerDAO,
@@ -80,6 +83,16 @@ public class SchedulerOssConfiguration {
                 properties,
                 schedulerTimeProvider,
                 lock,
-                objectMapper);
+                objectMapper,
+                scheduleChangeListener);
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            name = "conductor.schedule-change-listener.type",
+            havingValue = "stub",
+            matchIfMissing = true)
+    public ScheduleChangeListener scheduleChangeListener() {
+        return new ScheduleChangeListenerStub();
     }
 }

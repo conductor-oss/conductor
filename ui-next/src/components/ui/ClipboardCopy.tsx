@@ -60,6 +60,9 @@ export default function ClipboardCopy({
             marginLeft: 1,
             height: "20px",
             width: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <IconButton

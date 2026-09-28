@@ -256,3 +256,4 @@ If you see an error like "Vector DB instance not found: xyz", check:
 
 - Verify API key is valid and has necessary permissions
 - Ensure index exists in your Pinecone account before using it
+

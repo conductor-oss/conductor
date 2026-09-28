@@ -232,6 +232,91 @@ public class MySQLQueueDAOTest {
     }
 
     /**
+     * Test fix for https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>When fewer than {@code count} messages are available, pollMessages should return as soon
+     * as at least one message is available rather than blocking for the full timeout waiting to
+     * fill the whole batch.
+     */
+    @Test
+    public void pollMessagesReturnsPromptlyWhenFewerThanCountAvailable() {
+        final String queueName = "issue142_testQueue";
+        // Only one message in the queue...
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        // ...but poll asking for a much larger batch with a long timeout.
+        final int requestedCount = 5;
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, requestedCount, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertEquals("Should return the one available message", 1, polled.size());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned promptly",
+                elapsed < timeoutMs / 2);
+    }
+
+    /**
+     * Companion to {@link #pollMessagesReturnsPromptlyWhenFewerThanCountAvailable()} guarding the
+     * other side of the long-poll contract for
+     * https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>When the queue is empty, pollMessages must keep waiting until the timeout rather than
+     * returning an empty result immediately. The poll loop guards on what was actually popped, so
+     * an empty peek must not short-circuit the long poll into an immediate empty return (which
+     * would make workers busy-poll the DB at round-trip speed instead of long-polling).
+     */
+    @Test
+    public void pollMessagesBlocksUntilTimeoutWhenQueueEmpty() {
+        final String queueName = "issue142_emptyQueue";
+        assertEquals("Queue should start empty", 0, queueDAO.getSize(queueName));
+
+        final int timeoutMs = 1_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, 5, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertTrue("Empty queue should return no messages", polled.isEmpty());
+        assertTrue(
+                "pollMessages returned after " + elapsed + "ms; should have waited out the timeout",
+                elapsed >= timeoutMs);
+    }
+
+    /**
+     * Companion to {@link #pollMessagesBlocksUntilTimeoutWhenQueueEmpty()} for
+     * https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>A poll for zero messages must return immediately with an empty result rather than blocking
+     * for the full timeout. The long-poll loop only waits while nothing has been popped, so a
+     * {@code count == 0} request (which can never pop anything) has to short-circuit up front --
+     * even when the queue has messages waiting.
+     */
+    @Test
+    public void pollMessagesReturnsImmediatelyWhenCountIsZero() {
+        final String queueName = "issue142_zeroCountQueue";
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, 0, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertTrue("Zero-count poll should return no messages", polled.isEmpty());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned immediately",
+                elapsed < timeoutMs / 2);
+    }
+
+    /**
      * Test fix for https://github.com/Netflix/conductor/issues/448
      *
      * @since 1.8.2-rc5

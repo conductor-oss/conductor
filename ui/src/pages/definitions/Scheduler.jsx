@@ -124,35 +124,35 @@ export default function SchedulerDefinitions() {
         {isSchedulerDisabled(error) ? (
           <SchedulerDisabledBanner />
         ) : (
-        <>
-        <div className={classes.buttonRow}>
-          <Button
-            component={NavLink}
-            path="/schedulerDef"
-            startIcon={<AddIcon />}
-          >
-            New Schedule
-          </Button>
-        </div>
+          <>
+            <div className={classes.buttonRow}>
+              <Button
+                component={NavLink}
+                path="/schedulerDef"
+                startIcon={<AddIcon />}
+              >
+                New Schedule
+              </Button>
+            </div>
 
-        {schedules && (
-          <DataTable
-            title={`${schedules.length} results`}
-            localStorageKey="schedulerDefsTable"
-            defaultShowColumns={[
-              "name",
-              "cronExpression",
-              "startWorkflowRequest",
-              "paused",
-              "zoneId",
-              "actions",
-            ]}
-            keyField="name"
-            data={schedules}
-            columns={columns}
-          />
-        )}
-        </>
+            {schedules && (
+              <DataTable
+                title={`${schedules.length} results`}
+                localStorageKey="schedulerDefsTable"
+                defaultShowColumns={[
+                  "name",
+                  "cronExpression",
+                  "startWorkflowRequest",
+                  "paused",
+                  "zoneId",
+                  "actions",
+                ]}
+                keyField="name"
+                data={schedules}
+                columns={columns}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

@@ -14,6 +14,12 @@ package org.conductoross.conductor;
 
 import java.util.Optional;
 
+import org.conductoross.conductor.core.storage.ConductorFileStorageProperties;
+import org.conductoross.conductor.core.storage.FileStorageUrlSigner;
+import org.conductoross.conductor.filestorage.ConductorFileSignatureFilter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
@@ -29,6 +35,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN;
 
 @Configuration
 @Slf4j
+@EnableConfigurationProperties(ConductorFileStorageProperties.class)
 public class RestConfiguration implements WebMvcConfigurer {
 
     private final SpaInterceptor spaInterceptor;
@@ -36,6 +43,23 @@ public class RestConfiguration implements WebMvcConfigurer {
     public RestConfiguration(Optional<SpaInterceptor> spaInterceptor) {
         this.spaInterceptor = spaInterceptor.orElse(null);
         log.info("spaInterceptor: {}", spaInterceptor);
+    }
+
+    @Bean
+    public FilterRegistrationBean<ConductorFileSignatureFilter> conductorFileSignatureFilter(
+            ConductorFileStorageProperties properties, FileStorageUrlSigner fileStorageUrlSigner) {
+        FilterRegistrationBean<ConductorFileSignatureFilter> registration =
+                new FilterRegistrationBean<>(
+                        new ConductorFileSignatureFilter(
+                                properties.getSigning().isEnabled(), fileStorageUrlSigner));
+        registration.addUrlPatterns("/api/files/content/*");
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
+    }
+
+    @Bean
+    public FileStorageUrlSigner fileStorageUrlSigner(ConductorFileStorageProperties properties) {
+        return new FileStorageUrlSigner(properties.getSigning());
     }
 
     @Override

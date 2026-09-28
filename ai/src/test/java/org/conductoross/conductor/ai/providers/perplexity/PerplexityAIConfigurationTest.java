@@ -45,7 +45,7 @@ class PerplexityAIConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         PerplexityAIConfiguration config =
-                new PerplexityAIConfiguration("api-key", "https://custom.perplexity.ai");
+                new PerplexityAIConfiguration("api-key", "https://custom.perplexity.ai", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.perplexity.ai", config.getBaseURL());

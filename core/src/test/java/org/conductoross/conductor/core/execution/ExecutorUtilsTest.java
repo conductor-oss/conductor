@@ -15,6 +15,8 @@ package org.conductoross.conductor.core.execution;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -22,10 +24,13 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ExecutorUtilsTest {
@@ -235,6 +240,22 @@ public class ExecutorUtilsTest {
                 result.getSeconds() <= 121);
     }
 
+    private static SystemTaskRegistry registryWith(String type, boolean async, Long offsetSeconds) {
+        WorkflowSystemTask stub =
+                new WorkflowSystemTask(type) {
+                    @Override
+                    public boolean isAsync() {
+                        return async;
+                    }
+
+                    @Override
+                    public Optional<Long> getEvaluationOffset(TaskModel taskModel, long maxOffset) {
+                        return Optional.ofNullable(offsetSeconds);
+                    }
+                };
+        return new SystemTaskRegistry(Set.of(stub));
+    }
+
     private WorkflowModel newWorkflow(List<TaskModel> tasks, long timeoutSeconds) {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setTimeoutSeconds(timeoutSeconds);
@@ -243,6 +264,34 @@ public class ExecutorUtilsTest {
         workflow.setWorkflowDefinition(workflowDef);
         workflow.setTasks(tasks);
         return workflow;
+    }
+
+    @Test
+    public void hasInProgressHumanTaskTrueForInProgressHuman() {
+        WorkflowModel workflow =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.COMPLETED),
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertTrue(ExecutorUtils.hasInProgressHumanTask(workflow));
+    }
+
+    @Test
+    public void hasInProgressHumanTaskFalseWhenNoInProgressHuman() {
+        WorkflowModel noHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.IN_PROGRESS)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(noHuman));
+
+        WorkflowModel terminalHuman =
+                newWorkflow(
+                        Arrays.asList(
+                                newTask(TaskType.TASK_TYPE_HUMAN, TaskModel.Status.COMPLETED)),
+                        0);
+        assertFalse(ExecutorUtils.hasInProgressHumanTask(terminalHuman));
     }
 
     private TaskModel newTask(String taskType, TaskModel.Status status) {

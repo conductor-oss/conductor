@@ -9,17 +9,21 @@ import { TagDto } from "types/Tag";
 
 type ReplaceTagsInputProps = {
   onChange?: (tags: string[]) => void | null;
+  onInputChange?: (value: string) => void;
   label?: ReactNode;
   tags: TagDto[];
   options: TagDto[];
 };
 type SuggestValueType = { title: string; inputValue: string };
 
+import { isValidTag } from "components/features/tags/tagUtils";
+
 const filter = createFilterOptions<SuggestValueType>();
 
 const ReplaceTagsInput = ({
   label = "Tags",
   onChange = () => null,
+  onInputChange,
   tags = [],
   options = [],
 }: ReplaceTagsInputProps) => {
@@ -50,11 +54,13 @@ const ReplaceTagsInput = ({
             option?.inputValue ? option.inputValue : option
           ) as string;
           const { key, ...otherTagProps } = getTagProps({ index });
+          const invalid = !isValidTag(label);
           return (
             <TagChip
               key={key}
               id={`${label}-tag-chip`}
               label={label}
+              color={invalid ? "error" : undefined}
               {...otherTagProps}
               sx={{
                 "& .MuiSvgIcon-root": {
@@ -95,6 +101,9 @@ const ReplaceTagsInput = ({
         }
 
         return filtered;
+      }}
+      onInputChange={(_event, value) => {
+        onInputChange?.(value);
       }}
       onChange={(_event, newValue: (string | SuggestValueType)[]) => {
         onChange(

@@ -13,7 +13,7 @@
 package com.netflix.conductor.rest.controllers;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.model.SignalResponse;
 import org.conductoross.conductor.model.WorkflowSignalReturnStrategy;
+import org.conductoross.conductor.model.WorkflowStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,21 +38,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.*;
-import com.netflix.conductor.core.execution.NotificationResult;
-import com.netflix.conductor.model.TaskModel;
-import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.WorkflowService;
 import com.netflix.conductor.service.WorkflowTestService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW;
@@ -142,59 +138,13 @@ public class WorkflowResource {
                         ? waitUntilTaskRef.split(",")
                         : new String[0];
 
-        // Poll every 100ms using Flux.interval
-        return Flux.interval(Duration.ofMillis(100))
-                .map(tick -> workflowService.getWorkflowModel(workflowId, true))
-                .filter(
-                        workflow -> {
-                            // Check if workflow is terminal
-                            if (workflow.getStatus().isTerminal()) {
-                                return true;
-                            }
-
-                            // Check recursively for blocking tasks in the workflow and all
-                            // sub-workflows
-                            BlockingTaskResult blockingResult =
-                                    findBlockingTasks(workflow, taskRefs);
-                            return blockingResult.hasBlockingTasks();
-                        })
-                .next() // Take the first matching workflow
-                .map(
-                        workflow -> {
-                            // Find blocking tasks and blocking workflow recursively
-                            BlockingTaskResult blockingResult =
-                                    findBlockingTasks(workflow, taskRefs);
-
-                            // Create NotificationResult and return response based on strategy
-                            NotificationResult result =
-                                    NotificationResult.builder()
-                                            .targetWorkflow(workflow)
-                                            .blockingWorkflow(
-                                                    blockingResult.blockingWorkflow != null
-                                                            ? blockingResult.blockingWorkflow
-                                                            : workflow)
-                                            .blockingTasks(blockingResult.blockingTasks)
-                                            .build();
-
-                            return result.toResponse(returnStrategy, workflowRequestId);
-                        })
-                .timeout(
-                        Duration.ofSeconds(waitForSeconds),
-                        Mono.defer(
-                                () -> {
-                                    log.info("Execution timed out for {}", workflowId);
-                                    // Timeout reached, return current state
-                                    var workflow =
-                                            workflowService.getWorkflowModel(workflowId, true);
-                                    NotificationResult result =
-                                            NotificationResult.builder()
-                                                    .targetWorkflow(workflow)
-                                                    .blockingWorkflow(workflow)
-                                                    .blockingTasks(new ArrayList<>())
-                                                    .build();
-                                    return Mono.just(
-                                            result.toResponse(returnStrategy, workflowRequestId));
-                                }));
+        return WorkflowSignalResponder.awaitSignalResponse(
+                workflowService,
+                workflowId,
+                taskRefs,
+                returnStrategy,
+                workflowRequestId,
+                Duration.ofSeconds(waitForSeconds));
     }
 
     @GetMapping("/{name}/correlated/{correlationId}")
@@ -258,6 +208,18 @@ public class WorkflowResource {
             @RequestParam(value = "includeTasks", defaultValue = "true", required = false)
                     boolean includeTasks) {
         return workflowService.getExecutionStatus(workflowId, includeTasks);
+    }
+
+    @GetMapping("/{workflowId}/status")
+    @Operation(summary = "Gets the workflow status summary by workflow (execution) id")
+    public WorkflowStatus getWorkflowStatusSummary(
+            @PathVariable("workflowId") String workflowId,
+            @RequestParam(value = "includeOutput", defaultValue = "false", required = false)
+                    boolean includeOutput,
+            @RequestParam(value = "includeVariables", defaultValue = "false", required = false)
+                    boolean includeVariables) {
+        Workflow workflow = workflowService.getExecutionStatus(workflowId, false);
+        return new WorkflowStatus(workflow, includeOutput, includeVariables);
     }
 
     @DeleteMapping("/{workflowId}/remove")
@@ -379,8 +341,16 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflows(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
+        return workflowService.searchWorkflows(
+                start,
+                size,
+                withAgentHierarchySort(sort, classifier, topLevelOnly),
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
     }
 
     @Operation(
@@ -394,8 +364,68 @@ public class WorkflowResource {
             @RequestParam(value = "size", defaultValue = "100", required = false) int size,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-            @RequestParam(value = "query", required = false) String query) {
-        return workflowService.searchWorkflowsV2(start, size, sort, freeText, query);
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "classifier", required = false) String classifier,
+            @RequestParam(value = "topLevelOnly", defaultValue = "false", required = false)
+                    boolean topLevelOnly) {
+        return workflowService.searchWorkflowsV2(
+                start,
+                size,
+                withAgentHierarchySort(sort, classifier, topLevelOnly),
+                freeText,
+                withTopLevelFilter(withClassifierFilter(query, classifier), topLevelOnly));
+    }
+
+    /**
+     * Folds an optional classifier filter (comma-separated values, e.g. {@code agent} or {@code
+     * agent,workflow}) into the structured search query as a {@code classifier IN (...)} clause.
+     * This keeps the IndexDAO contract unchanged: every index backend that understands the {@code
+     * classifier} field in a query string automatically supports the request parameter.
+     */
+    private static String withClassifierFilter(String query, String classifier) {
+        if (classifier == null || classifier.isBlank()) {
+            return query;
+        }
+        String values =
+                Arrays.stream(classifier.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .collect(Collectors.joining(","));
+        if (values.isEmpty()) {
+            return query;
+        }
+        String clause = "classifier IN (" + values + ")";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
+    }
+
+    /**
+     * Folds the {@code topLevelOnly} request parameter into the structured search query as a {@code
+     * parentWorkflowId = ""} clause, restricting results to executions that were not spawned by
+     * another workflow (sub-workflows and sub-agents index their parent's id). Like the classifier
+     * filter, this keeps the IndexDAO contract unchanged.
+     */
+    private static String withTopLevelFilter(String query, boolean topLevelOnly) {
+        if (!topLevelOnly) {
+            return query;
+        }
+        String clause = "parentWorkflowId=\"\"";
+        return (query == null || query.isBlank()) ? clause : query + " AND " + clause;
+    }
+
+    /**
+     * Keeps agent executions grouped with their direct sub-agent executions. The index DAOs
+     * understand the internal {@code agentHierarchy} sort key and order each parent before its
+     * children, while retaining the caller's requested sort within a group. Top-level-only searches
+     * do not need this ordering because they exclude sub-agents altogether.
+     */
+    private static String withAgentHierarchySort(
+            String sort, String classifier, boolean topLevelOnly) {
+        if (topLevelOnly || classifier == null || !"agent".equalsIgnoreCase(classifier.trim())) {
+            return sort;
+        }
+        return (sort == null || sort.isBlank())
+                ? "agentHierarchy:DESC"
+                : "agentHierarchy:DESC|" + sort;
     }
 
     @Operation(
@@ -457,80 +487,5 @@ public class WorkflowResource {
 
         systemMetadata.put("dynamic", true);
         workflowInput.put(systemMetadataKey, systemMetadata);
-    }
-
-    /**
-     * Recursively finds blocking tasks in the workflow and all its sub-workflows. A blocking task
-     * is: 1. A WAIT task that is not in terminal state 2. A task matching waitUntilTaskRef that is
-     * in terminal state
-     *
-     * @param workflow The workflow to search
-     * @param taskRefs Array of task reference names to wait for
-     * @return BlockingTaskResult containing blocking tasks and the workflow where they were found
-     */
-    private BlockingTaskResult findBlockingTasks(WorkflowModel workflow, String[] taskRefs) {
-        List<TaskModel> blockingTasks = new ArrayList<>();
-        WorkflowModel blockingWorkflow = null;
-
-        // Check tasks in the current workflow
-        for (TaskModel task : workflow.getTasks()) {
-            // Check for WAIT tasks that are not terminal (actively waiting)
-            if (TaskType.TASK_TYPE_WAIT.equals(task.getTaskType())
-                    && !task.getStatus().isTerminal()
-                    && task.getWaitTimeout() == 0) {
-                blockingTasks.add(task);
-                if (blockingWorkflow == null) {
-                    blockingWorkflow = workflow;
-                }
-            }
-
-            // Check if this task matches any of the specified task refs and is terminal
-            for (String taskRef : taskRefs) {
-                String trimmedRef = taskRef.trim();
-                if (trimmedRef.equals(task.getReferenceTaskName())
-                        && task.getStatus().isTerminal()) {
-                    blockingTasks.add(task);
-                    if (blockingWorkflow == null) {
-                        blockingWorkflow = workflow;
-                    }
-                }
-            }
-
-            // If this is a SUB_WORKFLOW task, recursively check the sub-workflow
-            if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(task.getTaskType())
-                    && StringUtils.isNotBlank(task.getSubWorkflowId())
-                    && !task.getStatus().isTerminal()) {
-                try {
-                    WorkflowModel subWorkflow =
-                            workflowService.getWorkflowModel(task.getSubWorkflowId(), true);
-                    BlockingTaskResult subResult = findBlockingTasks(subWorkflow, taskRefs);
-                    if (subResult.hasBlockingTasks()) {
-                        blockingTasks.addAll(subResult.blockingTasks);
-                        if (blockingWorkflow == null) {
-                            blockingWorkflow = subResult.blockingWorkflow;
-                        }
-                    }
-                } catch (Exception e) {
-                    // If we can't fetch the sub-workflow, skip it
-                }
-            }
-        }
-
-        return new BlockingTaskResult(blockingTasks, blockingWorkflow);
-    }
-
-    /** Result of finding blocking tasks in a workflow hierarchy */
-    private static class BlockingTaskResult {
-        final List<TaskModel> blockingTasks;
-        final WorkflowModel blockingWorkflow;
-
-        BlockingTaskResult(List<TaskModel> blockingTasks, WorkflowModel blockingWorkflow) {
-            this.blockingTasks = blockingTasks;
-            this.blockingWorkflow = blockingWorkflow;
-        }
-
-        boolean hasBlockingTasks() {
-            return blockingTasks != null && !blockingTasks.isEmpty();
-        }
     }
 }

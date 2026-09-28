@@ -38,7 +38,7 @@ class CohereAIConfigurationTest {
     @Test
     void testAllArgsConstructor() {
         CohereAIConfiguration config =
-                new CohereAIConfiguration("api-key", "https://custom.cohere.ai");
+                new CohereAIConfiguration("api-key", "https://custom.cohere.ai", null);
 
         assertEquals("api-key", config.getApiKey());
         assertEquals("https://custom.cohere.ai", config.getBaseURL());

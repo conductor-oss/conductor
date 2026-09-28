@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,17 +21,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.utils.EnvUtils;
 import com.netflix.conductor.common.utils.TaskUtils;
+import com.netflix.conductor.dao.EnvironmentDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -46,16 +53,28 @@ import com.jayway.jsonpath.Option;
 public class ParametersUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParametersUtils.class);
-    private static final Pattern PATTERN =
-            Pattern.compile(
-                    "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)",
-                    Pattern.DOTALL);
+    private static final Pattern SECRET_PATTERN =
+            Pattern.compile("\\$\\{workflow\\.secrets\\.([^}]+)\\}");
+    private static final String SECRETS_PREFIX = "workflow.secrets.";
+    private static final String ENV_PREFIX = "workflow.env.";
 
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};
+    @Nullable private final EnvironmentDAO environmentDAO;
+    @Nullable private final SecretsDAO secretsDAO;
 
     public ParametersUtils(ObjectMapper objectMapper) {
+        this(objectMapper, null, null);
+    }
+
+    @Autowired
+    public ParametersUtils(
+            ObjectMapper objectMapper,
+            @Nullable EnvironmentDAO environmentDAO,
+            @Nullable SecretsDAO secretsDAO) {
         this.objectMapper = objectMapper;
+        this.environmentDAO = environmentDAO;
+        this.secretsDAO = secretsDAO;
     }
 
     public Map<String, Object> getTaskInput(
@@ -232,11 +251,10 @@ public class ParametersUtils {
 
     private Object replaceVariables(
             String paramString, DocumentContext documentContext, String taskId, int depth) {
-        var matcher = PATTERN.matcher(paramString);
         var replacements = new LinkedList<Replacement>();
-        while (matcher.find()) {
-            var start = matcher.start();
-            var end = matcher.end();
+        for (int[] expression : findExpressions(paramString)) {
+            var start = expression[0];
+            var end = expression[1];
             var match = paramString.substring(start, end);
             String paramPath = match.substring(2, match.length() - 1);
             paramPath = replaceVariables(paramPath, documentContext, taskId, depth + 1).toString();
@@ -246,7 +264,13 @@ public class ParametersUtils {
                 replacements.add(new Replacement("", start, end));
                 continue;
             }
-            if (EnvUtils.isEnvironmentVariable(paramPath)) {
+            if (paramPath.startsWith(SECRETS_PREFIX)) {
+                // Deferred: leave the literal; resolved at task hand-off via substituteSecrets.
+                replacements.add(new Replacement(match, start, end));
+            } else if (environmentDAO != null && paramPath.startsWith(ENV_PREFIX)) {
+                Object envValue = resolveEnvVariable(paramPath.substring(ENV_PREFIX.length()));
+                replacements.add(new Replacement(envValue, start, end));
+            } else if (EnvUtils.isEnvironmentVariable(paramPath)) {
                 String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
                 if (sysValue != null) {
                     replacements.add(new Replacement(sysValue, start, end));
@@ -279,6 +303,60 @@ public class ParametersUtils {
                     Objects.toString(replacement.getReplacement()));
         }
         return builder.toString().replaceAll("\\$\\$\\{", "\\${");
+    }
+
+    /**
+     * Finds the top-level <code>${...}</code> expressions of the given string in a single pass.
+     *
+     * <p>An expression starts at a <code>${</code> that is not preceded by a <code>$</code> (<code>
+     * $${</code> is the escape for a literal <code>${</code>) and ends at the matching closing
+     * brace, so expressions nested inside it are part of the same range. If an expression is never
+     * closed, neither it nor anything after it is reported.
+     *
+     * <p>This replaces a backtracking regular expression with the same semantics, whose matching
+     * time grew polynomially with the input and could be abused with crafted task output.
+     *
+     * @param value the string to scan
+     * @return the <code>[start, end)</code> index ranges of the expressions, in order
+     */
+    static List<int[]> findExpressions(String value) {
+        List<int[]> expressions = new ArrayList<>();
+        int length = value.length();
+        int i = 0;
+        while (i < length - 1) {
+            boolean startsExpression =
+                    value.charAt(i) == '$'
+                            && value.charAt(i + 1) == '{'
+                            && (i == 0 || value.charAt(i - 1) != '$');
+            if (!startsExpression) {
+                i++;
+                continue;
+            }
+            int end = findClosingBrace(value, i + 1);
+            if (end < 0) {
+                break;
+            }
+            expressions.add(new int[] {i, end + 1});
+            i = end + 1;
+        }
+        return expressions;
+    }
+
+    /**
+     * @return the index of the brace closing the one at <code>openingBrace</code>, or -1 if it is
+     *     never closed
+     */
+    private static int findClosingBrace(String value, int openingBrace) {
+        int depth = 0;
+        for (int i = openingBrace; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}' && --depth == 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @Deprecated
@@ -328,6 +406,110 @@ public class ParametersUtils {
             clone(workflowDef.getInputTemplate()).forEach(inputParams::putIfAbsent);
         }
         return inputParams;
+    }
+
+    private Object resolveEnvVariable(String ref) {
+        return resolveWithOptionalJsonPath(ref, environmentDAO::getEnvVariable);
+    }
+
+    /**
+     * Resolves any {@code ${workflow.secrets.*}} references in the given input, returning a new
+     * structure. The input map is not mutated. Returns the input unchanged when no secrets provider
+     * is configured.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> substituteSecrets(Map<String, Object> input) {
+        if (secretsDAO == null || input == null) {
+            return input;
+        }
+        return (Map<String, Object>) substituteSecretsValue(input);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object substituteSecretsValue(Object value) {
+        if (value instanceof String) {
+            return resolveSecretString((String) value);
+        } else if (value instanceof Map) {
+            Map<String, Object> src = (Map<String, Object>) value;
+            Map<String, Object> result = null;
+            for (Map.Entry<String, Object> e : src.entrySet()) {
+                Object original = e.getValue();
+                Object substituted = substituteSecretsValue(original);
+                if (substituted != original) {
+                    if (result == null) {
+                        result = new HashMap<>(src);
+                    }
+                    result.put(e.getKey(), substituted);
+                }
+            }
+            return result == null ? src : result;
+        } else if (value instanceof List) {
+            List<Object> src = (List<Object>) value;
+            List<Object> result = null;
+            for (int i = 0; i < src.size(); i++) {
+                Object original = src.get(i);
+                Object substituted = substituteSecretsValue(original);
+                if (substituted != original) {
+                    if (result == null) {
+                        result = new ArrayList<>(src);
+                    }
+                    result.set(i, substituted);
+                }
+            }
+            return result == null ? src : result;
+        }
+        return value;
+    }
+
+    private Object resolveSecretString(String str) {
+        if (str.indexOf("${workflow.secrets.") < 0) {
+            return str; // no secret reference — return the same instance, no regex, no allocation
+        }
+        Matcher whole = SECRET_PATTERN.matcher(str);
+        if (whole.matches()) {
+            return resolveSecretRef(whole.group(1));
+        }
+        Matcher m = SECRET_PATTERN.matcher(str);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            Object resolved = resolveSecretRef(m.group(1));
+            m.appendReplacement(sb, Matcher.quoteReplacement(Objects.toString(resolved, "")));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    private Object resolveSecretRef(String ref) {
+        return resolveWithOptionalJsonPath(ref, secretsDAO::getSecret);
+    }
+
+    /**
+     * Splits {@code ref} on the first '.' into a name and an optional JSON path, looks up the name
+     * via {@code lookup}, and if a JSON path is present, reads it out of the looked-up value.
+     * Returns null if the looked-up value is null, or if the JSON path cannot be read from it (e.g.
+     * the value is not valid JSON) -- in which case a warning is logged instead of throwing.
+     */
+    private Object resolveWithOptionalJsonPath(String ref, Function<String, String> lookup) {
+        int dot = ref.indexOf('.');
+        if (dot < 0) {
+            return lookup.apply(ref);
+        }
+        String name = ref.substring(0, dot);
+        String jsonPath = ref.substring(dot + 1);
+        String value = lookup.apply(name);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return JsonPath.parse(value).read(jsonPath);
+        } catch (Exception e) {
+            LOGGER.warn(
+                    "Failed to extract JSON path '{}' from reference '{}': {}",
+                    jsonPath,
+                    ref,
+                    e.toString());
+            return null;
+        }
     }
 
     private static class Replacement implements Comparable<Replacement> {

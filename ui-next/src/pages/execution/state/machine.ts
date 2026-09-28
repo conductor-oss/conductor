@@ -31,6 +31,7 @@ export const executionMachine = createMachine<
     context: {
       execution: undefined,
       executionId: undefined,
+      agentExecution: false,
       flowChild: undefined,
       error: undefined,
       expandedDynamic: [],
@@ -71,6 +72,10 @@ export const executionMachine = createMachine<
               target: "noAccess",
             },
             {
+              cond: "isNotFound",
+              target: "notFound",
+            },
+            {
               actions: ["logError", "assignError"],
               target: "init",
             },
@@ -78,6 +83,9 @@ export const executionMachine = createMachine<
         },
       },
       noAccess: {
+        type: "final",
+      },
+      notFound: {
         type: "final",
       },
       init: {
@@ -210,6 +218,14 @@ export const executionMachine = createMachine<
                     target: "diagram",
                   },
                   {
+                    // Agent-classified executions (Conductor-Agents-compiled workflows)
+                    // default to the Agent Execution debugger tab; regular
+                    // workflows keep Diagram as the default view.
+                    cond: "isAgentWorkflowExecution",
+                    actions: ["persistAgentExecutionTab"],
+                    target: "agentExecution",
+                  },
+                  {
                     target: "diagram",
                   },
                 ],
@@ -236,9 +252,14 @@ export const executionMachine = createMachine<
                     target: "summary",
                     cond: "isSummaryTab",
                   },
+                  {
+                    target: "agentExecution",
+                    cond: "isAgentExecutionTab",
+                  },
                   { target: "diagram" },
                 ],
               },
+              agentExecution: {},
               diagram: {
                 entry: "notifyFlowUpdates",
                 on: {

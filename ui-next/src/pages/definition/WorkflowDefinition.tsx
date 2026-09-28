@@ -1,6 +1,8 @@
-import { AlertColor, Box } from "@mui/material";
+import { AlertColor, Box, LinearProgress } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { SnackbarMessage } from "components/ui/SnackbarMessage";
+import Error from "components/ui/Error";
+import MuiTypography from "components/ui/MuiTypography";
 import TwoPanesDivider from "components/ui/TwoPanesDivider";
 import {
   DefinitionMachineContext,
@@ -9,6 +11,9 @@ import {
 } from "pages/definition/state";
 import { Helmet } from "react-helmet";
 import { useAuth } from "components/features/auth";
+import { useMemo } from "react";
+import { useNavigate } from "react-router";
+import { WORKFLOW_DEFINITION_URL } from "utils/constants/route";
 import { ActorRef, State } from "xstate";
 import sharedStyles from "../styles";
 import EditorPanel from "./EditorPanel/EditorPanel";
@@ -19,9 +24,19 @@ import { WorkflowMetaBar } from "./WorkflowMetadata";
 
 export default function Workflow() {
   const { conductorUser } = useAuth();
+  const navigate = useNavigate();
   const [
     { handleResetMessage, setLeftPanelExpanded },
-    { workflowName, message, definitionActor, leftPanelExpanded },
+    {
+      workflowName,
+      workflowVersions,
+      currentVersion,
+      message,
+      definitionActor,
+      leftPanelExpanded,
+      isNotFound,
+      isErrorFetching,
+    },
   ] = useWorkflowDefinition(conductorUser!);
 
   const graphPanel = <GraphPanel definitionActor={definitionActor} />;
@@ -34,6 +49,77 @@ export default function Workflow() {
     definitionActor,
     (state: State<DefinitionMachineContext>) => state.matches("ready"),
   );
+
+  const latestVersion = useMemo(() => {
+    if (!workflowVersions?.length) return undefined;
+    return Math.max(...workflowVersions.map(Number));
+  }, [workflowVersions]);
+
+  if (isNotFound || isErrorFetching) {
+    const description = isNotFound
+      ? latestVersion != null
+        ? `Version ${currentVersion} of "${workflowName}" was not found. The latest available version is ${latestVersion}.`
+        : currentVersion
+          ? `Version ${currentVersion} of "${workflowName}" was not found.`
+          : `Workflow "${workflowName}" was not found.`
+      : message?.text || "Failed to load this workflow definition.";
+
+    const openLatest = () => {
+      if (workflowName && latestVersion != null) {
+        navigate(
+          `${WORKFLOW_DEFINITION_URL.BASE}/${encodeURIComponent(
+            workflowName,
+          )}/${latestVersion}`,
+        );
+      } else {
+        navigate(WORKFLOW_DEFINITION_URL.BASE);
+      }
+    };
+
+    const canOpenLatest = isNotFound && latestVersion != null;
+
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          p: 5,
+        }}
+        data-testid="workflow-definition-not-found"
+      >
+        <Helmet>
+          <title>
+            {isNotFound ? "Version Not Found" : "Error"} -{" "}
+            {workflowName || "Workflow"}
+          </title>
+        </Helmet>
+        <SnackbarMessage
+          message={message?.text as string}
+          severity={(message?.severity as AlertColor) || "error"}
+          onDismiss={handleResetMessage}
+        />
+        <MuiTypography fontSize={20} fontWeight={700} mb={8}>
+          {isNotFound ? "VERSION NOT FOUND" : "ERROR"}
+        </MuiTypography>
+        <Error
+          title={isNotFound ? "404" : "Error"}
+          description={description}
+          buttonText={
+            canOpenLatest
+              ? `OPEN LATEST VERSION (v${latestVersion})`
+              : "BACK TO WORKFLOW DEFINITIONS"
+          }
+          onClick={
+            canOpenLatest
+              ? openLatest
+              : () => navigate(WORKFLOW_DEFINITION_URL.BASE)
+          }
+        />
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -64,6 +150,7 @@ export default function Workflow() {
           }}
           data-testid="workflow-definition-container"
         >
+          {!isReady && <LinearProgress />}
           <Box
             sx={{
               height: "100%",
@@ -89,13 +176,6 @@ export default function Workflow() {
                 right: "0px",
               }}
             >
-              {/* {showImportSuccessfulDialog && fetchingWfSuccessful && (
-                <FloatingMuiAlert
-                  title="Congratulations! You've created a workflow!"
-                  message="Edit whatever you want, or not, and take it for a Run!"
-                  onClose={hideExportSuccessModal}
-                />
-              )} */}
               <PromptIfChanges
                 definitionActor={
                   definitionActor as ActorRef<WorkflowDefinitionEvents>
@@ -105,7 +185,7 @@ export default function Workflow() {
               <FlowEditContextProvider
                 workflowDefinitionActor={definitionActor}
               >
-                {definitionActor?.children.get("flowMachine") && (
+                {definitionActor?.children.get("flowMachine") && isReady && (
                   <TwoPanesDivider
                     leftPanelContent={graphPanel}
                     rightPanelContent={editorPanel}

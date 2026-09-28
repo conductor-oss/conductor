@@ -18,6 +18,15 @@ message EventHandler {
         string workflow_id = 1;
         string termination_reason = 2;
     }
+    message StartAgent {
+        string name = 1;
+        int32 version = 2;
+        string prompt = 3;
+        string session_id = 4;
+        repeated string media = 5;
+        map<string, google.protobuf.Value> context = 6;
+        string idempotency_key = 7;
+    }
     message StartWorkflow {
         string name = 1;
         int32 version = 2;
@@ -41,6 +50,7 @@ message EventHandler {
             FAIL_TASK = 2;
             TERMINATE_WORKFLOW = 3;
             UPDATE_WORKFLOW_VARIABLES = 4;
+            START_AGENT = 5;
         }
         EventHandler.Action.Type action = 1;
         EventHandler.StartWorkflow start_workflow = 2;
@@ -49,6 +59,7 @@ message EventHandler {
         bool expand_inline_json = 5;
         EventHandler.TerminateWorkflow terminate_workflow = 6;
         EventHandler.UpdateWorkflowVariables update_workflow_variables = 7;
+        EventHandler.StartAgent start_agent = 8;
     }
     string name = 1;
     string event = 2;

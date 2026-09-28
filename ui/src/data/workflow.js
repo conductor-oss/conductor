@@ -161,7 +161,7 @@ export function useWorkflowNamesAndVersions() {
 
 export function useWorkflowVersions(workflowName) {
   return useFetch(
-    workflowName ? ["workflowVersions", workflowName] : null,
+    ["workflowVersions", workflowName],
     workflowName ? `/metadata/workflow/${workflowName}/versions` : null,
     {
       enabled: !!workflowName,

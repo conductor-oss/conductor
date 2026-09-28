@@ -17,6 +17,7 @@ import { TaskFormProps } from "./types";
 
 const connectionIdPath = "inputParameters.connectionId";
 const integrationNamePath = "inputParameters.integrationName";
+const schemaNamePath = "inputParameters.schemaName";
 const expectedUpdateCountPath = "inputParameters.expectedUpdateCount";
 const jdbcTypePath = "inputParameters.type";
 const queryParametersPath = "inputParameters.parameters";
@@ -75,6 +76,21 @@ export const JDBCTaskForm = ({ task, onChange }: TaskFormProps) => {
               }
               value={_path(integrationNamePath, task)}
               label="Integration name"
+            />
+          </Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 12,
+              md: 6,
+            }}
+          >
+            <ConductorAutocompleteVariables
+              onChange={(changes) =>
+                onChange(updateField(schemaNamePath, changes, task))
+              }
+              value={_path(schemaNamePath, task)}
+              label="Schema name"
             />
           </Grid>
         </Grid>

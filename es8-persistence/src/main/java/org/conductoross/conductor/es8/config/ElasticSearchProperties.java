@@ -94,12 +94,18 @@ public class ElasticSearchProperties {
     private String password;
 
     /**
-     * Whether to wait for index refresh when updating tasks and workflows. When enabled, the
-     * operation will block until the changes are visible for search. This guarantees immediate
-     * search visibility but can significantly impact performance (20-30s delays). Defaults to false
-     * for better performance.
+     * Whether to wait for the next index refresh cycle before returning from supported write
+     * operations. This preserves Elasticsearch's refresh interval behavior while still waiting for
+     * search visibility.
      */
     private boolean waitForIndexRefresh = false;
+
+    /**
+     * Whether to force an immediate refresh for every ES8 write/delete operation. When enabled, the
+     * operation returns only after Elasticsearch has refreshed the affected shard, making {@link
+     * #indexRefreshInterval} irrelevant for those operations.
+     */
+    private boolean refreshOnWrite = false;
 
     public String getUrl() {
         return url;
@@ -243,6 +249,14 @@ public class ElasticSearchProperties {
 
     public void setWaitForIndexRefresh(boolean waitForIndexRefresh) {
         this.waitForIndexRefresh = waitForIndexRefresh;
+    }
+
+    public boolean isRefreshOnWrite() {
+        return refreshOnWrite;
+    }
+
+    public void setRefreshOnWrite(boolean refreshOnWrite) {
+        this.refreshOnWrite = refreshOnWrite;
     }
 
     public List<URL> toURLs() {

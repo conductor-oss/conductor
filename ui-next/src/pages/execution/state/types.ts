@@ -55,6 +55,7 @@ export enum ExecutionActionTypes {
 }
 
 export enum ExecutionTabs {
+  AGENT_EXECUTION_TAB = "agentExecution",
   DIAGRAM_TAB = "diagram",
   TASK_LIST_TAB = "taskList",
   TIMELINE_TAB = "timeLine",
@@ -140,6 +141,7 @@ export type MessageType = {
 export interface ExecutionMachineContext {
   execution?: WorkflowExecution;
   executionId?: string;
+  agentExecution?: boolean;
   flowChild?: ActorRef<FlowEvents>;
   expandedDynamic: string[];
   workflowDefinition?: Partial<WorkflowDef>;
@@ -162,6 +164,7 @@ export interface ExecutionMachineContext {
 export type UpdateExecutionEvent = {
   type: ExecutionActionTypes.UPDATE_EXECUTION;
   executionId: string;
+  agentExecution?: boolean;
 };
 
 export type ClearErrorEvent = {

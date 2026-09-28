@@ -5,8 +5,7 @@
   "startWorkflowRequest": {
     "name": "daily_report_workflow",
     "version": 1,
-    "input": {},
-    "correlationId": "daily-report-${scheduledTime}"
+    "input": {}
   },
   "scheduleStartTime": 0,
   "scheduleEndTime": 0,

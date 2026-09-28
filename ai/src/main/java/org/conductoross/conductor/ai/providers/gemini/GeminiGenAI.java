@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Conductor Authors.
+ * Copyright 2026 Conductor Authors.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,55 +13,47 @@
 package org.conductoross.conductor.ai.providers.gemini;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
+import org.conductoross.conductor.ai.providers.gemini.api.GeminiApi;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 
-import com.google.genai.Client;
-import com.google.genai.types.GenerateImagesConfig;
-import com.google.genai.types.GenerateImagesResponse;
-import com.google.genai.types.GeneratedImage;
-
 public class GeminiGenAI implements ImageModel {
 
-    private final Client client;
+    private final GeminiApi api;
 
-    public GeminiGenAI(Client client) {
-        this.client = client;
+    public GeminiGenAI(GeminiApi api) {
+        this.api = api;
     }
 
     @Override
     public ImageResponse call(ImagePrompt request) {
         var options = request.getOptions();
-        GenerateImagesConfig config =
-                GenerateImagesConfig.builder()
-                        .numberOfImages(options.getN())
-                        .outputMimeType("image/png")
-                        .includeSafetyAttributes(true)
-                        .build();
+        String model = options.getModel();
+        String promptText = request.getInstructions().getFirst().getText();
 
-        GenerateImagesResponse response =
-                client.models.generateImages(
-                        options.getModel(), request.getInstructions().getFirst().getText(), config);
+        GeminiApi.GenerateImagesConfig config =
+                new GeminiApi.GenerateImagesConfig(options.getN(), "image/png", true);
 
-        List<GeneratedImage> generatedImages = response.generatedImages().orElse(new ArrayList<>());
+        GeminiApi.GenerateImagesResponse response;
+        try {
+            response = api.generateImages(model, promptText, config);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Gemini generateImages failed: " + e.getMessage(), e);
+        }
+
+        List<GeminiApi.ImagePrediction> predictions =
+                response.predictions() != null ? response.predictions() : List.of();
         List<ImageGeneration> generations = new ArrayList<>();
-        for (GeneratedImage generatedImage : generatedImages) {
-            generatedImage
-                    .image()
-                    .ifPresent(
-                            image -> {
-                                byte[] data = image.imageBytes().orElse(new byte[0]);
-                                org.springframework.ai.image.Image img =
-                                        new org.springframework.ai.image.Image(
-                                                null, Base64.getEncoder().encodeToString(data));
-                                ImageGeneration imageGeneration = new ImageGeneration(img);
-                                generations.add(imageGeneration);
-                            });
+        for (GeminiApi.ImagePrediction pred : predictions) {
+            if (pred.bytesBase64Encoded() != null) {
+                org.springframework.ai.image.Image img =
+                        new org.springframework.ai.image.Image(null, pred.bytesBase64Encoded());
+                generations.add(new ImageGeneration(img));
+            }
         }
         return new ImageResponse(generations);
     }

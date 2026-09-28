@@ -200,10 +200,26 @@ export const BasicSearch = ({
       <Grid
         size={{
           xs: 12,
-          sm: 12,
-          md: 6,
+          md: 4,
           lg: 6,
         }}
+        sx={{ order: { xs: 0, md: 2 } }}
+      >
+        <ConductorInput
+          fullWidth
+          label="Free text search"
+          value={freeText}
+          onTextInputChange={setFreeText}
+          showClearButton
+        />
+      </Grid>
+      <Grid
+        size={{
+          xs: 12,
+          md: 8,
+          lg: 6,
+        }}
+        sx={{ order: { xs: 0, md: 1 } }}
       >
         <DateControlComponent
           startTime={startTime}
@@ -237,57 +253,34 @@ export const BasicSearch = ({
         />
       </Grid>
       <Grid
-        size={{
-          xs: 12,
-          sm: 6,
-          md: 3,
-          lg: 3.5,
-        }}
-      >
-        <ConductorInput
-          fullWidth
-          label="Free text search"
-          value={freeText}
-          onTextInputChange={setFreeText}
-          showClearButton
-        />
-      </Grid>
-      <Grid
         display="flex"
         justifyContent="end"
-        size={{
-          xs: 12,
-          sm: 6,
-          md: 3,
-          lg: 2.5,
-        }}
+        alignItems="center"
+        gap={1}
+        size={12}
+        sx={{ flexWrap: "nowrap", order: { xs: 0, md: 3 } }}
       >
-        <Grid alignSelf="center" size={5}>
-          <Button
-            id="reset-task-btn"
-            variant="text"
-            onClick={handleReset}
-            style={{ width: "100%" }}
-            startIcon={<ResetIcon />}
-          >
-            Reset
-          </Button>
-        </Grid>
-        <Grid alignSelf="center">
-          <SplitButton
-            id="search-task-btn"
-            startIcon={<SearchIcon />}
-            options={[
-              {
-                label: "Show as code",
-                onClick: () => setShowCodeDialog("active"),
-              },
-            ]}
-            primaryOnClick={doSearch}
-          >
-            Search
-          </SplitButton>
-        </Grid>
+        <Button
+          id="reset-task-btn"
+          variant="text"
+          onClick={handleReset}
+          startIcon={<ResetIcon />}
+        >
+          Reset
+        </Button>
+        <SplitButton
+          id="search-task-btn"
+          startIcon={<SearchIcon />}
+          options={[
+            {
+              label: "Show as code",
+              onClick: () => setShowCodeDialog("active"),
+            },
+          ]}
+          primaryOnClick={doSearch}
+        >
+          Search
+        </SplitButton>
       </Grid>
     </Grid>
   );

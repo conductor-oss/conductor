@@ -101,7 +101,8 @@ class S3FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
     @Test
     void getMetadataForUnknownFileThrowsNotFoundException() {
         assertThrows(
-                NotFoundException.class, () -> fileStorageService.getFileMetadata("nonexistent"));
+                NotFoundException.class,
+                () -> fileStorageService.getFileMetadata(WORKFLOW_ID, "nonexistent"));
     }
 
     @Test
@@ -113,7 +114,7 @@ class S3FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fileStorageService.getDownloadUrl(fileId, "wf-test"));
+                () -> fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId));
     }
 
     @Test
@@ -125,8 +126,9 @@ class S3FileStorageIntegrationTest extends AbstractFileStorageIntegrationTest {
 
         putToPresignedUrl(created.getUploadUrl(), payload);
 
-        FileUploadCompleteResponse confirmed = fileStorageService.confirmUpload(fileId);
-        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(fileId, "wf-test");
+        FileUploadCompleteResponse confirmed =
+                fileStorageService.confirmUpload(WORKFLOW_ID, fileId);
+        FileDownloadUrlResponse download = fileStorageService.getDownloadUrl(WORKFLOW_ID, fileId);
         byte[] fetched = getFromPresignedUrl(download.getDownloadUrl());
 
         assertEquals(FileUploadStatus.UPLOADED, confirmed.getUploadStatus());

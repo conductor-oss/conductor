@@ -20,8 +20,12 @@ import {
   SearchProviderRegistration,
   SidebarExtension,
   SidebarItemRegistration,
+  TaskExecutionPanelRegistration,
   TaskMenuItemRegistration,
+  TaskValidatorFn,
 } from "./types";
+import type { TaskDef } from "types";
+import type { ValidationError } from "pages/definition/errorInspector/state/types";
 
 /**
  * Creates a new plugin registry instance
@@ -300,6 +304,24 @@ function createPluginRegistry(): PluginRegistry {
     },
 
     /**
+     * Get all task execution panels (extra tabs in the execution task detail panel)
+     * registered for the given task type.
+     */
+    getTaskExecutionPanels(taskType: string): TaskExecutionPanelRegistration[] {
+      const panels: TaskExecutionPanelRegistration[] = [];
+      for (const plugin of plugins) {
+        if (plugin.taskExecutionPanels) {
+          panels.push(
+            ...plugin.taskExecutionPanels.filter((p) =>
+              p.taskTypes.includes(taskType),
+            ),
+          );
+        }
+      }
+      return panels;
+    },
+
+    /**
      * Get the schema edit dialog component.
      * Returns the first registered one, or null if none (OSS build).
      */
@@ -378,6 +400,32 @@ function createPluginRegistry(): PluginRegistry {
         }
       }
       return null;
+    },
+
+    getTaskValidationErrors(task: TaskDef): ValidationError[] {
+      const errors: ValidationError[] = [];
+      for (const plugin of plugins) {
+        plugin.taskValidators?.forEach((validate: TaskValidatorFn) => {
+          errors.push(...validate(task));
+        });
+      }
+      return errors;
+    },
+
+    runPreSaveValidation(): void {
+      for (const plugin of plugins) {
+        if (!plugin.onPreSaveValidation) {
+          continue;
+        }
+        try {
+          plugin.onPreSaveValidation();
+        } catch (error) {
+          console.error(
+            `Error in onPreSaveValidation hook for plugin "${plugin.id}":`,
+            error,
+          );
+        }
+      }
     },
   };
 }

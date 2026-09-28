@@ -22,7 +22,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import org.conductoross.conductor.dao.SecretsDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,6 +36,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.dao.EnvironmentDAO;
+import com.netflix.conductor.model.WorkflowModel;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +45,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {TestObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -374,5 +384,226 @@ public class ParametersUtilsTest {
         Map<String, Object> workflowInput =
                 parametersUtils.getWorkflowInput(workflowDef, inputParams);
         assertEquals("supplied_value", workflowInput.get(keyName));
+    }
+
+    @Test
+    public void testWorkflowEnvResolvesEagerly() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        when(env.getEnvVariable("REGION")).thenReturn("us-east-1");
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("region", "${workflow.env.REGION}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("us-east-1", out.get("region"));
+    }
+
+    @Test
+    public void testWorkflowEnvResolvesJsonPath() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        when(env.getEnvVariable("CONFIG"))
+                .thenReturn("{\"host\":\"db.example.com\",\"port\":5432}");
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("host", "${workflow.env.CONFIG.host}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("db.example.com", out.get("host"));
+    }
+
+    @Test
+    public void testWorkflowSecretsLeftLiteralDuringNormalResolution() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+
+        WorkflowModel wf = new WorkflowModel();
+        wf.setWorkflowDefinition(new WorkflowDef());
+        Map<String, Object> out = pu.getTaskInput(input, wf, null, "t1");
+
+        assertEquals("${workflow.secrets.DB_PASSWORD}", out.get("pwd"));
+    }
+
+    @Test
+    public void testSubstituteSecretsResolvesPlainAndJsonPath() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("DB_PASSWORD")).thenReturn("s3cr3t");
+        when(secrets.getSecret("CREDS")).thenReturn("{\"user\":\"neo\",\"pass\":\"zion\"}");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        input.put("user", "${workflow.secrets.CREDS.user}");
+        input.put("header", "Bearer ${workflow.secrets.DB_PASSWORD}");
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertEquals("s3cr3t", out.get("pwd"));
+        assertEquals("neo", out.get("user"));
+        assertEquals("Bearer s3cr3t", out.get("header"));
+        // original input unmutated
+        assertEquals("${workflow.secrets.DB_PASSWORD}", input.get("pwd"));
+    }
+
+    @Test
+    public void testSubstituteSecretsResolvesInsideList() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("TOKEN")).thenReturn("tkn");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("headers", List.of("Bearer ${workflow.secrets.TOKEN}", "static"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertEquals(List.of("Bearer tkn", "static"), out.get("headers"));
+        // original input unmutated
+        assertEquals(List.of("Bearer ${workflow.secrets.TOKEN}", "static"), input.get("headers"));
+    }
+
+    @Test
+    public void testSubstituteSecretsMalformedJsonResolvesToNull() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        when(secrets.getSecret("CREDS")).thenReturn("not-json");
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("v", "${workflow.secrets.CREDS.field}");
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertNull(out.get("v"));
+    }
+
+    @Test
+    public void testSubstituteSecretsNullDaoReturnsInput() {
+        ParametersUtils pu = new ParametersUtils(objectMapper);
+        Map<String, Object> input = new HashMap<>();
+        input.put("pwd", "${workflow.secrets.DB_PASSWORD}");
+        assertTrue(pu.substituteSecrets(input) == input);
+    }
+
+    @Test
+    public void testSubstituteSecretsReturnsSameInstanceWhenNoSecretRef() {
+        EnvironmentDAO env = mock(EnvironmentDAO.class);
+        SecretsDAO secrets = mock(SecretsDAO.class);
+        ParametersUtils pu = new ParametersUtils(objectMapper, env, secrets);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("a", "plain");
+        Map<String, Object> nested = new HashMap<>();
+        nested.put("c", "no secret here");
+        input.put("b", nested);
+        input.put("d", List.of(1, 2, "x"));
+
+        Map<String, Object> out = pu.substituteSecrets(input);
+
+        assertSame(input, out);
+    }
+
+    @Test
+    public void testFindExpressions() {
+        assertEquals("", expressions("no expressions here"));
+        assertEquals("[0-4]", expressions("${a}"));
+        assertEquals("[2-6][9-13]", expressions("x ${a} y ${b} z"));
+        // nested expressions belong to the outer one
+        assertEquals("[0-9]", expressions("${a.${b}}"));
+        assertEquals("[0-12]", expressions("${a{b{c}d}e}"));
+        assertEquals("[0-3]", expressions("${}"));
+        // $${ is the escape for a literal ${
+        assertEquals("", expressions("$${a}"));
+        assertEquals("[6-10]", expressions("$${a} ${b}"));
+        // braces that do not belong to an expression are ignored
+        assertEquals("[4-8]", expressions("{}} ${a} {"));
+        // an expression that is never closed hides everything after it
+        assertEquals("", expressions("${a"));
+        assertEquals("[0-4]", expressions("${a} ${b ${c}"));
+        assertEquals("", expressions("$"));
+        assertEquals("", expressions(""));
+    }
+
+    @Test
+    public void testFindExpressionsMatchesLegacyPattern() {
+        // The pattern findExpressions replaced; kept here only as the reference for its semantics.
+        Pattern legacyPattern =
+                Pattern.compile(
+                        "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)",
+                        Pattern.DOTALL);
+        char[] alphabet = {'$', '{', '}', 'a', '\n'};
+        int maxLength = 6;
+        for (int length = 0; length <= maxLength; length++) {
+            int[] indexes = new int[length];
+            boolean exhausted = false;
+            while (!exhausted) {
+                StringBuilder input = new StringBuilder();
+                for (int index : indexes) {
+                    input.append(alphabet[index]);
+                }
+
+                StringBuilder expected = new StringBuilder();
+                Matcher matcher = legacyPattern.matcher(input);
+                while (matcher.find()) {
+                    expected.append('[').append(matcher.start()).append('-').append(matcher.end());
+                    expected.append(']');
+                }
+                assertEquals(
+                        "Input: " + input.toString().replace("\n", "\\n"),
+                        expected.toString(),
+                        expressions(input.toString()));
+
+                int position = length - 1;
+                while (position >= 0 && ++indexes[position] == alphabet.length) {
+                    indexes[position--] = 0;
+                }
+                exhausted = position < 0;
+            }
+        }
+    }
+
+    @Test(timeout = 10_000)
+    public void testReplaceIsNotVulnerableToReDoS() {
+        Map<String, Object> io = new HashMap<>();
+        io.put("name", "conductor");
+
+        // deeply nested expressions made the previous regex based matching take minutes
+        int depth = 1_000;
+        String nested = "${".repeat(depth) + "name" + "}".repeat(depth);
+        Map<String, Object> input = new HashMap<>();
+        input.put("nested", nested);
+        input.put("unclosed", "${" + "{".repeat(100_000));
+        input.put("many", "${name} ".repeat(50_000));
+        input.put("closingOnly", "}".repeat(100_000) + "${name}");
+
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+
+        assertNotNull(replaced);
+        assertEquals(input.get("unclosed"), replaced.get("unclosed"));
+        assertEquals("conductor ".repeat(50_000), replaced.get("many"));
+        assertEquals("}".repeat(100_000) + "conductor", replaced.get("closingOnly"));
+        // every level resolves to a path that does not exist, which yields null
+        assertTrue(replaced.containsKey("nested"));
+        assertNull(replaced.get("nested"));
+    }
+
+    private static String expressions(String value) {
+        return ParametersUtils.findExpressions(value).stream()
+                .map(range -> "[" + range[0] + "-" + range[1] + "]")
+                .collect(Collectors.joining());
     }
 }

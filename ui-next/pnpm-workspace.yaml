@@ -1,0 +1,10 @@
+overrides:
+  vis-timeline: "7.3.6"
+  vis-data: "7.1.9"
+  mini-css-extract-plugin: "2.4.5"
+
+allowBuilds:
+  "@parcel/watcher": true
+  esbuild: true
+  sharp: true
+  vis-timeline: true

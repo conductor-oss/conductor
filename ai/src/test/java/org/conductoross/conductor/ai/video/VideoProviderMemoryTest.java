@@ -17,7 +17,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Random;
 
-import org.conductoross.conductor.ai.models.Media;
+import org.conductoross.conductor.ai.model.Media;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

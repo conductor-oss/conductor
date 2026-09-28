@@ -14,6 +14,7 @@ package com.netflix.conductor.service;
 
 import java.util.*;
 
+import org.conductoross.conductor.core.listener.MetadataChangeListenerStub;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.Answer;
@@ -96,7 +97,8 @@ public class MetadataServiceTest {
                             invocation ->
                                     taskDefinitions.get(invocation.getArgument(0, String.class)));
 
-            return new MetadataServiceImpl(metadataDAO, eventHandlerDAO, properties);
+            return new MetadataServiceImpl(
+                    metadataDAO, eventHandlerDAO, new MetadataChangeListenerStub(), properties);
         }
 
         private List<WorkflowDef> mockWorkflowDefs() {
@@ -371,7 +373,9 @@ public class MetadataServiceTest {
         workflowTask.setName("hello");
         workflowTask.setType("SWITCH");
         workflowTask.setEvaluatorType("javascript");
-        workflowTask.setExpression("1>abcd");
+        // A genuine syntax error: registration validates syntax only, since expressions
+        // referencing runtime bound values cannot be evaluated at registration time
+        workflowTask.setExpression("1 >");
         WorkflowTask caseTask = new WorkflowTask();
         caseTask.setTaskReferenceName("casetrue");
         caseTask.setName("casetrue");

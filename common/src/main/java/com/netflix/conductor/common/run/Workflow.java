@@ -133,6 +133,9 @@ public class Workflow extends Auditable {
     private String rateLimitKey;
     private boolean rateLimited;
 
+    /** Token usage summed across this workflow and its sub-workflow tree. */
+    private AggregateTokenUsage aggregateTokenUsage;
+
     public Workflow() {}
 
     public String getIdempotencyKey() {
@@ -153,6 +156,14 @@ public class Workflow extends Auditable {
 
     public boolean isRateLimited() {
         return rateLimited;
+    }
+
+    public AggregateTokenUsage getAggregateTokenUsage() {
+        return aggregateTokenUsage;
+    }
+
+    public void setAggregateTokenUsage(AggregateTokenUsage aggregateTokenUsage) {
+        this.aggregateTokenUsage = aggregateTokenUsage;
     }
 
     public void setRateLimited(boolean rateLimited) {
@@ -536,6 +547,7 @@ public class Workflow extends Auditable {
         copy.setFailedReferenceTaskNames(failedReferenceTaskNames);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+        copy.setAggregateTokenUsage(aggregateTokenUsage);
         return copy;
     }
 

@@ -1,36 +1,10 @@
 ---
 description: "Build Conductor workers in JavaScript/TypeScript with workflow management and task polling."
+source_repo: "https://github.com/conductor-oss/javascript-sdk"
+sdk_page: javascript
 ---
 
 # JavaScript SDK
-
-!!! info "Source"
-    GitHub: [conductor-oss/javascript-sdk](https://github.com/conductor-oss/javascript-sdk) | Report issues and contribute on GitHub.
-
-## Start Conductor server
-
-If you don't already have a Conductor server running, pick one:
-
-**Docker (recommended, includes UI):**
-
-```shell
-docker run -p 8080:8080 conductoross/conductor:latest
-```
-
-The UI will be available at `http://localhost:8080` and the API at `http://localhost:8080/api`.
-
-**MacOS / Linux (one-liner):**
-
-```shell
-curl -sSL https://raw.githubusercontent.com/conductor-oss/conductor/main/conductor_server.sh | sh
-```
-
-**Conductor CLI:**
-
-```shell
-npm install -g @conductor-oss/conductor-cli
-conductor server start
-```
 
 ## Install the SDK
 
@@ -125,20 +99,10 @@ main();
 Run it:
 
 ```shell
-export CONDUCTOR_SERVER_URL=http://localhost:8080
 npx ts-node quickstart.ts
 ```
 
-> ### Using Orkes Conductor / Remote Server?
-> Export your authentication credentials:
->
-> ```shell
-> export CONDUCTOR_SERVER_URL="https://your-cluster.orkesconductor.io/api"
-> export CONDUCTOR_AUTH_KEY="your-key"
-> export CONDUCTOR_AUTH_SECRET="your-secret"
-> ```
-
-That's it — you defined a worker, built a workflow, and executed it. Open the Conductor UI (default: [http://localhost:8080](http://localhost:8080)) to see the execution.
+That's it — you defined a worker, built a workflow, and executed it. Open the UI for the Conductor server you configured to inspect the execution.
 
 ## What You Can Build
 
@@ -491,44 +455,6 @@ See [examples/agentic-workflows/](https://github.com/conductor-oss/javascript-sd
 - [Open an issue (Conductor server)](https://github.com/conductor-oss/conductor/issues) for Conductor OSS server issues
 - [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA) for community discussion and help
 - [Orkes Community Forum](https://community.orkes.io/) for Q&A
-
-## Frequently Asked Questions
-
-**Is this the same as Netflix Conductor?**
-
-Yes. Conductor OSS is the continuation of the original [Netflix Conductor](https://github.com/Netflix/conductor) repository after Netflix contributed the project to the open-source foundation.
-
-**Is this project actively maintained?**
-
-Yes. [Orkes](https://orkes.io) is the primary maintainer and offers an enterprise SaaS platform for Conductor across all major cloud providers.
-
-**Can Conductor scale to handle my workload?**
-
-Conductor was built at Netflix to handle massive scale and has been battle-tested in production environments processing millions of workflows. It scales horizontally to meet virtually any demand.
-
-**What Node.js versions are supported?**
-
-Node.js 18 and above.
-
-**Should I use `@worker` decorator or the legacy `TaskManager`?**
-
-Use `@worker` + `TaskHandler` for all new projects. It provides auto-discovery, cleaner code, and better TypeScript integration. The legacy `TaskManager` API is maintained for backward compatibility.
-
-**Can I mix workers written in different languages?**
-
-Yes. A single workflow can have workers written in TypeScript, Python, Java, Go, or any other supported language. Workers communicate through the Conductor server, not directly with each other.
-
-**How do I run workers in production?**
-
-Workers are standard Node.js processes. Deploy them as you would any Node.js application — in containers, VMs, or serverless. Workers poll the Conductor server for tasks, so no inbound ports need to be opened.
-
-**How do I test workflows without running a full Conductor server?**
-
-The SDK provides `testWorkflow()` on `WorkflowExecutor` that uses Conductor's `POST /api/workflow/test` endpoint to evaluate workflows with mock task outputs.
-
-**Does the SDK support HTTP/2?**
-
-Yes. When the optional `undici` package is installed (`npm install undici`), the SDK automatically uses HTTP/2 with connection pooling for better performance.
 
 ## License
 

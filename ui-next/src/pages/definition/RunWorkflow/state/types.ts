@@ -51,6 +51,7 @@ export interface RunMachineContext {
   idempotencyKey?: string;
   idempotencyStrategy?: IdempotencyStrategyEnum;
   workflowDefaultRunParam?: Record<string, unknown>;
+  focusInput?: boolean;
 }
 
 export enum RunMachineStates {

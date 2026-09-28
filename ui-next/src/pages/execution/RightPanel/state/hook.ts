@@ -9,7 +9,7 @@ import {
   RightPanelEvents,
   SetSelectedTaskEvent,
 } from "./types";
-import { TaskStatus } from "types/TaskStatus";
+import { fillIterationPlaceholders } from "../iterationHelpers";
 
 export const useRightPanelActor = (
   rightPanelActor: ActorRef<RightPanelEvents>,
@@ -37,34 +37,47 @@ export const useRightPanelActor = (
     }
   }, [executionStatusMap, selectedTask]);
 
-  const retryIterationOptions =
-    selectedTaskInStatusMap?.loopOver &&
-    [...(selectedTaskInStatusMap?.loopOver ?? [])].reverse();
+  const parentDoWhileRef = useMemo(() => {
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    return parentLoop?.referenceTaskName as string | undefined;
+  }, [selectedTaskInStatusMap]);
+
+  const retryIterationOptions = useMemo(() => {
+    const loopOver = selectedTaskInStatusMap?.loopOver;
+    if (!loopOver?.length) return loopOver;
+
+    const parentLoop = selectedTaskInStatusMap?.parentLoop as any;
+    const totalIterations = parentLoop?.iteration as number | undefined;
+    if (!totalIterations) {
+      return [...loopOver].reverse();
+    }
+
+    return fillIterationPlaceholders(
+      loopOver,
+      totalIterations,
+      parentDoWhileRef,
+      selectedTaskInStatusMap?.workflowTask,
+    );
+  }, [selectedTaskInStatusMap, parentDoWhileRef]);
   const maybeSiblings = selectedTaskInStatusMap?.related?.siblings || [];
 
-  const isSelectedTaskInProgressStatus = useSelector(
+  const executionId = useSelector(
     rightPanelActor,
-    (state: State<RightPanelContext>) =>
-      state.context?.selectedTask?.status &&
-      [
-        TaskStatus.PENDING,
-        TaskStatus.SCHEDULED,
-        TaskStatus.IN_PROGRESS,
-      ].includes(state?.context?.selectedTask?.status),
+    (state: State<RightPanelContext>) => state.context.executionId,
   );
-  // this condition check is required as there is a backend bug which returns the previous iterations outputdata when rerunning from a task in progress status
-  const isSelectedTaskIsARetry = useSelector(
+  const authHeaders = useSelector(
     rightPanelActor,
-    (state: State<RightPanelContext>) =>
-      state.context?.selectedTask?.retryCount &&
-      state.context?.selectedTask?.retryCount > 0,
+    (state: State<RightPanelContext>) => state.context.authHeaders,
   );
 
   return [
     {
       selectedTask,
       retryIterationOptions,
+      parentDoWhileRef,
       maybeSiblings,
+      executionId,
+      authHeaders,
       isIteration: useSelector(
         rightPanelActor,
         (state: State<RightPanelContext>) =>
@@ -82,8 +95,6 @@ export const useRightPanelActor = (
         rightPanelActor,
         (state: State<RightPanelContext>) => state?.context?.currentTab,
       ),
-      isReRunFromTaskInProgress:
-        isSelectedTaskInProgressStatus && isSelectedTaskIsARetry,
     },
     {
       handleClosePanel: () => {

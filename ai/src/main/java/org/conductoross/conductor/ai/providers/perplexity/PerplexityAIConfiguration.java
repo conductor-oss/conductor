@@ -16,11 +16,13 @@ import java.time.Duration;
 import java.util.Objects;
 
 import org.conductoross.conductor.ai.ModelConfiguration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import okhttp3.OkHttpClient;
 
 @Data
 @NoArgsConstructor
@@ -31,9 +33,18 @@ public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityA
     private String baseURL;
     private Duration timeout = Duration.ofSeconds(600);
 
-    public PerplexityAIConfiguration(String apiKey, String baseURL) {
+    private OkHttpClient httpClient;
+
+    public PerplexityAIConfiguration(String apiKey, String baseURL, OkHttpClient httpClient) {
         this.apiKey = apiKey;
         this.baseURL = baseURL;
+        this.httpClient = httpClient;
+    }
+
+    @Autowired
+    @Override
+    public void setHttpClient(OkHttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     public String getBaseURL() {
@@ -42,6 +53,6 @@ public class PerplexityAIConfiguration implements ModelConfiguration<PerplexityA
 
     @Override
     public PerplexityAI get() {
-        return new PerplexityAI(this);
+        return new PerplexityAI(this, httpClient);
     }
 }

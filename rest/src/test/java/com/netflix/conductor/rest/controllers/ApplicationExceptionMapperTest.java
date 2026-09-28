@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.Collections;
 
+import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,9 +24,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 
+import com.netflix.conductor.core.exception.ConflictException;
+import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.model.TaskModel;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +52,9 @@ public class ApplicationExceptionMapperTest {
     public void before() {
         mockLoggerFactory = Mockito.mockStatic(LoggerFactory.class);
         when(LoggerFactory.getLogger(ApplicationExceptionMapper.class)).thenReturn(logger);
+        // logger is a static mock reused across tests; clear its invocation history
+        // so per-test verifications (e.g. never().error()) are order-independent.
+        clearInvocations(logger);
 
         this.queueAdminResource = mock(QueueAdminResource.class);
         this.mockMvc =
@@ -85,6 +93,92 @@ public class ApplicationExceptionMapperTest {
                         "Exception",
                         "/api/queue/update/workflowId/taskRefName/SKIPPED",
                         exception);
+        verifyNoMoreInteractions(logger);
+    }
+
+    @Test
+    public void testClientErrorsLoggedAtWarn() throws Exception {
+        // Client (4xx) errors are logged at WARN, not ERROR, across the mapped
+        // exception types (for example ConflictException -> 409,
+        // NotFoundException -> 404).
+        assertLoggedAtWarn(new ConflictException("resource already exists"), status().isConflict());
+        assertLoggedAtWarn(new NotFoundException("resource not found"), status().isNotFound());
+    }
+
+    @Test
+    public void testSchemaValidationMapsTo400() throws Exception {
+        // A payload that does not match its definition's schema is the caller's to fix; a 500
+        // would tell an SDK to retry something that can never succeed.
+        assertLoggedAtWarn(
+                new SchemaValidationException("Workflow order input: required property 'name'"),
+                status().isBadRequest());
+    }
+
+    /**
+     * The same, with both advices registered as the server registers them.
+     * SchemaValidationException is a {@code jakarta.validation.ValidationException}, so
+     * ValidationExceptionMapper — at HIGHEST_PRECEDENCE — handles it, not the status map above. Its
+     * non-constraint-violation branch answers 500, so without an explicit case for this type a bad
+     * payload would come back as a server fault. The test above registers only one advice and would
+     * not notice.
+     */
+    @Test
+    public void testSchemaValidationMapsTo400WithBothAdvicesRegistered() throws Exception {
+        MockMvc withBothAdvices =
+                MockMvcBuilders.standaloneSetup(this.queueAdminResource)
+                        .setControllerAdvice(
+                                new ValidationExceptionMapper(), new ApplicationExceptionMapper())
+                        .build();
+
+        doThrow(new SchemaValidationException("Workflow order input: required property 'name'"))
+                .when(this.queueAdminResource)
+                .update(any(), any(), any(), any());
+
+        withBothAdvices
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testMethodNotSupportedMapsTo405() throws Exception {
+        // an unsupported HTTP method on an existing path must map to 405 (RFC 7231),
+        // not the default 500, so SDK GET-then-PUT-on-405 fallbacks keep working.
+        assertLoggedAtWarn(
+                new HttpRequestMethodNotSupportedException("GET"), status().isMethodNotAllowed());
+    }
+
+    private void assertLoggedAtWarn(Exception exception, ResultMatcher expectedStatus)
+            throws Exception {
+        // logger is a static mock reused across assertions; start each one clean.
+        clearInvocations(logger);
+        doThrow(exception).when(this.queueAdminResource).update(any(), any(), any(), any());
+
+        this.mockMvc
+                .perform(
+                        MockMvcRequestBuilders.post(
+                                        "/api/queue/update/workflowId/taskRefName/{status}",
+                                        TaskModel.Status.SKIPPED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        new ObjectMapper()
+                                                .writeValueAsString(Collections.emptyMap())))
+                .andDo(print())
+                .andExpect(expectedStatus);
+        // client (4xx) errors must be logged at WARN, not ERROR
+        verify(logger)
+                .warn(
+                        "Error {} url: '{}'",
+                        exception.getClass().getSimpleName(),
+                        "/api/queue/update/workflowId/taskRefName/SKIPPED",
+                        exception);
+        verify(logger, never()).error(any(), any(), any(), any());
         verifyNoMoreInteractions(logger);
     }
 }

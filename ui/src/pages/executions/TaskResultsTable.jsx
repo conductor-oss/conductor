@@ -158,7 +158,10 @@ export default function ResultsTable({
       )}
       {resultObj && (
         <DataTable
-          title={totalHits > 0 && ` Page ${page} of ${Math.ceil(totalHits / rowsPerPage)}`}
+          title={
+            totalHits > 0 &&
+            ` Page ${page} of ${Math.ceil(totalHits / rowsPerPage)}`
+          }
           data={resultObj.results}
           columns={executionFields}
           defaultShowColumns={[

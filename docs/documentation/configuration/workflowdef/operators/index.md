@@ -14,14 +14,14 @@ Here are the operators available in Conductor OSS:
 | [Dynamic](dynamic-task.md)           | Function pointer           | 
 | [Dynamic Fork](dynamic-fork-task.md) | Dynamic parallel execution |
 | [Fork](fork-task.md)                 | Static parallel execution  | 
-| [Join](join-task.md)                 | Map                        |
+| [Join](join-task.md)                 | Wait for all selected branches |
+| [Exclusive Join](exclusive-join-task.md) | Continue with the first selected branch |
 | [Set Variable](set-variable-task.md)     | Workflow variable declaration           |
 | [Start Workflow](start-workflow-task.md) | Entry point   | 
 | [Sub Workflow](sub-workflow-task.md) | Subroutine  | 
 | [Switch](switch-task.md)             | Switch / If..then...else selection     | 
 | [Terminate](terminate-task.md)       | Exit                       |
 
-The following operators are deprecated:
+## Deprecated migration guidance
 
-- Decision
-- Exclusive Join
+`DECISION` is deprecated. Use [Switch](switch-task.md) for new workflows. `EXCLUSIVE_JOIN` is active and documented above.

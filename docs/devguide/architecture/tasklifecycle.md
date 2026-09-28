@@ -8,6 +8,8 @@ During a workflow execution, each task transitions through a series of states. U
 
 ## State diagram
 
+Every task starts in `SCHEDULED` when it enters its queue. A worker poll moves it to `IN_PROGRESS`, and a successful result moves it to `COMPLETED`. The other transitions cover failure: `FAILED` and `TIMED_OUT` tasks return to `SCHEDULED` for retry until their retries are exhausted, and every other state is terminal.
+
 ```mermaid
 stateDiagram-v2
     [*] --> SCHEDULED
@@ -75,7 +77,7 @@ Retry behavior is controlled by the task definition:
 | Parameter | Description |
 | :--- | :--- |
 | `retryCount` | Maximum number of retry attempts. |
-| `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. See [Retry Logic](../../../documentation/configuration/taskdef.md#retry-logic). |
+| `retryLogic` | `FIXED`, `EXPONENTIAL_BACKOFF`, or `LINEAR_BACKOFF`. See [Retry Logic](../../documentation/configuration/taskdef.md#retry-logic). |
 | `retryDelaySeconds` | Base delay between retries. |
 | `maxRetryDelaySeconds` | Caps the computed delay. Prevents exponential growth from becoming arbitrarily large. |
 | `backoffJitterMs` | Adds random milliseconds to each delay to spread concurrent retries over time. |

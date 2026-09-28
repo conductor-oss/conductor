@@ -14,22 +14,49 @@ export function dowhileHasAllIterationsInOutput(
   outputData: Record<string, unknown>,
 ): boolean {
   const max = outputData?.iteration as number;
-  for (let i = 1; i < max; i++) {
-    if (!Object.prototype.hasOwnProperty.call(outputData, String(i))) {
-      return false;
-    }
+  if (typeof max !== "number" || !Number.isFinite(max)) {
+    return false;
   }
-  return true;
+  const iterationKeyCount = Object.keys(outputData).filter((k) =>
+    Number.isInteger(Number(k)),
+  ).length;
+  return iterationKeyCount >= max - 1;
+}
+
+/**
+ * Returns true when the backend has replaced old iteration payloads with a
+ * lightweight sentinel ({"_summarized": true}) to keep the response small.
+ * All iteration keys are still present so the dropdown can enumerate them,
+ * but the full output data is only available for the most recent iterations.
+ */
+export function dowhileHasSummarizedIterations(
+  outputData: Record<string, unknown>,
+): boolean {
+  return Object.values(outputData).some(
+    (val) =>
+      val !== null &&
+      typeof val === "object" &&
+      (val as Record<string, unknown>)["_summarized"] === true,
+  );
 }
 
 export function showIterationChip(nodeData: NodeTaskData): boolean {
-  const keepLastN = nodeData?.parentLoop?.inputData?.keepLastN;
-  return (
-    !keepLastN &&
-    dowhileHasAllIterationsInOutput(nodeData?.parentLoop?.outputData ?? {}) &&
-    typeof nodeData?.attempts === "number" &&
-    nodeData.attempts > 1
-  );
+  if (typeof nodeData?.attempts !== "number" || nodeData.attempts <= 1) {
+    return false;
+  }
+
+  // Standalone retries (no DO_WHILE parent) should still show the attempt badge.
+  // DO_WHILE summarization / keepLastN checks only apply when a parent loop exists.
+  const parentLoop = nodeData.parentLoop;
+  if (!parentLoop) {
+    return true;
+  }
+
+  if (parentLoop.inputData?.keepLastN) {
+    return false;
+  }
+
+  return dowhileHasAllIterationsInOutput(parentLoop.outputData ?? {});
 }
 
 // Helper function to check if a string is a valid URI

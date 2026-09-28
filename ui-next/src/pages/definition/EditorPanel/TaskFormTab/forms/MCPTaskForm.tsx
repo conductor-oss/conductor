@@ -244,7 +244,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
-        taskType={TaskType.MCP}
+        taskType={TaskType.INTEGRATION}
       >
         <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
           {isToolDataLoading ? (

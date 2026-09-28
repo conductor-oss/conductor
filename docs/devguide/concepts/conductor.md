@@ -1,87 +1,22 @@
 ---
-description: "Why use Conductor? An open source workflow engine for workflow orchestration, microservice orchestration, and AI agent orchestration. Durable execution, polyglot workers, LLM orchestration, workflow automation, and self-hosted deployment — a developer-first alternative to Temporal, Step Functions, and Airflow."
+description: "Why use Conductor? An open-source durable execution platform for workflow orchestration, adaptive agents, AI systems, polyglot workers, and self-hosted deployment."
 ---
 
 # Why Conductor
 
-Conductor is an open source workflow engine built for workflow orchestration at scale. It orchestrates distributed workflows across services, languages, and infrastructure — tracking every state transition, retrying failures automatically, and giving you full visibility into what happened and why. Whether you need microservice orchestration, AI agent orchestration, or workflow automation, Conductor provides a self-hosted, code-first platform with no vendor lock-in.
+Conductor is an engine that orchestrates workflows across services and languages. It records every state transition, retries failures automatically, and keeps a full history of what happened and why.
 
 ## The problem
 
-Distributed systems fail. Services crash, networks drop, deployments roll mid-flight. Without a workflow orchestration platform, you end up writing retry logic, state tracking, timeout handling, and compensation flows into every service. That logic is scattered, inconsistent, and invisible.
+Every distributed process has to survive failure. Without coordination, each service carries its own retry, timeout, and recovery logic. That logic gets duplicated everywhere and owned by no one.
 
-**Choreography** (peer-to-peer events) makes this worse at scale:
+One common proposed solution is **choreography**, where services react to each other's events with no central coordinator. This keeps services decoupled on paper, but the logic of the overall business process is not visible. The flow exists only as an implied chain of event contracts, so changing one service can break consumers it cannot see. Observing the process is also hard. For example debugging a failure means correlating logs across all of the services.
 
-- Business processes are implicit — embedded across dozens of services with no single view of the flow.
-- Tight coupling through assumed message contracts makes changes risky.
-- "How far along is order #12345?" requires querying every service in the chain.
-- Debugging a failure means correlating logs across services, queues, and time.
-
-**Orchestration** centralizes the flow definition while keeping execution distributed. Conductor is the orchestrator — your workers stay stateless and independent.
-
-## What Conductor gives you
-
-### Durable execution
-Conductor is a durable execution engine — every workflow execution is persisted. If a task fails, Conductor retries it with configurable backoff including exponential backoff. If a worker crashes, the task is rescheduled. If the server restarts, execution resumes exactly where it left off. Your code doesn't need to handle retry logic — Conductor provides it out of the box. This same durable execution guarantee powers durable agents that survive infrastructure failures.
-
-### Language-agnostic workers
-Write workers in Python, Java, Go, JavaScript, C#, or Clojure. Each task in a workflow can use a different language — pick the best tool for each job. Workers communicate with Conductor via REST or gRPC and can run anywhere: containers, VMs, serverless, or your laptop.
-
-### Built-in system tasks
-HTTP calls, inline JavaScript execution, JSON transforms, event publishing, wait timers, and human approval gates — all available without writing a single worker. See [System Tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
-
-### Flow control operators
-Fork/join for parallelism, switch for conditional branching, do-while for loops, sub-workflows for composition, and dynamic tasks resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
-
-### AI agent orchestration and LLM orchestration
-Conductor provides LLM orchestration and AI agent orchestration as native system tasks — no external frameworks required. Supported providers include Anthropic (Claude), OpenAI (GPT), Azure OpenAI, Google Gemini, AWS Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, and StabilityAI — 14+ providers available out of the box for chat completion, text completion, and embedding generation.
-
-MCP (Model Context Protocol) integration is built in: use `LIST_MCP_TOOLS` to discover available tools and `CALL_MCP_TOOL` to invoke them — enabling function calling and tool use within workflows with full retry and state tracking.
-
-For RAG pipelines, Conductor supports three vector databases natively — Pinecone, pgvector, and MongoDB Atlas — so you can index embeddings, run similarity search, and feed results to an LLM in a single workflow definition.
-
-Content generation tasks cover image, audio, video, and PDF creation using AI models. Every AI task runs with the same durability guarantees as any other Conductor task: automatic retries, timeout handling, and a complete audit trail.
-
-### Event-driven workflows
-Publish to and consume from Kafka, NATS, AMQP (RabbitMQ), and SQS. Trigger workflows from external events or emit events from within workflows. See [Event Bus Orchestration](../how-tos/event-bus.md).
-
-### Full operational control
-Pause, resume, restart, retry, and terminate any workflow execution. Search and filter executions by status, time, correlation ID, or custom tags. Every task has a complete audit trail — inputs, outputs, timestamps, retry history, and worker identity.
-
-### Horizontal scaling
-Conductor scales horizontally to millions of concurrent workflow executions. Workers scale independently — add more instances and Conductor distributes tasks automatically. Rate limits and concurrency caps prevent overload. This workflow engine scalability makes Conductor suitable for production deployments at any scale.
-
-## When to use Conductor
-
-| Use case | Example |
-| :--- | :--- |
-| **Microservice orchestration** | Order processing: payment → inventory → shipping → notification |
-| **Workflow automation** | Automate business processes with durable execution, retries, and full observability |
-| **Durable agents** | Multi-step LLM chains with function calling, tool use, RAG, and human-in-the-loop — durable agents that survive crashes |
-| **Long-running workflows** | Insurance claims, loan approvals, onboarding flows spanning days or weeks — async workflows that survive deploys |
-| **Event-driven automation** | React to Kafka events, trigger workflows, publish results back |
-| **Batch processing** | Fan-out work across thousands of parallel workers with dynamic fork |
-| **Saga pattern** | Distributed transactions with compensation on failure |
-| **RAG applications** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
-| **Content generation pipelines** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
-
-## What sets Conductor apart
-
-No other open source workflow engine matches this combination:
-
-- **14+ native LLM providers as system tasks** — Anthropic, OpenAI, Azure OpenAI, Gemini, Bedrock, Mistral, Cohere, HuggingFace, Ollama, Perplexity, Grok, StabilityAI, and more. No wrappers, no plugins — first-class support.
-- **MCP (Model Context Protocol) native integration** — discover and call tools directly from workflow definitions.
-- **3 vector databases for built-in RAG** — Pinecone, pgvector, MongoDB Atlas. Embed, index, search, and generate in one workflow.
-- **Content generation tasks** — image, audio, video, and PDF generation as system tasks.
-- **6 message brokers** — Kafka, NATS, NATS Streaming, SQS, AMQP (RabbitMQ), and internal queuing.
-- **5 persistence backends** — Redis, PostgreSQL, MySQL, Cassandra, and SQLite.
-- **7+ language SDKs** — Java, Python, Go, JavaScript, C#, Clojure, Ruby, and Rust.
-- **Battle-tested at scale** — proven in production at Netflix, Tesla, LinkedIn, and JP Morgan.
-- **JSON-native and code-first workflow definitions** — define workflows as JSON or as code using SDKs. Workflow as code for developers who want type safety; JSON for runtime generation and LLM-driven workflows.
-- **Self-hosted with no vendor lock-in** — deploy Conductor on your own infrastructure. Apache 2.0 licensed, fully open source.
-- **Human-in-the-loop as a first-class task type** — pause execution for approvals, reviews, or manual intervention with built-in timeout and escalation.
+**Orchestration** is Conductor's approach. The overall business process is defined in one place, while the work itself stays distributed. Conductor is the orchestrator. It owns the flow, the state, and the recovery, so workers stay stateless and independent.
 
 ## How it works
+
+Conductor runs as a server that your workers connect to. The server schedules tasks, persists every state change, and applies retries and timeouts. Workers poll the server for tasks, run your business logic in any supported language, and report results back. State lives in the persistence store you choose.
 
 ```mermaid
 graph TD
@@ -107,11 +42,55 @@ graph TD
     S --> DB
 ```
 
-Workers poll for tasks, execute business logic, and report results. Conductor handles everything else — scheduling, retries, timeouts, state persistence, and flow control. See [Architecture](../architecture/index.md) for details.
+See [Architecture](../architecture/index.md) for details.
+
+## What Conductor gives you
+
+### Durable execution
+Every workflow execution is persisted, so progress survives failure. A failed task is retried under a configurable backoff policy, a crashed worker's task is rescheduled to another worker, and a server restart resumes executions from their last recorded state. Your code carries no retry logic, because Conductor applies it for you. The same guarantee extends to agents.
+
+### Language-agnostic workers
+Workers can be written in Python, Java, Go, JavaScript, C#, or Clojure, and each task in a workflow can use a different language. Workers talk to Conductor over REST or gRPC, so they can run in containers, VMs, serverless functions, or on a laptop.
+
+### Built-in system tasks
+Common steps ship with the server: HTTP calls, inline scripts, JSON transforms, event publishing, wait timers, and human approval gates. None of them require a worker. See [System Tasks](../../documentation/configuration/workflowdef/systemtasks/index.md).
+
+### Flow control operators
+Operators express control flow in the definition itself: fork and join for parallelism, switch for branching, do-while for loops, and sub-workflows for composition. Dynamic tasks let the graph be resolved at runtime. See [Operators](../../documentation/configuration/workflowdef/operators/index.md).
+
+### AI tasks and agents
+LLM calls run as native system tasks. Configure a provider and model on the task, or bring a framework-authored agent into a durable Conductor graph. The [LLM orchestration guide](../ai/llm-orchestration.md) is the provider and capability reference.
+
+MCP support is built in. `LIST_MCP_TOOLS` discovers a server's tools and `CALL_MCP_TOOL` invokes one, with the same retries and state tracking as any other task.
+
+Vector search tasks support Pinecone, pgvector, and MongoDB Atlas, so a single workflow can index embeddings, run similarity search, and pass the results to an LLM. Content generation tasks produce images, audio, video, and PDFs. All AI tasks share the standard durability guarantees: automatic retries, timeouts, and a complete execution record.
+
+### Event-driven workflows
+Workflows can be triggered by external events and can publish events of their own. Kafka, NATS, AMQP, and SQS are supported. See [Event orchestration](../how-tos/event-bus.md).
+
+### Full operational control
+Any execution can be paused, resumed, restarted, retried, or terminated. Executions are searchable by status, time, correlation ID, or custom tags, and every task records its inputs, outputs, timestamps, retry history, and worker identity.
+
+### Horizontal scaling
+Servers and workers scale independently. Task domains, rate limits, concurrency limits, and persistence configuration control throughput and isolation, and metrics expose how each queue is behaving.
+
+## When to use Conductor
+
+| Use case | Example |
+| :--- | :--- |
+| **[Microservice orchestration](../cookbook/microservice-orchestration.md)** | Order processing: payment → inventory → shipping → notification |
+| **[Workflow automation](../workflows/index.md)** | Automate business processes with durable execution, retries, and full observability |
+| **[Durable agents](../ai/durable-agents.md)** | Multi-step LLM chains with function calling, tool use, RAG, and human-in-the-loop — durable agents that survive crashes |
+| **[Long-running workflows](../cookbook/wait-and-timers.md)** | Insurance claims, loan approvals, onboarding flows spanning days or weeks — async workflows that survive deploys |
+| **[Event-driven automation](../cookbook/event-driven.md)** | React to Kafka events, trigger workflows, publish results back |
+| **[Batch processing](../cookbook/dynamic-parallelism.md)** | Fan-out work across thousands of parallel workers with dynamic fork |
+| **[Saga pattern](../cookbook/saga-compensation.md)** | Distributed transactions with compensation on failure |
+| **[RAG applications](../ai/cookbook/rag-agent.md)** | Build retrieval-augmented generation pipelines with vector search, embedding generation, and LLM completion as workflow tasks |
+| **[Content generation pipelines](../ai/llm-orchestration.md)** | Generate images, audio, video, and PDFs using AI models orchestrated as durable workflows |
 
 ## Next steps
 
-- [Quickstart](../../quickstart/index.md) — run your first workflow in 2 minutes
+- [Quickstart](../../quickstart/first-workflow.md) — run your first workflow in 2 minutes
 - [Workflows](workflows.md) — how workflow definitions work
 - [Tasks](tasks.md) — task types and configuration
 - [Workers](workers.md) — building workers in any language

@@ -31,6 +31,12 @@ describe("executionToWorkflowDef", () => {
         sampleExecutedObject.taskId,
       );
     });
+    it("Should return an empty map when the execution has no tasks field", () => {
+      // Executions can come back without a `tasks` field; this used to throw
+      // "Cannot read properties of undefined (reading 'reduce')".
+      expect(() => executionTasksToStatusMap(undefined)).not.toThrow();
+      expect(executionTasksToStatusMap(undefined)).toEqual({});
+    });
   });
   describe("taskStatusUpdater", () => {
     it("Should return tasks with an executionData object", () => {

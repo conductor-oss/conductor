@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -24,6 +26,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
     private final long DAY_MS = 24 * 60 * 60 * 1000;
+
+    private final ThreadLocal<Map<String, Hold>> heldByThread =
+            ThreadLocal.withInitial(HashMap::new);
 
     public PostgresLockDAO(
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
@@ -42,6 +47,21 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
+        Map<String, Hold> holds = heldByThread.get();
+        Hold hold = holds.get(lockId);
+        if (hold != null) {
+            hold.count++;
+            return true;
+        }
+        long leaseExpiresAtMillis = System.currentTimeMillis() + unit.toMillis(leaseTime);
+        if (acquireFromDb(lockId, timeToTry, leaseTime, unit)) {
+            holds.put(lockId, new Hold(leaseExpiresAtMillis));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean acquireFromDb(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
         long endTime = System.currentTimeMillis() + unit.toMillis(timeToTry);
         while (System.currentTimeMillis() < endTime) {
             var sql =
@@ -71,12 +91,47 @@ public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
 
     @Override
     public void releaseLock(String lockId) {
-        var sql = "DELETE FROM locks WHERE lock_id = ?";
-        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+        Map<String, Hold> holds = heldByThread.get();
+        Hold hold = holds.get(lockId);
+        if (hold == null) {
+            deleteFromDb(lockId);
+            return;
+        }
+        if (hold.count > 1) {
+            hold.count--;
+            return;
+        }
+        holds.remove(lockId);
+        if (hold.leaseExpiresAtMillis > System.currentTimeMillis()) {
+            deleteFromDb(lockId);
+        } else {
+            deleteFromDbIfExpired(lockId);
+        }
     }
 
     @Override
     public void deleteLock(String lockId) {
-        releaseLock(lockId);
+        heldByThread.get().remove(lockId);
+        deleteFromDb(lockId);
+    }
+
+    private void deleteFromDb(String lockId) {
+        var sql = "DELETE FROM locks WHERE lock_id = ?";
+        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+    }
+
+    private void deleteFromDbIfExpired(String lockId) {
+        var sql = "DELETE FROM locks WHERE lock_id = ? AND lease_expiration <= now()";
+        queryWithTransaction(sql, q -> q.addParameter(lockId).executeDelete());
+    }
+
+    private static final class Hold {
+        int count;
+        final long leaseExpiresAtMillis;
+
+        Hold(long leaseExpiresAtMillis) {
+            this.count = 1;
+            this.leaseExpiresAtMillis = leaseExpiresAtMillis;
+        }
     }
 }

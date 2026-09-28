@@ -13,16 +13,23 @@
 package org.conductoross.conductor.ai.providers.anthropic;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
-import org.conductoross.conductor.ai.models.ToolSpec;
+import org.conductoross.conductor.ai.model.ChatCompletion;
+import org.conductoross.conductor.ai.model.ToolSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.util.MimeTypeUtils;
+
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,7 +46,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey("test-api-key");
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -204,7 +211,7 @@ class AnthropicTest {
         void setUp() {
             AnthropicConfiguration config = new AnthropicConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            anthropic = new Anthropic(config);
+            anthropic = new Anthropic(config, new OkHttpClient());
         }
 
         @Test
@@ -227,9 +234,55 @@ class AnthropicTest {
         }
 
         @Test
-        void testChatCompletion_withThinking() {
+        void testChatCompletionWithImageMedia() throws Exception {
+            // Live regression for the media fix (PR #1238): the vision model must actually
+            // see the image bytes forwarded by the adapter. The image embeds a
+            // machine-unguessable token, so a correct transcription can only come from
+            // the image — pre-fix the media was silently dropped.
+            byte[] png =
+                    Objects.requireNonNull(
+                                    getClass().getResourceAsStream("/media/melon7391.png"),
+                                    "test asset /media/melon7391.png missing")
+                            .readAllBytes();
+
             ChatCompletion input = new ChatCompletion();
-            input.setModel("claude-sonnet-4-5");
+            input.setModel("claude-haiku-4-5");
+            input.setMaxTokens(100);
+
+            UserMessage userMsg =
+                    UserMessage.builder()
+                            .text(
+                                    "Transcribe the exact text shown in the image. Reply with"
+                                            + " only that text and nothing else.")
+                            .media(
+                                    List.of(
+                                            Media.builder()
+                                                    .data(png)
+                                                    .mimeType(MimeTypeUtils.IMAGE_PNG)
+                                                    .build()))
+                            .build();
+
+            ChatResponse response =
+                    anthropic
+                            .getChatModel()
+                            .call(new Prompt(List.of(userMsg), anthropic.getChatOptions(input)));
+
+            String text = response.getResult().getOutput().getText();
+            assertNotNull(text);
+            assertTrue(
+                    text.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "").contains("MELON7391"),
+                    "vision model must transcribe the embedded token MELON7391; got: " + text);
+        }
+
+        @Test
+        void testChatCompletion_withThinking() {
+            // Lightweight smoke check for the legacy ``thinking.type=enabled`` shape on a model
+            // that still accepts it. Coverage for the Opus 4.7 adaptive-thinking translation
+            // (the production fix that motivates the regression suite) lives in
+            // ``AIModelIntegrationTest.AnthropicTests`` so it sits alongside the other live
+            // provider tests.
+            ChatCompletion input = new ChatCompletion();
+            input.setModel("claude-sonnet-4-6");
             input.setMaxTokens(16000);
             input.setThinkingTokenLimit(10000);
 

@@ -1,0 +1,99 @@
+# Regenerates the Playwright reference snapshots for ui-next on demand.
+#
+# Triggers:
+#   * comment `/update-snapshots` on a pull request (works once this file is on
+#     the default branch — issue_comment workflows only run from default), or
+#   * manual "Run workflow" (workflow_dispatch) against any branch — use this as
+#     the fallback before the file has merged to main.
+#
+# It rebuilds the baselines in the SAME pinned Docker image the `e2e-mocked` CI
+# check uses (docker-compose.snapshots.yml -> mcr.microsoft.com/playwright:...),
+# so the regenerated PNGs are pixel-identical to what CI compares against, then
+# commits them back to the branch.
+name: Update UI Snapshots
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-snapshots:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request && github.event.comment.body == '/update-snapshots') }}
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: React to the command
+        if: ${{ github.event_name == 'issue_comment' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+
+      # issue_comment payloads don't carry the PR head ref, so resolve it.
+      - name: Resolve PR head ref
+        id: pr
+        if: ${{ github.event_name == 'issue_comment' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('ref', pr.data.head.ref);
+            core.setOutput('repo', pr.data.head.repo.full_name);
+
+      - name: Checkout (comment trigger — PR branch)
+        if: ${{ github.event_name == 'issue_comment' }}
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ steps.pr.outputs.repo }}
+          ref: ${{ steps.pr.outputs.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout (manual trigger — selected branch)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Regenerate snapshots (same image as the e2e-mocked check)
+        run: PLAYWRIGHT_FLAGS=--update-snapshots docker compose -f docker-compose.snapshots.yml run --rm playwright
+        working-directory: ui-next
+
+      - name: Commit updated snapshots
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "test(ui-next): update Playwright snapshots via update-snapshots workflow"
+          file_pattern: "ui-next/e2e/__snapshots__/**"
+
+      - name: Report result (comment trigger)
+        if: ${{ always() && github.event_name == 'issue_comment' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ok = '${{ job.status }}' === 'success';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: ok
+                ? '✅ Snapshots regenerated and committed to this branch.'
+                : '❌ Snapshot update failed — see the workflow run logs.',
+            });

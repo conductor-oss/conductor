@@ -26,8 +26,10 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.core.exception.TransientException;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ConcurrentExecutionLimitDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -73,14 +75,17 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     protected final PreparedStatement deleteEventExecutionStatement;
 
     protected final int eventExecutionsTTL;
+    private final QueueDAO queueDAO;
 
     public CassandraExecutionDAO(
             Session session,
             ObjectMapper objectMapper,
             CassandraProperties properties,
-            Statements statements) {
+            Statements statements,
+            QueueDAO queueDAO) {
         super(session, objectMapper, properties);
 
+        this.queueDAO = queueDAO;
         eventExecutionsTTL = (int) properties.getEventExecutionPersistenceTtl().getSeconds();
 
         this.insertWorkflowStatement =
@@ -257,6 +262,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
                     && task.getTaskDefinition().get().concurrencyLimit() > 0) {
                 if (task.getStatus().isTerminal()) {
                     removeTaskFromLimit(task);
+                    String queueName = QueueUtils.getQueueName(task);
+                    List<String> nextIds = queueDAO.peekFirstIds(queueName, 1);
+                    if (nextIds != null && !nextIds.isEmpty()) {
+                        LOGGER.debug(
+                                "Concurrency slot freed for {}, releasing postponed task {}",
+                                task.getTaskDefName(),
+                                nextIds.get(0));
+                        queueDAO.resetOffsetTime(queueName, nextIds.get(0));
+                    }
                 } else if (task.getStatus() == TaskModel.Status.IN_PROGRESS) {
                     addTaskToLimit(task);
                 }
@@ -478,14 +492,14 @@ public class CassandraExecutionDAO extends CassandraBaseDAO
     }
 
     /**
-     * This is a dummy implementation and this feature is not implemented for Cassandra backed
-     * Conductor
+     * No-op: Cassandra does not maintain a pending-workflows structure, so there is nothing to
+     * remove. This used to throw UnsupportedOperationException, which turned every
+     * completeWorkflow/terminateWorkflow call that hits the already-terminal branch into an HTTP
+     * 500 — the workflow write paths cannot be allowed to fail on a bookkeeping call whose state
+     * does not exist on this backend.
      */
     @Override
-    public void removeFromPendingWorkflow(String workflowType, String workflowId) {
-        throw new UnsupportedOperationException(
-                "This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
-    }
+    public void removeFromPendingWorkflow(String workflowType, String workflowId) {}
 
     @Override
     public WorkflowModel getWorkflow(String workflowId) {

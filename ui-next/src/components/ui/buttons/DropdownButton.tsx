@@ -1,13 +1,23 @@
-import { Fragment, MouseEvent, ReactNode, useRef, useState } from "react";
-import { CaretDown } from "@phosphor-icons/react";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
+import Divider from "@mui/material/Divider";
 import Grow from "@mui/material/Grow";
-import Popper from "@mui/material/Popper";
 import MenuItem from "@mui/material/MenuItem";
 import MenuList from "@mui/material/MenuList";
+import Popper from "@mui/material/Popper";
+import { CaretDown } from "@phosphor-icons/react";
 import Paper from "components/ui/Paper"; // TODO check where this is used seems like specific
+import {
+  Fragment,
+  MouseEvent,
+  ReactNode,
+  UIEvent,
+  useCallback,
+  useRef,
+  useState,
+} from "react";
 import Button, { MuiButtonProps } from "./MuiButton";
-import Divider from "@mui/material/Divider";
+
+const RENDER_BATCH_SIZE = 100;
 
 export type DropdownButtonProps = {
   buttonProps?: MuiButtonProps;
@@ -29,9 +39,15 @@ export default function DropdownButton({
   const [open, setOpen] = useState(false);
   const isOpenMenu = typeof isOpen === "boolean" ? isOpen : open;
   const anchorRef = useRef<HTMLButtonElement>(null);
+  const [renderCount, setRenderCount] = useState(RENDER_BATCH_SIZE);
 
   const handleToggle = (e: MouseEvent<HTMLButtonElement>) => {
-    setOpen((prevOpen) => !prevOpen);
+    setOpen((prevOpen) => {
+      if (prevOpen) {
+        setRenderCount(RENDER_BATCH_SIZE);
+      }
+      return !prevOpen;
+    });
 
     if (onClick) {
       onClick(e, !isOpenMenu);
@@ -44,11 +60,25 @@ export default function DropdownButton({
     }
 
     setOpen(false);
+    setRenderCount(RENDER_BATCH_SIZE);
 
     if (onClickAway) {
       onClickAway(event);
     }
   };
+
+  const handleScroll = useCallback(
+    (e: UIEvent<HTMLUListElement>) => {
+      if (renderCount >= options.length) return;
+      const el = e.currentTarget;
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+        setRenderCount((c) => Math.min(c + RENDER_BATCH_SIZE, options.length));
+      }
+    },
+    [renderCount, options.length],
+  );
+
+  const visibleOptions = options.slice(0, renderCount);
 
   return (
     <Fragment>
@@ -91,8 +121,9 @@ export default function DropdownButton({
                     overflowY: "auto",
                     maxHeight: "75vh",
                   }}
+                  onScroll={handleScroll}
                 >
-                  {options.map(
+                  {visibleOptions.map(
                     ({ label, handler, disabled, isDivider }, index) => {
                       const itemId = `${label}-${index}`;
 

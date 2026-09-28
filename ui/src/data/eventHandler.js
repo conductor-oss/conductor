@@ -4,32 +4,35 @@ import { fetchWithContext, useFetchContext } from "../plugins/fetch";
 import { useMutation } from "react-query";
 import Path from "../utils/path";
 
-export function useEventHandler(eventHandlerEvent, eventHandlerName, defaultEventHandler) {
+export function useEventHandler(
+  eventHandlerEvent,
+  eventHandlerName,
+  defaultEventHandler
+) {
   let path;
   if (eventHandlerEvent) {
     path = new Path(`/event/${eventHandlerEvent}`);
-    path.search.append('activeOnly', false)
+    path.search.append("activeOnly", false);
   }
 
   const query = useFetch(["eventHandlerDef", eventHandlerEvent], path);
 
-  const eventHandler = useMemo(
-    () => {
-      const data = query.data;
+  const eventHandler = useMemo(() => {
+    const data = query.data;
 
-      if (!data || data.leading < 1) {
-        return defaultEventHandler;
-      }
+    if (!data || data.leading < 1) {
+      return defaultEventHandler;
+    }
 
-      return data ? data.find((row) => row.name === eventHandlerName) : defaultEventHandler
-    },
-    [query.data, eventHandlerName, defaultEventHandler]
-  );
+    return data
+      ? data.find((row) => row.name === eventHandlerName)
+      : defaultEventHandler;
+  }, [query.data, eventHandlerName, defaultEventHandler]);
 
   return {
     ...query,
-    eventHandler
-  }
+    eventHandler,
+  };
 }
 
 export function useEventHandlerDefs() {

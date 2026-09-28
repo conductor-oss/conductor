@@ -37,6 +37,10 @@ public class AnthropicChatOptions implements ChatOptions {
 
     // Anthropic-specific
     private Integer thinkingBudgetTokens;
+    // One of "low", "medium", "high", "xhigh", "max". Serialized as
+    // ``output_config.effort`` on the request. Required (alongside adaptive thinking) on
+    // Opus 4.7, which rejects ``thinking.type.enabled``. Optional on older models.
+    private String reasoningEffort;
     // Any non-blank value gates surfacing the model's thinking blocks into
     // ChatResponseMetadata["reasoning"]. The thinking budget itself is set
     // via ``thinkingBudgetTokens``; this flag only controls response-side
@@ -64,6 +68,7 @@ public class AnthropicChatOptions implements ChatOptions {
                 .maxTokens(maxTokens)
                 .stopSequences(stopSequences)
                 .thinkingBudgetTokens(thinkingBudgetTokens)
+                .reasoningEffort(reasoningEffort)
                 .reasoningSummary(reasoningSummary)
                 .tools(tools)
                 .build();

@@ -1,10 +1,7 @@
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import SplitButton from "components/ui/buttons/ConductorSplitButton";
 import AddIcon from "components/icons/AddIcon";
-import {
-  WORKFLOW_DEFINITION_URL,
-  WORKFLOW_EXPLORER_URL,
-} from "utils/constants/route";
+import { WORKFLOW_DEFINITION_URL } from "utils/constants/route";
 import { useAuth } from "components/features/auth";
 import { useMemo, useState } from "react";
 import { ImportBPNFileDialog } from "./ImportBPNFileDialog";
@@ -38,10 +35,6 @@ const SplitWorkflowDefinitionButton = ({
           clearNewWorkflowStorage();
           pushHistory(WORKFLOW_DEFINITION_URL.NEW);
         },
-      },
-      {
-        label: "Select Template",
-        onClick: () => pushHistory(WORKFLOW_EXPLORER_URL),
       },
     ];
     if (!isImportBpmnHidden) {

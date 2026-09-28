@@ -1,6 +1,7 @@
 import { ExecutedData } from "./Execution";
 import { TaskDefinitionDto } from "./TaskDefinition";
 import { TaskType } from "./common";
+import { AgentTaskInput, WorkflowTaskMetadata } from "./AgentTaskMetadata";
 
 // Copied and fixed from codegen. Use this one.
 export enum PollingStrategy {
@@ -19,6 +20,7 @@ export interface CommonTaskDef {
   taskDefinition?: TaskDefinitionDto;
   description?: string;
   optional?: boolean;
+  metadata?: WorkflowTaskMetadata;
 }
 
 export interface JoinTaskDef extends CommonTaskDef {
@@ -94,12 +96,13 @@ export interface GrpcTaskDef extends CommonTaskDef {
     inputType?: string;
     methodType?: string;
     outputType?: string;
+    compressionCodec?: string;
     hedgingConfig?: { maxAttempts?: number };
   };
 }
 
 export interface MCPTaskDef extends CommonTaskDef {
-  type: TaskType.MCP;
+  type: TaskType.INTEGRATION;
   inputParameters?: {
     service?: string;
     method?: string;
@@ -569,6 +572,30 @@ export interface ParseDocumentTaskDef extends CommonTaskDef {
   };
 }
 
+export interface AgentTaskDef extends CommonTaskDef {
+  type: TaskType.AGENT;
+  inputParameters: AgentTaskInput;
+}
+
+export interface GetAgentCardTaskDef extends CommonTaskDef {
+  type: TaskType.GET_AGENT_CARD;
+  inputParameters: {
+    agentType?: string;
+    agentUrl: string;
+    headers?: Record<string, string>;
+  };
+}
+
+export interface CancelAgentTaskDef extends CommonTaskDef {
+  type: TaskType.CANCEL_AGENT;
+  inputParameters: {
+    agentType?: string;
+    agentUrl: string;
+    taskId: string;
+    headers?: Record<string, string>;
+  };
+}
+
 export type LLMTaskTypes =
   | LLMGenerateEmbeddings
   | LLMGetEmbeddings
@@ -621,7 +648,17 @@ export type FormTaskType =
   | TaskType.LLM_CHAT_COMPLETE
   | TaskType.GET_SIGNED_JWT
   | TaskType.GRPC
-  | TaskType.MCP
+  | TaskType.INTEGRATION
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
-  | TaskType.PARSE_DOCUMENT;
+  | TaskType.PARSE_DOCUMENT
+  | TaskType.AGENT
+  | TaskType.GET_AGENT_CARD
+  | TaskType.CANCEL_AGENT
+  | TaskType.LLM_SEARCH_EMBEDDINGS
+  | TaskType.LIST_MCP_TOOLS
+  | TaskType.CALL_MCP_TOOL
+  | TaskType.GENERATE_IMAGE
+  | TaskType.GENERATE_AUDIO
+  | TaskType.GENERATE_VIDEO
+  | TaskType.GENERATE_PDF;

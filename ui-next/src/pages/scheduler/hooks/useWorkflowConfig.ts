@@ -24,13 +24,18 @@ export function useWorkflowConfig(
   currentWorkflowType: string | null,
   currentWorkflowVersions: string[],
   currentWorkflowInputTemplate: string,
+  agentNames: string[] = [],
 ): UseWorkflowConfigReturn {
   const workflowNames = useMemo<string[]>(
-    () =>
-      workflowDefByVersions
-        ? Array.from(workflowDefByVersions.get("lookups").keys())
-        : [],
-    [workflowDefByVersions],
+    () => [
+      ...new Set([
+        ...(workflowDefByVersions
+          ? Array.from<string>(workflowDefByVersions.get("lookups").keys())
+          : []),
+        ...agentNames,
+      ]),
+    ],
+    [workflowDefByVersions, agentNames],
   );
 
   // Get workflow versions for the current workflow type
@@ -50,9 +55,8 @@ export function useWorkflowConfig(
       let def: IObject = {};
 
       if (workflowType !== null) {
-        workflowVersionsVal = workflowDefByVersions
-          .get("lookups")
-          .get(workflowType);
+        workflowVersionsVal =
+          workflowDefByVersions.get("lookups").get(workflowType) || [];
       }
 
       if (workflowVersionsVal && workflowVersionsVal.length > 0) {
@@ -74,10 +78,17 @@ export function useWorkflowConfig(
           def?.["inputParameters"],
         )
           ? getTemplateFromInputParams(def?.["inputParameters"])
-          : currentWorkflowInputTemplate,
+          : agentNames.includes(workflowType)
+            ? '{\n  "prompt": ""\n}'
+            : currentWorkflowInputTemplate,
       };
     },
-    [workflowDefByVersions, currentWorkflowType, currentWorkflowInputTemplate],
+    [
+      workflowDefByVersions,
+      currentWorkflowType,
+      currentWorkflowInputTemplate,
+      agentNames,
+    ],
   );
 
   const setWorkflowVersion = useMemo(

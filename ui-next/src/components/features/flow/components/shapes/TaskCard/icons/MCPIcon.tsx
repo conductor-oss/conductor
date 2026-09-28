@@ -5,7 +5,7 @@ function MCPIcon({ size = "24" }) {
     <svg
       xmlns="http://www.w3.org/2000/svg"
       fill="currentColor"
-      fill-rule="evenodd"
+      fillRule="evenodd"
       height={size}
       viewBox="0 0 24 24"
       width={size}

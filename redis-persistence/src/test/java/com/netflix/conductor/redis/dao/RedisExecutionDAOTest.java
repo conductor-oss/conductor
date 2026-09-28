@@ -34,6 +34,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.redis.config.RedisProperties;
@@ -47,6 +48,13 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
@@ -72,7 +80,11 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
         executionDAO =
                 new RedisExecutionDAO(
-                        jedisProxy, objectMapper, conductorProperties, redisProperties);
+                        jedisProxy,
+                        objectMapper,
+                        conductorProperties,
+                        redisProperties,
+                        mock(QueueDAO.class));
     }
 
     @AfterClass
@@ -342,5 +354,81 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         def.setVersion(1);
         workflow.setWorkflowDefinition(def);
         return workflow;
+    }
+
+    @Test
+    public void updateTaskTerminalReleasesPostponedTaskWhenConcurrencyLimit() {
+        QueueDAO queueDAO = mock(QueueDAO.class);
+        when(queueDAO.peekFirstIds(anyString(), eq(1)))
+                .thenReturn(Collections.singletonList("postponed-id"));
+
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        RedisExecutionDAO dao =
+                new RedisExecutionDAO(
+                        jedisProxy,
+                        new ObjectMapperProvider().getObjectMapper(),
+                        conductorProperties,
+                        redisProperties,
+                        queueDAO);
+
+        TaskDef def = new TaskDef();
+        def.setName("limited_task");
+        def.setConcurrentExecLimit(1);
+        com.netflix.conductor.common.metadata.workflow.WorkflowTask wft1 =
+                new com.netflix.conductor.common.metadata.workflow.WorkflowTask();
+        wft1.setTaskDefinition(def);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("t1");
+        task.setWorkflowInstanceId("wf1");
+        task.setTaskDefName("limited_task");
+        task.setTaskType("limited_task");
+        task.setReferenceTaskName("ref");
+        task.setWorkflowTask(wft1);
+        task.setStatus(TaskModel.Status.COMPLETED);
+
+        dao.updateTask(task);
+
+        verify(queueDAO).peekFirstIds(anyString(), eq(1));
+        verify(queueDAO).resetOffsetTime(anyString(), eq("postponed-id"));
+    }
+
+    @Test
+    public void updateTaskScheduledDoesNotReleasePostponedTaskWhenConcurrencyLimit() {
+        QueueDAO queueDAO = mock(QueueDAO.class);
+
+        ConductorProperties conductorProperties = new ConductorProperties();
+        RedisProperties redisProperties = new RedisProperties(conductorProperties);
+        JedisProxy jedisProxy = new JedisProxy(new JedisStandalone(jedisPool));
+        RedisExecutionDAO dao =
+                new RedisExecutionDAO(
+                        jedisProxy,
+                        new ObjectMapperProvider().getObjectMapper(),
+                        conductorProperties,
+                        redisProperties,
+                        queueDAO);
+
+        TaskDef def = new TaskDef();
+        def.setName("limited_task");
+        def.setConcurrentExecLimit(1);
+        com.netflix.conductor.common.metadata.workflow.WorkflowTask wft2 =
+                new com.netflix.conductor.common.metadata.workflow.WorkflowTask();
+        wft2.setTaskDefinition(def);
+
+        TaskModel task = new TaskModel();
+        task.setTaskId("t2");
+        task.setWorkflowInstanceId("wf2");
+        task.setTaskDefName("limited_task");
+        task.setTaskType("limited_task");
+        task.setReferenceTaskName("ref");
+        task.setWorkflowTask(wft2);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+
+        dao.updateTask(task);
+
+        verify(queueDAO, never()).peekFirstIds(anyString(), anyInt());
+        verify(queueDAO, never()).resetOffsetTime(anyString(), anyString());
     }
 }

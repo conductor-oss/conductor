@@ -112,7 +112,7 @@ export const persistIntegrations = assign<
           category: RichAddMenuTabs.INTEGRATIONS_TAB,
           name: integration.name,
           description: integration.description ?? "",
-          type: TaskType.MCP,
+          type: TaskType.INTEGRATION,
           integrationType: integration.type,
           iconName: integration.iconName ?? "",
           status: availableIntegrationTypes.includes(integration.type)
@@ -128,7 +128,7 @@ export const persistIntegrations = assign<
           category: RichAddMenuTabs.INTEGRATIONS_TAB,
           name: integration.name,
           description: integration.description ?? "",
-          type: TaskType.MCP,
+          type: TaskType.INTEGRATION,
           integrationType: integration.type,
           iconName:
             data?.supportedIntegrations?.find(

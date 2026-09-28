@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.config.SchedulerProperties;
+import io.orkes.conductor.scheduler.listener.ScheduleChangeListenerStub;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
 
@@ -93,7 +94,8 @@ public abstract class AbstractSchedulerServiceIntegrationTest {
                         props,
                         timeProvider,
                         mock(Lock.class),
-                        objectMapper);
+                        objectMapper,
+                        new ScheduleChangeListenerStub());
     }
 
     // =========================================================================

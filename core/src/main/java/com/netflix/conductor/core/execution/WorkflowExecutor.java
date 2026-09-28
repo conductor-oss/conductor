@@ -13,10 +13,16 @@
 package com.netflix.conductor.core.execution;
 
 import java.util.List;
+import java.util.Map;
+
+import org.conductoross.conductor.common.metadata.agent.AgentConfig;
+import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -118,12 +124,28 @@ public interface WorkflowExecutor {
     void terminateWorkflow(String workflowId, String reason);
 
     /**
-     * @param workflow the workflow to be terminated
-     * @param reason the reason for termination
-     * @param failureWorkflow the failure workflow (if any) to be triggered as a result of this
+     * @param workflow Workflow to be terminated
+     * @param reason Reason for termination
+     * @param failureWorkflow Failure workflow (if any), to be triggered as a result of this
      *     termination
      */
-    WorkflowModel terminateWorkflow(WorkflowModel workflow, String reason, String failureWorkflow);
+    default WorkflowModel terminateWorkflow(
+            WorkflowModel workflow, String reason, String failureWorkflow) {
+        return terminateWorkflow(workflow, reason, failureWorkflow, null);
+    }
+
+    /**
+     * @param workflow Workflow to be terminated
+     * @param reason Reason for termination
+     * @param failureWorkflow Failure workflow (if any), to be triggered as a result of this
+     *     termination
+     * @param failureWorkflowVersion Failure workflow version (if any)
+     */
+    WorkflowModel terminateWorkflow(
+            WorkflowModel workflow,
+            String reason,
+            String failureWorkflow,
+            Integer failureWorkflowVersion);
 
     /**
      * @param workflowId
@@ -151,6 +173,27 @@ public interface WorkflowExecutor {
      * @return
      */
     WorkflowModel getWorkflow(String workflowId, boolean includeTasks);
+
+    /**
+     * Starts a previously deployed agent by name and optional version.
+     *
+     * @param request agent execution inputs
+     * @return started execution details
+     */
+    AgentStartResponse startAgentExecution(AgentStartRequest request);
+
+    /**
+     * @param request Request
+     * @param config Config with overrides
+     * @param def Underlying workflow definition
+     * @param executionConfig ad-hoc configuration (used by framework agents, such as openai)
+     * @return response
+     */
+    AgentStartResponse startAgentExecution(
+            AgentStartRequest request,
+            AgentConfig config,
+            WorkflowDef def,
+            Map<String, Object> executionConfig);
 
     /**
      * Used by tasks such as do while

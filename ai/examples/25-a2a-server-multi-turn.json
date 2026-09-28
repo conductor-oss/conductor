@@ -1,0 +1,28 @@
+{
+  "name": "book_appointment",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Multi-turn A2A agent: asks a clarifying question (HUMAN task → A2A 'input-required'), then confirms. Exposed via metadata.a2a.enabled. A client resumes it by sending another message/send carrying the returned task id; that follow-up completes the HUMAN task and the workflow continues.",
+  "ownerEmail": "a2a@example.com",
+  "metadata": {
+    "a2a.enabled": true,
+    "a2a.tags": ["scheduling", "multi-turn"]
+  },
+  "tasks": [
+    {
+      "name": "ask_preferred_time",
+      "taskReferenceName": "ask",
+      "type": "HUMAN"
+    },
+    {
+      "name": "confirm_appointment",
+      "taskReferenceName": "confirm",
+      "type": "INLINE",
+      "inputParameters": {
+        "evaluatorType": "graaljs",
+        "expression": "({ status: 'confirmed', when: $.when })",
+        "when": "${ask.output._a2a_text}"
+      }
+    }
+  ]
+}

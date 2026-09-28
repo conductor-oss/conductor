@@ -17,9 +17,15 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
+import org.conductoross.conductor.dao.schema.SchemaDAO;
 import org.conductoross.conductor.mysql.dao.MySQLFileMetadataDAO;
+import org.conductoross.conductor.mysql.dao.MySQLSchemaDAO;
+import org.conductoross.conductor.mysql.dao.MySQLSkillMetadataDAO;
+import org.conductoross.conductor.mysql.dao.MySQLSkillPackageDAO;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,6 +37,7 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
@@ -42,10 +49,18 @@ import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(MySQLProperties.class)
 @ConditionalOnProperty(name = "conductor.db.type", havingValue = "mysql")
-// Import the DataSourceAutoConfiguration when mysql database is selected.
-// By default the datasource configuration is excluded in the main module.
-@Import(DataSourceAutoConfiguration.class)
+// Import DataSourceAutoConfiguration and FlywayAutoConfiguration when mysql database is selected.
+// By default these are excluded in the main module. FlywayAutoConfiguration is required so that
+// the 'flyway' and 'flywayInitializer' beans exist before the MySQL DAOs are initialized.
+@Import({DataSourceAutoConfiguration.class, FlywayAutoConfiguration.class})
 public class MySQLConfiguration {
+
+    // scheduler flyway shares this schema (own history table, baseline 0) — baseline-0 here too
+    // so the non-empty-schema check can't fail when the scheduler migrates first
+    @Bean
+    public FlywayConfigurationCustomizer mysqlFlywayCustomizer() {
+        return configuration -> configuration.baselineOnMigrate(true).baselineVersion("0");
+    }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
@@ -62,13 +77,14 @@ public class MySQLConfiguration {
     public MySQLExecutionDAO mySqlExecutionDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
-            DataSource dataSource) {
-        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource);
+            DataSource dataSource,
+            QueueDAO queueDAO) {
+        return new MySQLExecutionDAO(retryTemplate, objectMapper, dataSource, queueDAO);
     }
 
     @Bean
     @DependsOn({"flyway", "flywayInitializer"})
-    public MySQLQueueDAO mySqlQueueDAO(
+    public QueueDAO mySqlQueueDAO(
             @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
             ObjectMapper objectMapper,
             DataSource dataSource) {
@@ -83,6 +99,35 @@ public class MySQLConfiguration {
             ObjectMapper objectMapper,
             DataSource dataSource) {
         return new MySQLFileMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public MySQLSkillMetadataDAO mySqlSkillMetadataDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSkillMetadataDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
+    public MySQLSkillPackageDAO mySqlSkillPackageDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSkillPackageDAO(retryTemplate, objectMapper, dataSource);
+    }
+
+    @Bean
+    @DependsOn({"flyway", "flywayInitializer"})
+    public SchemaDAO mySqlSchemaDAO(
+            @Qualifier("mysqlRetryTemplate") RetryTemplate retryTemplate,
+            ObjectMapper objectMapper,
+            DataSource dataSource) {
+        return new MySQLSchemaDAO(retryTemplate, objectMapper, dataSource);
     }
 
     @Bean

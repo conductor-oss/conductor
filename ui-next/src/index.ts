@@ -6,6 +6,10 @@
  * that enterprise packages can use to extend the application.
  */
 
+// Pins the Monaco CDN version for consumers of this package. Must stay a
+// side-effect import so it runs before any editor component mounts.
+import "./monacoLoader";
+
 // =============================================================================
 // Plugin System - Primary export for enterprise extensions
 // =============================================================================
@@ -91,6 +95,9 @@ export { EventMonitor } from "./pages/eventMonitor/EventMonitor";
 export { default as TaskQueue } from "./pages/queueMonitor/TaskQueue";
 export { default as ErrorPage } from "./pages/error/ErrorPage";
 
+// Schema registry pages
+export { SchemaList, SchemaEditPage } from "./pages/schema";
+
 // Definition pages
 export {
   Workflow as WorkflowDefinitions,
@@ -104,6 +111,11 @@ export {
 // =============================================================================
 export { useAuth } from "./components/features/auth";
 export { UISidebar } from "./components/providers/sidebar/UiSidebar";
+export { mergePluginSidebarItems } from "./components/providers/sidebar/sidebarMenuUtils";
+export {
+  findFirstNavigableSidebarPath,
+  resolveDefaultHomePath,
+} from "./utils/resolveDefaultHomePath";
 
 // =============================================================================
 // Auth Infrastructure (minimal stubs for OSS mode)
@@ -192,6 +204,20 @@ export {
   GET_STARTED_URL,
   HUB_URL,
 } from "./utils/constants/route";
+
+// =============================================================================
+// LLM Task Form Components (for enterprise extension)
+// =============================================================================
+export { LLMInstructionsWithPromptPicker } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMInstructionsWithPromptPicker";
+export type { LLMInstructionsWithPromptPickerProps } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMInstructionsWithPromptPicker";
+export { LLMFormFields } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMFormFields";
+export { default as LLMFormFieldsWrapper } from "./pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields/LLMFormFieldsWrapper";
+export { default as TaskFormSection } from "./pages/definition/EditorPanel/TaskFormTab/forms/TaskFormSection";
+export {
+  fieldsToFieldsFieldsComponents,
+  updateField,
+} from "./utils/fieldHelpers";
+export { UiIntegrationsFieldType } from "./types/FormFieldTypes";
 
 // =============================================================================
 // Types

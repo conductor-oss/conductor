@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.conductoross.conductor.ai.models.LLMWorkerInput;
+import org.conductoross.conductor.ai.model.LLMWorkerInput;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -73,6 +73,13 @@ public abstract class AIModelTaskMapper<T extends LLMWorkerInput> implements Tas
         if (taskDefinition == null) {
             taskDefinition = new TaskDef();
         }
+
+        if (taskDefinition.getRetryCount() < 1) {
+            taskDefinition.setRetryCount(3);
+            taskDefinition.setRetryDelaySeconds(2);
+            taskDefinition.setRetryLogic(TaskDef.RetryLogic.LINEAR_BACKOFF);
+        }
+
         TaskModel simpleTask = taskMapperContext.createTaskModel();
         simpleTask.setTaskType(workflowTask.getType());
         simpleTask.setStartDelayInSeconds(workflowTask.getStartDelay());

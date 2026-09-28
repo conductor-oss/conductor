@@ -37,6 +37,21 @@ export const SCHEDULER_DEFINITION_URL = {
 
 export const SCHEDULER_EXECUTION_URL = "/schedulerExecs";
 
+// Embedded Conductor-Agents pages, gated by conductor.integrations.ai.enabled.
+export const AGENT_DEFINITION_URL = {
+  BASE: "/agents",
+  NEW: "/agents/new",
+  NAME_VERSION: "/agents/:name/:version?",
+};
+export const AGENT_EXECUTIONS_URL = {
+  BASE: "/agentExecutions",
+  ID_TASK_ID: "/agentExecutions/:id/:taskId?",
+};
+export const SKILLS_URL = {
+  BASE: "/skills",
+};
+export const AGENT_SECRETS_URL = "/agentSecrets";
+
 export const USER_MANAGEMENT_URL = {
   BASE: "/userManagement",
   TYPE_ID: "/userManagement/:type?/:id?",
@@ -96,6 +111,8 @@ export const SECRETS_URL = {
 
 export const RUN_WORKFLOW_URL = "/runWorkflow";
 
+export const RUN_AGENT_URL = "/runAgent";
+
 export const HUMAN_TASK_URL = {
   BASE: "/human",
   LIST: "/human/tasks",
@@ -132,8 +149,6 @@ export const SERVICE_URL = {
 export const AUTHENTICATION_URL = "/authentication";
 
 export const ERROR_URL = "/error";
-
-export const WORKFLOW_EXPLORER_URL = "/workflowExplorer";
 
 export const OIDC_CALLBACK_ROUTE = "/login/oidc/callback";
 

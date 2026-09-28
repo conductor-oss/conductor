@@ -27,6 +27,9 @@ services:
     environment:
       - CONFIG_PROP=config-postgres.properties
       - conductor.app.ownerEmailMandatory=false
+      # Forwarded from the host when set. Empty/absent ⇒ OpenAI stays unconfigured and
+      # LLM execution tests that need a live provider self-skip (definition UI tests still run).
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     networks:
       - internal
     ports:

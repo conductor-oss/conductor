@@ -1,0 +1,42 @@
+{
+  "name": "a2a_client_multi_turn",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Client-side multi-turn conversation: call a remote agent; if it returns input-required, branch (SWITCH on the agent's state) and call again with the SAME contextId/taskId carrying the answer — resuming the same remote task.",
+  "ownerEmail": "a2a@example.com",
+  "tasks": [
+    {
+      "name": "ask_agent",
+      "taskReferenceName": "ask",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentUrl": "${workflow.input.agentUrl}",
+        "text": "${workflow.input.prompt}"
+      }
+    },
+    {
+      "name": "branch_on_state",
+      "taskReferenceName": "branch",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "state",
+      "inputParameters": { "state": "${ask.output.state}" },
+      "decisionCases": {
+        "input-required": [
+          {
+            "name": "answer_agent",
+            "taskReferenceName": "answer",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentUrl": "${workflow.input.agentUrl}",
+              "text": "${workflow.input.answer}",
+              "contextId": "${ask.output.contextId}",
+              "taskId": "${ask.output.taskId}"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ]
+}

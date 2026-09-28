@@ -23,13 +23,13 @@ import javax.net.ssl.SSLException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ServiceUnavailableRetryStrategy;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -232,7 +232,7 @@ public class RestClientManager {
     private HttpPost createPostRequest(String url, String data, Map<String, String> headers)
             throws IOException {
         HttpPost httpPost = new HttpPost(url);
-        StringEntity entity = new StringEntity(data);
+        StringEntity entity = new StringEntity(data, ContentType.APPLICATION_JSON);
         httpPost.setEntity(entity);
         httpPost.setHeader("Accept", "application/json");
         httpPost.setHeader("Content-type", "application/json");
@@ -243,7 +243,7 @@ public class RestClientManager {
     private void executePost(HttpPost httpPost) throws IOException {
         try (CloseableHttpResponse response = client.execute(httpPost)) {
             int sc = response.getStatusLine().getStatusCode();
-            if (!(sc == HttpStatus.SC_ACCEPTED || sc == HttpStatus.SC_OK)) {
+            if (!(sc >= 200 && sc < 300)) {
                 throw new ClientProtocolException("Unexpected response status: " + sc);
             }
         } finally {

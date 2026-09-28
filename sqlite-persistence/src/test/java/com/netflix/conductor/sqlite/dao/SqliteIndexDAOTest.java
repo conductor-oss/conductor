@@ -15,11 +15,11 @@ package com.netflix.conductor.sqlite.dao;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.*;
+import java.util.stream.IntStream;
 
 import javax.sql.DataSource;
 
@@ -69,6 +69,11 @@ import static org.junit.Assert.assertEquals;
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class SqliteIndexDAOTest {
+
+    // Canonical UTC text format the index columns are stored in (issue #1497). Byte-identical to
+    // SQLite's strftime('%Y-%m-%d %H:%M:%f', ...), independent of the JVM/host default zone.
+    private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
     @Autowired private SqliteIndexDAO indexDAO;
 
@@ -157,10 +162,11 @@ public class SqliteIndexDAOTest {
                 "Workflow type does not match",
                 wfs.getWorkflowType(),
                 result.get(0).get("workflow_type"));
-        TemporalAccessor ta = DateTimeFormatter.ISO_INSTANT.parse(wfs.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(ta));
+        Instant startInstant =
+                Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getStartTime()));
+        String expectedStartTime = SQLITE_UTC_TIMESTAMP.format(startInstant);
         assertEquals(
-                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
+                "Start time does not match", expectedStartTime, result.get(0).get("start_time"));
         assertEquals(
                 "Status does not match", wfs.getStatus().toString(), result.get(0).get("status"));
     }
@@ -185,22 +191,68 @@ public class SqliteIndexDAOTest {
                 "Task def name does not match",
                 ts.getTaskDefName(),
                 result.get(0).get("task_def_name"));
-        TemporalAccessor startTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getStartTime());
-        Timestamp startTime = Timestamp.from(Instant.from(startTa));
+        Instant startInstant = Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getStartTime()));
+        String expectedStartTime = SQLITE_UTC_TIMESTAMP.format(startInstant);
         assertEquals(
-                "Start time does not match", startTime.toString(), result.get(0).get("start_time"));
-        TemporalAccessor updateTa = DateTimeFormatter.ISO_INSTANT.parse(ts.getUpdateTime());
-        Timestamp updateTime = Timestamp.from(Instant.from(updateTa));
+                "Start time does not match", expectedStartTime, result.get(0).get("start_time"));
+        Instant updateInstant =
+                Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getUpdateTime()));
+        String expectedUpdateTime = SQLITE_UTC_TIMESTAMP.format(updateInstant);
         assertEquals(
-                "Update time does not match",
-                updateTime.toString(),
-                result.get(0).get("update_time"));
+                "Update time does not match", expectedUpdateTime, result.get(0).get("update_time"));
         assertEquals(
                 "Status does not match", ts.getStatus().toString(), result.get(0).get("status"));
         assertEquals(
                 "Workflow type does not match",
                 ts.getWorkflowType().toString(),
                 result.get(0).get("workflow_type"));
+    }
+
+    @Test
+    public void testIndexWorkflowStoresEndTimeOnceItIsSet() throws SQLException {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-end-time");
+
+        // Still running: no end time on the summary, so the column holds the epoch sentinel
+        // rather than NULL, which is what keeps endTime ordering the same on SQLite and Postgres.
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "Unfinished workflow should store the epoch",
+                SQLITE_UTC_TIMESTAMP.format(Instant.EPOCH),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+
+        // Terminal: the end time must reach the column through the ON CONFLICT update path too,
+        // since the row already exists by the time the workflow finishes.
+        wfs.setEndTime("2023-02-07T08:44:45Z");
+        wfs.setUpdateTime("2023-02-07T08:44:45Z");
+        indexDAO.indexWorkflow(wfs);
+        assertEquals(
+                "End time does not match",
+                SQLITE_UTC_TIMESTAMP.format(
+                        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(wfs.getEndTime()))),
+                queryEndTime("workflow_index", "workflow_id", "workflow-id-end-time"));
+    }
+
+    @Test
+    public void testIndexTaskStoresEndTime() throws SQLException {
+        TaskSummary ts = getMockTaskSummary("task-id-end-time");
+        ts.setEndTime("2023-02-07T09:43:45Z");
+
+        indexDAO.indexTask(ts);
+
+        assertEquals(
+                "End time does not match",
+                SQLITE_UTC_TIMESTAMP.format(
+                        Instant.from(DateTimeFormatter.ISO_INSTANT.parse(ts.getEndTime()))),
+                queryEndTime("task_index", "task_id", "task-id-end-time"));
+    }
+
+    private Object queryEndTime(String table, String idColumn, String id) throws SQLException {
+        List<Map<String, Object>> result =
+                queryDb(
+                        String.format(
+                                "SELECT end_time FROM %s WHERE %s = '%s'", table, idColumn, id));
+        assertEquals("Wrong number of rows returned", 1, result.size());
+        return result.get(0).get("end_time");
     }
 
     @Test
@@ -349,6 +401,62 @@ public class SqliteIndexDAOTest {
         assertEquals(1675845987000L, records.get(1).get("created_time"));
     }
 
+    // Asserts the rows actually come back ordered, not just that the SQL contains an ORDER BY.
+    // Workflows are indexed in an order that is deliberately NOT end-time order, so a dropped
+    // ORDER BY would surface as insertion order and fail here.
+    @Test
+    public void testSearchWorkflowSummarySortsByEndTime() {
+        indexEndTimeFixture("wf-end-mid", "2023-02-07T10:00:00Z");
+        indexEndTimeFixture("wf-end-late", "2023-02-07T12:00:00Z");
+        indexEndTimeFixture("wf-end-running", null);
+        indexEndTimeFixture("wf-end-early", "2023-02-07T08:00:00Z");
+
+        assertEquals(
+                "Descending end time order is wrong",
+                List.of("wf-end-late", "wf-end-mid", "wf-end-early", "wf-end-running"),
+                searchEndTimeFixture("endTime:DESC"));
+
+        // The unfinished workflow carries the epoch, so it leads on ascending rather than
+        // landing wherever the engine happens to place NULLs.
+        assertEquals(
+                "Ascending end time order is wrong",
+                List.of("wf-end-running", "wf-end-early", "wf-end-mid", "wf-end-late"),
+                searchEndTimeFixture("endTime:ASC"));
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryFiltersByEndTimeRange() {
+        indexEndTimeFixture("wf-range-early", "2023-02-07T08:00:00Z");
+        indexEndTimeFixture("wf-range-late", "2023-02-07T12:00:00Z");
+
+        // 2023-02-07T10:00:00Z. Only the later workflow finished after this instant; the earlier
+        // one must be excluded rather than the filter being dropped and both returned.
+        String query = "workflowType=\"end-time-range\" AND endTime>1675764000000";
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, List.of("endTime:DESC"));
+
+        assertEquals(
+                "End time range filter was not applied",
+                List.of("wf-range-late"),
+                results.getResults().stream().map(WorkflowSummary::getWorkflowId).toList());
+    }
+
+    private void indexEndTimeFixture(String id, String endTime) {
+        WorkflowSummary wfs = getMockWorkflowSummary(id);
+        wfs.setWorkflowType(id.startsWith("wf-range") ? "end-time-range" : "end-time-order");
+        wfs.setEndTime(endTime);
+        indexDAO.indexWorkflow(wfs);
+    }
+
+    private List<String> searchEndTimeFixture(String sort) {
+        return indexDAO
+                .searchWorkflowSummary("workflowType=\"end-time-order\"", "*", 0, 15, List.of(sort))
+                .getResults()
+                .stream()
+                .map(WorkflowSummary::getWorkflowId)
+                .toList();
+    }
+
     @Test
     public void testSearchWorkflowSummary() {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id");
@@ -363,6 +471,98 @@ public class SqliteIndexDAOTest {
                 "Wrong workflow returned",
                 wfs.getWorkflowId(),
                 results.getResults().get(0).getWorkflowId());
+    }
+
+    // Issue #1497 regression: on a negative-UTC-offset host, start_time was written in the JVM's
+    // default zone but the search bound was rendered in UTC. A workflow started "now" was
+    // therefore invisible to a search bound anchored an hour in the past. This test only proves
+    // anything when the JVM zone differs from UTC, hence the TZ env set on the `test` task in
+    // sqlite-persistence/build.gradle.
+    @Test
+    public void searchesFindWorkflowsIndexedInANonUtcZone() {
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-non-utc-zone");
+        Instant now = Instant.now();
+        wfs.setStartTime(DateTimeFormatter.ISO_INSTANT.format(now));
+        wfs.setUpdateTime(DateTimeFormatter.ISO_INSTANT.format(now));
+
+        indexDAO.indexWorkflow(wfs);
+
+        long oneHourAgoMillis = now.minusSeconds(3600).toEpochMilli();
+        String query = String.format("startTime>%d", oneHourAgoMillis);
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Workflow indexed 'now' should be found by a search bound one hour in the past",
+                1,
+                results.getResults().size());
+    }
+
+    // Issue #1497 regression, task-side. See searchesFindWorkflowsIndexedInANonUtcZone above.
+    @Test
+    public void searchesFindTasksIndexedInANonUtcZone() {
+        TaskSummary ts = getMockTaskSummary("task-id-non-utc-zone");
+        Instant now = Instant.now();
+        ts.setStartTime(DateTimeFormatter.ISO_INSTANT.format(now));
+        ts.setUpdateTime(DateTimeFormatter.ISO_INSTANT.format(now));
+
+        indexDAO.indexTask(ts);
+
+        long oneHourAgoMillis = now.minusSeconds(3600).toEpochMilli();
+        String query = String.format("startTime>%d", oneHourAgoMillis);
+        SearchResult<TaskSummary> results =
+                indexDAO.searchTaskSummary(query, "*", 0, 15, new ArrayList<>());
+        assertEquals(
+                "Task indexed 'now' should be found by a search bound one hour in the past",
+                1,
+                results.getResults().size());
+    }
+
+    @Test
+    public void testSearchWorkflowSummaryByClassifier() {
+        String correlationId = "classifier-search-correlation-id";
+
+        WorkflowSummary agentWfs = getMockWorkflowSummary("workflow-id-classifier-agent");
+        agentWfs.setCorrelationId(correlationId);
+        agentWfs.setClassifier("agent");
+        indexDAO.indexWorkflow(agentWfs);
+
+        WorkflowSummary plainWfs = getMockWorkflowSummary("workflow-id-classifier-plain");
+        plainWfs.setCorrelationId(correlationId);
+        plainWfs.setClassifier("workflow");
+        indexDAO.indexWorkflow(plainWfs);
+
+        // Simulates a row indexed before the classifier column existed (NULL classifier).
+        WorkflowSummary legacyWfs = getMockWorkflowSummary("workflow-id-classifier-legacy");
+        legacyWfs.setCorrelationId(correlationId);
+        indexDAO.indexWorkflow(legacyWfs);
+
+        String agentQuery =
+                String.format("correlationId='%s' AND classifier='agent'", correlationId);
+        SearchResult<WorkflowSummary> agentResults =
+                indexDAO.searchWorkflowSummary(agentQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of agent results", 1, agentResults.getResults().size());
+        assertEquals(
+                "Wrong workflow returned",
+                agentWfs.getWorkflowId(),
+                agentResults.getResults().get(0).getWorkflowId());
+
+        // The untagged token must match both explicitly tagged plain workflows and legacy
+        // NULL rows.
+        String workflowQuery =
+                String.format("correlationId='%s' AND classifier='workflow'", correlationId);
+        SearchResult<WorkflowSummary> workflowResults =
+                indexDAO.searchWorkflowSummary(workflowQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of untagged results", 2, workflowResults.getResults().size());
+
+        String inQuery =
+                String.format("correlationId='%s' AND classifier IN (agent,other)", correlationId);
+        SearchResult<WorkflowSummary> inResults =
+                indexDAO.searchWorkflowSummary(inQuery, "*", 0, 15, new ArrayList<>());
+        assertEquals("Wrong number of IN clause results", 1, inResults.getResults().size());
+
+        indexDAO.removeWorkflow(agentWfs.getWorkflowId());
+        indexDAO.removeWorkflow(plainWfs.getWorkflowId());
+        indexDAO.removeWorkflow(legacyWfs.getWorkflowId());
     }
 
     @Test
@@ -778,6 +978,47 @@ public class SqliteIndexDAOTest {
         SearchResult<WorkflowSummary> results =
                 indexDAO.searchWorkflowSummary(query, "*", 0, 15, new ArrayList<>());
         assertEquals("Should find 2 child workflows", 2, results.getResults().size());
+    }
+
+    @Test
+    public void testAgentHierarchySortPlacesChildImmediatelyAfterParent() {
+        WorkflowSummary child = getMockWorkflowSummary("agent-child", "agent-parent");
+        child.setClassifier("agent");
+        indexDAO.indexWorkflow(child);
+
+        WorkflowSummary grandchild = getMockWorkflowSummary("agent-grandchild", "agent-child");
+        grandchild.setClassifier("agent");
+        indexDAO.indexWorkflow(grandchild);
+
+        WorkflowSummary unrelated = getMockWorkflowSummary("agent-unrelated", "");
+        unrelated.setClassifier("agent");
+        indexDAO.indexWorkflow(unrelated);
+
+        WorkflowSummary parent = getMockWorkflowSummary("agent-parent", "");
+        parent.setClassifier("agent");
+        indexDAO.indexWorkflow(parent);
+
+        SearchResult<WorkflowSummary> results =
+                indexDAO.searchWorkflowSummary(
+                        "classifier=agent",
+                        "*",
+                        0,
+                        15,
+                        Arrays.asList("agentHierarchy:DESC", "startTime:DESC"));
+
+        int parentIndex =
+                IntStream.range(0, results.getResults().size())
+                        .filter(
+                                i ->
+                                        "agent-parent"
+                                                .equals(
+                                                        results.getResults()
+                                                                .get(i)
+                                                                .getWorkflowId()))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals("agent-child", results.getResults().get(parentIndex + 1).getWorkflowId());
+        assertEquals("agent-grandchild", results.getResults().get(parentIndex + 2).getWorkflowId());
     }
 
     @Test

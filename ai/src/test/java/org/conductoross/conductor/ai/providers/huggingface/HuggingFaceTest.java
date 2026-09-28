@@ -14,13 +14,15 @@ package org.conductoross.conductor.ai.providers.huggingface;
 
 import java.util.List;
 
-import org.conductoross.conductor.ai.models.ChatCompletion;
+import org.conductoross.conductor.ai.model.ChatCompletion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,7 +39,7 @@ class HuggingFaceTest {
         void setUp() {
             HuggingFaceConfiguration config = new HuggingFaceConfiguration();
             config.setApiKey("test-api-key");
-            huggingFace = new HuggingFace(config);
+            huggingFace = new HuggingFace(config, new OkHttpClient());
         }
 
         @Test
@@ -74,6 +76,17 @@ class HuggingFaceTest {
             var chatModel = huggingFace.getChatModel();
             assertNotNull(chatModel);
         }
+
+        @Test
+        void testGetChatModel_isResponsesModel_notLegacyTextGeneration() {
+            // The router migration (conductor-oss#1244) replaced the legacy text-only
+            // HuggingFaceChatModel with the shared, media-capable Responses model, which
+            // forwards UserMessage media as input_image content parts.
+            assertInstanceOf(
+                    org.conductoross.conductor.ai.providers.openai.OpenAIResponsesChatModel.class,
+                    huggingFace.getChatModel(),
+                    "HuggingFace must use OpenAIResponsesChatModel (multimodal) after the router migration");
+        }
     }
 
     @Nested
@@ -86,7 +99,7 @@ class HuggingFaceTest {
         void setUp() {
             HuggingFaceConfiguration config = new HuggingFaceConfiguration();
             config.setApiKey(System.getenv(ENV_API_KEY));
-            huggingFace = new HuggingFace(config);
+            huggingFace = new HuggingFace(config, new OkHttpClient());
         }
 
         @Test
