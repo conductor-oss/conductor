@@ -1,0 +1,33 @@
+{
+  "name": "support_triage",
+  "description": "Chat agent that calls one decision tool and reports the structured answer.",
+  "model": "openai/gpt-4o-mini",
+  "instructions": "Call classify_request with the user's message as state. Reply with one line: the chosen team and the confidence from the tool result.",
+  "tools": [
+    {
+      "name": "classify_request",
+      "description": "Classify a support request into a team.",
+      "toolType": "decision",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "state": { "type": "string", "description": "The support request text" }
+        },
+        "required": ["state"]
+      },
+      "config": {
+        "model": "jev-1.13",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose the team best suited to handle this request.",
+            "choices": {
+              "billing": "Payments, invoices, refunds, or subscriptions.",
+              "technical": "Errors, outages, or product troubleshooting."
+            }
+          }
+        }
+      }
+    }
+  ]
+}

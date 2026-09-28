@@ -125,6 +125,7 @@ it reaches a terminal (or `WAITING`) state.
 | `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Cancellation propagation to an in-flight agent | `conductor.integrations.ai.enabled=true`, a deployed agent |
 | `35-governed-adaptive-agent.json` | `governed_github_pr_reviewer` | Four-pass GitHub PR reviewer: context, files, CI, then bounded adaptive deep dive; a human must approve the single comment write | Configured LLM provider and an authenticated GitHub MCP endpoint exposing `pull_request_read` and `add_issue_comment` |
 | `38-ai-decision-router-agent.json` | `support_router` | Agent definition, not a workflow: `strategy: router` with a `kind: decision` selector compiles to `AI_DECISION` -> `SWITCH` -> selected child agent. Deploy with `POST /api/agent/deploy`, run with `POST /api/agent/start` | `conductor.integrations.ai.enabled=true`, `DECISION_API_KEY`, `OPENAI_API_KEY` for the child agents |
+| `39-ai-decision-tool-agent.json` | `support_triage` | Agent definition: a chat agent with one `toolType: decision` tool. The model calls it, the server runs `AI_DECISION`, and the structured answer returns to the model under the tool name. Deploy with `POST /api/agent/deploy`, run with `POST /api/agent/start` | `conductor.integrations.ai.enabled=true`, `DECISION_API_KEY`, `OPENAI_API_KEY` |
 
 ---
 
