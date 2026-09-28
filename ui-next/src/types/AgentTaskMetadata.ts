@@ -6,6 +6,7 @@ export type AgentRuntimeType =
   | "a2a"
   | "conductor"
   | "bedrock"
+  | "bedrock-agentcore"
   | "microsoft-foundry"
   | "openai-assistants";
 

@@ -37,6 +37,7 @@ export const isDynamicAgentIdentity = (value: unknown): value is string =>
 /** Hosted-platform runtimes, keyed by the platform's own identifier in `rawConfig`. */
 const PROVIDER_RUNTIMES: Record<ProviderAgentRuntimeType, string> = {
   bedrock: "agentId",
+  "bedrock-agentcore": "agentRuntimeId",
   "microsoft-foundry": "assistantId",
   "openai-assistants": "assistantId",
 };
@@ -52,6 +53,7 @@ export const AGENT_RUNTIME_LABELS: Record<AgentRuntimeType, string> = {
   a2a: "A2A",
   conductor: "Conductor",
   bedrock: "Bedrock",
+  "bedrock-agentcore": "Bedrock AgentCore",
   "microsoft-foundry": "Microsoft Foundry",
   "openai-assistants": "OpenAI Assistants",
 };
@@ -371,6 +373,7 @@ export const AGENT_RUNTIME_BADGES: Record<AgentRuntimeType, string> = {
   a2a: "A2A AGENT",
   conductor: "CONDUCTOR AGENT",
   bedrock: "BEDROCK AGENT",
+  "bedrock-agentcore": "BEDROCK AGENTCORE AGENT",
   "microsoft-foundry": "MICROSOFT FOUNDRY AGENT",
   "openai-assistants": "OPENAI AGENT",
 };

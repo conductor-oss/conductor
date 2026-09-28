@@ -47,6 +47,7 @@ const AGENT_TYPES = [
   { value: "conductor", label: "Conductor" },
   { value: "microsoft-foundry", label: "Microsoft Foundry" },
   { value: "bedrock", label: "Bedrock" },
+  { value: "bedrock-agentcore", label: "Bedrock AgentCore" },
   { value: "openai-assistants", label: "OpenAI Assistants" },
 ];
 
@@ -115,6 +116,28 @@ const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
       label: "Base URL (optional)",
       placeholder: "https://api.openai.com/v1",
       width: 6,
+    },
+  ],
+  "bedrock-agentcore": [
+    {
+      key: "integrationName",
+      label: "Integration name",
+      required: true,
+      width: 6,
+      placeholder: "Name of the bedrock_agentcore integration",
+    },
+    {
+      key: "agentRuntimeId",
+      label: "Agent runtime ARN",
+      required: true,
+      width: 6,
+      placeholder: "arn:aws:bedrock-agentcore:…",
+    },
+    {
+      key: "qualifier",
+      label: "Qualifier (optional)",
+      width: 6,
+      placeholder: "DEFAULT",
     },
   ],
 };
