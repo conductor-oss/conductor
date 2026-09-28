@@ -22,6 +22,7 @@ import { dateToEpoch } from "utils";
 import { pluralizeResults } from "utils/helpers";
 import { ERROR_URL, NEW_TASK_DEF_URL } from "utils/constants/route";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
+import { useDebouncedQueryState } from "utils/hooks/useDebouncedQueryState";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useTaskExecutionsSearch } from "utils/query";
 import { getErrors, tryToJson } from "utils/utils";
@@ -51,12 +52,15 @@ export function TaskSearch() {
   const currentTimeStamp = Date.now().toString();
   const last72HoursTimestamp = Date.now() - 72 * 60 * 60 * 1000;
 
-  const [freeText, setFreeText] = useQueryState("freeText", "");
-  const [taskDefName, setTaskDefName] = useQueryState("taskDefName", "");
-  const [taskId, setTaskId] = useQueryState("taskId", "");
-  const [taskRefName, setTaskRefName] = useQueryState("taskRefName", "");
-  const [workflowName, setWorkflowName] = useQueryState("workflowName", "");
-  const [queryText, setQueryText] = useQueryState("query", "");
+  // Text filters sync to the URL on a debounce. The value itself updates
+  // immediately, so Search still sees the full text; see the hook for why.
+  const [freeText, setFreeText] = useDebouncedQueryState("freeText");
+  const [taskDefName, setTaskDefName] = useDebouncedQueryState("taskDefName");
+  const [taskId, setTaskId] = useDebouncedQueryState("taskId");
+  const [taskRefName, setTaskRefName] = useDebouncedQueryState("taskRefName");
+  const [workflowName, setWorkflowName] =
+    useDebouncedQueryState("workflowName");
+  const [queryText, setQueryText] = useDebouncedQueryState("query");
   const [status, setStatus] = useQueryState<string[]>("status", []);
   const [taskType, setTaskType] = useQueryState<string[]>("taskType", []);
 

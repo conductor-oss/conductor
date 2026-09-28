@@ -40,8 +40,8 @@ interface AdvanceSearchComponentProps {
   setOpenDateSelect: Dispatch<SetStateAction<boolean>>;
   setToDisplayTime: Dispatch<SetStateAction<string>>;
   openEndDatePicker: boolean;
-  setFreeText: QueryDispatch<SetStateAction<string>>;
-  setQueryText: QueryDispatch<SetStateAction<string>>;
+  setFreeText: (value: string) => void;
+  setQueryText: (value: string) => void;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
   handleReset: () => void;
   doSearch: () => void;

@@ -39,11 +39,11 @@ interface BasicSearchComponentProps {
   setToDisplayTime: Dispatch<SetStateAction<string>>;
   taskType: string[];
   openEndDatePicker: boolean;
-  setTaskDefName: QueryDispatch<SetStateAction<string>>;
-  setTaskExecutionId: QueryDispatch<SetStateAction<string>>;
-  setTaskRefName: QueryDispatch<SetStateAction<string>>;
-  setWorkflowName: QueryDispatch<SetStateAction<string>>;
-  setFreeText: QueryDispatch<SetStateAction<string>>;
+  setTaskDefName: (value: string) => void;
+  setTaskExecutionId: (value: string) => void;
+  setTaskRefName: (value: string) => void;
+  setWorkflowName: (value: string) => void;
+  setFreeText: (value: string) => void;
   setStatus: QueryDispatch<SetStateAction<string[]>>;
   setTaskType: QueryDispatch<SetStateAction<string[]>>;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
