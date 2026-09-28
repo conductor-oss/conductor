@@ -161,7 +161,7 @@ class AgentChatCompleteTaskMapperTest {
     }
 
     @Test
-    void decisionSystemTaskResultKeepsTheDeclaredToolName() throws Exception {
+    void decisionSystemTaskResultIsReturnedAsToolMessage() throws Exception {
         String llmRef = "agent_llm";
         String logicalToolRef = "toolu_classify";
 
@@ -211,7 +211,7 @@ class AgentChatCompleteTaskMapperTest {
                 .singleElement()
                 .satisfies(
                         call -> {
-                            assertThat(call.getName()).isEqualTo("classify");
+                            assertThat(call.getName()).isEqualTo("AI_DECISION");
                             assertThat(call.getType()).isEqualTo("AI_DECISION");
                         });
         assertThat(result.getMessage()).contains("billing");

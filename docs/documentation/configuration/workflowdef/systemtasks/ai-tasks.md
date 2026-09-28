@@ -48,6 +48,14 @@ Provider-backed media tasks require the corresponding provider configuration. PD
 
 Supply the MCP server connection details in task input. The server must be reachable from Conductor.
 
+## Decision
+
+| Type | Purpose |
+|---|---|
+| `AI_DECISION` | Ask one `choice` question; the chosen name is returned as `selectedCase` for a following `SWITCH`. |
+
+Requires `conductor.ai.decision.api-key`.
+
 ## A2A agents
 
 | Type | Purpose |

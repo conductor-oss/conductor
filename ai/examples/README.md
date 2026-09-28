@@ -124,6 +124,7 @@ it reaches a terminal (or `WAITING`) state.
 | `33-conductor-agent-multi-agent.json` | `conductor_agent_multi_agent` | Parallel specialists via `FORK_JOIN` -> `JOIN` | `conductor.integrations.ai.enabled=true`, two deployed agents |
 | `34-conductor-agent-cancel.json` | `conductor_agent_cancel` | Cancellation propagation to an in-flight agent | `conductor.integrations.ai.enabled=true`, a deployed agent |
 | `35-governed-adaptive-agent.json` | `governed_github_pr_reviewer` | Four-pass GitHub PR reviewer: context, files, CI, then bounded adaptive deep dive; a human must approve the single comment write | Configured LLM provider and an authenticated GitHub MCP endpoint exposing `pull_request_read` and `add_issue_comment` |
+| `38-ai-decision-router-agent.json` | `support_router` | Agent definition, not a workflow: `strategy: router` with a `kind: decision` selector compiles to `AI_DECISION` -> `SWITCH` -> selected child agent. Deploy with `POST /api/agent/deploy`, run with `POST /api/agent/start` | `conductor.integrations.ai.enabled=true`, `DECISION_API_KEY`, `OPENAI_API_KEY` for the child agents |
 
 ---
 

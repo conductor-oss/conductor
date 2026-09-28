@@ -80,7 +80,6 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
 
     private static final Set<String> TOOL_TASK_TYPES =
             Set.of(TASK_TYPE_HTTP, TASK_TYPE_SIMPLE, "MCP", "CALL_MCP_TOOL", "AI_DECISION");
-    private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     private static final int SUMMARY_TEXT_LIMIT = 200;
     private static final int TOOL_OUTPUT_SUMMARY_LIMIT = 150;
@@ -423,11 +422,11 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             }
 
             if (TOOL_TASK_TYPES.contains(task.getWorkflowTask().getType())) {
-                // Declared tool task, including server-owned system tasks such as AI_DECISION.
+                // SIMPLE/HTTP/MCP tool — keep original behavior
                 ToolCall toolCall =
                         ToolCall.builder()
                                 .inputParameters(task.getInputData())
-                                .name(toolName(task))
+                                .name(task.getTaskDefName())
                                 .taskReferenceName(task.getReferenceTaskName())
                                 .type(task.getTaskType())
                                 .output(task.getOutputData())
@@ -500,7 +499,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                             ToolCall toolCallResult =
                                     ToolCall.builder()
                                             .inputParameters(toolInput)
-                                            .name(toolName(toolModel))
+                                            .name(toolModel.getTaskDefName())
                                             .taskReferenceName(uniqueRefName)
                                             .type(toolModel.getTaskType())
                                             .output(toolOutput)
@@ -530,7 +529,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                                     ToolCall.builder()
                                             .inputParameters(
                                                     stripInternalFields(toolModel.getInputData()))
-                                            .name(toolName(toolModel))
+                                            .name(toolModel.getTaskDefName())
                                             .taskReferenceName(uniqueRefName)
                                             .type(toolModel.getTaskType())
                                             .output(errorOutput)
@@ -587,13 +586,6 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
             }
         }
         chatCompletion.getMessages().addAll(history);
-    }
-
-    /** Keep the name declared by the agent even when it maps to a shared system task. */
-    private String toolName(TaskModel task) {
-        Object declaredName =
-                task.getInputData() == null ? null : task.getInputData().get(AGENT_TOOL_NAME_KEY);
-        return declaredName == null ? task.getTaskDefName() : declaredName.toString();
     }
 
     private boolean providerSupportsAssistantPrefill(ChatCompletion chatCompletion) {
