@@ -419,7 +419,7 @@ Call a specific tool on an MCP server.
 
 ### Decision-backed SWITCH
 
-Ask one `choice` question and route on the answer in the same `SWITCH`. See [DECISION_SWITCH.md](DECISION_SWITCH.md).
+Route on a `choice` question in the same `SWITCH`. Other questions can be included in the request; `expression` names the choice question when there is more than one. See [DECISION_SWITCH.md](DECISION_SWITCH.md).
 
 **Inputs:**
 
@@ -427,7 +427,7 @@ Ask one `choice` question and route on the answer in the same `SWITCH`. See [DEC
 |-----------|------|:--------:|-------------|
 | `model` | String | ✅ | Decision model, e.g. `jev-1.13` |
 | `state` | String | ✅ | Observed state the question is asked about |
-| `questions` | Object | ✅ | Exactly one entry of `type: choice` with `instructions` and named `choices` |
+| `questions` | Object | ✅ | Questions to ask; the routing question must have `type: choice`, `instructions`, and named `choices` |
 | `provider` | String | ❌ | Overrides `conductor.ai.decision.provider` |
 
 **Outputs:**
@@ -726,6 +726,7 @@ The AI module reads from standard environment variables automatically. Set the e
 | Ollama | `OLLAMA_BASE_URL` | Ollama server URL, e.g. `http://10.0.0.105:11434` (default: `http://localhost:11434`). `OLLAMA_HOST` is honored as a fallback. |
 | Decision | `DECISION_API_KEY` | API key for the decision evaluator |
 | Decision | `DECISION_PROVIDER` | Default decision provider (default: `openrouter`) |
+| Decision | `DECISION_API_SHAPE` | Wire format adapter (default: `system-one`) |
 
 ### Usage
 

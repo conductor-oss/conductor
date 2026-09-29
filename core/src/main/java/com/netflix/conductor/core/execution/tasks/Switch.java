@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -46,7 +45,6 @@ public class Switch extends WorkflowSystemTask {
 
     private final Map<String, Evaluator> evaluators;
 
-    @Autowired
     public Switch(Map<String, Evaluator> evaluators) {
         super(TASK_TYPE_SWITCH);
         this.evaluators = evaluators;
@@ -109,8 +107,13 @@ public class Switch extends WorkflowSystemTask {
                             .evaluate(task.getWorkflowTask().getExpression(), evaluationInput);
             String selectedCase;
             if (result instanceof Map<?, ?> map && map.containsKey(SELECTED_CASE)) {
-                // A deferred evaluator may return its whole result; keep it all in the output.
-                map.forEach((k, v) -> task.addOutput(String.valueOf(k), v));
+                // Preserve the response, then write the selected case as a string below.
+                map.forEach(
+                        (k, v) -> {
+                            if (!SELECTED_CASE.equals(k)) {
+                                task.addOutput(String.valueOf(k), v);
+                            }
+                        });
                 selectedCase = String.valueOf(map.get(SELECTED_CASE));
             } else {
                 selectedCase = String.valueOf(result);

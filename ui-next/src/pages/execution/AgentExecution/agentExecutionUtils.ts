@@ -54,8 +54,7 @@ function decisionTaskEvent(
       completionTokens,
       totalTokens: promptTokens + completionTokens,
     },
-    durationMs:
-      task.endTime && task.startTime ? task.endTime - task.startTime : 0,
+    durationMs: taskDuration(task),
     success: taskSuccess(task.status),
     taskMeta: {
       taskId: task.taskId,
@@ -88,10 +87,9 @@ function isRouterSelector(task: ExecutionTask, routerReference: string) {
 }
 
 function routerSelectorEvent(task: ExecutionTask): AgentEvent {
-  const result = isDecisionTask(task)
-    ? task.outputData
-    : task.outputData?.result;
-  const event: AgentEvent = isDecisionTask(task)
+  const decisionTask = isDecisionTask(task);
+  const result = decisionTask ? task.outputData : task.outputData?.result;
+  const event: AgentEvent = decisionTask
     ? decisionTaskEvent(task)
     : {
         id: `${task.taskId}-router`,
@@ -105,7 +103,7 @@ function routerSelectorEvent(task: ExecutionTask): AgentEvent {
       };
   const answers = (result as { answers?: Record<string, { choice?: string }> })
     ?.answers;
-  const choice = isDecisionTask(task)
+  const choice = decisionTask
     ? Object.values(answers ?? {})[0]?.choice
     : typeof result === "string"
       ? result
@@ -135,7 +133,7 @@ function routerChild(
   };
 }
 
-function taskDuration(task: ExecutionTask): number {
+function taskDuration(task: ExecutionTask<unknown>): number {
   return task.endTime && task.startTime ? task.endTime - task.startTime : 0;
 }
 
@@ -172,12 +170,19 @@ function routerTimeline(
   const calls = deduplicateRetriedTasks(
     sortTasksChronologically(tasks),
   ).tasks.filter(
-    (task) => isAgentSubWorkflow(task) || isRouterSelector(task, routerReference),
+    (task) =>
+      isAgentSubWorkflow(task) || isRouterSelector(task, routerReference),
   );
-  if (!calls.some((task) => isRouterSelector(task, routerReference))) return turns;
+  if (!calls.some((task) => isRouterSelector(task, routerReference)))
+    return turns;
   const children = turns.flatMap((turn) => turn.subAgents);
   const routed = calls.reduce<AgentTurn[]>((timeline, task) => {
-    const turn = routerTurn(task, children, routerReference, timeline.length + 1);
+    const turn = routerTurn(
+      task,
+      children,
+      routerReference,
+      timeline.length + 1,
+    );
     return turn ? [...timeline, turn] : timeline;
   }, []);
   return [
@@ -965,8 +970,6 @@ export function transformWorkflowExecutionToAgentRun(
     agentDefMeta?.name ?? execution.workflowName ?? execution.workflowType,
   );
   const routerReference = `${agentNameForReference.replace(/[^a-zA-Z0-9_]/g, "_")}_router`;
-  const isRouterSelectorReference = (reference: string) =>
-    reference.replace(/__\d+$/, "") === routerReference;
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -1051,7 +1054,7 @@ export function transformWorkflowExecutionToAgentRun(
       const subAgentTasks = agentTasks.filter(
         (t) =>
           extractAgentName(t.referenceTaskName) !== rootAgentName &&
-          !isRouterSelectorReference(t.referenceTaskName),
+          !isRouterSelector(t, routerReference),
       );
 
       const events: AgentEvent[] = [];

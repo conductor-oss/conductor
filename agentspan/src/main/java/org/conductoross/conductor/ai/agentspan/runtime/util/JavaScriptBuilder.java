@@ -1627,7 +1627,7 @@ public class JavaScriptBuilder {
         return "    } else if (decisionCfg[n]) {"
                 + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
                 + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
-                + "      t.expression = dc.question || dc.expression || '';"
+                + "      t.expression = dc.question || '';"
                 + "      t.decisionCases = {}; t.defaultCase = [];"
                 + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
                 + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"

@@ -1102,21 +1102,24 @@ function SummaryContent({
     const decision =
       node.kind === "decision" && ev ? decisionInferenceOutput(ev) : undefined;
     const { answers, usage, latencyMs, requestId } = decision ?? {};
-    const decisionRows = [
-      {
-        label: "Answers",
-        value: answers == null ? null : JSON.stringify(answers),
-      },
-      {
-        label: "Usage and cost",
-        value: usage == null ? null : JSON.stringify(usage),
-      },
-      {
-        label: "Provider latency",
-        value: latencyMs == null ? null : `${latencyMs} ms`,
-      },
-      { label: "Request ID", value: requestId },
-    ];
+    const decisionRows =
+      node.kind === "decision"
+        ? [
+            {
+              label: "Answers",
+              value: answers == null ? null : JSON.stringify(answers),
+            },
+            {
+              label: "Usage and cost",
+              value: usage == null ? null : JSON.stringify(usage),
+            },
+            {
+              label: "Provider latency",
+              value: latencyMs == null ? null : `${latencyMs} ms`,
+            },
+            { label: "Request ID", value: requestId },
+          ]
+        : [];
     return (
       <Box>
         {ev?.condensationInfo && (

@@ -158,14 +158,15 @@ public class ToolCompiler {
 
     /**
      * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
-     * tool's own name as its type. A floor, not a closed set: a media or RAG tool's config may name
-     * its own task type.
+     * tool's own name, and SWITCH, which is also used for orchestration. Decision tool calls carry
+     * an explicit tool marker. A floor, not a closed set: a media or RAG tool's config may name its
+     * own task type.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
                             TYPE_MAP.values().stream(),
                             MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
-                    .filter(taskType -> !"SIMPLE".equals(taskType))
+                    .filter(taskType -> !"SIMPLE".equals(taskType) && !"SWITCH".equals(taskType))
                     .collect(Collectors.toUnmodifiableSet());
 
     // ── Public API ───────────────────────────────────────────────────────
