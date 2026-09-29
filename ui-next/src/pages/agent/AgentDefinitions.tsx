@@ -41,7 +41,7 @@ import { AgentSummary } from "./types";
 
 // Compared after canonicalAgentType, so a definition saved under a runtime's former name still
 // reads as external.
-const EXTERNAL_TYPES = new Set(["microsoft-foundry", "bedrock"]);
+const EXTERNAL_TYPES = new Set(["microsoft-foundry", "bedrock", "bedrock-agentcore"]);
 
 function providerLabel(rawType?: string | null): string {
   switch (canonicalAgentType(rawType)) {
@@ -49,6 +49,8 @@ function providerLabel(rawType?: string | null): string {
       return "Microsoft Foundry";
     case "bedrock":
       return "Bedrock";
+    case "bedrock-agentcore":
+      return "Bedrock AgentCore";
     default:
       return "Conductor";
   }
@@ -59,6 +61,7 @@ function providerColor(rawType?: string | null): string {
     case "microsoft-foundry":
       return "#0078d4";
     case "bedrock":
+    case "bedrock-agentcore":
       return "#e07730";
     default:
       return "#1565c0";
@@ -70,6 +73,7 @@ function providerIcon(rawType?: string | null): string {
     case "microsoft-foundry":
       return AzureIcon;
     case "bedrock":
+    case "bedrock-agentcore":
       return BedrockIcon;
     default:
       return OrkesIcon;
