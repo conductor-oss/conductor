@@ -93,6 +93,37 @@ export const AGENT_AUTH_METHODS: Record<string, AgentAuthMethod[]> = {
       fields: [],
     },
   ],
+  "bedrock-agentcore": [
+    {
+      id: "staticKeys",
+      label: "Access key",
+      hint: "A long-lived IAM access key pair — an access key ID and its secret.",
+      fields: [
+        { key: "accessKeyId", label: "Access key ID" },
+        { key: "secretAccessKey", label: "Secret access key" },
+        { key: "sessionToken", label: "Session token", optional: true },
+      ],
+    },
+    {
+      id: "assumeRole",
+      label: "Assume a role",
+      hint: "Conductor assumes this role and refreshes the temporary credentials for as long as the agent runs.",
+      fields: [
+        {
+          key: "roleArn",
+          label: "Role ARN",
+          placeholder: "arn:aws:iam::…:role/…",
+        },
+        { key: "externalId", label: "External ID", optional: true },
+      ],
+    },
+    {
+      id: "default",
+      label: "The server's own AWS credentials",
+      hint: "Instance or task role, environment variables, or ~/.aws/credentials. Nothing to configure.",
+      fields: [],
+    },
+  ],
   "openai-assistants": [API_KEY("api_key")],
 };
 

@@ -120,18 +120,17 @@ const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
   ],
   "bedrock-agentcore": [
     {
-      key: "integrationName",
-      label: "Integration name",
-      required: true,
-      width: 6,
-      placeholder: "Name of the bedrock_agentcore integration",
-    },
-    {
       key: "agentRuntimeId",
       label: "Agent runtime ARN",
       required: true,
+      width: 12,
+      placeholder: "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/…",
+    },
+    {
+      key: "region",
+      label: "Region (optional)",
+      placeholder: "us-east-1",
       width: 6,
-      placeholder: "arn:aws:bedrock-agentcore:…",
     },
     {
       key: "qualifier",
