@@ -120,13 +120,6 @@ const PROVIDER_FIELDS: Record<string, ProviderField[]> = {
   ],
   "bedrock-agentcore": [
     {
-      key: "agentRuntimeId",
-      label: "Agent runtime ARN",
-      required: true,
-      width: 12,
-      placeholder: "arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/…",
-    },
-    {
       key: "region",
       label: "Region (optional)",
       placeholder: "us-east-1",
@@ -321,9 +314,10 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
         : JSON.stringify(rawMessage, null, 2);
 
   const isMicrosoftFoundry = runtime === "microsoft-foundry";
+  const isBedrockAgentCore = runtime === "bedrock-agentcore";
 
   const { data: agentDefinitions, isFetching: agentListFetching } = useFetch<AgentSummary[]>("/agent/list", {
-    enabled: isConductor || isMicrosoftFoundry,
+    enabled: isConductor || isMicrosoftFoundry || isBedrockAgentCore,
   });
   const agentNameOptions = useMemo(
     () =>
@@ -350,6 +344,19 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
   const foundryAgentOptions = useMemo(
     () => foundryAgents.map((a) => a.name),
     [foundryAgents],
+  );
+
+  const bedrockAgentCoreAgents = useMemo(
+    () =>
+      Array.isArray(agentDefinitions)
+        ? agentDefinitions.filter((a) => a.type === "bedrock-agentcore")
+        : [],
+    [agentDefinitions],
+  );
+
+  const bedrockAgentCoreOptions = useMemo(
+    () => bedrockAgentCoreAgents.map((a) => a.name),
+    [bedrockAgentCoreAgents],
   );
 
   return (
@@ -488,6 +495,51 @@ export const AgentTaskForm = ({ task, onChange }: TaskFormProps) => {
                             : foundryAgents.length === 0
                               ? "No agents found — add a secret with {endpoint:…} key"
                               : "Pick a discovered agent or type an ID"
+                        }
+                        openOnFocus
+                      />
+                    </Box>
+                    {agentListFetching && <CircularProgress size={18} />}
+                  </Box>
+                </Grid>
+              )}
+              {isBedrockAgentCore && (
+                <Grid size={12}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Box flex={1}>
+                      <ConductorAutocompleteVariables
+                        label="Agent runtime"
+                        value={
+                          get("inputParameters.rawConfig.agentRuntimeId") as
+                            | string
+                            | undefined
+                        }
+                        onChange={(v) => {
+                          const agent = bedrockAgentCoreAgents.find(
+                            (a) => a.name === v || a.endpoint === v,
+                          );
+                          const raw =
+                            (get("inputParameters.rawConfig") as
+                              | Record<string, unknown>
+                              | undefined) ?? {};
+                          onChange(
+                            updateField(
+                              "inputParameters.rawConfig",
+                              {
+                                ...raw,
+                                agentRuntimeId: agent?.endpoint ?? v,
+                              },
+                              task,
+                            ) as Partial<TaskDef>,
+                          );
+                        }}
+                        otherOptions={bedrockAgentCoreOptions}
+                        placeholder={
+                          agentListFetching
+                            ? "Loading runtimes…"
+                            : bedrockAgentCoreAgents.length === 0
+                              ? "No runtimes registered — or type an ARN directly"
+                              : "Select a registered runtime"
                         }
                         openOnFocus
                       />
