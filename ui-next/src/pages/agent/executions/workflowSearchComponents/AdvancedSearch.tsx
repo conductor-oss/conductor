@@ -35,7 +35,7 @@ import { ERROR_URL } from "utils/constants/route";
 import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
+import { DateControlComponent } from "pages/executions/DateControlComponent";
 import ResultsTable from "../ResultsTable";
 import { ExampleSearchQuery } from "../SearchExampleQuery";
 

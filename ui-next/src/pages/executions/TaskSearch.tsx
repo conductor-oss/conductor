@@ -18,10 +18,11 @@ import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { IObject } from "types/common";
-import { dateToEpoch } from "utils";
+import { FEATURES, dateToEpoch, featureFlags } from "utils";
 import { pluralizeResults } from "utils/helpers";
 import { ERROR_URL, NEW_TASK_DEF_URL } from "utils/constants/route";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
+import { useDebouncedQueryState } from "utils/hooks/useDebouncedQueryState";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useTaskExecutionsSearch } from "utils/query";
 import { getErrors, tryToJson } from "utils/utils";
@@ -32,6 +33,14 @@ import { TaskApiSearchModal } from "./Task/TaskApiSearchModal";
 import ResultsTable from "./TaskResultsTable";
 
 const DEFAULT_SORT = "startTime:DESC";
+
+// conductor-ui queries workflowName. OSS context.js switches this to
+// workflowType, which is the field the OSS task index stores.
+const taskWorkflowQueryField =
+  featureFlags.getValue(FEATURES.TASK_SEARCH_WORKFLOW_FIELD, "workflowName") ===
+  "workflowType"
+    ? "workflowType"
+    : "workflowName";
 
 const getTableTitle = (resultObj: TaskExecutionResult) => {
   const { results, totalHits } = resultObj;
@@ -51,12 +60,15 @@ export function TaskSearch() {
   const currentTimeStamp = Date.now().toString();
   const last72HoursTimestamp = Date.now() - 72 * 60 * 60 * 1000;
 
-  const [freeText, setFreeText] = useQueryState("freeText", "");
-  const [taskDefName, setTaskDefName] = useQueryState("taskDefName", "");
-  const [taskId, setTaskId] = useQueryState("taskId", "");
-  const [taskRefName, setTaskRefName] = useQueryState("taskRefName", "");
-  const [workflowName, setWorkflowName] = useQueryState("workflowName", "");
-  const [queryText, setQueryText] = useQueryState("query", "");
+  // Text filters sync to the URL on a debounce. The value itself updates
+  // immediately, so Search still sees the full text; see the hook for why.
+  const [freeText, setFreeText] = useDebouncedQueryState("freeText");
+  const [taskDefName, setTaskDefName] = useDebouncedQueryState("taskDefName");
+  const [taskId, setTaskId] = useDebouncedQueryState("taskId");
+  const [taskRefName, setTaskRefName] = useDebouncedQueryState("taskRefName");
+  const [workflowName, setWorkflowName] =
+    useDebouncedQueryState("workflowName");
+  const [queryText, setQueryText] = useDebouncedQueryState("query");
   const [status, setStatus] = useQueryState<string[]>("status", []);
   const [taskType, setTaskType] = useQueryState<string[]>("taskType", []);
 
@@ -110,6 +122,10 @@ export function TaskSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const showTaskReferenceName = featureFlags.isEnabled(
+    FEATURES.SHOW_TASK_REFERENCE_NAME,
+  );
+
   const buildQuery = useCallback(() => {
     const clauses = [];
 
@@ -127,11 +143,11 @@ export function TaskSearch() {
       if (!_isEmpty(taskId)) {
         clauses.push(`taskId='${taskId}'`);
       }
-      if (!_isEmpty(taskRefName)) {
+      if (showTaskReferenceName && !_isEmpty(taskRefName)) {
         clauses.push(`referenceTaskName='${taskRefName}'`);
       }
       if (!_isEmpty(workflowName)) {
-        clauses.push(`workflowName='${workflowName}'`);
+        clauses.push(`${taskWorkflowQueryField}='${workflowName}'`);
       }
       if (!_isEmpty(status) && !queryText.includes("status")) {
         clauses.push(`status IN (${status.join(",")})`);
@@ -167,6 +183,7 @@ export function TaskSearch() {
     taskId,
     taskRefName,
     taskType,
+    showTaskReferenceName,
     workflowName,
   ]);
 
