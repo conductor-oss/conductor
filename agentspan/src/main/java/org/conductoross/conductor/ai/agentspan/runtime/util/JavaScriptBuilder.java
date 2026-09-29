@@ -793,15 +793,7 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters = {batchSize: wmqCfg[n].batchSize || 1};"
                         + "      t.retryCount = 0;"
                         + "      t.optional = false;"
-                        + "    } else if (decisionCfg[n]) {"
-                        + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
-                        + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
-                        + "      t.expression = dc.question || dc.expression || '';"
-                        + "      t.decisionCases = {}; t.defaultCase = [];"
-                        + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
-                        + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
-                        + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
-                        + "    }"
+                        + decisionToolDispatchScript()
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
                         + "      if (cliCfg[n]) { t.inputParameters._allowed_commands = cliCfg[n].allowedCommands; }"
@@ -1618,21 +1610,29 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters = {batchSize: wmqCfg[n].batchSize || 1};"
                         + "      t.retryCount = 0;"
                         + "      t.optional = false;"
-                        + "    } else if (decisionCfg[n]) {"
-                        + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
-                        + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
-                        + "      t.expression = dc.question || dc.expression || '';"
-                        + "      t.decisionCases = {}; t.defaultCase = [];"
-                        + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
-                        + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
-                        + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
-                        + "    }"
+                        + decisionToolDispatchScript()
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
                         + "    }"
                         + "    result.push(t);"
                         + "  }"
                         + "  return {dynamicTasks: result};");
+    }
+
+    /**
+     * Emits a dynamic branchless SWITCH task for a decision tool call. Both static and
+     * runtime-discovered tool paths execute the same generated task contract.
+     */
+    private static String decisionToolDispatchScript() {
+        return "    } else if (decisionCfg[n]) {"
+                + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
+                + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
+                + "      t.expression = dc.question || dc.expression || '';"
+                + "      t.decisionCases = {}; t.defaultCase = [];"
+                + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
+                + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
+                + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
+                + "    }";
     }
 
     /**
