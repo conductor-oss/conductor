@@ -582,6 +582,7 @@ public class JavaScriptBuilder {
             String cliConfigJson,
             String humanConfigJson,
             String wmqConfigJson,
+            String decisionConfigJson,
             String knownToolNamesJson) {
         return iife(
                 "  var httpCfg = "
@@ -607,6 +608,9 @@ public class JavaScriptBuilder {
                         + ";"
                         + "  var wmqCfg = "
                         + wmqConfigJson
+                        + ";"
+                        + "  var decisionCfg = "
+                        + decisionConfigJson
                         + ";"
                         + "  var knownNames = "
                         + knownToolNamesJson
@@ -640,7 +644,7 @@ public class JavaScriptBuilder {
                         // SIMPLE task gets queued under the unknown name with no worker
                         // polling for it and the workflow hangs forever.
                         + "    var isCfg = !!(httpCfg[n] || mcpCfg[n] || agentToolCfg[n] ||"
-                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n]);"
+                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n] || decisionCfg[n]);"
                         // Reject any name not in the agent's declared tools. The
                         // previous gate (``hasKnownNames``) skipped this check when
                         // ``knownNames`` was empty, which allowed an agent declared
@@ -789,6 +793,14 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters = {batchSize: wmqCfg[n].batchSize || 1};"
                         + "      t.retryCount = 0;"
                         + "      t.optional = false;"
+                        + "    } else if (decisionCfg[n]) {"
+                        + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
+                        + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
+                        + "      t.expression = dc.question || dc.expression || '';"
+                        + "      t.decisionCases = {}; t.defaultCase = [];"
+                        + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
+                        + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
+                        + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
                         + "    }"
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
@@ -1383,6 +1395,7 @@ public class JavaScriptBuilder {
             String ragConfigJson,
             String humanConfigJson,
             String wmqConfigJson,
+            String decisionConfigJson,
             String knownToolNamesJson) {
         return iife(
                 "  var httpCfg = "
@@ -1404,6 +1417,9 @@ public class JavaScriptBuilder {
                         + ";"
                         + "  var wmqCfg = "
                         + wmqConfigJson
+                        + ";"
+                        + "  var decisionCfg = "
+                        + decisionConfigJson
                         + ";"
                         + "  var knownNames = "
                         + knownToolNamesJson
@@ -1428,7 +1444,7 @@ public class JavaScriptBuilder {
                         // for context). Without this the SIMPLE task gets queued under
                         // an unknown name and the workflow hangs forever.
                         + "    var isCfg = !!(httpCfg[n] || mcpCfg[n] || apiCfg[n] || agentToolCfg[n] ||"
-                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n]);"
+                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n] || decisionCfg[n]);"
                         // See ``enrichToolsScript`` above — empty knownNames means
                         // NO tool is callable by the LLM (locks down the prefill-only
                         // leak path).
@@ -1602,6 +1618,14 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters = {batchSize: wmqCfg[n].batchSize || 1};"
                         + "      t.retryCount = 0;"
                         + "      t.optional = false;"
+                        + "    } else if (decisionCfg[n]) {"
+                        + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
+                        + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
+                        + "      t.expression = dc.question || dc.expression || '';"
+                        + "      t.decisionCases = {}; t.defaultCase = [];"
+                        + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
+                        + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
+                        + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
                         + "    }"
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"
