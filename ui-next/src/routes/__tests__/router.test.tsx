@@ -195,7 +195,7 @@ vi.mock("react-vis-timeline", () => ({
 }));
 
 import { router } from "../router";
-import { getRoutes, getSchemaRoutes } from "../routes";
+import { getRoutes, getSchemaRoutes, getTaskExecutionRoutes } from "../routes";
 
 function flattenRoutes(routeList: any[]): any[] {
   const out: any[] = [];
@@ -479,13 +479,9 @@ describe("router (OSS)", () => {
       const getStartedPaths = allPaths.filter((path) =>
         path.includes("/get-started"),
       );
-      const taskExecutionPaths = allPaths.filter((path) =>
-        path.includes("/taskExecution"),
-      );
 
       expect(hubPaths.length).toBe(0);
       expect(getStartedPaths.length).toBe(0);
-      expect(taskExecutionPaths.length).toBe(0);
 
       expect(allPaths).toContain("*");
       expect(allPaths).toContain("/executions");
@@ -518,6 +514,24 @@ describe("router (OSS)", () => {
           "/schemas",
           "/schemas/:schemaName/:version?",
         ]);
+      });
+    });
+
+    describe("Task execution routes", () => {
+      it("is registered as a core route when no plugin claims it", () => {
+        expect(collectPaths(getRoutes())).toContain("/taskExecution");
+      });
+
+      it("is withheld when a plugin claims the task execution path", () => {
+        expect(getTaskExecutionRoutes([{ path: "/taskExecution" }])).toEqual(
+          [],
+        );
+      });
+
+      it("is registered when a plugin claims unrelated paths", () => {
+        const routes = getTaskExecutionRoutes([{ path: "/secrets" }]);
+
+        expect(routes.map((route) => route.path)).toEqual(["/taskExecution"]);
       });
     });
 
