@@ -13,6 +13,8 @@ dependencies {
     implementation "software.amazon.awssdk:bedrockagentruntime:${revAwsSdk}"
     // AWS Bedrock Agent management client — for listing agents
     implementation "software.amazon.awssdk:bedrockagent:${revAwsSdk}"
+    // AWS Bedrock AgentCore runtime — for BedrockAgentCoreAgentClient (invoke)
+    implementation "software.amazon.awssdk:bedrockagentcore:${revAwsSdkBedrockAgentCore}"
     // AWS STS — for AssumeRole
     implementation "software.amazon.awssdk:sts:${revAwsSdk}"
 
