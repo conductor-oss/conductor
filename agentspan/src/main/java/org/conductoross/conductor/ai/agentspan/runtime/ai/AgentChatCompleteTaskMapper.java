@@ -421,18 +421,12 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                 response = LLMResponse.builder().result(task.getOutputData()).build();
             }
 
-            boolean decisionTool =
-                    "SWITCH".equals(task.getWorkflowTask().getType())
-                            && task.getInputData().containsKey("_agent_tool_name");
-            if (TOOL_TASK_TYPES.contains(task.getWorkflowTask().getType()) || decisionTool) {
-                String toolName =
-                        decisionTool
-                                ? String.valueOf(task.getInputData().get("_agent_tool_name"))
-                                : task.getTaskDefName();
+            if (TOOL_TASK_TYPES.contains(task.getWorkflowTask().getType())) {
+                // SIMPLE/HTTP/MCP tool — keep original behavior
                 ToolCall toolCall =
                         ToolCall.builder()
                                 .inputParameters(task.getInputData())
-                                .name(toolName)
+                                .name(task.getTaskDefName())
                                 .taskReferenceName(task.getReferenceTaskName())
                                 .type(task.getTaskType())
                                 .output(task.getOutputData())
@@ -505,7 +499,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                             ToolCall toolCallResult =
                                     ToolCall.builder()
                                             .inputParameters(toolInput)
-                                            .name(toolCall.getName())
+                                            .name(toolModel.getTaskDefName())
                                             .taskReferenceName(uniqueRefName)
                                             .type(toolModel.getTaskType())
                                             .output(toolOutput)
@@ -535,7 +529,7 @@ public class AgentChatCompleteTaskMapper extends AIModelTaskMapper<ChatCompletio
                                     ToolCall.builder()
                                             .inputParameters(
                                                     stripInternalFields(toolModel.getInputData()))
-                                            .name(toolCall.getName())
+                                            .name(toolModel.getTaskDefName())
                                             .taskReferenceName(uniqueRefName)
                                             .type(toolModel.getTaskType())
                                             .output(errorOutput)

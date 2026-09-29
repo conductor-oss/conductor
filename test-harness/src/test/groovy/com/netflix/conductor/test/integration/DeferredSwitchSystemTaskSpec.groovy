@@ -15,10 +15,10 @@ package com.netflix.conductor.test.integration
 import java.math.BigDecimal
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionClient
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionQuestion
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionRequest
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionResult
+import org.conductoross.conductor.ai.decision.DecisionClient
+import org.conductoross.conductor.ai.decision.DecisionQuestion
+import org.conductoross.conductor.ai.decision.DecisionRequest
+import org.conductoross.conductor.ai.decision.DecisionResult
 import org.spockframework.spring.SpringBean
 import org.springframework.test.context.TestPropertySource
 

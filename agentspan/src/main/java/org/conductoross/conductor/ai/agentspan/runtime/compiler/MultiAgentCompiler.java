@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionQuestion;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlanAndCompileTask;
 import org.conductoross.conductor.ai.agentspan.runtime.service.PlannerContextFetchTask;
 import org.conductoross.conductor.ai.agentspan.runtime.util.JavaScriptBuilder;
@@ -32,7 +31,6 @@ import org.conductoross.conductor.common.metadata.agent.WorkerRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -826,13 +824,6 @@ public class MultiAgentCompiler {
     // ── Router strategy ─────────────────────────────────────────────
 
     private WorkflowDef compileRouter(AgentConfig config) {
-        Object selector = config.getRouter();
-        if (selector instanceof Map<?, ?> map && !map.containsKey("taskName")) {
-            selector = MAPPER.convertValue(map, AgentConfig.class);
-        }
-        if (selector instanceof AgentConfig agent && agent.getKind() == AgentConfig.Kind.DECISION) {
-            return compileDecisionRouter(config, agent);
-        }
         ParsedModel parsed = ModelParser.parse(config.getModel());
         WorkflowDef wf = agentCompiler.createWorkflow(config);
         wf.setDescription("Router agent: " + config.getName());
@@ -1047,127 +1038,6 @@ public class MultiAgentCompiler {
                         "${workflow.variables._agent_state}"));
         agentCompiler.applyTimeout(wf, config);
         return wf;
-    }
-
-    /** Route one Decision choice to its named child and preserve the child's structured result. */
-    private WorkflowDef compileDecisionRouter(AgentConfig config, AgentConfig selector) {
-        List<AgentConfig> agents = config.getAgents();
-        rejectReservedAgentNames(config, agents);
-        String questionName = validateDecisionRouter(selector, agents);
-
-        WorkflowTask route = buildDecisionRouterTask(config, selector, questionName);
-        route.setDecisionCases(buildDecisionRouterCases(config, agents));
-        route.setDefaultCase(List.of(buildInvalidDecisionRoute(config)));
-
-        WorkflowDef workflow = agentCompiler.createWorkflow(config);
-        workflow.setTasks(List.of(route));
-        workflow.setOutputParameters(
-                Map.of(
-                        "result",
-                        "${workflow.variables.result}",
-                        "selectedAgent",
-                        "${workflow.variables.selectedAgent}",
-                        "routing",
-                        ref(route.getTaskReferenceName() + ".output")));
-        agentCompiler.applyTimeout(workflow, config);
-        return workflow;
-    }
-
-    private String validateDecisionRouter(AgentConfig selector, List<AgentConfig> agents) {
-        Set<String> names = agents.stream().map(AgentConfig::getName).collect(Collectors.toSet());
-        if (selector.getQuestions() == null || selector.getQuestions().size() != 1) {
-            throw new IllegalArgumentException(
-                    "Decision router requires one fixed choice question");
-        }
-        var entry = selector.getQuestions().entrySet().iterator().next();
-        var question = MAPPER.convertValue(entry.getValue(), DecisionQuestion.class);
-        if (question.type() != DecisionQuestion.Type.CHOICE
-                || question.choices() == null
-                || !question.choices().keySet().equals(names)) {
-            throw new IllegalArgumentException(
-                    "Decision router choices must match child agent names");
-        }
-        return entry.getKey();
-    }
-
-    private WorkflowTask buildDecisionRouterTask(
-            AgentConfig config, AgentConfig selector, String questionName) {
-        String routerRef = toRef(config.getName()) + "_router";
-        WorkflowTask route = new WorkflowTask();
-        route.setName("decision_switch");
-        route.setType("SWITCH");
-        route.setTaskReferenceName(routerRef);
-        route.setEvaluatorType("decision");
-        route.setExpression(questionName);
-
-        Map<String, Object> routeInput = new LinkedHashMap<>();
-        routeInput.put("model", selector.getModel());
-        routeInput.put("state", "${workflow.input.prompt}");
-        routeInput.put("questions", selector.getQuestions());
-        if (selector.getProvider() != null && !selector.getProvider().isBlank()) {
-            routeInput.put("provider", selector.getProvider());
-        }
-        route.setInputParameters(routeInput);
-
-        route.setTaskDefinition(buildDecisionRetryPolicy());
-        return route;
-    }
-
-    private TaskDef buildDecisionRetryPolicy() {
-        TaskDef retry = new TaskDef();
-        retry.setName("decision_switch");
-        retry.setRetryCount(3);
-        retry.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
-        retry.setRetryDelaySeconds(1);
-        retry.setBackoffScaleFactor(2);
-        retry.setMaxRetryDelaySeconds(5);
-        return retry;
-    }
-
-    private Map<String, List<WorkflowTask>> buildDecisionRouterCases(
-            AgentConfig config, List<AgentConfig> agents) {
-        Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
-        for (int i = 0; i < agents.size(); i++) {
-            AgentConfig child = agents.get(i);
-            cases.put(child.getName(), buildDecisionRouterCase(config, child, i));
-        }
-        return cases;
-    }
-
-    private List<WorkflowTask> buildDecisionRouterCase(
-            AgentConfig config, AgentConfig child, int index) {
-        String childRef = toRef(config.getName()) + "_selected_" + index;
-        WorkflowTask run =
-                agentCompiler.compileSubAgent(
-                        child,
-                        childRef,
-                        "${workflow.input.prompt}",
-                        "${workflow.input.media}",
-                        "${workflow.input.context}");
-
-        WorkflowTask save = new WorkflowTask();
-        save.setType("SET_VARIABLE");
-        save.setTaskReferenceName(childRef + "_result");
-        save.setInputParameters(
-                Map.of(
-                        "result",
-                        ref(childRef + ".output.result"),
-                        "selectedAgent",
-                        child.getName()));
-        return List.of(run, save);
-    }
-
-    private WorkflowTask buildInvalidDecisionRoute(AgentConfig config) {
-        WorkflowTask invalid = new WorkflowTask();
-        invalid.setType("TERMINATE");
-        invalid.setTaskReferenceName(toRef(config.getName()) + "_invalid_route");
-        invalid.setInputParameters(
-                Map.of(
-                        "terminationStatus",
-                        "FAILED",
-                        "terminationReason",
-                        "Decision selected an unknown agent"));
-        return invalid;
     }
 
     // ── Round-robin / Random (shared rotation) ──────────────────────

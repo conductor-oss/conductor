@@ -419,7 +419,7 @@ Call a specific tool on an MCP server.
 
 ### Decision-backed SWITCH
 
-Ask one `choice` question and route on the answer in the same `SWITCH`. See [DECISION_AGENTS.md](DECISION_AGENTS.md).
+Ask one `choice` question and route on the answer in the same `SWITCH`. See [DECISION_SWITCH.md](DECISION_SWITCH.md).
 
 **Inputs:**
 

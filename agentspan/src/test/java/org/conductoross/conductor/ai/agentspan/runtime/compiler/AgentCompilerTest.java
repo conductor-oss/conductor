@@ -35,21 +35,6 @@ class AgentCompilerTest {
     }
 
     @Test
-    void rejectsStandaloneDecisionConfiguration() {
-        AgentConfig config =
-                AgentConfig.builder()
-                        .name("routing")
-                        .kind(AgentConfig.Kind.DECISION)
-                        .model("jev-1.13")
-                        .build();
-
-        assertThatThrownBy(() -> compiler.compile(config))
-                .isExactlyInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("router selectors")
-                .hasMessageContaining("decision tool");
-    }
-
-    @Test
     void testCompileSimple() {
         AgentConfig config =
                 AgentConfig.builder()

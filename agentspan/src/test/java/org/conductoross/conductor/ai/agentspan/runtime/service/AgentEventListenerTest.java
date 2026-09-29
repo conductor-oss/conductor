@@ -42,43 +42,6 @@ class AgentEventListenerTest {
     private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     @Test
-    void recordsDecisionTaskWithResolvedProviderAndUsage() {
-        AgentStreamRegistry registry = new AgentStreamRegistry();
-        SimpleMeterRegistry meters = new SimpleMeterRegistry();
-        AgentEventListener listener = new AgentEventListener(registry, meters);
-        WorkflowModel workflow = workflow("decision-metrics", "workflow");
-        TaskModel workflowDecision = task("decision-metrics", "SWITCH", "workflow_decision");
-        workflowDecision.setInputData(
-                Map.of(
-                        "model",
-                        "jev-1.13",
-                        "provider",
-                        "typesafe",
-                        "_conductorDeferredEvaluator",
-                        true));
-        workflowDecision.setOutputData(
-                Map.of("usage", Map.of("inputTokens", 3, "outputTokens", 1)));
-        workflow.setTasks(List.of(workflowDecision));
-
-        listener.onWorkflowCompletedIfEnabled(workflow);
-
-        assertThat(
-                        meters.find("agentspan.ai.requests")
-                                .tag("task_type", "decision")
-                                .tag("provider", "typesafe")
-                                .counter()
-                                .count())
-                .isEqualTo(1);
-        assertThat(
-                        meters.find("agentspan.ai.tokens")
-                                .tag("task_type", "decision")
-                                .tag("token_type", "total")
-                                .counter()
-                                .count())
-                .isEqualTo(4);
-    }
-
-    @Test
     void scheduledLlmAndCompletedToolPublishOrderedEventsToTheRealStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         AgentEventListener listener = listener(registry);

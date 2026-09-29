@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.decision;
+package org.conductoross.conductor.ai.decision;
 
 import java.io.IOException;
 import java.util.List;
@@ -33,7 +33,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
-import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.requireResponse;
+import static org.conductoross.conductor.ai.decision.DecisionValidation.requireResponse;
 
 /** Provider-neutral HTTP transport for structured decision inference. */
 @Component

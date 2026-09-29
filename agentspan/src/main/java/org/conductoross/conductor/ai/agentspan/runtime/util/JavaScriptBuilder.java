@@ -568,9 +568,10 @@ public class JavaScriptBuilder {
     }
 
     /**
-     * Build the tool call enrichment JavaScript. It maps declared tools to their executable
-     * Conductor tasks and injects server-owned configuration. It also injects {@code _agent_state}
-     * into worker tasks and {@code _allowed_commands} into CLI tasks.
+     * Build the tool call enrichment JavaScript. Injects {@code _agent_state} from {@code
+     * $.agentState} into worker (SIMPLE) tasks so that ToolContext.state is available server-side.
+     * Injects {@code _allowed_commands} for CLI (SIMPLE) tasks so that per-agent command whitelists
+     * are enforced even when multiple agents share the same worker.
      */
     public static String enrichToolsScript(
             String httpConfigJson,
@@ -581,7 +582,6 @@ public class JavaScriptBuilder {
             String cliConfigJson,
             String humanConfigJson,
             String wmqConfigJson,
-            String decisionConfigJson,
             String knownToolNamesJson) {
         return iife(
                 "  var httpCfg = "
@@ -607,9 +607,6 @@ public class JavaScriptBuilder {
                         + ";"
                         + "  var wmqCfg = "
                         + wmqConfigJson
-                        + ";"
-                        + "  var decisionCfg = "
-                        + decisionConfigJson
                         + ";"
                         + "  var knownNames = "
                         + knownToolNamesJson
@@ -643,7 +640,7 @@ public class JavaScriptBuilder {
                         // SIMPLE task gets queued under the unknown name with no worker
                         // polling for it and the workflow hangs forever.
                         + "    var isCfg = !!(httpCfg[n] || mcpCfg[n] || agentToolCfg[n] ||"
-                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n] || decisionCfg[n]);"
+                        + "                  mediaCfg[n] || ragCfg[n] || humanCfg[n] || wmqCfg[n]);"
                         // Reject any name not in the agent's declared tools. The
                         // previous gate (``hasKnownNames``) skipped this check when
                         // ``knownNames`` was empty, which allowed an agent declared
@@ -792,23 +789,6 @@ public class JavaScriptBuilder {
                         + "      t.inputParameters = {batchSize: wmqCfg[n].batchSize || 1};"
                         + "      t.retryCount = 0;"
                         + "      t.optional = false;"
-                        + "    } else if (decisionCfg[n]) {"
-                        + "      t.type = 'SWITCH';"
-                        + "      t.name = 'decision_switch';"
-                        + "      var dInput = _plain(tc.inputParameters);"
-                        + "      var dDefaults = decisionCfg[n] || {};"
-                        + "      for (var dk in dDefaults) { dInput[dk] = dDefaults[dk]; }"
-                        + "      var dQuestion = ''; var dQuestions = dDefaults.questions || {};"
-                        + "      for (var dq in dQuestions) {"
-                        + "        if (dQuestions[dq] && dQuestions[dq].type === 'choice') { dQuestion = dq; break; }"
-                        + "      }"
-                        + "      t.evaluatorType = 'decision';"
-                        + "      t.expression = dQuestion;"
-                        + "      t.decisionCases = {}; t.defaultCase = [];"
-                        + "      t.retryCount = 3; t.retryLogic = 'EXPONENTIAL_BACKOFF';"
-                        + "      t.retryDelaySeconds = 1; t.backoffScaleFactor = 2;"
-                        + "      t.maxRetryDelaySeconds = 5;"
-                        + "      t.inputParameters = dInput;"
                         + "    }"
                         + "    if (t.type === 'SIMPLE') {"
                         + "      t.inputParameters._agent_state = agentState;"

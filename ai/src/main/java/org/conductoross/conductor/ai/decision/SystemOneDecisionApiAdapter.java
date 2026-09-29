@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.decision;
+package org.conductoross.conductor.ai.decision;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import static org.conductoross.conductor.ai.agentspan.runtime.decision.DecisionValidation.requireResponse;
+import static org.conductoross.conductor.ai.decision.DecisionValidation.requireResponse;
 
 /** Default System One wire contract, isolated from provider selection and transport. */
 @Component

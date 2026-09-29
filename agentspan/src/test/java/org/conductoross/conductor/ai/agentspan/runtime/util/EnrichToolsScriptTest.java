@@ -75,19 +75,6 @@ class EnrichToolsScriptTest {
             String knownNamesJson,
             String toolCallsJson)
             throws Exception {
-        return enrichWithDecision(
-                httpJson, mcpJson, agentToolJson, "{}", knownNamesJson, toolCallsJson);
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> enrichWithDecision(
-            String httpJson,
-            String mcpJson,
-            String agentToolJson,
-            String decisionJson,
-            String knownNamesJson,
-            String toolCallsJson)
-            throws Exception {
         String script =
                 JavaScriptBuilder.enrichToolsScript(
                         httpJson,
@@ -98,7 +85,6 @@ class EnrichToolsScriptTest {
                         "{}",
                         "{}",
                         "{}",
-                        decisionJson,
                         knownNamesJson);
         // Wrap so the script's IIFE return is captured AND we get a JSON string
         // back — Graal's Value.toString() is JS source, not JSON.
@@ -118,36 +104,6 @@ class EnrichToolsScriptTest {
         Object tasks =
                 outer.containsKey("dynamicTasks") ? outer.get("dynamicTasks") : outer.get("tasks");
         return (List<Map<String, Object>>) tasks;
-    }
-
-    @Test
-    void decisionToolBecomesDeferredSwitchWithServerOwnedDefaults() throws Exception {
-        List<Map<String, Object>> tasks =
-                enrichWithDecision(
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{\"classify\":{\"provider\":\"typesafe\",\"model\":\"jev-1.13\","
-                                + "\"questions\":{\"route\":{\"type\":\"choice\",\"instructions\":\"Route\","
-                                + "\"choices\":{\"billing\":\"Billing\",\"support\":\"Support\"}}}}}",
-                        "{\"classify\":true}",
-                        "[{\"name\":\"classify\",\"taskReferenceName\":\"call_classify\","
-                                + "\"inputParameters\":{\"state\":\"refund request\",\"model\":\"untrusted\"}}]");
-
-        assertThat(tasks).singleElement();
-        assertThat(tasks.get(0))
-                .containsEntry("name", "decision_switch")
-                .containsEntry("type", "SWITCH")
-                .containsEntry("evaluatorType", "decision")
-                .containsEntry("expression", "route");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> input = (Map<String, Object>) tasks.get(0).get("inputParameters");
-        assertThat(input)
-                .containsEntry("state", "refund request")
-                .containsEntry("provider", "typesafe")
-                .containsEntry("model", "jev-1.13")
-                .containsEntry("_agent_tool_name", "classify")
-                .containsKey("questions");
     }
 
     @SuppressWarnings("unchecked")
@@ -444,7 +400,6 @@ class EnrichToolsScriptTest {
                         "{}",
                         "{}",
                         "{}",
-                        "{}",
                         "{\"get_current_weather_http\":true}");
         String dynamicScript =
                 JavaScriptBuilder.enrichToolsScriptDynamic(
@@ -706,16 +661,7 @@ class EnrichToolsScriptTest {
                         + "\"headers\": {\"Authorization\": \"Bearer #{API_KEY}\"}}}";
         String script =
                 JavaScriptBuilder.enrichToolsScript(
-                        httpCfg,
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{}",
-                        "{\"weather\": true}");
+                        httpCfg, "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{\"weather\": true}");
         assertThat(script).doesNotContain("${workflow.secrets.");
 
         String dynScript =
