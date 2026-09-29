@@ -124,8 +124,8 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.getInputData().putAll(taskInput);
         switchTask.getInputData().put("case", evalResult);
-        switchTask.addOutput("evaluationResult", List.of(evalResult));
-        switchTask.addOutput("selectedCase", evalResult);
+        switchTask.addOutput(Switch.EVALUATION_RESULT, List.of(evalResult));
+        switchTask.addOutput(Switch.SELECTED_CASE, evalResult);
         switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
@@ -153,7 +153,7 @@ public class SwitchTaskMapper implements TaskMapper {
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
             tasksToBeScheduled.addAll(caseTasks);
-            switchTask.getInputData().put("hasChildren", "true");
+            switchTask.getInputData().put(Switch.HAS_CHILDREN, "true");
         }
         return tasksToBeScheduled;
     }

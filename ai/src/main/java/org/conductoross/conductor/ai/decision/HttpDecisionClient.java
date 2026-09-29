@@ -74,40 +74,9 @@ public class HttpDecisionClient implements DecisionClient {
         requireResponse(adapter != null, "Unknown decision API shape: " + route.apiShape());
         long started = System.nanoTime();
         try {
-            byte[] payload = mapper.writeValueAsBytes(adapter.encode(input));
-            DecisionHttpRequest providerRequest = adapter.createRequest(input, route, payload);
-            requireResponse(
-                    providerRequest != null
-                            && providerRequest.endpoint() != null
-                            && !providerRequest.endpoint().isBlank()
-                            && providerRequest.method() != null
-                            && !providerRequest.method().isBlank()
-                            && providerRequest.headers() != null
-                            && (providerRequest.body() == null
-                                    || (providerRequest.mediaType() != null
-                                            && !providerRequest.mediaType().isBlank())),
-                    "invalid provider HTTP request");
-            Request.Builder requestBuilder = new Request.Builder().url(providerRequest.endpoint());
-            providerRequest.headers().forEach(requestBuilder::header);
-            RequestBody body =
-                    providerRequest.body() == null
-                            ? null
-                            : RequestBody.create(
-                                    providerRequest.body(),
-                                    MediaType.get(providerRequest.mediaType()));
-            Request request = requestBuilder.method(providerRequest.method(), body).build();
+            Request request = buildRequest(input, route, adapter);
             try (Response response = client.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String error = "Decision HTTP status " + response.code();
-                    if (response.code() == 429 || response.code() >= 500) {
-                        throw new IllegalStateException(error);
-                    }
-                    throw new NonRetryableException(error);
-                }
-                requireResponse(response.body() != null, "empty Decision response");
-                byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
-                requireResponse(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
-                JsonNode data = mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
+                JsonNode data = readResponse(response);
                 DecisionResult result =
                         adapter.decode(
                                 data,
@@ -122,5 +91,48 @@ public class HttpDecisionClient implements DecisionClient {
             // Provider errors may contain credentials; omit response bodies and causes.
             throw new IllegalStateException("Decision transport failed");
         }
+    }
+
+    private Request buildRequest(
+            DecisionRequest input, DecisionConfiguration.Route route, DecisionApiAdapter adapter)
+            throws JsonProcessingException {
+        byte[] payload = mapper.writeValueAsBytes(adapter.encode(input));
+        DecisionHttpRequest providerRequest = adapter.createRequest(input, route, payload);
+        validateRequest(providerRequest);
+        Request.Builder requestBuilder = new Request.Builder().url(providerRequest.endpoint());
+        providerRequest.headers().forEach(requestBuilder::header);
+        RequestBody body =
+                providerRequest.body() == null
+                        ? null
+                        : RequestBody.create(
+                                providerRequest.body(), MediaType.get(providerRequest.mediaType()));
+        return requestBuilder.method(providerRequest.method(), body).build();
+    }
+
+    private static void validateRequest(DecisionHttpRequest request) {
+        requireResponse(
+                request != null
+                        && request.endpoint() != null
+                        && !request.endpoint().isBlank()
+                        && request.method() != null
+                        && !request.method().isBlank()
+                        && request.headers() != null
+                        && (request.body() == null
+                                || (request.mediaType() != null && !request.mediaType().isBlank())),
+                "invalid provider HTTP request");
+    }
+
+    private JsonNode readResponse(Response response) throws IOException {
+        if (!response.isSuccessful()) {
+            String error = "Decision HTTP status " + response.code();
+            if (response.code() == 429 || response.code() >= 500) {
+                throw new IllegalStateException(error);
+            }
+            throw new NonRetryableException(error);
+        }
+        requireResponse(response.body() != null, "empty Decision response");
+        byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
+        requireResponse(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
+        return mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
     }
 }

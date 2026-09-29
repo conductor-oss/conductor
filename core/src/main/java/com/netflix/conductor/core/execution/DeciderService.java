@@ -36,6 +36,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
@@ -515,7 +516,7 @@ public class DeciderService {
         if (systemTaskRegistry.isSystemTask(task.getTaskType())
                 && (TaskType.TASK_TYPE_DECISION.equals(task.getTaskType())
                         || TaskType.TASK_TYPE_SWITCH.equals(task.getTaskType()))) {
-            if (task.getInputData().get("hasChildren") != null) {
+            if (task.getInputData().get(Switch.HAS_CHILDREN) != null) {
                 return Collections.emptyList();
             }
             // A SWITCH evaluated at execution time (deferred evaluator) completes with
@@ -1048,7 +1049,7 @@ public class DeciderService {
                     workflow.getWorkflowDefinition()
                             .getTaskByRefName(switchTask.getReferenceTaskName());
         }
-        Object selectedCase = switchTask.getOutputData().get("selectedCase");
+        Object selectedCase = switchTask.getOutputData().get(Switch.SELECTED_CASE);
         if (workflowTask == null || selectedCase == null) {
             return null;
         }
@@ -1060,7 +1061,7 @@ public class DeciderService {
         if (selectedTasks == null || selectedTasks.isEmpty()) {
             return null;
         }
-        switchTask.getInputData().put("hasChildren", "true");
+        switchTask.getInputData().put(Switch.HAS_CHILDREN, "true");
         return getTasksToBeScheduled(workflow, selectedTasks.get(0), 0);
     }
 

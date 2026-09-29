@@ -23,14 +23,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 class DecisionEvaluatorTest {
 
-    private final DecisionClient client = mock(DecisionClient.class);
+    private final FakeDecisionClient client = new FakeDecisionClient();
     private final DecisionEvaluator evaluator = new DecisionEvaluator(client, new ObjectMapper());
 
     private static Map<String, Object> input() {
@@ -67,7 +63,7 @@ class DecisionEvaluatorTest {
 
     @Test
     void returnsWholeResultPlusSelectedCase() {
-        when(client.decide(any())).thenReturn(result("billing"));
+        client.result = result("billing");
 
         Object out = evaluator.evaluate("route", input());
 
@@ -84,7 +80,7 @@ class DecisionEvaluatorTest {
 
     @Test
     void blankExpressionUsesTheOnlyQuestion() {
-        when(client.decide(any())).thenReturn(result("technical"));
+        client.result = result("technical");
         @SuppressWarnings("unchecked")
         Map<String, Object> out = (Map<String, Object>) evaluator.evaluate("", input());
         assertThat(out).containsEntry("selectedCase", "technical");
@@ -92,7 +88,7 @@ class DecisionEvaluatorTest {
 
     @Test
     void transientProviderFailurePropagatesSoTheTaskIsRetried() {
-        when(client.decide(any())).thenThrow(new IllegalStateException("Decision HTTP status 503"));
+        client.failure = new IllegalStateException("Decision HTTP status 503");
         assertThatThrownBy(() -> evaluator.evaluate("route", input()))
                 .isInstanceOf(IllegalStateException.class)
                 .isNotInstanceOf(NonTransientException.class);
@@ -100,7 +96,7 @@ class DecisionEvaluatorTest {
 
     @Test
     void terminalProviderFailureIsNonTransient() {
-        when(client.decide(any())).thenThrow(new NonRetryableException("invalid credential"));
+        client.failure = new NonRetryableException("invalid credential");
         assertThatThrownBy(() -> evaluator.evaluate("route", input()))
                 .isInstanceOf(NonTransientException.class)
                 .hasMessageContaining("invalid credential");
@@ -113,6 +109,21 @@ class DecisionEvaluatorTest {
         assertThatThrownBy(() -> evaluator.evaluate("missing", input()))
                 .isInstanceOf(NonTransientException.class)
                 .hasMessageContaining("missing");
-        verifyNoInteractions(client);
+        assertThat(client.calls).isZero();
+    }
+
+    private static final class FakeDecisionClient implements DecisionClient {
+        private DecisionResult result;
+        private RuntimeException failure;
+        private int calls;
+
+        @Override
+        public DecisionResult decide(DecisionRequest request) {
+            calls++;
+            if (failure != null) {
+                throw failure;
+            }
+            return result;
+        }
     }
 }

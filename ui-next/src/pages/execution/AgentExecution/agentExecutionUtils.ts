@@ -83,84 +83,103 @@ function embeddedAgentDef(task: ExecutionTask) {
   return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
 }
 
-/** A selector is inference by the parent. Its selected child acts in the next turn. */
+function isRouterSelector(task: ExecutionTask, routerReference: string) {
+  return task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
+}
+
+function routerSelectorEvent(task: ExecutionTask): AgentEvent {
+  const result = isDecisionTask(task)
+    ? task.outputData
+    : task.outputData?.result;
+  const event: AgentEvent = isDecisionTask(task)
+    ? decisionTaskEvent(task)
+    : {
+        id: `${task.taskId}-router`,
+        type: EventType.THINKING,
+        timestamp: task.startTime ?? 0,
+        summary: "Routing decision",
+        toolName: embeddedAgentDef(task)?.model as string | undefined,
+        detail: { input: task.inputData?.workflowInput, output: result },
+        success: taskSuccess(task.status),
+        durationMs: taskDuration(task),
+      };
+  const answers = (result as { answers?: Record<string, { choice?: string }> })
+    ?.answers;
+  const choice = isDecisionTask(task)
+    ? Object.values(answers ?? {})[0]?.choice
+    : typeof result === "string"
+      ? result
+      : undefined;
+  if (choice) {
+    event.targetAgent = choice;
+    event.summary = `Selected: ${choice}`;
+  }
+  return event;
+}
+
+function routerChild(
+  task: ExecutionTask,
+  children: AgentRunData[],
+): AgentRunData | null {
+  const child = children.find(
+    (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
+  );
+  if (!child) return null;
+  const definition = embeddedAgentDef(task);
+  return {
+    ...child,
+    agentName: (definition?.name as string) ?? child.agentName,
+    agentDef: definition ?? child.agentDef,
+    model: definition?.model as string | undefined,
+    output: task.outputData?.result ?? child.output,
+  };
+}
+
+function taskDuration(task: ExecutionTask): number {
+  return task.endTime && task.startTime ? task.endTime - task.startTime : 0;
+}
+
+function routerTurn(
+  task: ExecutionTask,
+  children: AgentRunData[],
+  routerReference: string,
+  turnNumber: number,
+): AgentTurn | null {
+  const event = isRouterSelector(task, routerReference)
+    ? routerSelectorEvent(task)
+    : null;
+  const child = event ? null : routerChild(task, children);
+  if (!event && !child) return null;
+  return {
+    id: `route-${task.taskId}`,
+    kind: AgentTimelineKind.TURN,
+    turnNumber,
+    status: mapTaskStatus(task.status),
+    durationMs: taskDuration(task),
+    tokens: event?.tokens ?? ZERO_TOKENS,
+    events: event ? [event] : [],
+    subAgents: child ? [child] : [],
+    strategy: AgentStrategy.SEQUENTIAL,
+  };
+}
+
+/** A selector is inference by the parent; its selected child runs in the next turn. */
 function routerTimeline(
   tasks: ExecutionTask[],
   turns: AgentTurn[],
   routerReference: string,
 ): AgentTurn[] {
-  const isSelector = (task: ExecutionTask) =>
-    task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
   const calls = deduplicateRetriedTasks(
     sortTasksChronologically(tasks),
-  ).tasks.filter((task) => isAgentSubWorkflow(task) || isSelector(task));
-  // The compiler owns one exact selector reference. Matching only a suffix
-  // misclassifies valid selected agents named "router" as another selector.
-  if (!calls.some(isSelector)) return turns;
+  ).tasks.filter(
+    (task) => isAgentSubWorkflow(task) || isRouterSelector(task, routerReference),
+  );
+  if (!calls.some((task) => isRouterSelector(task, routerReference))) return turns;
   const children = turns.flatMap((turn) => turn.subAgents);
-  const routed: AgentTurn[] = [];
-  for (const task of calls) {
-    const definition = embeddedAgentDef(task);
-    const durationMs =
-      task.endTime && task.startTime ? task.endTime - task.startTime : 0;
-    let events: AgentEvent[] = [];
-    let subAgents: AgentRunData[] = [];
-    if (isSelector(task)) {
-      const result = isDecisionTask(task)
-        ? task.outputData
-        : task.outputData?.result;
-      const event: AgentEvent = isDecisionTask(task)
-        ? decisionTaskEvent(task)
-        : {
-            id: `${task.taskId}-router`,
-            type: EventType.THINKING,
-            timestamp: task.startTime ?? 0,
-            summary: "Routing decision",
-            toolName: definition?.model as string | undefined,
-            detail: { input: task.inputData?.workflowInput, output: result },
-            success: taskSuccess(task.status),
-            durationMs,
-          };
-      const answers = (
-        result as { answers?: Record<string, { choice?: string }> } | undefined
-      )?.answers;
-      const choice = isDecisionTask(task)
-        ? Object.values(answers ?? {})[0]?.choice
-        : typeof result === "string"
-          ? result
-          : undefined;
-      if (choice) {
-        event.targetAgent = choice;
-        event.summary = `Selected: ${choice}`;
-      }
-      events = [event];
-    } else {
-      const child = children.find(
-        (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
-      );
-      if (!child) continue;
-      subAgents = [
-        {
-          ...child,
-          agentName: (definition?.name as string) ?? child.agentName,
-          agentDef: definition ?? child.agentDef,
-          model: definition?.model as string | undefined,
-          output: task.outputData?.result ?? child.output,
-        },
-      ];
-    }
-    routed.push({
-      id: `route-${task.taskId}`,
-      kind: AgentTimelineKind.TURN,
-      turnNumber: routed.length + 1,
-      status: mapTaskStatus(task.status),
-      durationMs,
-      tokens: events[0]?.tokens ?? ZERO_TOKENS,
-      events,
-      subAgents,
-      strategy: AgentStrategy.SEQUENTIAL,
-    });
-  }
+  const routed = calls.reduce<AgentTurn[]>((timeline, task) => {
+    const turn = routerTurn(task, children, routerReference, timeline.length + 1);
+    return turn ? [...timeline, turn] : timeline;
+  }, []);
   return [
     ...turns.filter((turn) => turn.kind === AgentTimelineKind.PREPARATION),
     ...routed,
@@ -989,18 +1008,7 @@ export function transformWorkflowExecutionToAgentRun(
   const rootAgentName: string =
     execution.workflowName ?? execution.workflowType ?? "";
 
-  // A real sub-agent turn renders its subAgent box AFTER its own events (a
-  // fixed convention in AgentExecutionDiagram, not something worth changing
-  // here) — so a "this agent is handing off" event attached to the SAME
-  // iteration as the sub-agent box would render ABOVE that box instead of
-  // below it, reading backwards ("here's the handoff" before "here's what
-  // the agent actually did"). Deferring it to the front of the NEXT
-  // iteration's events sidesteps that: it then renders right after the
-  // "TURN N+1" marker, immediately before that turn's own content — "here's
-  // who's taking over" followed by their work, which is the correct order
-  // either way. Self-call turns don't have this conflict (there's no
-  // sub-agent box competing for the same iteration), so their handoffs stay
-  // attached to the turn that produced them.
+  // Display a sub-agent's outgoing handoff at the start of the next turn.
   let pendingIncomingHandoff: AgentEvent | null = null;
 
   const turns: AgentTurn[] = sortedIters

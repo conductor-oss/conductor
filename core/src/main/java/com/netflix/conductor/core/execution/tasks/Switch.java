@@ -41,6 +41,7 @@ public class Switch extends WorkflowSystemTask {
 
     public static final String SELECTED_CASE = "selectedCase";
     public static final String EVALUATION_RESULT = "evaluationResult";
+    public static final String HAS_CHILDREN = "hasChildren";
     public static final String DEFERRED_EVALUATOR = "_conductorDeferredEvaluator";
 
     private final Map<String, Evaluator> evaluators;
