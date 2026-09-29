@@ -185,7 +185,7 @@ export const DatePickerComponent = ({
         >
           <Grid
             size={{
-              md: 8,
+              md: "auto",
             }}
           >
             <SingleDateRangePicker
@@ -198,7 +198,7 @@ export const DatePickerComponent = ({
           </Grid>
           <Grid
             size={{
-              md: 4,
+              md: "grow",
             }}
           >
             <Box
