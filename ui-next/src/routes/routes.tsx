@@ -9,6 +9,7 @@
  * - Task definitions
  * - Event handlers
  * - Scheduler definitions and executions
+ * - Task executions
  * - Schemas
  * - Queue monitor
  * - Event monitor
@@ -44,7 +45,11 @@ import {
 import ErrorPage from "pages/error/ErrorPage";
 import { EventMonitor } from "pages/eventMonitor/EventMonitor";
 import { EventMonitorDetail } from "pages/eventMonitor/EventMonitorDetail/EventMonitorDetail";
-import { SchedulerExecutions, WorkflowSearch } from "pages/executions";
+import {
+  SchedulerExecutions,
+  TaskSearch,
+  WorkflowSearch,
+} from "pages/executions";
 import { SchemaEditPage, SchemaList } from "pages/schema";
 import { pluginRegistry } from "plugins/registry";
 import { Navigate, RouteObject } from "react-router-dom";
@@ -59,6 +64,7 @@ import {
   SCHEDULER_DEFINITION_URL,
   SCHEMAS_URL,
   TASK_DEF_URL,
+  TASK_EXECUTION_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
 } from "utils/constants/route";
@@ -237,6 +243,24 @@ export const getSchemaRoutes = (pluginRoutes: RouteObject[]): RouteObject[] => {
 };
 
 /**
+ * Task execution search route.
+ *
+ * Withheld when a plugin has already claimed the path, for the same reason as
+ * the schema routes: a plugin that gates this screen (e.g. on task indexing)
+ * must not be bypassed by a core route matched ahead of it.
+ */
+export const getTaskExecutionRoutes = (
+  pluginRoutes: RouteObject[],
+): RouteObject[] => {
+  const claimedByPlugin = pluginRoutes.some(
+    (pluginRoute) => pluginRoute.path === TASK_EXECUTION_URL.LIST,
+  );
+  return claimedByPlugin
+    ? []
+    : [{ path: TASK_EXECUTION_URL.LIST, element: <TaskSearch /> }];
+};
+
+/**
  * Get the default index route based on feature flags
  */
 const getIndexRoute = (isPlayground: boolean) => {
@@ -275,6 +299,7 @@ export const getRoutes = (): RouteObject[] => {
     ...(indexRoute ? [indexRoute] : []),
     ...coreRoutes,
     ...getSchemaRoutes(pluginAuthenticatedRoutes),
+    ...getTaskExecutionRoutes(pluginAuthenticatedRoutes),
     ...pluginAuthenticatedRoutes,
   ];
 

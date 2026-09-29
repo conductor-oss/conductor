@@ -60,6 +60,13 @@ export const FEATURES = Object.freeze({
   SHOW_ONBOARDING_QUIZ: "SHOW_ONBOARDING_QUIZ",
   SKU_ENABLED: "SKU_ENABLED",
   TASK_INDEXING: "TASK_INDEXING",
+  // Task documents in OSS store the workflow's name as workflowType. Enterprise
+  // search accepts workflowName. Unset keeps workflowName, so conductor-ui is
+  // unchanged; OSS context.js sets this to workflowType.
+  TASK_SEARCH_WORKFLOW_FIELD: "TASK_SEARCH_WORKFLOW_FIELD",
+  // OSS does not index a task's reference name. Hidden unless a deployment
+  // sets this true (conductor-ui does).
+  SHOW_TASK_REFERENCE_NAME: "SHOW_TASK_REFERENCE_NAME",
   TRIGGER_WORKFLOW: "TRIGGER_WORKFLOW",
   ENV_IS_PRODUCTION: "ENV_IS_PRODUCTION",
   ENABLE_WHITE_BACKGROUND_FORM: "ENABLE_WHITE_BACKGROUND_FORM",
