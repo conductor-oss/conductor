@@ -174,7 +174,7 @@ public class WorkflowSweeperTest {
         when(systemTaskRegistry.isSystemTask(TaskType.TASK_TYPE_SUB_WORKFLOW)).thenReturn(true);
         when(systemTaskRegistry.get(TaskType.TASK_TYPE_SUB_WORKFLOW))
                 .thenReturn(workflowSystemTask);
-        when(workflowSystemTask.isAsync()).thenReturn(true);
+        when(workflowSystemTask.isAsync(subWorkflowTask)).thenReturn(true);
         when(workflowSystemTask.isAsyncComplete(subWorkflowTask)).thenReturn(true);
         when(executionDAO.getWorkflow("sub-workflow-id", false)).thenReturn(subWorkflow);
 
@@ -203,7 +203,7 @@ public class WorkflowSweeperTest {
         when(workflowExecutor.decide(WORKFLOW_ID)).thenReturn(workflow);
         when(systemTaskRegistry.isSystemTask(TaskType.TASK_TYPE_HTTP)).thenReturn(true);
         when(systemTaskRegistry.get(TaskType.TASK_TYPE_HTTP)).thenReturn(httpSystemTask);
-        when(httpSystemTask.isAsync()).thenReturn(true);
+        when(httpSystemTask.isAsync(httpTask)).thenReturn(true);
         when(httpSystemTask.isAsyncComplete(httpTask)).thenReturn(false);
         // the task is in flight and its message is still present (reserved by the executor)
         when(queueDAO.containsMessage(TaskType.TASK_TYPE_HTTP, httpTask.getTaskId()))
