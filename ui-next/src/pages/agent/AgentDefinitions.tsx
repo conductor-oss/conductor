@@ -22,6 +22,7 @@ import { useAuth } from "components/features/auth";
 import { MessageContext } from "components/providers/messageContext";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
+import AwsIcon from "images/svg/aws-icon.svg";
 import AzureIcon from "images/svg/azure-icon.svg";
 import BedrockIcon from "images/svg/bedrock-icon.svg";
 import OrkesIcon from "images/svg/orkes-icon.svg";
@@ -73,8 +74,9 @@ function providerIcon(rawType?: string | null): string {
     case "microsoft-foundry":
       return AzureIcon;
     case "bedrock":
-    case "bedrock-agentcore":
       return BedrockIcon;
+    case "bedrock-agentcore":
+      return AwsIcon;
     default:
       return OrkesIcon;
   }
@@ -154,6 +156,25 @@ export default function AgentDefinitions() {
         label: "Description",
         grow: 2,
         tooltip: "The description of the agent",
+      },
+      {
+        id: "provider",
+        name: "type",
+        label: "Provider",
+        grow: 0.8,
+        tooltip: "The runtime provider for this agent",
+        renderer: (type: string, agent: AgentSummary) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <img
+              src={providerIcon(agent.type)}
+              alt={providerLabel(agent.type)}
+              width={16}
+              height={16}
+              style={{ flexShrink: 0 }}
+            />
+            <span style={{ fontSize: "0.85em" }}>{providerLabel(agent.type)}</span>
+          </Box>
+        ),
       },
       ...(tagsEnabled
         ? ([
