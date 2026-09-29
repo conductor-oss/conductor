@@ -59,6 +59,19 @@ public class BlockingRedirectStrategyTest {
                         HttpClientContext.create());
     }
 
+    @Test(expected = RedirectException.class)
+    public void trailingDotRedirectTargetIsNormalizedAndBlocked() throws Exception {
+        HttpWorkerBlockConfig config = new HttpWorkerBlockConfig();
+        config.setIps(List.of("169.254.0.0/16"));
+
+        // getHost() is null for the trailing-dot metadata IP; it must still be rejected.
+        strategy(config)
+                .getLocationURI(
+                        new BasicHttpRequest("GET", "http://allowed.example.com/"),
+                        redirectTo("http://169.254.169.254./latest/meta-data/"),
+                        HttpClientContext.create());
+    }
+
     @Test
     public void allowedRedirectTargetPassesThrough() throws Exception {
         HttpWorkerBlockConfig config = new HttpWorkerBlockConfig();

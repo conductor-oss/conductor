@@ -62,6 +62,38 @@ public class RestTemplateInterceptorTest {
     }
 
     @Test
+    public void trailingDotIpIsNormalizedAndBlocked() throws Exception {
+        HttpWorkerBlockConfig config = new HttpWorkerBlockConfig();
+        config.setIps(List.of("127.0.0.0/8"));
+        ClientHttpRequestExecution execution = Mockito.mock(ClientHttpRequestExecution.class);
+
+        // getHost() is null for "127.0.0.1."; without normalization this used to slip through.
+        ClientHttpResponse response =
+                interceptor(config)
+                        .intercept(
+                                requestTo("http://127.0.0.1.:8080/secret"), new byte[0], execution);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        verify(execution, never()).execute(any(), any());
+    }
+
+    @Test
+    public void unparseableHostFailsClosed() throws Exception {
+        // A block list is configured, but the request host can't be derived at all -> block, never
+        // send.
+        HttpWorkerBlockConfig config = new HttpWorkerBlockConfig();
+        config.setIps(List.of("169.254.0.0/16"));
+        ClientHttpRequestExecution execution = Mockito.mock(ClientHttpRequestExecution.class);
+
+        ClientHttpResponse response =
+                interceptor(config)
+                        .intercept(requestTo("file:///etc/passwd"), new byte[0], execution);
+
+        assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+        verify(execution, never()).execute(any(), any());
+    }
+
+    @Test
     public void allowedHostProceeds() throws Exception {
         HttpWorkerBlockConfig config = new HttpWorkerBlockConfig();
         config.setIps(List.of("169.254.0.0/16"));

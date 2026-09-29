@@ -20,8 +20,11 @@ import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
+import org.conductoross.conductor.tasks.http.providers.interceptors.BlockingDnsResolver;
 import org.conductoross.conductor.tasks.http.providers.interceptors.BlockingRedirectStrategy;
 import org.conductoross.conductor.tasks.http.providers.interceptors.RestTemplateInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,21 +51,37 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
     private final Optional<RestTemplateInterceptor> interceptor;
     private final Optional<BlockingRedirectStrategy> redirectStrategy;
 
+    // Built once and shared across per-request clients so the SSRF-aware DNS resolver is enforced
+    // on
+    // every connection without leaking a pool per task execution. Null when no block rules
+    // configure
+    // a resolver, leaving the default connection manager (and behavior) untouched.
+    private final PoolingHttpClientConnectionManager connectionManager;
+
     @Autowired
     public DefaultRestTemplateProvider(
             @Value("${conductor.tasks.http.readTimeout:150ms}") Duration readTimeout,
             @Value("${conductor.tasks.http.connectTimeout:100ms}") Duration connectTimeout,
             Optional<RestTemplateInterceptor> interceptor,
-            Optional<BlockingRedirectStrategy> redirectStrategy) {
+            Optional<BlockingRedirectStrategy> redirectStrategy,
+            Optional<BlockingDnsResolver> dnsResolver) {
         this.threadLocalRestTemplateBuilder = ThreadLocal.withInitial(RestTemplateBuilder::new);
         this.defaultReadTimeout = (int) readTimeout.toMillis();
         this.defaultConnectTimeout = (int) connectTimeout.toMillis();
         this.interceptor = interceptor;
         this.redirectStrategy = redirectStrategy;
+        this.connectionManager =
+                dnsResolver
+                        .map(
+                                resolver ->
+                                        PoolingHttpClientConnectionManagerBuilder.create()
+                                                .setDnsResolver(resolver)
+                                                .build())
+                        .orElse(null);
     }
 
     public DefaultRestTemplateProvider(Duration readTimeout, Duration connectTimeout) {
-        this(readTimeout, connectTimeout, Optional.empty(), Optional.empty());
+        this(readTimeout, connectTimeout, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Override
@@ -80,6 +99,12 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
         HttpClientBuilder httpClientBuilder =
                 HttpClients.custom().setDefaultRequestConfig(requestConfig);
         redirectStrategy.ifPresent(httpClientBuilder::setRedirectStrategy);
+        if (connectionManager != null) {
+            // Shared manager: mark it so building/closing a per-request client never shuts the
+            // pool.
+            httpClientBuilder.setConnectionManager(connectionManager);
+            httpClientBuilder.setConnectionManagerShared(true);
+        }
         HttpClient httpClient = httpClientBuilder.build();
         HttpComponentsClientHttpRequestFactory requestFactory =
                 new HttpComponentsClientHttpRequestFactory(httpClient);

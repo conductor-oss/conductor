@@ -54,9 +54,11 @@ public class BlockingRedirectStrategy extends DefaultRedirectStrategy {
     public URI getLocationURI(HttpRequest request, HttpResponse response, HttpContext context)
             throws HttpException {
         final URI location = super.getLocationURI(request, response, context);
-        final String host = location.getHost();
+        // Fail closed on unparseable hosts, same as RestTemplateInterceptor: a redirect target the
+        // parser can't read must be rejected, not followed. See UriHostResolver.
+        final String host = UriHostResolver.resolveHost(location);
         try {
-            if (host != null && !hostAndIPChecker.isAllowed(host)) {
+            if (host == null || !hostAndIPChecker.isAllowed(host)) {
                 LOGGER.warn("Blocked redirect to host/ip: {}. Redirect URI: {}", host, location);
                 throw new RedirectException("Redirect to blocked host/ip: " + host);
             }

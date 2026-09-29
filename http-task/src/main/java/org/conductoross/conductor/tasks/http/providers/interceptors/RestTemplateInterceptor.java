@@ -52,8 +52,11 @@ public class RestTemplateInterceptor implements ClientHttpRequestInterceptor {
             @NonNull byte[] body,
             @NonNull ClientHttpRequestExecution execution)
             throws IOException {
-        final String host = request.getURI().getHost();
-        if (host != null && !hostAndIPChecker.isAllowed(host)) {
+        // Fail closed: a host the URI parser can't read (trailing dot, underscore, ...) must be
+        // blocked, not waved through — the HTTP client would still connect to it. See
+        // UriHostResolver.
+        final String host = UriHostResolver.resolveHost(request.getURI());
+        if (host == null || !hostAndIPChecker.isAllowed(host)) {
             LOGGER.warn("Blocked request to host/ip: {}. Request URI: {}", host, request.getURI());
             return forbiddenResponse();
         }
