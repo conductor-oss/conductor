@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -210,6 +211,11 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
         String accessKeyId = AgentCredentials.value(credentials, "accessKeyId");
         String secretAccessKey = AgentCredentials.value(credentials, "secretAccessKey");
         if (StringUtils.isNoneBlank(accessKeyId, secretAccessKey)) {
+            String sessionToken = AgentCredentials.value(credentials, "sessionToken");
+            if (StringUtils.isNotBlank(sessionToken)) {
+                return StaticCredentialsProvider.create(
+                        AwsSessionCredentials.create(accessKeyId, secretAccessKey, sessionToken));
+            }
             return StaticCredentialsProvider.create(
                     AwsBasicCredentials.create(accessKeyId, secretAccessKey));
         }
