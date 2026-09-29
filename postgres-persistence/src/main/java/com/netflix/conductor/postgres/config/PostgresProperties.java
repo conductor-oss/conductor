@@ -25,6 +25,14 @@ public class PostgresProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration taskDefCacheRefreshInterval = Duration.ofSeconds(60);
 
+    /**
+     * The interval at which {@code PostgresQueueDAO} scans for and recovers messages that were
+     * popped but never acknowledged (e.g. due to a worker crash or a task that ran longer than
+     * this interval allows for).
+     */
+    @DurationUnit(ChronoUnit.SECONDS)
+    private Duration unackScheduleInterval = Duration.ofSeconds(60);
+
     private Integer deadlockRetryMax = 3;
 
     @DurationUnit(ChronoUnit.MILLIS)
@@ -76,6 +84,14 @@ public class PostgresProperties {
 
     public void setTaskDefCacheRefreshInterval(Duration taskDefCacheRefreshInterval) {
         this.taskDefCacheRefreshInterval = taskDefCacheRefreshInterval;
+    }
+
+    public Duration getUnackScheduleInterval() {
+        return unackScheduleInterval;
+    }
+
+    public void setUnackScheduleInterval(Duration unackScheduleInterval) {
+        this.unackScheduleInterval = unackScheduleInterval;
     }
 
     public boolean getOnlyIndexOnStatusChange() {
