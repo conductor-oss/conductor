@@ -157,10 +157,9 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
-     * Task types the event listener recognizes as tool calls from their type alone, for the purpose
-     * of emitting tool call and tool result events. SIMPLE uses the worker's name as its type, and
-     * SWITCH also handles routing; decision tools carry an explicit tool marker instead. Custom
-     * media and RAG task types are detected separately.
+     * Task types counted as tool calls for the purpose of emitting tool call and tool result
+     * events. SIMPLE uses the worker's name as its type. SWITCH can also be a router, so decision
+     * tool calls use an explicit marker. Custom media and RAG task types are detected separately.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
