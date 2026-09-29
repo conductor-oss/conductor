@@ -519,6 +519,57 @@ class MultiAgentCompilerTest {
     }
 
     @Test
+    void decisionRouterCompilesWithoutAPrimaryLlmModel() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("decision_router")
+                        .strategy(AgentConfig.Strategy.ROUTER)
+                        .router(
+                                Map.of(
+                                        "name",
+                                        "support_selector",
+                                        "kind",
+                                        "decision",
+                                        "model",
+                                        "jev-1.13",
+                                        "provider",
+                                        "openrouter",
+                                        "questions",
+                                        Map.of(
+                                                "agent",
+                                                Map.of(
+                                                        "type",
+                                                        "choice",
+                                                        "instructions",
+                                                        "Choose a team",
+                                                        "choices",
+                                                        Map.of(
+                                                                "billing",
+                                                                "Invoices",
+                                                                "technical",
+                                                                "Troubleshooting")))))
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("billing", "Billing"),
+                                        simpleSubAgent("technical", "Technical")))
+                        .maxTurns(1)
+                        .synthesize(false)
+                        .build();
+
+        WorkflowDef workflow = compiler.compile(config);
+
+        WorkflowTask selector = workflow.getTasks().get(2).getLoopOver().get(0);
+        assertThat(selector.getType()).isEqualTo("SWITCH");
+        assertThat(selector.getEvaluatorType()).isEqualTo("decision");
+        assertThat(selector.getExpression()).isEqualTo("agent");
+        assertThat(selector.getInputParameters())
+                .containsEntry("model", "jev-1.13")
+                .containsEntry("provider", "openrouter")
+                .containsEntry("state", "${workflow.variables.conversation}");
+        assertThat(selector.getDecisionCases()).containsOnlyKeys("billing", "technical");
+    }
+
+    @Test
     void testAllowedTransitions() {
         AgentConfig config =
                 AgentConfig.builder()
