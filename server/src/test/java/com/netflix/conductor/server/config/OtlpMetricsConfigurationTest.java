@@ -15,12 +15,14 @@ package com.netflix.conductor.server.config;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.export.otlp.OtlpMetricsExportAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,29 +33,36 @@ import com.netflix.conductor.metrics.Monitors;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.micrometer.registry.otlp.OtlpConfig;
 import io.micrometer.registry.otlp.OtlpMeterRegistry;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Regression test for issue #1418: OTLP metrics export regressed in v3.30.0 when the
- * conductor-metrics module was retired (commit 396a09a4f, PR #1059). The OTLP registry dependency
- * must remain on the server classpath so that {@code management.otlp.metrics.export.enabled=true}
- * produces a working {@link OtlpMeterRegistry} that gets wired into {@link Monitors} via {@link
- * MetricsCollector}.
+ * Regression test for two issues on the OTLP metrics export path:
  *
- * <p>This test constructs the {@link OtlpMeterRegistry} bean the same way Spring Boot's {@code
- * OtlpMetricsAutoConfiguration} does — the only thing it does not exercise is the
- * auto-configuration wiring itself, which is owned by Spring Boot. It verifies (1) the OTLP
- * registry class is resolvable on the classpath (the regression), (2) it is wired into {@link
- * Monitors} by {@link MetricsCollector}, and (3) metrics recorded via {@link Monitors} are exported
- * over HTTP to a collector endpoint.
+ * <ul>
+ *   <li><b>#1418</b>: the OTLP registry dependency was dropped from the server classpath when the
+ *       conductor-metrics module was retired (commit 396a09a4f, PR #1059), so {@code
+ *       management.otlp.metrics.export.enabled=true} produced no registry at all.
+ *   <li><b>#1534</b>: after Spring Boot was upgraded to 3.5, its {@code
+ *       OtlpMetricsExportAutoConfiguration} builds the registry via {@code
+ *       OtlpMeterRegistry.builder(...)}, a class that only exists in micrometer-registry-otlp
+ *       1.15.x. With the registry pinned to 1.14.6 the server crashed at startup with {@code
+ *       NoClassDefFoundError: OtlpMeterRegistry$Builder}.
+ * </ul>
+ *
+ * <p>Both regressions live in Spring Boot's auto-configuration wiring, so this test drives that
+ * wiring directly: it loads {@link OtlpMetricsExportAutoConfiguration} (plus {@link
+ * MetricsAutoConfiguration} for the {@link io.micrometer.core.instrument.Clock} bean it depends on)
+ * with {@code management.otlp.metrics.export.enabled=true} and asserts (1) the context starts
+ * without failure — the #1534 crash — and the auto-configured {@link OtlpMeterRegistry} bean is
+ * present (the #1418 regression), (2) it is wired into {@link Monitors} by {@link
+ * MetricsCollector}, and (3) metrics recorded via {@link Monitors} are exported over HTTP to a
+ * collector endpoint.
  */
 public class OtlpMetricsConfigurationTest {
 
@@ -73,17 +82,36 @@ public class OtlpMetricsConfigurationTest {
     }
 
     @Test
-    public void otlpRegistryIsWiredIntoMonitorsAndExportsMetrics() {
+    public void otlpRegistryIsAutoConfiguredWiredIntoMonitorsAndExportsMetrics() {
+        String url = "http://localhost:" + server.port() + "/v1/metrics";
+
         ApplicationContextRunner runner =
-                new ApplicationContextRunner().withUserConfiguration(TestConfig.class);
+                new ApplicationContextRunner()
+                        .withConfiguration(
+                                AutoConfigurations.of(
+                                        MetricsAutoConfiguration.class,
+                                        OtlpMetricsExportAutoConfiguration.class))
+                        .withUserConfiguration(MetricsCollectorConfig.class)
+                        .withPropertyValues(
+                                "management.otlp.metrics.export.enabled=true",
+                                "management.otlp.metrics.export.url=" + url,
+                                // Emit immediately so the counter is flushed without waiting for
+                                // the default 60s step.
+                                "management.otlp.metrics.export.step=1s");
+
         runner.run(
                 context -> {
+                    // #1534: on micrometer-registry-otlp 1.14.6 the auto-configuration throws
+                    // NoClassDefFoundError building the registry, and the context fails to start.
+                    assertThat(context).hasNotFailed();
+
+                    // #1418: the OTLP registry must actually be auto-configured and present.
                     OtlpMeterRegistry registry = context.getBean(OtlpMeterRegistry.class);
                     assertNotNull("OTLP meter registry bean must be present", registry);
 
-                    // MetricsCollector wires every MeterRegistry bean into Monitors, so
-                    // a counter recorded through Monitors must be visible in the OTLP
-                    // registry and exported to the collector endpoint.
+                    // MetricsCollector wires every MeterRegistry bean into Monitors, so a counter
+                    // recorded through Monitors must be visible in the OTLP registry and exported
+                    // to the collector endpoint.
                     Counter counter =
                             Monitors.getCounter("otlp_regression_test_counter", "source", "test");
                     counter.increment(3);
@@ -93,14 +121,14 @@ public class OtlpMetricsConfigurationTest {
                             registry.find("otlp_regression_test_counter").counter().count(),
                             0.001);
 
-                    // Closing the registry flushes any pending meters to the collector,
-                    // so the embedded HTTP server receives the export request before
-                    // the context tears down.
+                    // Closing the registry flushes any pending meters to the collector, so the
+                    // embedded HTTP server receives the export request before the context tears
+                    // down.
                     registry.close();
                 });
 
-        // The collector should have received at least one OTLP request carrying our
-        // counter. A small bounded wait covers the async close flush.
+        // The collector should have received at least one OTLP request carrying our counter. A
+        // small bounded wait covers the async close flush.
         try {
             server.awaitRequest(2000);
         } catch (InterruptedException e) {
@@ -113,57 +141,16 @@ public class OtlpMetricsConfigurationTest {
     }
 
     /**
-     * Mirrors the server's metrics wiring: an {@link OtlpMeterRegistry} bean configured exactly as
-     * Spring Boot's auto-configuration would, a {@link SimpleMeterRegistry} alongside it so the
-     * composite path is exercised, and a {@link MetricsCollector} that wires both into {@link
-     * Monitors}.
+     * Wires every auto-configured {@link MeterRegistry} bean into {@link Monitors} through {@link
+     * MetricsCollector}, exactly as the server does at runtime.
      */
     @Configuration
-    static class TestConfig {
-
-        @Bean
-        OtlpMeterRegistry otlpMeterRegistry() {
-            OtlpConfig config =
-                    new OtlpConfig() {
-                        @Override
-                        public String url() {
-                            return "http://localhost:"
-                                    + CapturingOtlpServerHolder.PORT
-                                    + "/v1/metrics";
-                        }
-
-                        // Emit immediately so the counter is flushed without waiting
-                        // for the default 60s step.
-                        @Override
-                        public Duration step() {
-                            return Duration.ofSeconds(1);
-                        }
-
-                        @Override
-                        public String get(String key) {
-                            return null;
-                        }
-                    };
-            return new OtlpMeterRegistry(config, Clock.SYSTEM);
-        }
-
-        @Bean
-        SimpleMeterRegistry simpleMeterRegistry() {
-            return new SimpleMeterRegistry();
-        }
+    static class MetricsCollectorConfig {
 
         @Bean
         MetricsCollector metricsCollector(MeterRegistry... registries) {
             return new MetricsCollector(registries);
         }
-    }
-
-    /**
-     * Holder used by {@link TestConfig} to resolve the collector port, which is only known after
-     * the test server starts. Set in {@link OtlpMetricsConfigurationTest#startServer()}.
-     */
-    static final class CapturingOtlpServerHolder {
-        static volatile int PORT;
     }
 
     /** Minimal HTTP server that records every POST received on /v1/metrics. */
@@ -175,11 +162,10 @@ public class OtlpMetricsConfigurationTest {
             httpServer = HttpServer.create(new InetSocketAddress(port), 0);
             httpServer.createContext("/v1/metrics", new CapturingHandler(this));
             httpServer.start();
-            CapturingOtlpServerHolder.PORT = httpServer.getAddress().getPort();
         }
 
-        InetSocketAddress address() {
-            return httpServer.getAddress();
+        int port() {
+            return httpServer.getAddress().getPort();
         }
 
         void awaitRequest(int timeoutMillis) throws InterruptedException {

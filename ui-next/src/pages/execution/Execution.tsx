@@ -405,6 +405,7 @@ export default function Execution() {
                 <FlowExecutionContextProvider
                   onExpandDynamic={expandDynamic}
                   onCollapseDynamic={collapseDynamic}
+                  onSelectTask={selectTask}
                 >
                   <Flow
                     flowActor={flowActor}
@@ -554,6 +555,7 @@ export default function Execution() {
               workflowName={execution?.workflowName ?? ""}
               workflowStatus={execution?.status as string}
               doWhileSelection={doWhileSelection}
+              workflowDefinition={execution?.workflowDefinition}
             />
           </Box>
         )

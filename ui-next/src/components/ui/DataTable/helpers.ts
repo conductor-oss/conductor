@@ -64,6 +64,8 @@ export const defaultFilterItemsSorter = (filteredItems: any[]) =>
     return 0;
   });
 
+export const booleanRenderer = (value: boolean) => (value ? "Yes" : "No");
+
 export const formatForColumn = (column: LegacyColumn): Format<any> => {
   if (column?.type === ColumnCustomType.DATE) {
     return (row: any) => timestampRenderer(_get(row, column.name as string));
@@ -75,7 +77,11 @@ export const formatForColumn = (column: LegacyColumn): Format<any> => {
     return (row: any) =>
       column.renderer!(_get(row, column.name as string), row);
   }
-  return (row: any) => _get(row, column.name as string);
+  return (row: any) => {
+    const value = _get(row, column.name as string);
+    // React renders nothing for raw booleans, so label them like the filter does
+    return typeof value === "boolean" ? booleanRenderer(value) : value;
+  };
 };
 
 export const createDefaultFilterObject = (

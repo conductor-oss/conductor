@@ -62,6 +62,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 
@@ -883,7 +884,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 if (workflow.getFailedTaskId() != null) {
                     input.put("failureTaskId", workflow.getFailedTaskId());
                 }
-                input.put("failedWorkflow", workflow);
+                // Convert to a Map: the JsonPath provider used by ParametersUtils cannot traverse
+                // POJOs, so a raw WorkflowModel makes nested references like
+                // ${workflow.input.failedWorkflow.workflowId} silently resolve to null (#1164).
+                input.put(
+                        "failedWorkflow",
+                        OBJECT_MAPPER.convertValue(
+                                workflow, new TypeReference<Map<String, Object>>() {}));
 
                 try {
                     String failureWFId = idGenerator.generate();
@@ -1656,30 +1663,39 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
     /**
      * @param workflowId the workflow to be resumed
-     * @throws IllegalStateException if the workflow is not in PAUSED state
+     * @throws IllegalStateException if the workflow is not in PAUSED state (unless it is already
+     *     RUNNING, in which case resume is a no-op)
      */
     @Override
     public void resumeWorkflow(String workflowId) {
-        WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
-        if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
-            throw new IllegalStateException(
-                    "The workflow "
-                            + workflowId
-                            + " is not PAUSED so cannot resume. "
-                            + "Current status is "
-                            + workflow.getStatus().name());
+        try {
+            executionLockService.acquireLock(workflowId, 60000);
+            WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
+            if (workflow.getStatus().equals(WorkflowModel.Status.RUNNING)) {
+                return; // Already resumed!
+            }
+            if (!workflow.getStatus().equals(WorkflowModel.Status.PAUSED)) {
+                throw new IllegalStateException(
+                        "The workflow "
+                                + workflowId
+                                + " is not PAUSED so cannot resume. "
+                                + "Current status is "
+                                + workflow.getStatus().name());
+            }
+            workflow.setStatus(WorkflowModel.Status.RUNNING);
+            workflow.setLastRetriedTime(System.currentTimeMillis());
+            // Add to decider queue
+            queueDAO.push(
+                    DECIDER_QUEUE,
+                    workflow.getWorkflowId(),
+                    workflow.getPriority(),
+                    properties.getWorkflowOffsetTimeout().getSeconds());
+            executionDAOFacade.updateWorkflow(workflow);
+            // Notify on workflow resumed.
+            notifyWorkflowStatusListener(workflow, WorkflowEventType.RESUMED);
+        } finally {
+            executionLockService.releaseLock(workflowId);
         }
-        workflow.setStatus(WorkflowModel.Status.RUNNING);
-        workflow.setLastRetriedTime(System.currentTimeMillis());
-        // Add to decider queue
-        queueDAO.push(
-                DECIDER_QUEUE,
-                workflow.getWorkflowId(),
-                workflow.getPriority(),
-                properties.getWorkflowOffsetTimeout().getSeconds());
-        executionDAOFacade.updateWorkflow(workflow);
-        // Notify on workflow resumed.
-        notifyWorkflowStatusListener(workflow, WorkflowEventType.RESUMED);
         decide(workflowId);
     }
 
