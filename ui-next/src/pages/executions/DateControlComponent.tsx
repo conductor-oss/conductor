@@ -85,6 +85,7 @@ export interface DateControlComponentProps {
   startDialogHelpText?: string | null;
   endDialogTitle?: string | null;
   endDialogHelpText?: string | null;
+  menuPlacement?: TooltipProps["placement"];
 }
 
 export const DateControlComponent = ({
@@ -111,6 +112,7 @@ export const DateControlComponent = ({
   startDialogHelpText = null,
   endDialogTitle = null,
   endDialogHelpText = null,
+  menuPlacement = "bottom",
 }: DateControlComponentProps) => {
   const handleCommonStartDate = (time: string) => {
     const { rangeStart, rangeEnd } = commonlyUsedDateTime(time);
@@ -172,6 +174,7 @@ export const DateControlComponent = ({
               {startTimeLabel}:
             </MuiTypography>
             <CustomisedTooltip
+              placement={menuPlacement}
               open={openStartDatePicker}
               slotProps={{
                 popper: {
@@ -293,6 +296,7 @@ export const DateControlComponent = ({
                 {endTimeLabel}:
               </MuiTypography>
               <CustomisedTooltip
+                placement={menuPlacement}
                 open={openEndDatePicker}
                 slotProps={{
                   popper: {
