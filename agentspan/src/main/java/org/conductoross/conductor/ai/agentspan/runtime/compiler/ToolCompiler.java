@@ -157,10 +157,10 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
-     * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
-     * tool's own name, and SWITCH, which is also used for orchestration. Decision tool calls carry
-     * an explicit tool marker. A floor, not a closed set: a media or RAG tool's config may name its
-     * own task type.
+     * Task types the event listener recognizes as tool calls from their type alone, for the purpose
+     * of emitting tool call and tool result events. SIMPLE uses the worker's name as its type, and
+     * SWITCH also handles routing; decision tools carry an explicit tool marker instead. Custom
+     * media and RAG task types are detected separately.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
