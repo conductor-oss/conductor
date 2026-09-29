@@ -14,7 +14,9 @@ package org.conductoross.conductor.ai.agentspan.runtime.service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
@@ -43,6 +46,8 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentcore.BedrockAgentCoreClient;
 import software.amazon.awssdk.services.bedrockagentcore.model.InvokeAgentRuntimeRequest;
 import software.amazon.awssdk.services.bedrockagentcore.model.InvokeAgentRuntimeResponse;
+import software.amazon.awssdk.services.bedrockagentcorecontrol.BedrockAgentCoreControlClient;
+import software.amazon.awssdk.services.bedrockagentcorecontrol.model.ListAgentRuntimesRequest;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
@@ -125,6 +130,49 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
         log.warn(
                 "Bedrock AgentCore does not support cancellation; ignoring cancel for executionId={}",
                 request.getExecutionId());
+    }
+
+    // --- discovery ---
+
+    /**
+     * Lists available AgentCore runtimes visible with this credential. The secret that carries
+     * these credentials must use the key {@code agentcoreRegion} (not {@code region}) so the
+     * service can distinguish an AgentCore secret from a plain Bedrock secret.
+     *
+     * <p>Discovery is best-effort: any error returns an empty list rather than failing the whole
+     * agent listing.
+     */
+    public List<AgentSummary> listExternalAgents(Map<String, String> credentials, String region) {
+        String resolvedRegion = StringUtils.defaultIfBlank(region, DEFAULT_REGION);
+        AwsCredentialsProvider credentialsProvider = credentialsFor(credentials, resolvedRegion);
+        try (BedrockAgentCoreControlClient controlClient =
+                BedrockAgentCoreControlClient.builder()
+                        .region(Region.of(resolvedRegion))
+                        .credentialsProvider(credentialsProvider)
+                        .build()) {
+            List<AgentSummary> agents = new ArrayList<>();
+            controlClient
+                    .listAgentRuntimes(ListAgentRuntimesRequest.builder().build())
+                    .agentRuntimes()
+                    .forEach(
+                            runtime ->
+                                    agents.add(
+                                            AgentSummary.builder()
+                                                    .name(StringUtils.defaultIfBlank(
+                                                            runtime.agentRuntimeName(),
+                                                            runtime.agentRuntimeId()))
+                                                    .type(AGENT_TYPE)
+                                                    .endpoint(runtime.agentRuntimeArn())
+                                                    .description(runtime.agentRuntimeId())
+                                                    .build()));
+            log.debug(
+                    "Discovered {} AgentCore runtime(s) in {}", agents.size(), resolvedRegion);
+            return agents;
+        } catch (Exception e) {
+            log.warn(
+                    "Failed to list AgentCore runtimes in {}: {}", resolvedRegion, e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     // --- private helpers ---

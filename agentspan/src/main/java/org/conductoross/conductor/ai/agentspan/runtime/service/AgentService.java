@@ -80,6 +80,7 @@ public class AgentService {
     private final MetadataService metadataService;
     private final AzureFoundryAgentClient azureFoundryAgentClient;
     private final BedrockAgentClient bedrockAgentClient;
+    private final BedrockAgentCoreAgentClient bedrockAgentCoreAgentClient;
     private final SecretsDAO secretsDAO;
 
     /**
@@ -441,6 +442,8 @@ public class AgentService {
                         com.fasterxml.jackson.databind.JsonNode secretJson =
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
+                        // agentcoreRegion discriminates AgentCore secrets from plain Bedrock (region)
+                        String agentcoreRegion = secretJson.path("agentcoreRegion").asText(null);
                         String region = secretJson.path("region").asText(null);
                         // Discovery is a control-plane scan with no task behind it, so this is the
                         // one place that reads secrets directly — the clients are handed values.
@@ -451,6 +454,12 @@ public class AgentService {
                             agents.addAll(
                                     azureFoundryAgentClient.listExternalAgents(
                                             credentials, endpoint));
+                        } else if (agentcoreRegion != null
+                                && !agentcoreRegion.isBlank()
+                                && bedrockAgentCoreAgentClient != null) {
+                            agents.addAll(
+                                    bedrockAgentCoreAgentClient.listExternalAgents(
+                                            credentials, agentcoreRegion));
                         } else if (region != null
                                 && !region.isBlank()
                                 && bedrockAgentClient != null) {
@@ -933,6 +942,7 @@ public class AgentService {
                         com.fasterxml.jackson.databind.JsonNode secretJson =
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
+                        String agentcoreRegion = secretJson.path("agentcoreRegion").asText(null);
                         String region = secretJson.path("region").asText(null);
                         // Discovery is a control-plane scan with no task behind it, so this is the
                         // one place that reads secrets directly — the clients are handed values.
@@ -944,6 +954,11 @@ public class AgentService {
                                     azureFoundryAgentClient.getExternalAgentDef(
                                             name, credentials, endpoint);
                             if (def != null) return def;
+                        } else if (agentcoreRegion != null
+                                && !agentcoreRegion.isBlank()
+                                && bedrockAgentCoreAgentClient != null) {
+                            // AgentCore runtimes are identified by ARN (endpoint field on summary)
+                            // rather than a resolvable name, so skip the def lookup here.
                         } else if (region != null
                                 && !region.isBlank()
                                 && bedrockAgentClient != null) {
