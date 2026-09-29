@@ -58,23 +58,16 @@ public class DecisionEvaluator implements Evaluator {
 
     @Override
     public Object evaluate(String expression, Object input) {
-        DecisionRequest request;
+        DecisionResult result;
         String question;
         try {
             if (!(input instanceof Map<?, ?>)) {
                 throw new IllegalArgumentException("decision evaluator input must be an object");
             }
-            request = mapper.convertValue(input, DecisionRequest.class);
+            DecisionRequest request = mapper.convertValue(input, DecisionRequest.class);
             DecisionValidation.request(request);
             question = questionKey(expression, request);
-        } catch (NonRetryableException | IllegalArgumentException e) {
-            throw new NonTransientException(e.getMessage(), e);
-        }
-
-        DecisionResult result;
-        try {
             result = client.decide(request);
-            DecisionValidation.result(request, result);
         } catch (NonRetryableException | IllegalArgumentException e) {
             throw new NonTransientException(e.getMessage(), e);
         }

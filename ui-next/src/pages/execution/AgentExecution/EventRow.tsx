@@ -269,9 +269,7 @@ export function EventRow({ event }: EventRowProps) {
     return <CondensedSeparator event={event} />;
   }
   const visual = getEventVisual(event);
-  const hasDetail =
-    event.detail != null ||
-    (event.type === EventType.DECISION && event.result != null);
+  const hasDetail = event.detail != null;
 
   const tokenLabel =
     event.tokens && event.tokens.totalTokens > 0

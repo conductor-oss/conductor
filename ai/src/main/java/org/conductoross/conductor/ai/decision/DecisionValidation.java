@@ -12,8 +12,6 @@
  */
 package org.conductoross.conductor.ai.decision;
 
-import java.util.Map;
-
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -28,12 +26,8 @@ public final class DecisionValidation {
         require(
                 StringUtils.isNotBlank(request.model()) && StringUtils.isNotBlank(request.state()),
                 "model and state required");
-        questions(request.questions());
-    }
-
-    public static void questions(Map<String, DecisionQuestion> questions) {
-        require(!CollectionUtils.isEmpty(questions), "questions required");
-        questions.forEach(DecisionValidation::validateQuestion);
+        require(!CollectionUtils.isEmpty(request.questions()), "questions required");
+        request.questions().forEach(DecisionValidation::validateQuestion);
     }
 
     private static void validateQuestion(String name, DecisionQuestion q) {

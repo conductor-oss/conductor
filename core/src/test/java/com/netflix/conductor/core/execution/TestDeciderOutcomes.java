@@ -123,7 +123,7 @@ public class TestDeciderOutcomes {
 
         @Bean(TASK_TYPE_SWITCH)
         public Switch switchTask() {
-            return new Switch();
+            return new Switch(Map.of());
         }
 
         @Bean(TASK_TYPE_JOIN)

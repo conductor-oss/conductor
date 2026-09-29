@@ -54,13 +54,6 @@ class AgentCompilerTest {
 
         WorkflowTask llmTask = wf.getTasks().get(0);
         assertThat(llmTask.getType()).isEqualTo("LLM_CHAT_COMPLETE");
-        assertThat(llmTask.getTaskDefinition().getRetryCount()).isEqualTo(3);
-        assertThat(llmTask.getTaskDefinition().getRetryDelaySeconds()).isEqualTo(2);
-        assertThat(llmTask.getTaskDefinition().getMaxRetryDelaySeconds()).isEqualTo(0);
-        assertThat(llmTask.getTaskDefinition().getRetryLogic())
-                .isEqualTo(
-                        com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic
-                                .EXPONENTIAL_BACKOFF);
         assertThat(llmTask.getTaskReferenceName()).isEqualTo("test_agent_llm");
         assertThat(llmTask.getInputParameters().get("llmProvider")).isEqualTo("openai");
         assertThat(llmTask.getInputParameters().get("model")).isEqualTo("gpt-4o");

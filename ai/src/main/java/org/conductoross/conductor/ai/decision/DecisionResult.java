@@ -26,15 +26,6 @@ public record DecisionResult(
         Usage usage,
         long latencyMs,
         String requestId) {
-    public DecisionResult(
-            String model,
-            Map<String, Answer> answers,
-            Usage usage,
-            long latencyMs,
-            String requestId) {
-        this(null, model, answers, usage, latencyMs, requestId);
-    }
-
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Answer(
             DecisionQuestion.Type type,

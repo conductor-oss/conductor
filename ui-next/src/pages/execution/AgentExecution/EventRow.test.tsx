@@ -16,68 +16,57 @@ const output = {
 };
 
 describe("Decision inference rendering", () => {
-  it.each(["task", "decision event"])(
-    "renders %s as decision with structured inference details",
-    (source) => {
-      const run = transformWorkflowExecutionToAgentRun({
-        workflowId: "run-1",
-        workflowName: "decision_support_agent",
-        status: "COMPLETED",
-        tasks: [
-          {
-            taskId: "task-1",
-            referenceTaskName: "support_decision",
-            taskType: "SWITCH",
-            status: "COMPLETED",
-            inputData: {
-              _conductorDeferredEvaluator: true,
-              model: "jev-1.13",
-              state: "Duplicate charge",
-            },
-            outputData: output,
+  it("renders a decision task with structured inference details", () => {
+    const run = transformWorkflowExecutionToAgentRun({
+      workflowId: "run-1",
+      workflowName: "decision_support_agent",
+      status: "COMPLETED",
+      tasks: [
+        {
+          taskId: "task-1",
+          referenceTaskName: "support_decision",
+          taskType: "SWITCH",
+          status: "COMPLETED",
+          inputData: {
+            _conductorDeferredEvaluator: true,
+            model: "jev-1.13",
+            state: "Duplicate charge",
           },
-        ],
-        workflowDefinition: { metadata: { agentDef: {} } },
-      } as unknown as WorkflowExecution);
-      const events = run.turns.flatMap((turn) => turn.events);
-      expect(
-        events.filter((event) => event.type === EventType.TOOL_CALL),
-      ).toHaveLength(0);
-      expect(run.output).toEqual(output);
-      // The server's existing SSE payload puts structured answers in result.
-      const event: AgentEvent =
-        source === "task"
-          ? events.find((event) => event.type === EventType.DECISION)!
-          : {
-              id: "event-1",
-              type: EventType.DECISION,
-              timestamp: 0,
-              summary: "",
-              result: output,
-            };
-      expect(event.type).toBe("decision");
-      render(<EventRow event={event} />);
-      const label = screen.getByText("decision");
-      expect(label.closest(".MuiChip-root")).toHaveStyle({ color: "#9e9e9e" });
-      expect(screen.queryByText("Tool")).not.toBeInTheDocument();
-      fireEvent.click(label);
-      expect(screen.getByText("Model")).toBeInTheDocument();
-      expect(screen.getAllByText("jev-1.13").length).toBeGreaterThan(0);
-      expect(
-        screen.getByText(JSON.stringify(output.answers, null, 2), {
-          normalizer: (text) => text,
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(JSON.stringify(output.usage, null, 2), {
-          normalizer: (text) => text,
-        }),
-      ).toBeInTheDocument();
-      expect(screen.getByText("latencyMs")).toBeInTheDocument();
-      expect(screen.getByText("25")).toBeInTheDocument();
-      expect(screen.getByText("request-1")).toBeInTheDocument();
-    },
-  );
+          outputData: output,
+        },
+      ],
+      workflowDefinition: { metadata: { agentDef: {} } },
+    } as unknown as WorkflowExecution);
+    const events = run.turns.flatMap((turn) => turn.events);
+    expect(
+      events.filter((event) => event.type === EventType.TOOL_CALL),
+    ).toHaveLength(0);
+    expect(run.output).toEqual(output);
+    const event: AgentEvent = events.find(
+      (event) => event.type === EventType.DECISION,
+    )!;
+    expect(event.type).toBe("decision");
+    render(<EventRow event={event} />);
+    const label = screen.getByText("decision");
+    expect(label.closest(".MuiChip-root")).toHaveStyle({ color: "#9e9e9e" });
+    expect(screen.queryByText("Tool")).not.toBeInTheDocument();
+    fireEvent.click(label);
+    expect(screen.getByText("Model")).toBeInTheDocument();
+    expect(screen.getAllByText("jev-1.13").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(JSON.stringify(output.answers, null, 2), {
+        normalizer: (text) => text,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(JSON.stringify(output.usage, null, 2), {
+        normalizer: (text) => text,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("latencyMs")).toBeInTheDocument();
+    expect(screen.getByText("25")).toBeInTheDocument();
+    expect(screen.getByText("request-1")).toBeInTheDocument();
+  });
 
   it("omits an unreported request ID", () => {
     render(
@@ -87,7 +76,7 @@ describe("Decision inference rendering", () => {
           type: EventType.DECISION,
           timestamp: 0,
           summary: "",
-          result: { ...output, requestId: undefined },
+          detail: { output: { ...output, requestId: undefined } },
         }}
       />,
     );

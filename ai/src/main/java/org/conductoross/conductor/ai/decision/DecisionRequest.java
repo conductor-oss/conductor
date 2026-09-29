@@ -15,8 +15,4 @@ package org.conductoross.conductor.ai.decision;
 import java.util.Map;
 
 public record DecisionRequest(
-        String provider, String model, String state, Map<String, DecisionQuestion> questions) {
-    public DecisionRequest(String model, String state, Map<String, DecisionQuestion> questions) {
-        this(null, model, state, questions);
-    }
-}
+        String provider, String model, String state, Map<String, DecisionQuestion> questions) {}

@@ -724,7 +724,7 @@ The AI module reads from standard environment variables automatically. Set the e
 | Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`, Vertex AI path only) |
 | Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (Vertex AI path only) |
 | Ollama | `OLLAMA_BASE_URL` | Ollama server URL, e.g. `http://10.0.0.105:11434` (default: `http://localhost:11434`). `OLLAMA_HOST` is honored as a fallback. |
-| Decision | `DECISION_API_KEY` | API key for the decision evaluator (`JEV_API_KEY` still honored) |
+| Decision | `DECISION_API_KEY` | API key for the decision evaluator |
 | Decision | `DECISION_PROVIDER` | Default decision provider (default: `openrouter`) |
 
 ### Usage

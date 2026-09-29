@@ -69,7 +69,6 @@ public class HttpDecisionClient implements DecisionClient {
 
     @Override
     public DecisionResult decide(DecisionRequest input) {
-        DecisionValidation.request(input);
         DecisionConfiguration.Route route = config.resolve(input.provider(), input.model());
         DecisionApiAdapter adapter = adapters.get(route.apiShape());
         requireResponse(adapter != null, "Unknown decision API shape: " + route.apiShape());
@@ -109,21 +108,11 @@ public class HttpDecisionClient implements DecisionClient {
                 byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
                 requireResponse(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
                 JsonNode data = mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
-                DecisionResult decoded =
+                DecisionResult result =
                         adapter.decode(
                                 data,
                                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started),
                                 route.provider());
-                DecisionResult result =
-                        decoded.provider() != null
-                                ? decoded
-                                : new DecisionResult(
-                                        route.provider(),
-                                        decoded.model(),
-                                        decoded.answers(),
-                                        decoded.usage(),
-                                        decoded.latencyMs(),
-                                        decoded.requestId());
                 DecisionValidation.result(input, result);
                 return result;
             }

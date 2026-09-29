@@ -101,6 +101,7 @@ class HttpDecisionClientTest {
                             String selectedProvider) {
                         assertEquals("custom", selectedProvider);
                         return new DecisionResult(
+                                selectedProvider,
                                 "jev-1.13",
                                 Map.of(
                                         "team",
@@ -185,6 +186,7 @@ class HttpDecisionClientTest {
 
     private DecisionRequest request() {
         return new DecisionRequest(
+                null,
                 "jev-1.13",
                 "Duplicate charge",
                 Map.of(
@@ -225,6 +227,7 @@ class HttpDecisionClientTest {
     void mapsBooleanAndScoreAnswers() throws Exception {
         DecisionRequest input =
                 new DecisionRequest(
+                        null,
                         "jev-1.13",
                         "State",
                         Map.of(
@@ -254,14 +257,6 @@ class HttpDecisionClientTest {
                 mapper.readTree(server.takeRequest().getBody().readUtf8())
                         .at("/questions/urgent/type")
                         .asText());
-    }
-
-    @Test
-    void invalidInputDoesNotSendRequests() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> client.decide(new DecisionRequest("m", "", Map.of())));
-        assertEquals(0, server.getRequestCount());
     }
 
     @Test

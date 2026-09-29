@@ -45,10 +45,6 @@ public class Switch extends WorkflowSystemTask {
 
     private final Map<String, Evaluator> evaluators;
 
-    public Switch() {
-        this(Map.of());
-    }
-
     @Autowired
     public Switch(Map<String, Evaluator> evaluators) {
         super(TASK_TYPE_SWITCH);
@@ -76,10 +72,6 @@ public class Switch extends WorkflowSystemTask {
     @Override
     public boolean execute(
             WorkflowModel workflow, TaskModel task, WorkflowExecutor workflowExecutor) {
-        if (isDeferred(task) && !task.getStatus().isTerminal()) {
-            evaluate(task);
-            return true;
-        }
         task.setStatus(TaskModel.Status.COMPLETED);
         return true;
     }

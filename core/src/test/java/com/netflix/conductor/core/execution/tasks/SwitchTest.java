@@ -84,16 +84,6 @@ public class SwitchTest {
         assertFalse(subject().isAsync(task));
     }
 
-    @Test
-    public void noArgConstructorKeepsLegacyBehaviour() {
-        Switch sw = new Switch();
-        TaskModel task = switchTask("decision");
-        task.getInputData().remove(Switch.DEFERRED_EVALUATOR);
-        assertFalse(sw.isAsync(task));
-        sw.execute(workflow, task, executor);
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
-    }
-
     // ── Category 2: deferred evaluator runs in the executable ─────────────────────────
 
     @Test
@@ -127,7 +117,7 @@ public class SwitchTest {
         TaskModel task = switchTask("decision");
         when(deferred.evaluate(anyString(), any())).thenReturn("technical");
 
-        sw.execute(workflow, task, executor);
+        sw.start(workflow, task, executor);
 
         assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
         assertEquals("technical", task.getOutputData().get(Switch.SELECTED_CASE));
@@ -158,18 +148,6 @@ public class SwitchTest {
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertFalse(task.getStatus().isRetriable());
-    }
-
-    @Test
-    public void deferredExecuteDoesNotReEvaluateATerminalTask() {
-        Switch sw = subject();
-        TaskModel task = switchTask("decision");
-        task.setStatus(TaskModel.Status.COMPLETED);
-
-        sw.execute(workflow, task, executor);
-
-        verify(deferred, never()).evaluate(anyString(), any());
-        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
     }
 
     @Test
