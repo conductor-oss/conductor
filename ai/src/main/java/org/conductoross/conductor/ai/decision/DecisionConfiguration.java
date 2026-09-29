@@ -57,35 +57,65 @@ public class DecisionConfiguration {
     public record Route(String provider, String endpoint, String apiKey, String apiShape) {}
 
     public Route resolve(String requestedProvider, String model) {
-        String selected = StringUtils.defaultIfBlank(requestedProvider, provider);
-        requireResponse(StringUtils.isNotBlank(selected), "Decision provider is required");
-        Provider settings = providers.getOrDefault(selected, new Provider());
-        Model modelSettings = settings.getModels().getOrDefault(model, new Model());
-        // Model overrides provider; provider overrides the global API-shape default. Global
-        // credentials and endpoint belong only to the default provider, never to another one.
+        String selectedProvider = resolveProvider(requestedProvider);
+        Provider providerSettings = providers.getOrDefault(selectedProvider, new Provider());
+        Model modelSettings = providerSettings.getModels().getOrDefault(model, new Model());
+
+        String shape = resolveApiShape(providerSettings, modelSettings);
+        String url = resolveEndpoint(selectedProvider, providerSettings, modelSettings, shape);
+        String key = resolveApiKey(selectedProvider, providerSettings);
+        return new Route(selectedProvider, url, key, shape);
+    }
+
+    private String resolveProvider(String requestedProvider) {
+        String selectedProvider = StringUtils.defaultIfBlank(requestedProvider, provider);
+        requireResponse(StringUtils.isNotBlank(selectedProvider), "Decision provider is required");
+        return selectedProvider;
+    }
+
+    private String resolveApiShape(Provider providerSettings, Model modelSettings) {
+        // A model setting is most specific, followed by its provider and then the global default.
         String shape =
                 StringUtils.firstNonBlank(
-                        modelSettings.getApiShape(), settings.getApiShape(), apiShape);
-        String url =
+                        modelSettings.getApiShape(), providerSettings.getApiShape(), apiShape);
+        requireResponse(StringUtils.isNotBlank(shape), "Decision API shape is required");
+        return shape;
+    }
+
+    private String resolveEndpoint(
+            String selectedProvider, Provider providerSettings, Model modelSettings, String shape) {
+        String resolvedEndpoint =
                 StringUtils.firstNonBlank(
                         modelSettings.getEndpoint(),
-                        settings.getEndpoint(),
-                        selected.equals(provider) ? endpoint : null);
-        requireResponse(StringUtils.isNotBlank(shape), "Decision API shape is required");
-        if (StringUtils.isBlank(url) && "system-one".equals(shape)) {
-            url =
-                    switch (selected) {
-                        case "openrouter" -> "https://openrouter.ai/api/v1/systemone";
-                        case "typesafe" -> "https://api.typesafe.ai/v1/systemone";
-                        default -> null;
-                    };
+                        providerSettings.getEndpoint(),
+                        isDefaultProvider(selectedProvider) ? endpoint : null);
+        if (StringUtils.isBlank(resolvedEndpoint)) {
+            resolvedEndpoint = defaultEndpoint(selectedProvider, shape);
         }
         requireResponse(
-                StringUtils.isNotBlank(url),
-                "No endpoint configured for decision provider: " + selected);
-        String key =
-                StringUtils.firstNonBlank(
-                        settings.getApiKey(), selected.equals(provider) ? apiKey : null);
-        return new Route(selected, url, key, shape);
+                StringUtils.isNotBlank(resolvedEndpoint),
+                "No endpoint configured for decision provider: " + selectedProvider);
+        return resolvedEndpoint;
+    }
+
+    private String defaultEndpoint(String selectedProvider, String shape) {
+        if (!"system-one".equals(shape)) {
+            return null;
+        }
+        return switch (selectedProvider) {
+            case "openrouter" -> "https://openrouter.ai/api/v1/systemone";
+            case "typesafe" -> "https://api.typesafe.ai/v1/systemone";
+            default -> null;
+        };
+    }
+
+    private String resolveApiKey(String selectedProvider, Provider providerSettings) {
+        // Global credentials belong only to the default provider.
+        return StringUtils.firstNonBlank(
+                providerSettings.getApiKey(), isDefaultProvider(selectedProvider) ? apiKey : null);
+    }
+
+    private boolean isDefaultProvider(String selectedProvider) {
+        return selectedProvider.equals(provider);
     }
 }
