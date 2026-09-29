@@ -541,11 +541,7 @@ export default function AgentDefinitions() {
                       onClick={() => setSelectedType(active ? null : type)}
                       variant={active ? "filled" : "outlined"}
                       sx={{
-                        borderColor: active ? providerColor(type) : "#888",
-                        backgroundColor: active
-                          ? providerColor(type)
-                          : undefined,
-                        color: active ? "#fff" : providerColor(type),
+                        borderColor: active ? undefined : "#888",
                         fontWeight: active ? 600 : 400,
                       }}
                       clickable
