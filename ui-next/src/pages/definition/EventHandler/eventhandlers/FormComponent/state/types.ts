@@ -89,11 +89,12 @@ export enum Evaluator {
   python = "python",
   "value-param" = "value-param",
 }
+// Display names only; the lowercase enum values are what the server expects.
 export const evaluatorLabel: { [key in Evaluator]: string } = {
-  javascript: "javascript",
-  graaljs: "graaljs",
-  python: "python",
-  "value-param": "value-param",
+  javascript: "JavaScript",
+  graaljs: "GraalJS",
+  python: "Python",
+  "value-param": "Value param",
 };
 
 export enum Action {

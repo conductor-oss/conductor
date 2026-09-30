@@ -45,7 +45,12 @@ import FormSection from "./FormSection";
 import { templateFor } from "./actionMeta";
 import { tabColumnStyle, tabSurfaceStyle } from "../tabLayout";
 import { useEventHandlerFormActor } from "./state/hook";
-import { Action, Evaluator, FormHandlerEvents } from "./state/types";
+import {
+  Action,
+  Evaluator,
+  FormHandlerEvents,
+  evaluatorLabel,
+} from "./state/types";
 
 /**
  * No ground of its own — the tab container paints the surface for both tabs,
@@ -313,7 +318,7 @@ const EventHandlerForm = ({
                 >
                   {Object.values(Evaluator).map((value) => (
                     <MenuItem key={value} value={value}>
-                      {value}
+                      {evaluatorLabel[value]}
                     </MenuItem>
                   ))}
                 </ConductorSelect>

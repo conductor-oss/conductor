@@ -363,23 +363,24 @@ test.describe("event handler action types", () => {
 // One condition per evaluator the server registers (core/.../evaluators).
 // Python gets the payload's keys as globals; value-param names a payload key.
 const CONDITIONS = [
-  { evaluator: "javascript", condition: "$.amount > 100" },
+  { evaluator: "javascript", label: "JavaScript", condition: "$.amount > 100" },
   {
     evaluator: "graaljs",
+    label: "GraalJS",
     condition: "$.amount > 100 && $.currency === 'USD'",
   },
-  { evaluator: "python", condition: "amount > 100" },
-  { evaluator: "value-param", condition: "approved" },
+  { evaluator: "python", label: "Python", condition: "amount > 100" },
+  { evaluator: "value-param", label: "Value param", condition: "approved" },
 ];
 
 test.describe("event handler conditions", () => {
-  for (const { evaluator, condition } of CONDITIONS) {
+  for (const { evaluator, label, condition } of CONDITIONS) {
     test(`saves a ${evaluator} condition`, async ({ page }) => {
       const name = handlerName(`cond_${evaluator.replace("-", "_")}`);
       await startNewHandler(page, name, `conductor:e2e_cond_${RUN_ID}`);
 
       const conditionSection = section(page, "condition");
-      await chooseOption(page, conditionSection, evaluator);
+      await chooseOption(page, conditionSection, label);
       await setCondition(page, condition);
       await saveHandler(page, name);
 
@@ -390,7 +391,7 @@ test.describe("event handler conditions", () => {
       await reopen(page, name);
       await expect(
         section(page, "condition").getByRole("combobox").first(),
-      ).toHaveText(evaluator);
+      ).toHaveText(label);
       await expect(
         section(page, "condition").locator(".view-lines").first(),
       ).toHaveText(condition.replace(/ /g, " "));
