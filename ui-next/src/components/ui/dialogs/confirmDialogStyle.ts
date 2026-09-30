@@ -6,6 +6,13 @@ import { colors } from "theme/tokens/variables";
 
 export const CONFIRM_FIELD_ID = "choice-dialog-confirmation-field";
 
+// Emphasis a caller writes into its own copy stays black: a page puts both the name in
+// the question and the one in "please type X to confirm" into the message, so colouring
+// them here would redden both. Pages that want the question's name red say so inline, as
+// they always have. Scoped to a bare <strong>, so anything a page styled itself keeps its
+// own treatment.
+const callerEmphasis = { "& strong:not([class])": { color: colors.black } };
+
 export const confirmDialogStyle = {
   // One width for every confirmation. These are all a short question plus, at most, a
   // typed-name field — nothing in them needs more room, and 690px stretched a one-line
@@ -54,9 +61,7 @@ export const confirmDialogStyle = {
     color: colors.gray06,
     overflowWrap: "anywhere",
     "& p": { fontSize: "14px", fontWeight: "normal" },
-    // Prose steps back, but the name a caller emphasises must not go grey with it.
-    // Scoped to bare <strong>: anything a page coloured itself keeps its own treatment.
-    "& strong:not([class])": { color: colors.black },
+    ...callerEmphasis,
   },
   // An instruction, not a field label, so it matches the message prose it continues —
   // same size and colour, with only the name inside it at full strength. It belongs to
@@ -68,6 +73,7 @@ export const confirmDialogStyle = {
     fontWeight: 400,
     color: colors.gray06,
     overflowWrap: "anywhere",
+    ...callerEmphasis,
   },
   fieldLabel: {
     display: "block",
@@ -105,10 +111,10 @@ export const confirmDialogStyle = {
       borderColor: colors.red05,
     },
   },
-  // The name the user has to read and retype, so it sits at full strength against the
-  // greyed prose around it.
+  // The name in the question, in the same red the hand-written confirmations use inline.
+  // Only the question uses it — above the input the name is text to copy, not a warning.
   name: {
     fontWeight: 600,
-    color: colors.black,
+    color: colors.failure,
   },
 };

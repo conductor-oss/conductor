@@ -107,10 +107,7 @@ export default function DeleteVersionedDialog({
   const version = deletingAll ? undefined : Number(selection);
 
   const boldName = (
-    <Box
-      component="strong"
-      sx={{ ...confirmDialogStyle.name, color: colors.red07 }}
-    >
+    <Box component="strong" sx={confirmDialogStyle.name}>
       {name}
     </Box>
   );
@@ -145,11 +142,7 @@ export default function DeleteVersionedDialog({
       confirmBtnLabel={confirmLabel}
       inputLabel={
         <>
-          Type{" "}
-          <Box component="strong" sx={confirmDialogStyle.name}>
-            {name}
-          </Box>{" "}
-          to confirm
+          Type <strong>{name}</strong> to confirm
         </>
       }
       isConfirmLoading={isDeleting}
