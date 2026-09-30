@@ -19,7 +19,7 @@ export const validateEventHandlerJson = createJsonValidator(
       report(
         "warn",
         "event",
-        "event should follow type:queue, e.g. sqs:my_queue.",
+        "event should follow type:queue, e.g. conductor:my_workflow:my_task_ref.",
       );
     }
     if (

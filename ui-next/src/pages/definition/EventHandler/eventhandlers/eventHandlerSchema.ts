@@ -12,7 +12,10 @@ import {
 export const NEW_EVENT_HANDLER_TEMPLATE: Partial<ConductorEvent> = {
   name: "",
   description: "",
-  event: "kafka:sampleConfig:sampleName",
+  // The built-in `conductor` queue: on by default in OSS and the same shape
+  // in Orkes, unlike kafka/sqs whose URI differs between the two (topic vs
+  // integration:topic). An EVENT task with sink "conductor" publishes here.
+  event: "conductor:sample_workflow:sample_task_ref",
   evaluatorType: "javascript",
   condition: "true",
   actions: [

@@ -15,24 +15,20 @@ import {
 import {
   Box,
   FormControlLabel,
-  MenuItem,
   Switch,
   Theme,
   createFilterOptions,
 } from "@mui/material";
-import { ChangeEvent, ComponentType, useRef, useState } from "react";
-import { ActorRef } from "xstate";
-
-import { EventHandlerAction } from "types/Events";
-import { Props } from "./ActionForms/common";
-
 import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import HelperText from "components/ui/inputs/HelperText";
+import { ComponentType, useRef, useState } from "react";
+import { EventHandlerAction } from "types/Events";
 import { useEventNameSuggestions } from "utils/hooks/useEventNameSuggestions";
+import { ActorRef } from "xstate";
+import { tabColumnStyle, tabSurfaceStyle } from "../tabLayout";
 import ActionCard from "./ActionCard";
 import { CompleteTask } from "./ActionForms/CompleteTask";
 import { FailTask } from "./ActionForms/FailTask";
@@ -40,17 +36,12 @@ import { StartAgentActionForm } from "./ActionForms/StartAgentTask";
 import { StartWorkflowActionForm } from "./ActionForms/StartWorkflowTask";
 import { TerminateWorkflowForm } from "./ActionForms/TerminateWorkflowTask";
 import { UpdateWorkflowForm } from "./ActionForms/UpdateWorkflowTask";
+import { Props } from "./ActionForms/common";
 import AddActionMenu from "./AddActionMenu";
 import FormSection from "./FormSection";
 import { templateFor } from "./actionMeta";
-import { tabColumnStyle, tabSurfaceStyle } from "../tabLayout";
 import { useEventHandlerFormActor } from "./state/hook";
-import {
-  Action,
-  Evaluator,
-  FormHandlerEvents,
-  evaluatorLabel,
-} from "./state/types";
+import { Action, FormHandlerEvents } from "./state/types";
 
 /**
  * No ground of its own — the tab container paints the surface for both tabs,
@@ -99,7 +90,7 @@ const EVENT_PATTERN = /^[\w-]+:.+$/;
 const eventError = (event?: string) => {
   if (!event) return "Event is required.";
   if (!EVENT_PATTERN.test(event))
-    return "Use type:queue, e.g. kafka:payments.settled.";
+    return "Use type:queue, e.g. conductor:my_workflow:my_task_ref.";
   return undefined;
 };
 
@@ -152,7 +143,7 @@ const EventHandlerForm = ({
   actor: ActorRef<FormHandlerEvents>;
 }) => {
   const [
-    { name, condition, actions, event, active, description, evaluatorType },
+    { name, condition, actions, event, active, description },
     {
       handleChangeAction,
       handleChange,
@@ -254,7 +245,7 @@ const EventHandlerForm = ({
               fullWidth
               onTextInputChange={(value) => handleChange("description", value)}
               value={description}
-              placeholder="What this handler is for"
+              placeholder="Enter description"
             />
           </FormSection>
 
@@ -263,7 +254,7 @@ const EventHandlerForm = ({
               label="Event"
               fullWidth
               required
-              placeholder="kafka:payments.settled"
+              placeholder="conductor:my_workflow:my_task_ref"
               id="event-string-input"
               options={suggestions}
               value={event}
@@ -296,42 +287,20 @@ const EventHandlerForm = ({
                 return filtered;
               }}
             />
-            <HelperText>
-              The queue this handler listens on, as <code>source:queue</code> —
-              for example <code>kafka:payments.settled</code>.
+            <HelperText sx={{ pt: 0 }}>
+              Queue to listen on, e.g.{" "}
+              <code>conductor:my_workflow:my_task_ref</code>.
             </HelperText>
           </FormSection>
 
-          <FormSection
-            title="Condition"
-            id="event-handler-section-condition"
-            action={
-              <Box sx={{ width: 150 }}>
-                <ConductorSelect
-                  fullWidth
-                  size="small"
-                  value={evaluatorType || Evaluator.javascript}
-                  inputProps={{ "aria-label": "Evaluator" }}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                    handleChange("evaluatorType", e.target.value)
-                  }
-                >
-                  {Object.values(Evaluator).map((value) => (
-                    <MenuItem key={value} value={value}>
-                      {evaluatorLabel[value]}
-                    </MenuItem>
-                  ))}
-                </ConductorSelect>
-              </Box>
-            }
-          >
+          <FormSection title="Condition" id="event-handler-section-condition">
             <ConductorCodeBlockInput
               label="Condition (Trigger if evaluated to true)"
               language="javascript"
               value={condition}
               onChange={(val) => handleChange("condition", val)}
             />
-            <HelperText>
+            <HelperText sx={{ pt: 0 }}>
               Runs on every matching event when empty. Actions fire only if this
               evaluates to true.
             </HelperText>

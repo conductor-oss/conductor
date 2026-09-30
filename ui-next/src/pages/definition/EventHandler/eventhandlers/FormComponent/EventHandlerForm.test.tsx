@@ -66,8 +66,6 @@ vi.mock("components/ui/inputs/ConductorSelect", () => ({
       <option value="start_agent">Start Agent</option>
       <option value="terminate_workflow">Terminate Workflow</option>
       <option value="update_workflow_variables">Update Variables</option>
-      <option value="javascript">javascript</option>
-      <option value="graaljs">graaljs</option>
     </select>
   ),
 }));
@@ -180,17 +178,6 @@ describe("EventHandlerForm — fields write to machine context", () => {
     fireEvent.click(screen.getByLabelText("Active"));
 
     expect(definition().active).toBe(false);
-  });
-
-  it("writes the evaluator chosen in the Condition header", () => {
-    const { definition } = renderForm({ actions: [] });
-
-    expect(screen.getByLabelText("Evaluator")).toHaveValue("javascript");
-    fireEvent.change(screen.getByLabelText("Evaluator"), {
-      target: { value: "graaljs" },
-    });
-
-    expect(definition().evaluatorType).toBe("graaljs");
   });
 
   it("shows Name is required only after the name has been edited", () => {

@@ -4,15 +4,7 @@ import { EventFormMachineTypes } from "./types";
 export const useEventHandlerFormActor = (actor: any) => {
   const { eventAsJson } = useSelector(actor, (state: any) => state.context);
 
-  const {
-    name,
-    event,
-    condition,
-    actions,
-    active,
-    description,
-    evaluatorType,
-  } = eventAsJson;
+  const { name, event, condition, actions, active, description } = eventAsJson;
 
   const { send } = actor;
 
@@ -65,7 +57,6 @@ export const useEventHandlerFormActor = (actor: any) => {
       event,
       active,
       description,
-      evaluatorType,
     },
     {
       handleChangeAction,

@@ -71,12 +71,6 @@ async function replaceTemplateAction(page: Page, label: string) {
   await expect(actionCard(page, 1)).toHaveCount(0);
 }
 
-/** Chooses an option in a MUI select inside `scope`. */
-async function chooseOption(page: Page, scope: Locator, option: string) {
-  await scope.getByRole("combobox").first().click();
-  await page.getByRole("option", { name: option, exact: true }).click();
-}
-
 /**
  * Replaces the Condition editor's text. Monaco has no fillable input, and
  * select-all shortcuts don't reach its EditContext under Playwright on macOS,
@@ -360,43 +354,26 @@ test.describe("event handler action types", () => {
 
 // ── Conditions ────────────────────────────────────────────────────────────────
 
-// One condition per evaluator the server registers (core/.../evaluators).
-// Python gets the payload's keys as globals; value-param names a payload key.
-const CONDITIONS = [
-  { evaluator: "javascript", label: "JavaScript", condition: "$.amount > 100" },
-  {
-    evaluator: "graaljs",
-    label: "GraalJS",
-    condition: "$.amount > 100 && $.currency === 'USD'",
-  },
-  { evaluator: "python", label: "Python", condition: "amount > 100" },
-  { evaluator: "value-param", label: "Value param", condition: "approved" },
-];
-
 test.describe("event handler conditions", () => {
-  for (const { evaluator, label, condition } of CONDITIONS) {
-    test(`saves a ${evaluator} condition`, async ({ page }) => {
-      const name = handlerName(`cond_${evaluator.replace("-", "_")}`);
-      await startNewHandler(page, name, `conductor:e2e_cond_${RUN_ID}`);
+  test("saves a condition with the template's javascript evaluator", async ({
+    page,
+  }) => {
+    const name = handlerName("cond_javascript");
+    const condition = "$.amount > 100 && $.currency === 'USD'";
+    await startNewHandler(page, name, `conductor:e2e_cond_${RUN_ID}`);
+    await setCondition(page, condition);
+    await saveHandler(page, name);
 
-      const conditionSection = section(page, "condition");
-      await chooseOption(page, conditionSection, label);
-      await setCondition(page, condition);
-      await saveHandler(page, name);
+    const saved = await fetchSaved(name);
+    // The form has no evaluator control; the template's value is kept.
+    expect(saved.evaluatorType).toBe("javascript");
+    expect(saved.condition).toBe(condition);
 
-      const saved = await fetchSaved(name);
-      expect(saved.evaluatorType).toBe(evaluator);
-      expect(saved.condition).toBe(condition);
-
-      await reopen(page, name);
-      await expect(
-        section(page, "condition").getByRole("combobox").first(),
-      ).toHaveText(label);
-      await expect(
-        section(page, "condition").locator(".view-lines").first(),
-      ).toHaveText(condition.replace(/ /g, " "));
-    });
-  }
+    await reopen(page, name);
+    await expect(
+      section(page, "condition").locator(".view-lines").first(),
+    ).toHaveText(condition.replace(/ /g, "\u00a0"));
+  });
 
   test("saves an empty condition (actions run on every event)", async ({
     page,
