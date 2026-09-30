@@ -27,8 +27,8 @@ public class PostgresProperties {
 
     /**
      * The interval at which {@code PostgresQueueDAO} scans for and recovers messages that were
-     * popped but never acknowledged (e.g. due to a worker crash or a task that ran longer than
-     * this interval allows for).
+     * popped but never acknowledged (e.g. due to a worker crash or a task that ran longer than this
+     * interval allows for).
      */
     @DurationUnit(ChronoUnit.SECONDS)
     private Duration unackScheduleInterval = Duration.ofSeconds(60);
