@@ -201,11 +201,12 @@ const EventHandlerForm = ({
   };
 
   return (
-    <Box sx={pageStyle}>
+    <Box sx={pageStyle} id="event-handler-form-wrapper">
       <Box sx={columnStyle}>
         <Box sx={stackStyle}>
           <FormSection
             title="Details"
+            id="event-handler-section-details"
             action={
               <FormControlLabel
                 sx={{ mr: 0 }}
@@ -252,7 +253,7 @@ const EventHandlerForm = ({
             />
           </FormSection>
 
-          <FormSection title="Event">
+          <FormSection title="Event" id="event-handler-section-event">
             <ConductorAutoComplete
               label="Event"
               fullWidth
@@ -298,6 +299,7 @@ const EventHandlerForm = ({
 
           <FormSection
             title="Condition"
+            id="event-handler-section-condition"
             action={
               <Box sx={{ width: 150 }}>
                 <ConductorSelect
@@ -333,6 +335,7 @@ const EventHandlerForm = ({
 
         <FormSection
           title="Actions"
+          id="event-handler-section-actions"
           count={actions?.length ?? 0}
           action={<AddActionMenu onAdd={addAction} />}
         >

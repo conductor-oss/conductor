@@ -40,8 +40,11 @@ const FormSection = ({
   action,
   children,
   bodySx,
+  id,
 }: {
   title: string;
+  /** DOM id for the card, so tests can scope queries to one section. */
+  id?: string;
   /** Rendered next to the title, e.g. the number of actions. */
   count?: ReactNode;
   /** Right-aligned control in the header, e.g. an Add button. */
@@ -49,7 +52,7 @@ const FormSection = ({
   children: ReactNode;
   bodySx?: Record<string, unknown>;
 }) => (
-  <Box sx={cardStyle}>
+  <Box sx={cardStyle} id={id}>
     <Box sx={headerStyle}>
       <MuiTypography component="h2" sx={titleStyle}>
         {title}

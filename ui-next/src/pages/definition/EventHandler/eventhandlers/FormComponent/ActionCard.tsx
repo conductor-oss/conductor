@@ -131,6 +131,7 @@ const ActionCard = ({
         cardRef.current = node;
         setNodeRef(node);
       }}
+      id={`event-handler-action-${index}`}
       sx={flashing ? flashedCardStyle : cardStyle}
       style={{
         // Translate only: sortable items of different heights would otherwise
