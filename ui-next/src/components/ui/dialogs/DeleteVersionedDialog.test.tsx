@@ -75,7 +75,7 @@ describe("DeleteVersionedDialog", () => {
     const labels = Array.from(versionField()!.querySelectorAll("option")).map(
       (option) => option.textContent,
     );
-    expect(labels).toEqual(["3 — latest", "2", "1"]);
+    expect(labels).toEqual(["3 (latest)", "2", "1"]);
   });
 
   it("preselects the latest even when versions arrive after the first render", () => {
