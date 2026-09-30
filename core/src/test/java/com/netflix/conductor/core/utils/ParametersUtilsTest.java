@@ -601,6 +601,41 @@ public class ParametersUtilsTest {
         assertNull(replaced.get("nested"));
     }
 
+    @Test
+    public void testNestedExpressionsResolveUpToTheDepthLimit() {
+        Map<String, Object> io = new HashMap<>();
+        io.put("a", "a");
+
+        int limit = ParametersUtils.MAX_EXPRESSION_NESTING_DEPTH;
+        Map<String, Object> input = new HashMap<>();
+        input.put("atLimit", "${".repeat(limit) + "a" + "}".repeat(limit));
+        input.put("pastLimit", "${".repeat(limit + 1) + "a" + "}".repeat(limit + 1));
+
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+
+        // every level resolves "a" to "a"
+        assertEquals("a", replaced.get("atLimit"));
+        // the level past the limit resolves to null, and so do the paths built from it
+        assertTrue(replaced.containsKey("pastLimit"));
+        assertNull(replaced.get("pastLimit"));
+    }
+
+    @Test(timeout = 10_000)
+    public void testReplaceHandlesExtremelyNestedExpressions() {
+        Map<String, Object> io = new HashMap<>();
+        io.put("a", "a");
+
+        // evaluating every level used to run out of stack or heap on input like this
+        int depth = 100_000;
+        Map<String, Object> input = new HashMap<>();
+        input.put("nested", "${".repeat(depth) + "a" + "}".repeat(depth));
+
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+
+        assertTrue(replaced.containsKey("nested"));
+        assertNull(replaced.get("nested"));
+    }
+
     private static String expressions(String value) {
         return ParametersUtils.findExpressions(value).stream()
                 .map(range -> "[" + range[0] + "-" + range[1] + "]")

@@ -58,6 +58,13 @@ public class ParametersUtils {
     private static final String SECRETS_PREFIX = "workflow.secrets.";
     private static final String ENV_PREFIX = "workflow.env.";
 
+    /**
+     * Expressions nested deeper than this resolve to null, like a path that cannot be read, instead
+     * of being evaluated. Each level is evaluated recursively and keeps its own copy of the rest of
+     * the string, so crafted input nested deeply enough could otherwise exhaust the stack or heap.
+     */
+    static final int MAX_EXPRESSION_NESTING_DEPTH = 32;
+
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};
     @Nullable private final EnvironmentDAO environmentDAO;
@@ -255,6 +262,15 @@ public class ParametersUtils {
         for (int[] expression : findExpressions(paramString)) {
             var start = expression[0];
             var end = expression[1];
+            if (depth >= MAX_EXPRESSION_NESTING_DEPTH) {
+                if (replacements.isEmpty()) {
+                    LOGGER.warn(
+                            "Expression nested deeper than {} levels, resolving it to null",
+                            MAX_EXPRESSION_NESTING_DEPTH);
+                }
+                replacements.add(new Replacement(null, start, end));
+                continue;
+            }
             var match = paramString.substring(start, end);
             String paramPath = match.substring(2, match.length() - 1);
             paramPath = replaceVariables(paramPath, documentContext, taskId, depth + 1).toString();
