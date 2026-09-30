@@ -71,6 +71,8 @@ export * from "./components";
 export { default as Header } from "./components/ui/Header";
 export { default as ClipboardCopy } from "./components/ui/ClipboardCopy";
 export { default as ConfirmChoiceDialog } from "./components/ui/dialogs/ConfirmChoiceDialog";
+export { default as DeleteVersionedDialog } from "./components/ui/dialogs/DeleteVersionedDialog";
+export type { DeleteVersionedDialogProps } from "./components/ui/dialogs/DeleteVersionedDialog";
 export { default as NoDataComponent } from "./components/ui/NoDataComponent";
 export { DocLink } from "./components/ui/DocLink";
 export { SnackbarMessage } from "./components/ui/SnackbarMessage";
