@@ -586,9 +586,9 @@ public class PostgresQueueDAOTest {
     }
 
     /**
-     * Reproduces the original decider-queue busy-loop bug: a message whose delivery time is
-     * frozen in the past (e.g. left behind by a skipped postpone write) must be advanced into
-     * the future, not left permanently "due".
+     * Reproduces the original decider-queue busy-loop bug: a message whose delivery time is frozen
+     * in the past (e.g. left behind by a skipped postpone write) must be advanced into the future,
+     * not left permanently "due".
      */
     @Test
     public void setUnackTimeoutIfDueOrShorterUnsticksPastDeliverTime() throws Exception {
@@ -610,10 +610,10 @@ public class PostgresQueueDAOTest {
     }
 
     /**
-     * Regression test for the race a PR reviewer identified: an unconditional postpone write from
-     * a concurrent decide() must not overwrite a pending, sooner wake-up written by a sibling
-     * caller (e.g. a child sub-workflow completing and calling expediteLazyWorkflowEvaluation() on
-     * its parent via {@link com.netflix.conductor.dao.QueueDAO#postpone}).
+     * Regression test for the race a PR reviewer identified: an unconditional postpone write from a
+     * concurrent decide() must not overwrite a pending, sooner wake-up written by a sibling caller
+     * (e.g. a child sub-workflow completing and calling expediteLazyWorkflowEvaluation() on its
+     * parent via {@link com.netflix.conductor.dao.QueueDAO#postpone}).
      */
     @Test
     public void setUnackTimeoutIfDueOrShorterDoesNotOverwriteExpeditedWakeup() {
@@ -643,8 +643,7 @@ public class PostgresQueueDAOTest {
     @Test
     public void setUnackTimeoutIfDueOrShorterReturnsFalseForNonExistent() {
         String queueName = "setUnackIfDueOrShorter_nonexistent";
-        boolean updated =
-                queueDAO.setUnackTimeoutIfDueOrShorter(queueName, "no-such-message", 0L);
+        boolean updated = queueDAO.setUnackTimeoutIfDueOrShorter(queueName, "no-such-message", 0L);
         assertFalse(
                 "setUnackTimeoutIfDueOrShorter must return false for a non-existent message",
                 updated);
