@@ -25,12 +25,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
-import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
 import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
+import org.conductoross.conductor.common.metadata.agent.AgentSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -62,8 +62,10 @@ import software.amazon.awssdk.services.sts.model.AssumeRoleRequest;
  *
  * <ol>
  *   <li>{@code accessKeyId} + {@code secretAccessKey} — static IAM key pair
- *   <li>{@code roleArn} — Conductor assumes this role via STS; {@code externalId} honoured when present
- *   <li>Default AWS credential chain — instance/task role, environment vars, {@code ~/.aws/credentials}
+ *   <li>{@code roleArn} — Conductor assumes this role via STS; {@code externalId} honoured when
+ *       present
+ *   <li>Default AWS credential chain — instance/task role, environment vars, {@code
+ *       ~/.aws/credentials}
  * </ol>
  *
  * <p>The agent runtime ARN is taken from {@code rawConfig.agentRuntimeId}; an optional qualifier
@@ -93,11 +95,21 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
                     "bedrock-agentcore task requires rawConfig.agentRuntimeId (the runtime ARN)");
         }
         String qualifier = rawConfig(request.getRawConfig(), "qualifier");
-        String region = StringUtils.defaultIfBlank(rawConfig(request.getRawConfig(), "region"), DEFAULT_REGION);
-        String sessionId = StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
+        String region =
+                StringUtils.defaultIfBlank(
+                        rawConfig(request.getRawConfig(), "region"), DEFAULT_REGION);
+        String sessionId =
+                StringUtils.defaultIfBlank(request.getSessionId(), UUID.randomUUID().toString());
 
         AwsCredentialsProvider credentials = credentialsFor(request.getCredentials(), region);
-        String result = invoke(agentRuntimeArn, qualifier, sessionId, request.getPrompt(), credentials, region);
+        String result =
+                invoke(
+                        agentRuntimeArn,
+                        qualifier,
+                        sessionId,
+                        request.getPrompt(),
+                        credentials,
+                        region);
 
         return ConductorAgentStartResponse.builder()
                 .executionId(sessionId)
@@ -110,10 +122,12 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
 
     /**
      * AgentCore is synchronous: the whole turn completes in {@code startAgent}. If this is called
-     * it means the task was re-queued after the result was already recorded — report terminal completion.
+     * it means the task was re-queued after the result was already recorded — report terminal
+     * completion.
      */
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId, ConductorAgentRequest request) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         return ConductorAgentStatusResponse.builder()
                 .executionId(executionId)
                 .status(ConductorAgentState.COMPLETED)
@@ -159,19 +173,18 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
                             runtime ->
                                     agents.add(
                                             AgentSummary.builder()
-                                                    .name(StringUtils.defaultIfBlank(
-                                                            runtime.agentRuntimeName(),
-                                                            runtime.agentRuntimeId()))
+                                                    .name(
+                                                            StringUtils.defaultIfBlank(
+                                                                    runtime.agentRuntimeName(),
+                                                                    runtime.agentRuntimeId()))
                                                     .type(AGENT_TYPE)
                                                     .endpoint(runtime.agentRuntimeArn())
                                                     .description(runtime.agentRuntimeId())
                                                     .build()));
-            log.debug(
-                    "Discovered {} AgentCore runtime(s) in {}", agents.size(), resolvedRegion);
+            log.debug("Discovered {} AgentCore runtime(s) in {}", agents.size(), resolvedRegion);
             return agents;
         } catch (Exception e) {
-            log.warn(
-                    "Failed to list AgentCore runtimes in {}: {}", resolvedRegion, e.getMessage());
+            log.warn("Failed to list AgentCore runtimes in {}: {}", resolvedRegion, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -236,7 +249,8 @@ public class BedrockAgentCoreAgentClient implements ConductorAgentClient {
                     .build();
         }
 
-        AgentCredentials.rejectPartiallyResolved(credentials, AWS_AUTH_KEYS, "AWS (bedrock-agentcore)");
+        AgentCredentials.rejectPartiallyResolved(
+                credentials, AWS_AUTH_KEYS, "AWS (bedrock-agentcore)");
         return DefaultCredentialsProvider.create();
     }
 

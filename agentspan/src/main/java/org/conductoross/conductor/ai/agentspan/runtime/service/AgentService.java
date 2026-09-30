@@ -442,7 +442,8 @@ public class AgentService {
                         com.fasterxml.jackson.databind.JsonNode secretJson =
                                 MAPPER.readTree(secretValue);
                         String endpoint = secretJson.path("endpoint").asText(null);
-                        // agentcoreRegion discriminates AgentCore secrets from plain Bedrock (region)
+                        // agentcoreRegion discriminates AgentCore secrets from plain Bedrock
+                        // (region)
                         String agentcoreRegion = secretJson.path("agentcoreRegion").asText(null);
                         String region = secretJson.path("region").asText(null);
                         // Discovery is a control-plane scan with no task behind it, so this is the
