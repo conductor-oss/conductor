@@ -76,6 +76,7 @@ export const ConductorUpdateTaskFormEvent = ({
           <InputComponent
             fullWidth
             label="Task ID"
+            placeholder={`\${taskId}`}
             value={value?.taskId}
             onTextInputChange={(val: string) =>
               onChange(omitWorkflowID({ ...value, taskId: val }))
@@ -94,6 +95,7 @@ export const ConductorUpdateTaskFormEvent = ({
             <InputComponent
               fullWidth
               label="Workflow ID"
+              placeholder={`\${workflowInstanceId}`}
               value={value?.workflowId}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, workflowId: val }))
@@ -110,6 +112,7 @@ export const ConductorUpdateTaskFormEvent = ({
             <InputComponent
               fullWidth
               label="Task reference name"
+              placeholder="wait_task_ref"
               value={value?.taskRefName}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, taskRefName: val }))

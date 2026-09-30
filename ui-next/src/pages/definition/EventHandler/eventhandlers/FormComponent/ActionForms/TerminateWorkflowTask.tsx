@@ -46,8 +46,7 @@ export const TerminateWorkflowForm = ({
         <ConductorInput
           fullWidth
           label="Termination reason"
-          placeholder="abcd"
-          name="taskReference"
+          placeholder="e.g. Order cancelled"
           value={terminate_workflow?.terminationReason}
           onTextInputChange={(value) =>
             handleChange("terminationReason", value)

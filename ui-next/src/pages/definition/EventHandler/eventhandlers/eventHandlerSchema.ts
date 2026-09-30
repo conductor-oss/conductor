@@ -9,6 +9,9 @@ import {
 } from "types/Events";
 
 // v2
+// Action fields start empty; the forms show examples as input placeholders.
+// Pre-filled `${...}` values used to save as-is and silently resolve to null
+// when the event payload had no such field.
 export const NEW_EVENT_HANDLER_TEMPLATE: Partial<ConductorEvent> = {
   name: "",
   description: "",
@@ -23,8 +26,8 @@ export const NEW_EVENT_HANDLER_TEMPLATE: Partial<ConductorEvent> = {
       action: "complete_task",
       expandInlineJSON: false,
       complete_task: {
-        workflowId: "${workflowId}",
-        taskRefName: "${taskReferenceName}",
+        workflowId: "",
+        taskRefName: "",
       },
     },
   ],
@@ -36,8 +39,8 @@ export const COMPLETE_TASK_ACTION: CompleteActionType = {
   action: "complete_task",
   expandInlineJSON: false,
   complete_task: {
-    workflowId: "${workflowId}",
-    taskRefName: "${taskReferenceName}",
+    workflowId: "",
+    taskRefName: "",
   },
 };
 
@@ -45,8 +48,8 @@ export const FAIL_TASK_ACTION: FailActionType = {
   action: "fail_task",
   expandInlineJSON: false,
   fail_task: {
-    workflowId: "${workflowId}",
-    taskRefName: "${taskReferenceName}",
+    workflowId: "",
+    taskRefName: "",
   },
 };
 
@@ -54,14 +57,14 @@ export const UPDATE_VARIABLES_ACTION: UpdateWorkFlowVariableType = {
   action: "update_workflow_variables",
   expandInlineJSON: false,
   update_workflow_variables: {
-    workflowId: "${targetWorkflowId}",
+    workflowId: "",
   },
 };
 
 export const START_WORKFLOW_ACTION: StartWorkflowAction = {
   action: "start_workflow",
   start_workflow: {
-    name: "sample_wf",
+    name: "",
     version: "",
     correlationId: "",
     idempotencyKey: "",

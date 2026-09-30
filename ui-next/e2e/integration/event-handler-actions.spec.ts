@@ -301,6 +301,31 @@ test.describe("event handler action types", () => {
     );
   });
 
+  test("start_workflow defaults to the latest version", async ({ page }) => {
+    const name = handlerName("start_workflow_latest");
+    await startNewHandler(page, name, `conductor:e2e_start_latest_${RUN_ID}`);
+    await replaceTemplateAction(page, "Start Workflow");
+
+    const card = actionCard(page);
+    await expect(card.getByLabel("Workflow version")).toHaveValue("Latest");
+    const wfName = card.getByLabel("Workflow name");
+    await wfName.fill("e2e_target_workflow");
+    await wfName.blur();
+    await saveHandler(page, name);
+
+    // No version on the server means "latest at the time the event fires".
+    const [action] = (await fetchSaved(name)).actions;
+    expect(action.start_workflow).toMatchObject({
+      name: "e2e_target_workflow",
+    });
+    expect(action.start_workflow?.version ?? null).toBeNull();
+
+    await reopen(page, name);
+    await expect(actionCard(page).getByLabel("Workflow version")).toHaveValue(
+      "Latest",
+    );
+  });
+
   test("start_agent with name, prompt and session ID", async ({ page }) => {
     const name = handlerName("start_agent");
     await startNewHandler(page, name, `conductor:e2e_start_agent_${RUN_ID}`);

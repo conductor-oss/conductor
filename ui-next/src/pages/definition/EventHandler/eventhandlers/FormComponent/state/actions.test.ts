@@ -244,9 +244,11 @@ describe("NEW_EVENT_HANDLER_TEMPLATE", () => {
       actions: [
         expect.objectContaining({
           action: "complete_task",
+          // Empty so nothing example-like saves by accident; the form shows
+          // examples as placeholders instead.
           complete_task: expect.objectContaining({
-            workflowId: "${workflowId}",
-            taskRefName: "${taskReferenceName}",
+            workflowId: "",
+            taskRefName: "",
           }),
         }),
       ],

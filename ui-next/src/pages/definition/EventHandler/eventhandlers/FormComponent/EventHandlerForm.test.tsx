@@ -193,10 +193,10 @@ describe("EventHandlerForm — fields write to machine context", () => {
   it("shows the action summary only while the card is collapsed", async () => {
     renderForm();
 
-    expect(screen.queryByText("${taskReferenceName}")).not.toBeInTheDocument();
+    expect(screen.queryByText("no task set")).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Collapse action"));
 
-    expect(screen.getByText("${taskReferenceName}")).toBeInTheDocument();
+    expect(screen.getByText("no task set")).toBeInTheDocument();
   });
 
   it("shows an empty state until an action is added", () => {
@@ -281,6 +281,6 @@ describe("EventHandlerForm — fields write to machine context", () => {
 
     actionAt(definition(), 0).start_workflow.name = "mutated";
 
-    expect(START_WORKFLOW_ACTION.start_workflow.name).toBe("sample_wf");
+    expect(START_WORKFLOW_ACTION.start_workflow.name).toBe("");
   });
 });
