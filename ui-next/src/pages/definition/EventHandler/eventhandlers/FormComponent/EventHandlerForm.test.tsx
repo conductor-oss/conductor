@@ -28,21 +28,24 @@ vi.mock("components/ui/inputs", () => ({
       value={value ?? ""}
       onChange={(event) => {
         onChange?.(null, event.target.value);
-        onInputChange?.(null, event.target.value);
+        onInputChange?.(null, event.target.value, "input");
       }}
     />
   ),
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ label, value, onTextInputChange, id, name }: any) => (
-    <input
-      aria-label={label}
-      id={id}
-      name={name}
-      value={value ?? ""}
-      onChange={(event) => onTextInputChange?.(event.target.value)}
-    />
+  default: ({ label, value, onTextInputChange, id, name, helperText }: any) => (
+    <>
+      <input
+        aria-label={label}
+        id={id}
+        name={name}
+        value={value ?? ""}
+        onChange={(event) => onTextInputChange?.(event.target.value)}
+      />
+      {helperText && <span>{helperText}</span>}
+    </>
   ),
 }));
 
@@ -63,6 +66,8 @@ vi.mock("components/ui/inputs/ConductorSelect", () => ({
       <option value="start_agent">Start Agent</option>
       <option value="terminate_workflow">Terminate Workflow</option>
       <option value="update_workflow_variables">Update Variables</option>
+      <option value="javascript">javascript</option>
+      <option value="graaljs">graaljs</option>
     </select>
   ),
 }));
@@ -175,6 +180,36 @@ describe("EventHandlerForm — fields write to machine context", () => {
     fireEvent.click(screen.getByLabelText("Active"));
 
     expect(definition().active).toBe(false);
+  });
+
+  it("writes the evaluator chosen in the Condition header", () => {
+    const { definition } = renderForm({ actions: [] });
+
+    expect(screen.getByLabelText("Evaluator")).toHaveValue("javascript");
+    fireEvent.change(screen.getByLabelText("Evaluator"), {
+      target: { value: "graaljs" },
+    });
+
+    expect(definition().evaluatorType).toBe("graaljs");
+  });
+
+  it("shows Name is required only after the name has been edited", () => {
+    renderForm({ name: "", actions: [] });
+
+    expect(screen.queryByText("Name is required.")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "x" } });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "" } });
+
+    expect(screen.getByText("Name is required.")).toBeInTheDocument();
+  });
+
+  it("shows the action summary only while the card is collapsed", async () => {
+    renderForm();
+
+    expect(screen.queryByText("${taskReferenceName}")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Collapse action"));
+
+    expect(screen.getByText("${taskReferenceName}")).toBeInTheDocument();
   });
 
   it("shows an empty state until an action is added", () => {

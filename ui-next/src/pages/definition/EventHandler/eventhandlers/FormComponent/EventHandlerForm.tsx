@@ -15,11 +15,12 @@ import {
 import {
   Box,
   FormControlLabel,
+  MenuItem,
   Switch,
   Theme,
   createFilterOptions,
 } from "@mui/material";
-import { ComponentType, useRef, useState } from "react";
+import { ChangeEvent, ComponentType, useRef, useState } from "react";
 import { ActorRef } from "xstate";
 
 import { EventHandlerAction } from "types/Events";
@@ -29,6 +30,7 @@ import MuiTypography from "components/ui/MuiTypography";
 import { ConductorAutoComplete } from "components/ui/inputs";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
+import ConductorSelect from "components/ui/inputs/ConductorSelect";
 import HelperText from "components/ui/inputs/HelperText";
 import { useEventNameSuggestions } from "utils/hooks/useEventNameSuggestions";
 import ActionCard from "./ActionCard";
@@ -43,7 +45,7 @@ import FormSection from "./FormSection";
 import { templateFor } from "./actionMeta";
 import { tabColumnStyle, tabSurfaceStyle } from "../tabLayout";
 import { useEventHandlerFormActor } from "./state/hook";
-import { Action, FormHandlerEvents } from "./state/types";
+import { Action, Evaluator, FormHandlerEvents } from "./state/types";
 
 /**
  * No ground of its own — the tab container paints the surface for both tabs,
@@ -55,32 +57,25 @@ const pageStyle = {
 };
 
 // NB: this theme's spacing unit is 4px, not MUI's default 8px.
+/**
+ * Two columns once there is room for both at a usable width: what the handler
+ * is and when it fires on the left, what it does on the right. Narrower than
+ * that, the grid collapses to one column in DOM order.
+ */
 const columnStyle = {
   ...tabColumnStyle,
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 460px), 1fr))",
+  gap: 4,
+  alignItems: "start",
+};
+
+const stackStyle = {
   display: "flex",
   flexDirection: "column",
   gap: 4,
+  minWidth: 0,
 };
-
-/**
- * Name is the only short field in Details, so at md it takes the Active toggle
- * as a partner rather than leaving a long empty row beside it, with Description
- * spanning underneath. Stacked, the cells fall back to DOM order — Name,
- * Description, Active — which keeps the toggle out from between the two inputs.
- */
-const detailsBodyStyle = {
-  display: "grid",
-  gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) auto" },
-  columnGap: 6,
-  alignItems: "center",
-};
-
-const nameCellStyle = { gridColumn: { md: "1" }, gridRow: { md: 1 } };
-const descriptionCellStyle = {
-  gridColumn: { md: "1 / -1" },
-  gridRow: { md: 2 },
-};
-const activeCellStyle = { gridColumn: { md: "2" }, gridRow: { md: 1 } };
 
 const emptyStateStyle = {
   border: (theme: Theme) => `1px dashed ${theme.palette.divider}`,
@@ -92,6 +87,16 @@ const emptyStateStyle = {
 };
 
 const filter = createFilterOptions<string>();
+
+// The server splits the event at its first colon (EventQueues.getQueue).
+const EVENT_PATTERN = /^[\w-]+:.+$/;
+
+const eventError = (event?: string) => {
+  if (!event) return "Event is required.";
+  if (!EVENT_PATTERN.test(event))
+    return "Use type:queue, e.g. kafka:payments.settled.";
+  return undefined;
+};
 
 const actionForms: Record<Action, ComponentType<Props>> = {
   [Action.COMPLETE_TASK]: CompleteTask,
@@ -142,7 +147,7 @@ const EventHandlerForm = ({
   actor: ActorRef<FormHandlerEvents>;
 }) => {
   const [
-    { name, condition, actions, event, active, description },
+    { name, condition, actions, event, active, description, evaluatorType },
     {
       handleChangeAction,
       handleChange,
@@ -154,6 +159,13 @@ const EventHandlerForm = ({
   ] = useEventHandlerFormActor(actor);
 
   const suggestions = useEventNameSuggestions();
+
+  // Required-field errors wait until the field has been edited, so a new
+  // handler doesn't open covered in red.
+  const [touched, setTouched] = useState({ name: false, event: false });
+  const nameErrorText =
+    touched.name && !name?.trim() ? "Name is required." : undefined;
+  const eventErrorText = touched.event ? eventError(event) : undefined;
 
   // Bumped on every add so the new card can announce itself. persistNewAction
   // prepends, so the action just added is always the one at index 0.
@@ -191,20 +203,42 @@ const EventHandlerForm = ({
   return (
     <Box sx={pageStyle}>
       <Box sx={columnStyle}>
-        <FormSection title="Details" bodySx={detailsBodyStyle}>
-          <Box sx={nameCellStyle}>
+        <Box sx={stackStyle}>
+          <FormSection
+            title="Details"
+            action={
+              <FormControlLabel
+                sx={{ mr: 0 }}
+                control={
+                  <Switch
+                    size="small"
+                    color="primary"
+                    checked={active}
+                    name="activateEvent"
+                    onChange={(val) =>
+                      handleChange("active", val.target.checked)
+                    }
+                  />
+                }
+                label="Active"
+              />
+            }
+          >
             <ConductorInput
               label="Name"
               fullWidth
               required
-              placeholder="Event Handler Name"
+              placeholder="e.g. payments-settled-complete-task"
               id="event-name-input"
               name="name"
               value={name}
-              onTextInputChange={(val) => handleChange("name", val)}
+              error={Boolean(nameErrorText)}
+              helperText={nameErrorText}
+              onTextInputChange={(val) => {
+                setTouched((t) => ({ ...t, name: true }));
+                handleChange("name", val);
+              }}
             />
-          </Box>
-          <Box sx={descriptionCellStyle}>
             <ConductorInput
               id="event-description-field"
               label="Description"
@@ -216,69 +250,86 @@ const EventHandlerForm = ({
               value={description}
               placeholder="What this handler is for"
             />
-          </Box>
-          <Box sx={activeCellStyle}>
-            <FormControlLabel
-              control={
-                <Switch
-                  color="primary"
-                  checked={active}
-                  name="activateEvent"
-                  onChange={(val) => handleChange("active", val.target.checked)}
-                />
-              }
-              label="Active"
+          </FormSection>
+
+          <FormSection title="Event">
+            <ConductorAutoComplete
+              label="Event"
+              fullWidth
+              required
+              placeholder="kafka:payments.settled"
+              id="event-string-input"
+              options={suggestions}
+              value={event}
+              error={Boolean(eventErrorText)}
+              helperText={eventErrorText}
+              onChange={(_, val) => handleEventChange(val ?? "")}
+              onInputChange={(_, val, reason) => {
+                // MUI also fires this with reason "reset" when it syncs the
+                // stored value in; only a real edit should surface errors.
+                if (reason === "input") {
+                  setTouched((t) => ({ ...t, event: true }));
+                }
+                handleEventChange(val);
+              }}
+              freeSolo
+              selectOnFocus
+              filterOptions={(options, params) => {
+                const filtered = filter(options, params);
+
+                const { inputValue } = params;
+                // Suggest the creation of a new value
+                const isExisting = options.some(
+                  (option) => inputValue === option,
+                );
+
+                if (inputValue !== "" && !isExisting) {
+                  filtered.push(`${inputValue}`);
+                }
+
+                return filtered;
+              }}
             />
-          </Box>
-        </FormSection>
+            <HelperText>
+              The queue this handler listens on, as <code>source:queue</code> —
+              for example <code>kafka:payments.settled</code>.
+            </HelperText>
+          </FormSection>
 
-        <FormSection title="Event">
-          <ConductorAutoComplete
-            label="Event"
-            fullWidth
-            required
-            placeholder="Event String"
-            id="event-string-input"
-            options={suggestions}
-            value={event}
-            onChange={(_, val) => handleEventChange(val ?? "")}
-            onInputChange={(_, val) => handleEventChange(val)}
-            freeSolo
-            selectOnFocus
-            filterOptions={(options, params) => {
-              const filtered = filter(options, params);
-
-              const { inputValue } = params;
-              // Suggest the creation of a new value
-              const isExisting = options.some(
-                (option) => inputValue === option,
-              );
-
-              if (inputValue !== "" && !isExisting) {
-                filtered.push(`${inputValue}`);
-              }
-
-              return filtered;
-            }}
-          />
-          <HelperText>
-            The queue this handler listens on, as <code>source:queue</code> —
-            for example <code>kafka:payments.settled</code>.
-          </HelperText>
-        </FormSection>
-
-        <FormSection title="Condition">
-          <ConductorCodeBlockInput
-            label="Condition (Trigger if evaluated to true)"
-            language="javascript"
-            value={condition}
-            onChange={(val) => handleChange("condition", val)}
-          />
-          <HelperText>
-            Runs on every matching event when empty. Actions fire only if this
-            evaluates to true.
-          </HelperText>
-        </FormSection>
+          <FormSection
+            title="Condition"
+            action={
+              <Box sx={{ width: 150 }}>
+                <ConductorSelect
+                  fullWidth
+                  size="small"
+                  value={evaluatorType || Evaluator.javascript}
+                  inputProps={{ "aria-label": "Evaluator" }}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    handleChange("evaluatorType", e.target.value)
+                  }
+                >
+                  {Object.values(Evaluator).map((value) => (
+                    <MenuItem key={value} value={value}>
+                      {value}
+                    </MenuItem>
+                  ))}
+                </ConductorSelect>
+              </Box>
+            }
+          >
+            <ConductorCodeBlockInput
+              label="Condition (Trigger if evaluated to true)"
+              language="javascript"
+              value={condition}
+              onChange={(val) => handleChange("condition", val)}
+            />
+            <HelperText>
+              Runs on every matching event when empty. Actions fire only if this
+              evaluates to true.
+            </HelperText>
+          </FormSection>
+        </Box>
 
         <FormSection
           title="Actions"

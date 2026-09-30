@@ -1,8 +1,7 @@
 /**
- * Shared geometry for the Event and Code tab bodies. Both render a fixed-width
- * column centred in the tab container; keeping the numbers here stops the two
- * tabs drifting apart, which showed up as the content jumping sideways when
- * switching between them.
+ * Geometry for the Event tab body: a fixed-width column centred in the tab
+ * container. The Code tab fills the container edge to edge instead, with its
+ * own toolbar and status bar framing the editor.
  */
 export const TAB_COLUMN_WIDTH = 820;
 
@@ -12,6 +11,13 @@ export const TAB_COLUMN_WIDTH = 820;
  * forces a horizontal scroll.
  */
 export const TAB_COLUMN_WIDTH_WIDE = 1120;
+
+/**
+ * Caps for large screens, where the Event tab splits into two columns. At
+ * 1120 each column only got ~550px, which cramped the action cards.
+ */
+export const TAB_COLUMN_WIDTH_LG = 1440;
+export const TAB_COLUMN_WIDTH_XL = 1600;
 
 // NB: this theme's spacing unit is 4px, not MUI's default 8px.
 export const tabSurfaceStyle = {
@@ -23,5 +29,10 @@ export const tabSurfaceStyle = {
 export const tabColumnStyle = {
   flex: 1,
   minWidth: 0,
-  maxWidth: { xs: TAB_COLUMN_WIDTH, md: TAB_COLUMN_WIDTH_WIDE },
+  maxWidth: {
+    xs: TAB_COLUMN_WIDTH,
+    md: TAB_COLUMN_WIDTH_WIDE,
+    lg: TAB_COLUMN_WIDTH_LG,
+    xl: TAB_COLUMN_WIDTH_XL,
+  },
 };

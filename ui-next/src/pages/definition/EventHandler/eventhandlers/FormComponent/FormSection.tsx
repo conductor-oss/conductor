@@ -21,17 +21,11 @@ const headerStyle = {
   borderBottom: (theme: Theme) => `1px solid ${theme.palette.divider}`,
 };
 
-/**
- * Compact but not quiet: small and tracked out so the header bar stays short,
- * full-strength colour and heavy weight so the section names still read as
- * structure rather than as captions.
- */
+// Sentence case at body-plus size, per the Event Handler design.
 const titleStyle = {
   flex: 1,
-  fontSize: 12,
-  fontWeight: 600,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  fontSize: 14,
+  fontWeight: 500,
   color: "text.primary",
 };
 
@@ -63,9 +57,15 @@ const FormSection = ({
           <MuiTypography
             component="span"
             variant="inherit"
-            sx={{ ml: 0.5, opacity: 0.7 }}
+            sx={{
+              ml: 2,
+              fontFamily: "ui-monospace, Menlo, Monaco, Consolas, monospace",
+              fontSize: 12,
+              fontWeight: 400,
+              color: "text.secondary",
+            }}
           >
-            ({count})
+            {count}
           </MuiTypography>
         )}
       </MuiTypography>

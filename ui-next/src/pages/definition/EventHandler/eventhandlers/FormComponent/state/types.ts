@@ -82,12 +82,17 @@ export const queueTypeLabel: { [key in QueueTypeSource]: string } = {
   sqs: "sqs",
 };
 
+// Mirrors the evaluators the server registers (core/.../execution/evaluators).
 export enum Evaluator {
   javascript = "javascript",
+  graaljs = "graaljs",
+  python = "python",
   "value-param" = "value-param",
 }
 export const evaluatorLabel: { [key in Evaluator]: string } = {
   javascript: "javascript",
+  graaljs: "graaljs",
+  python: "python",
   "value-param": "value-param",
 };
 

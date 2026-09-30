@@ -181,8 +181,13 @@ const ActionCard = ({
             ))}
           </ConductorSelect>
         </Box>
+        {/*
+          The summary stands in for the body while collapsed; when open the
+          fields below already show it. The slot stays as a spacer so the
+          remove button keeps to the right.
+        */}
         <MuiTypography variant="caption" sx={summaryStyle}>
-          {actionSummary(payload)}
+          {open ? null : actionSummary(payload)}
         </MuiTypography>
         <Tooltip title="Remove action" arrow>
           <IconButton

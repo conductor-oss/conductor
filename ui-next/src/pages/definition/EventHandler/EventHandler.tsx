@@ -50,6 +50,11 @@ export default function EventHandlerDefinition() {
     },
   ] = useEventHandlerDefinition();
 
+  // `madeChanges` is always true for a new handler (it gates Save); the badge
+  // should only appear once the text actually differs from what was loaded.
+  const hasUnsavedChanges =
+    !isFetching && Boolean(editorChanges) && editorChanges !== originalSource;
+
   return (
     <Box id="event-handler-container">
       {isConfirmReset && (
@@ -111,7 +116,47 @@ export default function EventHandlerDefinition() {
                 to: "",
               },
             ]}
-            title={eventHandlerName ? eventHandlerName : "New Event Handler"}
+            title={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+                {eventHandlerName ? eventHandlerName : "New Event Handler"}
+                {hasUnsavedChanges && (
+                  <Box
+                    component="span"
+                    id="event-handler-unsaved-badge"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: 1,
+                      fontSize: 12,
+                      fontWeight: 400,
+                      letterSpacing: "normal",
+                      color: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? colors.orange10
+                          : colors.orange04,
+                      backgroundColor: (theme) =>
+                        theme.palette.mode === "dark"
+                          ? "rgba(246, 110, 19, 0.16)"
+                          : colors.orange13,
+                    }}
+                  >
+                    <Box
+                      component="span"
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        backgroundColor: colors.orange07,
+                      }}
+                    />
+                    Unsaved changes
+                  </Box>
+                )}
+              </Box>
+            }
             buttonsComponent={
               <EventHandlerButton
                 {...{
@@ -191,7 +236,14 @@ export default function EventHandlerDefinition() {
             <Box
               sx={{
                 height: "calc(100vh - 180px)",
-                overflow: "scroll",
+                // The Code tab lays out its own toolbar, editor and status bar
+                // and scrolls inside Monaco, so the wrapper must not scroll too.
+                overflow: isFormMode ? "scroll" : "hidden",
+                ...(!isFormMode && {
+                  mt: 4,
+                  border: (theme) => `1px solid ${theme.palette.divider}`,
+                  borderRadius: 1,
+                }),
                 color: (theme) =>
                   theme.palette?.mode === "dark" ? colors.gray14 : undefined,
                 // Not `customBackground.form` — that is still grey while the
