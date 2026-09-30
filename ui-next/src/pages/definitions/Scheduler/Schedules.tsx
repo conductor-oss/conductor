@@ -99,7 +99,7 @@ const searchableWorkflow = (workflow: IStartWorkflowRequest) => {
     : `${workflow.name} - Latest`;
 };
 
-const columns = [
+export const columns = [
   {
     id: "cronExpression",
     name: "cronExpression",
@@ -266,6 +266,19 @@ const columns = [
       </NavLink>
     ),
   },
+];
+
+export const getDefaultShowColumns = (tagsEnabled: boolean) => [
+  "name",
+  "nextRunTime",
+  "workflowExecutionsLink",
+  "schedulerExecutionsLink",
+  ...(tagsEnabled ? ["tags"] : []),
+  "cronExpression",
+  "startWorkflowRequest",
+  "createTime",
+  "paused",
+  "actions",
 ];
 
 export default function ScheduleDefinitions() {
@@ -803,18 +816,7 @@ export default function ScheduleDefinitions() {
                 title={`${schedules.length} results of ${totalCount}`}
                 localStorageKey="schedulesTable"
                 conditionalRowStyles={conditionalRowStyles}
-                defaultShowColumns={[
-                  "name",
-                  "nextRunTime",
-                  "workflowExecutionsLink",
-                  "schedulerExecutionsLink",
-                  ...(tagsEnabled ? ["tags"] : []),
-                  "cronTabExpression",
-                  "startWorkflowRequest",
-                  "createTime",
-                  "paused",
-                  "actions",
-                ]}
+                defaultShowColumns={getDefaultShowColumns(tagsEnabled)}
                 keyField="name"
                 hideSearch
                 sortByDefault={false}
