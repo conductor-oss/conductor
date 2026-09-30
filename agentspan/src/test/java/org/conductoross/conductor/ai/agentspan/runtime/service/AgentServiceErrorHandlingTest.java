@@ -65,6 +65,7 @@ class AgentServiceErrorHandlingTest {
                         mock(MetadataService.class),
                         mock(AzureFoundryAgentClient.class),
                         mock(BedrockAgentClient.class),
+                        mock(BedrockAgentCoreAgentClient.class),
                         mock(SecretsDAO.class));
     }
 
