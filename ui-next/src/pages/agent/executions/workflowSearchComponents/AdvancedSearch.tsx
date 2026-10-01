@@ -36,7 +36,7 @@ import { ERROR_URL } from "utils/constants/route";
 import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
+import { DateControlComponent } from "pages/executions/DateControlComponent";
 import ResultsTable from "../ResultsTable";
 import { ExampleSearchQuery } from "../SearchExampleQuery";
 
@@ -269,9 +269,7 @@ export default function AdvancedSearch({
   };
 
   const handleSort = (changedColumn: string, direction: string) => {
-    const sortColumn =
-      changedColumn === "workflowType" ? "workflowName" : changedColumn;
-    const newSort = `${sortColumn}:${direction.toUpperCase()}`;
+    const newSort = `${changedColumn}:${direction.toUpperCase()}`;
 
     // Only refetch if sort actually changed
     if (sort !== newSort) {

@@ -149,6 +149,13 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        // A zero- (or negative-) count poll can never pop a message, so return immediately.
+        // Otherwise the long-poll loop below would block for the full timeout waiting on a message
+        // it would never accept. This preserves the immediate empty return that callers relied on
+        // before issue #142 moved the loop guard onto what was actually popped.
+        if (count <= 0) {
+            return new ArrayList<>();
+        }
         if (timeout < 1) {
             List<Message> messages =
                     getWithTransactionWithOutErrorPropagation(
@@ -160,25 +167,24 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         }
 
         long start = System.currentTimeMillis();
-        final List<Message> messages = new ArrayList<>();
 
         while (true) {
             List<Message> messagesSlice =
                     getWithTransactionWithOutErrorPropagation(
-                            tx -> popMessages(tx, queueName, count - messages.size(), timeout));
+                            tx -> popMessages(tx, queueName, count, timeout));
             if (messagesSlice == null) {
                 logger.warn(
-                        "Unable to poll {} messages from {} due to tx conflict, only {} popped",
-                        count,
-                        queueName,
-                        messages.size());
-                // conflict could have happened, returned messages popped so far
-                return messages;
+                        "Unable to poll {} messages from {} due to tx conflict", count, queueName);
+                return new ArrayList<>();
             }
 
-            messages.addAll(messagesSlice);
-            if (messages.size() >= count || ((System.currentTimeMillis() - start) > timeout)) {
-                return messages;
+            // Long-poll semantics: return as soon as at least one message is available (up to
+            // count), rather than blocking for the full timeout waiting to fill the whole batch.
+            // The retry is still needed to keep waiting while the queue is empty; there is no
+            // partial batch to accumulate because we return on the first non-empty poll. This
+            // matches the Redis queue behavior and keeps tail latency low under low activity.
+            if (!messagesSlice.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
+                return messagesSlice;
             }
             Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
         }

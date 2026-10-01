@@ -19,7 +19,12 @@ export const persistPromptNameOptions = assign<
   LLMFormFieldsMachineContext,
   DoneInvokeEvent<any>
 >({
-  promptNameOptions: (_, { data }) => data,
+  promptNameOptions: (_, { data }) => data ?? [],
+  promptNamesFetched: true,
+});
+
+export const markPromptNamesFetched = assign<LLMFormFieldsMachineContext>({
+  promptNamesFetched: true,
 });
 
 export const persistVectorDbOptions = assign<

@@ -21,7 +21,6 @@ export interface IScheduleDto {
   updatedTime?: number;
   createdBy?: string;
   updatedBy?: string;
-  lastRunTimeInEpoch?: number;
   nextRunTime?: number;
   tags?: TagDto[];
 }
