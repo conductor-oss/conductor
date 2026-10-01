@@ -39,6 +39,7 @@ class ExternalAgentClientGatingTest {
     @Configuration
     @Import({
         BedrockAgentClient.class,
+        BedrockAgentCoreAgentClient.class,
         AzureFoundryAgentClient.class,
         OpenAiAssistantsAgentClient.class,
         CredentialResolutionService.class
@@ -57,6 +58,7 @@ class ExternalAgentClientGatingTest {
         runner.run(
                 ctx -> {
                     assertThat(ctx).doesNotHaveBean(BedrockAgentClient.class);
+                    assertThat(ctx).doesNotHaveBean(BedrockAgentCoreAgentClient.class);
                     assertThat(ctx).doesNotHaveBean(AzureFoundryAgentClient.class);
                     assertThat(ctx).doesNotHaveBean(OpenAiAssistantsAgentClient.class);
                     assertThat(ctx).doesNotHaveBean(CredentialResolutionService.class);
@@ -69,6 +71,7 @@ class ExternalAgentClientGatingTest {
                 .run(
                         ctx -> {
                             assertThat(ctx).hasSingleBean(BedrockAgentClient.class);
+                            assertThat(ctx).hasSingleBean(BedrockAgentCoreAgentClient.class);
                             assertThat(ctx).hasSingleBean(AzureFoundryAgentClient.class);
                             assertThat(ctx).hasSingleBean(OpenAiAssistantsAgentClient.class);
                             assertThat(ctx).hasSingleBean(CredentialResolutionService.class);
@@ -83,6 +86,8 @@ class ExternalAgentClientGatingTest {
                         ctx -> {
                             assertThat(ctx.getBean(BedrockAgentClient.class).agentType())
                                     .isEqualTo(A2AService.AGENT_TYPE_BEDROCK);
+                            assertThat(ctx.getBean(BedrockAgentCoreAgentClient.class).agentType())
+                                    .isEqualTo("bedrock-agentcore");
                             AzureFoundryAgentClient foundry =
                                     ctx.getBean(AzureFoundryAgentClient.class);
                             assertThat(foundry.agentType())
