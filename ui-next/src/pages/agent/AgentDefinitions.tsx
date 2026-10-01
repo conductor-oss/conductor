@@ -81,7 +81,7 @@ export default function AgentDefinitions() {
       {
         id: "workflow_name",
         name: "name",
-        label: "Workflow name",
+        label: "Agent name",
         renderer: (name: string, agent: AgentSummary) => (
           <NavLink
             data-cy="workflow-link"
@@ -173,13 +173,6 @@ export default function AgentDefinitions() {
         grow: 0.5,
         tooltip:
           "How long the agent may run before the timeout policy applies, in seconds",
-      },
-      {
-        id: "failure_workflow",
-        name: "failureWorkflow",
-        label: "Failure workflow",
-        grow: 1,
-        tooltip: "The compensation workflow to run if this agent fails",
       },
       {
         id: "executions_link",
