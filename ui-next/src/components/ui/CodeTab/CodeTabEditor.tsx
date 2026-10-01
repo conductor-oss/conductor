@@ -10,6 +10,7 @@ import {
   XCircle,
 } from "@phosphor-icons/react";
 import { DiffEditor } from "components/ui/DiffEditor";
+import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import {
   ReactNode,
   useContext,
@@ -56,7 +57,6 @@ export type CodeTabEditorProps<T extends Record<string, any>> = {
 };
 
 const MARKER_OWNER = "code-tab";
-const FLASH_MS = 1800;
 const TAB_SIZE = 2;
 
 const defaultValidate = createJsonValidator();
@@ -148,22 +148,17 @@ export const CodeTabEditor = <T extends Record<string, any>>({
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
-  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
   const [caret, setCaret] = useState({ ln: 1, col: 1 });
-  const [flash, setFlash] = useState("");
+  const [notice, setNotice] = useState<{
+    message: string;
+    severity: "success" | "error";
+    at: number;
+  } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const analysis = useMemo(() => validate(value), [validate, value]);
   const status = summarizeProblems(analysis);
   const lineCount = value.split("\n").length;
-
-  const showFlash = (msg: string) => {
-    setFlash(msg);
-    clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setFlash(""), FLASH_MS);
-  };
-
-  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   // Mirror the domain checks into Monaco so they show as squiggles and
   // gutter/overview-ruler marks alongside Monaco's own JSON syntax errors.
@@ -217,13 +212,30 @@ export const CodeTabEditor = <T extends Record<string, any>>({
     } else {
       onChange(formatted);
     }
+    setNotice({
+      message: formatted === value ? "Already formatted" : "Formatted",
+      severity: "success",
+      at: Date.now(),
+    });
   };
 
   const handleCopy = () => {
     navigator.clipboard
       ?.writeText(value)
-      .then(() => showFlash("Copied!"))
-      .catch(() => showFlash("Copy failed"));
+      .then(() =>
+        setNotice({
+          message: "Copied to clipboard",
+          severity: "success",
+          at: Date.now(),
+        }),
+      )
+      .catch(() =>
+        setNotice({
+          message: "Copy failed",
+          severity: "error",
+          at: Date.now(),
+        }),
+      );
   };
 
   const handleDownload = () => {
@@ -375,13 +387,18 @@ export const CodeTabEditor = <T extends Record<string, any>>({
           <span>{lineCount} lines</span>
           <span>Spaces: {TAB_SIZE}</span>
         </Box>
-        <Box sx={{ display: "flex", gap: 4 }}>
-          <Box component="span" sx={{ color: "primary.main" }} role="status">
-            {flash}
-          </Box>
-          <span>{schemaLabel}</span>
-        </Box>
+        <span>{schemaLabel}</span>
       </Box>
+      {notice && (
+        <SnackbarMessage
+          key={notice.at}
+          id={`${idPrefix}-notice`}
+          message={notice.message}
+          severity={notice.severity}
+          onDismiss={() => setNotice(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        />
+      )}
     </Box>
   );
 };
