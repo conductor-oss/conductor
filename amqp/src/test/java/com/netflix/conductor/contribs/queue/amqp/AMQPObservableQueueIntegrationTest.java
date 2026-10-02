@@ -12,11 +12,13 @@
  */
 package com.netflix.conductor.contribs.queue.amqp;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -41,7 +43,8 @@ public class AMQPObservableQueueIntegrationTest {
 
     @Container
     private static final RabbitMQContainer rabbitMQContainer =
-            new RabbitMQContainer("rabbitmq:3-management");
+            new RabbitMQContainer("rabbitmq:3-management")
+                    .withStartupTimeout(Duration.ofSeconds(60));
 
     private ConnectionFactory factory;
     private Address[] addresses;
@@ -49,15 +52,23 @@ public class AMQPObservableQueueIntegrationTest {
 
     @BeforeEach
     public void setup() {
+        AMQPConnection.setAMQPConnection(null);
         factory = new ConnectionFactory();
         factory.setHost(rabbitMQContainer.getHost());
         factory.setPort(rabbitMQContainer.getAmqpPort());
+        factory.setUsername(rabbitMQContainer.getAdminUsername());
+        factory.setPassword(rabbitMQContainer.getAdminPassword());
         addresses =
                 new Address[] {
                     new Address(rabbitMQContainer.getHost(), rabbitMQContainer.getAmqpPort())
                 };
 
         retryPattern = Mockito.mock(AMQPRetryPattern.class);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        AMQPConnection.setAMQPConnection(null);
     }
 
     private AMQPSettings createSettings(String queueName, String exchangeType) {
@@ -76,102 +87,101 @@ public class AMQPObservableQueueIntegrationTest {
     public void testPublishConsumeAckLoop() throws Exception {
         AMQPSettings settings = createSettings("test-queue", "direct");
         AMQPObservableQueue queue =
-                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
+                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 100);
 
-        // 1. Subscribe asynchronously FIRST to ensure the queue is declared and bound
-        TestSubscriber<Message> subscriber = new TestSubscriber<>();
-        queue.observe().subscribe(subscriber);
+        queue.start();
+        try {
+            TestSubscriber<Message> subscriber = new TestSubscriber<>();
+            queue.observe().subscribe(subscriber);
 
-        // 2. Give the broker MORE time to initialize the bindings (increased from 1s to 3s)
-        Thread.sleep(3000);
+            Message msg = new Message("test-id-1", "test-payload-1", null);
+            queue.publish(Collections.singletonList(msg));
 
-        // 3. Publish the message with retry logic
-        Message msg = new Message("test-id-1", "test-payload-1", null);
-        int maxRetries = 3;
-        for (int i = 0; i < maxRetries; i++) {
-            try {
-                queue.publish(Collections.singletonList(msg));
-                break;
-            } catch (Exception e) {
-                if (i == maxRetries - 1) throw e;
-                Thread.sleep(500 * (i + 1)); // Exponential backoff
+            subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+            List<Message> received = subscriber.getOnNextEvents();
+            int retries = 5;
+            while (received.isEmpty() && retries > 0) {
+                Thread.sleep(1000);
+                subscriber.awaitValueCount(1, 5, TimeUnit.SECONDS);
+                received = subscriber.getOnNextEvents();
+                retries--;
             }
+
+            assertTrue(received.size() > 0, "No messages received!");
+            assertEquals("test-payload-1", received.get(0).getPayload());
+
+            List<String> acked = queue.ack(Collections.singletonList(received.get(0)));
+            assertEquals(1, acked.size());
+        } finally {
+            queue.stop();
         }
-
-        // 4. Await the message with a 10-second timeout
-        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
-
-        List<Message> received = subscriber.getOnNextEvents();
-        assertTrue(received.size() > 0, "No messages received!");
-        assertEquals("test-payload-1", received.get(0).getPayload());
-
-        // 5. Ack
-        List<String> acked = queue.ack(Collections.singletonList(received.get(0)));
-        assertEquals(1, acked.size());
     }
 
     @Test
     public void testExchangeRouting() throws Exception {
         AMQPSettings settings = createSettings("test-exchange", "topic");
         AMQPObservableQueue queue =
-                new AMQPObservableQueue(factory, addresses, true, settings, retryPattern, 1, 1000);
+                new AMQPObservableQueue(factory, addresses, true, settings, retryPattern, 1, 100);
 
-        TestSubscriber<Message> subscriber = new TestSubscriber<>();
-        queue.observe().subscribe(subscriber);
-        Thread.sleep(3000);
+        queue.start();
+        try {
+            TestSubscriber<Message> subscriber = new TestSubscriber<>();
+            queue.observe().subscribe(subscriber);
 
-        Message msg = new Message("test-id-2", "test-payload-2", null);
-        int maxRetries = 3;
-        for (int i = 0; i < maxRetries; i++) {
-            try {
-                queue.publish(Collections.singletonList(msg));
-                break;
-            } catch (Exception e) {
-                if (i == maxRetries - 1) throw e;
-                Thread.sleep(500 * (i + 1));
+            Message msg = new Message("test-id-2", "test-payload-2", null);
+            queue.publish(Collections.singletonList(msg));
+
+            subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+            List<Message> received = subscriber.getOnNextEvents();
+            int retries = 5;
+            while (received.isEmpty() && retries > 0) {
+                Thread.sleep(1000);
+                subscriber.awaitValueCount(1, 5, TimeUnit.SECONDS);
+                received = subscriber.getOnNextEvents();
+                retries--;
             }
+
+            assertTrue(received.size() > 0, "No messages received!");
+            assertEquals("test-payload-2", received.get(0).getPayload());
+
+            queue.ack(Collections.singletonList(received.get(0)));
+        } finally {
+            queue.stop();
         }
-
-        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
-        List<Message> received = subscriber.getOnNextEvents();
-
-        assertTrue(received.size() > 0, "No messages received!");
-        assertEquals("test-payload-2", received.get(0).getPayload());
-
-        queue.ack(Collections.singletonList(received.get(0)));
     }
 
     @Test
     public void testCancelThrowsNumberFormatException() throws Exception {
         AMQPSettings settings = createSettings("test-cancel-queue", "direct");
         AMQPObservableQueue queue =
-                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
+                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 100);
 
-        TestSubscriber<Message> subscriber = new TestSubscriber<>();
-        queue.observe().subscribe(subscriber);
-        Thread.sleep(3000);
+        queue.start();
+        try {
+            TestSubscriber<Message> subscriber = new TestSubscriber<>();
+            queue.observe().subscribe(subscriber);
 
-        Message msg = new Message("test-id-3", "test-payload-3", null);
-        int maxRetries = 3;
-        for (int i = 0; i < maxRetries; i++) {
-            try {
-                queue.publish(Collections.singletonList(msg));
-                break;
-            } catch (Exception e) {
-                if (i == maxRetries - 1) throw e;
-                Thread.sleep(500 * (i + 1));
+            Message msg = new Message("test-id-3", "test-payload-3", null);
+            queue.publish(Collections.singletonList(msg));
+
+            subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+            List<Message> received = subscriber.getOnNextEvents();
+            int retries = 5;
+            while (received.isEmpty() && retries > 0) {
+                Thread.sleep(1000);
+                subscriber.awaitValueCount(1, 5, TimeUnit.SECONDS);
+                received = subscriber.getOnNextEvents();
+                retries--;
             }
+
+            assertTrue(received.size() > 0, "No messages received!");
+
+            Message consumedMsg = received.get(0);
+            consumedMsg.setReceipt(UUID.randomUUID().toString());
+
+            queue.ack(Collections.singletonList(consumedMsg));
+        } finally {
+            queue.stop();
         }
-
-        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
-        List<Message> received = subscriber.getOnNextEvents();
-        assertTrue(received.size() > 0, "No messages received!");
-
-        Message consumedMsg = received.get(0);
-        // Simulate Event.cancel() replacing the receipt with a UUID
-        consumedMsg.setReceipt(UUID.randomUUID().toString());
-
-        // This reproduces Issue #779, but now we expect it to safely return instead of crashing
-        queue.ack(Collections.singletonList(consumedMsg));
     }
 }
