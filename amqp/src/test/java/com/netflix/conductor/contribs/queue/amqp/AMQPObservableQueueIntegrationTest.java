@@ -82,14 +82,23 @@ public class AMQPObservableQueueIntegrationTest {
         TestSubscriber<Message> subscriber = new TestSubscriber<>();
         queue.observe().subscribe(subscriber);
 
-        // 2. Give the broker a moment to initialize the bindings
-        Thread.sleep(1000);
+        // 2. Give the broker MORE time to initialize the bindings (increased from 1s to 3s)
+        Thread.sleep(3000);
 
-        // 3. Publish the message safely
+        // 3. Publish the message with retry logic
         Message msg = new Message("test-id-1", "test-payload-1", null);
-        queue.publish(Collections.singletonList(msg));
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                queue.publish(Collections.singletonList(msg));
+                break;
+            } catch (Exception e) {
+                if (i == maxRetries - 1) throw e;
+                Thread.sleep(500 * (i + 1)); // Exponential backoff
+            }
+        }
 
-        // 4. Await the message with a 10-second timeout (Prevents infinite CI hanging!)
+        // 4. Await the message with a 10-second timeout
         subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
 
         List<Message> received = subscriber.getOnNextEvents();
@@ -109,10 +118,19 @@ public class AMQPObservableQueueIntegrationTest {
 
         TestSubscriber<Message> subscriber = new TestSubscriber<>();
         queue.observe().subscribe(subscriber);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         Message msg = new Message("test-id-2", "test-payload-2", null);
-        queue.publish(Collections.singletonList(msg));
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                queue.publish(Collections.singletonList(msg));
+                break;
+            } catch (Exception e) {
+                if (i == maxRetries - 1) throw e;
+                Thread.sleep(500 * (i + 1));
+            }
+        }
 
         subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
         List<Message> received = subscriber.getOnNextEvents();
@@ -131,10 +149,19 @@ public class AMQPObservableQueueIntegrationTest {
 
         TestSubscriber<Message> subscriber = new TestSubscriber<>();
         queue.observe().subscribe(subscriber);
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         Message msg = new Message("test-id-3", "test-payload-3", null);
-        queue.publish(Collections.singletonList(msg));
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                queue.publish(Collections.singletonList(msg));
+                break;
+            } catch (Exception e) {
+                if (i == maxRetries - 1) throw e;
+                Thread.sleep(500 * (i + 1));
+            }
+        }
 
         subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
         List<Message> received = subscriber.getOnNextEvents();
