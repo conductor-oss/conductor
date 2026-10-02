@@ -21,6 +21,7 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+    testImplementation 'org.springframework:spring-web'
     testImplementation project(':conductor-core').sourceSets.test.output
     testImplementation project(':conductor-common').sourceSets.test.output
 
