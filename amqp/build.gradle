@@ -9,4 +9,8 @@ dependencies {
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'org.springframework.boot:spring-boot-starter-web'
+
+    testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
+    testImplementation "org.testcontainers:rabbitmq:${revTestContainer}"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
