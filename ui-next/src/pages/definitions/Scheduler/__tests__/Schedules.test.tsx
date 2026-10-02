@@ -1,4 +1,4 @@
-import { columns, getDefaultShowColumns } from "../Schedules";
+import { columns, getDefaultShowColumns } from "../scheduleColumns";
 
 // "actions" is appended to the columns inside the component.
 const columnIds = [...columns.map((column) => column.id), "actions"];

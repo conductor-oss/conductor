@@ -34,7 +34,14 @@ export const ConductorUpdateTaskFormEvent = ({
   return (
     <>
       <RadioGroup
-        sx={{ color: "#767676", ">label >span": { fontWeight: 600, mb: 2 } }}
+        sx={{
+          color: "#767676",
+          // The theme's radio padding would push the row down from whatever is
+          // above it, so drop it and space the row from the inputs here.
+          mb: 4,
+          // "& .MuiRadio-root": { py: 0 },
+          // "& .MuiFormControlLabel-label": { fontWeight: 600 },
+        }}
         name="refresh-radio-group-options"
         row
         value={isTaskIdSelected ? "task-id" : "workflow-id-task-ref"}
@@ -69,6 +76,7 @@ export const ConductorUpdateTaskFormEvent = ({
           <InputComponent
             fullWidth
             label="Task ID"
+            placeholder={`\${taskId}`}
             value={value?.taskId}
             onTextInputChange={(val: string) =>
               onChange(omitWorkflowID({ ...value, taskId: val }))
@@ -87,6 +95,7 @@ export const ConductorUpdateTaskFormEvent = ({
             <InputComponent
               fullWidth
               label="Workflow ID"
+              placeholder={`\${workflowInstanceId}`}
               value={value?.workflowId}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, workflowId: val }))
@@ -103,6 +112,7 @@ export const ConductorUpdateTaskFormEvent = ({
             <InputComponent
               fullWidth
               label="Task reference name"
+              placeholder="wait_task_ref"
               value={value?.taskRefName}
               onTextInputChange={(val: string) =>
                 onChange(omitTaskId({ ...value, taskRefName: val }))

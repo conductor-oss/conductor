@@ -8,6 +8,7 @@ export enum EventFormMachineTypes {
   INPUT_CHANGE = "INPUT_CHANGE",
   EDIT_ACTION = "EDIT_ACTION",
   DELETE_ACTION = "DELETE_ACTION",
+  MOVE_ACTION = "MOVE_ACTION",
   SAVE_EVT = "SAVE_EVT",
   TOGGLE_FORM_EDITOR_EVT = "TOGGLE_FORM_EDITOR_EVT",
   RESET_CONFIRM_EVT = "RESET_CONFIRM_EVT",
@@ -28,6 +29,12 @@ export type EditActionEvent = {
 
 export type DeletActionEvent = {
   type: EventFormMachineTypes.DELETE_ACTION;
+};
+
+export type MoveActionEvent = {
+  type: EventFormMachineTypes.MOVE_ACTION;
+  from: number;
+  to: number;
 };
 
 export type SaveEvent = {
@@ -51,6 +58,7 @@ export type FormHandlerEvents =
   | AddEvent
   | EditActionEvent
   | DeletActionEvent
+  | MoveActionEvent
   | SaveEvent
   | ToggleFormModeEvent
   | ResetConfirmEvent
@@ -74,12 +82,17 @@ export const queueTypeLabel: { [key in QueueTypeSource]: string } = {
   sqs: "sqs",
 };
 
+// Mirrors the evaluators the server registers (core/.../execution/evaluators).
 export enum Evaluator {
   javascript = "javascript",
+  graaljs = "graaljs",
+  python = "python",
   "value-param" = "value-param",
 }
 export const evaluatorLabel: { [key in Evaluator]: string } = {
   javascript: "javascript",
+  graaljs: "graaljs",
+  python: "python",
   "value-param": "value-param",
 };
 
