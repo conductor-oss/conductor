@@ -210,7 +210,9 @@ public class AMQPObservableQueue implements ObservableQueue {
         try {
             deliveryTag = Long.parseLong(message.getReceipt());
         } catch (NumberFormatException e) {
-            LOGGER.warn("Cannot ACK message; receipt is not a valid AMQP delivery tag (e.g., UUID from Event.cancel): {}", message.getReceipt());
+            LOGGER.warn(
+                    "Cannot ACK message; receipt is not a valid AMQP delivery tag (e.g., UUID from Event.cancel): {}",
+                    message.getReceipt());
             return;
         }
 
@@ -252,7 +254,9 @@ public class AMQPObservableQueue implements ObservableQueue {
             try {
                 deliveryTag = Long.parseLong(message.getReceipt());
             } catch (NumberFormatException e) {
-                LOGGER.warn("Cannot NACK message; receipt is not a valid AMQP delivery tag: {}", message.getReceipt());
+                LOGGER.warn(
+                        "Cannot NACK message; receipt is not a valid AMQP delivery tag: {}",
+                        message.getReceipt());
                 continue;
             }
 
