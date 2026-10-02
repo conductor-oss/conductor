@@ -95,6 +95,7 @@ export interface GrpcTaskDef extends CommonTaskDef {
     inputType?: string;
     methodType?: string;
     outputType?: string;
+    compressionCodec?: string;
     hedgingConfig?: { maxAttempts?: number };
   };
 }

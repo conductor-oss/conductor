@@ -190,9 +190,9 @@ export const jakatraPathToPropertyPath = (path?: string): string => {
       .replace(/<list element>/g, "")
       // Remove <map value> markers
       .replace(/<map value>/g, "")
-      // Clean up any double brackets that might have been created
-      .replace(/\]\[/g, "][")
       // Remove any dots that appear right before a bracket
+      // (adjacent brackets like "[0][1]" are valid lodash nested access
+      // and are intentionally left as-is)
       .replace(/\.\[/g, "[")
   );
 };
