@@ -110,17 +110,9 @@ public class AMQPObservableQueueIntegrationTest {
             assertTrue(received.size() > 0, "No messages received!");
             assertEquals("test-payload-1", received.get(0).getPayload());
 
-            // Retry the ack operation to handle transient delays on the broker side under CI load.
-            List<String> acked = Collections.emptyList();
-            int ackRetries = 5;
-            while (acked.isEmpty() && ackRetries > 0) {
-                acked = queue.ack(Collections.singletonList(received.get(0)));
-                if (acked.isEmpty()) {
-                    Thread.sleep(1000);
-                }
-                ackRetries--;
-            }
-            assertEquals(1, acked.size());
+            // ack() returns the list of FAILED acknowledgements; an empty list means success.
+            List<String> acked = queue.ack(Collections.singletonList(received.get(0)));
+            assertTrue(acked.isEmpty(), "Ack failed for message: " + acked);
         } finally {
             queue.stop();
         }
