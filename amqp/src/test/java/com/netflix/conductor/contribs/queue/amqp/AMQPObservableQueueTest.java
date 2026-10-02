@@ -983,53 +983,62 @@ public class AMQPObservableQueueTest {
 
     @Test
     public void testAckWithUUIDReceiptDoesNotThrow() throws Exception {
-        ConnectionFactory factory = mock(ConnectionFactory.class);
-        Connection connection = mock(Connection.class);
-        Channel channel = mock(Channel.class);
-        when(factory.newConnection(any(Address[].class))).thenReturn(connection);
-        when(connection.isOpen()).thenReturn(true);
-        when(connection.createChannel()).thenReturn(channel);
+        Channel channel = mockBaseChannel();
+        Connection connection = mockGoodConnection(channel);
 
-        AMQPSettings settings = mock(AMQPSettings.class);
-        when(settings.getQueueOrExchangeName()).thenReturn("test_queue");
-        when(settings.getRoutingKey()).thenReturn("test_queue");
+        final String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        List<GetResponse> queue = buildQueue(new Random(), batchSize);
+        channel = mockChannelForQueue(channel, true, true, queueName, queue);
 
-        AMQPObservableQueue queue = new AMQPObservableQueue(
-                factory, new Address[]{new Address("localhost", 5672)}, false, settings, null, 1, 100);
-        
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        mockConnectionFactory(connection),
+                        addresses,
+                        false,
+                        settings,
+                        null,
+                        batchSize,
+                        pollTimeMs);
+
         Message message = new Message();
         message.setId("msg-1");
         message.setReceipt(UUID.randomUUID().toString()); // Simulate Event.cancel() UUID
 
         // This should not throw NumberFormatException, nor any other exception
-        queue.ack(Collections.singletonList(message));
-        
+        observableQueue.ack(Collections.singletonList(message));
+
         // Channel should not be used for basicAck since the receipt was invalid
         verify(channel, Mockito.never()).basicAck(anyLong(), anyBoolean());
     }
 
     @Test
     public void testAckWithValidNumericReceiptWorks() throws Exception {
-        ConnectionFactory factory = mock(ConnectionFactory.class);
-        Connection connection = mock(Connection.class);
-        Channel channel = mock(Channel.class);
-        when(factory.newConnection(any(Address[].class))).thenReturn(connection);
-        when(connection.isOpen()).thenReturn(true);
-        when(connection.createChannel()).thenReturn(channel);
+        Channel channel = mockBaseChannel();
+        Connection connection = mockGoodConnection(channel);
 
-        AMQPSettings settings = mock(AMQPSettings.class);
-        when(settings.getQueueOrExchangeName()).thenReturn("test_queue");
-        when(settings.getRoutingKey()).thenReturn("test_queue");
+        final String queueName = RandomStringUtils.randomAlphabetic(30);
+        AMQPSettings settings = new AMQPSettings(properties).fromURI("amqp_queue:" + queueName);
+        List<GetResponse> queue = buildQueue(new Random(), batchSize);
+        channel = mockChannelForQueue(channel, true, true, queueName, queue);
+        doNothing().when(channel).basicAck(anyLong(), eq(false));
 
-        AMQPObservableQueue queue = new AMQPObservableQueue(
-                factory, new Address[]{new Address("localhost", 5672)}, false, settings, null, 1, 100);
-        
+        AMQPObservableQueue observableQueue =
+                new AMQPObservableQueue(
+                        mockConnectionFactory(connection),
+                        addresses,
+                        false,
+                        settings,
+                        null,
+                        batchSize,
+                        pollTimeMs);
+
         Message message = new Message();
         message.setId("msg-1");
         message.setReceipt("12345"); // Valid AMQP delivery tag
 
-        queue.ack(Collections.singletonList(message));
-        
+        observableQueue.ack(Collections.singletonList(message));
+
         // Channel should be invoked with delivery tag 12345
         verify(channel, times(1)).basicAck(12345L, false);
     }

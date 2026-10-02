@@ -15,7 +15,6 @@ package com.netflix.conductor.contribs.queue.amqp;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,14 +33,13 @@ import com.rabbitmq.client.ConnectionFactory;
 import rx.Observable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class AMQPObservableQueueIntegrationTest {
 
     @Container
-    private static final RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management");
+    private static final RabbitMQContainer rabbitMQContainer =
+            new RabbitMQContainer("rabbitmq:3-management");
 
     private ConnectionFactory factory;
     private Address[] addresses;
@@ -52,7 +50,10 @@ public class AMQPObservableQueueIntegrationTest {
         factory = new ConnectionFactory();
         factory.setHost(rabbitMQContainer.getHost());
         factory.setPort(rabbitMQContainer.getAmqpPort());
-        addresses = new Address[]{new Address(rabbitMQContainer.getHost(), rabbitMQContainer.getAmqpPort())};
+        addresses =
+                new Address[] {
+                    new Address(rabbitMQContainer.getHost(), rabbitMQContainer.getAmqpPort())
+                };
 
         retryPattern = Mockito.mock(AMQPRetryPattern.class);
     }
@@ -60,7 +61,7 @@ public class AMQPObservableQueueIntegrationTest {
     private AMQPSettings createSettings(String queueName, String exchangeType) {
         AMQPEventQueueProperties properties = new AMQPEventQueueProperties();
         properties.setExchangeType(exchangeType);
-        
+
         AMQPSettings settings = new AMQPSettings(properties);
         AMQPSettings spySettings = Mockito.spy(settings);
         Mockito.when(spySettings.getQueueOrExchangeName()).thenReturn(queueName);
@@ -72,8 +73,8 @@ public class AMQPObservableQueueIntegrationTest {
     @Test
     public void testPublishConsumeAckLoop() throws Exception {
         AMQPSettings settings = createSettings("test-queue", "direct");
-        AMQPObservableQueue queue = new AMQPObservableQueue(
-                factory, addresses, false, settings, retryPattern, 1, 1000);
+        AMQPObservableQueue queue =
+                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
 
         // Publish
         Message msg = new Message("test-id-1", "test-payload-1", null);
@@ -93,8 +94,8 @@ public class AMQPObservableQueueIntegrationTest {
     @Test
     public void testExchangeRouting() throws Exception {
         AMQPSettings settings = createSettings("test-exchange", "topic");
-        AMQPObservableQueue queue = new AMQPObservableQueue(
-                factory, addresses, true, settings, retryPattern, 1, 1000);
+        AMQPObservableQueue queue =
+                new AMQPObservableQueue(factory, addresses, true, settings, retryPattern, 1, 1000);
 
         Message msg = new Message("test-id-2", "test-payload-2", null);
         queue.publish(Collections.singletonList(msg));
@@ -103,15 +104,15 @@ public class AMQPObservableQueueIntegrationTest {
         List<Message> received = observable.take(1).toList().toBlocking().first();
         assertEquals(1, received.size());
         assertEquals("test-payload-2", received.get(0).getPayload());
-        
+
         queue.ack(Collections.singletonList(received.get(0)));
     }
 
     @Test
     public void testCancelThrowsNumberFormatException() throws Exception {
         AMQPSettings settings = createSettings("test-cancel-queue", "direct");
-        AMQPObservableQueue queue = new AMQPObservableQueue(
-                factory, addresses, false, settings, retryPattern, 1, 1000);
+        AMQPObservableQueue queue =
+                new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
 
         Message msg = new Message("test-id-3", "test-payload-3", null);
         queue.publish(Collections.singletonList(msg));
