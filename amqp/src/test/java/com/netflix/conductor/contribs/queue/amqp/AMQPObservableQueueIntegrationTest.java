@@ -45,15 +45,13 @@ public class AMQPObservableQueueIntegrationTest {
 
     private AMQPSettings createSettings(String queueName, String exchangeType) {
         AMQPEventQueueProperties properties = new AMQPEventQueueProperties();
-        AMQPEventQueueProperties.RabbitMQProperties rProperties = new AMQPEventQueueProperties.RabbitMQProperties();
-        rProperties.setExchangeType(exchangeType);
-        properties.setRabbitmq(rProperties);
+        properties.setExchangeType(exchangeType);
         
         AMQPSettings settings = new AMQPSettings(properties);
         AMQPSettings spySettings = Mockito.spy(settings);
         Mockito.when(spySettings.getQueueOrExchangeName()).thenReturn(queueName);
         Mockito.when(spySettings.getRoutingKey()).thenReturn(queueName);
-        Mockito.when(spySettings.getDeliveryMode()).thenReturn("2");
+        Mockito.when(spySettings.getDeliveryMode()).thenReturn(2);
         return spySettings;
     }
 
