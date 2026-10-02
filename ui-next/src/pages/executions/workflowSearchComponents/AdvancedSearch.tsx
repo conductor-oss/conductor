@@ -1,16 +1,12 @@
 import { Monaco } from "@monaco-editor/react";
-import { Box, Grid } from "@mui/material";
-import { Button, Paper } from "components";
-import ResetIcon from "components/icons/ResetIcon";
-import SearchIcon from "components/icons/SearchIcon";
-import StatusBadge from "components/StatusBadge";
-import { renderStatusTagChip } from "components/StatusTagChip";
-import SplitButton from "components/ui/buttons/ConductorSplitButton";
+import { Box } from "@mui/material";
+import { Paper } from "components";
+import {
+  ExecutionSearchFilters,
+  FreeTextInput,
+  SqlQueryBar,
+} from "components/features/executionSearch";
 import { DEFAULT_ROWS_PER_PAGE } from "components/ui/DataTable/DataTable";
-import { ConductorAutoComplete } from "components/ui/inputs";
-import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
-import ConductorInput from "components/ui/inputs/ConductorInput";
-import MuiTypography from "components/ui/MuiTypography";
 import _isEmpty from "lodash/isEmpty";
 import {
   ReactNode,
@@ -23,21 +19,19 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 import { Navigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
-import { colors } from "theme/tokens/variables";
 import { Key } from "ts-key-enum";
 import { IObject } from "types/common";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { TaskExecutionResult } from "types/TaskExecution";
 import { DoSearchProps } from "types/WorkflowExecution";
-import { dateToEpoch, useLocalStorage } from "utils";
+import { dateToEpoch } from "utils";
 import { WORKFLOW_SEARCH_QUERY_SUGGESTIONS } from "utils/constants/common";
 import { ERROR_URL } from "utils/constants/route";
 import { useWorkflowNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
+import { buildExecutionDateFilters } from "../executionDateFilters";
 import ResultsTable from "../ResultsTable";
-import { ExampleSearchQuery } from "../SearchExampleQuery";
 
 const DEFAULT_SORT = "startTime:DESC";
 const workflowStatuses = Object.values(WorkflowExecutionStatus);
@@ -74,13 +68,6 @@ export interface AdvancedSearchProps {
   setFromDisplayTime: (val: string) => void;
   toDisplayTime: string;
   setToDisplayTime: (val: string) => void;
-  openDateSelect: boolean;
-  setOpenDateSelect: (val: boolean) => void;
-  openStartDatePicker: boolean;
-  setStartOpenDatePicker: (val: boolean) => void;
-  openEndDatePicker: boolean;
-  setEndOpenDatePicker: (val: boolean) => void;
-  recentSearches: { start: string; end: string };
   /** Classifier filter passed to /workflow/search (e.g. "workflow" or "agent"). */
   classifier?: string;
 }
@@ -109,13 +96,6 @@ export default function AdvancedSearch({
   setFromDisplayTime,
   toDisplayTime,
   setToDisplayTime,
-  openDateSelect,
-  setOpenDateSelect,
-  openStartDatePicker,
-  setStartOpenDatePicker,
-  openEndDatePicker,
-  setEndOpenDatePicker,
-  recentSearches,
   classifier = "workflow",
 }: AdvancedSearchProps) {
   const disposeRef = useRef<null | (() => void)>(null);
@@ -145,14 +125,6 @@ export default function AdvancedSearch({
       }
     };
   }, []);
-
-  // for tooltip flag in localstorage
-  const [tooltipFlags, setTooltipFlags] = useLocalStorage("tooltipFlags", {});
-  const handleToolTipOnClose = () => {
-    if (tooltipFlags && !tooltipFlags.executionSearch) {
-      setTooltipFlags({ ...tooltipFlags, executionSearch: true });
-    }
-  };
 
   const currentTimeStamp = Date.now().toString();
   const last72HoursTimestamp = Date.now() - 72 * 60 * 60 * 1000;
@@ -276,6 +248,26 @@ export default function AdvancedSearch({
     }
   };
 
+  // The pills apply on Apply, like in basic mode, so changing them searches
+  // with the current query. Typing in the editor still waits for Search.
+  const pillFiltersKey = JSON.stringify([
+    status,
+    startTimeFrom,
+    startTimeTo,
+    endTimeFrom,
+    endTimeTo,
+  ]);
+  const pillFiltersInitialized = useRef(false);
+  useEffect(() => {
+    if (!pillFiltersInitialized.current) {
+      pillFiltersInitialized.current = true;
+      return;
+    }
+    setPage(1);
+    setQueryFT(buildQuery());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pillFiltersKey]);
+
   // @ts-ignore
   if (error?.status === 401) {
     const errorResult = error;
@@ -350,63 +342,48 @@ export default function AdvancedSearch({
     }
   };
 
+  const runSearch = () =>
+    doSearch({
+      resultObj,
+      queryFT,
+      buildQuery,
+      setQueryFT,
+      refetch,
+      setPage,
+      setRecentTaskSearch,
+    });
+
+  const hasActiveFilters =
+    !_isEmpty(queryText) ||
+    !_isEmpty(freeText) ||
+    status.length > 0 ||
+    !_isEmpty(startTimeTo) ||
+    !_isEmpty(endTimeFrom) ||
+    !_isEmpty(endTimeTo);
+
   return (
     <>
       <Paper variant="outlined" sx={{ marginBottom: 6 }}>
-        {SwitchComponent}
-        <Box>
-          {showCodeDialog && (
-            <ApiSearchModalIntegration
-              onClose={() => setShowCodeDialog("")}
-              buildQueryOutput={{
-                start: (page - 1) * rowsPerPage,
-                size: rowsPerPage,
-                sort,
-                freeText,
-                query: buildQuery().query,
-              }}
-            />
-          )}
-          <Grid container sx={{ width: "100%" }} spacing={3} p={6} pt={2}>
-            <Grid size={12}>
-              <ConductorCodeBlockInput
-                label="Search"
-                language="sql"
-                minHeight={30}
+        {showCodeDialog && (
+          <ApiSearchModalIntegration
+            onClose={() => setShowCodeDialog("")}
+            buildQueryOutput={{
+              start: (page - 1) * rowsPerPage,
+              size: rowsPerPage,
+              sort,
+              freeText,
+              query: buildQuery().query,
+            }}
+          />
+        )}
+        <ExecutionSearchFilters
+          query={
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              <SqlQueryBar
                 value={queryText}
                 onChange={setQueryText}
-                autoFocus
-                options={{
-                  lineNumbers: "off",
-                }}
-                tooltip={{
-                  placement: "top",
-                  title: "Search",
-                  content: (
-                    <Box>
-                      Search workflow execution by query parameters. Then hit
-                      ENTER, and now you can click SEARCH.
-                      <Box
-                        sx={{
-                          border: "1px solid lightgrey",
-                          padding: 2,
-                          color: colors.black,
-                          borderRadius: "4px",
-                          marginTop: 1,
-                          fontWeight: 400,
-                        }}
-                      >
-                        <MuiTypography fontWeight={400} color={colors.greyText}>
-                          Sample:
-                        </MuiTypography>
-                        <ExampleSearchQuery />
-                      </Box>
-                    </Box>
-                  ),
-                  showInitial: !tooltipFlags.executionSearch,
-                  initialTimeout: 2000,
-                  onClose: handleToolTipOnClose,
-                }}
+                onSubmit={runSearch}
+                hint="Join conditions with AND · ⌘/Ctrl+Enter to search"
                 beforeMount={(monaco: Monaco) => {
                   if (disposeRef.current) {
                     disposeRef.current();
@@ -439,127 +416,40 @@ export default function AdvancedSearch({
                   disposeRef.current = () => disposable.dispose();
                 }}
               />
-            </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                md: 2,
-                lg: 2,
-              }}
-            >
-              <ConductorAutoComplete
-                id="workflow-search-status"
-                label="Status"
-                disabled={queryText.includes("status")}
-                fullWidth
-                options={workflowStatuses}
-                multiple
-                onChange={(__, val: string[]) => setStatus(val)}
-                value={status}
-                renderTags={renderStatusTagChip}
-                renderOption={(props, option) => (
-                  <Box component="li" {...props}>
-                    <StatusBadge status={option} />
-                  </Box>
-                )}
-              />
-            </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 12,
-                md: 2,
-                lg: 2.5,
-              }}
-            >
-              <ConductorInput
-                fullWidth
-                label="Free text search"
+              <FreeTextInput
                 value={freeText}
-                onTextInputChange={setFreeText}
-                showClearButton
+                onChange={setFreeText}
+                onSubmit={runSearch}
               />
-            </Grid>
-
-            <Grid
-              size={{
-                xs: 12,
-                sm: 12,
-                md: 5.5,
-                lg: 5,
-              }}
-            >
-              <DateControlComponent
-                startTime={startTimeFrom}
-                onStartFromChange={onStartFromChange}
-                startTimeEnd={startTimeTo}
-                onStartToChange={onStartToChange}
-                endTimeStart={endTimeFrom}
-                onEndFromChange={onEndFromChange}
-                endTime={endTimeTo}
-                onEndToChange={onEndToChange}
-                fromDisplayTime={fromDisplayTime}
-                setFromDisplayTime={setFromDisplayTime}
-                toDisplayTime={toDisplayTime}
-                setToDisplayTime={setToDisplayTime}
-                openDateSelect={openDateSelect}
-                setOpenDateSelect={setOpenDateSelect}
-                openStartDatePicker={openStartDatePicker}
-                setStartOpenDatePicker={setStartOpenDatePicker}
-                openEndDatePicker={openEndDatePicker}
-                setEndOpenDatePicker={setEndOpenDatePicker}
-                disabled={
-                  queryText.includes("startTime") ||
-                  queryText.includes("endTime")
-                }
-                recentSearches={recentSearches}
-                startTimeLabel="Execution Start Time"
-                endTimeLabel="Execution End Time"
-              />
-            </Grid>
-
-            <Grid
-              display="flex"
-              justifyContent="end"
-              alignItems="center"
-              gap={1}
-              size={12}
-              sx={{ flexWrap: "nowrap" }}
-            >
-              <Button
-                id="reset-workflow-btn"
-                variant="text"
-                onClick={handleReset}
-                startIcon={<ResetIcon />}
-              >
-                Reset
-              </Button>
-              <SplitButton
-                id="search-workflow-btn"
-                startIcon={<SearchIcon />}
-                options={[
-                  {
-                    label: "Show as code",
-                    onClick: () => setShowCodeDialog("active"),
-                  },
-                ]}
-                primaryOnClick={() =>
-                  doSearch({
-                    resultObj,
-                    queryFT,
-                    buildQuery,
-                    setQueryFT,
-                    refetch,
-                    setPage,
-                    setRecentTaskSearch,
-                  })
-                }
-              >
-                Search
-              </SplitButton>
-            </Grid>
-          </Grid>
-        </Box>
+            </Box>
+          }
+          refresh={{
+            onRefresh: runSearch,
+            onShowCode: () => setShowCodeDialog("active"),
+          }}
+          statusFilter={{
+            selected: status,
+            onApply: setStatus,
+            disabled: queryText.includes("status"),
+          }}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={handleReset}
+          dateFilters={buildExecutionDateFilters({
+            startTimeFrom,
+            startTimeTo,
+            onStartFromChange,
+            onStartToChange,
+            fromDisplayTime,
+            setFromDisplayTime,
+            endTimeFrom,
+            endTimeTo,
+            onEndFromChange,
+            onEndToChange,
+            toDisplayTime,
+            setToDisplayTime,
+          })}
+          modeSwitch={SwitchComponent}
+        />
       </Paper>
       <ResultsTable
         title={resultObj ? getTableTitle(resultObj) : undefined}

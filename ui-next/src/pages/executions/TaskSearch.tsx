@@ -28,7 +28,7 @@ import { useTaskExecutionsSearch } from "utils/query";
 import { getErrors, tryToJson } from "utils/utils";
 import { AdvanceSearch } from "./Task/AdvanceSearch";
 import { BasicSearch } from "./Task/BasicSearch";
-import { SwitchComponent } from "./Task/SwitchComponent";
+import { SearchModeSwitch } from "components/features/executionSearch";
 import { TaskApiSearchModal } from "./Task/TaskApiSearchModal";
 import ResultsTable from "./TaskResultsTable";
 
@@ -398,7 +398,11 @@ export function TaskSearch() {
       />
       <SectionContainer>
         <Paper variant="outlined" sx={{ marginBottom: 6 }}>
-          <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+          <Box
+            sx={{ display: "flex", justifyContent: "flex-end", px: 3, pt: 2 }}
+          >
+            <SearchModeSwitch checked={asQuery} onChange={setAsQuery} />
+          </Box>
           {asQuery ? (
             <AdvanceSearch
               setShowCodeDialog={setShowCodeDialog}

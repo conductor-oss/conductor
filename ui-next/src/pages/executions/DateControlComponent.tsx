@@ -193,7 +193,7 @@ export const DateControlComponent = ({
               }}
               sx={{
                 "& .MuiTooltip-tooltip": {
-                  minWidth: "500px",
+                  minWidth: { xs: "calc(100vw - 32px)", sm: "500px" },
                 },
               }}
               title={
@@ -315,7 +315,7 @@ export const DateControlComponent = ({
                 }}
                 sx={{
                   "& .MuiTooltip-tooltip": {
-                    minWidth: "500px",
+                    minWidth: { xs: "calc(100vw - 32px)", sm: "500px" },
                   },
                 }}
                 title={

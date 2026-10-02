@@ -57,18 +57,27 @@ const getMaskElements = (p: Page) => [
 ];
 
 /**
- * MUI commits an autocomplete selection on the next React render. Wait for its selected tag before
- * moving on so a following action cannot race the state update in CI.
+ * Opens the Status filter, checks the given statuses and applies them. Wait for
+ * the pill to show the applied value so a following action cannot race the
+ * state update in CI.
  */
-const selectWorkflowStatus = async (page: Page, status: string) => {
-  const statusInput = page.locator("#workflow-search-status");
-  const statusField = statusInput.locator("xpath=..");
-  await statusInput.click();
-  await page.getByRole("option", { name: status }).click();
-  await expect(statusField).toContainText(
-    status.charAt(0) + status.slice(1).toLowerCase(),
-  );
-  await page.keyboard.press("Escape");
+const applyWorkflowStatuses = async (page: Page, statuses: string[]) => {
+  const statusPill = page.locator("#workflow-search-status");
+  await statusPill.click();
+  const panel = page.getByRole("dialog", { name: "Status" });
+  for (const status of statuses) {
+    await panel.getByRole("checkbox", { name: status }).check();
+  }
+  await panel.getByRole("button", { name: /^Apply/ }).click();
+  await expect(panel).toBeHidden();
+  await expect(statusPill).not.toContainText("Any");
+};
+
+/** Picks a field in the scoped search bar and submits a value for it. */
+const searchBy = async (page: Page, field: string, value: string) => {
+  await page.locator("#workflow-search-field").selectOption(field);
+  await page.locator("#workflow-search-input").fill(value);
+  await page.locator("#search-workflow-btn").click();
 };
 
 const screenshotAtAllViewports = async (
@@ -98,12 +107,12 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
     });
   });
 
-  test("Should match search form with workflow ID filter filled", async ({
+  test("Should match search form with workflow ID filter added", async ({
     page,
   }) => {
     await gotoExecutions(page);
 
-    await page.locator("#workflow-search-id").fill("test-workflow-id-12345");
+    await searchBy(page, "workflowId", "test-workflow-id-12345");
 
     await screenshotAtAllViewports(
       page,
@@ -120,7 +129,7 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await selectWorkflowStatus(page, "COMPLETED");
+    await applyWorkflowStatuses(page, ["COMPLETED"]);
 
     await screenshotAtAllViewports(
       page,
@@ -137,12 +146,10 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   }) => {
     await gotoExecutions(page);
 
-    await selectWorkflowStatus(page, "COMPLETED");
-    await selectWorkflowStatus(page, "FAILED");
+    await applyWorkflowStatuses(page, ["COMPLETED", "FAILED"]);
 
-    await page
-      .locator("#workflow-search-correlation-id")
-      .fill("my-correlation-id");
+    await page.locator("#workflow-search-field").selectOption("correlationId");
+    await page.locator("#workflow-search-input").fill("my-correlation-id");
     await page.keyboard.press("Enter");
 
     await screenshotAtAllViewports(
@@ -158,8 +165,8 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   test("Should match search form after reset", async ({ page }) => {
     await gotoExecutions(page);
 
-    await selectWorkflowStatus(page, "COMPLETED");
-    await page.locator("#workflow-search-id").fill("some-id");
+    await applyWorkflowStatuses(page, ["COMPLETED"]);
+    await searchBy(page, "workflowId", "some-id");
 
     await page.locator("#reset-workflow-btn").click();
     await page.waitForTimeout(500);
@@ -170,14 +177,13 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
     });
   });
 
-  test("Should match search results after clicking search", async ({
+  test("Should match search results after applying a filter", async ({
     page,
   }) => {
     await gotoExecutions(page);
 
-    await selectWorkflowStatus(page, "COMPLETED");
-
-    await page.locator("#search-workflow-btn").click();
+    // Applying a filter runs the search; there is no separate submit step.
+    await applyWorkflowStatuses(page, ["COMPLETED"]);
     await page.waitForTimeout(1000);
 
     await screenshotAtAllViewports(
@@ -199,17 +205,16 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
 test.describe("Workflow execution search - start time picker visual snapshot", () => {
   const openStartTimePicker = async (page: Page) => {
     await gotoExecutions(page);
-    await page.locator("#date-picker-start-time").locator("p").nth(1).click();
+    await page.locator("#date-picker-start-time").click();
     await expect(page.getByRole("tab", { name: "Presets" })).toBeVisible();
   };
 
   test("Should match the open start time menu", async ({ page }) => {
     await openStartTimePicker(page);
 
-    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
-      "execution-start-time-picker.png",
-      SCREENSHOT_CONFIG,
-    );
+    await expect(
+      page.getByRole("dialog", { name: "Started" }),
+    ).toHaveScreenshot("execution-start-time-picker.png", SCREENSHOT_CONFIG);
   });
 
   test("Should match the Absolute tab calendar with a hovered end date", async ({
@@ -272,10 +277,9 @@ test.describe("Workflow execution search - start time picker visual snapshot", (
       page.getByRole("option", { name: /May 21st, 2026/ }),
     ).not.toHaveClass(/react-datepicker__day--in-selecting-range/);
 
-    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
-      "execution-start-time-absolute.png",
-      SCREENSHOT_CONFIG,
-    );
+    await expect(
+      page.getByRole("dialog", { name: "Started" }),
+    ).toHaveScreenshot("execution-start-time-absolute.png", SCREENSHOT_CONFIG);
   });
 
   test("Should match the Absolute tab calendar with a selected date range", async ({
@@ -305,7 +309,9 @@ test.describe("Workflow execution search - start time picker visual snapshot", (
     // range rather than a hover preview.
     await calendar.locator(".react-datepicker__current-month").hover();
 
-    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+    await expect(
+      page.getByRole("dialog", { name: "Started" }),
+    ).toHaveScreenshot(
       "execution-start-time-absolute-selected-range.png",
       SCREENSHOT_CONFIG,
     );
@@ -318,7 +324,7 @@ test.describe("Workflow execution search - SQL toggle mode visual snapshot", () 
   test("Should match SQL mode after toggling on", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.getByLabel("SQL format").click();
+    await page.getByLabel("SQL query").click();
     await page.waitForTimeout(300);
 
     await screenshotAtAllViewports(page, "execution-search-sql-mode.png", {
@@ -330,7 +336,7 @@ test.describe("Workflow execution search - SQL toggle mode visual snapshot", () 
   test("Should match SQL mode with query entered", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.getByLabel("SQL format").click();
+    await page.getByLabel("SQL query").click();
     await page.waitForTimeout(300);
 
     await page.locator(".monaco-editor").first().click();
@@ -350,9 +356,9 @@ test.describe("Workflow execution search - SQL toggle mode visual snapshot", () 
   test("Should match basic mode after toggling SQL off", async ({ page }) => {
     await gotoExecutions(page);
 
-    await page.getByLabel("SQL format").click();
+    await page.getByLabel("SQL query").click();
     await page.waitForTimeout(300);
-    await page.getByLabel("SQL format").click();
+    await page.getByLabel("SQL query").click();
     await page.waitForTimeout(300);
 
     await screenshotAtAllViewports(

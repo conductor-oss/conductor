@@ -1,4 +1,4 @@
-import { Box, Divider, FormControlLabel, Switch } from "@mui/material";
+import { Box, Divider } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
 import PlayIcon from "components/icons/PlayIcon";
 import _isEqual from "lodash/isEqual";
@@ -16,41 +16,12 @@ import { pluralizeResults } from "utils/helpers";
 import { dateToEpoch } from "utils/date";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
-import { tryToJson } from "utils/utils";
 import { featureFlags, FEATURES } from "utils/flags";
 import SplitWorkflowDefinitionButton from "./SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
 import ImportBpmnButton from "./SplitWorkflowDefinitionButton/ImportBpmnButton";
 import AdvancedSearch from "./workflowSearchComponents/AdvancedSearch";
 import BasicSearch from "./workflowSearchComponents/BasicSearch";
-
-const SwitchComponent = ({
-  asQuery,
-  setAsQuery,
-}: {
-  asQuery: boolean;
-  setAsQuery: (value: boolean) => void;
-}) => (
-  <Box
-    sx={{
-      display: "flex",
-      justifyContent: "flex-end",
-      padding: "10px 24px 0 24px",
-    }}
-  >
-    <FormControlLabel
-      sx={{
-        marginRight: 0,
-        "& .MuiTypography-root": {
-          fontSize: "12px",
-          color: colors.sidebarGreyDark,
-        },
-      }}
-      checked={asQuery}
-      control={<Switch color="primary" onChange={() => setAsQuery(!asQuery)} />}
-      label="SQL format"
-    />
-  </Box>
-);
+import { SearchModeSwitch } from "components/features/executionSearch";
 
 export interface WorkflowSearchProps {
   /** Classifier filter passed to /workflow/search ("workflow" | "agent"). */
@@ -78,9 +49,6 @@ export default function WorkflowPanel({
   const [asQuery, setAsQuery] = useQueryState("asQuery", false);
   const [freeText, setFreeText] = useQueryState("freeText", "");
   const [status, setStatus] = useQueryState<string[]>("status", []);
-  const [openDateSelect, setOpenDateSelect] = useState(false);
-  const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
-  const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
   const [startTimeFrom, setStartTimeFrom] = useQueryState(
     "startFrom",
     commonlyUsedDateTime("last72Hours").rangeStart,
@@ -98,12 +66,6 @@ export default function WorkflowPanel({
   );
 
   const last72HoursTimestamp = Date.now() - 72 * 60 * 60 * 1000;
-
-  const recentSearches =
-    (tryToJson(localStorage.getItem("recentTaskSearch")) as {
-      start: string;
-      end: string;
-    }) || {};
 
   useEffect(() => {
     if (!startTimeFrom) {
@@ -212,7 +174,7 @@ export default function WorkflowPanel({
             classifier={classifier}
             doSearch={doSearch}
             SwitchComponent={
-              <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+              <SearchModeSwitch checked={asQuery} onChange={setAsQuery} />
             }
             getTableTitle={getTableTitle}
             freeText={freeText}
@@ -235,13 +197,6 @@ export default function WorkflowPanel({
             setFromDisplayTime={setFromDisplayTime}
             toDisplayTime={toDisplayTime}
             setToDisplayTime={setToDisplayTime}
-            openDateSelect={openDateSelect}
-            setOpenDateSelect={setOpenDateSelect}
-            openStartDatePicker={openStartDatePicker}
-            setStartOpenDatePicker={setStartOpenDatePicker}
-            openEndDatePicker={openEndDatePicker}
-            setEndOpenDatePicker={setEndOpenDatePicker}
-            recentSearches={recentSearches}
           />
         ) : (
           <BasicSearch
@@ -250,7 +205,7 @@ export default function WorkflowPanel({
             excludeSubLabel={excludeSubLabel}
             doSearch={doSearch}
             SwitchComponent={
-              <SwitchComponent asQuery={asQuery} setAsQuery={setAsQuery} />
+              <SearchModeSwitch checked={asQuery} onChange={setAsQuery} />
             }
             getTableTitle={getTableTitle}
             freeText={freeText}
@@ -273,13 +228,6 @@ export default function WorkflowPanel({
             setFromDisplayTime={setFromDisplayTime}
             toDisplayTime={toDisplayTime}
             setToDisplayTime={setToDisplayTime}
-            openDateSelect={openDateSelect}
-            setOpenDateSelect={setOpenDateSelect}
-            openStartDatePicker={openStartDatePicker}
-            setStartOpenDatePicker={setStartOpenDatePicker}
-            openEndDatePicker={openEndDatePicker}
-            setEndOpenDatePicker={setEndOpenDatePicker}
-            recentSearches={recentSearches}
           />
         )}
       </SectionContainer>
