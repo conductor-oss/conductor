@@ -12,5 +12,6 @@ dependencies {
 
     testImplementation "org.testcontainers:testcontainers:${revTestContainer}"
     testImplementation "org.testcontainers:rabbitmq:${revTestContainer}"
+    testImplementation "org.testcontainers:junit-jupiter:${revTestContainer}"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
