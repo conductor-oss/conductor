@@ -6,7 +6,7 @@ import {
 } from "pages/runWorkflow/runWorkflowUtils";
 import { fetchContextNonHook, fetchWithContext } from "plugins/fetch";
 import { queryClient } from "queryClient";
-import { WorkflowDef } from "types/WorkflowDef";
+import { WorkflowDefSummary } from "types/WorkflowDef";
 import {
   fetchCloudTemplatesPreferCached,
   fetchWorkflowWithDependencies,
@@ -136,23 +136,25 @@ export const fetchSecretsEndEnvironmentsList = async (
 export const refetchCurrentWorkflowVersionsService = async ({
   authHeaders: headers,
   workflowName,
+  isNewWorkflow,
 }: DefinitionMachineContext) => {
-  if (!workflowName) {
-    return {};
+  if (!workflowName || isNewWorkflow || workflowName === "NEW") {
+    return { versions: [] };
   }
 
-  const url = `/metadata/workflow?includeShared=false&name=${encodeURIComponent(
-    workflowName,
-  )}`;
+  const url = `/metadata/workflow/${encodeURIComponent(workflowName)}/versions`;
 
   try {
-    const result: WorkflowDef[] = await queryClient.fetchQuery(
+    const result: WorkflowDefSummary[] = await queryClient.fetchQuery(
       [fetchContext.stack, url],
       () => fetchWithContext(url, fetchContext, { headers }),
     );
-    const versions = result?.map((item) => item?.version) ?? [];
+    const versions =
+      result
+        ?.map((item) => item?.version)
+        ?.filter((v): v is number => typeof v === "number") ?? [];
     return { versions };
   } catch {
-    return {};
+    return { versions: [] };
   }
 };
