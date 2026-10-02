@@ -1,0 +1,211 @@
+name: review-policy
+
+# Size-based review policy: large PRs need an extra approval.
+#
+# This is a REVIEW-POLICY gate, deliberately kept separate from CI so its
+# signal is never confused with a broken test:
+#   - The blocking check is named "review-policy / approvals" (not a test name).
+#   - The human-facing signal is a label + a sticky comment, so reviewers see
+#     the requirement in the labels/timeline, not only in the red checks row.
+#
+# Tiers:
+#   < 2000 changed lines  -> 1 approval  (enforced by native branch protection;
+#                                          this check stays green)
+#   >= 2000 changed lines -> 2 approvals (this check blocks until satisfied)
+#
+# Uses pull_request_target so the token is writable on fork PRs (needed to
+# manage the label + comment). This workflow never checks out or executes PR
+# code -- it only reads PR metadata via the API -- so pull_request_target is
+# safe here.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const LARGE_PR_THRESHOLD = 2000;   // changed lines (adds + dels)
+            const APPROVALS_FOR_LARGE = 2;
+            const APPROVALS_DEFAULT = 1;
+
+            const NEEDS_LABEL = `needs: ${APPROVALS_FOR_LARGE} approvals`;
+            const SIZE_LABEL = 'size: XL';
+            const COMMENT_MARKER = '<!-- review-policy:size-approvals -->';
+
+            // Files excluded from the line count: generated, vendored, binary,
+            // and lockfiles. Changes to these shouldn't push a PR into a higher
+            // review tier.
+            const EXCLUDE_EXACT = new Set([
+              'ui-next/pnpm-lock.yaml',
+              'ui/package-lock.json',
+              'ui/yarn.lock',
+            ]);
+            const EXCLUDE_PREFIX = ['server/src/main/resources/swagger-ui/'];
+            const EXCLUDE_SUBSTR = ['/vendor/', '/generated/', '/__snapshots__/'];
+            const EXCLUDE_SUFFIX = [
+              '.lock', '.min.js', '.min.css', '.snap',
+              '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp',
+              '.woff', '.woff2', '.ttf', '.eot', '.pdf',
+            ];
+            const isExcluded = (f) =>
+              EXCLUDE_EXACT.has(f) ||
+              EXCLUDE_PREFIX.some((p) => f.startsWith(p)) ||
+              EXCLUDE_SUBSTR.some((s) => f.includes(s)) ||
+              EXCLUDE_SUFFIX.some((s) => f.endsWith(s));
+
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull_request in payload; nothing to check.');
+              return;
+            }
+            const repo = context.repo;
+            const num = pr.number;
+
+            // ---- helpers for the human-facing signal (label + sticky comment) ----
+            //
+            // The label + comment are a best-effort convenience layer. They need a
+            // GITHUB_TOKEN with write access, which isn't available when the repo's
+            // default workflow permission is read-only (Settings -> Actions ->
+            // Workflow permissions). The actual merge gate below is enforced purely
+            // by the check's pass/fail status, which needs NO write access -- so if
+            // a write is denied we log a warning and carry on rather than failing
+            // the whole job (and with it, unrelated PRs).
+            const warnSignal = (action, e) => {
+              const code = e && e.status ? `${e.status} ` : '';
+              core.warning(
+                `review-policy: skipped ${action} (${code}${(e && e.message) || e}). ` +
+                  `The merge gate still works via the "review-policy / approvals" ` +
+                  `check; the label/comment signal needs the workflow token to have ` +
+                  `write access (repo Settings -> Actions -> Workflow permissions -> ` +
+                  `"Read and write permissions").`
+              );
+            };
+            const ensureLabel = async (name, color, description) => {
+              try {
+                await github.rest.issues.createLabel({ ...repo, name, color, description });
+              } catch (e) {
+                if (e.status !== 422) throw e; // 422 == already exists
+              }
+            };
+            const addLabel = async (name) => {
+              try {
+                await ensureLabel(name, 'D93F0B', 'Applied by the review-policy workflow');
+                await github.rest.issues.addLabels({ ...repo, issue_number: num, labels: [name] });
+              } catch (e) {
+                warnSignal(`adding label "${name}"`, e);
+              }
+            };
+            const removeLabel = async (name) => {
+              try {
+                await github.rest.issues.removeLabel({ ...repo, issue_number: num, name });
+              } catch (e) {
+                if (e.status === 404) return; // 404 == label wasn't applied
+                warnSignal(`removing label "${name}"`, e);
+              }
+            };
+            const upsertComment = async (body) => {
+              try {
+                const marked = `${COMMENT_MARKER}\n${body}`;
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  ...repo, issue_number: num, per_page: 100,
+                });
+                const existing = comments.find((c) => c.body?.includes(COMMENT_MARKER));
+                if (existing) {
+                  await github.rest.issues.updateComment({ ...repo, comment_id: existing.id, body: marked });
+                } else {
+                  await github.rest.issues.createComment({ ...repo, issue_number: num, body: marked });
+                }
+              } catch (e) {
+                warnSignal('updating the status comment', e);
+              }
+            };
+
+            if (pr.draft) {
+              core.info('PR is a draft; clearing any policy signal and skipping.');
+              await removeLabel(NEEDS_LABEL);
+              return;
+            }
+
+            // ---- compute effective diff size ----
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...repo, pull_number: num, per_page: 100,
+            });
+            let changed = 0;
+            const excluded = [];
+            for (const f of files) {
+              if (isExcluded(f.filename)) { excluded.push(f.filename); continue; }
+              changed += f.additions + f.deletions;
+            }
+            const changedStr = changed.toLocaleString('en-US');
+            core.info(`Changed lines (excluding generated/vendored): ${changed}`);
+            if (excluded.length) core.info(`Excluded ${excluded.length} file(s).`);
+
+            const required =
+              changed >= LARGE_PR_THRESHOLD ? APPROVALS_FOR_LARGE : APPROVALS_DEFAULT;
+
+            // Standard-size PR: the baseline approval is enforced by native branch
+            // protection (GitHub's "Review required" UI). Clear any policy signal
+            // this PR may have carried when it was larger, and pass green.
+            if (required <= APPROVALS_DEFAULT) {
+              core.info(
+                `Standard-size PR (< ${LARGE_PR_THRESHOLD} lines); ` +
+                  `baseline of ${APPROVALS_DEFAULT} approval(s) handled by branch protection.`
+              );
+              await removeLabel(NEEDS_LABEL);
+              await removeLabel(SIZE_LABEL);
+              return;
+            }
+
+            // ---- large PR: count approvals (latest non-comment review per user) ----
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              ...repo, pull_number: num, per_page: 100,
+            });
+            const latestByUser = new Map();
+            for (const r of reviews) {
+              if (r.state === 'COMMENTED') continue; // comments don't change standing
+              latestByUser.set(r.user.id, r.state);
+            }
+            const approvals = [...latestByUser.values()].filter((s) => s === 'APPROVED').length;
+            core.info(`Large PR requires ${required} approval(s); PR has ${approvals}.`);
+
+            await addLabel(SIZE_LABEL);
+
+            if (approvals >= required) {
+              await removeLabel(NEEDS_LABEL);
+              await upsertComment(
+                `👥 **Review policy — satisfied.** This PR changes **${changedStr}** ` +
+                  `lines (≥ ${LARGE_PR_THRESHOLD.toLocaleString('en-US')}) and has the ` +
+                  `required **${required}** approvals. ✅`
+              );
+              core.info('Approval requirement satisfied.');
+              return;
+            }
+
+            // Not enough approvals: raise the human-facing signal, then fail the
+            // (clearly-named) policy check to block merge.
+            await addLabel(NEEDS_LABEL);
+            const remaining = required - approvals;
+            await upsertComment(
+              `👥 **Review policy — action needed.** This PR changes **${changedStr}** ` +
+                `lines, which crosses the large-PR threshold ` +
+                `(${LARGE_PR_THRESHOLD.toLocaleString('en-US')}). Large PRs require ` +
+                `**${required}** approvals; it currently has **${approvals}**. ` +
+                `**${remaining}** more to go.\n\n` +
+                `_This is a review-policy gate, not a CI/test failure — see the ` +
+                `\`review-policy / approvals\` check._`
+            );
+            core.setFailed(
+              `Review policy: ${changedStr}-line PR needs ${required} approvals, has ${approvals}.`
+            );

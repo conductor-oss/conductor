@@ -18,6 +18,8 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.flywaydb:flyway-mysql:${revFlyway}"
 
+    // spring-retry is compileOnly for main; the DAO tests construct DAOs directly and need it
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
 
 //    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"

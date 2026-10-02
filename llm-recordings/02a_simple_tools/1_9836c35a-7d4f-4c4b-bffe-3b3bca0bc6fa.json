@@ -1,0 +1,93 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a helpful assistant. Use tools to answer questions.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What's the weather like in San Francisco?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "get_weather",
+      "description" : "Get the current weather for a city.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "city" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "city" ]
+      }
+    }, {
+      "name" : "get_stock_price",
+      "description" : "Get the current stock price for a ticker symbol.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "symbol" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "symbol" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_01edde1d424efcb5006aa82a3f4e7087d0987ada70ade254fa",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 93,
+        "completionTokens" : 19,
+        "totalTokens" : 112,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_01edde1d424efcb5006aa82a3f4e7087d0987ada70ade254fa",
+        "reasoning_tokens" : 0
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_U3Oo1BEkb3z0hEX8SHex49nH",
+          "type" : "function",
+          "name" : "get_weather",
+          "arguments" : "{\"city\":\"San Francisco\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

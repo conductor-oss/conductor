@@ -26,7 +26,6 @@ import org.conductoross.conductor.ai.model.StoreEmbeddingsInput;
 import org.conductoross.conductor.ai.tasks.worker.VectorDBWorkers;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoDBConfig;
 import org.conductoross.conductor.ai.vectordb.mongodb.MongoVectorDB;
-import org.conductoross.conductor.common.JsonSchemaValidator;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -35,12 +34,10 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.env.StandardEnvironment;
 import org.testcontainers.containers.MongoDBContainer;
 
-import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.sdk.workflow.executor.task.TaskContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
@@ -84,14 +81,9 @@ public class MongoVectorDBTest {
         mongoClient = MongoClients.create(settings);
         database = mongoClient.getDatabase(DATABASE_NAME);
 
-        ObjectMapper objectMapper = new ObjectMapperProvider().getObjectMapper();
         AIModelProvider provider = new AIModelProvider(List.of(), new StandardEnvironment());
-        LLMs llm =
-                new LLMs(
-                        null,
-                        new JsonSchemaValidator(objectMapper),
-                        provider,
-                        new okhttp3.OkHttpClient());
+        // No schema service: this test never attaches a schema to an LLM call.
+        LLMs llm = new LLMs(null, null, provider, new okhttp3.OkHttpClient());
 
         MongoDBConfig mongoConfig = new MongoDBConfig();
         mongoConfig.setDatabase(DATABASE_NAME);

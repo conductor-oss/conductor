@@ -98,7 +98,6 @@
     "ajv-formats": "^3.0.1",
     "autosuggest-highlight": "^3.3.4",
     "classnames": "^2.3.1",
-    "color": "^4.2.3",
     "cron-validate": "^1.4.3",
     "cronstrue": "^2.32.0",
     "date-fns": "^2.29.3",

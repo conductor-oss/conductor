@@ -1,11 +1,11 @@
 ---
-description: "Choose the supported Conductor bridge for an existing framework agent, then deploy it as a durable, reusable Conductor Agent."
+description: "Bring an agent from OpenAI Agents, Google ADK, LangChain, LangGraph, or Vercel AI SDK and run it as a durable, reusable Conductor Agent."
 ---
 
-# Framework Agent Bridges
+# Framework Agents
 
-<section class="framework-hero" aria-label="Framework bridges">
-  <p>A <strong>bridge</strong> is the SDK adapter that lets Conductor run an agent authored in another framework, such as OpenAI Agents, LangChain, LangGraph, or Google ADK. You keep the agent object your framework defines, and the bridge compiles and runs it as a durable Conductor execution. This page is the reference for the bridges: which frameworks and languages are supported, how a bridged agent becomes a deployable Conductor Agent, and where the maintained examples live for each pairing.</p>
+<section class="framework-hero" aria-label="Framework agents">
+  <p>You can bring an agent authored in another framework, such as OpenAI Agents, LangChain, LangGraph, or Google ADK. You keep the agent object your framework defines, and the Conductor SDK compiles and runs it as a durable Conductor execution. This page is the reference: which frameworks and languages are supported, how a framework agent becomes a deployable Conductor Agent, and where the maintained examples live for each pairing.</p>
   <div class="framework-logo-grid">
     <a class="framework-logo-card" href="../../quickstart/framework-agents.html#openai-agents-sdk" aria-label="OpenAI Agents quickstart">
       <img class="framework-logo framework-logo--wide" src="../../assets/images/frameworks/openai.svg" alt="" />
@@ -34,7 +34,7 @@ description: "Choose the supported Conductor bridge for an existing framework ag
   </div>
 </section>
 
-## Choose your bridge
+## Choose your framework
 
 | Framework | Start here |
 |---|---|
@@ -45,27 +45,27 @@ description: "Choose the supported Conductor bridge for an existing framework ag
 | Vercel AI SDK | [Vercel AI SDK examples on GitHub](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents/vercel-ai) |
 | Conductor Agents | [Your First Agent](../../quickstart/first-agent.md) |
 
-Each route keeps the framework-specific code, dependencies, and executable examples in the owning Conductor SDK. The bridge is the boundary: your framework remains the authoring surface, while Conductor provides durable execution around it.
+Each route keeps the framework-specific code, dependencies, and executable examples in the owning Conductor SDK. The SDK is the boundary: your framework remains the authoring surface, while Conductor provides durable execution around it.
 
 ## From framework object to workflow step
 
-Every bridge follows the same path from your code to a reusable workflow step:
+Every framework follows the same path from your code to a reusable workflow step:
 
 ```mermaid
 flowchart LR
-    obj["Your framework<br/>agent object"] --> bridge["SDK bridge<br/>compiles it to a workflow graph"]
-    bridge -- "run (develop)" --> devrun["One durable execution<br/>visible in the UI"]
-    bridge -- "deploy (release)" --> deployed["Deployed Conductor Agent<br/>named and versioned"]
+    obj["Your framework<br/>agent object"] --> sdk["The Conductor SDK<br/>compiles it to a workflow graph"]
+    sdk -- "run (develop)" --> devrun["One durable execution<br/>visible in the UI"]
+    sdk -- "deploy (release)" --> deployed["Deployed Conductor Agent<br/>named and versioned"]
     workers["serve: worker process<br/>executes the tools"] -.- deployed
     parent["Parent workflow<br/>AGENT task"] -- "invoke" --> deployed
 ```
 
-1. **Run it while you iterate.** Pass your framework's agent object to the SDK bridge and run it. The bridge compiles the agent and executes it on Conductor, so the durable execution is visible in the UI from the first run.
+1. **Run it while you iterate.** Pass your framework's agent object to the Conductor SDK and run it. The SDK compiles the agent and executes it on Conductor, so the durable execution is visible in the UI from the first run.
 2. **Deploy it when it stabilizes.** Deploying registers the compiled agent on the server as a named, versioned Conductor Agent. Callers can then invoke it without importing your framework or its dependencies.
-3. **Serve its workers.** Where the bridge runs your tools as local functions, a worker process must be running to execute them. Keep it running for as long as the deployed agent is in use.
+3. **Serve its workers.** Where the SDK runs your tools as local functions, a worker process must be running to execute them. Keep it running for as long as the deployed agent is in use.
 4. **Invoke it from a workflow.** A parent workflow calls the deployed agent with an `AGENT` task, the same way it calls any other durable step.
 
-In the Python SDK, those steps are four calls on the same runtime. Here they are with the LangChain bridge:
+In the Python SDK, those steps are four calls on the same runtime. Here they are with LangChain:
 
 ```python
 from conductor.ai.agents import AgentRuntime

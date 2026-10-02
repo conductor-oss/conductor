@@ -13,6 +13,7 @@ import { Lightning } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
 import SectionHeader from "components/layout/SectionHeader";
 import SectionContainer from "components/ui/layout/SectionContainer";
+import { useRef } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate, useSearchParams } from "react-router";
 import { AGENT_DEFINITION_URL } from "utils/constants/route";
@@ -25,6 +26,7 @@ import {
 } from "./guides/manifest";
 
 export default function CreateAgentGuide() {
+  const pendingRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const language = getAgentGuideLanguage(searchParams.get("language"));
@@ -182,9 +184,18 @@ export default function CreateAgentGuide() {
                   id="agent-guide-framework"
                   value={guide.id}
                   label="Framework"
-                  onChange={(event) =>
-                    selectGuide(language.id, event.target.value)
-                  }
+                  MenuProps={{
+                    TransitionProps: {
+                      onExited: () => {
+                        const next = pendingRef.current;
+                        pendingRef.current = null;
+                        if (next) selectGuide(language.id, next);
+                      },
+                    },
+                  }}
+                  onChange={(event) => {
+                    pendingRef.current = event.target.value;
+                  }}
                   sx={{
                     bgcolor: "#eef6ff",
                     color: "#145b9e",

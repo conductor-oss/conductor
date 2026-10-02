@@ -37,4 +37,4 @@ try (AgentRuntime runtime = new AgentRuntime()) {
 
 Run the class with your project’s normal Gradle or Maven application task, then return to [Agents](/agents).
 
-[Runnable Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples) · [Java agent documentation](https://github.com/conductor-oss/java-sdk/tree/main/docs/agents)
+[Runnable Java examples](https://github.com/conductor-oss/java-sdk/tree/main/examples/agents) · [Java agent documentation](https://github.com/conductor-oss/java-sdk/tree/main/docs/agents)
