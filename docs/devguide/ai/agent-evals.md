@@ -1,3 +1,7 @@
+---
+description: "Test Conductor agents with repeatable evals that check tool calls, routing, guardrails, and final state before you promote a new agent version."
+---
+
 # Agent Evals
 
 <section class="integration-hero integration-hero--evals" aria-label="Agent evals">

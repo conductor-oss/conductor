@@ -1,3 +1,7 @@
+---
+description: "Deploy an SDK-authored agent once as a stable Conductor capability, then invoke it from any parent workflow as a durable agent run."
+---
+
 # Conductor agent
 
 ```mermaid

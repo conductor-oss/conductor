@@ -1,3 +1,7 @@
+---
+description: "Delegate work to an independently deployed A2A agent from a Conductor workflow while keeping a durable, observable workflow boundary."
+---
+
 # A2A delegation
 
 ```mermaid
