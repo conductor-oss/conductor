@@ -1,0 +1,20 @@
+dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.testng:testng:7.1.0'
+    implementation 'org.testng:testng:7.1.0'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    implementation "org.apache.commons:commons-lang3"
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation platform('com.azure:azure-sdk-bom:1.2.22')
+    implementation 'com.azure:azure-storage-queue'
+    implementation 'com.azure:azure-identity'
+    implementation 'com.azure:azure-core'
+
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    testImplementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation project(':conductor-common').sourceSets.test.output
+}
