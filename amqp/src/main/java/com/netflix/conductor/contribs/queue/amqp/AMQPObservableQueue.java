@@ -206,14 +206,22 @@ public class AMQPObservableQueue implements ObservableQueue {
     }
 
     public void ackMsg(Message message) throws Exception {
+        final long deliveryTag;
+        try {
+            deliveryTag = Long.parseLong(message.getReceipt());
+        } catch (NumberFormatException e) {
+            LOGGER.warn("Cannot ACK message; receipt is not a valid AMQP delivery tag (e.g., UUID from Event.cancel): {}", message.getReceipt());
+            return;
+        }
+
         int retryIndex = 1;
         while (true) {
             try {
-                LOGGER.info("ACK message with delivery tag {}", message.getReceipt());
+                LOGGER.info("ACK message with delivery tag {}", deliveryTag);
                 Channel chn =
                         amqpConnection.getOrCreateChannel(
                                 ConnectionType.SUBSCRIBER, getSettings().getQueueOrExchangeName());
-                chn.basicAck(Long.parseLong(message.getReceipt()), false);
+                chn.basicAck(deliveryTag, false);
                 LOGGER.info("Ack'ed the message with delivery tag {}", message.getReceipt());
                 break;
             } catch (final Exception e) {
@@ -240,15 +248,23 @@ public class AMQPObservableQueue implements ObservableQueue {
     @Override
     public void nack(List<Message> messages) {
         for (final Message message : messages) {
+            final long deliveryTag;
+            try {
+                deliveryTag = Long.parseLong(message.getReceipt());
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Cannot NACK message; receipt is not a valid AMQP delivery tag: {}", message.getReceipt());
+                continue;
+            }
+
             int retryIndex = 1;
             while (true) {
                 try {
-                    LOGGER.info("NACK message with delivery tag {}", message.getReceipt());
+                    LOGGER.info("NACK message with delivery tag {}", deliveryTag);
                     Channel chn =
                             amqpConnection.getOrCreateChannel(
                                     ConnectionType.SUBSCRIBER,
                                     getSettings().getQueueOrExchangeName());
-                    chn.basicNack(Long.parseLong(message.getReceipt()), false, false);
+                    chn.basicNack(deliveryTag, false, false);
                     LOGGER.info("Nack'ed the message with delivery tag {}", message.getReceipt());
                     break;
                 } catch (final Exception e) {

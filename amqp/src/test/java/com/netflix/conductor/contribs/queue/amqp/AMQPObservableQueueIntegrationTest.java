@@ -112,9 +112,8 @@ public class AMQPObservableQueueIntegrationTest {
         // Simulate Event.cancel() replacing the receipt with a UUID
         consumedMsg.setReceipt(UUID.randomUUID().toString());
 
-        // This reproduces Issue #779
-        assertThrows(NumberFormatException.class, () -> {
-            queue.ack(Collections.singletonList(consumedMsg));
-        });
+        // This reproduces Issue #779, but now we expect it to safely return instead of crashing
+        queue.ack(Collections.singletonList(consumedMsg));
+        // No exception should be thrown
     }
 }
