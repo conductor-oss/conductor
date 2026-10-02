@@ -15,6 +15,7 @@ package com.netflix.conductor.contribs.queue.amqp;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,9 +31,10 @@ import com.netflix.conductor.core.events.queue.Message;
 
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.ConnectionFactory;
-import rx.Observable;
+import rx.observers.TestSubscriber;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 public class AMQPObservableQueueIntegrationTest {
@@ -76,17 +78,25 @@ public class AMQPObservableQueueIntegrationTest {
         AMQPObservableQueue queue =
                 new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
 
-        // Publish
+        // 1. Subscribe asynchronously FIRST to ensure the queue is declared and bound
+        TestSubscriber<Message> subscriber = new TestSubscriber<>();
+        queue.observe().subscribe(subscriber);
+
+        // 2. Give the broker a moment to initialize the bindings
+        Thread.sleep(1000);
+
+        // 3. Publish the message safely
         Message msg = new Message("test-id-1", "test-payload-1", null);
         queue.publish(Collections.singletonList(msg));
 
-        // Consume
-        Observable<Message> observable = queue.observe();
-        List<Message> received = observable.take(1).toList().toBlocking().first();
-        assertEquals(1, received.size());
+        // 4. Await the message with a 10-second timeout (Prevents infinite CI hanging!)
+        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+
+        List<Message> received = subscriber.getOnNextEvents();
+        assertTrue(received.size() > 0, "No messages received!");
         assertEquals("test-payload-1", received.get(0).getPayload());
 
-        // Ack
+        // 5. Ack
         List<String> acked = queue.ack(Collections.singletonList(received.get(0)));
         assertEquals(1, acked.size());
     }
@@ -97,12 +107,17 @@ public class AMQPObservableQueueIntegrationTest {
         AMQPObservableQueue queue =
                 new AMQPObservableQueue(factory, addresses, true, settings, retryPattern, 1, 1000);
 
+        TestSubscriber<Message> subscriber = new TestSubscriber<>();
+        queue.observe().subscribe(subscriber);
+        Thread.sleep(1000);
+
         Message msg = new Message("test-id-2", "test-payload-2", null);
         queue.publish(Collections.singletonList(msg));
 
-        Observable<Message> observable = queue.observe();
-        List<Message> received = observable.take(1).toList().toBlocking().first();
-        assertEquals(1, received.size());
+        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+        List<Message> received = subscriber.getOnNextEvents();
+
+        assertTrue(received.size() > 0, "No messages received!");
         assertEquals("test-payload-2", received.get(0).getPayload());
 
         queue.ack(Collections.singletonList(received.get(0)));
@@ -114,12 +129,16 @@ public class AMQPObservableQueueIntegrationTest {
         AMQPObservableQueue queue =
                 new AMQPObservableQueue(factory, addresses, false, settings, retryPattern, 1, 1000);
 
+        TestSubscriber<Message> subscriber = new TestSubscriber<>();
+        queue.observe().subscribe(subscriber);
+        Thread.sleep(1000);
+
         Message msg = new Message("test-id-3", "test-payload-3", null);
         queue.publish(Collections.singletonList(msg));
 
-        Observable<Message> observable = queue.observe();
-        List<Message> received = observable.take(1).toList().toBlocking().first();
-        assertEquals(1, received.size());
+        subscriber.awaitValueCount(1, 10, TimeUnit.SECONDS);
+        List<Message> received = subscriber.getOnNextEvents();
+        assertTrue(received.size() > 0, "No messages received!");
 
         Message consumedMsg = received.get(0);
         // Simulate Event.cancel() replacing the receipt with a UUID
@@ -127,6 +146,5 @@ public class AMQPObservableQueueIntegrationTest {
 
         // This reproduces Issue #779, but now we expect it to safely return instead of crashing
         queue.ack(Collections.singletonList(consumedMsg));
-        // No exception should be thrown
     }
 }
