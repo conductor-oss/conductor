@@ -22,4 +22,13 @@ public interface Evaluator {
      * @return Return the evaluation result.
      */
     Object evaluate(String expression, Object input);
+
+    /**
+     * A deferred evaluator may block, for example on a remote call. A SWITCH using one is not
+     * evaluated inside the decider; it is scheduled as an async task and evaluated by the system
+     * task worker, with the retry policy of its task definition.
+     */
+    default boolean isDeferred() {
+        return false;
+    }
 }

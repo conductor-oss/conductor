@@ -1,0 +1,77 @@
+{
+  "name": "ai_decision_routing",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 60,
+  "timeoutPolicy": "ALERT_ONLY",
+  "tasks": [
+    {
+      "name": "decision_switch",
+      "taskReferenceName": "decision",
+      "type": "SWITCH",
+      "evaluatorType": "decision",
+      "expression": "route",
+      "retryCount": 3,
+      "retryLogic": "EXPONENTIAL_BACKOFF",
+      "retryDelaySeconds": 1,
+      "backoffScaleFactor": 2,
+      "maxRetryDelaySeconds": 5,
+      "inputParameters": {
+        "model": "jev-1.13",
+        "state": "${workflow.input.request}",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose the team best suited to handle this request.",
+            "choices": {
+              "billing": "Payments, invoices, refunds, or subscriptions.",
+              "technical": "Errors, outages, or product troubleshooting."
+            }
+          }
+        }
+      },
+      "decisionCases": {
+        "billing": [
+          {
+            "name": "handle_billing",
+            "taskReferenceName": "handle_billing",
+            "type": "INLINE",
+            "inputParameters": {
+              "evaluatorType": "graaljs",
+              "expression": "({team: \"billing\", nextAction: \"review_invoice\", message: \"Check invoice line items and payment records.\", request: $.request})",
+              "request": "${workflow.input.request}"
+            }
+          }
+        ],
+        "technical": [
+          {
+            "name": "handle_technical",
+            "taskReferenceName": "handle_technical",
+            "type": "INLINE",
+            "inputParameters": {
+              "evaluatorType": "graaljs",
+              "expression": "({team: \"technical\", nextAction: \"collect_diagnostics\", message: \"Collect error logs and steps to reproduce.\", request: $.request})",
+              "request": "${workflow.input.request}"
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    },
+    {
+      "name": "selected_result",
+      "taskReferenceName": "selected_result",
+      "type": "INLINE",
+      "inputParameters": {
+        "evaluatorType": "graaljs",
+        "expression": "$.billing || $.technical",
+        "billing": "${handle_billing.output.result}",
+        "technical": "${handle_technical.output.result}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "decision": "${decision.output}",
+    "result": "${selected_result.output.result}"
+  }
+}

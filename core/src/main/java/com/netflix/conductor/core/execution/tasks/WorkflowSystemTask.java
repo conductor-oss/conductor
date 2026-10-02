@@ -89,6 +89,15 @@ public abstract class WorkflowSystemTask {
     }
 
     /**
+     * Whether this specific task instance runs asynchronously. Defaults to {@link #isAsync()}. A
+     * task type whose instances are sometimes synchronous returns true from {@link #isAsync()} so
+     * it gets a queue poller, and decides per instance here.
+     */
+    public boolean isAsync(TaskModel task) {
+        return isAsync();
+    }
+
+    /**
      * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external
      *     message.
      */

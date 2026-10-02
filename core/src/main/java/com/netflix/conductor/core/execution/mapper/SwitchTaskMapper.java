@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -85,6 +86,22 @@ public class SwitchTaskMapper implements TaskMapper {
             throw new TerminateWorkflowException(errorMsg);
         }
 
+        if (evaluator.isDeferred()) {
+            // Deferred evaluators may block; the SWITCH is queued and evaluated by Switch#start
+            // on the system task worker. The branch is scheduled by the decider on completion.
+            TaskModel switchTask = taskMapperContext.createTaskModel();
+            switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
+            switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
+            switchTask.getInputData().putAll(taskInput);
+            // Persist the execution mode with the task. Queueing, repair and retry must not change
+            // behavior if the evaluator bean is unavailable after a restart or configuration
+            // change.
+            switchTask.getInputData().put(Switch.DEFERRED_EVALUATOR, true);
+            switchTask.setStatus(TaskModel.Status.SCHEDULED);
+            tasksToBeScheduled.add(switchTask);
+            return tasksToBeScheduled;
+        }
+
         String evalResult = "";
         try {
             evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
@@ -107,8 +124,8 @@ public class SwitchTaskMapper implements TaskMapper {
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.getInputData().putAll(taskInput);
         switchTask.getInputData().put("case", evalResult);
-        switchTask.addOutput("evaluationResult", List.of(evalResult));
-        switchTask.addOutput("selectedCase", evalResult);
+        switchTask.addOutput(Switch.EVALUATION_RESULT, List.of(evalResult));
+        switchTask.addOutput(Switch.SELECTED_CASE, evalResult);
         switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
         tasksToBeScheduled.add(switchTask);
@@ -136,7 +153,7 @@ public class SwitchTaskMapper implements TaskMapper {
                                     retryCount,
                                     taskMapperContext.getRetryTaskId());
             tasksToBeScheduled.addAll(caseTasks);
-            switchTask.getInputData().put("hasChildren", "true");
+            switchTask.getInputData().put(Switch.HAS_CHILDREN, "true");
         }
         return tasksToBeScheduled;
     }
