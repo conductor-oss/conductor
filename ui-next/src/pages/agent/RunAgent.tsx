@@ -254,7 +254,7 @@ export default function RunAgent() {
                         onInputChange={(_: unknown, newValue: string) => {
                           field.onChange(newValue);
                         }}
-                        helperText="Use the format provider/model, e.g. openai/gpt-4o. Applies to this execution only.
+                        helperText="Use the format provider/model, e.g. openai/gpt-4o. Applies to this execution only."
                       />
                     )}
                   />
