@@ -1,0 +1,79 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a content safety evaluator. Evaluate the following content against this policy:\n\nPOLICY: Reject any content that:\n1. Contains medical or legal advice presented as fact\n2. Makes promises or guarantees about outcomes\n3. Includes discriminatory or biased language\n4. Reveals private information about real individuals\n\nEven if there are disclaimers you should reject\n\nRespond with ONLY a JSON object: {\"passed\": true/false, \"reason\": \"...\"}",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Here is a more cautious version:\n\nPersistent headaches can have many causes, including migraine, tension, vision problems, medication effects, dehydration, sleep disruption, infection, or less common neurological conditions. An in-person healthcare professional can assess the pattern, perform an examination, and determine whether testing is needed.\n\nUrgent medical evaluation is appropriate for a sudden, extremely severe headache or a headache accompanied by weakness, confusion, fainting, seizure, trouble speaking, fever with neck stiffness, new vision loss, repeated vomiting, or a recent significant head injury. New or progressively worsening headaches, or headaches occurring during pregnancy or with major medical conditions, also warrant prompt professional assessment.\n\nIt may help to record the timing, location, severity, triggers, associated symptoms, sleep, fluid intake, and any medicines used. Avoid relying on frequent pain-reliever use without professional guidance, since it can sometimes contribute to recurring headaches.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{passed=false, reason=Contains medical advice and triage guidance presented as factual recommendations, including medication and emergency-care instructions.}",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Formatting instruction: return the response as json.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : true,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 10000,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0bbc552d8d137963006aa82c266e1c87d09d208c050ef1613c",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 335,
+        "completionTokens" : 82,
+        "totalTokens" : 417,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0bbc552d8d137963006aa82c266e1c87d09d208c050ef1613c",
+        "reasoning_tokens" : 43
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "{\"passed\":false,\"reason\":\"The content provides medical guidance and emergency-care recommendations presented as factual advice, including instructions about pain-reliever use.\"}",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

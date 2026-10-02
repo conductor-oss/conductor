@@ -44,9 +44,10 @@ export const fetchForModels = async (
 };
 
 export const fetchForPromptNames = async (
-  { authHeaders: headers }: LLMFormFieldsMachineContext,
-  { task }: FocusEvent,
+  { authHeaders: headers, task: contextTask }: LLMFormFieldsMachineContext,
+  event: FocusEvent,
 ) => {
+  const task = event?.task ?? contextTask;
   const maybeLlmProvider = task?.inputParameters?.llmProvider;
   const maybeModel = task?.inputParameters?.model;
 
