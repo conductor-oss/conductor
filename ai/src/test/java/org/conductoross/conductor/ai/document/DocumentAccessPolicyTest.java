@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.document;
 
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,15 +27,33 @@ class DocumentAccessPolicyTest {
 
     private DocumentAccessPolicy policy;
     private Environment env;
+    private String originalUserHome;
 
     @BeforeEach
     void setUp() {
+        // The ~/worker-payload/ fallback is derived from user.home, and "/root/" is a built-in
+        // blocked prefix. When the tests run as root — which they do in a container-based CI, where
+        // user.home is /root — the fallback directory is itself blocked and the "safe path" cases
+        // fail for reasons unrelated to what they assert. Pin user.home to a neutral location so
+        // these tests describe the policy rather than the identity of the user running them.
+        originalUserHome = System.getProperty("user.home");
+        System.setProperty("user.home", "/home/conductor-test");
+
         env = mock(Environment.class);
         // Default: no file-storage.parentDir set — uses ~/worker-payload/ fallback
         when(env.getProperty("conductor.file-storage.parentDir")).thenReturn(null);
         policy = new DocumentAccessPolicy(env);
         // Simulate @PostConstruct
         policy.resolveEffectiveAllowedDirectories();
+    }
+
+    @AfterEach
+    void restoreUserHome() {
+        if (originalUserHome != null) {
+            System.setProperty("user.home", originalUserHome);
+        } else {
+            System.clearProperty("user.home");
+        }
     }
 
     // ========================================================================
