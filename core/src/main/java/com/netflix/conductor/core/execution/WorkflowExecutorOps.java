@@ -1727,15 +1727,24 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                             }
                         });
 
-        // Now create a "SKIPPED" task for this workflow
+        // Now create a "SKIPPED" task for this workflow.
+        // The task must carry the same identity fields (workflowType, taskDefName,
+        // workflowTask, scheduledTime) that TaskMapperContext#createTaskModel sets on a
+        // decider-scheduled task. Rerunning the workflow later updates this task and the
+        // index DAOs write task.getWorkflowType() into task_index.workflow_type, which is
+        // NOT NULL - a null there fails the rerun with a constraint violation.
         TaskModel taskToBeSkipped = new TaskModel();
         taskToBeSkipped.setTaskId(idGenerator.generate());
         taskToBeSkipped.setReferenceTaskName(taskReferenceName);
         taskToBeSkipped.setWorkflowInstanceId(workflowId);
+        taskToBeSkipped.setWorkflowType(workflow.getWorkflowName());
         taskToBeSkipped.setWorkflowPriority(workflow.getPriority());
         taskToBeSkipped.setStatus(SKIPPED);
-        taskToBeSkipped.setEndTime(System.currentTimeMillis());
         taskToBeSkipped.setTaskType(workflowTask.getName());
+        taskToBeSkipped.setTaskDefName(workflowTask.getName());
+        taskToBeSkipped.setWorkflowTask(workflowTask);
+        taskToBeSkipped.setScheduledTime(System.currentTimeMillis());
+        taskToBeSkipped.setEndTime(System.currentTimeMillis());
         taskToBeSkipped.setCorrelationId(workflow.getCorrelationId());
         if (skipTaskRequest != null) {
             taskToBeSkipped.setInputData(skipTaskRequest.getTaskInput());
