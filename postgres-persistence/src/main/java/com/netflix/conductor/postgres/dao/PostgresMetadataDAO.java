@@ -12,7 +12,10 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import java.sql.Array;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -27,6 +30,7 @@ import org.springframework.retry.support.RetryTemplate;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NonTransientException;
@@ -230,6 +234,68 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
         return queryWithTransaction(
                 GET_ALL_WORKFLOW_DEF_LATEST_VERSIONS_QUERY,
                 q -> q.executeAndFetch(WorkflowDef.class));
+    }
+
+    @Override
+    public List<WorkflowDefListItem> getWorkflowDefListItems() {
+        // json_data (TEXT) is cast to jsonb and parsed ONCE per row via a LATERAL cast (x.jd).
+        // `x.jd - 'tasks'` strips the task blueprint so Java deserializes only the lightweight
+        // def (WorkflowDef.fromWorkflowDef maps all scalar/collection fields + classifier).
+        // task_count and task_types are derived in a LEFT JOIN LATERAL aggregate rather than a
+        // per-row SELECT-list scalar subquery. Latest-version filtering uses the maintained
+        // latest_version column (same idiom as getAllLatest). PG11-compatible (no jsonb_path_*).
+        final String QUERY =
+                """
+                SELECT
+                  x.jd - 'tasks'                                   AS def_light,
+                  COALESCE(jsonb_array_length(x.jd -> 'tasks'), 0) AS task_count,
+                  tt.task_types                                    AS task_types
+                FROM meta_workflow_def m
+                CROSS JOIN LATERAL (SELECT m.json_data::jsonb AS jd) x
+                LEFT JOIN LATERAL (
+                    SELECT array_agg(DISTINCT e ->> 'type' ORDER BY e ->> 'type') AS task_types
+                    FROM jsonb_array_elements(x.jd -> 'tasks') AS e
+                ) tt ON true
+                WHERE m.version = m.latest_version
+                ORDER BY m.name""";
+
+        return queryWithTransaction(
+                QUERY,
+                q ->
+                        q.executeAndFetch(
+                                rs -> {
+                                    List<WorkflowDefListItem> items = new ArrayList<>();
+                                    while (rs.next()) {
+                                        WorkflowDef def =
+                                                readValue(
+                                                        rs.getString("def_light"),
+                                                        WorkflowDef.class);
+                                        WorkflowDefListItem item =
+                                                WorkflowDefListItem.fromWorkflowDef(def);
+                                        // tasks were stripped in SQL, so override the two
+                                        // task-derived fields with the SQL-computed values.
+                                        item.setTaskCount(rs.getInt("task_count"));
+                                        item.setTaskTypes(readTaskTypes(rs));
+                                        items.add(item);
+                                    }
+                                    return items;
+                                }));
+    }
+
+    private Set<String> readTaskTypes(ResultSet rs) throws SQLException {
+        Set<String> types = new TreeSet<>();
+        Array array = rs.getArray("task_types");
+        if (array != null) {
+            String[] values = (String[]) array.getArray();
+            if (values != null) {
+                for (String type : values) {
+                    if (type != null && !type.isEmpty()) {
+                        types.add(type);
+                    }
+                }
+            }
+        }
+        return types;
     }
 
     public List<WorkflowDef> getAllLatest() {
