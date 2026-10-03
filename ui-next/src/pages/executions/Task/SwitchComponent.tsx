@@ -1,15 +1,13 @@
 import { Box, FormControlLabel, Switch } from "@mui/material";
-import { SetStateAction } from "react";
-import { QueryDispatch } from "react-router-use-location-state";
 
 interface SwitchComponentProps {
   asQuery: boolean;
-  setAsQuery: QueryDispatch<SetStateAction<boolean>>;
+  onToggle: () => void;
 }
 
 export const SwitchComponent = ({
   asQuery,
-  setAsQuery,
+  onToggle,
 }: SwitchComponentProps) => {
   return (
     <Box
@@ -22,9 +20,7 @@ export const SwitchComponent = ({
     >
       <FormControlLabel
         checked={asQuery}
-        control={
-          <Switch color="primary" onChange={() => setAsQuery(!asQuery)} />
-        }
+        control={<Switch color="primary" onChange={onToggle} />}
         label="SQL format"
       />
     </Box>
