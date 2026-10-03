@@ -204,7 +204,12 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     if (forkedTaskInput == null) {
                         forkedTaskInput = new HashMap<>();
                     }
-                    dynForkTask.getInputParameters().putAll(forkedTaskInput);
+                    // forkedTaskInput is part of the fork's input, which was already evaluated
+                    // against this workflow above. The forked task's input parameters are
+                    // evaluated again when it is scheduled and on every retry, so escape the
+                    // merged values to pass them through unchanged (e.g. an inline workflowDef
+                    // for START_WORKFLOW keeps its ${...} expressions for the child workflow).
+                    dynForkTask.getInputParameters().putAll(escapeExpressions(forkedTaskInput));
                 } catch (Exception e) {
                     String reason =
                             String.format(
@@ -601,5 +606,32 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                         .collect(Collectors.toCollection(LinkedList::new));
 
         return new ImmutablePair<>(dynamicForkJoinWorkflowTasks, dynamicForkJoinTasksInput);
+    }
+
+    /**
+     * Returns a copy of the given input in which every "${" in a string value, at any depth, is
+     * escaped as "$${". {@link ParametersUtils} turns an escaped expression back into the literal
+     * text instead of evaluating it, so already resolved values survive another evaluation as-is.
+     */
+    private static Map<String, Object> escapeExpressions(Map<String, Object> input) {
+        Map<String, Object> escaped = new LinkedHashMap<>();
+        input.forEach((key, value) -> escaped.put(key, escapeExpressions(value)));
+        return escaped;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Object escapeExpressions(Object value) {
+        if (value instanceof String string) {
+            return string.replace("${", "$${");
+        }
+        if (value instanceof Map) {
+            return escapeExpressions((Map<String, Object>) value);
+        }
+        if (value instanceof Collection<?> values) {
+            return values.stream()
+                    .map(ForkJoinDynamicTaskMapper::escapeExpressions)
+                    .collect(Collectors.toList());
+        }
+        return value;
     }
 }
