@@ -662,3 +662,78 @@ describe("replaceAgentRunNode", () => {
     expect(updated.turns[0].subAgents[1]).toBe(untouchedSibling);
   });
 });
+
+// A task guardrail's detector COMPLETES even when it blocks the call: the task status says the
+// detector ran, the `verdicts[]` in its output say what it found. Reading only the status showed
+// a guardrail that blocked the agent as "passed" — the one direction that must never be wrong.
+describe("task-guardrail verdicts drive the pass/fail event", () => {
+  const detector = (
+    outputData: Record<string, unknown>,
+    status = "COMPLETED",
+  ) =>
+    task({
+      referenceTaskName: "_guardrail_grb_115fd84fcd77dff55af1a45c_0",
+      taskType: "examples_guardrail_worker",
+      status,
+      seq: "2",
+      startTime: 10,
+      endTime: 12,
+      inputData: { guardrailContext: { stampId: "grs_1" } },
+      outputData,
+    });
+
+  const guardrailEvent = (detectorTask: any) => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_llm",
+          taskType: "LLM_CHAT_COMPLETE",
+          seq: "1",
+          startTime: 0,
+          endTime: 5,
+          inputData: { model: "gpt", messages: [] },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+        detectorTask,
+      ]),
+    );
+    return run.turns
+      .flatMap((turn) => turn.events)
+      .find((event) => event.id.endsWith("-guardrail"));
+  };
+
+  it("reports a failing verdict as GUARDRAIL_FAIL even though the task completed", () => {
+    const event = guardrailEvent(
+      detector({
+        verdicts: [
+          {
+            itemId: "item-0",
+            passed: false,
+            reason: "contains a banned word",
+            detections: [{ type: "FORBIDDEN", start: 8, end: 17 }],
+          },
+        ],
+        detectorVersion: "examples-worker-v1",
+      }),
+    );
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_FAIL);
+    expect(event?.success).toBe(false);
+    expect(event?.summary).toContain("contains a banned word");
+  });
+
+  it("reports a passing verdict as GUARDRAIL_PASS", () => {
+    const event = guardrailEvent(
+      detector({ verdicts: [{ itemId: "item-0", passed: true }] }),
+    );
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_PASS);
+    expect(event?.success).toBe(true);
+  });
+
+  it("still fails when the detector task itself failed", () => {
+    const event = guardrailEvent(detector({}, "FAILED"));
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_FAIL);
+  });
+});
