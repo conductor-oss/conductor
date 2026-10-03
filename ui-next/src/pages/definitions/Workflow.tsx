@@ -11,7 +11,6 @@ import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import Header from "components/ui/Header";
 import NoDataComponent from "components/ui/NoDataComponent";
 import { SnackbarMessage } from "components/ui/SnackbarMessage";
-import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
 import AddTagDialog, {
   TagDialogProps,
 } from "components/features/tags/AddTagDialog";
@@ -21,7 +20,7 @@ import { MessageContext } from "components/providers/messageContext";
 import SplitWorkflowDefinitionButton from "pages/executions/SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
 import ImportBpmnButton from "pages/executions/SplitWorkflowDefinitionButton/ImportBpmnButton";
 import { removeDeletedWorkflow } from "pages/runWorkflow/runWorkflowUtils";
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { UseQueryResult } from "react-query";
 import { useNavigate } from "react-router";
@@ -43,7 +42,11 @@ import { usePushHistory } from "utils/hooks/usePushHistory";
 import { logger } from "utils/logger";
 import { useActionWithPath, useWorkflowDefs } from "utils/query";
 import { createSearchableTags, tryToJson } from "utils/utils";
-import { getUniqueWorkflows } from "utils/workflow";
+import {
+  getUniqueWorkflows,
+  getUniqueWorkflowsWithVersions,
+} from "utils/workflow";
+import DeleteVersionedDialog from "components/ui/dialogs/DeleteVersionedDialog";
 import CloneWorkflowDialog from "./dialog/CloneWorkflowDialog";
 
 const INTRO_CONTENT = `A **workflow definition** is a blueprint that defines the sequence of tasks, their dependencies, and how data flows between them.
@@ -95,12 +98,21 @@ export default function WorkflowDefinitions() {
   const filterObj =
     filterParam === "" ? undefined : tryToJson<FilterObjectItem>(filterParam);
 
+  const versionsByName = useMemo(
+    () => getUniqueWorkflowsWithVersions(data),
+    [data],
+  );
+
+  // The dialog closes as soon as delete is pressed, so the row being removed has to be
+  // remembered for the response rather than read back off state.
+  const deleted = useRef<{ name: string; version: number } | null>(null);
+
   const deleteWorkflowVersionAction = useActionWithPath({
     onSuccess: () => {
-      if (confirmDelete?.workflowName) {
+      if (deleted.current) {
         removeDeletedWorkflow(
-          encodeURIComponent(confirmDelete?.workflowName),
-          confirmDelete?.workflowVersion,
+          encodeURIComponent(deleted.current.name),
+          deleted.current.version,
         );
       }
 
@@ -440,35 +452,29 @@ export default function WorkflowDefinitions() {
       )}
 
       {confirmDelete && (
-        <ConfirmChoiceDialog
-          handleConfirmationValue={(selectedChoice) => {
-            if (selectedChoice) {
-              // @ts-ignore
-              deleteWorkflowVersionAction.mutate({
-                method: "delete",
-                path: `/metadata/workflow/${encodeURIComponent(
-                  confirmDelete.workflowName,
-                )}/${confirmDelete.workflowVersion}`,
-              });
-            }
+        <DeleteVersionedDialog
+          name={confirmDelete.workflowName}
+          entityLabel="workflow definition"
+          versions={versionsByName.get(confirmDelete.workflowName)}
+          // There is no endpoint that removes a whole workflow definition yet, so only a
+          // single version can be deleted here.
+          allowDeleteAll={false}
+          isDeleting={deleteWorkflowVersionAction.isLoading}
+          onCancel={() => setConfirmDelete(null)}
+          onConfirm={(version) => {
+            deleted.current = {
+              name: confirmDelete.workflowName,
+              version: version as number,
+            };
+            // @ts-ignore
+            deleteWorkflowVersionAction.mutate({
+              method: "delete",
+              path: `/metadata/workflow/${encodeURIComponent(
+                confirmDelete.workflowName,
+              )}/${version}`,
+            });
             setConfirmDelete(null);
           }}
-          message={
-            <>
-              Are you sure you want to delete{" "}
-              <strong style={{ color: "red" }}>
-                {confirmDelete.workflowName}
-              </strong>{" "}
-              workflow definition? This cannot be undone.
-              <div style={{ marginTop: "15px" }}>
-                Please type <strong>{confirmDelete.workflowName}</strong> to
-                confirm.
-              </div>
-            </>
-          }
-          header={"Deletion confirmation"}
-          isInputConfirmation
-          valueToBeDeleted={confirmDelete.workflowName}
         />
       )}
       <SectionHeader
