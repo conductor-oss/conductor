@@ -19,6 +19,8 @@ ext {
     revApacheHttpComponentsClient5 = '5.3.1'
     revAwaitility = '3.1.6'
     revAwsSdk = '2.31.68'
+    // BedrockAgentCore runtime/control SDKs were introduced after 2.31.x; pin to a compatible release
+    revAwsSdkBedrockAgentCore = '2.33.11'
     revBval = '2.0.5'
     revCassandra = '3.10.2'
     revCassandraUnit = '3.11.2.0'
@@ -101,6 +103,7 @@ ext {
     revElasticSearch8 = '8.19.11'
     revCodec = '1.15'
     revAzureStorageBlobSdk = '12.25.1'
+    revAzureIdentitySdk = '1.15.4'
     revNatsStreaming = '2.6.5'
     revNats = '2.16.14'
     revStan = '2.2.3'
