@@ -180,6 +180,25 @@ public class MonitorsTest {
     }
 
     @Test
+    public void workflowNameTagDisabled_dropsWorkflowNameTagFromMetrics() {
+        SimpleMeterRegistry probe = new SimpleMeterRegistry();
+        Monitors.addMeterRegistry(probe);
+
+        try {
+            Monitors.setWorkflowNameTagEnabled(false);
+
+            Monitors.recordWorkflowStartSuccess("no_tag_workflow", "1", "ownerApp");
+
+            Counter counter =
+                    probe.find("workflow_start_success").tag("ownerApp", "ownerApp").counter();
+            assertNotNull(counter);
+            assertNull(counter.getId().getTag("workflowName"));
+        } finally {
+            Monitors.setWorkflowNameTagEnabled(true);
+        }
+    }
+
+    @Test
     public void recordWebhookPublishSuccess_defaultsBlankTagsToUnknown() {
         SimpleMeterRegistry probe = new SimpleMeterRegistry();
         Monitors.addMeterRegistry(probe);
