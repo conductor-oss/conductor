@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.storage;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -88,5 +90,46 @@ public class DummyPayloadStorageTest {
     public void testDownloadForInvalidPath() {
         InputStream inputStream = dummyPayloadStorage.download("testPath");
         assertNull(inputStream);
+    }
+
+    @Test
+    public void testDownloadRejectsPathTraversal() {
+        assertNull(dummyPayloadStorage.download("../../etc/passwd"));
+        assertNull(dummyPayloadStorage.download("subdir/../../../etc/passwd"));
+    }
+
+    @Test
+    public void testUploadRejectsPathTraversal() throws Exception {
+        String traversalPath = "../escaped-payload.json";
+        byte[] payloadBytes = MOCK_PAYLOAD.getBytes(StandardCharsets.UTF_8);
+
+        // Where an unguarded "../" write would land: one level above payloadDir.
+        File escaped =
+                new File(
+                        dummyPayloadStorage.getPayloadDir().getParentFile(),
+                        "escaped-payload.json");
+        escaped.delete(); // clear any stale file from a prior run so the assertion is meaningful
+
+        dummyPayloadStorage.upload(
+                traversalPath, new ByteArrayInputStream(payloadBytes), payloadBytes.length);
+
+        // The guard must prevent the file from ever being written outside payloadDir.
+        assertFalse("Traversal upload must not write outside payloadDir", escaped.exists());
+        // And it is not readable back through the guarded download path either.
+        assertNull(dummyPayloadStorage.download(traversalPath));
+    }
+
+    @Test
+    public void testUploadAndDownloadNestedPath() throws Exception {
+        String nestedPath = "nested/dir/payload.json";
+        byte[] payloadBytes = MOCK_PAYLOAD.getBytes(StandardCharsets.UTF_8);
+
+        dummyPayloadStorage.upload(
+                nestedPath, new ByteArrayInputStream(payloadBytes), payloadBytes.length);
+
+        try (InputStream inputStream = dummyPayloadStorage.download(nestedPath)) {
+            assertNotNull("A nested path within payloadDir should be readable", inputStream);
+            assertEquals(MOCK_PAYLOAD, IOUtils.toString(inputStream, StandardCharsets.UTF_8));
+        }
     }
 }

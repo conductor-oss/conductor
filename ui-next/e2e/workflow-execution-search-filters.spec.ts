@@ -194,6 +194,124 @@ test.describe("Workflow execution search - filters visual snapshot", () => {
   });
 });
 
+// ─── Execution start time picker ───────────────────────────────────────────
+
+test.describe("Workflow execution search - start time picker visual snapshot", () => {
+  const openStartTimePicker = async (page: Page) => {
+    await gotoExecutions(page);
+    await page.locator("#date-picker-start-time").locator("p").nth(1).click();
+    await expect(page.getByRole("tab", { name: "Presets" })).toBeVisible();
+  };
+
+  test("Should match the open start time menu", async ({ page }) => {
+    await openStartTimePicker(page);
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-picker.png",
+      SCREENSHOT_CONFIG,
+    );
+  });
+
+  test("Should match the Absolute tab calendar with a hovered end date", async ({
+    page,
+  }) => {
+    await openStartTimePicker(page);
+
+    await page.locator("#date-picker-absolute-tab").click();
+    const calendar = page.locator(".react-datepicker");
+    await expect(calendar).toBeVisible();
+
+    // Weekday letters and the date cells share one column grid.
+    const columns = await page.evaluate(() => {
+      const center = (el: Element) => {
+        const box = el.getBoundingClientRect();
+        return box.x + box.width / 2;
+      };
+      const root = document.querySelector(".react-datepicker")!;
+      const names = [...root.querySelectorAll(".react-datepicker__day-name")];
+      const days = [
+        ...root.querySelectorAll(".react-datepicker__week")[1].children,
+      ];
+      return names.map((name, index) => ({
+        name: center(name),
+        day: center(days[index]),
+      }));
+    });
+    for (const column of columns) {
+      expect(Math.abs(column.name - column.day)).toBeLessThan(1);
+    }
+
+    // Pick a start day, then hover a later day so the snapshot shows the
+    // in-progress range instead of a single selected day.
+    const startDay = page.getByRole("option", { name: /May 10th, 2026/ });
+    const endDay = page.getByRole("option", { name: /May 20th, 2026/ });
+    await startDay.click();
+    await expect(startDay).toHaveAttribute("aria-selected", "true");
+
+    const selected = await startDay.boundingBox();
+    expect(selected).not.toBeNull();
+    expect(Math.abs(selected!.width - selected!.height)).toBeLessThan(1);
+
+    const before = await endDay.boundingBox();
+    await endDay.hover();
+    const after = await endDay.boundingBox();
+    expect(before).not.toBeNull();
+    expect(after).not.toBeNull();
+    expect(Math.abs(after!.x - before!.x)).toBeLessThan(1);
+    expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
+    expect(Math.abs(after!.height - before!.height)).toBeLessThan(1);
+
+    await expect(startDay).toHaveClass(/react-datepicker__day--selected/);
+    await expect(endDay).toHaveClass(
+      /react-datepicker__day--selecting-range-end/,
+    );
+    await expect(
+      page.getByRole("option", { name: /May 15th, 2026/ }),
+    ).toHaveClass(/react-datepicker__day--in-selecting-range/);
+    await expect(
+      page.getByRole("option", { name: /May 21st, 2026/ }),
+    ).not.toHaveClass(/react-datepicker__day--in-selecting-range/);
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-absolute.png",
+      SCREENSHOT_CONFIG,
+    );
+  });
+
+  test("Should match the Absolute tab calendar with a selected date range", async ({
+    page,
+  }) => {
+    await openStartTimePicker(page);
+
+    await page.locator("#date-picker-absolute-tab").click();
+    const calendar = page.locator(".react-datepicker");
+    await expect(calendar).toBeVisible();
+
+    const startDay = page.getByRole("option", { name: /May 10th, 2026/ });
+    const endDay = page.getByRole("option", { name: /May 20th, 2026/ });
+    await startDay.click();
+    await endDay.click();
+
+    await expect(startDay).toHaveClass(/react-datepicker__day--range-start/);
+    await expect(endDay).toHaveClass(/react-datepicker__day--range-end/);
+    await expect(
+      page.getByRole("option", { name: /May 15th, 2026/ }),
+    ).toHaveClass(/react-datepicker__day--in-range/);
+    await expect(
+      page.getByRole("option", { name: /May 21st, 2026/ }),
+    ).not.toHaveClass(/react-datepicker__day--in-range/);
+
+    // Leave the pointer off the calendar so the snapshot shows the committed
+    // range rather than a hover preview.
+    await calendar.locator(".react-datepicker__current-month").hover();
+
+    await expect(page.locator(".MuiTooltip-popper")).toHaveScreenshot(
+      "execution-start-time-absolute-selected-range.png",
+      SCREENSHOT_CONFIG,
+    );
+  });
+});
+
 // ─── SQL toggle mode ───────────────────────────────────────────────────────
 
 test.describe("Workflow execution search - SQL toggle mode visual snapshot", () => {
