@@ -13,7 +13,7 @@ const optionRowSx = {
   alignItems: "center",
   m: 0,
   minHeight: { xs: 44, sm: 40 },
-  px: 0.5,
+  px: 2,
   borderRadius: 1.5,
   "&:hover": { bgcolor: "action.hover" },
   "& .MuiFormControlLabel-label": { minWidth: 0, fontSize: 13 },
@@ -68,7 +68,8 @@ export const NameFilterPanel = ({
 
   return (
     <>
-      <Box sx={{ p: 1.5 }}>
+      {/* Spacing is in 4px units: 20px from the panel edges, like the date picker. */}
+      <Box sx={{ px: 5, pt: 5, pb: 3 }}>
         <Box
           sx={{
             display: "flex",
@@ -100,7 +101,7 @@ export const NameFilterPanel = ({
           />
         </Box>
       </Box>
-      <Box sx={{ maxHeight: 260, overflowY: "auto", px: 0.5, pb: 1 }}>
+      <Box sx={{ maxHeight: 260, overflowY: "auto", px: 3, pb: 3 }}>
         {isPattern && !draft.includes(trimmedQuery) && (
           <FormControlLabel
             sx={optionRowSx}
@@ -141,13 +142,13 @@ export const NameFilterPanel = ({
           />
         ))}
         {matches.length > MAX_LISTED_NAMES && (
-          <Box sx={{ px: 1.25, py: 1, fontSize: 12, color: helperTextColor }}>
+          <Box sx={{ px: 2, py: 2, fontSize: 12, color: helperTextColor }}>
             Showing the first {MAX_LISTED_NAMES} of {matches.length}. Type to
             narrow the list.
           </Box>
         )}
         {listed.length === 0 && extraSelected.length === 0 && !isPattern && (
-          <Box sx={{ px: 1.25, py: 1, fontSize: 12, color: helperTextColor }}>
+          <Box sx={{ px: 2, py: 2, fontSize: 12, color: helperTextColor }}>
             No {noun}s match. Add * to search by pattern.
           </Box>
         )}
@@ -179,7 +180,7 @@ export const StatusFilterPanel = ({
 
   return (
     <>
-      <Box sx={{ px: 0.5, py: 1 }}>
+      <Box sx={{ px: 3, py: 3 }}>
         {WORKFLOW_STATUSES.map((status) => (
           <FormControlLabel
             key={status}

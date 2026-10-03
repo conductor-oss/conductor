@@ -53,9 +53,9 @@ export const ResponsivePanel = ({
             flexDirection: "column",
             alignItems: "center",
             gap: 1.25,
-            px: 2,
-            pt: 1,
-            pb: 0.5,
+            px: 5,
+            pt: 2,
+            pb: 1,
           }}
         >
           <Box
@@ -123,8 +123,8 @@ export const PanelActions = ({
       alignItems: "center",
       justifyContent: onClear ? "space-between" : "flex-end",
       gap: 1,
-      px: 1.5,
-      py: 1.25,
+      px: 5,
+      py: 3,
       borderTop: 1,
       borderColor: "divider",
       "& button": { minHeight: { xs: 44, sm: 36 } },
@@ -138,7 +138,7 @@ export const PanelActions = ({
         sx={{
           border: 0,
           bgcolor: "transparent",
-          px: 1,
+          px: 2,
           font: "inherit",
           fontSize: 13,
           color: "primary.main",
@@ -155,7 +155,7 @@ export const PanelActions = ({
         onClick={onCancel}
         sx={{
           flex: { xs: 1, sm: "none" },
-          px: 1.75,
+          px: 4,
           border: 1,
           borderColor: fieldBorderColor,
           borderRadius: 1.5,
@@ -176,7 +176,7 @@ export const PanelActions = ({
         disabled={applyDisabled}
         sx={{
           flex: { xs: 1, sm: "none" },
-          px: 2,
+          px: 4,
           border: 0,
           borderRadius: 1.5,
           bgcolor: "primary.main",

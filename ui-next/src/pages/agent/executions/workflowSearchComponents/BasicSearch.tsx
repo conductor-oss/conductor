@@ -462,6 +462,10 @@ export default function BasicSearch({
           hasActiveFilters={hasActiveFilters}
           onClearAll={handleReset}
           dateFilters={buildExecutionDateFilters({
+            startHelpText:
+              "Select a date range within which the Execution has started.",
+            endHelpText:
+              "Select a date range within which the Execution has ended.",
             startTimeFrom,
             startTimeTo,
             onStartFromChange,
