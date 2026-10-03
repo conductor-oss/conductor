@@ -11,6 +11,8 @@ services:
       dockerfile: docker/server/Dockerfile
       args:
         YARN_OPTS: ${YARN_OPTS}
+        # ES7 is no longer the build default; pin it so this legacy stack keeps building es7-persistence.
+        INDEXING_BACKEND: elasticsearch7
     networks:
       - internal
     ports:
