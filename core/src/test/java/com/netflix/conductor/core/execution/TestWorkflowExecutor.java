@@ -214,6 +214,9 @@ public class TestWorkflowExecutor {
         when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(30));
         when(properties.getLockTimeToTry()).thenReturn(Duration.ofMillis(500));
 
+        ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
+        when(externalPayloadStorage.isConfigured()).thenReturn(false);
+
         workflowExecutor =
                 new WorkflowExecutorOps(
                         deciderService,
@@ -229,7 +232,8 @@ public class TestWorkflowExecutor {
                         parametersUtils,
                         idGenerator,
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        externalPayloadStorage);
     }
 
     @Test
@@ -837,6 +841,31 @@ public class TestWorkflowExecutor {
         assertEquals(
                 workflow.getWorkflowId(), argumentCaptor.getAllValues().get(1).getWorkflowId());
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
+    }
+
+    @Test
+    public void testStartWorkflowRejectsExternalInputPathWhenPayloadStorageIsUnavailable() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("external-input-storage-workflow");
+        workflowDef.setVersion(1);
+
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowDefinition(workflowDef);
+        input.setExternalInputPayloadStoragePath("workflow/input/missing.json");
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        try {
+            workflowExecutor.startWorkflow(input);
+            fail("Expected an external payload storage validation error");
+        } catch (IllegalArgumentException exception) {
+            assertEquals(
+                    "External payload storage is not configured on this server",
+                    exception.getMessage());
+        }
+
+        verify(executionDAOFacade, never()).createWorkflow(any(WorkflowModel.class));
     }
 
     @Test

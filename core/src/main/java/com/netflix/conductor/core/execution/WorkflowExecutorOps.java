@@ -38,6 +38,7 @@ import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.*;
 import com.netflix.conductor.common.metadata.workflow.*;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
@@ -102,6 +103,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
     private final ExecutionLockService executionLockService;
     private final Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO;
     private final SchemaService schemaService;
+    private final ExternalPayloadStorage externalPayloadStorage;
 
     private final Predicate<PollData> validateLastPolledTime =
             pollData ->
@@ -122,7 +124,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             ParametersUtils parametersUtils,
             IDGenerator idGenerator,
             Optional<WorkflowMessageQueueDAO> workflowMessageQueueDAO,
-            SchemaService schemaService) {
+            SchemaService schemaService,
+            ExternalPayloadStorage externalPayloadStorage) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
@@ -138,6 +141,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         this.systemTaskRegistry = systemTaskRegistry;
         this.workflowMessageQueueDAO = workflowMessageQueueDAO;
         this.schemaService = schemaService;
+        this.externalPayloadStorage = externalPayloadStorage;
     }
 
     /**
@@ -2930,6 +2934,16 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     workflowDef.getName(), WorkflowContext.get().getClientApp());
 
             throw new IllegalArgumentException("NULL input passed when starting workflow");
+        }
+
+        // External input is used only when no inline input was supplied. Reject it before the
+        // workflow is persisted so an unavailable backend is reported as a client error instead of
+        // failing later as a payload download error.
+        if ((workflowInput == null || workflowInput.isEmpty())
+                && StringUtils.isNotBlank(externalStoragePath)
+                && !externalPayloadStorage.isConfigured()) {
+            throw new IllegalArgumentException(
+                    "External payload storage is not configured on this server");
         }
     }
 

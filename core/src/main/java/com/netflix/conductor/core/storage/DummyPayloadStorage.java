@@ -56,6 +56,11 @@ public class DummyPayloadStorage implements ExternalPayloadStorage {
     }
 
     @Override
+    public boolean isConfigured() {
+        return false;
+    }
+
+    @Override
     public ExternalStorageLocation getLocation(
             Operation operation, PayloadType payloadType, String path) {
         ExternalStorageLocation location = new ExternalStorageLocation();
