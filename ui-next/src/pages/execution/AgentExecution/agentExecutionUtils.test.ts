@@ -737,3 +737,86 @@ describe("task-guardrail verdicts drive the pass/fail event", () => {
     expect(event?.type).toBe(EventType.GUARDRAIL_FAIL);
   });
 });
+
+// A guardrail with a builtin detector runs inside the LLM worker and schedules no task, so there
+// is nothing in the DAG to recognise. Its only trace is the evidence on the task it guarded.
+describe("in-process guardrails surface from task evidence", () => {
+  const guarded = (evaluations: unknown[]) =>
+    task({
+      referenceTaskName: "sdk_demo_agent_llm",
+      taskType: "LLM_CHAT_COMPLETE",
+      status: "FAILED_WITH_TERMINAL_ERROR",
+      seq: "1",
+      startTime: 0,
+      endTime: 5,
+      inputData: { model: "gpt-4o", messages: [] },
+      outputData: {},
+      executionMetadata: { additionalContext: { guardrails: { evaluations } } },
+    });
+
+  const events = (detectorTask: any) =>
+    transformWorkflowExecutionToAgentRun(execution([detectorTask]))
+      .turns.flatMap((turn) => turn.events)
+      .filter((event) => event.id.includes("guardrail-evidence"));
+
+  it("renders a blocked in-process guardrail with no detector task present", () => {
+    const [event] = events(
+      guarded([
+        {
+          guardrail: "prompt-injection",
+          point: "USER_MESSAGE",
+          outcome: "BLOCKED",
+          latencyMillis: 1200,
+        },
+      ]),
+    );
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_FAIL);
+    expect(event?.success).toBe(false);
+    expect(event?.summary).toContain("prompt-injection");
+    expect(event?.summary).toContain("USER_MESSAGE");
+  });
+
+  it("renders a passing evaluation as a pass", () => {
+    const [event] = events(
+      guarded([{ guardrail: "pii", point: "MODEL_OUTPUT", outcome: "PASSED" }]),
+    );
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_PASS);
+    expect(event?.success).toBe(true);
+  });
+
+  it("does not call a redaction a pass — the guardrail did act", () => {
+    const [event] = events(
+      guarded([{ guardrail: "pii", point: "PROMPT", outcome: "REDACTED" }]),
+    );
+
+    expect(event?.type).toBe(EventType.GUARDRAIL_FAIL);
+    expect(event?.summary).toContain("redacted");
+  });
+
+  it("emits one event per evaluation", () => {
+    expect(
+      events(
+        guarded([
+          { guardrail: "pii", point: "PROMPT", outcome: "PASSED" },
+          { guardrail: "pii", point: "MODEL_OUTPUT", outcome: "REDACTED" },
+        ]),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("adds nothing when a task carries no guardrail evidence", () => {
+    expect(
+      events(
+        task({
+          referenceTaskName: "plain_llm",
+          taskType: "LLM_CHAT_COMPLETE",
+          seq: "1",
+          inputData: { model: "gpt-4o", messages: [] },
+          outputData: {},
+        }),
+      ),
+    ).toHaveLength(0);
+  });
+});
