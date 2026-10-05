@@ -3,6 +3,7 @@ import { Provider as ThemeProvider } from "theme/material/provider";
 import { StatusFilterPanel } from "./FilterPanels";
 import { ScopedSearchBar } from "./ScopedSearchBar";
 import { SearchChips } from "./SearchChips";
+import { searchScopesFor } from "./searchScopes";
 
 describe("ScopedSearchBar", () => {
   it("submits on Enter and on the Search button, and switches field", () => {
@@ -13,6 +14,7 @@ describe("ScopedSearchBar", () => {
       <ThemeProvider>
         <ScopedSearchBar
           scope="correlationId"
+          scopes={searchScopesFor("Workflow id")}
           onScopeChange={onScopeChange}
           value="abc"
           onChange={vi.fn()}

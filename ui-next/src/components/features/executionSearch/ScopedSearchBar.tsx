@@ -2,12 +2,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { Box, InputBase, NativeSelect } from "@mui/material";
 import { Theme } from "@mui/material/styles";
 import { KeyboardEvent } from "react";
-import {
-  SEARCH_SCOPE_ORDER,
-  SEARCH_SCOPES,
-  SearchScope,
-  SearchScopeConfig,
-} from "./searchScopes";
+import { SearchScope, SearchScopeConfig } from "./searchScopes";
 import { fieldBorderColor, helperTextColor } from "./styles";
 
 export interface ScopedSearchBarProps {
@@ -19,7 +14,8 @@ export interface ScopedSearchBarProps {
   onSubmit: () => void;
   /** Hidden on phones once filters exist, since the chips show how it works. */
   hideHintOnPhone?: boolean;
-  scopes?: Record<SearchScope, SearchScopeConfig>;
+  scopes: SearchScopeConfig[];
+  searchButtonId?: string;
 }
 
 const focusRing = (theme: Theme) => ({
@@ -41,9 +37,10 @@ export const ScopedSearchBar = ({
   onChange,
   onSubmit,
   hideHintOnPhone = false,
-  scopes = SEARCH_SCOPES,
+  scopes,
+  searchButtonId = "search-workflow-btn",
 }: ScopedSearchBarProps) => {
-  const config = scopes[scope];
+  const config = scopes.find((s) => s.key === scope) ?? scopes[0];
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter" && !event.metaKey && !event.ctrlKey) {
@@ -95,9 +92,9 @@ export const ScopedSearchBar = ({
             "& select:focus": { bgcolor: "transparent" },
           }}
         >
-          {SEARCH_SCOPE_ORDER.map((key) => (
+          {scopes.map(({ key, label }) => (
             <option key={key} value={key}>
-              {scopes[key].label}
+              {label}
             </option>
           ))}
         </NativeSelect>
@@ -140,7 +137,7 @@ export const ScopedSearchBar = ({
         <Box
           component="button"
           type="button"
-          id="search-workflow-btn"
+          id={searchButtonId}
           onClick={onSubmit}
           sx={{
             px: 4,

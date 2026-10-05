@@ -2,11 +2,13 @@ import { useState } from "react";
 import {
   mergeValues,
   parseSearchInput,
-  SEARCH_SCOPE_ORDER,
   SearchScope,
+  SearchScopeConfig,
 } from "./searchScopes";
 
 export interface UseScopedSearchOptions {
+  /** The fields the search bar offers, in menu and chip order. */
+  scopes: SearchScopeConfig[];
   /** Current filter values for each scope, as stored by the page. */
   values: Record<SearchScope, string[]>;
   setValues: (scope: SearchScope, values: string[]) => void;
@@ -20,6 +22,7 @@ export interface SearchChipData {
 }
 
 export interface ScopedSearchState {
+  scopes: SearchScopeConfig[];
   scope: SearchScope;
   setScope: (scope: SearchScope) => void;
   term: string;
@@ -38,16 +41,18 @@ export interface ScopedSearchState {
  * and the chip actions on top.
  */
 export const useScopedSearch = ({
+  scopes,
   values,
   setValues,
   onSearchAgain,
 }: UseScopedSearchOptions): ScopedSearchState => {
-  const [scope, setScope] = useState<SearchScope>("workflowId");
+  const [scope, setScope] = useState<SearchScope>(scopes[0].key);
   const [term, setTerm] = useState("");
+  const config = scopes.find((s) => s.key === scope) ?? scopes[0];
 
   const submit = () => {
-    const added = parseSearchInput(scope, term);
-    const current = values[scope];
+    const added = parseSearchInput(config, term);
+    const current = values[config.key] ?? [];
     const merged = mergeValues(current, added);
     setTerm("");
     if (merged.length === current.length) {
@@ -55,25 +60,25 @@ export const useScopedSearch = ({
       onSearchAgain();
       return;
     }
-    setValues(scope, merged);
+    setValues(config.key, merged);
   };
 
   const removeValue = (chipScope: SearchScope, value: string) => {
     setValues(
       chipScope,
-      values[chipScope].filter((v) => v !== value),
+      (values[chipScope] ?? []).filter((v) => v !== value),
     );
   };
 
   const removeScope = (chipScope: SearchScope) => setValues(chipScope, []);
 
-  const chips = SEARCH_SCOPE_ORDER.map((s) => ({
-    scope: s,
-    values: values[s],
-  })).filter((chip) => chip.values.length > 0);
+  const chips = scopes
+    .map(({ key }) => ({ scope: key, values: values[key] ?? [] }))
+    .filter((chip) => chip.values.length > 0);
 
   return {
-    scope,
+    scopes,
+    scope: config.key,
     setScope,
     term,
     setTerm,

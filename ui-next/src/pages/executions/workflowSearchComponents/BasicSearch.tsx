@@ -29,9 +29,9 @@ import {
   searchScopesFor,
   SearchScope,
   splitFreeText,
-  splitWorkflowIds,
+  splitList,
   useScopedSearch,
-  workflowIdClause,
+  exactClause,
 } from "components/features/executionSearch";
 
 const DEFAULT_SORT = "startTime:DESC";
@@ -139,7 +139,7 @@ export default function BasicSearch({
   const [showCodeDialog, setShowCodeDialog] = useQueryState("displayCode", "");
 
   const workflowNames: string[] = useWorkflowNames();
-  const workflowIds = useMemo(() => splitWorkflowIds(workflowId), [workflowId]);
+  const workflowIds = useMemo(() => splitList(workflowId), [workflowId]);
 
   const handleRowsPerPage = (rowsPerPage: number) => {
     setPage(1);
@@ -193,7 +193,7 @@ export default function BasicSearch({
     if (!_isEmpty(workflowType)) {
       clauses.push(`workflowType IN (${workflowType.join(",")})`);
     }
-    const workflowIdFilter = workflowIdClause(splitWorkflowIds(workflowId));
+    const workflowIdFilter = exactClause("workflowId", splitList(workflowId));
     if (workflowIdFilter) {
       clauses.push(workflowIdFilter);
     }
@@ -393,6 +393,7 @@ export default function BasicSearch({
     });
 
   const search = useScopedSearch({
+    scopes: SEARCH_SCOPES,
     values: {
       workflowId: workflowIds,
       correlationId: correlationIds,
@@ -478,7 +479,6 @@ export default function BasicSearch({
         )}
         <ExecutionSearchFilters
           search={search}
-          scopes={SEARCH_SCOPES}
           nameFilter={{
             label: "Workflow name",
             noun: "workflow",

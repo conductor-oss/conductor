@@ -27,6 +27,9 @@ export interface SqlQueryBarProps {
   /** e.g. to register completion items for field names and values. */
   beforeMount?: BeforeMount;
   hint: string;
+  searchButtonId?: string;
+  /** An example query shown while the editor is empty. */
+  placeholder?: string;
 }
 
 /**
@@ -40,6 +43,8 @@ export const SqlQueryBar = ({
   onSubmit,
   beforeMount,
   hint,
+  searchButtonId = "search-workflow-btn",
+  placeholder = "workflowType = 'my_workflow' AND status IN (FAILED)",
 }: SqlQueryBarProps) => {
   const { mode } = useContext(ColorModeContext);
   // Phones use 44px controls, like the Free text box below the bar.
@@ -121,7 +126,7 @@ export const SqlQueryBar = ({
                 zIndex: 1,
               }}
             >
-              workflowType = &apos;my_workflow&apos; AND status IN (FAILED)
+              {placeholder}
             </Box>
           )}
           <Editor
@@ -151,7 +156,7 @@ export const SqlQueryBar = ({
         <Box
           component="button"
           type="button"
-          id="search-workflow-btn"
+          id={searchButtonId}
           onClick={onSubmit}
           sx={{
             px: 4,
@@ -193,6 +198,7 @@ export interface FreeTextInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  placeholder?: string;
 }
 
 /** A free text box styled like the scoped search bar's input. */
@@ -200,6 +206,7 @@ export const FreeTextInput = ({
   value,
   onChange,
   onSubmit,
+  placeholder = "Free text: words from input, output, variables, task outputs or failure reasons",
 }: FreeTextInputProps) => (
   <Box
     sx={(theme) => ({
@@ -230,7 +237,7 @@ export const FreeTextInput = ({
           onSubmit();
         }
       }}
-      placeholder="Free text: words from input, output, variables, task outputs or failure reasons"
+      placeholder={placeholder}
       inputProps={{ "aria-label": "Free text" }}
       sx={{ fontSize: { xs: 16, sm: 14 } }}
     />

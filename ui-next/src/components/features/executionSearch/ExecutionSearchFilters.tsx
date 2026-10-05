@@ -11,7 +11,6 @@ import {
 } from "./RefreshActions";
 import { ScopedSearchBar } from "./ScopedSearchBar";
 import { FilterChip, SearchChips } from "./SearchChips";
-import { SEARCH_SCOPES, SearchScope, SearchScopeConfig } from "./searchScopes";
 import { ScopedSearchState } from "./useScopedSearch";
 
 const summarize = (values: string[], format = (value: string) => value) => {
@@ -30,12 +29,30 @@ export interface DateFilter {
   renderPanel: (close: () => void) => ReactNode;
 }
 
+/** Element ids, kept stable per page for tests and deep links. */
+export interface ExecutionSearchFilterIds {
+  search: string;
+  refresh: string;
+  clearAll: string;
+  name: string;
+  status: string;
+}
+
+const WORKFLOW_IDS: ExecutionSearchFilterIds = {
+  search: "search-workflow-btn",
+  refresh: "refresh-workflow-search-btn",
+  clearAll: "reset-workflow-btn",
+  name: "workflow-search-name-dropdown",
+  status: "workflow-search-status",
+};
+
 export interface ExecutionSearchFiltersProps {
   /** Scoped search bar and chips. Omit when `query` replaces the search bar. */
   search?: ScopedSearchState;
   /** Replaces the search bar, e.g. the SQL editor in SQL mode. */
   query?: ReactNode;
-  scopes?: Record<SearchScope, SearchScopeConfig>;
+  ids?: Partial<ExecutionSearchFilterIds>;
+  /** A pick-from-list filter, e.g. workflow names or task types. */
   nameFilter?: {
     /** Pill label, e.g. "Workflow name" or "Agent name". */
     label: string;
@@ -44,12 +61,17 @@ export interface ExecutionSearchFiltersProps {
     names: string[];
     selected: string[];
     onApply: (names: string[]) => void;
+    /** Offer "Match pattern" for terms with `*`. Defaults to true. */
+    allowPatterns?: boolean;
   };
-  statusFilter: {
+  statusFilter?: {
     selected: string[];
     onApply: (statuses: string[]) => void;
     /** e.g. when a SQL query already filters on status. */
     disabled?: boolean;
+    /** Defaults to the workflow execution statuses. */
+    options?: string[];
+    renderOption?: (status: string) => ReactNode;
   };
   /** Time range pills shown between the name and status pills. */
   dateFilters: DateFilter[];
@@ -68,7 +90,7 @@ export interface ExecutionSearchFiltersProps {
 }
 
 /**
- * The filter form shared by the workflow and agent execution searches, in both
+ * The filter form shared by the execution searches (workflow, agent, task), in both
  * basic and SQL mode: a search bar (or SQL editor), then the filter pills and
  * the SQL switch, then the search chips and Clear all. On phones the pills sit
  * three across so the row never scrolls sideways.
@@ -76,7 +98,7 @@ export interface ExecutionSearchFiltersProps {
 export const ExecutionSearchFilters = ({
   search,
   query,
-  scopes = SEARCH_SCOPES,
+  ids: idOverrides,
   nameFilter,
   statusFilter,
   dateFilters,
@@ -89,20 +111,22 @@ export const ExecutionSearchFilters = ({
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const isPhone = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
   const closePanel = () => setOpenPanel(null);
+  const ids = { ...WORKFLOW_IDS, ...idOverrides };
 
   // Values added from the search bar. The pills already show the other
   // filters, so they get no chips.
-  const chips: FilterChip[] = (search?.chips ?? []).map(
-    ({ scope, values }) => ({
+  const chips: FilterChip[] = (search?.chips ?? []).map(({ scope, values }) => {
+    const config = search?.scopes.find((s) => s.key === scope);
+    return {
       id: scope,
-      label: scopes[scope].label,
+      label: config?.label ?? scope,
       values,
-      matchesWords: scope === "freeText",
-      monospace: true,
+      matchesWords: config?.matchesWords,
+      monospace: config?.monospace,
       onRemoveValue: (value) => search?.removeValue(scope, value),
       onRemove: () => search?.removeScope(scope),
-    }),
-  );
+    };
+  });
 
   return (
     <Box
@@ -123,13 +147,14 @@ export const ExecutionSearchFilters = ({
               onChange={search.setTerm}
               onSubmit={search.submit}
               hideHintOnPhone={search.chips.length > 0}
-              scopes={scopes}
+              scopes={search.scopes}
+              searchButtonId={ids.search}
             />
           ) : (
             query
           )}
         </Box>
-        {refresh && !isPhone && <RefreshButton {...refresh} />}
+        {refresh && !isPhone && <RefreshButton id={ids.refresh} {...refresh} />}
       </Box>
       <Box
         sx={{
@@ -143,7 +168,7 @@ export const ExecutionSearchFilters = ({
         {nameFilter && (
           <Box sx={{ minWidth: 0 }}>
             <FilterPill
-              id="workflow-search-name-dropdown"
+              id={ids.name}
               label={nameFilter.label}
               value={summarize(nameFilter.selected)}
               active={nameFilter.selected.length > 0}
@@ -154,6 +179,7 @@ export const ExecutionSearchFilters = ({
               <NameFilterPanel
                 names={nameFilter.names}
                 noun={nameFilter.noun}
+                allowPatterns={nameFilter.allowPatterns}
                 selected={nameFilter.selected}
                 onCancel={closePanel}
                 onApply={(names) => {
@@ -179,32 +205,36 @@ export const ExecutionSearchFilters = ({
             </FilterPill>
           </Box>
         ))}
-        <Box sx={{ minWidth: 0 }}>
-          <FilterPill
-            id="workflow-search-status"
-            label="Status"
-            value={
-              statusFilter.disabled
-                ? "Set in query"
-                : summarize(statusFilter.selected, humanizeStatus)
-            }
-            active={statusFilter.selected.length > 0}
-            disabled={statusFilter.disabled}
-            open={openPanel === "status"}
-            onOpen={() => setOpenPanel("status")}
-            onClose={closePanel}
-            panelWidth={260}
-          >
-            <StatusFilterPanel
-              selected={statusFilter.selected}
-              onCancel={closePanel}
-              onApply={(statuses) => {
-                closePanel();
-                statusFilter.onApply(statuses);
-              }}
-            />
-          </FilterPill>
-        </Box>
+        {statusFilter && (
+          <Box sx={{ minWidth: 0 }}>
+            <FilterPill
+              id={ids.status}
+              label="Status"
+              value={
+                statusFilter.disabled
+                  ? "Set in query"
+                  : summarize(statusFilter.selected, humanizeStatus)
+              }
+              active={statusFilter.selected.length > 0}
+              disabled={statusFilter.disabled}
+              open={openPanel === "status"}
+              onOpen={() => setOpenPanel("status")}
+              onClose={closePanel}
+              panelWidth={260}
+            >
+              <StatusFilterPanel
+                options={statusFilter.options}
+                renderOption={statusFilter.renderOption}
+                selected={statusFilter.selected}
+                onCancel={closePanel}
+                onApply={(statuses) => {
+                  closePanel();
+                  statusFilter.onApply(statuses);
+                }}
+              />
+            </FilterPill>
+          </Box>
+        )}
         {toggles && (
           <Box
             sx={{
@@ -221,7 +251,7 @@ export const ExecutionSearchFilters = ({
           <Box
             component="button"
             type="button"
-            id="reset-workflow-btn"
+            id={ids.clearAll}
             onClick={() => {
               search?.clearTerm();
               onClearAll();

@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { SearchScope } from "./searchScopes";
+import { SearchScope, searchScopesFor } from "./searchScopes";
 import { useScopedSearch } from "./useScopedSearch";
 
 const setup = (values: Partial<Record<SearchScope, string[]>> = {}) => {
@@ -7,6 +7,7 @@ const setup = (values: Partial<Record<SearchScope, string[]>> = {}) => {
   const onSearchAgain = vi.fn();
   const { result } = renderHook(() =>
     useScopedSearch({
+      scopes: searchScopesFor("Workflow id"),
       values: {
         workflowId: [],
         correlationId: [],

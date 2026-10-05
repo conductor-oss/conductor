@@ -1,7 +1,7 @@
 import SearchIcon from "@mui/icons-material/Search";
 import { Box, Checkbox, FormControlLabel, InputBase } from "@mui/material";
 import WorkflowStatusBadge from "components/WorkflowStatusBadge";
-import { useMemo, useState } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { WorkflowExecutionStatus } from "types/Execution";
 import { PanelActions } from "./ResponsivePanel";
 import { fieldBorderColor, helperTextColor } from "./styles";
@@ -33,6 +33,8 @@ export interface NameFilterPanelProps {
   selected: string[];
   onApply: (names: string[]) => void;
   onCancel: () => void;
+  /** Offer "Match pattern" for terms with `*`. Defaults to true. */
+  allowPatterns?: boolean;
 }
 
 /**
@@ -45,6 +47,7 @@ export const NameFilterPanel = ({
   selected,
   onApply,
   onCancel,
+  allowPatterns = true,
 }: NameFilterPanelProps) => {
   const [draft, setDraft] = useState<string[]>(selected);
   const [query, setQuery] = useState("");
@@ -56,8 +59,10 @@ export const NameFilterPanel = ({
   );
 
   const trimmedQuery = query.trim();
-  const isPattern = trimmedQuery.includes("*");
-  const needle = trimmedQuery.replace(/\*/g, "").toLowerCase();
+  const isPattern = allowPatterns && trimmedQuery.includes("*");
+  const needle = (
+    allowPatterns ? trimmedQuery.replace(/\*/g, "") : trimmedQuery
+  ).toLowerCase();
   const matches = sortedNames.filter((name) =>
     name.toLowerCase().includes(needle),
   );
@@ -95,7 +100,11 @@ export const NameFilterPanel = ({
             fullWidth
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Find ${articleFor(noun)} ${noun}, or use * as a wildcard`}
+            placeholder={
+              allowPatterns
+                ? `Find ${articleFor(noun)} ${noun}, or use * as a wildcard`
+                : `Find ${articleFor(noun)} ${noun}`
+            }
             inputProps={{ "aria-label": `Find ${noun}` }}
             sx={{ fontSize: { xs: 16, sm: 13 } }}
           />
@@ -149,7 +158,7 @@ export const NameFilterPanel = ({
         )}
         {listed.length === 0 && extraSelected.length === 0 && !isPattern && (
           <Box sx={{ px: 2, py: 2, fontSize: 12, color: helperTextColor }}>
-            No {noun}s match. Add * to search by pattern.
+            No {noun}s match.{allowPatterns && " Add * to search by pattern."}
           </Box>
         )}
       </Box>
@@ -169,19 +178,28 @@ export interface StatusFilterPanelProps {
   selected: string[];
   onApply: (statuses: string[]) => void;
   onCancel: () => void;
+  /** Defaults to the workflow execution statuses. */
+  options?: string[];
+  renderOption?: (status: string) => ReactNode;
 }
+
+const renderWorkflowStatus = (status: string) => (
+  <WorkflowStatusBadge status={status as WorkflowExecutionStatus} />
+);
 
 export const StatusFilterPanel = ({
   selected,
   onApply,
   onCancel,
+  options = WORKFLOW_STATUSES,
+  renderOption = renderWorkflowStatus,
 }: StatusFilterPanelProps) => {
   const [draft, setDraft] = useState<string[]>(selected);
 
   return (
     <>
-      <Box sx={{ px: 3, py: 3 }}>
-        {WORKFLOW_STATUSES.map((status) => (
+      <Box sx={{ px: 3, py: 3, maxHeight: 360, overflowY: "auto" }}>
+        {options.map((status) => (
           <FormControlLabel
             key={status}
             sx={{ ...optionRowSx, width: "100%" }}
@@ -193,7 +211,7 @@ export const StatusFilterPanel = ({
                 inputProps={{ "aria-label": status }}
               />
             }
-            label={<WorkflowStatusBadge status={status} />}
+            label={renderOption(status)}
           />
         ))}
       </Box>

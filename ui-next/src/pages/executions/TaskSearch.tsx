@@ -5,7 +5,7 @@ import MuiTypography from "components/ui/MuiTypography";
 import AddIcon from "components/icons/AddIcon";
 import _isEmpty from "lodash/isEmpty";
 import _isEqual from "lodash/isEqual";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useHotkeys } from "react-hotkeys-hook";
 import { UseQueryResult } from "react-query";
@@ -25,10 +25,30 @@ import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { useDebouncedQueryState } from "utils/hooks/useDebouncedQueryState";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { useTaskExecutionsSearch } from "utils/query";
-import { getErrors, tryToJson } from "utils/utils";
-import { AdvanceSearch } from "./Task/AdvanceSearch";
-import { BasicSearch } from "./Task/BasicSearch";
-import { SearchModeSwitch } from "components/features/executionSearch";
+import { getErrors } from "utils/utils";
+import {
+  ExecutionSearchFilters,
+  exactClause,
+  exactScope,
+  FreeTextInput,
+  freeTextScope,
+  SearchModeSwitch,
+  SearchScope,
+  SearchScopeConfig,
+  splitFreeText,
+  splitList,
+  SqlQueryBar,
+  useScopedSearch,
+} from "components/features/executionSearch";
+import StatusBadge from "components/StatusBadge";
+import { Monaco } from "@monaco-editor/react";
+import { TaskType } from "types/common";
+import { TaskStatus } from "types/TaskStatus";
+import {
+  TASK_SEARCH_QUERY_SUGGESTIONS,
+  WORKFLOW_SEARCH_QUERY_SUGGESTIONS,
+} from "utils/constants/common";
+import { buildExecutionDateFilters } from "./executionDateFilters";
 import { TaskApiSearchModal } from "./Task/TaskApiSearchModal";
 import ResultsTable from "./TaskResultsTable";
 
@@ -41,6 +61,35 @@ const taskWorkflowQueryField =
   "workflowType"
     ? "workflowType"
     : "workflowName";
+
+const taskTypes = Object.values(TaskType).filter(
+  (type) => ![TaskType.START, TaskType.SWITCH_JOIN].includes(type),
+);
+const taskStatuses = Object.values(TaskStatus)
+  .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+  .filter((status) => status !== TaskStatus.PENDING);
+
+const showTaskReferenceName = featureFlags.isEnabled(
+  FEATURES.SHOW_TASK_REFERENCE_NAME,
+);
+
+// Fields the search bar offers, kept in the URL as comma-separated values.
+const TASK_SEARCH_SCOPES: SearchScopeConfig[] = [
+  exactScope("taskDefName", "Task definition name", false),
+  exactScope("taskId", "Task execution id"),
+  ...(showTaskReferenceName
+    ? [exactScope("taskRefName", "Task reference name", false)]
+    : []),
+  exactScope("workflowName", "Workflow name", false),
+  freeTextScope(
+    "Words that appear in the task's data",
+    "Matches words in the indexed task data · all words must match",
+  ),
+];
+
+const renderTaskStatus = (status: string) => (
+  <StatusBadge status={status as TaskStatus} />
+);
 
 const getTableTitle = (resultObj: TaskExecutionResult) => {
   const { results, totalHits } = resultObj;
@@ -96,9 +145,6 @@ export function TaskSearch() {
     error?: string;
   } | null>(null);
 
-  const [openDateSelect, setOpenDateSelect] = useState(false);
-  const [openStartDatePicker, setStartOpenDatePicker] = useState(false);
-  const [openEndDatePicker, setEndOpenDatePicker] = useState(false);
   const [fromDisplayTime, setFromDisplayTime] = useState(
     startTimeFrom
       ? getSearchDateTime(startTimeFrom, startTimeEnd)
@@ -108,12 +154,6 @@ export function TaskSearch() {
     endTimeTo ? getSearchDateTime(endTimeFrom, endTimeTo) : "Select time range",
   );
 
-  const recentSearches =
-    (tryToJson(localStorage.getItem("recentTaskSearch")) as {
-      start: string;
-      end: string;
-    }) || {};
-
   useEffect(() => {
     if (!startTimeFrom) {
       setStartTimeFrom(last72HoursTimestamp.toString());
@@ -121,10 +161,6 @@ export function TaskSearch() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const showTaskReferenceName = featureFlags.isEnabled(
-    FEATURES.SHOW_TASK_REFERENCE_NAME,
-  );
 
   const buildQuery = useCallback(() => {
     const clauses = [];
@@ -134,22 +170,19 @@ export function TaskSearch() {
         clauses.push(queryText);
       }
     } else {
-      if (!_isEmpty(taskDefName)) {
-        clauses.push(`taskDefName='${taskDefName}'`);
-      }
-      if (!_isEmpty(taskType) && !queryText.includes("taskType")) {
+      const listClauses = [
+        exactClause("taskDefName", splitList(taskDefName)),
+        exactClause("taskId", splitList(taskId)),
+        showTaskReferenceName
+          ? exactClause("referenceTaskName", splitList(taskRefName))
+          : null,
+        exactClause(taskWorkflowQueryField, splitList(workflowName)),
+      ];
+      listClauses.forEach((clause) => clause && clauses.push(clause));
+      if (!_isEmpty(taskType)) {
         clauses.push(`taskType IN (${taskType.join(",")})`);
       }
-      if (!_isEmpty(taskId)) {
-        clauses.push(`taskId='${taskId}'`);
-      }
-      if (showTaskReferenceName && !_isEmpty(taskRefName)) {
-        clauses.push(`referenceTaskName='${taskRefName}'`);
-      }
-      if (!_isEmpty(workflowName)) {
-        clauses.push(`${taskWorkflowQueryField}='${workflowName}'`);
-      }
-      if (!_isEmpty(status) && !queryText.includes("status")) {
+      if (!_isEmpty(status)) {
         clauses.push(`status IN (${status.join(",")})`);
       }
     }
@@ -183,7 +216,6 @@ export function TaskSearch() {
     taskId,
     taskRefName,
     taskType,
-    showTaskReferenceName,
     workflowName,
   ]);
 
@@ -252,6 +284,94 @@ export function TaskSearch() {
   useHotkeys(`${Key.Meta}+${Key.Enter}`, doSearch, {
     enableOnFormTags: ["INPUT", "TEXTAREA", "SELECT"],
   });
+
+  const search = useScopedSearch({
+    scopes: TASK_SEARCH_SCOPES,
+    values: {
+      taskDefName: splitList(taskDefName),
+      taskId: splitList(taskId),
+      taskRefName: splitList(taskRefName),
+      workflowName: splitList(workflowName),
+      freeText: splitFreeText(freeText),
+    },
+    setValues: (scope: SearchScope, values: string[]) => {
+      const setters: Record<SearchScope, (value: string) => void> = {
+        taskDefName: setTaskDefName,
+        taskId: setTaskId,
+        taskRefName: setTaskRefName,
+        workflowName: setWorkflowName,
+      };
+      if (scope === "freeText") {
+        setFreeText(values.join(" "));
+      } else {
+        setters[scope]?.(values.join(","));
+      }
+    },
+    onSearchAgain: doSearch,
+  });
+
+  // Every filter is applied as soon as it changes: panels only write their
+  // value on Apply, and the search bar only on Enter or Search, so re-running
+  // the search here is what makes those actions search. Typing in the SQL
+  // editor still waits for Search. Skip the initial mount.
+  const filtersKey = JSON.stringify([
+    asQuery,
+    taskDefName,
+    taskId,
+    taskRefName,
+    workflowName,
+    taskType,
+    status,
+    asQuery ? "" : freeText,
+    startTimeFrom,
+    startTimeEnd,
+    endTimeFrom,
+    endTimeTo,
+  ]);
+  const filtersInitialized = useRef(false);
+  useEffect(() => {
+    if (!filtersInitialized.current) {
+      filtersInitialized.current = true;
+      return;
+    }
+    setPage(1);
+    setQueryFT(buildQuery());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtersKey]);
+
+  // The SQL editor's completion provider is global to Monaco; drop it on unmount.
+  const disposeCompletionsRef = useRef<null | (() => void)>(null);
+  useEffect(
+    () => () => {
+      disposeCompletionsRef.current?.();
+      disposeCompletionsRef.current = null;
+    },
+    [],
+  );
+  const registerCompletions = (monaco: Monaco) => {
+    disposeCompletionsRef.current?.();
+    const disposable = monaco.languages.registerCompletionItemProvider("sql", {
+      provideCompletionItems: () => ({
+        suggestions: [
+          ...WORKFLOW_SEARCH_QUERY_SUGGESTIONS,
+          ...TASK_SEARCH_QUERY_SUGGESTIONS,
+          ...taskTypes,
+          ...taskStatuses,
+        ]
+          .filter(
+            (property) =>
+              showTaskReferenceName || property !== "referenceTaskName",
+          )
+          .map((property) => ({
+            label: property,
+            kind: monaco.languages.CompletionItemKind.Value,
+            insertText: property,
+          })),
+      }),
+    });
+    // Keep dispose() bound to its disposable.
+    disposeCompletionsRef.current = () => disposable.dispose();
+  };
 
   const handlePage = (page: number) => {
     setPage(page);
@@ -354,6 +474,15 @@ export function TaskSearch() {
     setSort(DEFAULT_SORT);
   };
 
+  const hasActiveFilters =
+    (asQuery
+      ? !_isEmpty(queryText)
+      : search.chips.length > 0 || taskType.length > 0 || status.length > 0) ||
+    !_isEmpty(freeText) ||
+    !_isEmpty(startTimeEnd) ||
+    !_isEmpty(endTimeFrom) ||
+    !_isEmpty(endTimeTo);
+
   const handleReset = () => {
     clearAllFields();
     const newQueryFT = {
@@ -398,81 +527,88 @@ export function TaskSearch() {
       />
       <SectionContainer>
         <Paper variant="outlined" sx={{ marginBottom: 6 }}>
-          <Box
-            sx={{ display: "flex", justifyContent: "flex-end", px: 3, pt: 2 }}
-          >
-            <SearchModeSwitch checked={asQuery} onChange={setAsQuery} />
-          </Box>
-          {asQuery ? (
-            <AdvanceSearch
-              setShowCodeDialog={setShowCodeDialog}
-              doSearch={doSearch}
-              handleReset={handleReset}
-              onStartFromChange={onStartFromChange}
-              onStartToChange={onStartToChange}
-              startTime={startTimeFrom}
-              endTime={endTimeTo}
-              queryText={queryText}
-              setQueryText={setQueryText}
-              freeText={freeText}
-              setFreeText={setFreeText}
-              fromDisplayTime={fromDisplayTime}
-              setFromDisplayTime={setFromDisplayTime}
-              openEndDatePicker={openEndDatePicker}
-              setEndOpenDatePicker={setEndOpenDatePicker}
-              toDisplayTime={toDisplayTime}
-              setToDisplayTime={setToDisplayTime}
-              openDateSelect={openDateSelect}
-              setOpenDateSelect={setOpenDateSelect}
-              openStartDatePicker={openStartDatePicker}
-              setStartOpenDatePicker={setStartOpenDatePicker}
-              onEndFromChange={onEndFromChange}
-              onEndToChange={onEndToChange}
-              startTimeEnd={startTimeEnd}
-              endTimeStart={endTimeFrom}
-              recentSearches={recentSearches}
-            />
-          ) : (
-            <BasicSearch
-              taskDefName={taskDefName}
-              taskType={taskType}
-              taskExecutionId={taskId}
-              taskRefName={taskRefName}
-              workflowName={workflowName}
-              status={status}
-              startTime={startTimeFrom}
-              startTimeEnd={startTimeEnd}
-              endTime={endTimeTo}
-              endTimeStart={endTimeFrom}
-              freeText={freeText}
-              setTaskDefName={setTaskDefName}
-              setTaskType={setTaskType}
-              setTaskExecutionId={setTaskId}
-              setTaskRefName={setTaskRefName}
-              setWorkflowName={setWorkflowName}
-              setShowCodeDialog={setShowCodeDialog}
-              doSearch={doSearch}
-              handleReset={handleReset}
-              onStartFromChange={onStartFromChange}
-              onStartToChange={onStartToChange}
-              setFreeText={setFreeText}
-              setStatus={setStatus}
-              fromDisplayTime={fromDisplayTime}
-              setFromDisplayTime={setFromDisplayTime}
-              openEndDatePicker={openEndDatePicker}
-              setEndOpenDatePicker={setEndOpenDatePicker}
-              toDisplayTime={toDisplayTime}
-              setToDisplayTime={setToDisplayTime}
-              openDateSelect={openDateSelect}
-              setOpenDateSelect={setOpenDateSelect}
-              openStartDatePicker={openStartDatePicker}
-              setStartOpenDatePicker={setStartOpenDatePicker}
-              onEndFromChange={onEndFromChange}
-              onEndToChange={onEndToChange}
-              queryText={queryText}
-              recentSearches={recentSearches}
-            />
-          )}
+          <ExecutionSearchFilters
+            search={asQuery ? undefined : search}
+            query={
+              asQuery ? (
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+                >
+                  <SqlQueryBar
+                    value={queryText}
+                    onChange={setQueryText}
+                    onSubmit={doSearch}
+                    beforeMount={registerCompletions}
+                    hint="Join conditions with AND · ⌘/Ctrl+Enter to search"
+                    searchButtonId="search-task-btn"
+                    placeholder="taskType = 'HTTP' AND status IN (FAILED)"
+                  />
+                  <FreeTextInput
+                    value={freeText}
+                    onChange={setFreeText}
+                    onSubmit={doSearch}
+                    placeholder="Free text: words that appear in the task's data"
+                  />
+                </Box>
+              ) : undefined
+            }
+            ids={{
+              search: "search-task-btn",
+              refresh: "refresh-task-search-btn",
+              clearAll: "reset-task-btn",
+              name: "task-type-dropdown",
+              status: "task-status-dropdown",
+            }}
+            nameFilter={
+              asQuery
+                ? undefined
+                : {
+                    label: "Task type",
+                    noun: "task type",
+                    names: taskTypes,
+                    selected: taskType,
+                    onApply: setTaskType,
+                    allowPatterns: false,
+                  }
+            }
+            statusFilter={
+              asQuery
+                ? undefined
+                : {
+                    selected: status,
+                    onApply: setStatus,
+                    options: taskStatuses,
+                    renderOption: renderTaskStatus,
+                  }
+            }
+            dateFilters={buildExecutionDateFilters({
+              startHelpText:
+                "Select a date range within which the Task Execution has started.",
+              endHelpText:
+                "Select a date range within which the Task Execution has ended.",
+              startTimeFrom,
+              startTimeTo: startTimeEnd,
+              onStartFromChange,
+              onStartToChange,
+              fromDisplayTime,
+              setFromDisplayTime,
+              endTimeFrom,
+              endTimeTo,
+              onEndFromChange,
+              onEndToChange,
+              toDisplayTime,
+              setToDisplayTime,
+            })}
+            modeSwitch={
+              <SearchModeSwitch checked={asQuery} onChange={setAsQuery} />
+            }
+            refresh={{
+              onRefresh: doSearch,
+              onShowCode: () => setShowCodeDialog("active"),
+            }}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={handleReset}
+          />
         </Paper>
 
         <ResultsTable

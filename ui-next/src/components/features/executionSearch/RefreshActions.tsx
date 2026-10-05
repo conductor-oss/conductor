@@ -11,11 +11,16 @@ export interface RefreshActionsProps {
   onShowCode: () => void;
 }
 
+interface RefreshButtonProps extends RefreshActionsProps {
+  id?: string;
+}
+
 /** Refresh with a Show as code menu, as an outlined split button. */
 export const RefreshButton = ({
+  id = "refresh-workflow-search-btn",
   onRefresh,
   onShowCode,
-}: RefreshActionsProps) => (
+}: RefreshButtonProps) => (
   <Box
     sx={{
       display: "flex",
@@ -32,7 +37,7 @@ export const RefreshButton = ({
     }}
   >
     <SplitButton
-      id="refresh-workflow-search-btn"
+      id={id}
       variant="outlined"
       startIcon={<RefreshIcon />}
       options={[{ label: "Show as code", onClick: onShowCode }]}

@@ -76,12 +76,16 @@ describe("OSS task search", () => {
     renderTaskSearch();
 
     expect(
-      screen.queryByRole("textbox", { name: "Task reference name" }),
+      screen.queryByRole("option", { name: "Task reference name" }),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Workflow name" }), {
-      target: { value: "checkout_flow" },
+    fireEvent.change(screen.getByRole("combobox", { name: "Search field" }), {
+      target: { value: "workflowName" },
     });
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search by workflow name" }),
+      { target: { value: "checkout_flow" } },
+    );
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
     await waitFor(() => {
