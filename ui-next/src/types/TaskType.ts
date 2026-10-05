@@ -334,7 +334,6 @@ export enum JDBCType {
 export enum QueryProcessorType {
   CONDUCTOR_API = "CONDUCTOR_API",
   METRICS = "METRICS",
-  CONDUCTOR_EVENTS = "CONDUCTOR_EVENTS",
 }
 
 export enum GetSignedJWTAlgorithmType {
