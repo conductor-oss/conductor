@@ -256,7 +256,7 @@ public class ParametersUtils {
             LOGGER.warn(
                     "Expression nesting depth limit exceeded ({}) for: {}. Resolving to null.",
                     MAX_EXPRESSION_DEPTH,
-                    paramString);
+                    StringUtils.abbreviate(paramString, 256));
             return null;
         }
         var replacements = new LinkedList<Replacement>();
