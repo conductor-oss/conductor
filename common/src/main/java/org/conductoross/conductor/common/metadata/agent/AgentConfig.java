@@ -88,6 +88,15 @@ public class AgentConfig {
 
     private OutputTypeConfig outputType;
     private List<GuardrailConfig> guardrails;
+
+    /**
+     * Server guardrails bound to every LLM task this agent compiles, including those of sub-agents
+     * compiled with it. Each entry is an entry of an LLM task's {@code guardrails} input: a
+     * guardrail name, or an object naming one. Compiling fails on a server that does not enforce
+     * them.
+     */
+    private List<Object> taskGuardrails;
+
     private MemoryConfig memory;
 
     @Builder.Default private int maxTurns = 100;

@@ -251,6 +251,8 @@ public class GuardrailCompiler {
         llmInputs.put("temperature", 0);
         llmInputs.put("maxTokens", guard.getMaxTokens() != null ? guard.getMaxTokens() : 256);
         llmInputs.put("jsonOutput", true);
+        // A judge is a guardrail itself: the agent's server guardrails are not bound to it.
+        llmInputs.put(TaskGuardrails.INPUT, List.of());
         llmTask.setInputParameters(llmInputs);
 
         // Task 2: InlineTask parser - parse LLM JSON into guardrail schema
