@@ -1,3 +1,5 @@
+import type { ExecutionTask } from "types/Execution";
+
 export enum EventType {
   THINKING = "THINKING",
   TOOL_CALL = "TOOL_CALL",
@@ -99,6 +101,11 @@ export interface AgentEvent {
     messagesAfter: number;
     exchangesCondensed: number;
   };
+  /**
+   * The Conductor task an LLM call event came from, for views that need all of it, such as
+   * plugin task-execution panels.
+   */
+  task?: ExecutionTask;
   /** Conductor task execution metadata (start/end/schedule times, worker, etc.) */
   taskMeta?: {
     taskId?: string;

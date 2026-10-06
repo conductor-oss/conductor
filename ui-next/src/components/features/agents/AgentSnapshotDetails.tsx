@@ -195,6 +195,10 @@ export function AgentDefinitionDetails({
     firstDefined(agentDef, "outputGuardrails", "output_guardrails"),
   );
   const guardrails = guardrailNames(agentDef.guardrails);
+  // Server guardrails bound to the agent's LLM tasks: a name, or an object naming one.
+  const serverGuardrails = asArray(agentDef.taskGuardrails).map((entry) =>
+    itemName(asRecord(entry)?.guardrail ?? entry),
+  );
   const subAgents = asArray(agentDef.agents);
   const runtimeRows: Array<[string, unknown]> = [
     ["Strategy", agentDef.strategy],
@@ -267,6 +271,12 @@ export function AgentDefinitionDetails({
       )}
       {guardrails.length > 0 && (
         <DetailRow label="Guardrails" value={<TagList values={guardrails} />} />
+      )}
+      {serverGuardrails.length > 0 && (
+        <DetailRow
+          label="Server guardrails"
+          value={<TagList values={serverGuardrails} />}
+        />
       )}
       {Object.entries(toolGroups).map(([label, entries]) => (
         <ToolGroup key={label} label={label} tools={entries} />

@@ -122,6 +122,30 @@ describe("isFailedTaskStatus", () => {
   );
 });
 
+describe("transformWorkflowExecutionToAgentRun failure reason", () => {
+  it("carries the execution's reason for a failed run", () => {
+    const run = transformWorkflowExecutionToAgentRun(
+      execution(
+        [
+          task({
+            referenceTaskName: "root_llm",
+            taskType: "LLM_CHAT_COMPLETE",
+            status: "FAILED_WITH_TERMINAL_ERROR",
+            reasonForIncompletion: "guardrail block at USER_MESSAGE",
+            inputData: { model: "gpt", messages: [] },
+          }),
+        ],
+        {
+          status: "FAILED",
+          reasonForIncompletion: "guardrail block at USER_MESSAGE",
+        },
+      ),
+    );
+
+    expect(run.failureReason).toBe("guardrail block at USER_MESSAGE");
+  });
+});
+
 describe("transformWorkflowExecutionToAgentRun timeline", () => {
   it("uses the server-provided aggregate token usage", () => {
     const run = transformWorkflowExecutionToAgentRun(

@@ -516,9 +516,19 @@ function buildDefDiagram(agentDef: Record<string, unknown>) {
   const guardrailTools = allTools.filter((t) => toolCat(t) === "guardrail");
   const guardrailsDef =
     (agentDef.guardrails as Array<unknown> | undefined) ?? [];
+  // Server guardrails bound to the agent's LLM tasks: a name, or an object naming one.
+  const taskGuardrailsDef =
+    (agentDef.taskGuardrails as Array<unknown> | undefined) ?? [];
   const allGuardrails = [
     ...guardrailTools.map((g) => getItemName(g)),
     ...(guardrailsDef as unknown[]).map((g) => getItemName(g)),
+    ...taskGuardrailsDef.map((g) =>
+      getItemName(
+        g && typeof g === "object"
+          ? (g as Record<string, unknown>).guardrail
+          : g,
+      ),
+    ),
   ];
 
   // Merge all sub-agents into a unified list
