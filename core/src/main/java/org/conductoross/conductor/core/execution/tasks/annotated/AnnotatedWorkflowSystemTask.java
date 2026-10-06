@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.util.Optional;
 
 import org.conductoross.conductor.common.spi.DelegatedTokenInjector;
+import org.springframework.lang.Nullable;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -49,24 +50,17 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
     private final AnnotatedMethodResultMapper resultMapper;
 
-    // Optional: enterprise provides an impl that injects per-user delegated access tokens.
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private DelegatedTokenInjector delegatedTokenInjector;
+    @Nullable
+    private final DelegatedTokenInjector delegatedTokenInjector;
 
-    /**
-     * Creates a new AnnotatedWorkflowSystemTask.
-     *
-     * @param taskType The task type name
-     * @param method The annotated method to invoke
-     * @param bean The Spring bean instance containing the method
-     * @param annotation The @WorkerTask annotation metadata
-     */
     public AnnotatedWorkflowSystemTask(
-            String taskType, Method method, Object bean, WorkerTask annotation) {
+            String taskType, Method method, Object bean, WorkerTask annotation,
+            @Nullable DelegatedTokenInjector delegatedTokenInjector) {
         super(taskType);
         this.method = method;
         this.bean = bean;
         this.annotation = annotation;
+        this.delegatedTokenInjector = delegatedTokenInjector;
         this.parameterMapper = new AnnotatedMethodParameterMapper();
         this.resultMapper = new AnnotatedMethodResultMapper();
     }
