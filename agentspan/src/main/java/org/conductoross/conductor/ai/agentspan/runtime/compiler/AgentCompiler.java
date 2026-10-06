@@ -21,6 +21,7 @@ import org.conductoross.conductor.common.metadata.agent.*;
 import org.conductoross.conductor.common.metadata.agent.ModelParser.ParsedModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -60,6 +61,9 @@ public class AgentCompiler {
     private int llmRetryCount = 3;
     private int contextMaxSizeBytes = 32768;
     private int contextMaxValueSizeBytes = 4096;
+
+    /** Null on a server that does not enforce LLM task guardrails. */
+    private TaskGuardrailSupport taskGuardrailSupport;
 
     /**
      * Sanitizes an agent name for use as a Conductor task reference name.
@@ -218,6 +222,19 @@ public class AgentCompiler {
         // each sub-agent workflow carries its own config's masked fields too.
         if (config.getMaskedFields() != null && !config.getMaskedFields().isEmpty()) {
             wf.setMaskedFields(config.getMaskedFields());
+        }
+
+        // Bind the agent's server guardrails to every LLM task it compiled. A sub-agent's own
+        // compile binds its list first, so the parent's entries are added to the sub-agent's.
+        if (config.getTaskGuardrails() != null && !config.getTaskGuardrails().isEmpty()) {
+            if (taskGuardrailSupport == null) {
+                throw new IllegalArgumentException(
+                        "Agent '"
+                                + config.getName()
+                                + "' binds server guardrails (taskGuardrails), but this server"
+                                + " does not enforce them. Its LLM tasks would run unguarded.");
+            }
+            TaskGuardrails.bind(wf, config.getTaskGuardrails());
         }
 
         // Stamp the agent classifier and definition into workflow metadata. The explicit
@@ -2758,6 +2775,11 @@ public class AgentCompiler {
 
     public void setContextMaxValueSizeBytes(int contextMaxValueSizeBytes) {
         this.contextMaxValueSizeBytes = contextMaxValueSizeBytes;
+    }
+
+    @Autowired(required = false)
+    public void setTaskGuardrailSupport(TaskGuardrailSupport taskGuardrailSupport) {
+        this.taskGuardrailSupport = taskGuardrailSupport;
     }
 
     int getContextMaxSizeBytes() {
