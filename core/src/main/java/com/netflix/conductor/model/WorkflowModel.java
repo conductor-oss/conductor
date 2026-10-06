@@ -110,6 +110,14 @@ public class WorkflowModel {
      */
     @JsonIgnore private String callerEntraToken;
 
+    public String getCallerEntraToken() {
+        return callerEntraToken;
+    }
+
+    public void setCallerEntraToken(String callerEntraToken) {
+        this.callerEntraToken = callerEntraToken;
+    }
+
     // Capture the failed taskId if the workflow execution failed because of task failure
     private String failedTaskId;
 

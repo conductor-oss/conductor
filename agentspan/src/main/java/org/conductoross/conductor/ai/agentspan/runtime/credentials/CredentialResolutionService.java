@@ -83,6 +83,7 @@ public class CredentialResolutionService {
         return extractByDottedPath(json, path);
     }
 
+
     /**
      * Walk a dotted path through a JSON document. Returns the leaf as a string (text nodes
      * unquoted; everything else as compact JSON). Returns null if the input isn't valid JSON or the

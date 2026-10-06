@@ -92,6 +92,18 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
                     getTaskType(),
                     workflow.getWorkflowId());
 
+            // OBO: if the task requests useCallerIdentity and the workflow holds a callerEntraToken
+            // (captured at HTTP request time by the SSO layer), inject it as userAssertion so the
+            // Foundry client can perform the on-behalf-of token exchange. @JsonIgnore prevents the
+            // token from appearing in parameter substitution output, so it must be injected here
+            // where the full WorkflowModel is available.
+            String callerEntraToken = workflow.getCallerEntraToken();
+            if (callerEntraToken != null && !callerEntraToken.isBlank()
+                    && Boolean.TRUE.equals(task.getInputData().get("useCallerIdentity"))
+                    && task.getInputData().get("userAssertion") == null) {
+                task.getInputData().put("userAssertion", callerEntraToken);
+            }
+
             // Map task parameters to method parameters
             Object[] parameters = parameterMapper.mapParameters(task, method);
 
