@@ -14,6 +14,7 @@ package org.conductoross.conductor.ai.tasks.mapper;
 
 import org.conductoross.conductor.ai.model.A2ACallRequest;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Conditional(AIIntegrationEnabledCondition.class)
+@ConditionalOnMissingBean(AgentTaskMapper.class)
 public class AgentTaskMapper extends AIModelTaskMapper<A2ACallRequest> {
 
     public static final String TASK_TYPE = "AGENT";

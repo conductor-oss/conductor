@@ -54,6 +54,12 @@ public class IntegrationCredentialPreprocessor implements AgentCredentialPreproc
         if (integrationName == null) {
             return credentials;
         }
+        // Delegated access: a pre-fetched per-user bearer token takes absolute priority.
+        // It was injected server-side before the task was queued and must not be overwritten.
+        String existingBearer = credentials != null ? credentials.get("bearerToken") : null;
+        if (StringUtils.isNotBlank(existingBearer)) {
+            return credentials;
+        }
         try {
             String json = credentialResolutionService.resolve("integration:" + integrationName);
             if (json == null) {
