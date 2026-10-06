@@ -55,6 +55,34 @@ describe("AgentSnapshotDetails", () => {
     expect(screen.getByText("8")).toBeInTheDocument();
   });
 
+  it("lists server guardrails apart from the agent's own guardrails", () => {
+    const snapshot: AgentMetadataSnapshot = {
+      schemaVersion: 1,
+      agentType: "conductor",
+      displayName: "Support",
+      source: { name: "support" },
+      resolved: true,
+      conductor: {
+        name: "support",
+        resolvedVersion: 1,
+        normalization: "normalized",
+        agentConfig: {
+          name: "Support",
+          model: "openai/gpt-4o-mini",
+          guardrails: [{ name: "no_internal_links" }],
+          taskGuardrails: ["secrets", { guardrail: "pii", action: "REDACT" }],
+        },
+      },
+    };
+
+    render(<AgentSnapshotDetails snapshot={snapshot} />);
+
+    expect(screen.getByText("Server guardrails")).toBeInTheDocument();
+    expect(screen.getByText("pii")).toBeInTheDocument();
+    expect(screen.getByText("secrets")).toBeInTheDocument();
+    expect(screen.getByText("no_internal_links")).toBeInTheDocument();
+  });
+
   it("renders standard A2A skills as skills rather than tools", () => {
     const snapshot: AgentMetadataSnapshot = {
       schemaVersion: 1,

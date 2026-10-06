@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { pluginRegistry } from "plugins/registry";
 
 import { AgentDetailPanel, type DetailNodeData } from "./AgentDetailPanel";
 import { AgentStatus, EventType } from "./types";
@@ -101,5 +102,82 @@ describe("AgentDetailPanel prompt tab", () => {
     });
     expect(screen.queryByText("Prompt")).toBeNull();
     expect(screen.queryByText("hello")).toBeNull();
+  });
+});
+
+describe("AgentDetailPanel plugin task panels", () => {
+  const task = {
+    taskId: "t-1",
+    taskType: "LLM_CHAT_COMPLETE",
+    inputData: { guardrails: ["pii"] },
+  };
+
+  function withTask(node: DetailNodeData): DetailNodeData {
+    return { ...node, event: { ...node.event!, task: task as any } };
+  }
+
+  function registerPanel(shouldShow?: (taskResult: any) => boolean) {
+    return vi.spyOn(pluginRegistry, "getTaskExecutionPanels").mockReturnValue([
+      {
+        id: "llm-guardrail-executions",
+        label: "Guardrails",
+        taskTypes: ["LLM_CHAT_COMPLETE"],
+        component: ({ taskResult }) => (
+          <div>guardrails for {taskResult.taskId}</div>
+        ),
+        shouldShow,
+      },
+    ]);
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows a registered panel for the LLM call's task", () => {
+    const panels = registerPanel();
+    renderPanel(withTask(llmNode({})));
+
+    expect(panels).toHaveBeenCalledWith("LLM_CHAT_COMPLETE");
+    fireEvent.click(screen.getByText("Guardrails"));
+    expect(screen.getByText("guardrails for t-1")).toBeTruthy();
+  });
+
+  it("respects the panel's shouldShow predicate", () => {
+    registerPanel(() => false);
+    renderPanel(withTask(llmNode({})));
+
+    expect(screen.queryByText("Guardrails")).toBeNull();
+  });
+
+  it("shows no plugin panel without the task or for non-LLM nodes", () => {
+    registerPanel();
+    const { unmount } = renderPanel(llmNode({}));
+    expect(screen.queryByText("Guardrails")).toBeNull();
+    unmount();
+
+    renderPanel({ ...withTask(llmNode({})), kind: "tool" });
+    expect(screen.queryByText("Guardrails")).toBeNull();
+  });
+});
+
+describe("AgentDetailPanel LLM failure", () => {
+  it("shows why the LLM call failed", () => {
+    const node = llmNode({});
+    renderPanel({
+      ...node,
+      status: AgentStatus.FAILED,
+      event: {
+        ...node.event!,
+        task: {
+          taskId: "t-1",
+          taskType: "LLM_CHAT_COMPLETE",
+          reasonForIncompletion: "guardrail block at USER_MESSAGE",
+        } as any,
+      },
+    });
+
+    expect(screen.getByText("Failure")).toBeTruthy();
+    expect(screen.getByText("guardrail block at USER_MESSAGE")).toBeTruthy();
   });
 });

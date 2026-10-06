@@ -745,6 +745,7 @@ function transformChainWorkflowToAgentRun(
     strategy: AgentStrategy.SEQUENTIAL,
     input: agentInput,
     output: execution.output ?? chainOutput,
+    failureReason: execution.reasonForIncompletion ?? undefined,
   };
 }
 
@@ -1163,6 +1164,7 @@ export function transformWorkflowExecutionToAgentRun(
           durationMs: llmDuration,
           success: taskSuccess(llmTask.status),
           condensationInfo: condensed?.condensationInfo,
+          task: llmTask,
         });
 
         // If the LLM returned a text response, show it as "Output" (DONE event)
@@ -1625,6 +1627,7 @@ export function transformWorkflowExecutionToAgentRun(
           durationMs: dur,
           success: taskSuccess(task.status),
           condensationInfo: condensed?.condensationInfo,
+          task,
           taskMeta: {
             taskId: task.taskId,
             taskType: task.taskType,
@@ -2000,5 +2003,6 @@ export function transformWorkflowExecutionToAgentRun(
           : AgentStrategy.SINGLE),
     input: agentInput,
     output: execution.output ?? finalOutput,
+    failureReason: execution.reasonForIncompletion ?? undefined,
   };
 }

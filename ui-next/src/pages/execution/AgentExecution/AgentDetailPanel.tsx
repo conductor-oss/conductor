@@ -15,6 +15,7 @@ import { X as CloseIcon, ArrowRight, Scissors } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
 import { AgentDefinitionDetails } from "components/features/agents/AgentSnapshotDetails";
 import { ContentView, JsonView } from "./ContentViews";
+import { pluginRegistry } from "plugins/registry";
 import { PromptPreview } from "./PromptPreview";
 import { hasPromptMessages } from "./promptPreviewModel";
 import {
@@ -65,6 +66,7 @@ const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
 const FORMATTED_OUTPUT_TAB = "formatted";
 const RAW_OUTPUT_TAB = "raw";
+const PLUGIN_TAB_PREFIX = "plugin:";
 
 function formattedOutput(value: unknown): unknown {
   if (typeof value !== "object" || value == null || Array.isArray(value)) {
@@ -1139,6 +1141,16 @@ function SummaryContent({
               value={formatDuration(ev.durationMs)}
             />
           )}
+          {ev?.task?.reasonForIncompletion && (
+            <SummaryRow
+              label="Failure"
+              value={
+                <span style={{ color: "#DC2626" }}>
+                  {ev.task.reasonForIncompletion}
+                </span>
+              }
+            />
+          )}
         </SummaryTable>
       </Box>
     );
@@ -1888,11 +1900,24 @@ export function AgentDetailPanel({
       null);
   const hasPrompt = node.kind === "llm" && hasPromptMessages(promptValue);
 
+  // Plugin task-execution panels (e.g. guardrails) for the LLM task this node came from,
+  // filtered the same way the workflow view's right panel filters them.
+  const llmTask = node.kind === "llm" ? node.event?.task : undefined;
+  const pluginPanels = llmTask
+    ? pluginRegistry
+        .getTaskExecutionPanels(`${llmTask.taskType}`)
+        .filter((panel) => !panel.shouldShow || panel.shouldShow(llmTask))
+    : [];
+
   const tabs = [
     { value: SUMMARY_TAB, label: "Summary" },
     ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
     ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt" }] : []),
     ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
+    ...pluginPanels.map((panel) => ({
+      value: `${PLUGIN_TAB_PREFIX}${panel.id}`,
+      label: panel.label,
+    })),
     { value: JSON_TAB, label: "JSON" },
   ];
   // The selected tab can disappear, e.g. switching to an attempt with no prompt.
@@ -2128,6 +2153,12 @@ export function AgentDetailPanel({
           </>
         )}
         {activeTab === PROMPT_TAB && <PromptPreview input={promptValue} />}
+        {pluginPanels.map((panel) => {
+          const PanelComponent = panel.component;
+          return activeTab === `${PLUGIN_TAB_PREFIX}${panel.id}` ? (
+            <PanelComponent key={panel.id} taskResult={llmTask} />
+          ) : null;
+        })}
         {activeTab === OUTPUT_TAB && (
           <>
             <Box
