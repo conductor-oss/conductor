@@ -2586,6 +2586,9 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testResumeWorkflow() {
+        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
+        doNothing().when(executionLockService).releaseLock(anyString());
+
         String workflowId = "testResumeWorkflowId";
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
@@ -2600,6 +2603,14 @@ public class TestWorkflowExecutor {
             verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
             verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         }
+
+        // if workflow is already RUNNING (e.g. a racing resume call already resumed it)
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.resumeWorkflow(workflowId);
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
 
         // if workflow is in PAUSED state
         workflow.setStatus(WorkflowModel.Status.PAUSED);
