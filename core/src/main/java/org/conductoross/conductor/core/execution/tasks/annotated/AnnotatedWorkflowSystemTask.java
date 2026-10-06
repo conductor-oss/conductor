@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import org.conductoross.conductor.common.spi.DelegatedTokenInjector;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -107,7 +108,13 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
             // Delegated access (approach 2): enterprise injects a stored per-user Bearer token.
             if (delegatedTokenInjector != null) {
-                delegatedTokenInjector.inject(task, workflow);
+                String failReason = delegatedTokenInjector.resolveToken(
+                        task.getInputData(), workflow.getCreatedBy());
+                if (failReason != null) {
+                    task.setStatus(TaskModel.Status.FAILED);
+                    task.setReasonForIncompletion(failReason);
+                    return true;
+                }
             }
 
             // Map task parameters to method parameters
