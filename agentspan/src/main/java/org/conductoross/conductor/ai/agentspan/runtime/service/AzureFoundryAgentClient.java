@@ -37,6 +37,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsAuth;
 import org.conductoross.conductor.ai.agentspan.runtime.service.assistants.AssistantsRunApi;
 import org.conductoross.conductor.common.metadata.agent.AgentSummary;
+import org.conductoross.conductor.ai.agentspan.runtime.credentials.CredentialResolutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +101,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
     private final OkHttpClient httpClient;
     private final AssistantsRunApi api;
     private final Clock clock;
+
+    // Optional: resolves integration:* credential references at task execution time.
+    @Autowired(required = false)
+    private CredentialResolutionService credentialResolutionService;
 
     // Caches resolved auth, not tokens — an SDK credential refreshes its own token, so what is
     // worth keeping is the credential and the three secret reads behind it. Rebuilding per call
@@ -986,12 +991,18 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
             String userAssertion) {
         // Credentials are optional: the caller's own identity or the host's default credential
         // chain may supply them.
+        credentials = resolveCredentials(credentials, rawConfig);
         String endpoint = resolveEndpoint(endpointFromUrl(agentUrl), rawConfig);
         String apiVersion =
                 StringUtils.defaultIfBlank(rawConfig(rawConfig, "apiVersion"), DEFAULT_API_VERSION);
+        // Classic Azure OpenAI Assistants paths (/threads, /assistants) live under /openai.
+        // INFERENCE and RESPONSES surfaces use the endpoint as-is.
+        Surface surface = surfaceOf(endpoint, rawConfig);
+        String baseUrl = (surface == Surface.ASSISTANTS && !endpoint.endsWith("/openai"))
+                ? endpoint + "/openai" : endpoint;
         AssistantsRunApi.Target target =
                 new AssistantsRunApi.Target(
-                        endpoint,
+                        baseUrl,
                         resolveAssistantId(agentUrl, rawConfig),
                         "api-version=" + apiVersion,
                         Map.of());
@@ -999,6 +1010,46 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
                 target,
                 new ProviderKey(credentials, resolveScope(credentials, rawConfig, endpoint)),
                 userAssertion);
+    }
+
+    /**
+     * Resolves credentials from {@code rawConfig.integrationName} at runtime so that no credential
+     * values or references need to appear in the workflow definition.
+     *
+     * <p>No-ops when {@code credentialResolutionService} is absent (tests, standalone workers).
+     */
+    private Map<String, String> resolveCredentials(
+            Map<String, String> credentials, Map<String, Object> rawConfig) {
+        if (credentialResolutionService == null) {
+            return credentials;
+        }
+        String integrationName = rawConfig(rawConfig, "integrationName");
+        if (StringUtils.isBlank(integrationName)) {
+            return credentials;
+        }
+        try {
+            String json = credentialResolutionService.resolve("integration:" + integrationName);
+            if (json == null) {
+                log.warn("No credentials resolved for integration '{}'", integrationName);
+                return credentials;
+            }
+            Map<String, String> result = new LinkedHashMap<>();
+            MAPPER.readTree(json)
+                    .fields()
+                    .forEachRemaining(
+                            e -> {
+                                if (e.getValue().isTextual()) {
+                                    result.put(e.getKey(), e.getValue().asText());
+                                }
+                            });
+            return result;
+        } catch (Exception e) {
+            log.warn(
+                    "Could not resolve credentials for integration '{}': {}",
+                    integrationName,
+                    e.getMessage());
+            return credentials;
+        }
     }
 
     /**
