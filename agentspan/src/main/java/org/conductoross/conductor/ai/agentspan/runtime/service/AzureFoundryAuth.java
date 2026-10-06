@@ -151,6 +151,13 @@ public final class AzureFoundryAuth implements AssistantsAuth {
             String userAssertion,
             String scope) {
 
+        // Delegated access: enterprise injects a pre-fetched, already-scoped Bearer token.
+        // Use it directly — no OBO exchange needed.
+        String bearerToken = AgentCredentials.value(credentials, "bearerToken");
+        if (StringUtils.isNotBlank(bearerToken)) {
+            return ofBearer(bearerToken);
+        }
+
         String tenantId = AgentCredentials.value(credentials, "tenant_id");
         String clientId = AgentCredentials.value(credentials, "client_id");
         String clientSecret = AgentCredentials.value(credentials, "client_secret");
@@ -204,6 +211,7 @@ public final class AzureFoundryAuth implements AssistantsAuth {
     /** Keys this class can authenticate with; anything else in the map is not a credential. */
     private static final Set<String> AUTH_KEYS =
             Set.of(
+                    "bearerToken",
                     "apiKey",
                     "api_key",
                     "client_id",

@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
+import org.conductoross.conductor.ai.agentspan.runtime.credentials.DelegatedTokenInjector;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -47,6 +48,10 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
     private final AnnotatedMethodParameterMapper parameterMapper;
 
     private final AnnotatedMethodResultMapper resultMapper;
+
+    // Optional: enterprise provides an impl that injects per-user delegated access tokens.
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DelegatedTokenInjector delegatedTokenInjector;
 
     /**
      * Creates a new AnnotatedWorkflowSystemTask.
@@ -92,16 +97,17 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
                     getTaskType(),
                     workflow.getWorkflowId());
 
-            // OBO: if the task requests useCallerIdentity and the workflow holds a callerEntraToken
-            // (captured at HTTP request time by the SSO layer), inject it as userAssertion so the
-            // Foundry client can perform the on-behalf-of token exchange. @JsonIgnore prevents the
-            // token from appearing in parameter substitution output, so it must be injected here
-            // where the full WorkflowModel is available.
+            // OBO (approach 1): inject caller's Entra token as userAssertion for OBO exchange.
             String callerEntraToken = workflow.getCallerEntraToken();
             if (callerEntraToken != null && !callerEntraToken.isBlank()
                     && Boolean.TRUE.equals(task.getInputData().get("useCallerIdentity"))
                     && task.getInputData().get("userAssertion") == null) {
                 task.getInputData().put("userAssertion", callerEntraToken);
+            }
+
+            // Delegated access (approach 2): enterprise injects a stored per-user Bearer token.
+            if (delegatedTokenInjector != null) {
+                delegatedTokenInjector.inject(task, workflow);
             }
 
             // Map task parameters to method parameters
