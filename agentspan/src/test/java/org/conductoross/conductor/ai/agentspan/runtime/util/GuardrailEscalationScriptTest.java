@@ -156,6 +156,97 @@ class GuardrailEscalationScriptTest {
     }
 
     @Test
+    void passingGuardrailWithFixPolicyPassesWithoutEscalatingToRaise() {
+        // SDK custom guardrail returns passed: true along with configured on_fail: 'fix'
+        Value result =
+                normalize(
+                        "{worker_output: {passed: true, on_fail: 'fix'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 99, max_retries: 1}");
+
+        assertThat(result.getMember("passed").asBoolean()).isTrue();
+        assertThat(result.getMember("on_fail").isNull()).isTrue();
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void passingGuardrailWithRetryPolicyPassesWithoutInjectingRetry() {
+        Value result =
+                normalize(
+                        "{worker_output: {passed: true, on_fail: 'retry'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 99, max_retries: 1}");
+
+        assertThat(result.getMember("passed").asBoolean()).isTrue();
+        assertThat(result.getMember("on_fail").isNull()).isTrue();
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void passingGuardrailWithRaisePolicyPassesWithoutTerminating() {
+        Value result =
+                normalize(
+                        "{worker_output: {passed: true, on_fail: 'raise'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 99, max_retries: 1}");
+
+        assertThat(result.getMember("passed").asBoolean()).isTrue();
+        assertThat(result.getMember("on_fail").isNull()).isTrue();
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void failingGuardrailWithExplicitPassedFalseAndFixPolicyAppliesFix() {
+        Value result =
+                normalize(
+                        "{worker_output: {passed: false, on_fail: 'fix', fixed_output: 'REDACTED'}, "
+                                + "guardrail_name: 'g', default_on_fail: 'retry', iteration: 1, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("fix");
+        assertThat(result.getMember("fixed_output").asString()).isEqualTo("REDACTED");
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void failingGuardrailWithoutOnFailFollowsDefaultOnFailRaise() {
+        Value result =
+                normalize(
+                        "{worker_output: {passed: false}, guardrail_name: 'g', "
+                                + "default_on_fail: 'raise', iteration: 0, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("raise");
+        assertThat(result.getMember("should_continue").asBoolean()).isFalse();
+    }
+
+    @Test
+    void failingGuardrailWithoutOnFailFollowsDefaultOnFailRetry() {
+        Value result =
+                normalize(
+                        "{worker_output: {passed: false}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 1, max_retries: 3}");
+
+        assertThat(result.getMember("passed").asBoolean()).isFalse();
+        assertThat(result.getMember("on_fail").asString()).isEqualTo("retry");
+        assertThat(result.getMember("should_continue").asBoolean()).isTrue();
+    }
+
+    @Test
+    void nonBooleanPassedDoesNotCountAsPass() {
+        Value nullPassed =
+                normalize(
+                        "{worker_output: {passed: null, on_fail: 'raise'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 0, max_retries: 3}");
+        assertThat(nullPassed.getMember("passed").asBoolean()).isFalse();
+        assertThat(nullPassed.getMember("on_fail").asString()).isEqualTo("raise");
+
+        Value zeroPassed =
+                normalize(
+                        "{worker_output: {passed: 0, on_fail: 'raise'}, guardrail_name: 'g', "
+                                + "default_on_fail: 'retry', iteration: 0, max_retries: 3}");
+        assertThat(zeroPassed.getMember("passed").asBoolean()).isFalse();
+        assertThat(zeroPassed.getMember("on_fail").asString()).isEqualTo("raise");
+    }
+
+    @Test
     void nullWorkerOutputPassesWithoutEscalation() {
         Value result =
                 normalize(
