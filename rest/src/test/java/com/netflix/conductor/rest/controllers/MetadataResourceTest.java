@@ -14,6 +14,7 @@ package com.netflix.conductor.rest.controllers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,9 +22,12 @@ import java.util.Optional;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.service.MetadataService;
@@ -34,11 +38,14 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class MetadataResourceTest {
 
@@ -160,6 +167,50 @@ public class MetadataResourceTest {
 
         when(mockMetadataService.getWorkflowDefsLatestVersions()).thenReturn(listOfWorkflowDef);
         assertEquals(listOfWorkflowDef, metadataResource.getAllWorkflowsWithLatestVersions());
+    }
+
+    @Test
+    public void testGetWorkflowListItems() {
+        WorkflowDefListItem item = new WorkflowDefListItem();
+        item.setName("wf");
+        item.setVersion(3);
+        when(mockMetadataService.getWorkflowDefListItems()).thenReturn(List.of(item));
+
+        List<WorkflowDefListItem> result = metadataResource.getWorkflowListItems(null);
+
+        assertEquals(1, result.size());
+        assertEquals("wf", result.get(0).getName());
+        verify(mockMetadataService, times(1)).getWorkflowDefListItems();
+    }
+
+    @Test
+    public void testGetWorkflowListItemsFiltersByClassifier() {
+        WorkflowDefListItem workflowItem = new WorkflowDefListItem();
+        workflowItem.setName("plain");
+        workflowItem.setClassifier("workflow");
+        WorkflowDefListItem agentItem = new WorkflowDefListItem();
+        agentItem.setName("bot");
+        agentItem.setClassifier("agent");
+        when(mockMetadataService.getWorkflowDefListItems())
+                .thenReturn(List.of(workflowItem, agentItem));
+
+        List<WorkflowDefListItem> filtered = metadataResource.getWorkflowListItems("workflow");
+        assertEquals(1, filtered.size());
+        assertEquals("plain", filtered.get(0).getName());
+
+        List<WorkflowDefListItem> all = metadataResource.getWorkflowListItems(null);
+        assertEquals(2, all.size());
+    }
+
+    @Test
+    public void testListPathDoesNotCollideWithNamePathVariable() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(metadataResource).build();
+        when(mockMetadataService.getWorkflowDefListItems()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/metadata/workflow/list")).andExpect(status().isOk());
+
+        verify(mockMetadataService, never()).getWorkflowDef(eq("list"), any());
+        verify(mockMetadataService, times(1)).getWorkflowDefListItems();
     }
 
     @Test

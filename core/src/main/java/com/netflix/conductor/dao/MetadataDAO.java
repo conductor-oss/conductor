@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 
 /** Data access layer for the workflow metadata - task definitions and workflow definitions */
@@ -123,6 +124,20 @@ public interface MetadataDAO {
                             summary.setCreateTime(def.getCreateTime());
                             return summary;
                         })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Returns a lightweight list projection of the latest version of every workflow definition,
+     * omitting full task blueprints. Persistence modules should override this with a query that
+     * projects list fields from json_data server-side. The default fallback maps the existing
+     * latest-version definitions in Java, so backends without an optimized query still work.
+     *
+     * @return list items for the latest version of each workflow, one per name
+     */
+    default List<WorkflowDefListItem> getWorkflowDefListItems() {
+        return getAllWorkflowDefsLatestVersions().stream()
+                .map(WorkflowDefListItem::fromWorkflowDef)
                 .collect(Collectors.toList());
     }
 }
