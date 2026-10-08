@@ -5,6 +5,7 @@ import { ChangeEvent, useState } from "react";
 import { HttpInputParameters } from "types";
 import {
   ACCEPT_PATH,
+  ACCEPTED_STATUS_CODES_PATH,
   CONTENT_TYPE_PATH,
   HEADERS_PATH,
   HEDGING_CONFIG_PATH,
@@ -99,6 +100,16 @@ export const useCreateHttpRequestHandlers = ({
     onChange(updateField(generatePath(HTTP_REQUEST_BODY), newValue, task));
   };
 
+  const onChangeAcceptedStatusCodes = (acceptedStatusCodes: string[]) => {
+    onChange(
+      updateField(
+        generatePath(ACCEPTED_STATUS_CODES_PATH),
+        acceptedStatusCodes,
+        task,
+      ),
+    );
+  };
+
   const httpHeaders = _clone(_get(task, generatePath(HEADERS_PATH), {}));
   const accept = _clone(_get(task, generatePath(ACCEPT_PATH)));
   const contentType = _clone(_get(task, generatePath(CONTENT_TYPE_PATH)));
@@ -120,6 +131,10 @@ export const useCreateHttpRequestHandlers = ({
     _get(task, generatePath(HTTP_REQUEST_ENCODE)),
   );
 
+  const acceptedStatusCodes = _clone(
+    _get(task, generatePath(ACCEPTED_STATUS_CODES_PATH)),
+  );
+
   return [
     {
       onChangeHttpRequest,
@@ -137,6 +152,7 @@ export const useCreateHttpRequestHandlers = ({
       generatePath,
       onChangeHttpRequestBodyParameter,
       onChangeHedgingConfig,
+      onChangeAcceptedStatusCodes,
     },
     {
       httpHeaders,
@@ -151,6 +167,7 @@ export const useCreateHttpRequestHandlers = ({
       errorInJsonField,
       hedgingConfig,
       service,
+      acceptedStatusCodes,
     },
   ] as const;
 };
