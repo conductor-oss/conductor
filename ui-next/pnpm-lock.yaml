@@ -33,6 +33,7 @@ overrides:
   uuid: '>=11.1.1 <12'
   esbuild: '>=0.28.1 <0.29'
   vitest: '>=4.1.11 <5'
+  source-map-js: '>=1.2.2 <2'
 
 packageExtensionsChecksum: sha256-22S/yASLi5EDMLN6A7kKm3Dlc2xXhLQLQ3EfcVxVzT4=
 
@@ -211,7 +212,7 @@ importers:
         version: 3.7.0
       '@jsonforms/material-renderers':
         specifier: ^3.6.0
-        version: 3.7.0(974f8127bea3923bba790fad9e8e3d4d)
+        version: 3.7.0(bb582c1c6e9a4d0cf7da9cc4bbc35dca)
       '@jsonforms/react':
         specifier: ^3.6.0
         version: 3.7.0(@jsonforms/core@3.7.0)(react@18.3.1)
@@ -3826,10 +3827,6 @@ packages:
   snake-case@3.0.4:
     resolution: {integrity: sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==}
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
-    engines: {node: '>=0.10.0'}
-
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
@@ -4956,7 +4953,7 @@ snapshots:
       ajv-formats: 2.1.1(ajv@8.20.0)
       lodash: 4.18.1
 
-  '@jsonforms/material-renderers@3.7.0(974f8127bea3923bba790fad9e8e3d4d)':
+  '@jsonforms/material-renderers@3.7.0(bb582c1c6e9a4d0cf7da9cc4bbc35dca)':
     dependencies:
       '@date-io/dayjs': 3.2.0(dayjs@1.10.7)
       '@emotion/react': 11.14.0(@types/react@18.3.30)(react@18.3.1)
@@ -7175,7 +7172,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   make-dir@4.0.0:
     dependencies:
@@ -8141,7 +8138,7 @@ snapshots:
     dependencies:
       chokidar: 5.0.0
       immutable: 5.1.9
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
     optionalDependencies:
       '@parcel/watcher': 2.5.6
 
@@ -8243,8 +8240,6 @@ snapshots:
     dependencies:
       dot-case: 3.0.4
       tslib: 2.8.1
-
-  source-map-js@1.2.1: {}
 
   source-map-js@1.2.2: {}
 
