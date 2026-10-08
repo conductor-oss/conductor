@@ -4,6 +4,11 @@ const shellQuote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
 
 const formatCommand = (parts: string[]) => parts.join(" ");
 
+// TODO: replace this and the per-command clause regexes below with
+// queryClauses.ts, so the codebase has one clause parser rather than several.
+// Deliberately left for a follow-up: the matchers here also decide which CLI
+// flag a clause maps to, so migrating them changes CLI output as well as
+// parsing, and is worth its own change with its own review.
 const parseClauses = (query: string) =>
   query ? query.split(/\s+AND\s+/).map((clause) => clause.trim()) : [];
 
