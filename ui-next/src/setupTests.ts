@@ -32,6 +32,11 @@ Object.defineProperty(document, "queryCommandSupported", {
   writable: true,
 });
 
+// react-vis-timeline requires vis-data/esnext whose esnext/index.js uses
+// `export * from "./esm"` — a bare directory import that Node's ESM resolver
+// rejects. Mock the package so tests never load the vis-data chain.
+vi.mock("react-vis-timeline", () => ({ default: vi.fn(() => null) }));
+
 // Monaco Editor does not run in jsdom. Mock the package so tests that render
 // components containing editors get a lightweight no-op instead.
 vi.mock("@monaco-editor/react", () => ({
