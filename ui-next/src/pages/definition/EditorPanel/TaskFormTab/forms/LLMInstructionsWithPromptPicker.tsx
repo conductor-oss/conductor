@@ -110,14 +110,14 @@ export const LLMInstructionsWithPromptPicker = ({
       {/* Primary: AI Prompt picker */}
       <Grid size={12}>
         <MuiTypography sx={{ opacity: 0.5, mb: 3 }}>
-          Select a saved AI Prompt or{" "}
+          Use a saved AI Prompt as the system instructions. Don&apos;t have one?{" "}
           <Link
             sx={{ fontWeight: 400 }}
             target="_blank"
             href="/ai_prompts/new_ai_prompt_model"
             rel="noreferrer"
           >
-            create a new one.
+            Create an AI Prompt
           </Link>
         </MuiTypography>
         <ConductorAutocompleteVariables
@@ -180,7 +180,7 @@ export const LLMInstructionsWithPromptPicker = ({
             <CaretRight size={16} weight="bold" />
           )}
           <MuiTypography sx={{ ml: 1, fontWeight: 500 }}>
-            Write custom instructions
+            Write instructions inline
           </MuiTypography>
         </Box>
         <Collapse in={customExpanded}>

@@ -104,7 +104,7 @@ describe("LLMInstructionsWithPromptPicker", () => {
     render(<Harness initialTask={{ inputParameters: {} }} />);
 
     expect(screen.getByLabelText("Prompt Template")).toBeInTheDocument();
-    expect(screen.getByText("Write custom instructions")).toBeInTheDocument();
+    expect(screen.getByText("Write instructions inline")).toBeInTheDocument();
   });
 
   it("auto-expands custom instructions when prompt registry is empty", async () => {
