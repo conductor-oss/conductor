@@ -154,11 +154,34 @@ public class AMQPSettings {
      * amqp_queue:myQueue?deliveryMode=1&autoDelete=true&exclusive=true
      * </pre>
      *
+     * <u>Example for queue with dead letter exchange:</u>
+     *
+     * <pre>
+     * amqp_queue:myQueue?durable=true&deadLetterExchange=myDLX&deadLetterRoutingKey=failed&messageTtl=60000&maxLength=1000
+     * </pre>
+     *
      * <u>Example for exchange:</u>
      *
      * <pre>
      * amqp_exchange:myExchange?bindQueueName=myQueue&exchangeType=topic&routingKey=myRoutingKey&exclusive=true
      * </pre>
+     *
+     * <p>Supported parameters:
+     *
+     * <ul>
+     *   <li>deliveryMode - Message delivery mode (1=non-persistent, 2=persistent)
+     *   <li>durable - Queue/Exchange durability (true/false)
+     *   <li>exclusive - Exclusive queue (true/false)
+     *   <li>autoDelete - Auto-delete queue/exchange (true/false)
+     *   <li>maxPriority - Maximum priority for messages (integer)
+     *   <li>deadLetterExchange - Dead letter exchange name for failed messages
+     *   <li>deadLetterRoutingKey - Routing key for dead lettered messages
+     *   <li>messageTtl - Message time-to-live in milliseconds (integer)
+     *   <li>maxLength - Maximum queue length (integer)
+     *   <li>exchangeType - Exchange type (topic, direct, fanout, headers)
+     *   <li>bindQueueName - Queue name to bind to exchange
+     *   <li>routingKey - Routing key for exchange binding
+     * </ul>
      *
      * @param queueURI
      * @return
@@ -226,6 +249,22 @@ public class AMQPSettings {
                                         if (kv[0].equalsIgnoreCase(
                                                 (String.valueOf(PARAM_MAX_PRIORITY)))) {
                                             arguments.put("x-max-priority", Integer.valueOf(kv[1]));
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_DEAD_LETTER_EXCHANGE)))) {
+                                            arguments.put("x-dead-letter-exchange", kv[1]);
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_DEAD_LETTER_ROUTING_KEY)))) {
+                                            arguments.put("x-dead-letter-routing-key", kv[1]);
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_MESSAGE_TTL)))) {
+                                            arguments.put("x-message-ttl", Integer.valueOf(kv[1]));
+                                        }
+                                        if (kv[0].equalsIgnoreCase(
+                                                (String.valueOf(PARAM_MAX_LENGTH)))) {
+                                            arguments.put("x-max-length", Integer.valueOf(kv[1]));
                                         }
                                     }
                                 });
