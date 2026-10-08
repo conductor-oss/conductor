@@ -38,6 +38,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.events.scheduler.AdaptiveEventScheduler;
 import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.utils.JsonUtils;
@@ -98,13 +99,20 @@ public class DefaultEventProcessor {
                     "Cannot set event processor thread count to <=0. To disable event "
                             + "processing, set conductor.default-event-processor.enabled=false.");
         }
-        ThreadFactory threadFactory =
-                new BasicThreadFactory.Builder()
-                        .namingPattern("event-action-executor-thread-%d")
-                        .build();
-        eventActionExecutorService =
-                Executors.newFixedThreadPool(
-                        properties.getEventProcessorThreadCount(), threadFactory);
+        if (properties.isAdaptiveSchedulerEnabled()) {
+            // Action fan-out inside handle() is bounded by the per-message action count, not by
+            // event cardinality, but it can still be I/O heavy. Virtual threads let us run all
+            // actions concurrently without sizing a pool against the worst case.
+            eventActionExecutorService = AdaptiveEventScheduler.newWorkerExecutor();
+        } else {
+            ThreadFactory threadFactory =
+                    new BasicThreadFactory.Builder()
+                            .namingPattern("event-action-executor-thread-%d")
+                            .build();
+            eventActionExecutorService =
+                    Executors.newFixedThreadPool(
+                            properties.getEventProcessorThreadCount(), threadFactory);
+        }
 
         this.isEventMessageIndexingEnabled = properties.isEventMessageIndexingEnabled();
         LOGGER.info("Event Processing is ENABLED");
