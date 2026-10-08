@@ -254,6 +254,45 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                 == 1;
     }
 
+    /**
+     * A message overdue by more than this is treated as stuck, not as a just-set, intentional
+     * due-now wake-up. Keep this well under realistic staleness (minutes to hours) and well above
+     * normal call latency between a sibling's expedite write and this write.
+     */
+    private static final long UNSTICK_GRACE_SECONDS = 5;
+
+    @Override
+    public boolean setUnackTimeoutIfDueOrShorter(
+            String queueName, String messageId, long unackTimeout) {
+        long updatedOffsetTimeInSecond = unackTimeout / 1000;
+
+        // A message overdue by more than UNSTICK_GRACE_SECONDS is treated as stuck (frozen in the
+        // past, e.g. left behind by a skipped postpone write) and advanced to now + offset.
+        // A message due within that grace window is treated as a just-written, intentional
+        // due-now wake-up (e.g. an expedited postpone()) and must not be pushed later: only
+        // shorten, taking the earlier of the two delivery times.
+        final String UPDATE_UNACK_TIMEOUT_IF_DUE_OR_SHORTER =
+                "UPDATE queue_message SET offset_time_seconds = ?, "
+                        + "deliver_on = CASE "
+                        + "  WHEN deliver_on <= current_timestamp - (? ||' seconds')::interval "
+                        + "    THEN (current_timestamp + (? ||' seconds')::interval) "
+                        + "  ELSE LEAST(deliver_on, current_timestamp + (? ||' seconds')::interval) "
+                        + "END "
+                        + "WHERE queue_name = ? AND message_id = ?";
+
+        return queryWithTransaction(
+                        UPDATE_UNACK_TIMEOUT_IF_DUE_OR_SHORTER,
+                        q ->
+                                q.addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(UNSTICK_GRACE_SECONDS)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(updatedOffsetTimeInSecond)
+                                        .addParameter(queueName)
+                                        .addParameter(messageId)
+                                        .executeUpdate())
+                == 1;
+    }
+
     @Override
     public void flush(String queueName) {
         final String FLUSH_QUEUE = "DELETE FROM queue_message WHERE queue_name = ?";
