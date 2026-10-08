@@ -24,11 +24,13 @@ nginx
 cd /app/libs
 echo "Using java options config: $JAVA_OPTS"
 
+echo "Handing off PID 1 to the Conductor JVM"
+
 if [ -z "$CONFIG_PROP" ];
   then
     echo "No CONFIG_PROP set — using built-in defaults (SQLite, no external dependencies required)";
-    java ${JAVA_OPTS} -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
+    exec java ${JAVA_OPTS:-} -jar conductor-server.jar
   else
     echo "Using config: $CONFIG_PROP";
-    java ${JAVA_OPTS} -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP -jar conductor-server.jar 2>&1 | tee -a /app/logs/server.log
+    exec java ${JAVA_OPTS:-} -DCONDUCTOR_CONFIG_FILE=/app/config/$CONFIG_PROP -jar conductor-server.jar
 fi
