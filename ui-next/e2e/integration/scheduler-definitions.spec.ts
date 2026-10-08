@@ -142,6 +142,19 @@ test("navigating to /newScheduleDef opens an empty schedule form", async ({
   await expectMainContentScreenshot(page, "scheduler-definition-new.png");
 });
 
+test("saving a new schedule without a name is blocked", async ({ page }) => {
+  await page.goto("/newScheduleDef");
+  await page.waitForLoadState("networkidle");
+
+  await page.getByRole("button", { name: "Save" }).click();
+
+  // Stays on the form with the error shown, and never reaches the confirm step.
+  await expect(page.locator("#schedule-name-field-helper-text")).toHaveText(
+    "Name is required",
+  );
+  await expect(page.getByRole("button", { name: "Confirm" })).toHaveCount(0);
+});
+
 test("API pause/resume is reflected as Inactive/Active in the list", async ({
   page,
 }) => {

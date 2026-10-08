@@ -1042,6 +1042,9 @@ public class SchedulerService extends LifecycleAwareComponent {
     }
 
     public WorkflowSchedule createOrUpdateWorkflowSchedule(WorkflowSchedule workflowSchedule) {
+        if (StringUtils.isBlank(workflowSchedule.getName())) {
+            throw new IllegalArgumentException("Schedule name is required");
+        }
         String userId = getCurrentUserId();
         checkScheduleLimit(workflowSchedule);
 
