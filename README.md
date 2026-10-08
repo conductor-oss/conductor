@@ -233,6 +233,8 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 | Postgres + ES7 | [config-postgres-es7.properties](docker/server/config/config-postgres-es7.properties) |
 | MySQL + ES7 | [config-mysql.properties](docker/server/config/config-mysql.properties) |
 
+**Using Valkey?** Conductor's Redis backend uses standard RESP commands only, so [Valkey](https://valkey.io) — the open-source, BSD-3-licensed fork of Redis — works as a drop-in replacement. Point any `config-redis*.properties` file's `conductor.redis.hosts` at your Valkey endpoint; `conductor.db.type` stays `redis_standalone`/`redis_cluster`/`redis_sentinel` since it selects the wire protocol, not the product. See [Redis configuration](docs/documentation/advanced/redis.md#valkey-compatibility) for details.
+
 </details>
 
 ---
