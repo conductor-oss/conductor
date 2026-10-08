@@ -53,14 +53,11 @@ import com.jayway.jsonpath.Option;
 public class ParametersUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParametersUtils.class);
-    private static final Pattern PATTERN =
-            Pattern.compile(
-                    "(?=(?<!\\$)\\$\\{)(?:(?=.*?\\{(?!.*?\\1)(.*\\}(?!.*\\2).*))(?=.*?\\}(?!.*?\\2)(.*)).)+?.*?(?=\\1)[^{]*(?=\\2$)",
-                    Pattern.DOTALL);
     private static final Pattern SECRET_PATTERN =
             Pattern.compile("\\$\\{workflow\\.secrets\\.([^}]+)\\}");
     private static final String SECRETS_PREFIX = "workflow.secrets.";
     private static final String ENV_PREFIX = "workflow.env.";
+    private static final int MAX_EXPRESSION_DEPTH = 32;
 
     private final ObjectMapper objectMapper;
     private final TypeReference<Map<String, Object>> map = new TypeReference<>() {};
@@ -255,14 +252,26 @@ public class ParametersUtils {
 
     private Object replaceVariables(
             String paramString, DocumentContext documentContext, String taskId, int depth) {
-        var matcher = PATTERN.matcher(paramString);
+        if (depth >= MAX_EXPRESSION_DEPTH) {
+            LOGGER.warn(
+                    "Expression nesting depth limit exceeded ({}) for: {}. Resolving to null.",
+                    MAX_EXPRESSION_DEPTH,
+                    StringUtils.abbreviate(paramString, 256));
+            return null;
+        }
         var replacements = new LinkedList<Replacement>();
-        while (matcher.find()) {
-            var start = matcher.start();
-            var end = matcher.end();
+        for (int[] expression : findExpressions(paramString)) {
+            var start = expression[0];
+            var end = expression[1];
             var match = paramString.substring(start, end);
             String paramPath = match.substring(2, match.length() - 1);
-            paramPath = replaceVariables(paramPath, documentContext, taskId, depth + 1).toString();
+            Object resolvedParamPath =
+                    replaceVariables(paramPath, documentContext, taskId, depth + 1);
+            if (resolvedParamPath == null) {
+                replacements.add(new Replacement(null, start, end));
+                continue;
+            }
+            paramPath = resolvedParamPath.toString();
             // if the paramPath is blank, meaning no value in between ${ and }
             // like ${}, ${  } etc, set the value to empty string
             if (StringUtils.isBlank(paramPath)) {
@@ -308,6 +317,60 @@ public class ParametersUtils {
                     Objects.toString(replacement.getReplacement()));
         }
         return builder.toString().replaceAll("\\$\\$\\{", "\\${");
+    }
+
+    /**
+     * Finds the top-level <code>${...}</code> expressions of the given string in a single pass.
+     *
+     * <p>An expression starts at a <code>${</code> that is not preceded by a <code>$</code> (<code>
+     * $${</code> is the escape for a literal <code>${</code>) and ends at the matching closing
+     * brace, so expressions nested inside it are part of the same range. If an expression is never
+     * closed, neither it nor anything after it is reported.
+     *
+     * <p>This replaces a backtracking regular expression with the same semantics, whose matching
+     * time grew polynomially with the input and could be abused with crafted task output.
+     *
+     * @param value the string to scan
+     * @return the <code>[start, end)</code> index ranges of the expressions, in order
+     */
+    static List<int[]> findExpressions(String value) {
+        List<int[]> expressions = new ArrayList<>();
+        int length = value.length();
+        int i = 0;
+        while (i < length - 1) {
+            boolean startsExpression =
+                    value.charAt(i) == '$'
+                            && value.charAt(i + 1) == '{'
+                            && (i == 0 || value.charAt(i - 1) != '$');
+            if (!startsExpression) {
+                i++;
+                continue;
+            }
+            int end = findClosingBrace(value, i + 1);
+            if (end < 0) {
+                break;
+            }
+            expressions.add(new int[] {i, end + 1});
+            i = end + 1;
+        }
+        return expressions;
+    }
+
+    /**
+     * @return the index of the brace closing the one at <code>openingBrace</code>, or -1 if it is
+     *     never closed
+     */
+    private static int findClosingBrace(String value, int openingBrace) {
+        int depth = 0;
+        for (int i = openingBrace; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '{') {
+                depth++;
+            } else if (c == '}' && --depth == 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @Deprecated

@@ -18,6 +18,10 @@ export const NEW_TASK_TEMPLATE = {
   inputTemplate: {},
   backoffScaleFactor: 1,
   concurrentExecLimit: 0,
+  maxRetryDelaySeconds: 0,
+  backoffJitterMs: 0,
+  totalTimeoutSeconds: 0,
+  taskStatusListenerEnabled: true,
 };
 
 export const newTaskTemplate = (ownerEmail) => {

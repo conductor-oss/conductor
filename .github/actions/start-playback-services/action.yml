@@ -1,0 +1,20 @@
+name: Start playback services
+description: Start and check the authenticated HTTP and MCP fixtures used by SDK playback.
+inputs:
+  work-directory:
+    description: Directory for fixture logs and PID files.
+    default: tmp/agent-playback
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Install MCP test service
+      shell: bash
+      run: pip install mcp-testkit==1.0.4
+    - name: Start and check HTTP and MCP services
+      shell: bash
+      env:
+        CONDUCTOR_PLAYBACK_WORK_DIR: ${{ inputs.work-directory }}
+      run: bash "$GITHUB_ACTION_PATH/start-services.sh"

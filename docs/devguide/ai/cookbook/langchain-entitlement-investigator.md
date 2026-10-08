@@ -2,16 +2,16 @@
 
 ```mermaid
 flowchart LR
-  L(["Written with LangChain"]) --> B("Deployed through<br/>the Conductor bridge")
+  L(["Written with LangChain"]) --> B("Deployed with<br/>the Conductor SDK")
   B --> A("Called like any<br/>other agent")
   A --> O(["Investigation"])
 ```
 
-**Outcome:** author an entitlement investigator with LangChain, deploy it through the Conductor bridge, and invoke it as a durable capability.
+**Outcome:** author an entitlement investigator with LangChain, deploy it with the Conductor SDK, and invoke it as a durable capability.
 
-## Prerequisites and authoring bridge
+## Prerequisites and authoring path
 
-The current Python SDK quickstart documents the bridge installation as `pip install 'conductor-python[langchain]'`, `AgentRuntime`, and `runtime.run(agent, input)`. Verify the owning [Python SDK framework guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md) before upgrading packages or bridge APIs.
+The current Python SDK quickstart documents the installation as `pip install 'conductor-python[langchain]'`, `AgentRuntime`, and `runtime.run(agent, input)`. Verify the owning [Python SDK framework guide](https://github.com/conductor-oss/python-sdk/blob/main/docs/agents/framework-agents.md) before upgrading packages or framework-agent APIs.
 
 ```python
 from langchain.agents import create_agent
@@ -24,7 +24,7 @@ agent = create_agent(
 )
 ```
 
-Download the companion [`deploy_local_cookbook_agents.py`](assets/deploy_local_cookbook_agents.py) into your working directory; it creates this LangChain-authored capability and its read-only fixture tool. Deploy once and keep the bridge worker running before invoking the parent:
+Download the companion [`deploy_local_cookbook_agents.py`](assets/deploy_local_cookbook_agents.py) into your working directory; it creates this LangChain-authored capability and its read-only fixture tool. Deploy once and keep the tool worker running before invoking the parent:
 
 ```bash
 python3 deploy_local_cookbook_agents.py deploy
@@ -50,8 +50,8 @@ conductor workflow start -w langchain_entitlement_investigator --sync -i '{"cust
 
 ## Production notes
 
-- **`agentType` is `conductor`, not `langchain`.** The bridge runs it; the protocol doesn't change.
+- **`agentType` is `conductor`, not `langchain`.** The Conductor SDK runs it; the protocol doesn't change.
 - **Bound tokens and tool calls in the deployed agent,** where the loop actually runs.
 - **Pass document references, not payloads.**
 - **Reconcile duplicate runs by customer ID plus request ID.**
-- **Check the SDK source before bumping package versions.** The bridge API moves.
+- **Check the SDK source before bumping package versions.** The framework-agent API moves.

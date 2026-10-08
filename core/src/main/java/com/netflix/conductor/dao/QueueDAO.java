@@ -84,10 +84,18 @@ public interface QueueDAO {
     List<String> pop(String queueName, int count, int timeout);
 
     /**
+     * Long-polls the queue for available messages.
+     *
+     * <p>Returns as soon as at least one message is available, with up to {@code count} messages —
+     * it does not wait to fill the whole batch. If no message is available it blocks for up to
+     * {@code timeout} milliseconds and then returns whatever became available, which may be an
+     * empty list. A {@code count} of zero or less returns an empty list immediately.
+     *
      * @param queueName Name of the queue
-     * @param count number of messages to be read from the queue
-     * @param timeout timeout in milliseconds
-     * @return list of elements from the named queue
+     * @param count maximum number of messages to read from the queue
+     * @param timeout time in milliseconds to wait for at least one message before giving up
+     * @return up to {@code count} messages from the named queue, or an empty list if none became
+     *     available within the timeout
      */
     List<Message> pollMessages(String queueName, int count, int timeout);
 

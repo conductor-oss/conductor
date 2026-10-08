@@ -25,6 +25,7 @@ import org.conductoross.conductor.es8.utils.TestUtils;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.junit.Test;
+import org.springframework.retry.support.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -35,6 +36,9 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 
@@ -126,6 +130,69 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
                 "Index template for 'task_log' should exist",
                 indexDAO.doesResourceExist(
                         "/_index_template/" + resourceName("template_" + LOG_DOC_TYPE)));
+    }
+
+    @Test
+    public void setupAddsClassifierMappingToExistingWorkflowIndex() throws Exception {
+        String workflowAlias = indexName(WORKFLOW_DOC_TYPE);
+        String workflowIndex = "legacy-" + workflowAlias;
+
+        restClient.performRequest(new Request("DELETE", "/" + workflowAlias + "-000001"));
+        Request createLegacyIndex = new Request("PUT", "/" + workflowIndex);
+        createLegacyIndex.setJsonEntity(
+                """
+                {
+                  "aliases": {
+                    "%s": {
+                      "is_write_index": true
+                    }
+                  },
+                  "mappings": {
+                    "dynamic": false,
+                    "properties": {
+                      "workflowId": {
+                        "type": "keyword"
+                      }
+                    }
+                  }
+                }
+                """
+                        .formatted(workflowAlias));
+        restClient.performRequest(createLegacyIndex);
+
+        ElasticsearchClient client =
+                new ElasticsearchClient(
+                        new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper)));
+        Es8IndexManagementSupport indexManagementSupport =
+                new Es8IndexManagementSupport(
+                        client,
+                        new RetryTemplate(),
+                        properties,
+                        objectMapper,
+                        properties.getIndexPrefix(),
+                        workflowAlias,
+                        indexName(TASK_DOC_TYPE),
+                        indexName(LOG_DOC_TYPE),
+                        indexName(MSG_DOC_TYPE),
+                        indexName(EVENT_DOC_TYPE));
+        indexManagementSupport.ensureWorkflowClassifierMapping();
+
+        Response mappingResponse =
+                restClient.performRequest(
+                        new Request("GET", "/" + workflowIndex + "/_mapping/field/classifier"));
+        JsonNode mapping;
+        try (InputStream content = mappingResponse.getEntity().getContent()) {
+            mapping = objectMapper.readTree(content);
+        }
+        assertEquals(
+                "keyword",
+                mapping.path(workflowIndex)
+                        .path("mappings")
+                        .path("classifier")
+                        .path("mapping")
+                        .path("classifier")
+                        .path("type")
+                        .asText());
     }
 
     @Test

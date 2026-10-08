@@ -79,14 +79,14 @@ dependencies {
     implementation project(':conductor-scheduler-sqlite-persistence')
 
     //Metrics
-    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometer}"
-    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometer}"
-    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-cloudwatch2:${revMicrometerRegistry}"
+    implementation "io.micrometer:micrometer-registry-azure-monitor:${revMicrometerRegistry}"
+    implementation "io.micrometer:micrometer-registry-prometheus:${revMicrometerRegistry}"
     // Restores OTLP metrics export removed when the conductor-metrics module was
     // retired (commit 396a09a4f, #1059). Spring Boot's OtlpMetricsAutoConfiguration
     // wires OtlpMeterRegistry when management.otlp.metrics.export.enabled=true,
     // mirroring how the prometheus registry is auto-configured.
-    implementation "io.micrometer:micrometer-registry-otlp:${revMicrometer}"
+    implementation "io.micrometer:micrometer-registry-otlp:${revMicrometerRegistry}"
 
     //Event Listener
     implementation project(':conductor-workflow-event-listener')

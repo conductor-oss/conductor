@@ -22,6 +22,8 @@ dependencies {
 
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
 
+    // spring-retry is compileOnly for main; the DAO tests construct DAOs directly and need it
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-grpc-client')
