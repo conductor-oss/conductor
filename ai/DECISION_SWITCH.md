@@ -1,7 +1,7 @@
 # Decision-backed SWITCH
 
-Decision inference uses the ordinary Conductor `SWITCH` task. The provider call runs on the
-system-task worker, and the completed task selects its branch.
+Decision inference uses the ordinary Conductor `SWITCH` task. `SwitchTaskMapper` calls the
+provider synchronously and schedules the selected branch in the same mapping step.
 
 ```json
 {
@@ -10,11 +10,6 @@ system-task worker, and the completed task selects its branch.
   "type": "SWITCH",
   "evaluatorType": "decision",
   "expression": "route",
-  "retryCount": 3,
-  "retryLogic": "EXPONENTIAL_BACKOFF",
-  "retryDelaySeconds": 1,
-  "backoffScaleFactor": 2,
-  "maxRetryDelaySeconds": 5,
   "inputParameters": {
     "model": "jev-1.13",
     "state": "${workflow.input.request}",
@@ -43,8 +38,8 @@ system-task worker, and the completed task selects its branch.
 workflow task; there is no separate decision-agent or decision-tool task type.
 
 Output contains `provider`, `model`, `answers`, `selectedCase`, `latencyMs`, optional `requestId`,
-and provider-reported `usage`. Retry behavior comes from the retry policy configured on the
-`SWITCH`.
+and provider-reported `usage`. Evaluation failures use the ordinary built-in `SWITCH` failure
+path; they fail the workflow without task retries.
 
 ## Server configuration
 

@@ -1,6 +1,6 @@
 {
-  "name": "deferred_switch_system_task",
-  "description": "Exercises a decision-backed SWITCH through the real async system-task worker",
+  "name": "decision_switch_workflow",
+  "description": "Exercises synchronous decision evaluation and branch scheduling through SwitchTaskMapper",
   "version": 1,
   "tasks": [
     {

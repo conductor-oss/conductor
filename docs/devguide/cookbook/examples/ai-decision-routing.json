@@ -11,11 +11,6 @@
       "type": "SWITCH",
       "evaluatorType": "decision",
       "expression": "route",
-      "retryCount": 3,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 1,
-      "backoffScaleFactor": 2,
-      "maxRetryDelaySeconds": 5,
       "inputParameters": {
         "model": "jev-1.13",
         "state": "${workflow.input.request}",

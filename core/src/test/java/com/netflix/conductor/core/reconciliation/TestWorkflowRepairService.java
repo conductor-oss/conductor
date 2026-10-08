@@ -147,7 +147,7 @@ public class TestWorkflowRepairService {
         // Return a Switch task object to init WorkflowSystemTask registry.
         when(systemTaskRegistry.get(TASK_TYPE_DECISION)).thenReturn(new Decision());
         when(systemTaskRegistry.isSystemTask(TASK_TYPE_DECISION)).thenReturn(true);
-        when(systemTaskRegistry.get(TASK_TYPE_SWITCH)).thenReturn(new Switch(Map.of()));
+        when(systemTaskRegistry.get(TASK_TYPE_SWITCH)).thenReturn(new Switch());
         when(systemTaskRegistry.isSystemTask(TASK_TYPE_SWITCH)).thenReturn(true);
 
         TaskModel task = new TaskModel();

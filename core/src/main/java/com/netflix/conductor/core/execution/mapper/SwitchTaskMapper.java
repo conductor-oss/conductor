@@ -86,49 +86,34 @@ public class SwitchTaskMapper implements TaskMapper {
             throw new TerminateWorkflowException(errorMsg);
         }
 
-        if (evaluator.isDeferred()) {
-            // Deferred evaluators may block; the SWITCH is queued and evaluated by Switch#start
-            // on the system task worker. The branch is scheduled by the decider on completion.
-            TaskModel switchTask = taskMapperContext.createTaskModel();
-            switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
-            switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
-            switchTask.getInputData().putAll(taskInput);
-            // Persist the execution mode with the task. Queueing, repair and retry must not change
-            // behavior if the evaluator bean is unavailable after a restart or configuration
-            // change.
-            switchTask.getInputData().put(Switch.DEFERRED_EVALUATOR, true);
-            switchTask.setStatus(TaskModel.Status.SCHEDULED);
-            tasksToBeScheduled.add(switchTask);
-            return tasksToBeScheduled;
-        }
-
-        String evalResult = "";
-        try {
-            evalResult = "" + evaluator.evaluate(workflowTask.getExpression(), taskInput);
-        } catch (Exception exception) {
-            TaskModel switchTask = taskMapperContext.createTaskModel();
-            switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
-            switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
-            switchTask.getInputData().putAll(taskInput);
-            switchTask.setStartTime(System.currentTimeMillis());
-            switchTask.setStatus(TaskModel.Status.FAILED);
-            switchTask.setReasonForIncompletion(exception.getMessage());
-            tasksToBeScheduled.add(switchTask);
-
-            return tasksToBeScheduled;
-        }
-
-        // QQ why is the case value and the caseValue passed and caseOutput passes as the same ??
         TaskModel switchTask = taskMapperContext.createTaskModel();
         switchTask.setTaskType(TaskType.TASK_TYPE_SWITCH);
         switchTask.setTaskDefName(TaskType.TASK_TYPE_SWITCH);
         switchTask.getInputData().putAll(taskInput);
+        switchTask.setStartTime(System.currentTimeMillis());
+        tasksToBeScheduled.add(switchTask);
+
+        String evalResult;
+        try {
+            Object result = evaluator.evaluate(workflowTask.getExpression(), taskInput);
+            if (result instanceof Map<?, ?> output && output.containsKey(Switch.SELECTED_CASE)) {
+                // Decision evaluators return routing plus provider output; scalar evaluators
+                // continue to use their result directly as the case key.
+                output.forEach((key, value) -> switchTask.addOutput(String.valueOf(key), value));
+                evalResult = String.valueOf(output.get(Switch.SELECTED_CASE));
+            } else {
+                evalResult = String.valueOf(result);
+            }
+        } catch (Exception exception) {
+            switchTask.setStatus(TaskModel.Status.FAILED);
+            switchTask.setReasonForIncompletion(exception.getMessage());
+            return tasksToBeScheduled;
+        }
+
         switchTask.getInputData().put("case", evalResult);
         switchTask.addOutput(Switch.EVALUATION_RESULT, List.of(evalResult));
         switchTask.addOutput(Switch.SELECTED_CASE, evalResult);
-        switchTask.setStartTime(System.currentTimeMillis());
         switchTask.setStatus(TaskModel.Status.IN_PROGRESS);
-        tasksToBeScheduled.add(switchTask);
 
         // get the list of tasks based on the evaluated expression
         List<WorkflowTask> selectedTasks = workflowTask.getDecisionCases().get(evalResult);

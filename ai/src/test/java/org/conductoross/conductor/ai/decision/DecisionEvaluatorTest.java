@@ -57,11 +57,6 @@ class DecisionEvaluatorTest {
     }
 
     @Test
-    void isDeferredSoTheSwitchIsQueuedNotEvaluatedInTheDecider() {
-        assertThat(evaluator.isDeferred()).isTrue();
-    }
-
-    @Test
     void returnsWholeResultPlusSelectedCase() {
         client.result = result("billing");
 
@@ -87,7 +82,7 @@ class DecisionEvaluatorTest {
     }
 
     @Test
-    void transientProviderFailurePropagatesSoTheTaskIsRetried() {
+    void providerFailurePropagatesToTheMapper() {
         client.failure = new IllegalStateException("Decision HTTP status 503");
         assertThatThrownBy(() -> evaluator.evaluate("route", input()))
                 .isInstanceOf(IllegalStateException.class)

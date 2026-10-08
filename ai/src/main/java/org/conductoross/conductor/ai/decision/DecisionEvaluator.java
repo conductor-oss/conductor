@@ -29,8 +29,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * SWITCH evaluator backed by the decision engine. Deferred: the SWITCH is queued and evaluated by
- * the system task worker, and transient provider failures are retried by the task's retry policy.
+ * SWITCH evaluator backed by the decision engine. Evaluated synchronously by SwitchTaskMapper,
+ * which preserves the decision output and schedules the selected branch.
  *
  * <p>Input is the SWITCH's inputParameters: {@code model}, {@code state}, {@code questions} and
  * optional {@code provider}. The expression names the choice question to route on; it may be blank
@@ -49,11 +49,6 @@ public class DecisionEvaluator implements Evaluator {
     public DecisionEvaluator(DecisionClient client, ObjectMapper mapper) {
         this.client = client;
         this.mapper = mapper;
-    }
-
-    @Override
-    public boolean isDeferred() {
-        return true;
     }
 
     @Override

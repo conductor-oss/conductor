@@ -144,24 +144,9 @@ public class TestWorkflowExecutor {
             };
         }
 
-        @Bean("deferred-stub")
-        public Evaluator deferredStubEvaluator() {
-            return new Evaluator() {
-                @Override
-                public Object evaluate(String expression, Object input) {
-                    return "billing";
-                }
-
-                @Override
-                public boolean isDeferred() {
-                    return true;
-                }
-            };
-        }
-
         @Bean(TASK_TYPE_SWITCH)
-        public Switch switchBean(Map<String, Evaluator> evaluators) {
-            return new Switch(evaluators);
+        public Switch switchBean() {
+            return new Switch();
         }
 
         @Bean
@@ -3250,22 +3235,19 @@ public class TestWorkflowExecutor {
         task.setWorkflowInstanceId(workflow.getWorkflowId());
         task.setTaskId(new IDGenerator().generate());
         task.setWorkflowTask(wt);
-        if ("deferred-stub".equals(evaluatorType)) {
-            task.getInputData().put(Switch.DEFERRED_EVALUATOR, true);
-        }
         return task;
     }
 
-    /** Category 1: a SWITCH with a regular evaluator is never put on a queue. */
+    /** SWITCH evaluation happens in its mapper, so it is never put on a system-task queue. */
     @Test
-    public void testRegularSwitchIsNeverQueued() {
+    public void testDecisionSwitchIsNeverQueued() {
         WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("sw-regular");
+        workflow.setWorkflowId("sw-decision");
         WorkflowDef def = new WorkflowDef();
         def.setName("sw");
         def.setVersion(1);
         workflow.setWorkflowDefinition(def);
-        TaskModel regular = switchTaskModel(workflow, "r1", "value-param");
+        TaskModel regular = switchTaskModel(workflow, "r1", "decision");
         regular.setStatus(TaskModel.Status.IN_PROGRESS); // as SwitchTaskMapper produces it
 
         workflowExecutor.scheduleTask(workflow, List.of(regular));
@@ -3273,24 +3255,5 @@ public class TestWorkflowExecutor {
         verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyInt(), anyLong());
         verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
         assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
-    }
-
-    /** Category 2: a SWITCH with a deferred evaluator goes to the SWITCH queue for the poller. */
-    @Test
-    public void testDeferredSwitchIsQueued() {
-        WorkflowModel workflow = new WorkflowModel();
-        workflow.setWorkflowId("sw-deferred");
-        WorkflowDef def = new WorkflowDef();
-        def.setName("sw");
-        def.setVersion(1);
-        workflow.setWorkflowDefinition(def);
-        TaskModel deferred = switchTaskModel(workflow, "r2", "deferred-stub");
-        deferred.setStatus(TaskModel.Status.SCHEDULED); // as SwitchTaskMapper produces it
-
-        workflowExecutor.scheduleTask(workflow, List.of(deferred));
-
-        verify(queueDAO).push(eq(TASK_TYPE_SWITCH), eq(deferred.getTaskId()), anyInt(), anyLong());
-        assertEquals(TaskModel.Status.SCHEDULED, deferred.getStatus());
-        assertNull("not evaluated inline", deferred.getOutputData().get("selectedCase"));
     }
 }

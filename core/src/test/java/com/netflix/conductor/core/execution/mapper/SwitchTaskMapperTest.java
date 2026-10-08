@@ -49,10 +49,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -354,16 +352,6 @@ public class SwitchTaskMapperTest {
         assertEquals(TaskModel.Status.FAILED, mappedTasks.get(0).getStatus());
     }
 
-    // ── Category 1: existing evaluators keep the synchronous, in-decider path ────────
-
-    @Test
-    public void noBuiltInEvaluatorIsDeferred() {
-        assertFalse(evaluators.isEmpty());
-        evaluators.forEach(
-                (name, evaluator) ->
-                        assertFalse(name + " must stay synchronous", evaluator.isDeferred()));
-    }
-
     @Test
     public void valueParamSwitchIsEvaluatedInTheMapperAndBranchScheduledInTheSameCall() {
         WorkflowTask switchTask = switchTask(ValueParamEvaluator.NAME, "route");
@@ -385,37 +373,90 @@ public class SwitchTaskMapperTest {
         assertEquals("even", sw.getOutputData().get("selectedCase"));
         assertEquals("true", sw.getInputData().get("hasChildren"));
         assertEquals("t2", mapped.get(1).getReferenceTaskName());
-        assertFalse("regular SWITCH is never async", new Switch(evaluators).isAsync(sw));
+        assertFalse("regular SWITCH is never async", new Switch().isAsync());
     }
 
-    // ── Category 2: a deferred evaluator is not run by the mapper ────────────────────
+    @Test
+    public void structuredResultIsEvaluatedInMapperAndSchedulesSelectedBranch() {
+        Map<String, Object> output =
+                Map.of(
+                        "selectedCase",
+                        "even",
+                        "model",
+                        "jev-1.13",
+                        "answers",
+                        Map.of("route", Map.of("choice", "even")),
+                        "usage",
+                        Map.of("inputTokens", 10),
+                        "latencyMs",
+                        42L);
+        Evaluator decision =
+                (expression, input) -> {
+                    assertEquals("route", expression);
+                    assertEquals(Map.of("route", "refund"), input);
+                    return output;
+                };
+        SwitchTaskMapper mapper = new SwitchTaskMapper(Map.of("decision", decision));
+        WorkflowTask switchTask = switchTask("decision", "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+        TaskModel branchTask = new TaskModel();
+        branchTask.setReferenceTaskName("t2");
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
+                .thenReturn(List.of(branchTask));
+
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
+
+        assertEquals(2, mapped.size());
+        TaskModel sw = mapped.get(0);
+        assertEquals(TaskModel.Status.IN_PROGRESS, sw.getStatus());
+        output.forEach((key, value) -> assertEquals(value, sw.getOutputData().get(key)));
+        assertEquals(List.of("even"), sw.getOutputData().get(Switch.EVALUATION_RESULT));
+        assertEquals("even", sw.getInputData().get("case"));
+        assertEquals("true", sw.getInputData().get(Switch.HAS_CHILDREN));
+        assertEquals(branchTask, mapped.get(1));
+        assertFalse(new Switch().isAsync());
+    }
 
     @Test
-    public void deferredEvaluatorSwitchIsScheduledWithoutEvaluationOrBranch() {
-        Evaluator deferred = org.mockito.Mockito.mock(Evaluator.class);
-        when(deferred.isDeferred()).thenReturn(true);
-        Map<String, Evaluator> withDeferred = new HashMap<>(evaluators);
-        withDeferred.put("decision", deferred);
-        SwitchTaskMapper mapper = new SwitchTaskMapper(withDeferred);
+    public void structuredResultWithUnmatchedCaseSchedulesDefault() {
+        SwitchTaskMapper mapper =
+                new SwitchTaskMapper(
+                        Map.of(
+                                "decision",
+                                (expression, input) -> Map.of("selectedCase", "unknown")));
         WorkflowTask switchTask = switchTask("decision", "route");
-        WorkflowModel workflowModel = workflowWithInput("route", "ignored");
-        Map<String, Object> input =
-                parametersUtils.getTaskInput(
-                        switchTask.getInputParameters(), workflowModel, null, null);
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+        TaskModel branchTask = new TaskModel();
+        when(deciderService.getTasksToBeScheduled(workflowModel, task1, 0, null))
+                .thenReturn(List.of(branchTask));
 
-        List<TaskModel> mapped = mapper.getMappedTasks(context(switchTask, workflowModel, input));
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
+
+        assertEquals(List.of(mapped.get(0), branchTask), mapped);
+        assertEquals("unknown", mapped.get(0).getOutputData().get(Switch.SELECTED_CASE));
+    }
+
+    @Test
+    public void structuredResultWithEmptyMatchedCaseDoesNotScheduleDefault() {
+        SwitchTaskMapper mapper =
+                new SwitchTaskMapper(
+                        Map.of("decision", (expression, input) -> Map.of("selectedCase", "even")));
+        WorkflowTask switchTask = switchTask("decision", "route");
+        switchTask.setDecisionCases(Map.of("even", List.of()));
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
 
         assertEquals(1, mapped.size());
-        TaskModel sw = mapped.get(0);
-        assertEquals(TaskModel.Status.SCHEDULED, sw.getStatus());
-        assertEquals(TaskType.TASK_TYPE_SWITCH, sw.getTaskType());
-        assertNull(sw.getOutputData().get("selectedCase"));
-        assertNull(sw.getInputData().get("hasChildren"));
-        assertEquals("ignored", sw.getInputData().get("route"));
-        assertEquals(Boolean.TRUE, sw.getInputData().get(Switch.DEFERRED_EVALUATOR));
-        verify(deferred, never()).evaluate(anyString(), any());
+        assertEquals("even", mapped.get(0).getOutputData().get(Switch.SELECTED_CASE));
+        assertNull(mapped.get(0).getInputData().get(Switch.HAS_CHILDREN));
         verify(deciderService, never()).getTasksToBeScheduled(any(), any(), anyInt(), any());
-        assertTrue("deferred SWITCH is async", new Switch(withDeferred).isAsync(sw));
     }
 
     private WorkflowTask switchTask(String evaluatorType, String expression) {

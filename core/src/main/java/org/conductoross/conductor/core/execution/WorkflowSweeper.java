@@ -105,7 +105,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                 if (systemTaskRegistry.isSystemTask(task.getTaskType())) { // If system task
                     WorkflowSystemTask workflowSystemTask =
                             systemTaskRegistry.get(task.getTaskType());
-                    return workflowSystemTask.isAsync(task)
+                    return workflowSystemTask.isAsync()
                             && (!workflowSystemTask.isAsyncComplete(task)
                                     || (workflowSystemTask.isAsyncComplete(task)
                                             && task.getStatus() == TaskModel.Status.SCHEDULED))
