@@ -49,8 +49,6 @@ jobs:
             // review tier.
             const EXCLUDE_EXACT = new Set([
               'ui-next/pnpm-lock.yaml',
-              'ui/package-lock.json',
-              'ui/yarn.lock',
             ]);
             const EXCLUDE_PREFIX = ['server/src/main/resources/swagger-ui/'];
             const EXCLUDE_SUBSTR = ['/vendor/', '/generated/', '/__snapshots__/'];
