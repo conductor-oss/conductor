@@ -1,0 +1,31 @@
+{
+  "name": "remote_a2a_agent_delegation",
+  "description": "Delegates research to a remote A2A agent with a deterministic request id supplied by the caller.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 360,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "agentUrl",
+    "request",
+    "idempotencyKey"
+  ],
+  "tasks": [
+    {
+      "name": "delegate_remote_agent",
+      "taskReferenceName": "delegate_remote_agent",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "a2a",
+        "agentUrl": "${workflow.input.agentUrl}",
+        "text": "${workflow.input.request}",
+        "idempotencyKey": "${workflow.input.idempotencyKey}",
+        "pollIntervalSeconds": 5
+      }
+    }
+  ],
+  "outputParameters": {
+    "state": "${delegate_remote_agent.output.state}",
+    "artifacts": "${delegate_remote_agent.output.artifacts}"
+  }
+}
