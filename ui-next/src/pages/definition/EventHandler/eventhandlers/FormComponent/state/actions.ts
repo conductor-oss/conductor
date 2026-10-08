@@ -89,6 +89,19 @@ export const editAction = assign({
   },
 });
 
+export const moveAction = assign({
+  eventAsJson: (context: any, event: any) => {
+    const { from, to } = event;
+    const newActions = [...context.eventAsJson.actions];
+    const [moved] = newActions.splice(from, 1);
+    newActions.splice(to, 0, moved);
+    return {
+      ...context.eventAsJson,
+      actions: newActions,
+    };
+  },
+});
+
 export const resetForm = assign<EventFormMachineContext>({
   eventAsJson: (context) => {
     return context.originalSource;

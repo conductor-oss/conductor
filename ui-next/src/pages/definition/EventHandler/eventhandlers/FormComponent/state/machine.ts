@@ -49,6 +49,9 @@ export const eventFormMachine = createMachine<
           [EventFormMachineTypes.EDIT_ACTION]: {
             actions: ["editAction"],
           },
+          [EventFormMachineTypes.MOVE_ACTION]: {
+            actions: ["moveAction"],
+          },
         },
       },
       [EventFormMachineStates.EXIT]: {
