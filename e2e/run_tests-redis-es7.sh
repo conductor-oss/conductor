@@ -2,7 +2,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose.yaml"
+COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-redis-es7.yaml"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
 
 echo "Starting Conductor (Redis + Elasticsearch 7)..."
