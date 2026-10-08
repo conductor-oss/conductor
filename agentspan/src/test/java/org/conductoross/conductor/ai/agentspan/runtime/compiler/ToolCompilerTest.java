@@ -199,6 +199,35 @@ class ToolCompilerTest {
     }
 
     @Test
+    void testCompileToolSpecs_Handoff() {
+        ToolConfig tool =
+                ToolConfig.builder()
+                        .name("swarm_agent_a_transfer_to_swarm_agent_b")
+                        .description("Transfer the conversation to swarm_agent_b.")
+                        .toolType("handoff")
+                        .build();
+
+        ToolCompiler tc = new ToolCompiler();
+        List<Map<String, Object>> specs = tc.compileToolSpecs(List.of(tool));
+
+        assertThat(specs).hasSize(1);
+        assertThat(specs.get(0).get("type")).isEqualTo("INLINE");
+    }
+
+    @Test
+    void testCompileToolSpecs_compilerOwnedToolTypesHaveExplicitMappings() {
+        assertThat(specType("worker")).isEqualTo("SIMPLE");
+        assertThat(specType("agent_tool")).isEqualTo("SUB_WORKFLOW");
+        assertThat(specType("handoff")).isEqualTo("INLINE");
+    }
+
+    private String specType(String toolType) {
+        ToolConfig tool =
+                ToolConfig.builder().name("probe").description("probe").toolType(toolType).build();
+        return (String) new ToolCompiler().compileToolSpecs(List.of(tool)).get(0).get("type");
+    }
+
+    @Test
     void testCompileToolSpecs_AgentTool() {
         ToolConfig tool =
                 ToolConfig.builder()
