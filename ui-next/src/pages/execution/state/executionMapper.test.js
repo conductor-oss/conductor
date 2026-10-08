@@ -447,3 +447,61 @@ describe("doWhileSelectionForStatusMap", () => {
     expect(result.missing_ref.loopOver).toBeUndefined();
   });
 });
+
+describe("agent tool tasks", () => {
+  const agentTask = { type: "AGENT", taskReferenceName: "agent_ref" };
+
+  const statusMapWith = (refs) =>
+    refs.reduce(
+      (map, ref) => ({
+        ...map,
+        [ref]: {
+          status: "COMPLETED",
+          executed: true,
+          loopOver: [{ taskType: ref.split("__").pop().replace(/_\d+$/, "") }],
+        },
+      }),
+      {
+        agent_ref: { status: "IN_PROGRESS", executed: true, loopOver: [{}] },
+      },
+    );
+
+  it("nests the tools an agent ran, in the order it asked for them", () => {
+    // The children are not in the workflow definition and could not be: which tools run, and how
+    // many rounds of them, is the model's decision. They are found in the execution instead.
+    const statusMap = statusMapWith([
+      "agent_ref__t2__get_headcount",
+      "agent_ref__t1__get_revenue",
+      "agent_ref__t10__summarise",
+    ]);
+
+    const [updated] = taskStatusUpdater([agentTask], statusMap, []);
+
+    expect(updated.loopOver.map((t) => t.taskReferenceName)).toEqual([
+      "agent_ref__t1__get_revenue",
+      "agent_ref__t2__get_headcount",
+      // Ordered by turn number, not by name — otherwise turn 10 sorts between 1 and 2.
+      "agent_ref__t10__summarise",
+    ]);
+  });
+
+  it("leaves an agent that ran no tools as a plain task", () => {
+    const [updated] = taskStatusUpdater([agentTask], statusMapWith([]), []);
+
+    // A container with nothing to nest would draw an empty box around a leaf.
+    expect(updated.loopOver).toBeUndefined();
+  });
+
+  it("does not adopt another agent's tools", () => {
+    const statusMap = statusMapWith([
+      "agent_ref__t1__get_revenue",
+      "other_agent__t1__get_revenue",
+    ]);
+
+    const [updated] = taskStatusUpdater([agentTask], statusMap, []);
+
+    expect(updated.loopOver.map((t) => t.taskReferenceName)).toEqual([
+      "agent_ref__t1__get_revenue",
+    ]);
+  });
+});
