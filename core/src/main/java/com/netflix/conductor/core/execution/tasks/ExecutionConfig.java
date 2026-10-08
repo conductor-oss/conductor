@@ -33,14 +33,10 @@ class ExecutionConfig {
     }
 
     /**
-     * Non-isolated queues: share the given pool but each gets its own semaphore, so a slow/busy
-     * queue cannot exhaust a shared permit pool and starve other queues' polling.
+     * Shared-pool queues: every non-isolated queue without a dedicated pool gets the same pool AND
+     * the same semaphore, so admission across all of them is bounded by the pool's threads (issue
+     * #1649).
      */
-    ExecutionConfig(ExecutorService executorService, int permits) {
-        this(executorService, permits, -1);
-    }
-
-    /** Test-only: inject a pre-built semaphore (e.g. a mock). */
     ExecutionConfig(ExecutorService executorService, SemaphoreUtil semaphoreUtil) {
         this.executorService = executorService;
         this.semaphoreUtil = semaphoreUtil;
