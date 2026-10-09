@@ -740,14 +740,32 @@ public class TestDeciderOutcomes {
         workflow.setCreateTime(System.currentTimeMillis());
         workflow.getInput().put("items", "parent items");
         workflow.getInput().put("tasks", List.of(startChild));
+        // An array, a set and another object reach the forked task's evaluation as the lists and
+        // maps of their JSON form, so their strings must pass through unresolved as well.
+        String expression = "${workflow.input.items}";
         workflow.getInput()
-                .put("tasks_input", Map.of("child_1", Map.of("startWorkflow", startWorkflow)));
+                .put(
+                        "tasks_input",
+                        Map.of(
+                                "child_1",
+                                Map.of(
+                                        "startWorkflow",
+                                        startWorkflow,
+                                        "codes",
+                                        new String[] {expression},
+                                        "tags",
+                                        Set.of(expression),
+                                        "note",
+                                        new Note(expression))));
 
         DeciderOutcome outcome = deciderService.decide(workflow);
         assertEquals(3, outcome.tasksToBeScheduled.size());
         TaskModel childStarter = outcome.tasksToBeScheduled.get(1);
         assertEquals("child_1", childStarter.getReferenceTaskName());
         assertEquals(startWorkflow, childStarter.getInputData().get("startWorkflow"));
+        assertEquals(List.of(expression), childStarter.getInputData().get("codes"));
+        assertEquals(List.of(expression), childStarter.getInputData().get("tags"));
+        assertEquals(Map.of("text", expression), childStarter.getInputData().get("note"));
         assertEquals("parent_workflow_id", childStarter.getInputData().get("parentWorkflowId"));
 
         // A retry evaluates the forked task's input parameters again.
@@ -765,5 +783,8 @@ public class TestDeciderOutcomes {
                         .orElseThrow();
         assertEquals(childStarter.getTaskId(), retried.getRetriedTaskId());
         assertEquals(startWorkflow, retried.getInputData().get("startWorkflow"));
+        assertEquals(Map.of("text", expression), retried.getInputData().get("note"));
     }
+
+    record Note(String text) {}
 }

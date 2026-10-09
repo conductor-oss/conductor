@@ -612,15 +612,23 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * Returns a copy of the given input in which every "${" in a string value, at any depth, is
      * escaped as "$${". {@link ParametersUtils} turns an escaped expression back into the literal
      * text instead of evaluating it, so already resolved values survive another evaluation as-is.
+     *
+     * <p>{@link ParametersUtils} evaluates the JSON form of a task's input: it clones the input
+     * through JSON first, so a collection becomes a list and an array or any other object becomes
+     * the list or map Jackson writes for it. The copy has that same form, so the strings inside
+     * those values are escaped too.
      */
-    private static Map<String, Object> escapeExpressions(Map<String, Object> input) {
+    private Map<String, Object> escapeExpressions(Map<String, Object> input) {
         Map<String, Object> escaped = new LinkedHashMap<>();
         input.forEach((key, value) -> escaped.put(key, escapeExpressions(value)));
         return escaped;
     }
 
     @SuppressWarnings("unchecked")
-    private static Object escapeExpressions(Object value) {
+    private Object escapeExpressions(Object value) {
+        if (value == null || value instanceof Number || value instanceof Boolean) {
+            return value;
+        }
         if (value instanceof String string) {
             return string.replace("${", "$${");
         }
@@ -628,10 +636,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
             return escapeExpressions((Map<String, Object>) value);
         }
         if (value instanceof Collection<?> values) {
-            return values.stream()
-                    .map(ForkJoinDynamicTaskMapper::escapeExpressions)
-                    .collect(Collectors.toList());
+            return values.stream().map(this::escapeExpressions).collect(Collectors.toList());
         }
-        return value;
+        return escapeExpressions(objectMapper.convertValue(value, Object.class));
     }
 }
