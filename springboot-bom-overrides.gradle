@@ -19,7 +19,9 @@
 ext['spring-framework.version'] = '6.2.19'
 ext['spring-security.version'] = '6.5.11'
 ext['log4j2.version'] = '2.25.4'
-ext['netty.version'] = '4.1.136.Final'
+// 4.1.137.Final clears CVE-2026-75595 (SNI routing bypass via fragmented TLS ClientHello),
+// net-new since the 4.1.136.Final bump.
+ext['netty.version'] = '4.1.137.Final'
 // Bumps the BOM-managed micrometer family (micrometer-core et al.) to the CVE-patched
 // revMicrometer. The registry artifacts are pinned separately to revMicrometerRegistry in
 // server/build.gradle and must NOT be bumped through this property — see dependencies.gradle.
