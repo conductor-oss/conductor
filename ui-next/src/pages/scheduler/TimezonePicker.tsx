@@ -2,6 +2,8 @@ import { ConductorAutoComplete } from "components/ui/inputs/ConductorAutoComplet
 import timezones from "./timezones.json";
 
 type TimezonePickerProps = {
+  /** Set this when more than one picker is on the page, so the ids stay unique. */
+  id?: string;
   timezone: string;
   onChange: (newValue: any) => void;
   error: boolean;
@@ -9,6 +11,7 @@ type TimezonePickerProps = {
 };
 
 export const TimezonePicker = ({
+  id = "scheduler-timezone-picker",
   timezone,
   onChange,
   error,
@@ -16,7 +19,7 @@ export const TimezonePicker = ({
 }: TimezonePickerProps) => {
   return (
     <ConductorAutoComplete
-      id="scheduler-timezone-picker"
+      id={id}
       label="Select Timezone"
       required
       fullWidth

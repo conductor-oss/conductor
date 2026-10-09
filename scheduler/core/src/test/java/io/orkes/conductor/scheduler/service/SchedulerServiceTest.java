@@ -1168,6 +1168,49 @@ class SchedulerServiceTest {
     }
 
     @Test
+    @DisplayName("a schedule carrying both cronExpression and cronSchedules runs only the list")
+    void bothCronFieldsSetRunsOnlyTheList() {
+        SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);
+        ZonedDateTime now = utcTime(1630000000000L);
+        when(mockTimeProvider.getUtcTime(any())).thenReturn(now);
+        SchedulerService service = createServiceWithRedisHealthy(mockTimeProvider);
+        service.start();
+
+        WorkflowSchedule schedule = new WorkflowSchedule();
+        schedule.setName("both_fields_sched");
+        schedule.setStartWorkflowRequest(new StartWorkflowRequest());
+        schedule.getStartWorkflowRequest().setName("my_wf");
+        // Set to something that appears in neither list entry, so it is identifiable.
+        schedule.setCronExpression("0 0 */2 ? * *");
+        schedule.setZoneId("UTC");
+
+        CronSchedule cs1 = new CronSchedule();
+        cs1.setCronExpression("0 0 1/2 ? * *");
+        cs1.setZoneId("UTC");
+        CronSchedule cs2 = new CronSchedule();
+        cs2.setCronExpression("0 0 0 * * ?");
+        cs2.setZoneId("UTC");
+        schedule.setCronSchedules(Arrays.asList(cs1, cs2));
+
+        service.createOrUpdateWorkflowSchedule(schedule);
+
+        Map<String, ?> schedulerQueue =
+                queueDAO.dummyQueues.get(CONDUCTOR_SYSTEM_SCHEDULER_QUEUE_NAME);
+        assertNotNull(schedulerQueue);
+        String queued = String.join(" | ", schedulerQueue.keySet());
+
+        assertEquals(
+                2,
+                schedulerQueue.size(),
+                "Only the two list entries should be scheduled, got: " + queued);
+        assertTrue(queued.contains("0 0 1/2 ? * *"), "First list entry missing: " + queued);
+        assertTrue(queued.contains("0 0 0 * * ?"), "Second list entry missing: " + queued);
+        assertFalse(
+                queued.contains("0 0 */2 ? * *"),
+                "cronExpression must not be scheduled when cronSchedules is set: " + queued);
+    }
+
+    @Test
     @DisplayName("multi-cron picks the earliest next run across all cron entries")
     void multiCronSchedulePicksEarliestNextRun() {
         SchedulerTimeProvider mockTimeProvider = Mockito.mock(SchedulerTimeProvider.class);
