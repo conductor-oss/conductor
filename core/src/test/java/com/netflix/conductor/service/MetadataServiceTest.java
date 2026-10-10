@@ -254,6 +254,47 @@ public class MetadataServiceTest {
         assertEquals(before.getCreateTime(), after.getCreateTime());
     }
 
+    @Test
+    public void testUpdateTaskDefPreservesRuntimeMetadataWhenIncomingEmpty() {
+        String taskDefName = "task-with-creds";
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName(taskDefName);
+        taskDef.setOwnerEmail("sample@test.com");
+        taskDef.setRuntimeMetadata(new ArrayList<>(Arrays.asList("MY_CRED")));
+        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+
+        // Worker re-registration supplies an empty TaskDef (no runtimeMetadata).
+        TaskDef update = new TaskDef();
+        update.setName(taskDefName);
+        update.setOwnerEmail("sample@test.com");
+        update.setRuntimeMetadata(new ArrayList<>());
+        update.setRetryCount(5);
+        metadataService.updateTaskDef(update);
+
+        TaskDef after = metadataService.getTaskDef(taskDefName);
+        assertEquals(Collections.singletonList("MY_CRED"), after.getRuntimeMetadata());
+        assertEquals(5, after.getRetryCount());
+    }
+
+    @Test
+    public void testUpdateTaskDefOverwritesRuntimeMetadataWhenIncomingNonEmpty() {
+        String taskDefName = "task-update-creds";
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName(taskDefName);
+        taskDef.setOwnerEmail("sample@test.com");
+        taskDef.setRuntimeMetadata(new ArrayList<>(Arrays.asList("OLD_CRED")));
+        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+
+        TaskDef update = new TaskDef();
+        update.setName(taskDefName);
+        update.setOwnerEmail("sample@test.com");
+        update.setRuntimeMetadata(new ArrayList<>(Arrays.asList("NEW_CRED")));
+        metadataService.updateTaskDef(update);
+
+        TaskDef after = metadataService.getTaskDef(taskDefName);
+        assertEquals(Collections.singletonList("NEW_CRED"), after.getRuntimeMetadata());
+    }
+
     @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefNull() {
         try {
