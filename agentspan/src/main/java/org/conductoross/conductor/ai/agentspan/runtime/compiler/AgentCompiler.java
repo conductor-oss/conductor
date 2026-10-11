@@ -369,12 +369,22 @@ public class AgentCompiler {
             llmTask.getInputParameters().put("participants", participants);
         }
 
-        // Build termination condition
-        String guardrailContinue = buildGuardrailContinue(guardrailRefs);
+        // Build termination condition. The guardrail disjunct is only emitted when a guardrail
+        // actually compiled to a task: an output-positioned guardrail carrying no type builds
+        // nothing, and interpolating an empty buildGuardrailContinue would leave "|| ()" behind —
+        // invalid JavaScript, which fails the loop on every iteration. The with-tools and
+        // multi-agent paths below already guard this the same way.
+        String loopReason =
+                String.format(
+                        "$.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS'",
+                        llmRef, llmRef);
+        if (!guardrailRefs.isEmpty()) {
+            loopReason = loopReason + " || (" + buildGuardrailContinue(guardrailRefs) + ")";
+        }
         String termCondition =
                 String.format(
-                        "if ( $.%s['iteration'] < %d && $._stop_requested != true && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || (%s)) ) { true; } else { false; }",
-                        loopRef, maxTurns, llmRef, llmRef, guardrailContinue);
+                        "if ( $.%s['iteration'] < %d && $._stop_requested != true && (%s) ) { true; } else { false; }",
+                        loopRef, maxTurns, loopReason);
 
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");

@@ -34,6 +34,30 @@ class AgentCompilerTest {
         compiler = new AgentCompiler();
     }
 
+    /**
+     * A guardrail the compiler builds no task for — one carrying only a name — still counts as an
+     * output guardrail, so the DO_WHILE path is taken with nothing to put in its condition.
+     * Interpolating an empty disjunct left {@code || ()} behind: invalid JavaScript, which fails
+     * the loop on its first evaluation even though the agent itself is fine.
+     */
+    @Test
+    void aGuardrailThatCompilesToNoTaskLeavesAValidLoopCondition() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("named_guardrail_agent")
+                        .model("openai/gpt-4o")
+                        .guardrails(List.of(GuardrailConfig.builder().name("pii").build()))
+                        .build();
+
+        WorkflowDef wf = compiler.compile(config);
+
+        WorkflowTask loop = wf.getTasks().get(0);
+        assertThat(loop.getType()).isEqualTo("DO_WHILE");
+        String condition = loop.getLoopCondition();
+        assertThat(condition).doesNotContain("()").doesNotContain("|| )");
+        assertThat(condition).contains("named_guardrail_agent_llm['finishReason'] == 'LENGTH'");
+    }
+
     @Test
     void testCompileSimple() {
         AgentConfig config =
