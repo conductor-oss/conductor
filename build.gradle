@@ -27,7 +27,10 @@ plugins {
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-ext["tomcat.version"] = "10.1.54"
+// 10.1.60 (latest 10.1.x; 10.1.58 was never published) clears 6 criticals + 3 highs in the server
+// request path: CVE-2026-43512 / -65905 / -68525 (auth bypass), -43515 / -65182 (authz bypass),
+// -41293 (HTTP/2 header validation), plus -41284 / -42498 / -43513.
+ext["tomcat.version"] = "10.1.60"
 
 subprojects {
     tasks.withType(Javadoc).all { enabled = false }
