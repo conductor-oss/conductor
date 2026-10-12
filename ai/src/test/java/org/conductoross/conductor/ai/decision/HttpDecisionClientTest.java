@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.conductoross.conductor.ai.http.AIHttpClients;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class HttpDecisionClientTest {
                 new HttpDecisionClient(
                         config,
                         mapper,
-                        new OkHttpClient(),
+                        AIHttpClients.defaultClient(),
                         java.util.List.of(new SystemOneDecisionApiAdapter()));
     }
 
@@ -274,7 +275,7 @@ class HttpDecisionClientTest {
 
     @Test
     void redactsHttpErrorsAndDoesNotFollowRedirectsOrRetry() {
-        for (int code : List.of(302, 401, 429, 500)) {
+        for (int code : List.of(302, 401, 429, 500, 503)) {
             server.enqueue(
                     new MockResponse()
                             .setResponseCode(code)
@@ -285,7 +286,7 @@ class HttpDecisionClientTest {
             assertEquals("Decision HTTP status " + code, error.getMessage());
             assertNull(error.getCause());
         }
-        assertEquals(4, server.getRequestCount());
+        assertEquals(5, server.getRequestCount());
     }
 
     @Test

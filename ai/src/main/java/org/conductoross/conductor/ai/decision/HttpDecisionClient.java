@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.conductoross.conductor.ai.http.RetryInterceptor;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
@@ -56,15 +57,17 @@ public class HttpDecisionClient implements DecisionClient {
                         .collect(
                                 Collectors.toUnmodifiableMap(
                                         DecisionApiAdapter::name, Function.identity()));
-        // Conductor owns retries. Redirects must not forward the API key.
-        this.client =
+        // Decision SWITCH failures must not retry HTTP calls. Redirects must not forward the API
+        // key.
+        OkHttpClient.Builder builder =
                 client.newBuilder()
                         .followRedirects(false)
                         .followSslRedirects(false)
                         .retryOnConnectionFailure(false)
                         .callTimeout(config.getTimeout())
-                        .readTimeout(config.getTimeout())
-                        .build();
+                        .readTimeout(config.getTimeout());
+        builder.interceptors().removeIf(RetryInterceptor.class::isInstance);
+        this.client = builder.build();
     }
 
     @Override
