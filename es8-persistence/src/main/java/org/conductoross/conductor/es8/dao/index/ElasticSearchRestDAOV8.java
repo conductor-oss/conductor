@@ -13,6 +13,7 @@
 package org.conductoross.conductor.es8.dao.index;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
@@ -64,6 +65,8 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import jakarta.annotation.*;
 
 @Trace
@@ -91,6 +94,12 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private static final String className = ElasticSearchRestDAOV8.class.getSimpleName();
 
+    /**
+     * A document created this long after the alias write index was created cannot live in an older
+     * backing index; the margin absorbs clock skew between the Elasticsearch master and this JVM.
+     */
+    private static final long NEW_DOCUMENT_CLOCK_SKEW_MS = 60_000L;
+
     private final String workflowIndexName;
     private final String taskIndexName;
     private final String eventIndexPrefix;
@@ -113,6 +122,19 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     private final Es8IndexManagementSupport indexManagementSupport;
     private final Es8SearchSupport searchSupport;
     private final Es8BulkIngestionSupport bulkIngestionSupport;
+
+    /**
+     * Document id -> backing index name for documents this node has written or located. With ILM
+     * rollover a document can live in an older backing index than the alias write index; without
+     * this cache every index/update/delete needs an alias-wide ids search (one probe per shard of
+     * every backing index) to find it.
+     */
+    private final Cache<String, String> docIndexCache;
+
+    /** Alias -> resolved write index (name + creation date), refreshed every writeIndexCacheTtl. */
+    private final Cache<String, WriteIndexInfo> writeIndexCache;
+
+    private record WriteIndexInfo(String name, long creationDateMillis) {}
 
     public ElasticSearchRestDAOV8(
             RestClientBuilder restClientBuilder,
@@ -200,6 +222,16 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                         this.executorService,
                         this.logExecutorService,
                         className);
+        this.docIndexCache =
+                CacheBuilder.newBuilder()
+                        .maximumSize(Math.max(0, properties.getDocIndexCacheSize()))
+                        .expireAfterAccess(Duration.ofDays(1))
+                        .build();
+        this.writeIndexCache =
+                CacheBuilder.newBuilder()
+                        .maximumSize(16)
+                        .expireAfterWrite(properties.getWriteIndexCacheTtl())
+                        .build();
     }
 
     @PreDestroy
@@ -325,7 +357,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                     workflowId,
                     workflow,
                     refresh,
-                    workflow.getUpdateTime());
+                    workflow.getUpdateTime(),
+                    workflow.getStartTime());
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -357,7 +390,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                     taskId,
                     task,
                     refreshPolicy,
-                    task.getUpdateTime());
+                    task.getUpdateTime(),
+                    task.getScheduledTime());
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",
@@ -932,7 +966,13 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
      */
     private UpdateOutcome updateByIdWithIlmFallback(
             String indexAlias, String id, Map<String, Object> source) throws IOException {
-        if (shouldSkipStaleWrite(indexAlias, id, source.get("updateTime"))) {
+        Optional<String> located = locateDocumentIndex(indexAlias, id, Optional.empty());
+        if (located.isEmpty()) {
+            return UpdateOutcome.NOT_FOUND;
+        }
+        String targetIndex = located.get();
+
+        if (isStaleWrite(targetIndex, id, source.get("updateTime"))) {
             logger.warn(
                     "Skipping stale partial update for document {} in alias {} because incoming updateTime is older than the indexed document",
                     id,
@@ -940,16 +980,19 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             return UpdateOutcome.SKIPPED_STALE;
         }
 
-        UpdateOutcome aliasOutcome = updateById(indexAlias, id, source);
-        if (aliasOutcome != UpdateOutcome.NOT_FOUND) {
-            return aliasOutcome;
+        UpdateOutcome outcome = updateById(targetIndex, id, source);
+        if (outcome != UpdateOutcome.NOT_FOUND) {
+            return outcome;
         }
 
+        // The cached location was wrong (document deleted or moved): forget it and resolve once
+        // through the alias-wide search.
+        forgetDocumentIndex(indexAlias, id);
         Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
         if (resolvedIndex.isEmpty()) {
             return UpdateOutcome.NOT_FOUND;
         }
-
+        rememberDocumentIndex(indexAlias, id, resolvedIndex.get());
         return updateById(resolvedIndex.get(), id, source);
     }
 
@@ -1014,19 +1057,23 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private DeleteOutcome deleteByIdWithIlmFallback(String indexAlias, String id)
             throws IOException {
-        Optional<String> writeIndex = resolveWriteIndexForAlias(indexAlias);
-        if (writeIndex.isPresent()) {
-            DeleteOutcome writeOutcome = deleteById(writeIndex.get(), id);
-            if (writeOutcome == DeleteOutcome.DELETED) {
-                return DeleteOutcome.DELETED;
+        try {
+            Optional<String> located = locateDocumentIndex(indexAlias, id, Optional.empty());
+            if (located.isEmpty()) {
+                return DeleteOutcome.NOT_FOUND;
             }
+            DeleteOutcome outcome = deleteById(located.get(), id);
+            if (outcome == DeleteOutcome.DELETED) {
+                return outcome;
+            }
+            Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
+            if (resolvedIndex.isEmpty()) {
+                return DeleteOutcome.NOT_FOUND;
+            }
+            return deleteById(resolvedIndex.get(), id);
+        } finally {
+            forgetDocumentIndex(indexAlias, id);
         }
-
-        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
-        if (resolvedIndex.isEmpty()) {
-            return DeleteOutcome.NOT_FOUND;
-        }
-        return deleteById(resolvedIndex.get(), id);
     }
 
     private DeleteOutcome deleteById(String indexName, String id) throws IOException {
@@ -1056,22 +1103,88 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private Map getDocumentSourceByIdWithIlmFallback(String indexAlias, String id)
             throws IOException {
-        Optional<String> writeIndex = resolveWriteIndexForAlias(indexAlias);
-        if (writeIndex.isPresent()) {
+        Optional<String> located = locateDocumentIndex(indexAlias, id, Optional.empty());
+        if (located.isEmpty()) {
+            return null;
+        }
+        return getDocumentSource(located.get(), id);
+    }
+
+    private Map getDocumentSource(String indexName, String id) throws IOException {
+        try {
             GetResponse<Map> response =
-                    elasticSearchClient.get(g -> g.index(writeIndex.get()).id(id), Map.class);
-            if (response.found() && response.source() != null) {
-                return response.source();
+                    elasticSearchClient.get(g -> g.index(indexName).id(id), Map.class);
+            return response.found() ? response.source() : null;
+        } catch (ElasticsearchException e) {
+            if (e.status() == HttpStatus.SC_NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private boolean existsInIndex(String indexName, String id) throws IOException {
+        try {
+            return elasticSearchClient.exists(e -> e.index(indexName).id(id)).value();
+        } catch (ElasticsearchException e) {
+            if (e.status() == HttpStatus.SC_NOT_FOUND) {
+                return false;
+            }
+            throw e;
+        }
+    }
+
+    private String docIndexCacheKey(String indexAlias, String id) {
+        return indexAlias + "\u0000" + id;
+    }
+
+    private void rememberDocumentIndex(String indexAlias, String id, String indexName) {
+        if (properties.getDocIndexCacheSize() > 0 && StringUtils.isNotBlank(indexName)) {
+            docIndexCache.put(docIndexCacheKey(indexAlias, id), indexName);
+        }
+    }
+
+    private void forgetDocumentIndex(String indexAlias, String id) {
+        docIndexCache.invalidate(docIndexCacheKey(indexAlias, id));
+    }
+
+    /**
+     * Find the backing index that holds {@code id} behind {@code indexAlias}, cheapest check first:
+     *
+     * <ol>
+     *   <li>the document-location cache (no round trip);
+     *   <li>a HEAD on the alias write index (one shard, hot tier);
+     *   <li>if the document was created after the write index was created it cannot live in an
+     *       older backing index, so it is new: return empty without an alias-wide search;
+     *   <li>otherwise the alias-wide ids search (one probe per shard of every backing index).
+     * </ol>
+     *
+     * Returns empty when the document does not exist anywhere behind the alias.
+     */
+    private Optional<String> locateDocumentIndex(
+            String indexAlias, String id, Optional<Long> createdAtMillis) throws IOException {
+        String cached = docIndexCache.getIfPresent(docIndexCacheKey(indexAlias, id));
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+
+        Optional<WriteIndexInfo> writeIndex = writeIndexInfo(indexAlias);
+        if (writeIndex.isPresent()) {
+            if (existsInIndex(writeIndex.get().name(), id)) {
+                rememberDocumentIndex(indexAlias, id, writeIndex.get().name());
+                return Optional.of(writeIndex.get().name());
+            }
+            if (createdAtMillis.isPresent()
+                    && writeIndex.get().creationDateMillis() > 0
+                    && createdAtMillis.get()
+                            >= writeIndex.get().creationDateMillis() + NEW_DOCUMENT_CLOCK_SKEW_MS) {
+                return Optional.empty();
             }
         }
 
         Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
-        if (resolvedIndex.isEmpty()) {
-            return null;
-        }
-        GetResponse<Map> response =
-                elasticSearchClient.get(g -> g.index(resolvedIndex.get()).id(id), Map.class);
-        return response.found() ? response.source() : null;
+        resolvedIndex.ifPresent(index -> rememberDocumentIndex(indexAlias, id, index));
+        return resolvedIndex;
     }
 
     private <T> void indexDocumentWithIlmFallback(
@@ -1080,9 +1193,19 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             String id,
             T doc,
             Refresh refreshPolicy,
-            Object incomingUpdateTime)
+            Object incomingUpdateTime,
+            Object createdAt)
             throws IOException {
-        if (shouldSkipStaleWrite(indexAlias, id, incomingUpdateTime)) {
+        Optional<String> located = locateDocumentIndex(indexAlias, id, toEpochMillis(createdAt));
+        if (located.isEmpty()) {
+            // New document: write through the alias so Elasticsearch routes it to the current
+            // write index even if our cached write index just rolled over.
+            indexObject(indexAlias, docType, id, doc, refreshPolicy);
+            return;
+        }
+
+        String targetIndex = located.get();
+        if (isStaleWrite(targetIndex, id, incomingUpdateTime)) {
             logger.warn(
                     "Skipping stale {} index write for document {} in alias {} because incoming updateTime is older than the indexed document",
                     docType,
@@ -1090,23 +1213,20 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                     indexAlias);
             return;
         }
-
-        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
-        String targetIndex = resolvedIndex.orElseGet(() -> indexAlias);
-        if (resolvedIndex.isEmpty()) {
-            targetIndex = resolveWriteIndexForAlias(indexAlias).orElse(indexAlias);
-        }
         indexObject(targetIndex, docType, id, doc, refreshPolicy);
     }
 
-    private boolean shouldSkipStaleWrite(String indexAlias, String id, Object incomingUpdateTime)
+    /**
+     * True when the document already indexed in {@code indexName} is newer than the incoming one.
+     */
+    private boolean isStaleWrite(String indexName, String id, Object incomingUpdateTime)
             throws IOException {
         Optional<Long> incomingUpdateTimeMs = toEpochMillis(incomingUpdateTime);
         if (incomingUpdateTimeMs.isEmpty()) {
             return false;
         }
 
-        Map existingSource = getDocumentSourceByIdWithIlmFallback(indexAlias, id);
+        Map existingSource = getDocumentSource(indexName, id);
         if (existingSource == null) {
             return false;
         }
@@ -1139,6 +1259,36 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             return Optional.of(Long.parseLong(text));
         } catch (NumberFormatException ignored) {
             return Optional.empty();
+        }
+    }
+
+    private Optional<WriteIndexInfo> writeIndexInfo(String alias) throws IOException {
+        WriteIndexInfo cached = writeIndexCache.getIfPresent(alias);
+        if (cached != null) {
+            return Optional.of(cached);
+        }
+        Optional<String> name = resolveWriteIndexForAlias(alias);
+        if (name.isEmpty()) {
+            return Optional.empty();
+        }
+        WriteIndexInfo info = new WriteIndexInfo(name.get(), indexCreationDateMillis(name.get()));
+        writeIndexCache.put(alias, info);
+        return Optional.of(info);
+    }
+
+    /** Creation date of a backing index in epoch millis, or 0 when it cannot be read. */
+    private long indexCreationDateMillis(String indexName) {
+        Request request =
+                new Request(HttpMethod.GET, "/" + indexName + "/_settings/index.creation_date");
+        try {
+            Response response = elasticSearchAdminClient.performRequest(request);
+            JsonNode root = objectMapper.readTree(response.getEntity().getContent());
+            JsonNode node =
+                    root.path(indexName).path("settings").path("index").path("creation_date");
+            return node.isMissingNode() ? 0L : Long.parseLong(node.asText("0"));
+        } catch (IOException | NumberFormatException e) {
+            logger.warn("Could not read creation date of index {}: {}", indexName, e.toString());
+            return 0L;
         }
     }
 

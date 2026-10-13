@@ -321,6 +321,79 @@ public class TestElasticSearchRestDAOV8 extends ElasticSearchRestDaoBaseTest {
     }
 
     @Test
+    public void shouldLocateDocumentsAcrossRolloverWithoutDuplicates() throws Exception {
+        String workflowAlias = indexName(WORKFLOW_DOC_TYPE);
+
+        WorkflowSummary beforeRollover =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        beforeRollover.setWorkflowId(uuid());
+        beforeRollover.setStatus(WorkflowStatus.RUNNING);
+        indexDAO.indexWorkflow(beforeRollover);
+
+        // Roll the alias over: -000002 becomes the write index, the old document stays in -000001
+        restClient.performRequest(new Request("POST", "/" + workflowAlias + "/_rollover"));
+        assertTrue(indexExists(workflowAlias + "-000002"));
+
+        // A partial update of the old document must land on the index that holds it
+        indexDAO.updateWorkflow(
+                beforeRollover.getWorkflowId(),
+                new String[] {"status"},
+                new Object[] {WorkflowStatus.COMPLETED});
+        beforeRollover.setStatus(WorkflowStatus.COMPLETED);
+        assertWorkflowSummary(beforeRollover.getWorkflowId(), beforeRollover);
+        assertEquals(
+                "old document must exist in exactly one backing index",
+                1,
+                countDocumentsAcrossAlias(workflowAlias, beforeRollover.getWorkflowId()));
+
+        // A full re-index of the old document must not create a copy in the new write index
+        beforeRollover.setStatus(WorkflowStatus.FAILED);
+        beforeRollover.setUpdateTime(getFormattedTime(Date.from(Instant.now())));
+        indexDAO.indexWorkflow(beforeRollover);
+        assertWorkflowSummary(beforeRollover.getWorkflowId(), beforeRollover);
+        assertEquals(
+                "re-indexed document must still exist in exactly one backing index",
+                1,
+                countDocumentsAcrossAlias(workflowAlias, beforeRollover.getWorkflowId()));
+
+        // A document created after the rollover goes to the new write index only
+        WorkflowSummary afterRollover =
+                TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");
+        afterRollover.setWorkflowId(uuid());
+        afterRollover.setStartTime(getFormattedTime(Date.from(Instant.now())));
+        indexDAO.indexWorkflow(afterRollover);
+        assertWorkflowSummary(afterRollover.getWorkflowId(), afterRollover);
+        assertEquals(
+                "new document must exist in exactly one backing index",
+                1,
+                countDocumentsAcrossAlias(workflowAlias, afterRollover.getWorkflowId()));
+
+        indexDAO.updateWorkflow(
+                afterRollover.getWorkflowId(),
+                new String[] {"status"},
+                new Object[] {WorkflowStatus.COMPLETED});
+        afterRollover.setStatus(WorkflowStatus.COMPLETED);
+        assertWorkflowSummary(afterRollover.getWorkflowId(), afterRollover);
+
+        indexDAO.removeWorkflow(beforeRollover.getWorkflowId());
+        assertEquals(
+                "removed document must be gone from every backing index",
+                0,
+                countDocumentsAcrossAlias(workflowAlias, beforeRollover.getWorkflowId()));
+    }
+
+    private int countDocumentsAcrossAlias(String alias, String id) throws IOException {
+        Request request = new Request("GET", "/" + alias + "/_search");
+        request.setJsonEntity(
+                "{\"size\":10,\"_source\":false,\"query\":{\"ids\":{\"values\":[\""
+                        + id
+                        + "\"]}}}");
+        Response response = restClient.performRequest(request);
+        JsonNode root = objectMapper.readTree(response.getEntity().getContent());
+        return root.path("hits").path("hits").size();
+    }
+
+    @Test
     public void shouldAsyncUpdateWorkflow() throws Exception {
         WorkflowSummary workflowSummary =
                 TestUtils.loadWorkflowSnapshot(objectMapper, "workflow_summary");

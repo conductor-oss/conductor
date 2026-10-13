@@ -48,6 +48,17 @@ public class ElasticSearchProperties {
     private int asyncMaxPoolSize = 12;
 
     /**
+     * Maximum number of entries in the document-location cache (document id -> backing index). With
+     * ILM rollover a document may live in an older backing index than the alias write index; this
+     * cache remembers where each recently written document lives so index/update/delete do not need
+     * an alias-wide ids search on every call. 0 disables the cache.
+     */
+    private int docIndexCacheSize = 500_000;
+
+    /** How long a resolved alias write index (and its creation date) is cached. */
+    private Duration writeIndexCacheTtl = Duration.ofSeconds(30);
+
+    /**
      * The time in seconds after which the async buffers will be flushed (if no activity) to prevent
      * data loss
      */
@@ -145,6 +156,22 @@ public class ElasticSearchProperties {
 
     public void setAsyncWorkerQueueSize(int asyncWorkerQueueSize) {
         this.asyncWorkerQueueSize = asyncWorkerQueueSize;
+    }
+
+    public int getDocIndexCacheSize() {
+        return docIndexCacheSize;
+    }
+
+    public void setDocIndexCacheSize(int docIndexCacheSize) {
+        this.docIndexCacheSize = docIndexCacheSize;
+    }
+
+    public Duration getWriteIndexCacheTtl() {
+        return writeIndexCacheTtl;
+    }
+
+    public void setWriteIndexCacheTtl(Duration writeIndexCacheTtl) {
+        this.writeIndexCacheTtl = writeIndexCacheTtl;
     }
 
     public int getAsyncMaxPoolSize() {

@@ -70,6 +70,14 @@ conductor.elasticsearch.asyncWorkerQueueSize=100
 # Maximum thread pool size in executor service for async methods in IndexDao
 conductor.elasticsearch.asyncMaxPoolSize=12
 
+# Document-location cache (document id -> backing index). With ILM rollover a document may live in an
+# older backing index than the alias write index; the cache lets index/update/delete skip the
+# alias-wide ids search on every call. 0 disables it.
+conductor.elasticsearch.docIndexCacheSize=500000
+
+# How long a resolved alias write index (and its creation date) is cached.
+conductor.elasticsearch.writeIndexCacheTtl=30s
+
 # Timeout (in seconds) for the in-memory to be flushed if not explicitly indexed
 conductor.elasticsearch.asyncBufferFlushTimeout=10
 ```
