@@ -71,14 +71,16 @@ Without `question`, the task still completes with every answer; route on
 | Outcome | Task status |
 |---|---|
 | HTTP 429 or 5xx, timeout, connection error | `FAILED`, retried per the task definition |
-| Other non-2xx status, redirect, invalid input, invalid answer | `FAILED_WITH_TERMINAL_ERROR` |
+| Other non-2xx status, redirect, response over 2 MB, invalid input, invalid answer | `FAILED_WITH_TERMINAL_ERROR` |
 
-Without a registered task definition the task is not retried. To retry, register a task definition
-with the task's `name` and set `retryCount`, `retryLogic` and `retryDelaySeconds` there.
+Without a task definition the task is not retried. To retry, register a task definition with the
+task's `name`, or set `taskDefinition` on the workflow task, with `retryCount`, `retryLogic` and
+`retryDelaySeconds`. Agentspan sets an inline definition on the decision tasks it generates: 3
+retries with exponential backoff from 2 seconds.
 
-The HTTP client itself retries a 429 or 503 response once before the task sees it, as it does for
-every `HTTP` task. Redirects are not followed, so the API key is only sent to the configured
-endpoint. Failure reasons carry the HTTP status, never the provider's response body.
+Each attempt sends one request: the HTTP client does not retry on its own and does not follow
+redirects, so the API key is only sent to the configured endpoint. Failure reasons carry the HTTP
+status, never the provider's response body.
 
 ## Server configuration
 

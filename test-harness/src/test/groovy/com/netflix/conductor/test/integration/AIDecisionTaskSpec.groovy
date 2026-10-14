@@ -22,6 +22,7 @@ import org.springframework.test.context.TestPropertySource
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
@@ -36,6 +37,7 @@ import com.sun.net.httpserver.HttpServer
 class AIDecisionTaskSpec extends AbstractSpecification {
 
     private static final String WORKFLOW_NAME = 'ai_decision_task_workflow'
+    private static final String INLINE_RETRY_WORKFLOW = 'ai_decision_inline_retry_workflow'
 
     private static final String DECISION_RESPONSE = '''
         {"model":"typesafe/jev-test","id":"decision-test-1",
@@ -83,6 +85,10 @@ class AIDecisionTaskSpec extends AbstractSpecification {
         }
         try {
             metadataService.unregisterWorkflowDef('ai_decision_dynamic_fork_workflow', 1)
+        } catch (ignored) {
+        }
+        try {
+            metadataService.unregisterWorkflowDef(INLINE_RETRY_WORKFLOW, 1)
         } catch (ignored) {
         }
         try {
@@ -196,6 +202,85 @@ class AIDecisionTaskSpec extends AbstractSpecification {
         workflow.tasks.find { it.taskId == retry.taskId }.status == Task.Status.COMPLETED
         workflow.tasks.find { it.referenceTaskName == 'billing_branch' }.status == Task.Status.SCHEDULED
         authorizations.size() == 2
+    }
+
+    def "an inline task definition retries a server error, as agentspan emits for routers"() {
+        given: 'the decision carries its retry policy and no definition is registered'
+        WorkflowDef inline = metadataService.getWorkflowDef(WORKFLOW_NAME, 1)
+        inline.name = INLINE_RETRY_WORKFLOW
+        inline.tasks[0].taskDefinition = inlineRetryPolicy()
+        metadataService.registerWorkflowDef(inline)
+        statuses.add(500)
+
+        expect:
+        metadataService.getTaskDefs().every { it.name != 'decision_task' }
+
+        when:
+        String workflowId = startWorkflow(INLINE_RETRY_WORKFLOW, 1, 'decision-inline-retry', [:], null)
+        Task first = workflowExecutionService.getExecutionStatus(workflowId, true).tasks[0]
+        asyncSystemTaskExecutor.execute(decisionTask, first.taskId)
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true)
+
+        then:
+        workflow.status == Workflow.WorkflowStatus.RUNNING
+        workflow.tasks[0].status == Task.Status.FAILED
+        Task retry = workflow.tasks.find { it.referenceTaskName == 'decide' && it.retryCount == 1 }
+        retry.status == Task.Status.SCHEDULED
+
+        when:
+        asyncSystemTaskExecutor.execute(decisionTask, retry.taskId)
+
+        then:
+        workflowExecutionService.getExecutionStatus(workflowId, true)
+                .tasks.find { it.taskId == retry.taskId }.status == Task.Status.COMPLETED
+        authorizations.size() == 2
+    }
+
+    def "an inline task definition retries a forked decision, as agentspan emits for tools"() {
+        given:
+        statuses.add(503)
+        Map input = [
+                dynamicTasks     : [[name          : 'AI_DECISION', taskReferenceName: 'tool_call', type: 'AI_DECISION',
+                                     taskDefinition: [name: 'AI_DECISION', retryCount: 1, retryDelaySeconds: 0]]],
+                dynamicTasksInput: [tool_call: [
+                        model    : 'jev-1.13',
+                        state    : 'The customer was charged twice.',
+                        question : 'route',
+                        questions: [route: [
+                                type        : 'choice',
+                                instructions: 'Choose a team.',
+                                choices     : [billing: 'Billing', technical: 'Technical']]]]]]
+
+        expect:
+        metadataService.getTaskDefs().every { it.name != 'AI_DECISION' }
+
+        when:
+        String workflowId = startWorkflow('ai_decision_dynamic_fork_workflow', 1, 'decision-fork-retry', input, null)
+        Task forked = workflowExecutionService.getExecutionStatus(workflowId, true)
+                .tasks.find { it.referenceTaskName == 'tool_call' }
+        asyncSystemTaskExecutor.execute(decisionTask, forked.taskId)
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true)
+
+        then:
+        workflow.status == Workflow.WorkflowStatus.RUNNING
+        workflow.tasks.find { it.taskId == forked.taskId }.status == Task.Status.FAILED
+        Task retry = workflow.tasks.find { it.referenceTaskName == 'tool_call' && it.retryCount == 1 }
+        retry.status == Task.Status.SCHEDULED
+
+        when:
+        asyncSystemTaskExecutor.execute(decisionTask, retry.taskId)
+
+        then:
+        workflowExecutionService.getExecutionStatus(workflowId, true)
+                .tasks.find { it.taskId == retry.taskId }.outputData.selectedCase == 'billing'
+        authorizations.size() == 2
+    }
+
+    private static TaskDef inlineRetryPolicy() {
+        TaskDef policy = new TaskDef('decision_task')
+        policy.retryCount = 1
+        policy.retryDelaySeconds = 0
+        return policy
     }
 
     def "a rejected request fails the workflow without retrying"() {

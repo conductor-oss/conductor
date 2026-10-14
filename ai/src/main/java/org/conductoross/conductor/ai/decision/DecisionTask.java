@@ -12,6 +12,10 @@
  */
 package org.conductoross.conductor.ai.decision;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -19,11 +23,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.util.Timeout;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -59,17 +70,22 @@ public class DecisionTask extends HttpTask {
     public static final String QUESTION = "question";
     public static final String SELECTED_CASE = "selectedCase";
 
+    /** Responses above this size fail the task without retrying. */
+    static final int MAX_RESPONSE_BYTES = 2_000_000;
+
+    /** Concurrent requests per provider endpoint; the client's default of 5 would queue them. */
+    private static final int MAX_CONNECTIONS = 50;
+
     private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
 
     private final DecisionConfiguration config;
     private final Map<String, DecisionApiAdapter> adapters;
 
     public DecisionTask(
-            RestTemplateProvider restTemplateProvider,
             ObjectMapper objectMapper,
             DecisionConfiguration config,
             List<DecisionApiAdapter> adapters) {
-        super(TASK_TYPE, decisionTransport(restTemplateProvider), objectMapper);
+        super(TASK_TYPE, decisionTransport(config.getTimeout()), objectMapper);
         this.config = config;
         this.adapters =
                 adapters.stream()
@@ -79,45 +95,88 @@ public class DecisionTask extends HttpTask {
     }
 
     /**
-     * Adapts the HTTP task's {@link RestTemplate} for decision calls.
+     * The transport {@link HttpTask#httpCall} sends decision requests through.
      *
      * <ul>
+     *   <li>Redirects are not followed: the HTTP client would re-send the {@code Authorization}
+     *       header to the redirect target.
+     *   <li>The HTTP client does not retry on its own. Each attempt is one request, and the task
+     *       definition's retry policy decides whether another attempt runs.
      *   <li>{@link HttpTask#httpCall} turns an error status into an exception without the status
      *       code. Returning error responses instead lets this task tell a rate limit or server
      *       error, which is retried, from a rejected request, which is not.
-     *   <li>Redirects are not followed: the HTTP client re-sends the {@code Authorization} header
-     *       to the redirect target. The per-request config replaces the client default, so it
-     *       carries the same timeouts {@code DefaultRestTemplateProvider} applies.
+     *   <li>Responses larger than {@link #MAX_RESPONSE_BYTES} fail the task without a retry.
      * </ul>
      */
-    private static RestTemplateProvider decisionTransport(RestTemplateProvider delegate) {
-        return input -> {
-            RestTemplate restTemplate = delegate.getRestTemplate(input);
-            if (!(restTemplate.getRequestFactory()
-                    instanceof HttpComponentsClientHttpRequestFactory factory)) {
-                throw new NonRetryableException(
-                        "Decision: the HTTP task transport must use Apache HttpClient");
+    private static RestTemplateProvider decisionTransport(Duration timeout) {
+        Timeout perRequest = Timeout.of(timeout);
+        HttpClient client =
+                HttpClients.custom()
+                        .setConnectionManager(
+                                PoolingHttpClientConnectionManagerBuilder.create()
+                                        .setMaxConnTotal(MAX_CONNECTIONS)
+                                        .setMaxConnPerRoute(MAX_CONNECTIONS)
+                                        .setDefaultConnectionConfig(
+                                                ConnectionConfig.custom()
+                                                        .setConnectTimeout(perRequest)
+                                                        .setSocketTimeout(perRequest)
+                                                        .build())
+                                        .build())
+                        .setDefaultRequestConfig(
+                                RequestConfig.custom().setResponseTimeout(perRequest).build())
+                        .disableRedirectHandling()
+                        .disableAutomaticRetries()
+                        .build();
+        RestTemplate restTemplate =
+                new RestTemplate(new HttpComponentsClientHttpRequestFactory(client));
+        restTemplate.setErrorHandler(
+                new DefaultResponseErrorHandler() {
+                    @Override
+                    public boolean hasError(ClientHttpResponse response) {
+                        return false;
+                    }
+                });
+        restTemplate.getInterceptors().add(DecisionTask::limitResponseSize);
+        return input -> restTemplate;
+    }
+
+    private static ClientHttpResponse limitResponseSize(
+            HttpRequest request, byte[] body, ClientHttpRequestExecution execution)
+            throws IOException {
+        ClientHttpResponse response = execution.execute(request, body);
+        byte[] bytes;
+        try (InputStream in = response.getBody()) {
+            bytes = in.readNBytes(MAX_RESPONSE_BYTES + 1);
+        }
+        if (bytes.length > MAX_RESPONSE_BYTES) {
+            response.close();
+            throw new NonRetryableException("Decision response too large");
+        }
+        return new ClientHttpResponse() {
+            @Override
+            public HttpStatusCode getStatusCode() throws IOException {
+                return response.getStatusCode();
             }
-            RequestConfig noRedirects =
-                    RequestConfig.custom()
-                            .setRedirectsEnabled(false)
-                            .setConnectTimeout(Timeout.ofMilliseconds(input.getConnectionTimeOut()))
-                            .setResponseTimeout(Timeout.ofMilliseconds(input.getReadTimeOut()))
-                            .build();
-            factory.setHttpContextFactory(
-                    (method, uri) -> {
-                        HttpClientContext context = HttpClientContext.create();
-                        context.setRequestConfig(noRedirects);
-                        return context;
-                    });
-            restTemplate.setErrorHandler(
-                    new DefaultResponseErrorHandler() {
-                        @Override
-                        public boolean hasError(ClientHttpResponse response) {
-                            return false;
-                        }
-                    });
-            return restTemplate;
+
+            @Override
+            public String getStatusText() throws IOException {
+                return response.getStatusText();
+            }
+
+            @Override
+            public HttpHeaders getHeaders() {
+                return response.getHeaders();
+            }
+
+            @Override
+            public InputStream getBody() {
+                return new ByteArrayInputStream(bytes);
+            }
+
+            @Override
+            public void close() {
+                response.close();
+            }
         };
     }
 
@@ -135,10 +194,6 @@ public class DecisionTask extends HttpTask {
                     adapter != null, "Unknown decision API shape: " + route.apiShape());
 
             HttpTask.Input input = adapter.createRequest(request, route);
-            int timeoutMs = (int) config.getTimeout().toMillis();
-            input.setConnectionTimeOut(timeoutMs);
-            input.setReadTimeOut(timeoutMs);
-
             long started = System.nanoTime();
             HttpResponse response = httpCall(input);
             if (response.statusCode < 200 || response.statusCode > 299) {

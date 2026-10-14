@@ -20,6 +20,7 @@ import org.conductoross.conductor.common.metadata.agent.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -570,6 +571,16 @@ class MultiAgentCompilerTest {
         assertThat(normalizer.getInputParameters())
                 .containsEntry(
                         "raw", "${" + selector.getTaskReferenceName() + ".output.selectedCase}");
+        // Rate limits and server errors are retried without a registered AI_DECISION definition.
+        assertThat(selector.getTaskDefinition().getRetryCount()).isEqualTo(3);
+        assertThat(selector.getTaskDefinition().getRetryLogic())
+                .isEqualTo(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        // A DONE decision runs no agent, so the result falls back to the conversation.
+        WorkflowTask init = workflow.getTasks().get(1);
+        assertThat(init.getInputParameters().get("selectedResult"))
+                .isEqualTo(init.getInputParameters().get("conversation"));
+        assertThat(workflow.getOutputParameters())
+                .containsEntry("result", "${workflow.variables.selectedResult}");
     }
 
     @Test

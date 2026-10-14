@@ -871,6 +871,11 @@ public class MultiAgentCompiler {
         } else {
             routerInitParams.put("conversation", "${workflow.input.prompt}");
         }
+        if (maxTurns == 1 && !config.isSynthesize()) {
+            // A single-turn router returns the selected agent's response. Seed it with the
+            // conversation so a DONE decision still returns the conversation.
+            routerInitParams.put("selectedResult", routerInitParams.get("conversation"));
+        }
         routerInitParams.put("_agent_state", "${" + routerCtxResolveRef + ".output.result}");
         initVar.setInputParameters(routerInitParams);
 
@@ -2374,6 +2379,7 @@ public class MultiAgentCompiler {
             inputs.put("provider", provider);
         }
         task.setInputParameters(inputs);
+        task.setTaskDefinition(AgentCompiler.decisionRetryDef());
         return task;
     }
 

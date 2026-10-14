@@ -184,6 +184,10 @@ class EnrichToolsScriptTest {
                 .containsEntry("state", "charged twice")
                 .containsEntry("_agent_tool_name", "classify_request")
                 .containsKey("questions");
+        assertThat((Map<String, Object>) task.get("taskDefinition"))
+                .containsEntry("name", "AI_DECISION")
+                .containsEntry("retryCount", 3)
+                .containsEntry("retryLogic", "EXPONENTIAL_BACKOFF");
     }
 
     @Test

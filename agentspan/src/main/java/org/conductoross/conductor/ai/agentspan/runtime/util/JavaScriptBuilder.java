@@ -1635,6 +1635,9 @@ public class JavaScriptBuilder {
                 + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
                 + "      if (dc.question != null) t.inputParameters.question = dc.question;"
                 + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
+                // Same retry policy as AgentCompiler.decisionRetryDef().
+                + "      t.taskDefinition = {name: 'AI_DECISION', retryCount: 3,"
+                + "        retryLogic: 'EXPONENTIAL_BACKOFF', retryDelaySeconds: 2, backoffScaleFactor: 2};"
                 // The marker tells a decision tool call from the decision router.
                 + "      t.inputParameters._agent_tool_name = n;"
                 + "    }";

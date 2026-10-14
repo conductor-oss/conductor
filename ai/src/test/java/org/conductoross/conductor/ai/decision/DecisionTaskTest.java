@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.tasks.http.HttpTask;
-import com.netflix.conductor.tasks.http.providers.DefaultRestTemplateProvider;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,11 +64,7 @@ class DecisionTaskTest {
     }
 
     private DecisionTask task(List<DecisionApiAdapter> adapters) {
-        return new DecisionTask(
-                new DefaultRestTemplateProvider(Duration.ofMillis(150), Duration.ofMillis(100)),
-                mapper,
-                config,
-                adapters);
+        return new DecisionTask(mapper, config, adapters);
     }
 
     private static DecisionRequest request(String provider) {
@@ -229,18 +224,29 @@ class DecisionTaskTest {
                 });
     }
 
-    /** The HTTP task's client retries 429 and 503 once itself; other statuses are sent once. */
+    /** Retries belong to the task definition, so the HTTP client sends each attempt once. */
     @Test
-    void httpClientRetriesOnlyRateLimitsAndUnavailableOnce() {
-        Map<Integer, Integer> expectedRequests = Map.of(401, 1, 429, 2, 500, 1, 503, 2);
-        expectedRequests.forEach(
-                (code, requests) -> {
-                    alwaysRespond(code);
-                    int before = server.getRequestCount();
-                    run(request(null), "team");
-                    assertEquals(
-                            requests, server.getRequestCount() - before, "requests for " + code);
-                });
+    void eachAttemptSendsOneRequest() {
+        for (int code : List.of(401, 429, 500, 503)) {
+            alwaysRespond(code);
+            int before = server.getRequestCount();
+            run(request(null), "team");
+            assertEquals(1, server.getRequestCount() - before, "requests for " + code);
+        }
+    }
+
+    @Test
+    void oversizedResponseIsTerminal() {
+        server.enqueue(
+                new MockResponse()
+                        .setBody(
+                                "{\"pad\":\"" + "x".repeat(DecisionTask.MAX_RESPONSE_BYTES) + "\"}")
+                        .addHeader("Content-Type", "application/json"));
+
+        TaskModel task = run(request(null), "team");
+
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
+        assertEquals("Decision response too large", task.getReasonForIncompletion());
     }
 
     @Test
@@ -260,6 +266,7 @@ class DecisionTaskTest {
     @Test
     void appliesTheConfiguredTimeout() {
         config.setTimeout(Duration.ofMillis(200));
+        decisionTask = task(List.of(new SystemOneDecisionApiAdapter()));
         server.enqueue(
                 new MockResponse()
                         .setBody(RESPONSE)
