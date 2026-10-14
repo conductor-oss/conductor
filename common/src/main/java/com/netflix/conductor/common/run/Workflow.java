@@ -16,6 +16,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.common.run.Admission;
+import org.conductoross.conductor.common.run.ExecutionPrincipal;
+import org.conductoross.conductor.common.run.OriginSettings;
 
 import com.netflix.conductor.annotations.protogen.ProtoEnum;
 import com.netflix.conductor.annotations.protogen.ProtoField;
@@ -24,6 +27,7 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
@@ -136,6 +140,49 @@ public class Workflow extends Auditable {
     /** Token usage summed across this workflow and its sub-workflow tree. */
     private AggregateTokenUsage aggregateTokenUsage;
 
+    // Provenance, absent unless the server populates it.
+
+    /** Domain that owns this execution. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String domainId;
+
+    /** Domain of the root execution this one descends from. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String originDomainId;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String rootWorkflowId;
+
+    /** Who started the root execution. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private ExecutionPrincipal initiatingPrincipal;
+
+    /** Identity the execution runs as, set when it differs from the initiator. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private ExecutionPrincipal actingPrincipal;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private OriginSettings originSettings;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Admission admission;
+
+    /** Epoch milliseconds after which this execution's history is deleted. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Long historyExpiresAt;
+
+    /** Execution whose START_WORKFLOW task started this one. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String triggeringWorkflowId;
+
+    /** True when ending the triggering execution does not end this one. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean detached;
+
+    /** True when tasks, input and logs are withheld from the viewer. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean restrictedDetails;
+
     public Workflow() {}
 
     public String getIdempotencyKey() {
@@ -168,6 +215,94 @@ public class Workflow extends Auditable {
 
     public void setRateLimited(boolean rateLimited) {
         this.rateLimited = rateLimited;
+    }
+
+    public String getDomainId() {
+        return domainId;
+    }
+
+    public void setDomainId(String domainId) {
+        this.domainId = domainId;
+    }
+
+    public String getOriginDomainId() {
+        return originDomainId;
+    }
+
+    public void setOriginDomainId(String originDomainId) {
+        this.originDomainId = originDomainId;
+    }
+
+    public String getRootWorkflowId() {
+        return rootWorkflowId;
+    }
+
+    public void setRootWorkflowId(String rootWorkflowId) {
+        this.rootWorkflowId = rootWorkflowId;
+    }
+
+    public ExecutionPrincipal getInitiatingPrincipal() {
+        return initiatingPrincipal;
+    }
+
+    public void setInitiatingPrincipal(ExecutionPrincipal initiatingPrincipal) {
+        this.initiatingPrincipal = initiatingPrincipal;
+    }
+
+    public ExecutionPrincipal getActingPrincipal() {
+        return actingPrincipal;
+    }
+
+    public void setActingPrincipal(ExecutionPrincipal actingPrincipal) {
+        this.actingPrincipal = actingPrincipal;
+    }
+
+    public OriginSettings getOriginSettings() {
+        return originSettings;
+    }
+
+    public void setOriginSettings(OriginSettings originSettings) {
+        this.originSettings = originSettings;
+    }
+
+    public Admission getAdmission() {
+        return admission;
+    }
+
+    public void setAdmission(Admission admission) {
+        this.admission = admission;
+    }
+
+    public Long getHistoryExpiresAt() {
+        return historyExpiresAt;
+    }
+
+    public void setHistoryExpiresAt(Long historyExpiresAt) {
+        this.historyExpiresAt = historyExpiresAt;
+    }
+
+    public String getTriggeringWorkflowId() {
+        return triggeringWorkflowId;
+    }
+
+    public void setTriggeringWorkflowId(String triggeringWorkflowId) {
+        this.triggeringWorkflowId = triggeringWorkflowId;
+    }
+
+    public Boolean getDetached() {
+        return detached;
+    }
+
+    public void setDetached(Boolean detached) {
+        this.detached = detached;
+    }
+
+    public Boolean getRestrictedDetails() {
+        return restrictedDetails;
+    }
+
+    public void setRestrictedDetails(Boolean restrictedDetails) {
+        this.restrictedDetails = restrictedDetails;
     }
 
     public List<Workflow> getHistory() {
@@ -548,6 +683,17 @@ public class Workflow extends Auditable {
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         copy.setAggregateTokenUsage(aggregateTokenUsage);
+        copy.setDomainId(domainId);
+        copy.setOriginDomainId(originDomainId);
+        copy.setRootWorkflowId(rootWorkflowId);
+        copy.setInitiatingPrincipal(initiatingPrincipal);
+        copy.setActingPrincipal(actingPrincipal);
+        copy.setOriginSettings(originSettings);
+        copy.setAdmission(admission);
+        copy.setHistoryExpiresAt(historyExpiresAt);
+        copy.setTriggeringWorkflowId(triggeringWorkflowId);
+        copy.setDetached(detached);
+        copy.setRestrictedDetails(restrictedDetails);
         return copy;
     }
 
