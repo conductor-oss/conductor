@@ -31,6 +31,7 @@ import org.conductoross.conductor.ai.a2a.model.AgentCard;
 import org.conductoross.conductor.ai.a2a.model.Part;
 import org.conductoross.conductor.ai.a2a.model.PushNotificationConfig;
 import org.conductoross.conductor.ai.a2a.model.TaskState;
+import org.conductoross.conductor.ai.agent.AgentCredentialPreprocessor;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
 import org.conductoross.conductor.ai.agent.ConductorAgentDelegate;
@@ -88,6 +89,9 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     private final A2AService a2aService;
     private final Map<String, ConductorAgentClient> agentClients = new HashMap<>();
     private final String callbackUrl;
+
+    @Autowired(required = false)
+    private AgentCredentialPreprocessor credentialPreprocessor;
 
     // Set only in the Spring-managed path; null when constructed directly (SDK / tests).
     private final ApplicationContext applicationContext;
@@ -207,6 +211,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     @WorkerTask(value = AGENT, leaseExtendEnabled = true)
     public A2ACallResult agent(A2ACallRequest request) {
         Task task = TaskContext.get().getTask();
+        resolveIntegrationCredentials(task);
         TaskResult result;
         ConductorAgentClient client =
                 clients().get(StringUtils.defaultIfBlank(request.getAgentType(), "").toLowerCase());
@@ -222,6 +227,7 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
     @WorkerTask(CANCEL_AGENT)
     public A2ACancelResult cancelAgent(A2ACancelRequest request) {
         Task task = TaskContext.get().getTask();
+        resolveIntegrationCredentials(task);
         TaskResult result = resultFor(task);
         ConductorAgentClient cancelClient = agentClientFor(request.getAgentType());
         if (cancelClient != null) {
@@ -695,6 +701,21 @@ public class A2AWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
                 + task.getReferenceTaskName()
                 + ":"
                 + task.getIteration();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resolveIntegrationCredentials(Task task) {
+        if (credentialPreprocessor == null) return;
+        Map<String, Object> input = task.getInputData();
+        Map<String, Object> rawConfig = (Map<String, Object>) input.get("rawConfig");
+        Map<String, String> credentials = (Map<String, String>) input.get("credentials");
+        Map<String, String> resolved =
+                credentialPreprocessor.resolve(
+                        credentials != null ? credentials : Map.of(),
+                        rawConfig != null ? rawConfig : Map.of());
+        if (resolved != credentials) {
+            input.put("credentials", resolved);
+        }
     }
 
     private static TaskResult resultFor(Task task) {

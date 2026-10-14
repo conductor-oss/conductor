@@ -16,7 +16,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
-import org.conductoross.conductor.ai.agentspan.runtime.credentials.DelegatedTokenInjector;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
 
 import com.netflix.conductor.common.metadata.tasks.TaskResult;

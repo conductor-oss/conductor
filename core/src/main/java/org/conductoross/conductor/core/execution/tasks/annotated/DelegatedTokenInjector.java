@@ -10,9 +10,9 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package org.conductoross.conductor.ai.agentspan.runtime.credentials;
+package org.conductoross.conductor.core.execution.tasks.annotated;
 
-import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
 /**
@@ -31,9 +31,10 @@ public interface DelegatedTokenInjector {
      * <p>If the task requests delegated access ({@code useCallerIdentity=true} and an
      * {@code integrationName} is set in {@code rawConfig}), the implementation must either inject
      * {@code bearerToken} into the task's credentials input, or set the task status to
-     * {@link Task.Status#FAILED_WITH_TERMINAL_ERROR} with a reason that includes the consent URL.
+     * {@link TaskModel.Status#FAILED_WITH_TERMINAL_ERROR} with a reason that includes the consent
+     * URL.
      *
      * <p>If delegated access is not requested, this is a no-op.
      */
-    void inject(Task task, WorkflowModel workflow);
+    void inject(TaskModel task, WorkflowModel workflow);
 }
