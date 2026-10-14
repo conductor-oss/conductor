@@ -8,14 +8,13 @@
   "timeoutPolicy": "ALERT_ONLY",
   "tasks": [
     {
-      "name": "route_request",
-      "taskReferenceName": "route_request",
-      "type": "SWITCH",
-      "evaluatorType": "decision",
-      "expression": "route",
+      "name": "classify_request",
+      "taskReferenceName": "classify_request",
+      "type": "AI_DECISION",
       "inputParameters": {
         "model": "jev-1.13",
         "state": "${workflow.input.request}",
+        "question": "route",
         "questions": {
           "route": {
             "type": "choice",
@@ -26,6 +25,16 @@
             }
           }
         }
+      }
+    },
+    {
+      "name": "route_request",
+      "taskReferenceName": "route_request",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "selected",
+      "inputParameters": {
+        "selected": "${classify_request.output.selectedCase}"
       },
       "decisionCases": {
         "billing": [
@@ -68,11 +77,11 @@
     }
   ],
   "outputParameters": {
-    "selectedCase": "${route_request.output.selectedCase}",
-    "answers": "${route_request.output.answers}",
-    "usage": "${route_request.output.usage}",
-    "cost": "${route_request.output.usage.cost}",
-    "latencyMs": "${route_request.output.latencyMs}",
+    "selectedCase": "${classify_request.output.selectedCase}",
+    "answers": "${classify_request.output.answers}",
+    "usage": "${classify_request.output.usage}",
+    "cost": "${classify_request.output.usage.cost}",
+    "latencyMs": "${classify_request.output.latencyMs}",
     "result": "${selected_result.output.result}"
   }
 }

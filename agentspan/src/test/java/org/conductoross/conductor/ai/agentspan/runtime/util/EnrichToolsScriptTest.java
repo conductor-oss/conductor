@@ -145,7 +145,7 @@ class EnrichToolsScriptTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void decisionToolBecomesDecisionBackedSwitch() throws Exception {
+    void decisionToolBecomesDecisionTask() throws Exception {
         String script =
                 JavaScriptBuilder.enrichToolsScript(
                         "{}",
@@ -177,16 +177,52 @@ class EnrichToolsScriptTest {
                                 "original prompt"));
 
         Map<String, Object> task = ((List<Map<String, Object>>) result.get("dynamicTasks")).get(0);
-        assertThat(task)
-                .containsEntry("type", "SWITCH")
-                .containsEntry("evaluatorType", "decision")
-                .containsEntry("expression", "");
+        assertThat(task).containsEntry("type", "AI_DECISION").doesNotContainKey("evaluatorType");
         assertThat((Map<String, Object>) task.get("inputParameters"))
                 .containsEntry("model", "jev-1.13")
                 .containsEntry("provider", "openrouter")
                 .containsEntry("state", "charged twice")
+                .containsEntry("_agent_tool_name", "classify_request")
                 .containsKey("questions");
-        assertThat(task.get("decisionCases")).isEqualTo(Map.of());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dynamicDecisionToolIsMarkedSoItIsNotMistakenForTheRouter() throws Exception {
+        String script =
+                JavaScriptBuilder.enrichToolsScriptDynamic(
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{\"classify_request\":{\"model\":\"jev-1.13\",\"question\":\"department\",\"questions\":{\"department\":{\"type\":\"choice\"}}}}",
+                        "{\"classify_request\":true}");
+        Map<String, Object> result =
+                evaluateWithJavaInputs(
+                        script,
+                        map(
+                                "toolCalls",
+                                List.of(
+                                        map(
+                                                "name",
+                                                "classify_request",
+                                                "taskReferenceName",
+                                                "call_1",
+                                                "inputParameters",
+                                                map("state", "charged twice"))),
+                                "agentState",
+                                Map.of(),
+                                "userPrompt",
+                                "original prompt"));
+
+        Map<String, Object> task = ((List<Map<String, Object>>) result.get("dynamicTasks")).get(0);
+        assertThat(task).containsEntry("type", "AI_DECISION");
+        assertThat((Map<String, Object>) task.get("inputParameters"))
+                .containsEntry("question", "department")
+                .containsEntry("state", "charged twice")
+                .containsEntry("_agent_tool_name", "classify_request");
     }
 
     @Test

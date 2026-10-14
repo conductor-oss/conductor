@@ -14,6 +14,8 @@ package org.conductoross.conductor.ai.decision;
 
 import java.util.Map;
 
+import com.netflix.conductor.tasks.http.HttpTask;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** Maps a provider API shape to the shared structured decision contract. */
@@ -23,11 +25,11 @@ public interface DecisionApiAdapter {
     Map<String, Object> encode(DecisionRequest request);
 
     /**
-     * Builds the complete provider request. Authentication, headers, HTTP method and media type are
-     * part of the wire contract and therefore belong to the adapter rather than the shared client.
+     * Builds the provider request for {@link HttpTask}. Authentication, headers, HTTP method and
+     * body are part of the wire contract and therefore belong to the adapter; timeouts are set by
+     * {@link DecisionTask}.
      */
-    DecisionHttpRequest createRequest(
-            DecisionRequest request, DecisionConfiguration.Route route, byte[] encodedBody);
+    HttpTask.Input createRequest(DecisionRequest request, DecisionConfiguration.Route route);
 
     DecisionResult decode(JsonNode response, long latencyMs, String provider);
 }

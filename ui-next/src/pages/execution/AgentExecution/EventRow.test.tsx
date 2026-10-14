@@ -25,10 +25,9 @@ describe("Decision inference rendering", () => {
         {
           taskId: "task-1",
           referenceTaskName: "support_decision",
-          taskType: "SWITCH",
+          taskType: "AI_DECISION",
           status: "COMPLETED",
           inputData: {
-            _conductorDeferredEvaluator: true,
             model: "jev-1.13",
             state: "Duplicate charge",
           },

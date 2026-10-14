@@ -681,9 +681,8 @@ describe("decision tasks", () => {
               taskId: "decision",
               referenceTaskName: loopOverTask ? "decide__1" : "decide",
               loopOverTask,
-              taskType: "SWITCH",
+              taskType: "AI_DECISION",
               inputData: {
-                _conductorDeferredEvaluator: true,
                 provider: "decision",
                 model: "jev-1.13",
                 state: "state",
@@ -731,23 +730,28 @@ it.each([
     const selectorResult = decision
       ? {
           model: "jev-1.13",
-          answers: { agent: { type: "choice", choice: childName } },
+          // A non-routing question comes first; the routed agent is selectedCase.
+          answers: {
+            urgent: { type: "boolean", probability: 0.2 },
+            agent: { type: "choice", choice: childName },
+          },
+          selectedCase: childName,
           usage: { inputTokens: 10, outputTokens: 2 },
         }
       : childName;
     const selector = task({
       taskId: "selector",
-      taskType: decision ? "SWITCH" : "SUB_WORKFLOW",
+      taskType: decision ? "AI_DECISION" : "SUB_WORKFLOW",
       referenceTaskName: decision ? "triage_router" : "triage_router__1",
       loopOverTask: !decision,
       startTime: 10,
       endTime: 20,
       inputData: decision
         ? {
-            _conductorDeferredEvaluator: true,
             model: "jev-1.13",
             state: "route this",
-            questions: { agent: {} },
+            questions: { urgent: {}, agent: {} },
+            question: "agent",
           }
         : {
             subWorkflowName: "triage_selector",

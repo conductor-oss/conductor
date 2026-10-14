@@ -52,7 +52,7 @@ Supply the MCP server connection details in task input. The server must be reach
 
 | Type | Purpose |
 |---|---|
-| `SWITCH` with `evaluatorType: decision` | Ask one `choice` question and run the matching branch. |
+| `AI_DECISION` | Ask a decision model structured questions; route on `selectedCase` with a `SWITCH`. |
 
 Requires `conductor.ai.decision.api-key`.
 

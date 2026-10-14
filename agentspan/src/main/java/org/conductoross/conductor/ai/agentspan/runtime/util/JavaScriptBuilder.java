@@ -1624,18 +1624,19 @@ public class JavaScriptBuilder {
     }
 
     /**
-     * Emits a dynamic branchless SWITCH task for a decision tool call. Both static and
-     * runtime-discovered tool paths execute the same generated task contract.
+     * Emits an AI_DECISION task for a decision tool call. Both static and runtime-discovered tool
+     * paths execute the same generated task contract.
      */
     private static String decisionToolDispatchScript() {
         return "    } else if (decisionCfg[n]) {"
                 + "      var dc = decisionCfg[n]; var dargs = _plain(tc.inputParameters);"
-                + "      t.type = 'SWITCH'; t.name = 'SWITCH'; t.evaluatorType = 'decision';"
-                + "      t.expression = dc.question || '';"
-                + "      t.decisionCases = {}; t.defaultCase = [];"
+                + "      t.type = 'AI_DECISION'; t.name = 'AI_DECISION';"
                 + "      t.inputParameters = {model: dc.model, questions: dc.questions,"
                 + "        state: dargs.state != null ? dargs.state : (dargs.input != null ? dargs.input : $.userPrompt)};"
+                + "      if (dc.question != null) t.inputParameters.question = dc.question;"
                 + "      if (dc.provider != null) t.inputParameters.provider = dc.provider;"
+                // The marker tells a decision tool call from the decision router.
+                + "      t.inputParameters._agent_tool_name = n;"
                 + "    }";
     }
 

@@ -62,7 +62,7 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 | **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
 | **Generate PDF** | `GENERATE_PDF` | Convert markdown to PDF document |
 | **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
-| **AI Decision** | `SWITCH` with `evaluatorType: decision` | One structured choice question and its matching branch |
+| **AI Decision** | `AI_DECISION` | Structured questions answered by a decision model; route on the answer with a `SWITCH` |
 
 ---
 
@@ -417,9 +417,9 @@ Call a specific tool on an MCP server.
 | `content` | Array | Result content items with `type` and `text` |
 | `isError` | Boolean | Whether the call resulted in an error |
 
-### Decision-backed SWITCH
+### AI Decision
 
-Route on a `choice` question in the same `SWITCH`. Other questions can be included in the request; `expression` names the choice question when there is more than one. See [DECISION_SWITCH.md](DECISION_SWITCH.md).
+Ask a decision model structured questions. The task runs on the system task worker like an `HTTP` task; route on its answer with a regular `SWITCH` on `${<ref>.output.selectedCase}`. See [AI_DECISION.md](AI_DECISION.md).
 
 **Inputs:**
 
@@ -427,14 +427,15 @@ Route on a `choice` question in the same `SWITCH`. Other questions can be includ
 |-----------|------|:--------:|-------------|
 | `model` | String | ✅ | Decision model, e.g. `jev-1.13` |
 | `state` | String | ✅ | Observed state the question is asked about |
-| `questions` | Object | ✅ | Questions to ask; the routing question must have `type: choice`, `instructions`, and named `choices` |
+| `questions` | Object | ✅ | Named questions; `type` is `choice` (with `choices`), `score` (with `scale`), or `boolean`, each with `instructions` |
+| `question` | String | ❌ | The `choice` question to report as `selectedCase` |
 | `provider` | String | ❌ | Overrides `conductor.ai.decision.provider` |
 
 **Outputs:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `selectedCase` | String | Chosen choice name used by the task to select a branch |
+| `selectedCase` | String | Answer to the `choice` question named by `question`, if set |
 | `answers` | Object | Per-question answer with optional `confidence` |
 | `usage` | Object | `inputTokens`, `outputTokens`, `cost`, `currency` when reported |
 | `latencyMs` | Long | Provider round-trip time |
@@ -679,12 +680,13 @@ conductor.ai.stabilityai.api-key=${STABILITY_API_KEY}
 | `api-key` | Yes | - | Stability AI API key |
 
 Supported models: `sd3.5-large`, `sd3.5-large-turbo`, `sd3.5-medium`, `sd3-large`, `sd3-medium`, `core` (Stable Image Core), `ultra` (Stable Image Ultra). The endpoint is selected automatically based on the model name.
-#### Decision evaluator
+#### AI Decision
 
 ```properties
 conductor.ai.decision.api-key=${DECISION_API_KEY}
 conductor.ai.decision.provider=openrouter
 conductor.ai.decision.api-shape=system-one
+conductor.ai.decision.timeout=20s
 ```
 
 | Property | Required | Default | Description |
@@ -692,6 +694,7 @@ conductor.ai.decision.api-shape=system-one
 | `api-key` | ✅ | - | Decision provider API key |
 | `provider` | ❌ | `openrouter` | Default provider; per-provider overrides under `providers.<name>` |
 | `api-shape` | ❌ | `system-one` | Wire format adapter |
+| `timeout` | ❌ | `20s` | Connect and read timeout for the provider call |
 
 
 ## Environment Variables
@@ -724,7 +727,7 @@ The AI module reads from standard environment variables automatically. Set the e
 | Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`, Vertex AI path only) |
 | Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (Vertex AI path only) |
 | Ollama | `OLLAMA_BASE_URL` | Ollama server URL, e.g. `http://10.0.0.105:11434` (default: `http://localhost:11434`). `OLLAMA_HOST` is honored as a fallback. |
-| Decision | `DECISION_API_KEY` | API key for the decision evaluator |
+| Decision | `DECISION_API_KEY` | API key for the `AI_DECISION` task |
 | Decision | `DECISION_PROVIDER` | Default decision provider (default: `openrouter`) |
 | Decision | `DECISION_API_SHAPE` | Wire format adapter (default: `system-one`) |
 

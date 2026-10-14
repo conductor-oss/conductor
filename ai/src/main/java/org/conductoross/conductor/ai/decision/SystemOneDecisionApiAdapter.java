@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.decision;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+import com.netflix.conductor.tasks.http.HttpTask;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -44,19 +46,19 @@ public class SystemOneDecisionApiAdapter implements DecisionApiAdapter {
     }
 
     @Override
-    public DecisionHttpRequest createRequest(
-            DecisionRequest request, DecisionConfiguration.Route route, byte[] encodedBody) {
+    public HttpTask.Input createRequest(
+            DecisionRequest request, DecisionConfiguration.Route route) {
         requireResponse(
                 StringUtils.isNotBlank(route.apiKey()), "Decision API key is not configured");
         requireResponse(
                 route.apiKey().chars().allMatch(c -> c > 32 && c < 127),
                 "invalid Decision credential format");
-        return new DecisionHttpRequest(
-                route.endpoint(),
-                "POST",
-                Map.of("Authorization", "Bearer " + route.apiKey()),
-                "application/json",
-                encodedBody);
+        HttpTask.Input input = new HttpTask.Input();
+        input.setUri(route.endpoint());
+        input.setMethod("POST");
+        input.setHeaders(new HashMap<>(Map.of("Authorization", "Bearer " + route.apiKey())));
+        input.setBody(encode(request));
+        return input;
     }
 
     private Map<String, Object> encodeQuestions(Map<String, DecisionQuestion> questions) {

@@ -1,16 +1,16 @@
 ---
-description: "Conductor cookbook — route a request with a decision-backed SWITCH."
+description: "Conductor cookbook — route a request on an AI_DECISION answer with a SWITCH."
 ---
 
 # AI decision routing
 
-One `SWITCH` asks a fixed choice question and routes to the selected branch. The choices live in the definition, so the model can only pick a branch you declared.
+An `AI_DECISION` task asks a fixed choice question, and a regular `SWITCH` routes on the answer. The choices live in the definition, so the model can only pick a branch you declared. The decision call runs on the system task worker like an `HTTP` task, so it never blocks the decider.
 
 ## The shape
 
 ```text
-route_request (SWITCH, evaluatorType: decision)  ──>  billing   ──> selected_result (INLINE)
-                                                  └──>  technical ──┘
+classify_request (AI_DECISION) ──> route_request (SWITCH on selectedCase) ──>  billing   ──> selected_result (INLINE)
+                                                                          └──>  technical ──┘
 ```
 
 ## Prerequisites
@@ -36,4 +36,9 @@ curl --fail-with-body -X POST "$CONDUCTOR_API/workflow/ai_decision_routing?versi
   -d '{"request":"I was charged twice on my latest invoice."}'
 ```
 
-Open **Executions** in your Conductor UI and select the new execution. `route_request.output.selectedCase` and the workflow's `selectedCase` output are `billing`, only `handle_billing` ran, and `result.nextAction` is `review_invoice`. The workflow also exposes `answers`, `usage`, `cost`, and `latencyMs` from the decision.
+<!-- TODO: verify against live server -->
+Open **Executions** in your Conductor UI and select the new execution. `classify_request.output.selectedCase` and the workflow's `selectedCase` output are `billing`, only `handle_billing` ran, and `result.nextAction` is `review_invoice`. The workflow also exposes `answers`, `usage`, `cost`, and `latencyMs` from the decision.
+
+## Retries
+
+Without a registered task definition, `AI_DECISION` is not retried. To retry rate limits and provider errors, register a task definition named `classify_request` with `retryCount`, `retryLogic` and `retryDelaySeconds`.

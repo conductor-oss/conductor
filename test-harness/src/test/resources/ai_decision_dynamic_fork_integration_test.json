@@ -1,0 +1,31 @@
+{
+  "name": "ai_decision_dynamic_fork_workflow",
+  "description": "Forks an AI_DECISION task dynamically, as agentspan does for decision tools",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "fork_decision",
+      "taskReferenceName": "fork_decision",
+      "inputParameters": {
+        "dynamicTasks": "${workflow.input.dynamicTasks}",
+        "dynamicTasksInput": "${workflow.input.dynamicTasksInput}"
+      },
+      "type": "FORK_JOIN_DYNAMIC",
+      "dynamicForkTasksParam": "dynamicTasks",
+      "dynamicForkTasksInputParamName": "dynamicTasksInput"
+    },
+    {
+      "name": "join_decision",
+      "taskReferenceName": "join_decision",
+      "type": "JOIN"
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@conductor.io"
+}

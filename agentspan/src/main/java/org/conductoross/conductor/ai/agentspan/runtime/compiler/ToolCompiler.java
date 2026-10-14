@@ -147,7 +147,7 @@ public class ToolCompiler {
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
                     Map.entry("mcp", "CALL_MCP_TOOL"),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
-                    Map.entry("decision", "SWITCH"),
+                    Map.entry("decision", "AI_DECISION"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),
                     Map.entry("generate_audio", "GENERATE_AUDIO"),
@@ -157,15 +157,15 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
-     * Task types counted as tool calls for the purpose of emitting tool call and tool result
-     * events. SIMPLE uses the worker's name as its type. SWITCH can also be a router, so decision
-     * tool calls use an explicit marker. Custom media and RAG task types are detected separately.
+     * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
+     * tool's own name as its type. A floor, not a closed set: a media or RAG tool's config may name
+     * its own task type.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
                             TYPE_MAP.values().stream(),
                             MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
-                    .filter(taskType -> !"SIMPLE".equals(taskType) && !"SWITCH".equals(taskType))
+                    .filter(taskType -> !"SIMPLE".equals(taskType))
                     .collect(Collectors.toUnmodifiableSet());
 
     // ── Public API ───────────────────────────────────────────────────────

@@ -559,14 +559,17 @@ class MultiAgentCompilerTest {
         WorkflowDef workflow = compiler.compile(config);
 
         WorkflowTask selector = workflow.getTasks().get(2).getLoopOver().get(0);
-        assertThat(selector.getType()).isEqualTo("SWITCH");
-        assertThat(selector.getEvaluatorType()).isEqualTo("decision");
-        assertThat(selector.getExpression()).isEqualTo("agent");
+        assertThat(selector.getType()).isEqualTo("AI_DECISION");
         assertThat(selector.getInputParameters())
                 .containsEntry("model", "jev-1.13")
                 .containsEntry("provider", "openrouter")
+                .containsEntry("question", "agent")
                 .containsEntry("state", "${workflow.variables.conversation}");
-        assertThat(selector.getDecisionCases()).containsOnlyKeys("billing", "technical");
+        // The route normalizer reads the selected case the decision task outputs.
+        WorkflowTask normalizer = workflow.getTasks().get(2).getLoopOver().get(1);
+        assertThat(normalizer.getInputParameters())
+                .containsEntry(
+                        "raw", "${" + selector.getTaskReferenceName() + ".output.selectedCase}");
     }
 
     @Test

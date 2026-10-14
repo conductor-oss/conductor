@@ -190,6 +190,32 @@ class AgentEventListenerTest {
     }
 
     @Test
+    void aDecisionToolIsAToolCallWhileTheDecisionRouterIsNot() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-decision", null);
+
+        TaskModel router = task("wf-decision", "AI_DECISION", "support_router__1");
+        router.setTaskDefName("AI_DECISION");
+        router.setInputData(Map.of("model", "jev-1.13", "question", "agent"));
+        router.setOutputData(Map.of("selectedCase", "billing"));
+        listener.onTaskCompleted(router);
+
+        TaskModel tool = task("wf-decision", "AI_DECISION", "call_1");
+        tool.setTaskDefName("AI_DECISION");
+        tool.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "classify_request", "model", "jev-1.13"));
+        tool.setOutputData(Map.of("answers", Map.of()));
+        listener.onTaskCompleted(tool);
+
+        // The router emitted nothing, so the first event on the stream is the tool's.
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("classify_request");
+        assertThat(next(stream).getType()).isEqualTo("tool_result");
+        stream.close();
+    }
+
+    @Test
     void theMcpDiscoveryTaskIsNotReportedAsAToolCall() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
         AgentEventListener listener = listener(registry);

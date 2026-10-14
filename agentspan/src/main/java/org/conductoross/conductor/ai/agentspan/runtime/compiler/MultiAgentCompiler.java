@@ -2362,22 +2362,18 @@ public class MultiAgentCompiler {
             throw new IllegalArgumentException("Decision router requires model and questions");
         }
         WorkflowTask task = new WorkflowTask();
-        task.setType("SWITCH");
+        task.setName("AI_DECISION");
+        task.setType("AI_DECISION");
         task.setTaskReferenceName(routerRef);
-        task.setEvaluatorType("decision");
-        task.setExpression(decisionRouterQuestion((Map<?, ?>) questions, agentNames));
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("model", modelName);
         inputs.put("state", "${workflow.variables.conversation}");
         inputs.put("questions", questions);
+        inputs.put("question", decisionRouterQuestion((Map<?, ?>) questions, agentNames));
         if (router.get("provider") instanceof String provider && !provider.isBlank()) {
             inputs.put("provider", provider);
         }
         task.setInputParameters(inputs);
-        Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
-        agentNames.forEach(agent -> cases.put(agent, List.of()));
-        task.setDecisionCases(cases);
-        task.setDefaultCase(List.of());
         return task;
     }
 

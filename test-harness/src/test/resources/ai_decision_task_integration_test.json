@@ -1,14 +1,15 @@
 {
-  "name": "decision_switch_workflow",
-  "description": "Exercises synchronous decision evaluation and branch scheduling through SwitchTaskMapper",
+  "name": "ai_decision_task_workflow",
+  "description": "Routes on an AI_DECISION task's selectedCase with a regular value-param SWITCH",
   "version": 1,
   "tasks": [
     {
-      "name": "decision_switch",
-      "taskReferenceName": "decision_switch",
+      "name": "decision_task",
+      "taskReferenceName": "decide",
       "inputParameters": {
         "model": "jev-1.13",
         "state": "The customer was charged twice.",
+        "question": "route",
         "questions": {
           "route": {
             "type": "choice",
@@ -20,10 +21,17 @@
           }
         }
       },
+      "type": "AI_DECISION"
+    },
+    {
+      "name": "route",
+      "taskReferenceName": "route",
+      "inputParameters": {
+        "selected": "${decide.output.selectedCase}"
+      },
       "type": "SWITCH",
-      "evaluatorType": "decision",
-      "expression": "route",
-      "retryCount": 1,
+      "evaluatorType": "value-param",
+      "expression": "selected",
       "decisionCases": {
         "billing": [
           {

@@ -68,11 +68,7 @@ function decisionTaskEvent(
 }
 
 function isDecisionTask(task: ExecutionTask): boolean {
-  return (
-    task.taskType === "SWITCH" &&
-    (task.inputData?._conductorDeferredEvaluator === true ||
-      task.outputData?.answers !== undefined)
-  );
+  return task.taskType === "AI_DECISION";
 }
 
 function embeddedAgentDef(task: ExecutionTask) {
@@ -101,10 +97,9 @@ function routerSelectorEvent(task: ExecutionTask): AgentEvent {
         success: taskSuccess(task.status),
         durationMs: taskDuration(task),
       };
-  const answers = (result as { answers?: Record<string, { choice?: string }> })
-    ?.answers;
+  // The decision task reports the routed choice as selectedCase.
   const choice = decisionTask
-    ? Object.values(answers ?? {})[0]?.choice
+    ? (result as { selectedCase?: string } | undefined)?.selectedCase
     : typeof result === "string"
       ? result
       : undefined;
@@ -999,7 +994,7 @@ export function transformWorkflowExecutionToAgentRun(
     if (iter !== null) {
       if (!iterMap.has(iter)) iterMap.set(iter, []);
       iterMap.get(iter)!.push(task);
-    } else if (!ITER_INFRA.has(task.taskType) || isDecisionTask(task)) {
+    } else if (!ITER_INFRA.has(task.taskType)) {
       // Root-level non-infrastructure: final LLM tasks, or entire simple agents
       rootActiveTasks.push(task);
     }
