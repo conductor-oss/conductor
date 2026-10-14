@@ -993,8 +993,10 @@ public class AzureFoundryAgentClient implements ConductorAgentClient {
         // Classic Azure OpenAI Assistants paths (/threads, /assistants) live under /openai.
         // INFERENCE and RESPONSES surfaces use the endpoint as-is.
         Surface surface = surfaceOf(endpoint, rawConfig);
-        String baseUrl = (surface == Surface.ASSISTANTS && !endpoint.endsWith("/openai"))
-                ? endpoint + "/openai" : endpoint;
+        String baseUrl =
+                (surface == Surface.ASSISTANTS && !endpoint.endsWith("/openai"))
+                        ? endpoint + "/openai"
+                        : endpoint;
         AssistantsRunApi.Target target =
                 new AssistantsRunApi.Target(
                         baseUrl,
