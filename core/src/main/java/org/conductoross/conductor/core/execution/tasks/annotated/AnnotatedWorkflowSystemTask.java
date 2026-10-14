@@ -98,7 +98,8 @@ public class AnnotatedWorkflowSystemTask extends WorkflowSystemTask {
 
             // OBO (approach 1): inject caller's Entra token as userAssertion for OBO exchange.
             String callerEntraToken = workflow.getCallerEntraToken();
-            if (callerEntraToken != null && !callerEntraToken.isBlank()
+            if (callerEntraToken != null
+                    && !callerEntraToken.isBlank()
                     && Boolean.TRUE.equals(task.getInputData().get("useCallerIdentity"))
                     && task.getInputData().get("userAssertion") == null) {
                 task.getInputData().put("userAssertion", callerEntraToken);

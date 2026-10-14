@@ -17,9 +17,10 @@ import java.util.Map;
 /**
  * SPI for resolving agent credentials before a task reaches the agent client.
  *
- * <p>Enterprise/agentspan provides an implementation that resolves {@code rawConfig.integrationName}
- * references against the integration store and merges the result into the credentials map. OSS
- * leaves the bean absent; clients receive credentials exactly as supplied by the workflow.
+ * <p>Enterprise/agentspan provides an implementation that resolves {@code
+ * rawConfig.integrationName} references against the integration store and merges the result into
+ * the credentials map. OSS leaves the bean absent; clients receive credentials exactly as supplied
+ * by the workflow.
  *
  * <p>Implementations must be idempotent: if credentials are already fully resolved (no
  * integrationName or already-populated keys), the input map is returned unchanged.
