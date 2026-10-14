@@ -23,12 +23,17 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.conductoross.conductor.common.run.Admission;
+import org.conductoross.conductor.common.run.ExecutionPrincipal;
+import org.conductoross.conductor.common.run.OriginSettings;
 
 import com.netflix.conductor.annotations.protogen.ProtoField;
 import com.netflix.conductor.annotations.protogen.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.SummaryUtil;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /** Captures workflow summary info to be indexed in Elastic Search. */
 @ProtoMessage
@@ -111,6 +116,42 @@ public class WorkflowSummary {
     @ProtoField(id = 23)
     private String classifier;
 
+    // Provenance, as on Workflow. Absent unless the server populates it.
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String domainId;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String originDomainId;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String rootWorkflowId;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private ExecutionPrincipal initiatingPrincipal;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private ExecutionPrincipal actingPrincipal;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private OriginSettings originSettings;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Admission admission;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Long historyExpiresAt;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String triggeringWorkflowId;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean detached;
+
+    /** Depends on the viewer, so it is set when read, never copied from the workflow. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Boolean restrictedDetails;
+
     public WorkflowSummary() {}
 
     public WorkflowSummary(Workflow workflow) {
@@ -161,6 +202,16 @@ public class WorkflowSummary {
         this.parentWorkflowId =
                 workflow.getParentWorkflowId() != null ? workflow.getParentWorkflowId() : "";
         this.classifier = WorkflowClassifier.classifierOf(workflow.getWorkflowDefinition());
+        this.domainId = workflow.getDomainId();
+        this.originDomainId = workflow.getOriginDomainId();
+        this.rootWorkflowId = workflow.getRootWorkflowId();
+        this.initiatingPrincipal = workflow.getInitiatingPrincipal();
+        this.actingPrincipal = workflow.getActingPrincipal();
+        this.originSettings = workflow.getOriginSettings();
+        this.admission = workflow.getAdmission();
+        this.historyExpiresAt = workflow.getHistoryExpiresAt();
+        this.triggeringWorkflowId = workflow.getTriggeringWorkflowId();
+        this.detached = workflow.getDetached();
     }
 
     /**
@@ -415,6 +466,94 @@ public class WorkflowSummary {
 
     public void setClassifier(String classifier) {
         this.classifier = classifier;
+    }
+
+    public String getDomainId() {
+        return domainId;
+    }
+
+    public void setDomainId(String domainId) {
+        this.domainId = domainId;
+    }
+
+    public String getOriginDomainId() {
+        return originDomainId;
+    }
+
+    public void setOriginDomainId(String originDomainId) {
+        this.originDomainId = originDomainId;
+    }
+
+    public String getRootWorkflowId() {
+        return rootWorkflowId;
+    }
+
+    public void setRootWorkflowId(String rootWorkflowId) {
+        this.rootWorkflowId = rootWorkflowId;
+    }
+
+    public ExecutionPrincipal getInitiatingPrincipal() {
+        return initiatingPrincipal;
+    }
+
+    public void setInitiatingPrincipal(ExecutionPrincipal initiatingPrincipal) {
+        this.initiatingPrincipal = initiatingPrincipal;
+    }
+
+    public ExecutionPrincipal getActingPrincipal() {
+        return actingPrincipal;
+    }
+
+    public void setActingPrincipal(ExecutionPrincipal actingPrincipal) {
+        this.actingPrincipal = actingPrincipal;
+    }
+
+    public OriginSettings getOriginSettings() {
+        return originSettings;
+    }
+
+    public void setOriginSettings(OriginSettings originSettings) {
+        this.originSettings = originSettings;
+    }
+
+    public Admission getAdmission() {
+        return admission;
+    }
+
+    public void setAdmission(Admission admission) {
+        this.admission = admission;
+    }
+
+    public Long getHistoryExpiresAt() {
+        return historyExpiresAt;
+    }
+
+    public void setHistoryExpiresAt(Long historyExpiresAt) {
+        this.historyExpiresAt = historyExpiresAt;
+    }
+
+    public String getTriggeringWorkflowId() {
+        return triggeringWorkflowId;
+    }
+
+    public void setTriggeringWorkflowId(String triggeringWorkflowId) {
+        this.triggeringWorkflowId = triggeringWorkflowId;
+    }
+
+    public Boolean getDetached() {
+        return detached;
+    }
+
+    public void setDetached(Boolean detached) {
+        this.detached = detached;
+    }
+
+    public Boolean getRestrictedDetails() {
+        return restrictedDetails;
+    }
+
+    public void setRestrictedDetails(Boolean restrictedDetails) {
+        this.restrictedDetails = restrictedDetails;
     }
 
     @Override
