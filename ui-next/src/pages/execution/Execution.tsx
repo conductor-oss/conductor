@@ -49,6 +49,7 @@ import ExecutionSummary from "./ExecutionSummary";
 import { isAgentWorkflowExecution } from "./helpers";
 import LeftPanelTabs from "./LeftPanelTabs";
 import { ReasonForIncompletion } from "./ReasonForIncompletion";
+import { TasksToDomain } from "./TasksToDomain";
 import { RightPanel } from "./RightPanel";
 import { TaskList } from "./TaskList/TaskList";
 import Timeline from "./Timeline";
@@ -493,19 +494,7 @@ export default function Execution() {
               />
             )}
             {openedTab === ExecutionTabs.TASKS_TO_DOMAIN_TAB && (
-              <InputOutput
-                execution={execution as unknown as Record<string, unknown>}
-                data={[
-                  {
-                    title: "Task to domain",
-                    src: execution.taskToDomain ?? {},
-                    hidden: !execution.taskToDomain,
-                    style: {
-                      minWidth: 340,
-                    },
-                  },
-                ]}
-              />
+              <TasksToDomain execution={execution} />
             )}
           </>
         </Box>
