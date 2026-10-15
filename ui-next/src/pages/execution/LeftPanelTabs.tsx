@@ -35,7 +35,7 @@ export default function LeftPanelTabs({
 
   // Agent-classified executions use a focused tab set. Input/Output remains
   // available because it exposes the submitted prompt and final agent result.
-  // Variables and Tasks to Domain remain workflow-only controls.
+  // Variables and Tasks to domain remain workflow-only controls.
   const leftPanelTabItems = isAgentWorkflow
     ? [
         {
@@ -114,7 +114,7 @@ export default function LeftPanelTabs({
           value: ExecutionTabs.VARIABLES_TAB,
         },
         {
-          label: "Tasks to Domain",
+          label: "Tasks to domain",
           onClick: () =>
             onChangeExecutionTab(ExecutionTabs.TASKS_TO_DOMAIN_TAB),
           value: ExecutionTabs.TASKS_TO_DOMAIN_TAB,

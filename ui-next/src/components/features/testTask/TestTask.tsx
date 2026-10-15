@@ -128,7 +128,7 @@ const FormSection: FunctionComponent<FormSectionProps> = ({
       })}
       <Box sx={{ padding: "10px 0 20px 0" }}>
         <ConductorInput
-          label="Domain"
+          label="Task domain"
           fullWidth
           value={domain ?? ""}
           onChange={(event) => onChangeDomain(event.target.value)}
@@ -163,7 +163,7 @@ const JsonSection: FunctionComponent<JsonSectionProps> = ({
       />
       <Box sx={{ padding: "20px 0" }}>
         <ConductorInput
-          label="Domain"
+          label="Task domain"
           fullWidth
           value={domain ?? ""}
           onChange={(event) => onChangeDomain(event.target.value)}

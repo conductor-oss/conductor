@@ -497,7 +497,7 @@ export default function Execution() {
                 execution={execution as unknown as Record<string, unknown>}
                 data={[
                   {
-                    title: "Task to Domain",
+                    title: "Task to domain",
                     src: execution.taskToDomain ?? {},
                     hidden: !execution.taskToDomain,
                     style: {

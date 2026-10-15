@@ -185,3 +185,22 @@ export const lastPollTimeColumnRenderer = (lastPollTime: number) => {
     ? formatRelativeDuration(lastPollTime, Date.now())
     : "N/A";
 };
+
+export const pollWorkerColumns = [
+  {
+    id: "workerId",
+    name: "workerId",
+    label: "Worker",
+  },
+  {
+    id: "domain",
+    name: "domain",
+    label: "Task domain",
+  },
+  {
+    id: "lastPollTime",
+    name: "lastPollTime",
+    label: "Last Poll Time",
+    renderer: lastPollTimeColumnRenderer,
+  },
+];

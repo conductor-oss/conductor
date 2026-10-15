@@ -2,27 +2,9 @@ import { Box } from "@mui/material";
 import { useSelector } from "@xstate/react";
 import { DataTable } from "components";
 import { useContext, useEffect, useRef } from "react";
-import { lastPollTimeColumnRenderer } from "./helpers";
+import { pollWorkerColumns } from "./helpers";
 import { QueueMonitorContext } from "./state";
 
-const columns = [
-  {
-    id: "workerId",
-    name: "workerId",
-    label: "Worker",
-  },
-  {
-    id: "domain",
-    name: "domain",
-    label: "Domain",
-  },
-  {
-    id: "lastPollTime",
-    name: "lastPollTime",
-    label: "Last Poll Time",
-    renderer: lastPollTimeColumnRenderer,
-  },
-];
 export const PollWorkerDetailsDataTable = () => {
   const { queueMachineActor } = useContext(QueueMonitorContext);
   const divRef = useRef<null | HTMLDivElement>(null);
@@ -60,7 +42,7 @@ export const PollWorkerDetailsDataTable = () => {
             </Box>
           }
           data={data}
-          columns={columns}
+          columns={pollWorkerColumns}
         />
       )}
     </div>

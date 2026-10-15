@@ -2,6 +2,7 @@ import {
   createQueueMonitorResponse,
   createQueueSummaries,
   lastPollTimeColumnRenderer,
+  pollWorkerColumns,
 } from "./helpers";
 import { PollData, RangeOptions } from "./state";
 
@@ -115,5 +116,13 @@ describe("lastPollTimeColumnRenderer", () => {
     [0, "N/A"],
   ])("formats %i as %s", (lastPollTime, expected) => {
     expect(lastPollTimeColumnRenderer(lastPollTime)).toBe(expected);
+  });
+});
+
+describe("pollWorkerColumns", () => {
+  it("labels the domain column as a task domain", () => {
+    const domainColumn = pollWorkerColumns.find((c) => c.id === "domain");
+
+    expect(domainColumn?.label).toBe("Task domain");
   });
 });

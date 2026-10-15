@@ -122,3 +122,11 @@ describe("TestTask input parameter validation", () => {
     expect(runTest).toBeEnabled();
   });
 });
+
+describe("TestTask labels", () => {
+  it("labels the domain input as a task domain", () => {
+    const { panel } = renderTestTask();
+
+    expect(panel.getByLabelText("Task domain")).toBeInTheDocument();
+  });
+});

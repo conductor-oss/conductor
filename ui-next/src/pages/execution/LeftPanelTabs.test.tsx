@@ -60,7 +60,7 @@ describe("LeftPanelTabs", () => {
       "Workflow Input/Output",
       "JSON",
       "Variables",
-      "Tasks to Domain",
+      "Tasks to domain",
     ]);
   });
 

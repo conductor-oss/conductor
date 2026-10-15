@@ -38,7 +38,7 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
   ] as DataType[];
 
   if (taskResult.domain) {
-    data.push({ label: "Domain", value: taskResult.domain });
+    data.push({ label: "Task domain", value: taskResult.domain });
   }
 
   if (taskResult.taskId) {
