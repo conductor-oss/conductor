@@ -570,6 +570,13 @@ export interface ConductorPlugin {
   getAccessToken?: () => string | null;
 
   /**
+   * Function to get the org ID sent as X-Org-Id on API requests.
+   * Enterprise plugins register this to select the Domain a request acts in.
+   * OSS builds send no X-Org-Id.
+   */
+  getOrgId?: () => string | null;
+
+  /**
    * Initialization function called when plugin is registered
    */
   onRegister?: () => void;
@@ -721,4 +728,10 @@ export interface PluginRegistry {
    * Enterprise plugins provide the JWT token from their auth provider.
    */
   getAccessToken(): string | null;
+
+  /**
+   * Get the org ID sent as X-Org-Id on API requests.
+   * Returns null in OSS builds.
+   */
+  getOrgId(): string | null;
 }

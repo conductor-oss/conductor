@@ -402,6 +402,19 @@ function createPluginRegistry(): PluginRegistry {
       return null;
     },
 
+    /**
+     * Get the org ID sent as X-Org-Id on API requests.
+     * Returns null in OSS builds.
+     */
+    getOrgId(): string | null {
+      for (const plugin of plugins) {
+        if (plugin.getOrgId) {
+          return plugin.getOrgId();
+        }
+      }
+      return null;
+    },
+
     getTaskValidationErrors(task: TaskDef): ValidationError[] {
       const errors: ValidationError[] = [];
       for (const plugin of plugins) {

@@ -1,3 +1,4 @@
+import { withOrgIdHeader } from "plugins/fetch";
 import { pluginRegistry } from "plugins/registry";
 import { getAccessToken as getAccessTokenStub } from "components/features/auth/tokenManagerJotai";
 
@@ -16,8 +17,8 @@ function getAccessToken(): string | null {
 
 /**
  * fetch wrapper for direct /api calls in the ported agentspan executions page.
- * Injects the enterprise access token (when present) so requests succeed under
- * RBAC-enabled conductor deployments; a no-op for OSS (token is null).
+ * Injects the enterprise access token and org ID (when present) so requests
+ * succeed under RBAC-enabled conductor deployments; a no-op for OSS.
  */
 export function agentFetch(
   input: Parameters<typeof fetch>[0],
@@ -28,5 +29,5 @@ export function agentFetch(
   if (token && !headers.has(AUTH_HEADER_NAME)) {
     headers.set(AUTH_HEADER_NAME, token);
   }
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers: withOrgIdHeader(headers) });
 }

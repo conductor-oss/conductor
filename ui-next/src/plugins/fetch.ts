@@ -10,8 +10,29 @@ import { IObject } from "types/common";
 import { asciiSafeJson } from "utils/strings";
 import { getErrorMessage, tryToJson } from "utils/utils";
 import { useEnv as hardcodeEnv } from "./env";
+import { pluginRegistry } from "./registry";
 
 const { VITE_ENVIRONMENT, VITE_WF_SERVER } = process.env;
+
+export const ORG_ID_HEADER_NAME = "X-Org-Id";
+
+/**
+ * Adds X-Org-Id from the plugin-registered org ID, unless the caller set one.
+ * Returns the headers unchanged when no org ID is registered (OSS).
+ */
+export function withOrgIdHeader(
+  headers?: ConstructorParameters<typeof Headers>[0],
+): ConstructorParameters<typeof Headers>[0] {
+  const orgId = pluginRegistry.getOrgId();
+  if (!orgId) {
+    return headers;
+  }
+  const merged = new Headers(headers);
+  if (!merged.has(ORG_ID_HEADER_NAME)) {
+    merged.set(ORG_ID_HEADER_NAME, orgId);
+  }
+  return merged;
+}
 
 export function fetchContextNonHook() {
   const { stack } = hardcodeEnv();
@@ -40,6 +61,11 @@ export async function fetchWithContext(
   throwOnError = true,
 ): Promise<any> {
   const newParams = { ...fetchParams };
+
+  const headers = withOrgIdHeader(newParams.headers);
+  if (headers !== newParams.headers) {
+    newParams.headers = headers;
+  }
 
   if (typeof newParams.body === "string") {
     try {
