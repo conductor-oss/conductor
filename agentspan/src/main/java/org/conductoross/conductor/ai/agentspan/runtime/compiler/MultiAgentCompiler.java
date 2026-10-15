@@ -834,7 +834,11 @@ public class MultiAgentCompiler {
         List<AgentConfig> agents = config.getAgents();
         rejectReservedAgentNames(config, agents);
         List<String> agentNames = agents.stream().map(AgentConfig::getName).toList();
-        int maxTurns = config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
+        boolean returnsSelectedResult = returnsSelectedResult(config);
+        // A decision router's choices are the agent names, so it can never answer DONE: it
+        // routes once rather than running the selected agents until max turns.
+        int maxTurns =
+                isDecisionRouter(config) ? 1 : config.getMaxTurns() > 0 ? config.getMaxTurns() : 25;
         String loopRef = toRef(config.getName()) + "_loop";
         String routerRef = toRef(config.getName()) + "_router";
 
@@ -871,9 +875,9 @@ public class MultiAgentCompiler {
         } else {
             routerInitParams.put("conversation", "${workflow.input.prompt}");
         }
-        if (maxTurns == 1 && !config.isSynthesize()) {
-            // A single-turn router returns the selected agent's response. Seed it with the
-            // conversation so a DONE decision still returns the conversation.
+        if (returnsSelectedResult) {
+            // A decision router returns the selected agent's response. Seed it with the
+            // conversation so a run that selects no agent still returns the conversation.
             routerInitParams.put("selectedResult", routerInitParams.get("conversation"));
         }
         routerInitParams.put("_agent_state", "${" + routerCtxResolveRef + ".output.result}");
@@ -1029,7 +1033,7 @@ public class MultiAgentCompiler {
                         "result",
                         config.isSynthesize()
                                 ? ref(toRef(config.getName()) + "_final.output.result")
-                                : maxTurns == 1
+                                : returnsSelectedResult
                                         ? "${workflow.variables.selectedResult}"
                                         : "${workflow.variables.conversation}",
                         "context",
@@ -2357,6 +2361,17 @@ public class MultiAgentCompiler {
         return "decision".equals(router.get("kind"));
     }
 
+    private boolean isDecisionRouter(AgentConfig config) {
+        return config.getStrategy() == AgentConfig.Strategy.ROUTER
+                && config.getRouter() instanceof Map<?, ?> router
+                && isDecisionRouter(router);
+    }
+
+    /** A decision router without synthesis returns the selected agent's response. */
+    private boolean returnsSelectedResult(AgentConfig config) {
+        return isDecisionRouter(config) && !config.isSynthesize();
+    }
+
     private WorkflowTask buildDecisionRouterTask(
             String routerRef, Map<?, ?> router, List<String> agentNames) {
         Object model = router.get("model");
@@ -2589,9 +2604,7 @@ public class MultiAgentCompiler {
                 "conversation",
                 ref(parent.getName() + "_hconcat_" + idx + suffix + ".output.result"));
         setParams.put("_agent_state", "${" + hCtxMergeRef + ".output.result}");
-        if (parent.getStrategy() == AgentConfig.Strategy.ROUTER
-                && parent.getMaxTurns() == 1
-                && !parent.isSynthesize()) {
+        if (returnsSelectedResult(parent)) {
             setParams.put("selectedResult", responseRef);
         }
         setVar.setInputParameters(setParams);

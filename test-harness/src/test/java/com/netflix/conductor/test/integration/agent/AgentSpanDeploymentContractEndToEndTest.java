@@ -21,6 +21,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,7 @@ import org.conductoross.conductor.ai.agent.ConductorAgentState;
 import org.conductoross.conductor.ai.agent.ConductorAgentStatusResponse;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentDagService;
 import org.conductoross.conductor.ai.agentspan.runtime.service.AgentService;
+import org.conductoross.conductor.ai.decision.DecisionConfiguration;
 import org.conductoross.conductor.common.metadata.agent.AgentConfig;
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
@@ -182,6 +184,7 @@ class AgentSpanDeploymentContractEndToEndTest {
     @Autowired private ExecutionService executionService;
     @Autowired private QueueDAO queueDAO;
     @Autowired private AsyncSystemTaskExecutor asyncSystemTaskExecutor;
+    @Autowired private DecisionConfiguration decisionConfiguration;
 
     @Autowired
     @Qualifier(SystemTaskRegistry.ASYNC_SYSTEM_TASKS_QUALIFIER)
@@ -765,6 +768,260 @@ class AgentSpanDeploymentContractEndToEndTest {
         assertEquals(
                 "parallel-acme",
                 ((Map<?, ?>) parallelCompleted.getOutput().get("context")).get("tenant"));
+    }
+
+    @Test
+    void decisionRouterCallsTheProviderOnceAndReturnsOnlyTheSelectedAgentsAnswer()
+            throws Exception {
+        String suffix = UUID.randomUUID().toString().replace('-', '_');
+        String billing = "billing_" + suffix;
+        String technical = "technical_" + suffix;
+        String router = "decision_router_" + suffix;
+        List<JsonNode> providerRequests = new java.util.concurrent.CopyOnWriteArrayList<>();
+        HttpServer provider = startDecisionProvider(providerRequests, "billing_");
+        try {
+            agentService.deploy(
+                    AgentStartRequest.builder()
+                            .agentConfig(
+                                    AgentConfig.builder()
+                                            .name(router)
+                                            .strategy(AgentConfig.Strategy.ROUTER)
+                                            // The SDK default; a decision router routes once.
+                                            .maxTurns(25)
+                                            .synthesize(false)
+                                            .router(
+                                                    Map.of(
+                                                            "kind",
+                                                            "decision",
+                                                            "model",
+                                                            "jev-1.13",
+                                                            "questions",
+                                                            Map.of(
+                                                                    "agent",
+                                                                    Map.of(
+                                                                            "type",
+                                                                            "choice",
+                                                                            "instructions",
+                                                                            "Choose the team",
+                                                                            "choices",
+                                                                            Map.of(
+                                                                                    billing,
+                                                                                    "Invoices",
+                                                                                    technical,
+                                                                                    "Software")))))
+                                            .agents(
+                                                    List.of(
+                                                            AgentConfig.builder()
+                                                                    .name(billing)
+                                                                    .model("openai/gpt-4o-mini")
+                                                                    .build(),
+                                                            AgentConfig.builder()
+                                                                    .name(technical)
+                                                                    .model("openai/gpt-4o-mini")
+                                                                    .build()))
+                                            .build())
+                            .build());
+            AgentStartResponse run =
+                    agentService.start(
+                            AgentStartRequest.builder()
+                                    .name(router)
+                                    .prompt("I was charged twice on my invoice.")
+                                    .build());
+
+            Task llm = awaitScheduledLlmAcrossSubworkflows(run.getExecutionId());
+            assertTrue(
+                    llm.getReferenceTaskName().contains(billing),
+                    () -> "the selected agent should run: " + llm.getReferenceTaskName());
+            completeScriptedLlm(llm, Map.of("finishReason", "STOP", "result", "Billing handled."));
+            Workflow completed = awaitAgentTerminal(run.getExecutionId());
+
+            assertEquals(Workflow.WorkflowStatus.COMPLETED, completed.getStatus());
+            assertEquals("Billing handled.", completed.getOutput().get("result"));
+            List<Task> decisions =
+                    completed.getTasks().stream()
+                            .filter(task -> "AI_DECISION".equals(task.getTaskType()))
+                            .toList();
+            assertEquals(1, decisions.size());
+            assertEquals(billing, decisions.get(0).getOutputData().get("selectedCase"));
+            assertEquals(
+                    1,
+                    completed.getTasks().stream()
+                            .filter(task -> "SUB_WORKFLOW".equals(task.getTaskType()))
+                            .count());
+            assertEquals(1, providerRequests.size());
+            assertTrue(providerRequests.get(0).path("state").asText().contains("charged twice"));
+            assertTrue(
+                    executionService
+                            .getExecutionStatus(run.getExecutionId(), true)
+                            .getTasks()
+                            .stream()
+                            .noneMatch(
+                                    task ->
+                                            String.valueOf(task.getInputData())
+                                                    .contains(DECISION_KEY)),
+                    "the API key must never appear in task input");
+        } finally {
+            provider.stop(0);
+        }
+    }
+
+    @Test
+    void decisionToolRunsAsAnAiDecisionTaskAndReturnsItsAnswerToTheAgent() throws Exception {
+        String suffix = UUID.randomUUID().toString().replace('-', '_');
+        String agent = "decision_tool_agent_" + suffix;
+        String tool = "classify_request_" + suffix;
+        List<JsonNode> providerRequests = new java.util.concurrent.CopyOnWriteArrayList<>();
+        HttpServer provider = startDecisionProvider(providerRequests, "billing");
+        try {
+            agentService.deploy(
+                    AgentStartRequest.builder()
+                            .agentConfig(
+                                    AgentConfig.builder()
+                                            .name(agent)
+                                            .model("openai/gpt-4o-mini")
+                                            .maxTurns(3)
+                                            .tools(
+                                                    List.of(
+                                                            ToolConfig.builder()
+                                                                    .name(tool)
+                                                                    .description(
+                                                                            "Classify the request")
+                                                                    .toolType("decision")
+                                                                    .config(
+                                                                            Map.of(
+                                                                                    "model",
+                                                                                    "jev-1.13",
+                                                                                    "question",
+                                                                                    "department",
+                                                                                    "questions",
+                                                                                    Map.of(
+                                                                                            "department",
+                                                                                            Map.of(
+                                                                                                    "type",
+                                                                                                    "choice",
+                                                                                                    "instructions",
+                                                                                                    "Pick the department",
+                                                                                                    "choices",
+                                                                                                    Map
+                                                                                                            .of(
+                                                                                                                    "billing",
+                                                                                                                    "Invoices",
+                                                                                                                    "technical",
+                                                                                                                    "Software")))))
+                                                                    .build()))
+                                            .build())
+                            .build());
+            AgentStartResponse run =
+                    agentService.start(
+                            AgentStartRequest.builder()
+                                    .name(agent)
+                                    .prompt("Route my double charge")
+                                    .build());
+
+            Task firstLlm = awaitScheduledLlm(run.getExecutionId());
+            completeScriptedLlm(
+                    firstLlm,
+                    Map.of(
+                            "finishReason",
+                            "TOOL_CALLS",
+                            "result",
+                            "",
+                            "toolCalls",
+                            List.of(
+                                    Map.of(
+                                            "taskReferenceName",
+                                            "call_decision",
+                                            "name",
+                                            tool,
+                                            "type",
+                                            "SIMPLE",
+                                            "inputParameters",
+                                            Map.of("state", "I was charged twice.")))));
+            Task secondLlm = awaitScheduledLlm(run.getExecutionId());
+            Task decision =
+                    findTaskAcrossSubworkflows(
+                            run.getExecutionId(),
+                            "AI_DECISION",
+                            Task.Status.COMPLETED,
+                            new java.util.HashSet<>());
+            assertTrue(decision != null, "the decision tool must run as an AI_DECISION task");
+            assertEquals("billing", decision.getOutputData().get("selectedCase"));
+            assertEquals(tool, decision.getInputData().get("_agent_tool_name"));
+            assertEquals(1, providerRequests.size());
+            assertEquals("I was charged twice.", providerRequests.get(0).path("state").asText());
+
+            completeScriptedLlm(secondLlm, Map.of("finishReason", "STOP", "result", "Routed."));
+            assertEquals(
+                    Workflow.WorkflowStatus.COMPLETED,
+                    awaitAgentTerminal(run.getExecutionId()).getStatus());
+        } finally {
+            provider.stop(0);
+        }
+    }
+
+    private static final String DECISION_KEY = "e2e-decision-key";
+
+    /**
+     * A stand-in for the decision provider: answers every choice question with the first choice
+     * whose key starts with {@code preferred}, in the system-one wire format.
+     */
+    private HttpServer startDecisionProvider(List<JsonNode> requests, String preferred)
+            throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/v1/systemone",
+                exchange -> {
+                    JsonNode body = JSON.readTree(exchange.getRequestBody());
+                    requests.add(body);
+                    boolean authorized =
+                            ("Bearer " + DECISION_KEY)
+                                    .equals(exchange.getRequestHeaders().getFirst("Authorization"));
+                    Map<String, Object> answers = new java.util.LinkedHashMap<>();
+                    body.path("questions")
+                            .fields()
+                            .forEachRemaining(
+                                    question -> {
+                                        List<String> keys = new ArrayList<>();
+                                        question.getValue()
+                                                .path("criteria")
+                                                .fieldNames()
+                                                .forEachRemaining(keys::add);
+                                        String choice =
+                                                keys.stream()
+                                                        .filter(key -> key.startsWith(preferred))
+                                                        .findFirst()
+                                                        .orElse(keys.get(0));
+                                        answers.put(
+                                                question.getKey(),
+                                                Map.of(
+                                                        "type",
+                                                        "choice",
+                                                        "choice",
+                                                        choice,
+                                                        "confidence",
+                                                        0.9));
+                                    });
+                    byte[] response =
+                            JSON.writeValueAsBytes(
+                                    Map.of(
+                                            "model",
+                                            "typesafe/jev-1.13",
+                                            "id",
+                                            "e2e-1",
+                                            "answers",
+                                            answers,
+                                            "usage",
+                                            Map.of("input_tokens", 10, "output_tokens", 2)));
+                    exchange.getResponseHeaders().add("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(authorized ? 200 : 401, response.length);
+                    exchange.getResponseBody().write(response);
+                    exchange.close();
+                });
+        server.start();
+        decisionConfiguration.setApiKey(DECISION_KEY);
+        decisionConfiguration.setEndpoint(
+                "http://127.0.0.1:" + server.getAddress().getPort() + "/v1/systemone");
+        return server;
     }
 
     @Test

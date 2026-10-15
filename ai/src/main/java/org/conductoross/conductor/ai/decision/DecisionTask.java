@@ -50,6 +50,7 @@ import com.netflix.conductor.tasks.http.HttpTask;
 import com.netflix.conductor.tasks.http.providers.RestTemplateProvider;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -85,7 +86,11 @@ public class DecisionTask extends HttpTask {
             ObjectMapper objectMapper,
             DecisionConfiguration config,
             List<DecisionApiAdapter> adapters) {
-        super(TASK_TYPE, decisionTransport(config.getTimeout()), objectMapper);
+        // Provider costs are decimals; parse them without rounding through double.
+        super(
+                TASK_TYPE,
+                decisionTransport(config.getTimeout()),
+                objectMapper.copy().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS));
         this.config = config;
         this.adapters =
                 adapters.stream()

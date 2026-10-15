@@ -584,6 +584,93 @@ class MultiAgentCompilerTest {
     }
 
     @Test
+    void decisionRouterRoutesOnceWhateverTheMaxTurns() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("decision_router")
+                        .strategy(AgentConfig.Strategy.ROUTER)
+                        .router(
+                                Map.of(
+                                        "kind",
+                                        "decision",
+                                        "model",
+                                        "jev-1.13",
+                                        "questions",
+                                        Map.of(
+                                                "agent",
+                                                Map.of(
+                                                        "type",
+                                                        "choice",
+                                                        "instructions",
+                                                        "Choose a team",
+                                                        "choices",
+                                                        Map.of(
+                                                                "billing",
+                                                                "Invoices",
+                                                                "technical",
+                                                                "Troubleshooting")))))
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("billing", "Billing"),
+                                        simpleSubAgent("technical", "Technical")))
+                        .maxTurns(25)
+                        .synthesize(false)
+                        .build();
+
+        WorkflowDef workflow = compiler.compile(config);
+
+        // The choices are the agent names, so the decision never answers DONE.
+        assertThat(workflow.getTasks().get(2).getLoopCondition()).contains("['iteration'] < 1 &&");
+        assertThat(workflow.getOutputParameters())
+                .containsEntry("result", "${workflow.variables.selectedResult}");
+        // Every case, including the default, records the selected agent's response.
+        assertThat(caseVariableSets(workflow))
+                .hasSize(3)
+                .allMatch(task -> task.getInputParameters().containsKey("selectedResult"));
+    }
+
+    /** The SET_VARIABLE tasks inside the router SWITCH's cases, including the default case. */
+    private static List<WorkflowTask> caseVariableSets(WorkflowDef workflow) {
+        WorkflowTask routeSwitch =
+                workflow.getTasks().get(2).getLoopOver().stream()
+                        .filter(task -> "SWITCH".equals(task.getType()))
+                        .findFirst()
+                        .orElseThrow();
+        List<List<WorkflowTask>> cases =
+                new java.util.ArrayList<>(routeSwitch.getDecisionCases().values());
+        cases.add(routeSwitch.getDefaultCase());
+        return cases.stream()
+                .flatMap(List::stream)
+                .filter(task -> "SET_VARIABLE".equals(task.getType()))
+                .toList();
+    }
+
+    @Test
+    void singleTurnLlmRouterStillReturnsTheConversation() {
+        AgentConfig config =
+                AgentConfig.builder()
+                        .name("llm_router")
+                        .model("openai/gpt-4o")
+                        .strategy(AgentConfig.Strategy.ROUTER)
+                        .agents(
+                                List.of(
+                                        simpleSubAgent("billing", "Billing"),
+                                        simpleSubAgent("technical", "Technical")))
+                        .maxTurns(1)
+                        .synthesize(false)
+                        .build();
+
+        WorkflowDef workflow = compiler.compile(config);
+
+        assertThat(workflow.getOutputParameters())
+                .containsEntry("result", "${workflow.variables.conversation}");
+        assertThat(workflow.getTasks().get(1).getInputParameters())
+                .doesNotContainKey("selectedResult");
+        assertThat(caseVariableSets(workflow))
+                .noneMatch(task -> task.getInputParameters().containsKey("selectedResult"));
+    }
+
+    @Test
     void testAllowedTransitions() {
         AgentConfig config =
                 AgentConfig.builder()

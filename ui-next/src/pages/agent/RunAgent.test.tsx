@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import RunAgent from "./RunAgent";
 
 const navigate = vi.fn();
@@ -134,7 +128,7 @@ vi.mock("components/ui/inputs/ConductorAutoComplete", () => ({
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
-  default: ({ id, label, value, onTextInputChange, helperText }: any) => (
+  default: ({ id, label, value, onTextInputChange }: any) => (
     <div>
       <label htmlFor={id}>{label}</label>
       <textarea
@@ -143,7 +137,6 @@ vi.mock("components/ui/inputs/ConductorInput", () => ({
         value={value ?? ""}
         onChange={(event) => onTextInputChange?.(event.target.value)}
       />
-      {helperText ? <span>{helperText}</span> : null}
     </div>
   ),
 }));
@@ -272,7 +265,7 @@ describe("RunAgent", () => {
     expect(screen.getByRole("button", { name: "Run agent" })).toBeEnabled();
   });
 
-  it("starts the agent with a selected model override", async () => {
+  it("starts the agent with a selected model override", () => {
     useAiModelOptions.mockReturnValue(["openai/gpt-5"]);
 
     render(<RunAgent />);
@@ -288,19 +281,17 @@ describe("RunAgent", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
 
-    await waitFor(() => {
-      expect(startAgent).toHaveBeenCalledWith({
-        body: JSON.stringify({
-          name: "researcher",
-          version: undefined,
-          model: "openai/gpt-5",
-          prompt: "Find citations",
-        }),
-      });
+    expect(startAgent).toHaveBeenCalledWith({
+      body: JSON.stringify({
+        name: "researcher",
+        version: undefined,
+        model: "openai/gpt-5",
+        prompt: "Find citations",
+      }),
     });
   });
 
-  it("omits blank model from the start payload", async () => {
+  it("omits blank model from the start payload", () => {
     locationState.current = { agentName: "researcher", agentVersion: 3 };
 
     render(<RunAgent />);
@@ -313,15 +304,13 @@ describe("RunAgent", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Run agent" }));
 
-    await waitFor(() => {
-      expect(startAgent).toHaveBeenCalledWith({
-        body: JSON.stringify({
-          name: "researcher",
-          version: 3,
-          model: undefined,
-          prompt: "  go  ",
-        }),
-      });
+    expect(startAgent).toHaveBeenCalledWith({
+      body: JSON.stringify({
+        name: "researcher",
+        version: 3,
+        model: undefined,
+        prompt: "  go  ",
+      }),
     });
   });
 

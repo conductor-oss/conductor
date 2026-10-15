@@ -236,6 +236,17 @@ class DecisionTaskTest {
     }
 
     @Test
+    void providerCostKeepsItsDecimalPrecision() {
+        respond(RESPONSE.replace("\"cost\":0.00001", "\"cost\":0.000012345678901234567"));
+
+        TaskModel task = run(request(null), "team");
+
+        assertEquals(TaskModel.Status.COMPLETED, task.getStatus());
+        Map<?, ?> usage = (Map<?, ?>) task.getOutputData().get("usage");
+        assertEquals(new java.math.BigDecimal("0.000012345678901234567"), usage.get("cost"));
+    }
+
+    @Test
     void oversizedResponseIsTerminal() {
         server.enqueue(
                 new MockResponse()
