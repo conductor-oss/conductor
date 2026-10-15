@@ -9,6 +9,7 @@
  * gated by conductor.integrations.ai.enabled) — /api/agent/:id/status and
  * /api/agent/:id/respond.
  */
+import { agentFetch } from "utils/agentFetch";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -60,7 +61,7 @@ function usePendingTool(executionId: string): {
     let cancelled = false;
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/agent/${executionId}/status`);
+        const res = await agentFetch(`/api/agent/${executionId}/status`);
         if (!res.ok || cancelled) return;
         const data: AgentStatusResponse = await res.json();
         if (!cancelled) {
@@ -85,7 +86,7 @@ async function callRespond(
   executionId: string,
   body: Record<string, unknown>,
 ): Promise<void> {
-  const res = await fetch(`/api/agent/${executionId}/respond`, {
+  const res = await agentFetch(`/api/agent/${executionId}/respond`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

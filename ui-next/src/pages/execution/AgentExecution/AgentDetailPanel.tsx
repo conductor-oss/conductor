@@ -2,6 +2,7 @@
  * AgentDetailPanel — right-hand panel matching Conductor's task detail style.
  * Tabs: Summary | Input | Prompt | Output | JSON
  */
+import { agentFetch } from "utils/agentFetch";
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import {
   Box,
@@ -154,7 +155,7 @@ function useAgentExecutionDetail(run: AgentRunData): {
     let cancelled = false;
     setData(null);
     setLoading(true);
-    fetch(`/api/agent/executions/${executionId}/full`)
+    agentFetch(`/api/agent/executions/${executionId}/full`)
       .then((response) => (response.ok ? response.json() : null))
       .then((rawExecution: WorkflowExecution | null) => {
         if (cancelled) return;
@@ -969,7 +970,7 @@ function useSubAgentDef(run: AgentRunData | undefined): {
     }
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/agent/executions/${run.subWorkflowId}/full`)
+    agentFetch(`/api/agent/executions/${run.subWorkflowId}/full`)
       .then((r) => (r.ok ? r.json() : null))
       .then((exec: any) => {
         if (!exec || cancelled) return;

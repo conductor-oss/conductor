@@ -17,8 +17,7 @@ function getAccessToken(): string | null {
 
 /**
  * fetch wrapper for direct /api calls in the ported agentspan executions page.
- * Injects the enterprise access token and org ID (when present) so requests
- * succeed under RBAC-enabled conductor deployments; a no-op for OSS.
+ * Injects the enterprise access token and org ID when present; a no-op for OSS.
  */
 export function agentFetch(
   input: Parameters<typeof fetch>[0],

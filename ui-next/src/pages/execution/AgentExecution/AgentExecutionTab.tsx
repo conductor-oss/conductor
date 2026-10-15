@@ -1,3 +1,4 @@
+import { agentFetch } from "utils/agentFetch";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { AGENT_EXECUTIONS_URL } from "utils/constants/route";
@@ -107,7 +108,7 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
       })),
     );
     try {
-      const res = await fetch(
+      const res = await agentFetch(
         `/api/agent/executions/${sub.subWorkflowId}/full`,
       );
       if (!res.ok) throw new Error(`request failed with ${res.status}`);
@@ -146,7 +147,7 @@ export function AgentExecutionTab({ execution }: AgentExecutionTabProps) {
 
       // Check if this is a wrapper workflow and resolve inner ID
       try {
-        const res = await fetch(`/api/agent/executions/${targetId}/full`);
+        const res = await agentFetch(`/api/agent/executions/${targetId}/full`);
         if (res.ok) {
           const subExecution: WorkflowExecution = await res.json();
           const innerId = findInnerSubWorkflowId(subExecution);
