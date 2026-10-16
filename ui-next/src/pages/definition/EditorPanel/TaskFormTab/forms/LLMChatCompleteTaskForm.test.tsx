@@ -14,6 +14,8 @@ vi.mock("plugins/fetch", () => ({
 
 vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({}),
+  // PromptVersionSelect looks up the selected prompt's versions.
+  useFetch: () => ({ data: undefined }),
 }));
 
 vi.mock("components/ui/inputs/ConductorInput", () => ({
