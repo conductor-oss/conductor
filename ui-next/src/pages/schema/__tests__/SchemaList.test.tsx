@@ -103,6 +103,17 @@ vi.mock("components/ui/dialogs/ConfirmChoiceDialog", () => ({
     </div>
   ),
 }));
+vi.mock("components/ui/dialogs/DeleteVersionedDialog", () => ({
+  default: ({ name, versions, allowDeleteAll, onConfirm }: any) => (
+    <div>
+      <span data-testid="delete-dialog">{`${name}|${(versions ?? []).join(",")}|${allowDeleteAll}`}</span>
+      <button onClick={() => onConfirm(versions?.[versions.length - 1])}>
+        Confirm latest
+      </button>
+      <button onClick={() => onConfirm(undefined)}>Confirm all</button>
+    </div>
+  ),
+}));
 vi.mock("pages/definitions/dialog/CloneDialog", () => ({
   default: ({ name, onSuccess }: any) => (
     <button onClick={() => onSuccess({ name: `${name}` })}>
@@ -138,11 +149,23 @@ describe("SchemaList", () => {
     expect(shipmentRow).toHaveTextContent("AVRO");
   });
 
-  it("deletes every version of a schema from its row", () => {
+  it("deletes just the chosen version from its row", () => {
     const { container } = render(<SchemaList />);
 
     fireEvent.click(container.querySelector("#delete-order-btn")!);
-    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm latest" }));
+
+    expect(mutate).toHaveBeenCalledWith({
+      method: "delete",
+      path: "/schema/order/3",
+    });
+  });
+
+  it("deletes every version when the whole schema is chosen", () => {
+    const { container } = render(<SchemaList />);
+
+    fireEvent.click(container.querySelector("#delete-order-btn")!);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm all" }));
 
     expect(mutate).toHaveBeenCalledWith({
       method: "delete",
@@ -150,12 +173,14 @@ describe("SchemaList", () => {
     });
   });
 
-  it("warns that a delete from the row takes every version with it", () => {
+  it("offers the schema's versions, and deleting all of them", () => {
     const { container } = render(<SchemaList />);
 
     fireEvent.click(container.querySelector("#delete-order-btn")!);
 
-    expect(screen.getByText(/All 2 versions will be removed/)).toBeVisible();
+    expect(screen.getByTestId("delete-dialog")).toHaveTextContent(
+      "order|1,3|true",
+    );
   });
 
   it("clones a schema as a fresh version 1, without the source's history", () => {
