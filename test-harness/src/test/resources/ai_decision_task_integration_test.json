@@ -1,0 +1,56 @@
+{
+  "name": "ai_decision_task_workflow",
+  "description": "Routes on an AI_DECISION task's selectedCase with a regular value-param SWITCH",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "decision_task",
+      "taskReferenceName": "decide",
+      "inputParameters": {
+        "model": "jev-1.13",
+        "state": "The customer was charged twice.",
+        "question": "route",
+        "questions": {
+          "route": {
+            "type": "choice",
+            "instructions": "Choose the team that should handle the request.",
+            "choices": {
+              "billing": "Billing and payment issues",
+              "technical": "Product and technical issues"
+            }
+          }
+        }
+      },
+      "type": "AI_DECISION"
+    },
+    {
+      "name": "route",
+      "taskReferenceName": "route",
+      "inputParameters": {
+        "selected": "${decide.output.selectedCase}"
+      },
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "selected",
+      "decisionCases": {
+        "billing": [
+          {
+            "name": "integration_task_1",
+            "taskReferenceName": "billing_branch",
+            "inputParameters": {},
+            "type": "SIMPLE"
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "inputParameters": [],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@conductor.io"
+}

@@ -1574,6 +1574,21 @@ public class AgentCompiler {
         return llm;
     }
 
+    /**
+     * Retry policy for AI_DECISION tasks: rate limits, server errors and transport failures fail as
+     * FAILED and are retried like LLM calls; rejected requests and invalid answers are terminal.
+     * The dynamic tool dispatch script emits the same policy.
+     */
+    static TaskDef decisionRetryDef() {
+        TaskDef def = new TaskDef();
+        def.setName("AI_DECISION");
+        def.setRetryCount(3);
+        def.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        def.setRetryDelaySeconds(2);
+        def.setBackoffScaleFactor(2);
+        return def;
+    }
+
     ResolvedInstructions resolveInstructions(AgentConfig config, String refName) {
         Object instructions = config.getInstructions();
         if (!(instructions instanceof Map<?, ?> map) || !map.containsKey("_worker_ref")) {

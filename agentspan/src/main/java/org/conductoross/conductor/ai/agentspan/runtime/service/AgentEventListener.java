@@ -421,6 +421,10 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
             // SUB_WORKFLOW is also the multi-agent handoff. Unmarked means handoff, not a tool.
             return false;
         }
+        if ("AI_DECISION".equals(taskType)) {
+            // AI_DECISION is also the decision router. Unmarked means router, not a tool.
+            return false;
+        }
         if (ToolCompiler.COMPILED_TOOL_TASK_TYPES.contains(taskType)) {
             return true;
         }

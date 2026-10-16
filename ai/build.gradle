@@ -18,6 +18,7 @@ dependencies {
 
     implementation project(':conductor-common')
     implementation project(':conductor-core')
+    implementation project(':conductor-http-task')
 
     api "org.springframework.ai:spring-ai-model:${revSpringAI}"
     api "org.springframework.ai:spring-ai-client-chat:${revSpringAI}"
