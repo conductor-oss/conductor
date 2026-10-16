@@ -257,7 +257,7 @@ class AgentEventListenerTest {
         AgentEventListener listener = listener(registry);
         AgentEventStream stream = registry.openStream("wf-dynamic", null);
 
-        // enrichToolsScriptDynamic sets no _agent_tool_name, so selection is on task type alone.
+        // A statically compiled tool carries no _agent_tool_name, so selection is on task type.
         TaskModel media = task("wf-dynamic", "GENERATE_DIAGRAM", "make_diagram_0");
         media.setTaskDefName("make_diagram");
         media.setInputData(Map.of("prompt", "a box", "method", "make_diagram"));
