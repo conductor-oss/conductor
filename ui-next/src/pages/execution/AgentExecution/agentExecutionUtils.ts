@@ -43,6 +43,66 @@ export function getModelIconPath(model: string | undefined): string | null {
   return null;
 }
 
+/**
+ * Guardrail events for a guarded LLM task, read from the evidence the engine left on it.
+ *
+ * A task guardrail whose detector is a builtin runs inside the LLM worker and schedules no task of
+ * its own, so there is nothing in the DAG to recognise — unlike a WORKER/WORKFLOW/HTTP detector,
+ * which is dispatched as `_guardrail_<bindingId>_<n>` and picked up as a tool task. What every
+ * guardrail does leave is evidence on the task it guarded: one evaluation per guardrail and point.
+ * Reading it here is the only way an in-process guardrail appears in this view at all.
+ *
+ * Only `PASSED` is shown as a pass. `REDACTED`, `BLOCKED`, `REASKED`, the `HUMAN_*` outcomes and
+ * `UNCOVERED` all mean the guardrail did something, or could not vouch for the text, and naming the
+ * outcome is more honest than a green tick.
+ */
+function guardrailEvidenceEvents(task: ExecutionTask): AgentEvent[] {
+  const context = (task as unknown as Record<string, any>).executionMetadata
+    ?.additionalContext as Record<string, unknown> | undefined;
+  const evidence = context?.guardrails as Record<string, unknown> | undefined;
+  const evaluations = evidence?.evaluations;
+  if (!Array.isArray(evaluations)) return [];
+  return (evaluations as Array<Record<string, unknown>>).map(
+    (evaluation, index) => {
+      const outcome = String(evaluation.outcome ?? "");
+      const passed = outcome === "PASSED";
+      const guardrail = String(evaluation.guardrail ?? "guardrail");
+      const point = String(evaluation.point ?? "");
+      return {
+        id: `${task.taskId}-guardrail-evidence-${index}`,
+        type: passed ? EventType.GUARDRAIL_PASS : EventType.GUARDRAIL_FAIL,
+        timestamp: (evaluation.evaluationTime as number) ?? task.startTime ?? 0,
+        toolName: guardrail,
+        summary: passed
+          ? `${guardrail} passed at ${point}`
+          : `${guardrail} ${outcome.toLowerCase().replace(/_/g, " ")} at ${point}`,
+        detail: evaluation,
+        success: passed,
+        durationMs: (evaluation.latencyMillis as number) ?? 0,
+      } as AgentEvent;
+    },
+  );
+}
+
+/**
+ * The first failing verdict in a task-guardrail detector's output, if any.
+ *
+ * A detector returns `verdicts[]` — one per item it was handed — and its task COMPLETES even when
+ * it finds something: the status says the detector ran, the verdict says what it found. Deciding
+ * pass/fail from the task status alone therefore reports a guardrail that blocked the call as
+ * having passed, which is the one direction that must never be wrong.
+ */
+function failedGuardrailVerdict(
+  outputData: Record<string, unknown>,
+): Record<string, unknown> | undefined {
+  const verdicts = outputData.verdicts;
+  return Array.isArray(verdicts)
+    ? (verdicts as Array<Record<string, unknown>>).find(
+        (v) => v?.passed === false,
+      )
+    : undefined;
+}
+
 /** Build a CONTEXT_CONDENSED event from task inputData if _condensation metadata is present */
 function maybeCondensationEvent(task: ExecutionTask): AgentEvent | null {
   const info = (task.inputData as Record<string, unknown> | undefined)
@@ -1100,6 +1160,7 @@ export function transformWorkflowExecutionToAgentRun(
       for (const llmTask of iterLlmTasks) {
         const condensed = maybeCondensationEvent(llmTask);
         if (condensed) events.push(condensed);
+        events.push(...guardrailEvidenceEvents(llmTask));
 
         const model = llmTask.inputData?.model as string | undefined;
         const llmBaseUrl = llmTask.inputData?.baseUrl as string | undefined;
@@ -1288,13 +1349,22 @@ export function transformWorkflowExecutionToAgentRun(
 
           // Guardrail "failure" is expressed in the output data, not the task status.
           // The worker task COMPLETES even when the guardrail triggers — check output fields.
+          //
+          // Two detector contracts report that differently. An agent guardrail sets
+          // `tripwire_triggered`, or returns `passed` from a sibling INLINE evaluation. A task
+          // guardrail's detector returns `verdicts[]`, one per item it was given, and any entry
+          // with `passed: false` is a trigger — its task still COMPLETES, because the detector
+          // did its job; the verdict inside is the finding.
+          const failedVerdict = failedGuardrailVerdict(od);
           const guardrailTriggered =
             failed ||
             od.tripwire_triggered === true ||
-            evalResult?.passed === false;
+            evalResult?.passed === false ||
+            failedVerdict !== undefined;
           const reason =
             (evalResult?.message as string | undefined) ??
             (od.output_info as any)?.reason ??
+            (failedVerdict?.reason as string | undefined) ??
             (guardrailTriggered
               ? (toolTask.reasonForIncompletion ?? "content blocked")
               : "passed");
@@ -1564,6 +1634,7 @@ export function transformWorkflowExecutionToAgentRun(
       if (task.taskType === "LLM_CHAT_COMPLETE") {
         const condensed = maybeCondensationEvent(task);
         if (condensed) rootEvents.push(condensed);
+        rootEvents.push(...guardrailEvidenceEvents(task));
 
         const model = task.inputData?.model as string | undefined;
         const rootBaseUrl = task.inputData?.baseUrl as string | undefined;
@@ -1705,23 +1776,33 @@ export function transformWorkflowExecutionToAgentRun(
           }
           // skip regardless
         } else {
-          const isGuardrail = task.taskType.toLowerCase().includes("guardrail");
+          // Matched on the reference name as well as the task type: a task guardrail's
+          // detector is dispatched as `_guardrail_<bindingId>_<n>` whatever worker runs it.
+          const isGuardrail =
+            task.taskType.toLowerCase().includes("guardrail") ||
+            (task.referenceTaskName ?? "").toLowerCase().includes("guardrail");
           if (isGuardrail) {
+            const failedVerdict = failedGuardrailVerdict(od);
+            const triggered = failed || failedVerdict !== undefined;
+            const reason =
+              (failedVerdict?.reason as string | undefined) ??
+              task.reasonForIncompletion ??
+              "content blocked";
             rootEvents.push({
               id: `${task.taskId}-guardrail`,
-              type: failed
+              type: triggered
                 ? EventType.GUARDRAIL_FAIL
                 : EventType.GUARDRAIL_PASS,
               timestamp: task.startTime ?? 0,
               toolName: task.taskType,
-              summary: failed
-                ? `${task.taskType} blocked: ${task.reasonForIncompletion ?? "content blocked"}`
+              summary: triggered
+                ? `${task.taskType} blocked: ${reason}`
                 : `${task.taskType} passed`,
               detail: {
                 input: cleanInput,
                 output: failed ? task.reasonForIncompletion : od,
               },
-              success: !failed,
+              success: !triggered,
               durationMs: dur,
             });
           } else {
