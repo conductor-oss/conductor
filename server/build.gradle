@@ -48,19 +48,21 @@ dependencies {
     implementation project(':conductor-sqlite-persistence')
 
     // Indexing backend selection (build-time) to avoid Lucene conflicts between ES and OS
-    def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch'
+    def indexingBackend = project.findProperty('indexingBackend') ?: 'elasticsearch8'
 
     if (indexingBackend == 'opensearch3' || indexingBackend == 'os3') {
         implementation project(':conductor-os-persistence-v3')
     } else if (indexingBackend == 'opensearch' || indexingBackend == 'os') {
         implementation project(':conductor-os-persistence')
         implementation project(':conductor-os-persistence-v2')
-    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7') {
+        // Legacy ES7 backend, opt-in only. Pulls org.elasticsearch:elasticsearch 7.17.x, which
+        // carries the unpatchable CVE-2025-37731. Retained for users not yet moved to ES 8.x.
+        implementation project(':conductor-es7-persistence')
+    } else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8' || indexingBackend == 'elasticsearch') {
         implementation project(':conductor-es8-persistence')
-    } else if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7' || indexingBackend == 'elasticsearch') {
-        implementation project(':conductor-es7-persistence')
     } else {
-        implementation project(':conductor-es7-persistence')
+        implementation project(':conductor-es8-persistence')
     }
     implementation project(':conductor-redis-lock')
     implementation project(':conductor-redis-concurrency-limit')
