@@ -1,0 +1,19 @@
+{
+  "name": "publish_order_event",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId", "status"],
+  "tasks": [
+    {
+      "name": "publish_order_status",
+      "taskReferenceName": "publish_order_status",
+      "type": "EVENT",
+      "sink": "conductor:order-status",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "status": "${workflow.input.status}",
+        "eventVersion": 1
+      }
+    }
+  ]
+}
