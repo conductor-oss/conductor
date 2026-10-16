@@ -23,6 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.ConflictException;
 import com.netflix.conductor.core.exception.NotFoundException;
@@ -202,6 +203,37 @@ public interface WorkflowExecutor {
      * @param workflow workflow
      */
     void scheduleNextIteration(TaskModel task, WorkflowModel workflow);
+
+    /**
+     * Schedules tasks that the workflow definition does not declare, for a running task that
+     * decides its own next work — an agent running the tools its model asked for, say.
+     *
+     * <p>Unlike {@link #scheduleNextIteration}, which can only re-run a statically declared
+     * loopOver, the tasks here are built at run time and passed in whole.
+     *
+     * <p>They behave like any other task: queued for a worker, and non-terminal ones hold the
+     * workflow open. What they do not get is a successor — {@code getNextTask} reads the
+     * definition, so nothing follows a task that is not in it. Advancing past them is the calling
+     * task's job, which is the point: it is the one that knows when it has what it needs.
+     *
+     * <p>Reference names must be unique within the workflow, and are dropped silently otherwise —
+     * by two separate filters, one for a name already in progress or finished and one for a repeat
+     * at the same retry count. The returned list is the only signal of what actually happened, so a
+     * caller scheduling several rounds has to distinguish them and check what came back.
+     *
+     * <p>Called from a worker thread rather than the decider, so it holds no execution lock. It
+     * refuses a workflow that has already reached a terminal state, and the tasks it creates are
+     * durable through the task store; the caller's {@code WorkflowModel} is not persisted here.
+     *
+     * @param workflow the running workflow
+     * @param tasks task definitions built at run time
+     * @return the tasks actually scheduled — empty when the workflow is terminal or every name was
+     *     already taken
+     */
+    default List<TaskModel> scheduleDynamicTasks(WorkflowModel workflow, List<WorkflowTask> tasks) {
+        throw new UnsupportedOperationException(
+                "This WorkflowExecutor cannot schedule tasks outside the workflow definition");
+    }
 
     /**
      * @param input Starts a new workflow execution

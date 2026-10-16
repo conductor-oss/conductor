@@ -76,6 +76,23 @@ public class A2ACallResult {
     /** Tool or human request currently blocking a native Conductor agent. */
     private Map<String, Object> pendingTool;
 
+    /** Every outstanding tool request, when the agent asked for more than one at once. */
+    private List<Map<String, Object>> pendingTools;
+
+    /** Tool calls the platform ran by itself during the turn, with the input each was given. */
+    private List<Map<String, Object>> executedTools;
+
+    /**
+     * The workflow running the agent's tools under autoRunTools.
+     *
+     * <p>Read back off the task output on the next poll to advance that dispatch, so dropping it
+     * here does not merely hide a link - it makes every poll start the tools again.
+     */
+    private String toolDispatchId;
+
+    /** The child execution a native Conductor agent runs as. */
+    private String subWorkflowId;
+
     /** Structured final output of a native Conductor agent. */
     private Map<String, Object> output;
 

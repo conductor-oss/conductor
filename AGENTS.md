@@ -164,6 +164,17 @@ This matters because plausible-looking docs can be silently wrong. Concretely: a
 2. Verify each one using the steps above — not just the block you plan to change.
 3. Fix anything you find while you're there.
 
+### Building the docs
+
+```bash
+PYTHONPATH=. ./.mkdocs-venv/bin/mkdocs build
+```
+
+`PYTHONPATH=.` is required. `mkdocs.yml` references `main.mermaid_fence`, and a console script puts
+its own directory on `sys.path` rather than the working directory, so without it the build dies at
+config parse with `cannot find module 'main'` — which reads like a broken checkout rather than a
+missing path entry.
+
 ### When you can't verify
 
 If a running server or CLI binary is unavailable:

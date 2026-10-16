@@ -1,4 +1,8 @@
-import { Box, Tooltip } from "@mui/material";
+import React, { useCallback, useContext, useMemo, useState } from "react";
+import { Box, Chip, Tooltip } from "@mui/material";
+import { TagDto } from "types/Tag";
+import { featureFlags, FEATURES } from "utils/flags";
+import TagList from "components/ui/TagList";
 import {
   CopySimple as CopyIcon,
   Trash as DeleteIcon,
@@ -16,28 +20,67 @@ import SectionContainer from "components/ui/layout/SectionContainer";
 import PlayIcon from "components/icons/PlayIcon";
 import { useAuth } from "components/features/auth";
 import { MessageContext } from "components/providers/messageContext";
-import { useCallback, useContext, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router";
+import AwsIcon from "images/svg/aws-icon.svg";
+import AzureIcon from "images/svg/azure-icon.svg";
+import BedrockIcon from "images/svg/bedrock-icon.svg";
+import OrkesIcon from "images/svg/orkes-icon.svg";
 import { PopoverMessage } from "types/Messages";
-import { TagDto } from "types/Tag";
 import {
   AGENT_DEFINITION_URL,
   AGENT_EXECUTIONS_URL,
   RUN_AGENT_URL,
 } from "utils/constants/route";
-import { featureFlags, FEATURES } from "utils/flags";
 import useCustomPagination from "utils/hooks/useCustomPagination";
 import { logger } from "utils/logger";
 import { useActionWithPath, useFetch } from "utils/query";
 import { tryToJson } from "utils/utils";
-import TagList from "components/ui/TagList";
 import CloneAgentDialog from "./CloneAgentDialog";
+import { canonicalAgentType } from "utils/agentMetadata";
 import { AgentSummary } from "./types";
 
-const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded Conductor Agents runtime.
+// Compared after canonicalAgentType, so a definition saved under a runtime's former name still
+// reads as external.
+const EXTERNAL_TYPES = new Set(["microsoft-foundry", "bedrock", "bedrock-agentcore"]);
 
-No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
+function providerLabel(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return "Microsoft Foundry";
+    case "bedrock":
+      return "Bedrock";
+    case "bedrock-agentcore":
+      return "Bedrock AgentCore";
+    default:
+      return "Conductor";
+  }
+}
+
+function providerColor(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return "#0078d4";
+    case "bedrock":
+    case "bedrock-agentcore":
+      return "#e07730";
+    default:
+      return "#1565c0";
+  }
+}
+
+function providerIcon(rawType?: string | null): string {
+  switch (canonicalAgentType(rawType)) {
+    case "microsoft-foundry":
+      return AzureIcon;
+    case "bedrock":
+      return BedrockIcon;
+    case "bedrock-agentcore":
+      return AwsIcon;
+    default:
+      return OrkesIcon;
+  }
+}
 
 const toTagDtos = (tags?: string[]): TagDto[] =>
   (tags || []).map((tag) => ({
@@ -45,6 +88,10 @@ const toTagDtos = (tags?: string[]): TagDto[] =>
     value: tag,
     type: "METADATA",
   }));
+
+const INTRO_CONTENT = `**Agents** are AI agent definitions compiled and run as native Conductor workflows by the embedded Conductor Agents runtime.
+
+No agents deployed yet? Use **Create Agent** for a copy-and-run SDK guide.`;
 
 export default function AgentDefinitions() {
   const navigate = useNavigate();
@@ -55,6 +102,7 @@ export default function AgentDefinitions() {
   const [toastMessage, setToastMessage] = useState<PopoverMessage | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AgentSummary | null>(null);
   const [agentToClone, setAgentToClone] = useState<AgentSummary | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [
     { filterParam, pageParam, searchParam },
     { setFilterParam, setSearchParam, handlePageChange },
@@ -83,13 +131,22 @@ export default function AgentDefinitions() {
         name: "name",
         label: "Workflow name",
         renderer: (name: string, agent: AgentSummary) => (
-          <NavLink
-            data-cy="workflow-link"
-            path={`${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(name.trim())}/${agent.version}`}
-            id={`${name.trim()}-link-btn`}
-          >
-            {name.trim()}
-          </NavLink>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <img
+              src={providerIcon(agent.type)}
+              alt={providerLabel(agent.type)}
+              width={18}
+              height={18}
+              style={{ flexShrink: 0 }}
+            />
+            <NavLink
+              data-cy="workflow-link"
+              path={`${AGENT_DEFINITION_URL.BASE}/${encodeURIComponent(name.trim())}/${agent.version}`}
+              id={`${name.trim()}-link-btn`}
+            >
+              {name.trim()}
+            </NavLink>
+          </Box>
         ),
         tooltip: "The name of the agent",
       },
@@ -99,6 +156,25 @@ export default function AgentDefinitions() {
         label: "Description",
         grow: 2,
         tooltip: "The description of the agent",
+      },
+      {
+        id: "provider",
+        name: "type",
+        label: "Provider",
+        grow: 0.8,
+        tooltip: "The runtime provider for this agent",
+        renderer: (type: string, agent: AgentSummary) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <img
+              src={providerIcon(agent.type)}
+              alt={providerLabel(agent.type)}
+              width={16}
+              height={16}
+              style={{ flexShrink: 0 }}
+            />
+            <span style={{ fontSize: "0.85em" }}>{providerLabel(agent.type)}</span>
+          </Box>
+        ),
       },
       ...(tagsEnabled
         ? ([
@@ -207,47 +283,53 @@ export default function AgentDefinitions() {
         grow: 0.5,
         minWidth: "180px",
         tooltip: "Actions you can perform on the agent",
-        renderer: (_: string, agent: AgentSummary) => (
-          <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
-            <Tooltip title="Run agent">
-              <IconButton
-                id={`run-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() =>
-                  navigate(RUN_AGENT_URL, {
-                    state: {
-                      agentName: agent.name,
-                      agentVersion: agent.version,
-                    },
-                  })
-                }
-                size="small"
-              >
-                <PlayIcon size={22} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Clone Agent">
-              <IconButton
-                id={`clone-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() => setAgentToClone(agent)}
-                size="small"
-              >
-                <CopyIcon size={20} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete agent">
-              <IconButton
-                id={`delete-${agent.name}-btn`}
-                disabled={isTrialExpired}
-                onClick={() => setConfirmDelete(agent)}
-                size="small"
-              >
-                <DeleteIcon size={20} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        ),
+        renderer: (_: string, agent: AgentSummary) => {
+          const isExternal =
+            agent.type && EXTERNAL_TYPES.has(canonicalAgentType(agent.type));
+          return (
+            <Box style={{ display: "flex", justifyContent: "space-evenly" }}>
+              <Tooltip title="Run agent">
+                <IconButton
+                  id={`run-${agent.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() =>
+                    navigate(RUN_AGENT_URL, {
+                      state: {
+                        agentName: agent.name,
+                        agentVersion: agent.version,
+                      },
+                    })
+                  }
+                  size="small"
+                >
+                  <PlayIcon size={22} />
+                </IconButton>
+              </Tooltip>
+              {!isExternal && (
+                <Tooltip title="Clone Agent">
+                  <IconButton
+                    id={`clone-${agent.name}-btn`}
+                    disabled={isTrialExpired}
+                    onClick={() => setAgentToClone(agent)}
+                    size="small"
+                  >
+                    <CopyIcon size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip title="Delete agent">
+                <IconButton
+                  id={`delete-${agent.name}-btn`}
+                  disabled={isTrialExpired}
+                  onClick={() => setConfirmDelete(agent)}
+                  size="small"
+                >
+                  <DeleteIcon size={20} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          );
+        },
       },
     ],
     [isTrialExpired, navigate, tagsEnabled],
@@ -259,10 +341,27 @@ export default function AgentDefinitions() {
     [setFilterParam],
   );
 
-  const tableData = useMemo<AgentSummary[]>(
+  const allAgents = useMemo<AgentSummary[]>(
     () => (Array.isArray(data) ? data : []),
     [data],
   );
+
+  // Unique provider types present in the data
+  const providerTypes = useMemo<string[]>(() => {
+    const types = new Set<string>();
+    allAgents.forEach((a) => types.add(a.type ?? "conductor"));
+    return [...types].sort();
+  }, [allAgents]);
+
+  // Agents filtered to selected provider chip
+  const tableData = useMemo<AgentSummary[]>(() => {
+    if (selectedType === null) return allAgents;
+    return allAgents.filter((a) =>
+      selectedType === "conductor"
+        ? !a.type || !EXTERNAL_TYPES.has(canonicalAgentType(a.type))
+        : a.type === selectedType,
+    );
+  }, [allAgents, selectedType]);
 
   return (
     <>
@@ -346,7 +445,6 @@ export default function AgentDefinitions() {
             defaultShowColumns={[
               "workflow_name",
               "workflow_description",
-              ...(tagsEnabled ? ["workflow_tags"] : []),
               "latest_version",
               "create_time",
               "owner_email",
@@ -373,6 +471,85 @@ export default function AgentDefinitions() {
                 </Button>
               </Tooltip>,
             ]}
+            customStyles={{
+              subHeader: {
+                style: {
+                  backgroundColor: "transparent",
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                },
+              },
+            }}
+            subHeader={providerTypes.length > 1}
+            subHeaderComponent={
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  py: 0.5,
+                  width: "100%",
+                }}
+              >
+                <Chip
+                  label={
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <img src={OrkesIcon} alt="" width={14} height={14} />
+                      All ({allAgents.length})
+                    </Box>
+                  }
+                  onClick={() => setSelectedType(null)}
+                  variant={selectedType === null ? "filled" : "outlined"}
+                  sx={{
+                    borderColor: selectedType === null ? undefined : "#888",
+                    fontWeight: selectedType === null ? 600 : 400,
+                  }}
+                  clickable
+                />
+                {providerTypes.map((type) => {
+                  const count =
+                    type === "conductor"
+                      ? allAgents.filter(
+                          (a) =>
+                            !a.type ||
+                            !EXTERNAL_TYPES.has(canonicalAgentType(a.type)),
+                        ).length
+                      : allAgents.filter((a) => a.type === type).length;
+                  const active = selectedType === type;
+                  return (
+                    <Chip
+                      key={type}
+                      label={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <img
+                            src={providerIcon(type)}
+                            alt=""
+                            width={14}
+                            height={14}
+                          />
+                          {providerLabel(type)} ({count})
+                        </Box>
+                      }
+                      onClick={() => setSelectedType(active ? null : type)}
+                      variant={active ? "filled" : "outlined"}
+                      sx={{
+                        borderColor: active ? undefined : "#888",
+                        fontWeight: active ? 600 : 400,
+                      }}
+                      clickable
+                    />
+                  );
+                })}
+              </Box>
+            }
             onChangePage={handlePageChange}
             paginationDefaultPage={pageParam ? Number(pageParam) : 1}
             noDataComponent={
