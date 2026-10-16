@@ -38,8 +38,6 @@ import jakarta.annotation.*;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
-    private static final Long UNACK_SCHEDULE_MS = 60_000L;
-
     private final ScheduledExecutorService scheduledExecutorService;
 
     private PostgresQueueListener queueListener;
@@ -51,14 +49,12 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             PostgresProperties properties) {
         super(retryTemplate, objectMapper, dataSource);
 
+        long unackScheduleMs = properties.getUnackScheduleInterval().toMillis();
         this.scheduledExecutorService =
                 Executors.newSingleThreadScheduledExecutor(
                         ExecutorsUtil.newNamedThreadFactory("postgres-queue-"));
         this.scheduledExecutorService.scheduleAtFixedRate(
-                this::processAllUnacks,
-                UNACK_SCHEDULE_MS,
-                UNACK_SCHEDULE_MS,
-                TimeUnit.MILLISECONDS);
+                this::processAllUnacks, unackScheduleMs, unackScheduleMs, TimeUnit.MILLISECONDS);
         logger.debug("{} is ready to serve", PostgresQueueDAO.class.getName());
 
         if (properties.getExperimentalQueueNotify()) {
