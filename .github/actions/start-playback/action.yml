@@ -1,0 +1,18 @@
+name: Start LLM playback server
+description: Start the built Conductor server with shared recordings and fixture secrets.
+inputs:
+  work-directory:
+    description: Fresh directory for the SQLite database, server log, and server.pid.
+    default: tmp/agent-playback
+  port:
+    description: HTTP port for the playback server.
+    default: '18080'
+runs:
+  using: composite
+  steps:
+    - name: Start Conductor
+      shell: bash
+      env:
+        CONDUCTOR_PLAYBACK_WORK_DIR: ${{ inputs.work-directory }}
+        CONDUCTOR_PLAYBACK_PORT: ${{ inputs.port }}
+      run: bash "$GITHUB_ACTION_PATH/start-playback.sh"

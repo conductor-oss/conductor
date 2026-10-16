@@ -1147,6 +1147,11 @@ export function transformWorkflowExecutionToAgentRun(
               ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: llmTask.outputData,
           },
           result: isStop && typeof result === "string" ? result : result,
@@ -1605,6 +1610,11 @@ export function transformWorkflowExecutionToAgentRun(
               ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: task.outputData,
           },
           tokens: {

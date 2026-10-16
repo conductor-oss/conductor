@@ -57,10 +57,12 @@ public class SqliteIndexQueryBuilder {
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
 
     private static class Condition {
+        private static final Pattern CONDITION_PATTERN =
+                Pattern.compile("^([a-zA-Z]++)\\s*(=|>|<|IN)\\s*(.*)$");
+
         private String attribute;
         private String operator;
         private List<String> values;
-        private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
 
         /** Must match {@code SqliteIndexDAO}'s write-path format exactly. */
         private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
@@ -69,8 +71,7 @@ public class SqliteIndexQueryBuilder {
         public Condition() {}
 
         public Condition(String query) {
-            Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
-            Matcher conditionMatcher = conditionRegex.matcher(query);
+            Matcher conditionMatcher = CONDITION_PATTERN.matcher(query);
             if (conditionMatcher.find()) {
                 String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));

@@ -95,6 +95,9 @@ export { EventMonitor } from "./pages/eventMonitor/EventMonitor";
 export { default as TaskQueue } from "./pages/queueMonitor/TaskQueue";
 export { default as ErrorPage } from "./pages/error/ErrorPage";
 
+// Schema registry pages
+export { SchemaList, SchemaEditPage } from "./pages/schema";
+
 // Definition pages
 export {
   Workflow as WorkflowDefinitions,

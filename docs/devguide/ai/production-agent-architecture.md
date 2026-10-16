@@ -74,7 +74,7 @@ Every path starts and ends in the parent workflow: validate the request, choose 
 The parent workflow can use one or more of these execution paths. Choose the path based on where the agent behavior belongs; all three participate in the same durable business process.
 
 - **Native AI tasks** run directly in the workflow graph. Use `LLM_CHAT_COMPLETE`, MCP tasks, `HUMAN`, and control-flow tasks when the workflow definition is the agent implementation.
-- **Deployed Conductor Agents** run through an `AGENT` task with `agentType: "conductor"`. They include agents authored with a Conductor SDK or framework bridges for OpenAI Agents, Google ADK, LangChain, LangGraph, and Vercel AI SDK. Conductor compiles these agents into deployed workflow graphs.
+- **Deployed Conductor Agents** run through an `AGENT` task with `agentType: "conductor"`. They include agents authored with a Conductor SDK or brought from OpenAI Agents, Google ADK, LangChain, LangGraph, and Vercel AI SDK. Conductor compiles these agents into deployed workflow graphs.
 - **Remote A2A agents** run through an `AGENT` task with `agentType: "a2a"`. This is a durable handoff to an independently deployed Agent2Agent service: Conductor manages the parent-workflow lifecycle, while the remote service keeps its own implementation and internals.
 
 `agentType` selects the execution mode; it does not name an authoring framework. Use `SUB_WORKFLOW` or `START_WORKFLOW` to compose child workflows, and use `AGENT` when the parent invokes an agent runtime.
@@ -82,7 +82,7 @@ The parent workflow can use one or more of these execution paths. Choose the pat
 | Boundary | Use it when | Execution and observability |
 |---|---|---|
 | Native tasks | The workflow graph owns the orchestration and agent behavior. | Native system tasks execute and are observable in Conductor. |
-| `AGENT` / `agentType: "conductor"` | The agent is authored in a Conductor SDK or a supported framework bridge: OpenAI Agents, Google ADK, LangChain, LangGraph, or Vercel AI SDK. | Conductor compiles and runs the deployed agent graph, so its execution is observable in Conductor. |
+| `AGENT` / `agentType: "conductor"` | The agent is authored in a Conductor SDK or brought from a supported framework: OpenAI Agents, Google ADK, LangChain, LangGraph, or Vercel AI SDK. | Conductor compiles and runs the deployed agent graph, so its execution is observable in Conductor. |
 | `AGENT` / `agentType: "a2a"` | A specialist is independently deployed as a remote A2A service. | Conductor observes the durable handoff, lifecycle, and returned artifacts; the remote agent owns its private internals. |
 | `SUB_WORKFLOW` / `START_WORKFLOW` | You are composing another Conductor workflow, synchronously or fire-and-forget. | These compose workflow definitions; they do not invoke either `AGENT` runtime mode. |
 
@@ -104,7 +104,7 @@ The parent workflow can use one or more of these execution paths. Choose the pat
 - Run one recovery drill: interrupt a safe execution, locate it by correlation ID, retry, resume, or terminate as appropriate, and verify the audit trail.
 - Keep releases KISS: test the changed path against sandbox tools, deploy it, and retain a known-good definition for rollback.
 
-For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agent Bridges](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
+For implementation details, see [Conductor Agents](conductor-agents.md), [Framework Agents](agent-framework-recipes.md), [A2A Integration](a2a-integration.md), [Guardrails](agent-guardrails.md), [Evals](agent-evals.md), [Failure Semantics](failure-semantics.md), and [Durable Adaptive Graphs](dynamic-workflows.md).
 
 ## Native-task implementation: architecture diagram
 
@@ -600,7 +600,7 @@ The parent waits for the child workflow to complete. If it fails, the parent's f
 ## Next steps
 
 - **[Conductor Agents](conductor-agents.md)** — Use this architecture around a deployed SDK-authored agent graph.
-- **[Framework Agent Bridges](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
+- **[Framework Agents](agent-framework-recipes.md)** — Supported framework routes and maintained SDK examples.
 - **[A2A Integration](a2a-integration.md)** — Hand off to independently deployed A2A agents while retaining a durable parent-workflow boundary.
 - **[Failure Semantics for AI Agents](failure-semantics.md)** — The exact failure contract: what happens under crashes, retries, duplicates, and long waits.
 - **[Why Conductor for Agents](why-conductor.md)** — What Conductor gives you out of the box for agentic workflows.
