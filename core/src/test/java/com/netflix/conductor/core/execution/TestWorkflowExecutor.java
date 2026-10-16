@@ -840,6 +840,51 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void testSkipTaskPopulatesTaskModelFields() {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("test_task");
+        workflowTask.setTaskReferenceName("task_ref");
+        workflowTask.setType(TaskType.SIMPLE.name());
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(1);
+        workflowDef.getTasks().add(workflowTask);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("test-workflow-id");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setCorrelationId("test-corr");
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(false);
+
+        List<TaskModel> createdTasks = new ArrayList<>();
+        when(executionDAOFacade.createTasks(anyList()))
+                .thenAnswer(
+                        invocation -> {
+                            createdTasks.addAll(invocation.getArgument(0));
+                            return new ArrayList<>(createdTasks);
+                        });
+
+        workflowExecutor.skipTaskFromWorkflow(workflow.getWorkflowId(), "task_ref", null);
+
+        // The skipped task must carry the same identity fields a decider-scheduled task
+        // gets from TaskMapperContext#createTaskModel. A later rerun of the workflow
+        // updates this task and the index DAOs write task.getWorkflowType() into
+        // task_index.workflow_type, which is NOT NULL - a null there fails the rerun
+        // with a constraint violation.
+        assertEquals(1, createdTasks.size());
+        TaskModel skippedTask = createdTasks.get(0);
+        assertEquals(TaskModel.Status.SKIPPED, skippedTask.getStatus());
+        assertEquals("testDef", skippedTask.getWorkflowType());
+        assertEquals("test_task", skippedTask.getTaskDefName());
+        assertEquals(workflowTask, skippedTask.getWorkflowTask());
+        assertTrue(skippedTask.getScheduledTime() > 0);
+    }
+
+    @Test
     public void testStartWorkflowIdempotentReturnsExistingWorkflowModel() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("existing-workflow");
