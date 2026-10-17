@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import { X as CloseIcon, ArrowRight, Scissors } from "@phosphor-icons/react";
 import { Tab, Tabs } from "components";
+import { pluginRegistry } from "plugins/registry";
 import { AgentDefinitionDetails } from "components/features/agents/AgentSnapshotDetails";
 import { ContentView, JsonView } from "./ContentViews";
 import { PromptPreview } from "./PromptPreview";
@@ -65,6 +66,8 @@ const OUTPUT_TAB = "output";
 const JSON_TAB = "json";
 const FORMATTED_OUTPUT_TAB = "formatted";
 const RAW_OUTPUT_TAB = "raw";
+/** Namespaces a plugin's tab value so it can never collide with one of the tabs above. */
+const PLUGIN_TAB_PREFIX = "plugin:";
 
 function formattedOutput(value: unknown): unknown {
   if (typeof value !== "object" || value == null || Array.isArray(value)) {
@@ -1888,12 +1891,28 @@ export function AgentDetailPanel({
       null);
   const hasPrompt = node.kind === "llm" && hasPromptMessages(promptValue);
 
+  // Task-type panels contributed by plugins, for the task behind this node. The same registry
+  // contract the workflow execution view's right panel uses, so a plugin that surfaces something
+  // about a task — guardrail evidence, say — shows it wherever that task is selected, rather than
+  // only on the execution page. Each panel's own predicate decides whether this execution has
+  // anything worth a tab.
+  const backingTask = node.event?.task;
+  const pluginPanels = backingTask
+    ? pluginRegistry
+        .getTaskExecutionPanels(`${backingTask.taskType}`)
+        .filter((panel) => !panel.shouldShow || panel.shouldShow(backingTask))
+    : [];
+
   const tabs = [
     { value: SUMMARY_TAB, label: "Summary" },
     ...(hasInput ? [{ value: INPUT_TAB, label: "Input" }] : []),
     ...(hasPrompt ? [{ value: PROMPT_TAB, label: "Prompt" }] : []),
     ...(hasOutput ? [{ value: OUTPUT_TAB, label: "Output" }] : []),
     { value: JSON_TAB, label: "JSON" },
+    ...pluginPanels.map((panel) => ({
+      value: `${PLUGIN_TAB_PREFIX}${panel.id}`,
+      label: panel.label,
+    })),
   ];
   // The selected tab can disappear, e.g. switching to an attempt with no prompt.
   // Falling back keeps the strip and the body below in agreement.
@@ -2084,6 +2103,16 @@ export function AgentDetailPanel({
             }
             onDrillIn={onDrillIn}
           />
+        )}
+        {pluginPanels.map((panel) =>
+          activeTab === `${PLUGIN_TAB_PREFIX}${panel.id}` ? (
+            <Box
+              key={panel.id}
+              sx={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}
+            >
+              <panel.component taskResult={backingTask} />
+            </Box>
+          ) : null,
         )}
         {activeTab === INPUT_TAB && (
           <>

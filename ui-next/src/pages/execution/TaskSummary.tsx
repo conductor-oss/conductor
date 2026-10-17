@@ -5,6 +5,7 @@ import { NavLink, KeyValueTable } from "components";
 import { Link, Paper } from "@mui/material";
 import { ExecutionTask, TaskType } from "types";
 import { ReactNode, useMemo } from "react";
+import { guardrailSummaryRows } from "./guardrailTaskSummary";
 
 interface TaskSummaryProps {
   taskResult: ExecutionTask;
@@ -36,6 +37,10 @@ export default function TaskSummary({ taskResult }: TaskSummaryProps) {
       value: taskResult.workflowTask.taskReferenceName,
     },
   ] as DataType[];
+
+  // For a guardrail detector the generic rows below describe it accurately and say nothing useful;
+  // which guardrail it was, what it inspected and what it decided goes directly under the identity.
+  data.push(...guardrailSummaryRows(taskResult));
 
   if (taskResult.domain) {
     data.push({ label: "Domain", value: taskResult.domain });

@@ -1,3 +1,5 @@
+import type { ExecutionTask } from "types/Execution";
+
 export enum EventType {
   THINKING = "THINKING",
   TOOL_CALL = "TOOL_CALL",
@@ -69,6 +71,14 @@ export interface AgentEvent {
   id: string;
   type: EventType;
   timestamp: number;
+  /**
+   * The Conductor task this event came from, where one backs it.
+   *
+   * `taskMeta` below is a projection for display and deliberately carries no payload. This is the
+   * task itself, by reference, so a consumer that needs the whole thing — a plugin panel keyed on
+   * task type, for instance — has it without re-fetching the execution.
+   */
+  task?: ExecutionTask;
   /** Display summary text */
   summary: string;
   /** Full detail - JSON object or text */

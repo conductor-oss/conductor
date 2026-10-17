@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { pluginRegistry } from "plugins/registry";
+
 import { AgentDetailPanel, type DetailNodeData } from "./AgentDetailPanel";
 import { AgentStatus, EventType } from "./types";
 
@@ -101,5 +103,66 @@ describe("AgentDetailPanel prompt tab", () => {
     });
     expect(screen.queryByText("Prompt")).toBeNull();
     expect(screen.queryByText("hello")).toBeNull();
+  });
+});
+
+describe("AgentDetailPanel plugin panels", () => {
+  /** A node for an LLM turn backed by a real task, as the transform now builds it. */
+  function nodeForTask(task: unknown): DetailNodeData {
+    return {
+      kind: "llm",
+      label: "gpt-4o",
+      status: AgentStatus.COMPLETED,
+      event: {
+        id: "llm-1",
+        type: EventType.THINKING,
+        timestamp: 0,
+        toolName: "gpt-4o",
+        summary: "gpt-4o",
+        detail: { output: { result: "answer" } },
+        task,
+      } as any,
+    };
+  }
+
+  const guarded = {
+    taskId: "t1",
+    taskType: "LLM_CHAT_COMPLETE",
+    referenceTaskName: "agent_llm",
+    inputData: { guardrails: ["pii"] },
+  };
+
+  it("renders a plugin's tab for the task behind the node, and its content when selected", () => {
+    pluginRegistry.register({
+      id: "test-task-panel",
+      name: "Test Task Panel",
+      taskExecutionPanels: [
+        {
+          id: "evidence",
+          label: "Evidence",
+          taskTypes: ["LLM_CHAT_COMPLETE"],
+          component: ({ taskResult }: { taskResult: any }) => (
+            <div>panel for {taskResult.referenceTaskName}</div>
+          ),
+          // Only when the task actually has something to show.
+          shouldShow: (taskResult: any) =>
+            taskResult?.inputData?.guardrails != null,
+        },
+      ],
+    } as any);
+
+    const { unmount } = renderPanel(nodeForTask(guarded));
+    fireEvent.click(screen.getByText("Evidence"));
+    expect(screen.getByText("panel for agent_llm")).toBeTruthy();
+    unmount();
+
+    // The predicate is honoured: an unguarded task of the same type gets no tab.
+    renderPanel(nodeForTask({ ...guarded, inputData: {} }));
+    expect(screen.queryByText("Evidence")).toBeNull();
+  });
+
+  it("offers no plugin tab when no task backs the node", () => {
+    renderPanel(nodeForTask(undefined));
+    expect(screen.queryByText("Evidence")).toBeNull();
   });
 });
