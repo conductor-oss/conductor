@@ -42,6 +42,7 @@ import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
@@ -56,8 +57,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Asks a decision provider structured questions and completes with its validated answers. The
- * request is sent through {@link HttpTask#httpCall}, so the task runs on the system task worker,
- * never in the decider, and failures are retried with the task definition's retry policy.
+ * request is sent through {@link HttpTask}'s request handling, so the task runs on the system task
+ * worker, never in the decider, and failures are retried with the task definition's retry policy.
  *
  * <p>Route a workflow on the result with a regular {@code SWITCH}: either on {@code
  * answers.<question>.choice}, or on {@code selectedCase} when the {@code question} input names the
@@ -65,7 +66,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 @Component(DecisionTask.TASK_TYPE)
 @Conditional(AIIntegrationEnabledCondition.class)
-public class DecisionTask extends HttpTask {
+public class DecisionTask extends WorkflowSystemTask {
 
     public static final String TASK_TYPE = "AI_DECISION";
     public static final String QUESTION = "question";
@@ -79,6 +80,8 @@ public class DecisionTask extends HttpTask {
 
     private static final TypeReference<Map<String, Object>> MAP = new TypeReference<>() {};
 
+    private final ObjectMapper objectMapper;
+    private final DecisionHttp http;
     private final DecisionConfiguration config;
     private final Map<String, DecisionApiAdapter> adapters;
 
@@ -86,17 +89,32 @@ public class DecisionTask extends HttpTask {
             ObjectMapper objectMapper,
             DecisionConfiguration config,
             List<DecisionApiAdapter> adapters) {
+        super(TASK_TYPE);
         // Provider costs are decimals; parse them without rounding through double.
-        super(
-                TASK_TYPE,
-                decisionTransport(config.getTimeout()),
-                objectMapper.copy().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS));
+        this.objectMapper =
+                objectMapper.copy().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+        this.http = new DecisionHttp(decisionTransport(config.getTimeout()), this.objectMapper);
         this.config = config;
         this.adapters =
                 adapters.stream()
                         .collect(
                                 Collectors.toUnmodifiableMap(
                                         DecisionApiAdapter::name, Function.identity()));
+    }
+
+    /**
+     * Reuses {@link HttpTask}'s request handling. It is not a Spring bean, so injecting {@code
+     * HttpTask} by type still finds only the HTTP task.
+     */
+    private static final class DecisionHttp extends HttpTask {
+
+        DecisionHttp(RestTemplateProvider restTemplateProvider, ObjectMapper objectMapper) {
+            super(TASK_TYPE, restTemplateProvider, objectMapper);
+        }
+
+        HttpResponse call(Input input) throws Exception {
+            return httpCall(input);
+        }
     }
 
     /**
@@ -200,7 +218,7 @@ public class DecisionTask extends HttpTask {
 
             HttpTask.Input input = adapter.createRequest(request, route);
             long started = System.nanoTime();
-            HttpResponse response = httpCall(input);
+            HttpTask.HttpResponse response = http.call(input);
             if (response.statusCode < 200 || response.statusCode > 299) {
                 // Provider error bodies may echo credentials, so only the status is reported.
                 task.setReasonForIncompletion("Decision HTTP status " + response.statusCode);
@@ -231,6 +249,21 @@ public class DecisionTask extends HttpTask {
             task.setReasonForIncompletion("Decision transport failed");
             task.setStatus(TaskModel.Status.FAILED);
         }
+    }
+
+    @Override
+    public boolean execute(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        return false;
+    }
+
+    @Override
+    public void cancel(WorkflowModel workflow, TaskModel task, WorkflowExecutor executor) {
+        task.setStatus(TaskModel.Status.CANCELED);
+    }
+
+    @Override
+    public boolean isAsync() {
+        return true;
     }
 
     /** The choice question named by {@code question}, or null when the task does not route. */
