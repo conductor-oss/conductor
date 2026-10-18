@@ -1,14 +1,6 @@
-import {
-  FormControl,
-  FormControlLabel,
-  Grid,
-  InputLabel,
-  Switch,
-  Tooltip,
-} from "@mui/material";
+import { FormControlLabel, Grid, Switch, Tooltip } from "@mui/material";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorDateRangePicker from "components/ui/date-time/ConductorDateRangePicker";
-import { baseLabelStyle } from "theme/styles";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 
 interface ScheduleTimingSectionProps {
@@ -55,9 +47,6 @@ export function ScheduleTimingSection({
         />
       </Grid>
       <Grid size={12}>
-        <FormControl>
-          <InputLabel sx={baseLabelStyle}>Start schedule paused?</InputLabel>
-        </FormControl>
         <Tooltip
           title="Turn this on to pause the schedule before it starts."
           arrow
@@ -72,7 +61,7 @@ export function ScheduleTimingSection({
               />
             }
             label="Pause schedule"
-            sx={{ mt: 3, mb: 3 }}
+            sx={{ mb: 3 }}
           />
         </Tooltip>
       </Grid>
