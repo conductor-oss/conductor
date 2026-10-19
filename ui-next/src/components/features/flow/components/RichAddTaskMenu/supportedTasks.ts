@@ -225,7 +225,7 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
   },
   {
     name: "LLM Get Embeddings",
-    description: "Search a vector database using pre-computed embeddings.",
+    description: "Retrieve stored embeddings by ID or query.",
     type: TaskType.LLM_GET_EMBEDDINGS,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
