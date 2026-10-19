@@ -224,9 +224,8 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
-    name: "LLM Get Embeddings (Deprecated)",
-    description:
-      "Deprecated alias of LLM Search Embeddings. Use LLM Search Embeddings instead.",
+    name: "LLM Get Embeddings",
+    description: "Search a vector database using pre-computed embeddings.",
     type: TaskType.LLM_GET_EMBEDDINGS,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
