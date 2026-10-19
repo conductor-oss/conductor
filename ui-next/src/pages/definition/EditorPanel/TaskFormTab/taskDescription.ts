@@ -72,7 +72,7 @@ export const taskDescriptions: TaskDescriptions = {
   [TaskType.LLM_GENERATE_EMBEDDINGS]:
     "A system task to generate embeddings from the input data provided. Embeddings are the processed input text converted into a sequence of vectors, which can then be stored in a vector database for retrieval later. You can use a model that was previously integrated to generate these embeddings.",
   [TaskType.LLM_GET_EMBEDDINGS]:
-    "Deprecated: this task is a legacy alias of the LLM Search Embeddings task and behaves identically. Use LLM Search Embeddings for new workflows. Searches a vector database for the closest matches using a set of pre-computed embeddings.",
+    "Searches a vector database for the closest matches using a set of pre-computed embeddings.",
   [TaskType.LLM_STORE_EMBEDDINGS]:
     "A system task responsible for storing the generated embeddings produced by the LLM Generate Embeddings task, into a vector database. The stored embeddings serve as a repository of information that can be later accessed by the LLM Search Embeddings task for efficient and quick retrieval of related data.",
   [TaskType.LLM_SEARCH_INDEX]:
