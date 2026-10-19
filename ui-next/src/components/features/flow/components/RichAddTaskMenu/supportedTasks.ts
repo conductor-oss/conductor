@@ -224,8 +224,9 @@ export const AI_TASKS: BaseTaskMenuItem[] = [
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },
   {
-    name: "LLM Get Embeddings",
-    description: "Retrieve stored embeddings by ID or query.",
+    name: "LLM Get Embeddings (Deprecated)",
+    description:
+      "Deprecated alias of LLM Search Embeddings. Use LLM Search Embeddings instead.",
     type: TaskType.LLM_GET_EMBEDDINGS,
     category: RichAddMenuTabs.AI_AGENTS_TAB,
   },

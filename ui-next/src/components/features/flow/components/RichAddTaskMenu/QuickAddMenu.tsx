@@ -75,7 +75,7 @@ const QUICK_ADD_INTEGRATIONS_PANEL = "QUICK_ADD_INTEGRATIONS_PANEL" as const;
 const AI_QUICK_ADD_TYPES: TaskType[] = [
   TaskType.LLM_CHAT_COMPLETE,
   TaskType.LLM_GENERATE_EMBEDDINGS,
-  TaskType.LLM_GET_EMBEDDINGS,
+  TaskType.LLM_SEARCH_EMBEDDINGS,
   TaskType.LLM_INDEX_DOCUMENT,
   TaskType.LLM_SEARCH_INDEX,
   TaskType.AGENT,
@@ -329,7 +329,9 @@ const QuickAddMenu = ({
               return "Search Document";
             case "LLM Generate Embeddings":
               return "Generate Embeddings";
-            case "LLM Get Embeddings":
+            case "LLM Get Embeddings (Deprecated)":
+              return "Get Embeddings (Deprecated)";
+            case "LLM Search Embeddings":
               return "Search Embeddings";
 
             default:
