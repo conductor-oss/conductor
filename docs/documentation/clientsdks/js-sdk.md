@@ -303,6 +303,18 @@ await handler.startWorkers();
 
 Collects 18 metric types: poll counts, execution durations, error rates, output sizes, and more — with p50/p75/p90/p95/p99 quantiles. See [METRICS.md](https://github.com/conductor-oss/javascript-sdk/blob/main/METRICS.md) for the full reference.
 
+## Logging
+
+The SDK's default logger prints to the console. Set the log level with the `CONDUCTOR_LOG_LEVEL` environment variable, without any code changes.
+
+```shell
+export CONDUCTOR_LOG_LEVEL=DEBUG
+```
+
+Accepted values are `DEBUG`, `INFO`, `WARN`, and `ERROR`. Values are case-sensitive and must be uppercase. If the variable is unset or has any other value, the level is `INFO`.
+
+A level set in the logger config takes precedence over the environment variable. The variable is read once, when the logger is created, and does not apply to a custom logger that you pass to the SDK.
+
 ## Managing Workflow Executions
 
 Once a workflow is registered (see [What You Can Build](#what-you-can-build)), you can run and manage it through the full lifecycle:
