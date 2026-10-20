@@ -315,6 +315,31 @@ Accepted values are `DEBUG`, `INFO`, `WARN`, and `ERROR`. Values are case-sensit
 
 A level set in the logger config takes precedence over the environment variable. The variable is read once, when the logger is created, and does not apply to a custom logger that you pass to the SDK.
 
+### Custom logger
+
+To send SDK logs to your own logging library, pass it as the `logger` option of `TaskHandler`. The option accepts a `ConductorLogger`, which is any object with `info`, `error`, and `debug` methods, so libraries such as pino can be passed in directly. If you do not set it, `TaskHandler` uses the default logger.
+
+```typescript
+import pino from "pino";
+
+const logger = pino({ level: "debug" });
+
+const handler = new TaskHandler({
+  client,
+  scanForDecorated: true,
+  logger,
+});
+await handler.startWorkers();
+```
+
+`TaskHandler` and its workers write all their logs through this logger. A custom logger replaces the default logger, so `CONDUCTOR_LOG_LEVEL` no longer applies. Set the level on your own logger instead.
+
+Logs written while the client connects and authenticates use a separate logger. To send those to your logger as well, pass it when you create the client.
+
+```typescript
+const clients = await OrkesClients.from({ logger });
+```
+
 ## Managing Workflow Executions
 
 Once a workflow is registered (see [What You Can Build](#what-you-can-build)), you can run and manage it through the full lifecycle:
