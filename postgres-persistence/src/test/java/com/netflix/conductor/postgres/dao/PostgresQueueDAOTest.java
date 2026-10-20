@@ -528,6 +528,61 @@ public class PostgresQueueDAOTest {
         assertEquals(messageId, popped.get(0));
     }
 
+    /**
+     * Test fix for https://github.com/conductor-oss/conductor/issues/1667
+     *
+     * <p>When decide() re-queues a workflow after a lock miss, pushMessage on an existing popped
+     * row must reset popped so popMessages returns it without waiting for processAllUnacks.
+     */
+    @Test
+    public void pushMessageResetsPoppedOnExistingRow() {
+        String queueName = "issue1667_testQueue";
+        String messageId = "decider-msg";
+
+        queueDAO.push(queueName, messageId, 0L);
+
+        List<String> firstPop = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, firstPop.size());
+        assertEquals(messageId, firstPop.get(0));
+
+        // Row is popped=true now; a second pop must return nothing.
+        assertEquals(0, queueDAO.pop(queueName, 1, 100).size());
+
+        // Re-queue via pushMessage (same path WorkflowExecutor uses on a lock miss).
+        queueDAO.push(queueName, messageId, 0L);
+
+        List<String> repopped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, repopped.size());
+        assertEquals(messageId, repopped.get(0));
+    }
+
+    /**
+     * Same guarantee for the Message overload (INSERT ... ON CONFLICT DO UPDATE path), which is
+     * exercised when a payload-bearing push collides with an existing popped row.
+     */
+    @Test
+    public void pushMessagesResetsPoppedOnExistingRow() {
+        String queueName = "issue1667_testQueue_payload";
+        String messageId = "decider-msg-payload";
+
+        Message m = new Message(messageId, "{\"v\":1}", "");
+        queueDAO.push(queueName, ImmutableList.of(m));
+
+        List<Message> firstPop = queueDAO.pollMessages(queueName, 1, 100);
+        assertEquals(1, firstPop.size());
+        assertEquals(messageId, firstPop.get(0).getId());
+
+        assertEquals(0, queueDAO.pollMessages(queueName, 1, 100).size());
+
+        Message m2 = new Message(messageId, "{\"v\":2}", "");
+        queueDAO.push(queueName, ImmutableList.of(m2));
+
+        List<Message> repopped = queueDAO.pollMessages(queueName, 1, 100);
+        assertEquals(1, repopped.size());
+        assertEquals(messageId, repopped.get(0).getId());
+        assertEquals("{\"v\":2}", repopped.get(0).getPayload());
+    }
+
     // @Test
     public void processUnacksTest() {
         processUnacks(
