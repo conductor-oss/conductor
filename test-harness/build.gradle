@@ -29,6 +29,7 @@ dependencies {
     testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     testImplementation "com.google.guava:guava:${revGuava}"
     testImplementation "org.springframework:spring-web"
+    testImplementation 'org.springframework.boot:spring-boot-web-server'
 
     testImplementation "redis.clients:jedis"
     implementation "io.orkes.queues:orkes-conductor-queues:${revOrkesQueues}"

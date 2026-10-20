@@ -6,6 +6,7 @@ import {
   roleMetaManager,
   roleReadOnly,
   roleScheduleManager,
+  roleIntegrationManager,
   roleQueueMonitorViewer,
   roleUser,
   roleWfManager,
@@ -21,6 +22,7 @@ export const roleLabel: { [key: string]: string } = {
   [Role.HUMAN_TASK_MANAGER]: "Human task manager",
   [Role.EVENT_HANDLER_MANAGER]: "Event handler manager",
   [Role.SCHEDULE_MANAGER]: "Schedule manager",
+  [Role.INTEGRATION_MANAGER]: "Integrations manager",
   [Role.QUEUE_MONITOR_VIEWER]: "Queue monitor viewer",
   [Role.USER_READ_ONLY]: "Read only user",
 };
@@ -36,6 +38,7 @@ const roleColor: { [key: string]: string } = {
   [Role.HUMAN_TASK_MANAGER]: roleHumanTaskManager,
   [Role.EVENT_HANDLER_MANAGER]: roleEventHandlerManager,
   [Role.SCHEDULE_MANAGER]: roleScheduleManager,
+  [Role.INTEGRATION_MANAGER]: roleIntegrationManager,
   [Role.QUEUE_MONITOR_VIEWER]: roleQueueMonitorViewer,
 };
 

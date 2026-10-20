@@ -85,6 +85,7 @@ class EnrichToolsScriptTest {
                         "{}",
                         "{}",
                         "{}",
+                        "{}",
                         knownNamesJson);
         // Wrap so the script's IIFE return is captured AND we get a JSON string
         // back — Graal's Value.toString() is JS source, not JSON.
@@ -111,7 +112,7 @@ class EnrichToolsScriptTest {
             String httpJson, String knownNamesJson, String toolCallsJson) throws Exception {
         String script =
                 JavaScriptBuilder.enrichToolsScriptDynamic(
-                        httpJson, "{}", "{}", "{}", "{}", "{}", knownNamesJson);
+                        httpJson, "{}", "{}", "{}", "{}", "{}", "{}", knownNamesJson);
         String wrapped =
                 "var $ = {toolCalls: "
                         + toolCallsJson
@@ -140,6 +141,52 @@ class EnrichToolsScriptTest {
             result.put((String) entries[i], entries[i + 1]);
         }
         return result;
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void decisionToolBecomesDecisionBackedSwitch() throws Exception {
+        String script =
+                JavaScriptBuilder.enrichToolsScript(
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{\"classify_request\":{\"model\":\"jev-1.13\",\"provider\":\"openrouter\",\"questions\":{\"department\":{\"type\":\"choice\"}}}}",
+                        "{\"classify_request\":true}");
+        Map<String, Object> result =
+                evaluateWithJavaInputs(
+                        script,
+                        map(
+                                "toolCalls",
+                                List.of(
+                                        map(
+                                                "name",
+                                                "classify_request",
+                                                "taskReferenceName",
+                                                "call_1",
+                                                "inputParameters",
+                                                map("state", "charged twice"))),
+                                "agentState",
+                                Map.of(),
+                                "userPrompt",
+                                "original prompt"));
+
+        Map<String, Object> task = ((List<Map<String, Object>>) result.get("dynamicTasks")).get(0);
+        assertThat(task)
+                .containsEntry("type", "SWITCH")
+                .containsEntry("evaluatorType", "decision")
+                .containsEntry("expression", "");
+        assertThat((Map<String, Object>) task.get("inputParameters"))
+                .containsEntry("model", "jev-1.13")
+                .containsEntry("provider", "openrouter")
+                .containsEntry("state", "charged twice")
+                .containsKey("questions");
+        assertThat(task.get("decisionCases")).isEqualTo(Map.of());
     }
 
     @Test
@@ -400,10 +447,12 @@ class EnrichToolsScriptTest {
                         "{}",
                         "{}",
                         "{}",
+                        "{}",
                         "{\"get_current_weather_http\":true}");
         String dynamicScript =
                 JavaScriptBuilder.enrichToolsScriptDynamic(
                         "{\"get_current_weather_http\":{\"url\":\"http://localhost:3001/api/weather\",\"method\":\"GET\"}}",
+                        "{}",
                         "{}",
                         "{}",
                         "{}",
@@ -661,12 +710,21 @@ class EnrichToolsScriptTest {
                         + "\"headers\": {\"Authorization\": \"Bearer #{API_KEY}\"}}}";
         String script =
                 JavaScriptBuilder.enrichToolsScript(
-                        httpCfg, "{}", "{}", "{}", "{}", "{}", "{}", "{}", "{\"weather\": true}");
+                        httpCfg,
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{}",
+                        "{\"weather\": true}");
         assertThat(script).doesNotContain("${workflow.secrets.");
 
         String dynScript =
                 JavaScriptBuilder.enrichToolsScriptDynamic(
-                        httpCfg, "{}", "{}", "{}", "{}", "{}", "{\"weather\": true}");
+                        httpCfg, "{}", "{}", "{}", "{}", "{}", "{}", "{\"weather\": true}");
         assertThat(dynScript).doesNotContain("${workflow.secrets.");
     }
 }

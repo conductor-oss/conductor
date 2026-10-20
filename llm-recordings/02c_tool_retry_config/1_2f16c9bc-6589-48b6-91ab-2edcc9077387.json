@@ -1,0 +1,105 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You help users fetch and process data. Use the appropriate tool for each request.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Look up the latest Python release info from the API.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "call_external_api",
+      "description" : "Call an unreliable external API that may need aggressive retries.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "query" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "query" ]
+      }
+    }, {
+      "name" : "query_database",
+      "description" : "Run a database query with fixed-interval retries for transient connection issues.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "sql" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "sql" ]
+      }
+    }, {
+      "name" : "process_data",
+      "description" : "Process data locally — light retries with linear backoff.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_005a0fec9b96ea8b006aa831c0933887d0ada04ed18e9ccc10",
+      "model" : "gpt-5.6-sol",
+      "usage" : {
+        "promptTokens" : 132,
+        "completionTokens" : 110,
+        "totalTokens" : 242,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_005a0fec9b96ea8b006aa831c0933887d0ada04ed18e9ccc10",
+        "reasoning_tokens" : 51
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_rSY7UMc9IETiqaddAb7Lfwz6",
+          "type" : "function",
+          "name" : "call_external_api",
+          "arguments" : "{\"query\":\"Fetch the latest stable Python release information from an authoritative API (prefer Python.org if available). Return version, release date, release page/download URL, and source/API URL. Exclude prereleases.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

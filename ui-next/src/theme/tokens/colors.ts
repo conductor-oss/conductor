@@ -785,6 +785,9 @@ export const roleEventHandlerManager = "#BAB9F1";
 //schedule-manager
 export const roleScheduleManager = "#9EE0C8";
 
+//integrations-manager
+export const roleIntegrationManager = "#A5D8E6";
+
 //queue-monitor-viewer
 export const roleQueueMonitorViewer = "#B8D4EA";
 

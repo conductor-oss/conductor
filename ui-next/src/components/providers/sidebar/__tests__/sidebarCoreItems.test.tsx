@@ -54,6 +54,7 @@ vi.mock("utils/constants/route", () => ({
   AGENT_SECRETS_URL: "/agentSecrets",
   SKILLS_URL: { BASE: "/skills" },
   TASK_DEF_URL: { BASE: "/taskDef", NAME: "/taskDef/:name" },
+  TASK_EXECUTION_URL: { LIST: "/taskExecs" },
   TASK_QUEUE_URL: { BASE: "/taskQueue" },
   WORKFLOW_DEFINITION_URL: {
     BASE: "/workflowDef",
@@ -117,6 +118,35 @@ describe("getCoreSidebarItems", () => {
       const schemaItems = definitions?.items?.filter((i) => i.id === "schemas");
       expect(schemaItems).toHaveLength(1);
       expect(schemaItems?.[0].position).toBe(850);
+    });
+  });
+
+  describe("task execution item", () => {
+    it("is present in the executionsSubMenu", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe).toBeDefined();
+    });
+
+    it("links to the task executions page", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe?.linkTo).toBe("/taskExecs");
+    });
+
+    it("is visible (not hidden) by default", () => {
+      const taskExe = findNestedItem(items, "executionsSubMenu", "taskExeItem");
+      expect(taskExe?.hidden).toBe(false);
+    });
+
+    it("is positioned after workflowExeItem and before schedulerExeItem", () => {
+      const execMenu = findItem(items, "executionsSubMenu");
+      const position = (id: string) =>
+        execMenu?.items?.find((i) => i.id === id)?.position;
+      expect(position("taskExeItem")).toBeGreaterThan(
+        position("workflowExeItem") ?? 0,
+      );
+      expect(position("taskExeItem")).toBeLessThan(
+        position("schedulerExeItem") ?? Infinity,
+      );
     });
   });
 
@@ -239,10 +269,11 @@ describe("getCoreSidebarItems", () => {
   });
 
   describe("overall structure", () => {
-    it("returns executionsSubMenu with workflow, scheduler, and queue monitor", () => {
+    it("returns executionsSubMenu with workflow, task, scheduler, and queue monitor", () => {
       const execMenu = findItem(items, "executionsSubMenu");
       const childIds = execMenu?.items?.map((i) => i.id) ?? [];
       expect(childIds).toContain("workflowExeItem");
+      expect(childIds).toContain("taskExeItem");
       expect(childIds).toContain("schedulerExeItem");
       expect(childIds).toContain("queueMonitorItem");
     });

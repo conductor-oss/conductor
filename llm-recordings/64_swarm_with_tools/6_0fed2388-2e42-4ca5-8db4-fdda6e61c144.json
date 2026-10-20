@@ -1,0 +1,107 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are an order specialist. Use the lookup_order tool to check order status. Include the shipping status and ETA in your response.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Where is my order ORD-789?\n\n[support -> order_specialist]: Please check order ORD-789 and provide its current shipping status and estimated delivery date to the customer.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "lookup_order",
+      "description" : "Look up the status of an order.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id" ]
+      }
+    }, {
+      "name" : "order_specialist_transfer_to_support",
+      "description" : "Transfer the conversation to support. You are front-line customer support. Triage customer requests. Transfer to billing_specialist for account/payment questions, order_specialist for shipping/order questions. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for support: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "order_specialist_transfer_to_billing_specialist",
+      "description" : "Transfer the conversation to billing_specialist. You are a billing specialist. Use the check_balance tool to look up account balances. Include the balance amount in your response. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for billing_specialist: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0fad2090b6f56f8e006aa82c392de487d089406b5a3837db51",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 274,
+        "completionTokens" : 21,
+        "totalTokens" : 295,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0fad2090b6f56f8e006aa82c392de487d089406b5a3837db51",
+        "reasoning_tokens" : 0
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_d8wGkgnldRTYAxK0aYHG8rFa",
+          "type" : "function",
+          "name" : "lookup_order",
+          "arguments" : "{\"order_id\":\"ORD-789\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

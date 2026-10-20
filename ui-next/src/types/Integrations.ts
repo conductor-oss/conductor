@@ -32,6 +32,7 @@ export enum IntegrationType {
   WEAVIATE_DB = "weaviatedb",
   PERPLEXITY = "perplexity",
   GROK = "Grok",
+  OLLAMA = "ollama",
   SENDGRID = "sendgrid",
   GOOGLE_CALENDER = "google-calendar",
   GOOGLE_DRIVE = "google-drive",

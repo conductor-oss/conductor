@@ -2,7 +2,7 @@
  * Core (OSS) sidebar menu items for Conductor UI.
  *
  * These items are merged with plugin-registered items in UiSidebar.
- * - Executions submenu (Workflow, Scheduler, Queue Monitor)
+ * - Executions submenu (Workflow, Task, Scheduler, Queue Monitor)
  * - Run Workflow button
  * - Definitions submenu (Workflow, Agents, Task, Event Handler, Scheduler, Schemas)
  * - Help menu
@@ -30,6 +30,7 @@ import {
   SCHEMAS_URL,
   SKILLS_URL,
   TASK_DEF_URL,
+  TASK_EXECUTION_URL,
   TASK_QUEUE_URL,
   WORKFLOW_DEFINITION_URL,
   WORKFLOW_EXECUTION_URL,
@@ -59,6 +60,7 @@ const CORE_SIDEBAR_POSITIONS = {
   // Executions submenu children
   EXECUTIONS: {
     workflowExeItem: 100,
+    taskExeItem: 150,
     schedulerExeItem: 185,
     queueMonitorItem: 200,
   },
@@ -112,6 +114,16 @@ export function getCoreSidebarItems(open: boolean): MenuItemType[] {
           hotkeys: "",
           hidden: false,
           position: E.workflowExeItem,
+        },
+        {
+          id: "taskExeItem",
+          title: "Task",
+          icon: null,
+          linkTo: TASK_EXECUTION_URL.LIST,
+          shortcuts: [],
+          hotkeys: "",
+          hidden: false,
+          position: E.taskExeItem,
         },
         {
           id: "schedulerExeItem",
