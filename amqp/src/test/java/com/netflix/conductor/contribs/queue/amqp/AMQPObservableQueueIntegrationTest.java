@@ -180,7 +180,9 @@ public class AMQPObservableQueueIntegrationTest {
             Message consumedMsg = received.get(0);
             consumedMsg.setReceipt(UUID.randomUUID().toString());
 
-            queue.ack(Collections.singletonList(consumedMsg));
+            // ack() returns failed message receipts; empty list confirms UUID was safely handled
+            // without error
+            assertTrue(queue.ack(Collections.singletonList(consumedMsg)).isEmpty());
         } finally {
             queue.stop();
         }
