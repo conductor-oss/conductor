@@ -144,6 +144,11 @@ public class TestWorkflowExecutor {
             };
         }
 
+        @Bean(TASK_TYPE_SWITCH)
+        public Switch switchBean() {
+            return new Switch();
+        }
+
         @Bean
         public SystemTaskRegistry systemTaskRegistry(Set<WorkflowSystemTask> tasks) {
             return new SystemTaskRegistry(tasks);
@@ -3214,5 +3219,41 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
+    }
+
+    private TaskModel switchTaskModel(WorkflowModel workflow, String ref, String evaluatorType) {
+        WorkflowTask wt = new WorkflowTask();
+        wt.setType(TASK_TYPE_SWITCH);
+        wt.setName(ref);
+        wt.setTaskReferenceName(ref);
+        wt.setEvaluatorType(evaluatorType);
+        wt.setExpression("route");
+        TaskModel task = new TaskModel();
+        task.setTaskType(TASK_TYPE_SWITCH);
+        task.setTaskDefName(TASK_TYPE_SWITCH);
+        task.setReferenceTaskName(ref);
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setTaskId(new IDGenerator().generate());
+        task.setWorkflowTask(wt);
+        return task;
+    }
+
+    /** SWITCH evaluation happens in its mapper, so it is never put on a system-task queue. */
+    @Test
+    public void testDecisionSwitchIsNeverQueued() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("sw-decision");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("sw");
+        def.setVersion(1);
+        workflow.setWorkflowDefinition(def);
+        TaskModel regular = switchTaskModel(workflow, "r1", "decision");
+        regular.setStatus(TaskModel.Status.IN_PROGRESS); // as SwitchTaskMapper produces it
+
+        workflowExecutor.scheduleTask(workflow, List.of(regular));
+
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyInt(), anyLong());
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
+        assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
     }
 }
