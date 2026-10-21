@@ -448,6 +448,28 @@ public class TestWorkflowExecutor {
         verify(taskStatusListener, never()).onTaskCompletedIfEnabled(any());
     }
 
+    /**
+     * #1176: most synchronous system tasks (LAMBDA, INLINE, SET_VARIABLE, ...) keep the default
+     * no-op start() and are still SCHEDULED when scheduleTask notifies. SCHEDULED must stay a no-op
+     * in notifyTaskStatusListener, otherwise every such task would emit a spurious event here.
+     */
+    @Test
+    public void testScheduleTaskDoesNotNotifyListenerForSyncTaskStillScheduled() {
+        IDGenerator idGenerator = new IDGenerator();
+        WorkflowModel workflow = newWorkflowForScheduling();
+        TaskModel task =
+                newScheduledSystemTask(TASK_TYPE_LAMBDA, "lambda_ref", workflow, idGenerator);
+
+        List<TaskModel> tasks = new LinkedList<>();
+        tasks.add(task);
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
+
+        workflowExecutor.scheduleTask(workflow, tasks);
+
+        assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
+        verifyNoInteractions(taskStatusListener);
+    }
+
     @Test(expected = TerminateWorkflowException.class)
     public void testScheduleTaskFailure() {
         WorkflowModel workflow = new WorkflowModel();
