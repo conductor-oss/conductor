@@ -1908,7 +1908,6 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         Map<String, Object> literalInput = task.getInputData();
         try {
             task.setInputData(parametersUtils.substituteSecrets(literalInput));
-            task.setInputData(parametersUtils.substituteSecrets(literalInput));
             systemTask.start(workflow, task, this);
         } finally {
             task.setInputData(literalInput);
