@@ -12,7 +12,7 @@ export const taskListMachine = () =>
       context: {
         taskList: [],
         startIndex: 0,
-        rowsPerPage: 15,
+        rowsPerPage: 20,
         executionId: undefined,
         authHeaders: undefined,
         filterStatus: undefined,

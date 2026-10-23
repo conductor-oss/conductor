@@ -220,6 +220,7 @@ export const TaskList: FunctionComponent<TaskListProps> = ({
           hideSearch
           paginationServer
           paginationPerPage={rowsPerPage}
+          useGlobalRowsPerPage={false}
           paginationRowsPerPageOptions={[20, 50, 100]}
           paginationTotalRows={totalHits}
           localStorageKey="taskListTable"
