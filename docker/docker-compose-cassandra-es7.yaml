@@ -21,7 +21,7 @@ services:
       - 8000:8080
       - 8127:5000
     healthcheck:
-      test: ["CMD", "curl", "-I", "-XGET", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
       interval: 60s
       timeout: 30s
       retries: 12
