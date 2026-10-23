@@ -1,3 +1,7 @@
+---
+description: "Build an order-exception triage agent with Google ADK, deploy it with the Conductor SDK, and call it from a workflow like any other agent."
+---
+
 # ADK triage
 
 ```mermaid
