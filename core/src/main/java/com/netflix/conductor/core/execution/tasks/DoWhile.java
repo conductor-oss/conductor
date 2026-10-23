@@ -515,7 +515,12 @@ public class DoWhile extends WorkflowSystemTask {
                         workflow,
                         task.getTaskId(),
                         taskDefinition);
-        conditionInput.put(task.getReferenceTaskName(), task.getOutputData());
+        // Strip iteration suffix (e.g. "dwdw_inner__1" → "dwdw_inner") so that
+        // $.taskRef in the loopCondition resolves correctly when this DO_WHILE is
+        // nested inside another DO_WHILE whose iteration suffix is appended at runtime.
+        conditionInput.put(
+                TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()),
+                task.getOutputData());
         List<TaskModel> loopOver =
                 workflow.getTasks().stream()
                         .filter(
