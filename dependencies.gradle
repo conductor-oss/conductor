@@ -74,9 +74,28 @@ ext {
     revSpotifyCompletableFutures = '0.3.3'
     revTestContainer = '1.21.4'
     revFasterXml = '2.15.3'
-    revAmqpClient = '5.13.0'
+    // amqp-client is BOM-managed (rabbit-amqp-client.version); the Spring Boot 3.5 BOM pins 5.25.0,
+    // which carries CVE-2026-63337 / CVE-2026-69219 / CVE-2026-69220. 5.35.0 clears all three.
+    // The override that actually forces this into the shaded jar lives in springboot-bom-overrides.gradle.
+    revAmqpClient = '5.35.0'
     revKafka = '3.9.1'
-    revMicrometer = '1.14.6'
+    // micrometer-core carries CVE-2026-40983 / CVE-2026-40984, fixed in 1.15.12.
+    revMicrometer = '1.15.12'
+    // Registry artifacts (otlp / cloudwatch2 / azure-monitor / prometheus) track revMicrometer.
+    // They MUST stay on 1.15.x: Spring Boot 3.5's OTLP metrics auto-configuration
+    // (OtlpMetricsExportAutoConfiguration) calls OtlpMeterRegistry.builder(...), a class that only
+    // exists from micrometer-registry-otlp 1.15.0. On 1.14.6 the server crashes at startup with
+    // NoClassDefFoundError: OtlpMeterRegistry$Builder whenever
+    // management.otlp.metrics.export.enabled=true (#1534).
+    revMicrometerRegistry = '1.15.12'
+    // PINNED (#1534, #964): micrometer-registry-otlp 1.15.x requests opentelemetry-proto
+    // 1.5.0-alpha, whose generated code requires protobuf-java 4.x (com.google.protobuf.
+    // RuntimeVersion). protobuf-java is pinned to 3.x (#964, GraalVM polyglot). Forcing
+    // opentelemetry-proto back to 1.3.2-alpha (protobuf 3.x, GeneratedMessageV3) keeps the 3.x
+    // stack intact: micrometer 1.15's OTLP serializer references only metrics/common/resource proto
+    // messages, all present in 1.3.2-alpha — the sole delta between 1.3.2 and 1.5.0 is profiling
+    // classes micrometer never touches. Forced in build.gradle's resolutionStrategy.eachDependency.
+    revOpenTelemetryProto = '1.3.2-alpha'
     revPrometheus = '0.9.0'
     revElasticSearch7 = '7.17.29'
     revElasticSearch8 = '8.19.11'

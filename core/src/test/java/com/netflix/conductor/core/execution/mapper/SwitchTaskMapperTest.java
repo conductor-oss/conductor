@@ -38,6 +38,7 @@ import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.JavascriptEvaluator;
 import com.netflix.conductor.core.execution.evaluators.ValueParamEvaluator;
+import com.netflix.conductor.core.execution.tasks.Switch;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -46,7 +47,13 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(
@@ -343,5 +350,152 @@ public class SwitchTaskMapperTest {
         assertEquals(1, mappedTasks.size());
         assertEquals("switchTask", mappedTasks.get(0).getReferenceTaskName());
         assertEquals(TaskModel.Status.FAILED, mappedTasks.get(0).getStatus());
+    }
+
+    @Test
+    public void valueParamSwitchIsEvaluatedInTheMapperAndBranchScheduledInTheSameCall() {
+        WorkflowTask switchTask = switchTask(ValueParamEvaluator.NAME, "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "even");
+        Map<String, Object> input =
+                parametersUtils.getTaskInput(
+                        switchTask.getInputParameters(), workflowModel, null, null);
+        TaskModel branchTask = new TaskModel();
+        branchTask.setReferenceTaskName("t2");
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
+                .thenReturn(Collections.singletonList(branchTask));
+
+        List<TaskModel> mapped =
+                switchTaskMapper.getMappedTasks(context(switchTask, workflowModel, input));
+
+        assertEquals(2, mapped.size());
+        TaskModel sw = mapped.get(0);
+        assertEquals(TaskModel.Status.IN_PROGRESS, sw.getStatus());
+        assertEquals("even", sw.getOutputData().get("selectedCase"));
+        assertEquals("true", sw.getInputData().get("hasChildren"));
+        assertEquals("t2", mapped.get(1).getReferenceTaskName());
+        assertFalse("regular SWITCH is never async", new Switch().isAsync());
+    }
+
+    @Test
+    public void structuredResultIsEvaluatedInMapperAndSchedulesSelectedBranch() {
+        Map<String, Object> output =
+                Map.of(
+                        "selectedCase",
+                        "even",
+                        "model",
+                        "jev-1.13",
+                        "answers",
+                        Map.of("route", Map.of("choice", "even")),
+                        "usage",
+                        Map.of("inputTokens", 10),
+                        "latencyMs",
+                        42L);
+        Evaluator decision =
+                (expression, input) -> {
+                    assertEquals("route", expression);
+                    assertEquals(Map.of("route", "refund"), input);
+                    return output;
+                };
+        SwitchTaskMapper mapper = new SwitchTaskMapper(Map.of("decision", decision));
+        WorkflowTask switchTask = switchTask("decision", "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+        TaskModel branchTask = new TaskModel();
+        branchTask.setReferenceTaskName("t2");
+        when(deciderService.getTasksToBeScheduled(workflowModel, task2, 0, null))
+                .thenReturn(List.of(branchTask));
+
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
+
+        assertEquals(2, mapped.size());
+        TaskModel sw = mapped.get(0);
+        assertEquals(TaskModel.Status.IN_PROGRESS, sw.getStatus());
+        output.forEach((key, value) -> assertEquals(value, sw.getOutputData().get(key)));
+        assertEquals(List.of("even"), sw.getOutputData().get(Switch.EVALUATION_RESULT));
+        assertEquals("even", sw.getInputData().get("case"));
+        assertEquals("true", sw.getInputData().get(Switch.HAS_CHILDREN));
+        assertEquals(branchTask, mapped.get(1));
+        assertFalse(new Switch().isAsync());
+    }
+
+    @Test
+    public void structuredResultWithUnmatchedCaseSchedulesDefault() {
+        SwitchTaskMapper mapper =
+                new SwitchTaskMapper(
+                        Map.of(
+                                "decision",
+                                (expression, input) -> Map.of("selectedCase", "unknown")));
+        WorkflowTask switchTask = switchTask("decision", "route");
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+        TaskModel branchTask = new TaskModel();
+        when(deciderService.getTasksToBeScheduled(workflowModel, task1, 0, null))
+                .thenReturn(List.of(branchTask));
+
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
+
+        assertEquals(List.of(mapped.get(0), branchTask), mapped);
+        assertEquals("unknown", mapped.get(0).getOutputData().get(Switch.SELECTED_CASE));
+    }
+
+    @Test
+    public void structuredResultWithEmptyMatchedCaseDoesNotScheduleDefault() {
+        SwitchTaskMapper mapper =
+                new SwitchTaskMapper(
+                        Map.of("decision", (expression, input) -> Map.of("selectedCase", "even")));
+        WorkflowTask switchTask = switchTask("decision", "route");
+        switchTask.setDecisionCases(Map.of("even", List.of()));
+        WorkflowModel workflowModel = workflowWithInput("route", "refund");
+
+        List<TaskModel> mapped =
+                mapper.getMappedTasks(
+                        context(switchTask, workflowModel, Map.of("route", "refund")));
+
+        assertEquals(1, mapped.size());
+        assertEquals("even", mapped.get(0).getOutputData().get(Switch.SELECTED_CASE));
+        assertNull(mapped.get(0).getInputData().get(Switch.HAS_CHILDREN));
+        verify(deciderService, never()).getTasksToBeScheduled(any(), any(), anyInt(), any());
+    }
+
+    private WorkflowTask switchTask(String evaluatorType, String expression) {
+        WorkflowTask switchTask = new WorkflowTask();
+        switchTask.setType(TaskType.SWITCH.name());
+        switchTask.setName("Switch");
+        switchTask.setTaskReferenceName("switchTask");
+        switchTask.getInputParameters().put("route", "${workflow.input.route}");
+        switchTask.setEvaluatorType(evaluatorType);
+        switchTask.setExpression(expression);
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("even", Collections.singletonList(task2));
+        decisionCases.put("odd", Collections.singletonList(task3));
+        switchTask.setDecisionCases(decisionCases);
+        switchTask.setDefaultCase(Collections.singletonList(task1));
+        return switchTask;
+    }
+
+    private WorkflowModel workflowWithInput(String key, String value) {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+        WorkflowModel workflowModel = new WorkflowModel();
+        workflowModel.setWorkflowDefinition(workflowDef);
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put(key, value);
+        workflowModel.setInput(workflowInput);
+        return workflowModel;
+    }
+
+    private TaskMapperContext context(
+            WorkflowTask switchTask, WorkflowModel workflowModel, Map<String, Object> input) {
+        return TaskMapperContext.newBuilder()
+                .withWorkflowModel(workflowModel)
+                .withTaskDefinition(new TaskDef())
+                .withWorkflowTask(switchTask)
+                .withTaskInput(input)
+                .withRetryCount(0)
+                .withTaskId(idGenerator.generate())
+                .withDeciderService(deciderService)
+                .build();
     }
 }

@@ -18,6 +18,8 @@ dependencies {
     implementation "org.flywaydb:flyway-core:${revFlyway}"
     implementation "org.flywaydb:flyway-database-postgresql:${revFlyway}"
 
+    // spring-retry is compileOnly for main; the DAO tests construct DAOs directly and need it
+    testImplementation 'org.springframework.retry:spring-retry'
     testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-grpc-client')

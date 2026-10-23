@@ -14,6 +14,7 @@ import {
   AgentStatus,
   AgentStrategy,
   AgentTimelineKind,
+  EventType,
 } from "./types";
 
 function task(overrides: Record<string, unknown>) {
@@ -340,6 +341,67 @@ describe("transformWorkflowExecutionToAgentRun timeline", () => {
     ]);
   });
 
+  it("preserves every LLM message for inspection", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Investigate the timeout" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_loop",
+          taskType: "DO_WHILE",
+          loopOverTask: true,
+        }),
+        task({
+          referenceTaskName: "agent_llm__1",
+          taskType: "LLM_CHAT_COMPLETE",
+          loopOverTask: true,
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns[0].events.find(
+      (event) => event.type === EventType.THINKING,
+    );
+    expect((thinking?.detail as any).prompt.messages).toEqual(messages);
+    // `input` stays the concise payload the Input tab and event rows render.
+    expect((thinking?.detail as any).input).toEqual({
+      instructions: "Coordinator instructions",
+      message: "Investigate the timeout",
+    });
+  });
+
+  it("preserves every LLM message for a root-level call", () => {
+    const messages = [
+      { role: "system", message: "Coordinator instructions" },
+      { role: "system", message: "Injected recall instructions" },
+      { role: "user", message: "Summarize the incident" },
+    ];
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([
+        task({
+          referenceTaskName: "agent_llm",
+          taskType: "LLM_CHAT_COMPLETE",
+          inputData: { model: "gpt", messages },
+          outputData: { finishReason: "STOP", result: "answer" },
+        }),
+      ]),
+    );
+
+    const thinking = run.turns
+      .flatMap((turn) => turn.events)
+      .find((event) => event.type === EventType.THINKING);
+    expect((thinking?.detail as any).prompt.messages).toEqual(messages);
+    expect((thinking?.detail as any).input).toEqual({
+      instructions: "Coordinator instructions",
+      message: "Summarize the incident",
+    });
+  });
+
   it("excludes preparation and finalization from agent-turn metrics", () => {
     const run = transformWorkflowExecutionToAgentRun(
       execution([
@@ -600,3 +662,155 @@ describe("replaceAgentRunNode", () => {
     expect(updated.turns[0].subAgents[1]).toBe(untouchedSibling);
   });
 });
+
+describe("decision tasks", () => {
+  it.each([false, true])(
+    "keeps Decision inference out of tools (loop: %s)",
+    (loopOverTask) => {
+      const output = {
+        model: "jev-1.13",
+        answers: { action: { type: "choice", choice: "a", confidence: 0.9 } },
+        usage: { inputTokens: 12, outputTokens: 2, cost: 0.001 },
+        latencyMs: 25,
+        requestId: "request",
+      };
+      const run = transformWorkflowExecutionToAgentRun(
+        execution(
+          [
+            task({
+              taskId: "decision",
+              referenceTaskName: loopOverTask ? "decide__1" : "decide",
+              loopOverTask,
+              taskType: "SWITCH",
+              inputData: {
+                _conductorDeferredEvaluator: true,
+                provider: "decision",
+                model: "jev-1.13",
+                state: "state",
+                questions: { action: {} },
+              },
+              outputData: output,
+            }),
+          ],
+          {
+            workflowDefinition: {
+              metadata: {
+                classifier: "agent",
+                agentDef: { model: "jev-1.13" },
+              },
+            },
+          },
+        ),
+      );
+      const event = run.turns
+        .flatMap((t) => t.events)
+        .find((e) => e.type === EventType.DECISION);
+      expect(run.agentType).toBeUndefined();
+      expect(event?.tokens?.totalTokens).toBe(14);
+      expect(
+        run.turns.reduce((sum, turn) => sum + turn.tokens.totalTokens, 0),
+      ).toBe(14);
+      expect(event?.detail).toMatchObject({ output });
+      expect(event?.success).toBe(true);
+      expect(
+        run.turns
+          .flatMap((turn) => turn.events)
+          .filter((event) => event.type === EventType.TOOL_CALL),
+      ).toHaveLength(0);
+    },
+  );
+});
+
+it.each([
+  { decision: false, childName: "billing" },
+  { decision: true, childName: "billing" },
+  { decision: false, childName: "router" },
+])(
+  "renders router inference before child '$childName' (Decision=$decision)",
+  ({ decision, childName }) => {
+    const selectorResult = decision
+      ? {
+          model: "jev-1.13",
+          answers: { agent: { type: "choice", choice: childName } },
+          usage: { inputTokens: 10, outputTokens: 2 },
+        }
+      : childName;
+    const selector = task({
+      taskId: "selector",
+      taskType: decision ? "SWITCH" : "SUB_WORKFLOW",
+      referenceTaskName: decision ? "triage_router" : "triage_router__1",
+      loopOverTask: !decision,
+      startTime: 10,
+      endTime: 20,
+      inputData: decision
+        ? {
+            _conductorDeferredEvaluator: true,
+            model: "jev-1.13",
+            state: "route this",
+            questions: { agent: {} },
+          }
+        : {
+            subWorkflowName: "triage_selector",
+            subWorkflowDefinition: {
+              metadata: {
+                agentDef: {
+                  name: "triage_selector",
+                  kind: "chat",
+                  model: "openai/gpt-6-luna",
+                },
+              },
+            },
+          },
+      outputData: decision
+        ? selectorResult
+        : { subWorkflowId: "selector-run", result: selectorResult },
+    });
+    const selected = task({
+      taskId: childName,
+      taskType: "SUB_WORKFLOW",
+      referenceTaskName: decision
+        ? "triage_selected_0"
+        : `triage_handoff_0_${childName}__1`,
+      loopOverTask: !decision,
+      startTime: 20,
+      endTime: 40,
+      inputData: {
+        subWorkflowName: childName,
+        subWorkflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: childName,
+              kind: "chat",
+              model: "openai/gpt-6-luna",
+            },
+          },
+        },
+      },
+      outputData: { subWorkflowId: "billing-run", result: "handled" },
+    });
+    const run = transformWorkflowExecutionToAgentRun(
+      execution([selector, selected], {
+        workflowName: "triage",
+        workflowDefinition: {
+          metadata: {
+            agentDef: {
+              name: "triage",
+              strategy: "router",
+              agents: [{ name: childName, kind: "chat" }],
+            },
+          },
+        },
+      }),
+    );
+    expect(run.turns).toHaveLength(2);
+    expect(run.turns[0].subAgents).toEqual([]);
+    expect(run.turns[0].events[0]).toMatchObject({
+      type: decision ? EventType.DECISION : EventType.THINKING,
+      targetAgent: childName,
+    });
+    expect(run.turns[1].subAgents.map((sub) => sub.agentName)).toEqual([
+      childName,
+    ]);
+    expect(run.turns[1].strategy).toBe(AgentStrategy.SEQUENTIAL);
+  },
+);

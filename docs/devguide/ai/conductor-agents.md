@@ -13,7 +13,7 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
     </a>
     <a class="integration-action-card" href="agent-framework-recipes.html">
       <span class="integration-action-card__title">Bring a framework agent</span>
-      <span>Choose a bridge for OpenAI Agents, Google ADK, LangChain, LangGraph, or more.</span>
+      <span>Run an agent built with OpenAI Agents, Google ADK, LangChain, LangGraph, or more.</span>
     </a>
     <a class="integration-action-card" href="#use-a-deployed-agent-in-a-workflow">
       <span class="integration-action-card__title">Use it in a workflow</span>
@@ -22,7 +22,7 @@ description: "Conductor Agents — compile SDK-authored agents into durable, ins
   </div>
 </section>
 
-A **Conductor Agent** is an agent you author in code and register on the server. You write it with a Conductor SDK, or bring it from a supported framework through a bridge, and Conductor compiles it into an ordinary workflow definition. Because the compiled agent is a workflow, every LLM call, tool invocation, wait, retry, and branch is visible in the UI and API, and the agent composes with everything else a workflow can contain: other tasks, branching, schedules, human approval, and cancellation. Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#.
+A **Conductor Agent** is an agent you author in code and register on the server. You build it with a Conductor SDK, or bring it from a supported agent framework, and Conductor compiles it into an ordinary workflow definition. Because the compiled agent is a workflow, every LLM call, tool invocation, wait, retry, and branch is visible in the UI and API, and the agent composes with everything else a workflow can contain: other tasks, branching, schedules, human approval, and cancellation. Conductor Agents are available in Python, Java, TypeScript/JavaScript, and C#.
 
 Conductor Agents are one of two ways to build AI behavior. The other is a [declarative AI workflow](llm-orchestration.md), where you place LLM, MCP, and control-flow tasks directly in the workflow definition. Choose the declarative path when the orchestration itself is what you are building. Choose a Conductor Agent when the agent logic lives in code and you want to run it inside a durable process.
 
@@ -43,12 +43,12 @@ Every Conductor Agent moves through the same five operations, and the names belo
 1. **Create**: define the agent in code, from the SDK's own `Agent` class or from a supported framework object.
 2. **Plan**: inspect the workflow graph the agent will compile to. Useful during development and in CI, before anything is deployed.
 3. **Deploy**: register the compiled agent on the server as a reusable, versioned Conductor Agent.
-4. **Serve**: start the worker process that executes the agent's tools, where the bridge requires one.
+4. **Serve**: start the worker process that executes the agent's tools, where the framework requires one.
 5. **Run**: execute the agent. During development, `run` compiles and runs it in one step. In production, workflows invoke the deployed agent by name through an `AGENT` task.
 
 In short: use `run` while you iterate, then `deploy` and `serve` so workflows and other callers can start the stable deployed version.
 
-For framework-specific code, package versions, and runnable examples, see [Framework Agent Bridges](agent-framework-recipes.md). For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md).
+For framework-specific code, package versions, and runnable examples, see [Framework Agents](agent-framework-recipes.md). For server setup and credentials, complete [Connect to Conductor](../../quickstart/connect.md).
 
 ## Use a deployed agent in a workflow
 
@@ -57,7 +57,7 @@ For framework-specific code, package versions, and runnable examples, see [Frame
 - `agentType: "a2a"` (default) calls a remote A2A endpoint.
 - `agentType: "conductor"` runs a deployed Conductor Agent selected by `name`.
 
-OpenAI Agents, Google ADK, LangGraph, and other supported bridges are SDK authoring paths. They are not `agentType` values.
+OpenAI Agents, Google ADK, LangGraph, and other supported frameworks are SDK authoring paths. They are not `agentType` values.
 
 ```json
 {
@@ -116,7 +116,7 @@ Before promotion, evaluate the recorded agent behavior—not only its final text
 
 ## Workflow-integration recipes
 
-These repository examples deliberately contain only the stable workflow contract. They are framework-agnostic; create and deploy `planner` / `researcher` with the SDK bridge appropriate to your framework.
+These repository examples deliberately contain only the stable workflow contract. They are framework-agnostic; create and deploy `planner` / `researcher` with the Conductor SDK for your framework.
 
 | Recipe | What it demonstrates |
 |---|---|
@@ -125,4 +125,4 @@ These repository examples deliberately contain only the stable workflow contract
 | [`33-conductor-agent-multi-agent.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/33-conductor-agent-multi-agent.json) | Parallel specialist agents inside a `FORK_JOIN` / `JOIN` graph. |
 | [`34-conductor-agent-cancel.json`](https://github.com/conductor-oss/conductor/blob/main/ai/examples/34-conductor-agent-cancel.json) | Cancellation propagation from the parent graph. |
 
-Next: choose a framework route in [Framework Agent Bridges](agent-framework-recipes.md), compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md), then use the [Production Agent Architecture](production-agent-architecture.md) for governance, evaluation, deployment, recovery, and operations.
+Next: choose a framework route in [Framework Agents](agent-framework-recipes.md), compose the deployed agent in [Build Your First Agentic Workflow Graph](first-ai-agent.md), then use the [Production Agent Architecture](production-agent-architecture.md) for governance, evaluation, deployment, recovery, and operations.

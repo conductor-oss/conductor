@@ -66,4 +66,5 @@ message Task {
     ExecutionMetadata execution_metadata = 44;
     string parent_task_id = 45;
     map<string, string> runtime_metadata = 46;
+    string parent_task_reference_name = 47;
 }

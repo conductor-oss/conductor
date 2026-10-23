@@ -1,0 +1,113 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You can reverse strings and format reports. When asked to reverse a string, use reverse_string first, then format_report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Reverse the string 'hello world' and add 33 and 21 append the result to that string, then write a report with the result.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "format_report",
+      "description" : "Format a title and body into a structured report.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "title", "body" ]
+      }
+    }, {
+      "name" : "math_add",
+      "description" : "Add two numbers and return the sum.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "a" : {
+            "title" : "A",
+            "type" : "number"
+          },
+          "b" : {
+            "title" : "B",
+            "type" : "number"
+          }
+        },
+        "required" : [ "a", "b" ]
+      }
+    }, {
+      "name" : "string_reverse",
+      "description" : "Reverse a string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "text" : {
+            "title" : "Text",
+            "type" : "string"
+          }
+        },
+        "required" : [ "text" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0f0924ca20f60b60006aa83c742b0487d0a5bc133d6d00b10b",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 162,
+        "completionTokens" : 91,
+        "totalTokens" : 253,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0f0924ca20f60b60006aa83c742b0487d0a5bc133d6d00b10b",
+        "reasoning_tokens" : 70
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_q6mH81CJRxTbFNHY8hJKw2fw",
+          "type" : "function",
+          "name" : "string_reverse",
+          "arguments" : "{\"text\":\"hello world\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

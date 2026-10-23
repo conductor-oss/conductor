@@ -1,0 +1,156 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a banking assistant. Use check_balance for balance inquiries. When asked to transfer money, first check the balance, then call transfer_funds to request the transfer. The runtime will pause for human approval before the transfer executes.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"account_id\":\"ACC-789\",\"balance\":15000},\"name\":\"check_balance\"},{\"output\":{\"amount\":500,\"from\":\"ACC-789\",\"to\":\"ACC-456\",\"status\":\"completed\"},\"name\":\"transfer_funds\"}]\n[/TOOL RESULTS]\n\nTransfer $500 from ACC-789 to ACC-456. Check the balance first.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "system",
+      "text" : "Human reviewer feedback: Reason: y.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "check_balance",
+        "arguments" : {
+          "account_id" : "ACC-789",
+          "method" : "check_balance"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "check_balance",
+        "value" : {
+          "account_id" : "ACC-789",
+          "balance" : 15000.0
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_1",
+        "name" : "transfer_funds",
+        "arguments" : {
+          "to_acct" : "ACC-456",
+          "amount" : 500,
+          "method" : "transfer_funds",
+          "from_acct" : "ACC-789"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_1",
+        "name" : "transfer_funds",
+        "value" : {
+          "status" : "completed",
+          "from" : "ACC-789",
+          "to" : "ACC-456",
+          "amount" : 500
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "check_balance",
+      "description" : "Check the balance of an account.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "account_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "account_id" ]
+      }
+    }, {
+      "name" : "transfer_funds",
+      "description" : "Request a funds transfer; runtime pauses for human approval before execution.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "to_acct" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "from_acct" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "from_acct", "to_acct", "amount" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0d1e1589cd648443006aa8302b950487d08e03f76e43edfbea",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 357,
+        "completionTokens" : 90,
+        "totalTokens" : 447,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0d1e1589cd648443006aa8302b950487d08e03f76e43edfbea",
+        "reasoning_tokens" : 46
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "The transfer is complete: **$500 was transferred from ACC-789 to ACC-456**. The balance of ACC-789 was checked first and was **$15,000**.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

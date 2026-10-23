@@ -1,0 +1,210 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a customer support agent. Use the available tools to look up customers, check inventory, process orders, and format responses for the customer.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"name\":\"Example Customer\",\"orders\":[{\"product_id\":\"PROD-001\",\"customer_id\":\"C-1234\",\"warehouse\":\"default\",\"order_id\":\"ORD-5678\",\"status\":\"pending\"}],\"customer_id\":\"C-1234\"},\"name\":\"get_customer\"},{\"output\":{\"product_id\":\"PROD-001\",\"customer_id\":\"C-1234\",\"warehouse\":\"default\",\"order_id\":\"ORD-5678\",\"status\":\"cancelled\"},\"name\":\"process_order\"},{\"output\":{\"quantity\":12,\"product_id\":\"PROD-001\",\"warehouse\":\"default\",\"in_stock\":true},\"name\":\"check_inventory\"}]\n[/TOOL RESULTS]\n\nCustomer C-1234 wants to cancel order ORD-5678. Look up the customer, check if we have the product in stock, and process the cancellation.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "get_customer",
+        "arguments" : {
+          "method" : "get_customer",
+          "customer_id" : "C-1234"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "get_customer",
+        "value" : {
+          "customer_id" : "C-1234",
+          "name" : "Example Customer",
+          "orders" : [ {
+            "order_id" : "ORD-5678",
+            "customer_id" : "C-1234",
+            "product_id" : "PROD-001",
+            "warehouse" : "default",
+            "status" : "pending"
+          } ]
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_1",
+        "name" : "check_inventory",
+        "arguments" : {
+          "method" : "check_inventory",
+          "product_id" : "PROD-001",
+          "warehouse" : "default"
+        }
+      }, {
+        "reference" : "call_2",
+        "name" : "process_order",
+        "arguments" : {
+          "method" : "process_order",
+          "action" : "cancel",
+          "order_id" : "ORD-5678"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_1",
+        "name" : "check_inventory",
+        "value" : {
+          "product_id" : "PROD-001",
+          "warehouse" : "default",
+          "in_stock" : true,
+          "quantity" : 12
+        }
+      } ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_2",
+        "name" : "process_order",
+        "value" : {
+          "order_id" : "ORD-5678",
+          "customer_id" : "C-1234",
+          "product_id" : "PROD-001",
+          "warehouse" : "default",
+          "status" : "cancelled"
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "format_response",
+      "description" : "Format a data dictionary into a human-readable string.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "additionalProperties" : { },
+            "type" : "object"
+          }
+        },
+        "required" : [ "data" ]
+      }
+    }, {
+      "name" : "get_customer",
+      "description" : "Look up customer details from the CRM system.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "customer_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "customer_id" ]
+      }
+    }, {
+      "name" : "check_inventory",
+      "description" : "Check product availability in a warehouse.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "product_id" : {
+            "type" : "string"
+          },
+          "warehouse" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "product_id" ]
+      }
+    }, {
+      "name" : "process_order",
+      "description" : "Process a customer order. Actions: refund, cancel, update.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "action" : {
+            "type" : "string"
+          },
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id", "action" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0b1c2e95a39e0e9c006aa8303d679487d0b91a16e32518207c",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 589,
+        "completionTokens" : 109,
+        "totalTokens" : 698,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0b1c2e95a39e0e9c006aa8303d679487d0b91a16e32518207c",
+        "reasoning_tokens" : 46
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_ICLnQETSyGwlQJ7wZCptyzv0",
+          "type" : "function",
+          "name" : "format_response",
+          "arguments" : "{\"data\":{\"customer\":\"Example Customer (C-1234)\",\"order_id\":\"ORD-5678\",\"product_id\":\"PROD-001\",\"cancellation_status\":\"Cancelled successfully\",\"inventory_status\":\"In stock\",\"quantity_available\":12}}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

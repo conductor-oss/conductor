@@ -1,4 +1,4 @@
-import { Box, FormControlLabel, Switch } from "@mui/material";
+import { Box, Divider, FormControlLabel, Switch } from "@mui/material";
 import MuiTypography from "components/ui/MuiTypography";
 import PlayIcon from "components/icons/PlayIcon";
 import _isEqual from "lodash/isEqual";
@@ -17,7 +17,9 @@ import { dateToEpoch } from "utils/date";
 import { commonlyUsedDateTime, getSearchDateTime } from "utils/date";
 import { usePushHistory } from "utils/hooks/usePushHistory";
 import { tryToJson } from "utils/utils";
+import { featureFlags, FEATURES } from "utils/flags";
 import SplitWorkflowDefinitionButton from "./SplitWorkflowDefinitionButton/SplitWorkflowDefinitionButton";
+import ImportBpmnButton from "./SplitWorkflowDefinitionButton/ImportBpmnButton";
 import AdvancedSearch from "./workflowSearchComponents/AdvancedSearch";
 import BasicSearch from "./workflowSearchComponents/BasicSearch";
 
@@ -160,9 +162,25 @@ export default function WorkflowPanel({
     );
   };
 
+  const isImportBpmnHidden = featureFlags.isEnabled(FEATURES.HIDE_IMPORT_BPMN);
+
   const defaultActions = (
     <SectionHeaderActions
       buttons={[
+        ...(isImportBpmnHidden
+          ? []
+          : [
+              { customButtonElement: <ImportBpmnButton /> },
+              {
+                customButtonElement: (
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ height: 24, alignSelf: "center" }}
+                  />
+                ),
+              },
+            ]),
         {
           label: "Run workflow",
           color: "secondary",

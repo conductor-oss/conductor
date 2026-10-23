@@ -1,0 +1,76 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You list GitHub repos using the list_github_repos tool. Summarize the results.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "List the repos for Conductor",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "list_github_repos",
+      "description" : "List public GitHub repositories for a user. Returns JSON array with name, url, and stars.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : { }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_003265317ca17e27006aa83f2db73487d0a03b316ec465d0b6",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 83,
+        "completionTokens" : 17,
+        "totalTokens" : 100,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_003265317ca17e27006aa83f2db73487d0a03b316ec465d0b6",
+        "reasoning_tokens" : 0
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_hDHTUHhGkJwo2gaqhykofJwB",
+          "type" : "function",
+          "name" : "list_github_repos",
+          "arguments" : "{}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

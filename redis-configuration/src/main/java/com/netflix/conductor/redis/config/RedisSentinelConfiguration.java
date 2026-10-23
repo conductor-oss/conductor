@@ -86,7 +86,7 @@ public class RedisSentinelConfiguration extends RedisConfiguration {
                 redisProperties.isSsl());
 
         JedisClientConfig masterConfig = createMasterClientConfig(redisProperties, password);
-        JedisClientConfig sentinelConfig = createSentinelClientConfig(redisProperties, password);
+        JedisClientConfig sentinelConfig = createSentinelClientConfig(redisProperties);
 
         JedisSentineled sentineled =
                 new JedisSentineled(
@@ -102,9 +102,12 @@ public class RedisSentinelConfiguration extends RedisConfiguration {
         return builder.build();
     }
 
-    JedisClientConfig createSentinelClientConfig(RedisProperties redisProperties, String password) {
+    JedisClientConfig createSentinelClientConfig(RedisProperties redisProperties) {
         DefaultJedisClientConfig.Builder builder = createBaseClientConfigBuilder(redisProperties);
-        applyCredentials(builder, redisProperties, password);
+        String sentinelPassword = redisProperties.getSentinelPassword();
+        if (isNotBlank(sentinelPassword)) {
+            applyCredentials(builder, redisProperties, sentinelPassword);
+        }
         return builder.build();
     }
 

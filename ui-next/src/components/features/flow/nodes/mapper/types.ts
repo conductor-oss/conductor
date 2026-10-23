@@ -19,6 +19,8 @@ export interface NodeTaskData<T extends CommonTaskDef = CommonTaskDef> {
   withinExpandedSubWorkflow?: boolean;
   outputData?: Record<string, unknown>;
   parentLoop?: ExecutionTask;
+  /** Tasks run for this one without being steps of the definition; drawn beside the node. */
+  sideTasks?: ExecutionTask[];
 }
 
 type EdgeInnerData = {
