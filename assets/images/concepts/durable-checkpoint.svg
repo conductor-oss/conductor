@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Durable checkpoint</title>
+  <path fill="#172033" d="M12 10h29l11 11v33H12V10Zm28 4v12h12L40 14ZM18 20h14v7H18v-7Zm0 13h28v5H18v-5Zm0 10h20v5H18v-5Z"/>
+  <path fill="#f97316" d="M50 37a13 13 0 1 0 0 26 13 13 0 0 0 0-26Zm-2 19-6-6 3-3 3 3 7-7 3 3-10 10Z"/>
+</svg>

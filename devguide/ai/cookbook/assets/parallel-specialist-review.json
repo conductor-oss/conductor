@@ -1,0 +1,48 @@
+{
+  "name": "parallel_specialist_agent_review",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Derived from ai/examples/33-conductor-agent-multi-agent.json. A FORK_JOIN fans out to the deployed security-reviewer and reliability-reviewer agents, then a JOIN collects both.",
+  "tasks": [
+    {
+      "name": "fork_agents",
+      "taskReferenceName": "fork_agents_ref",
+      "type": "FORK_JOIN",
+      "forkTasks": [
+        [
+          {
+            "name": "run_security_reviewer",
+            "taskReferenceName": "run_security_reviewer_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "security-reviewer",
+              "prompt": "${workflow.input.prompt}"
+            }
+          }
+        ],
+        [
+          {
+            "name": "run_reliability_reviewer",
+            "taskReferenceName": "run_reliability_reviewer_ref",
+            "type": "AGENT",
+            "inputParameters": {
+              "agentType": "conductor",
+              "name": "reliability-reviewer",
+              "prompt": "${workflow.input.prompt}"
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "name": "join_agents",
+      "taskReferenceName": "join_agents_ref",
+      "type": "JOIN",
+      "joinOn": [
+        "run_security_reviewer_ref",
+        "run_reliability_reviewer_ref"
+      ]
+    }
+  ]
+}
