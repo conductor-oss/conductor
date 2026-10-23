@@ -1707,8 +1707,7 @@ class PlanAndCompileTaskTest {
                 List.of("coder", "doc_search", "publish", "approve", "check_word_count");
         List<Map<String, Object>> tools = List.of(coder, mcp, http, human, validator);
 
-        com.fasterxml.jackson.databind.ObjectMapper mapper =
-                new com.fasterxml.jackson.databind.ObjectMapper();
+        tools.jackson.databind.ObjectMapper mapper = new tools.jackson.databind.ObjectMapper();
 
         // Compile 10 times in a tight loop — same input every iteration.
         String reference = null;

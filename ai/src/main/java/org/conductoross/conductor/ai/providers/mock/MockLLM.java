@@ -36,8 +36,8 @@ import org.springframework.ai.image.ImageModel;
 
 import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /** Playback-only provider backed by recorded JSON responses. Never calls a real provider. */
 public final class MockLLM implements AIModel {
@@ -61,7 +61,7 @@ public final class MockLLM implements AIModel {
                     LLMRecording saved = objectMapper.readValue(file.toFile(), LLMRecording.class);
                     RecordedResponseJson.validate(saved.response());
                     register(saved, loaded);
-                } catch (IOException | RuntimeException exception) {
+                } catch (RuntimeException exception) {
                     throw new IllegalArgumentException(
                             "Invalid LLM recording in '"
                                     + relative

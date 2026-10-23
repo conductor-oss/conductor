@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.postgres.dao;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -25,15 +24,15 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.postgres.util.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 public abstract class PostgresBaseDAO {
 
@@ -69,7 +68,7 @@ public abstract class PostgresBaseDAO {
     protected String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new NonTransientException(ex.getMessage(), ex);
         }
     }
@@ -77,7 +76,7 @@ public abstract class PostgresBaseDAO {
     protected <T> T readValue(String json, Class<T> tClass) {
         try {
             return objectMapper.readValue(json, tClass);
-        } catch (IOException ex) {
+        } catch (JacksonException ex) {
             throw new NonTransientException(ex.getMessage(), ex);
         }
     }
@@ -85,7 +84,7 @@ public abstract class PostgresBaseDAO {
     protected <T> T readValue(String json, TypeReference<T> typeReference) {
         try {
             return objectMapper.readValue(json, typeReference);
-        } catch (IOException ex) {
+        } catch (JacksonException ex) {
             throw new NonTransientException(ex.getMessage(), ex);
         }
     }
@@ -143,7 +142,7 @@ public abstract class PostgresBaseDAO {
 
     <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
         try {
-            return retryTemplate.execute(context -> getWithTransaction(function));
+            return retryTemplate.invoke(() -> getWithTransaction(function));
         } catch (Exception e) {
             throw new NonTransientException(e.getMessage(), e);
         }
