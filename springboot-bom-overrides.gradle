@@ -34,15 +34,19 @@ ext['rabbit-amqp-client.version'] = revAmqpClient
 // latest stable in the 5.4 line (5.5.x is alpha/beta) and clears it. Shared by both artifacts.
 ext['httpcore5.version'] = '5.4.3'
 
-// Conductor's default is ES6, but SB brings in ES7
+// Base default for non-ES backends (e.g. OpenSearch) that still resolve an ES version transitively.
 ext['elasticsearch.version'] = revElasticSearch7
 
-// When building with ES8 persistence, override Spring Boot's managed Elasticsearch versions.
+// Elasticsearch is the default indexing backend and defaults to ES8 (revElasticSearch8), which clears
+// CVE-2025-37731 by dropping the ES7 core jar. ES7 stays available as an explicit opt-in.
 // Spring Boot 3.3.x manages `org.elasticsearch.client:elasticsearch-rest-client` via
 // `elasticsearch.version` and `co.elastic.clients:elasticsearch-java` via
 // `elasticsearch-client.version`.
-def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch'
-if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch8'
+if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7') {
+    ext['elasticsearch.version'] = revElasticSearch7
+} else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8'
+        || indexingBackend == 'elasticsearch') {
     ext['elasticsearch.version'] = revElasticSearch8
     ext['elasticsearch-client.version'] = revElasticSearch8
 }
