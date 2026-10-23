@@ -24,6 +24,17 @@ export const isForkJoinDynamicTask = (
 export const isDoWhileTask = (task: CommonTaskDef): task is DoWhileTaskDef =>
   task?.type === TaskType.DO_WHILE;
 
+/**
+ * An agent that ran tools, which are drawn nested inside it.
+ *
+ * Only when it has children: an agent that called none is an ordinary card, and giving it a
+ * container would draw an empty box round a leaf.
+ */
+export const isAgentWithTools = (task: CommonTaskDef): boolean =>
+  task?.type === TaskType.AGENT &&
+  Array.isArray((task as { loopOver?: unknown[] }).loopOver) &&
+  ((task as { loopOver?: unknown[] }).loopOver?.length ?? 0) > 0;
+
 export const isTerminateTask = (
   task: CommonTaskDef,
 ): task is TerminateTaskDef => task?.type === TaskType.TERMINATE;

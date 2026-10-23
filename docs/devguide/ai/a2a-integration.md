@@ -47,12 +47,15 @@ flowchart LR
 conductor.integrations.ai.enabled=true
 ```
 
-Each task takes an **`agentType`** input that selects one of the two supported `AGENT` modes. It does not select an authoring framework such as OpenAI Agents, Google ADK, or LangGraph. An unrecognized value fails the task with a clear error.
+Each task takes an **`agentType`** input that selects the agent runtime. It does not select an authoring framework such as OpenAI Agents, Google ADK, or LangGraph. It defaults to `"a2a"`, and an unrecognized value fails the task with an error naming the runtimes that are registered.
 
 **Choosing a runtime.** `agentType` picks where the agent runs:
 
 - `agentType: "a2a"` (default) — call a **remote** Agent2Agent endpoint (`agentUrl`). This page.
 - `agentType: "conductor"` — run a deployed **Conductor Agent** by `name`. See [Conductor Agents](conductor-agents.md).
+- `agentType: "microsoft-foundry"`, `"openai-assistants"`, `"bedrock"` — drive an agent hosted on Microsoft Foundry, the OpenAI Assistants API, or AWS Bedrock. See [Hosted platform agents](hosted-agents.md).
+
+Vertex AI agents speak A2A natively, so they are called with `agentType: "a2a"` rather than a runtime of their own.
 
 ### AGENT — send a message to an agent
 
@@ -99,7 +102,7 @@ sequenceDiagram
 
 | Field | Description |
 |---|---|
-| `agentType` | `"a2a"` (default) calls a remote A2A endpoint. `"conductor"` runs a deployed Conductor Agent. It does not select a framework; other values are rejected. |
+| `agentType` | `"a2a"` (default) calls a remote A2A endpoint; `"conductor"` runs a deployed Conductor Agent; `"microsoft-foundry"`, `"openai-assistants"` and `"bedrock"` drive a hosted platform agent. It does not select a framework. The fields on this page apply to `"a2a"` only — see [Conductor Agents](conductor-agents.md) and [Hosted platform agents](hosted-agents.md) for the others. |
 | `agentUrl` | Base URL of the remote agent (required). |
 | `text` / `prompt` | Convenience for a single text part. |
 | `parts` / `message` | A full A2A message (multi-part / data parts) instead of `text`. |

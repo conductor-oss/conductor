@@ -42,7 +42,7 @@ public class AgentCredentialConfig {
     /** AWS region for Bedrock; ignored by other platforms. */
     private String region;
 
-    /** Agent endpoint URL (e.g. Azure Foundry A2A endpoint). */
+    /** Agent endpoint URL (e.g. Microsoft Foundry A2A endpoint). */
     private String endpoint;
 
     /** OAuth scope; defaults are applied per-platform if omitted. */

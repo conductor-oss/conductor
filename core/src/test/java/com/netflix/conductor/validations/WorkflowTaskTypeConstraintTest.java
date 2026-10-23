@@ -654,6 +654,70 @@ public class WorkflowTaskTypeConstraintTest {
                         .anyMatch(e -> e.contains("Expression is not well formatted")));
     }
 
+    private WorkflowTask agentTask(String agentType, String prompt) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("agent");
+        workflowTask.setTaskReferenceName("agent_ref");
+        workflowTask.setType(TaskType.TASK_TYPE_AGENT);
+        Map<String, Object> input = new HashMap<>();
+        if (agentType != null) {
+            input.put("agentType", agentType);
+        }
+        if (prompt != null) {
+            input.put("prompt", prompt);
+        }
+        workflowTask.setInputParameters(input);
+        return workflowTask;
+    }
+
+    @Test
+    public void testAgentTaskOnAHostedRuntimeRequiresPrompt() {
+        // A hosted runtime reads the message from prompt and nowhere else, so a definition without
+        // one fails at run time - possibly after the workflow has already done work.
+        List<String> errors = getErrorMessages(agentTask("microsoft-foundry", null));
+
+        assertEquals(1, errors.size());
+        assertTrue(errors.get(0).contains("inputParameters.prompt"));
+        assertTrue(errors.get(0).contains("microsoft-foundry"));
+
+        assertEquals(1, getErrorMessages(agentTask("bedrock", "   ")).size());
+        assertEquals(1, getErrorMessages(agentTask("openai-assistants", null)).size());
+        // The runtime it was called before the rename is validated the same way.
+        assertEquals(1, getErrorMessages(agentTask("azure-foundry", null)).size());
+        // conductor agents go through the same delegate and have the same requirement.
+        assertEquals(1, getErrorMessages(agentTask("conductor", null)).size());
+    }
+
+    @Test
+    public void testAgentTaskWithAPromptIsValid() {
+        assertEquals(0, getErrorMessages(agentTask("microsoft-foundry", "hi there")).size());
+        // An expression is a prompt: what it resolves to is not knowable at save time.
+        assertEquals(
+                0,
+                getErrorMessages(agentTask("microsoft-foundry", "${workflow.input.question}"))
+                        .size());
+    }
+
+    @Test
+    public void testAgentTaskLeavesA2aAndUnknowableTypesAlone() {
+        // A2A takes any of message, parts, text or prompt, so prompt alone is not the rule there.
+        assertEquals(0, getErrorMessages(agentTask("a2a", null)).size());
+        assertEquals(0, getErrorMessages(agentTask("A2A", null)).size());
+        assertEquals(0, getErrorMessages(agentTask(null, null)).size());
+        // A runtime chosen at run time cannot be judged at save time.
+        assertEquals(0, getErrorMessages(agentTask("${workflow.input.runtime}", null)).size());
+    }
+
+    @Test
+    public void testAgentTaskAcceptsAPromptFromTheTaskDefTemplate() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("agent");
+        taskDef.setInputTemplate(Map.of("prompt", "a templated question"));
+        when(mockMetadataDao.getTaskDef("agent")).thenReturn(taskDef);
+
+        assertEquals(0, getErrorMessages(agentTask("microsoft-foundry", null)).size());
+    }
+
     private List<String> getErrorMessages(WorkflowTask workflowTask) {
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         List<String> validationErrors = new ArrayList<>();
