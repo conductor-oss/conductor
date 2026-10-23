@@ -21,6 +21,9 @@ export interface CommonTaskDef {
   description?: string;
   optional?: boolean;
   metadata?: WorkflowTaskMetadata;
+  boundaryTimerDuration?: string;
+  boundaryTimerCompletionStatus?: string;
+  boundaryTimerOutput?: Record<string, unknown>;
 }
 
 export interface JoinTaskDef extends CommonTaskDef {

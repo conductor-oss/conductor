@@ -177,6 +177,40 @@ public class WorkflowTask {
     private JoinMode joinMode;
 
     /**
+     * The terminal status a task is moved to when its boundary timer fires. A boundary timer gives
+     * up waiting rather than reporting a failure, so only statuses the workflow can carry on from
+     * are offered.
+     */
+    @ProtoEnum
+    public enum BoundaryTimerStatus {
+        COMPLETED,
+        FAILED,
+        COMPLETED_WITH_ERRORS
+    }
+
+    /**
+     * How long this task may stay unfinished before it is settled on its behalf, as a duration ("2
+     * days", "48 hours", "1 days 4 hours 30 minutes"), measured from when the task was scheduled.
+     * Blank leaves the task waiting indefinitely.
+     *
+     * <p>Not a timeout. {@code TaskDef}'s timeouts mark a task TIMED_OUT and hand it to the retry
+     * logic; a boundary timer stops waiting and decides the outcome, settling the task on {@link
+     * #boundaryTimerCompletionStatus} with {@link #boundaryTimerOutput} so the workflow moves on
+     * through its normal path. It lives here rather than on {@code TaskDef} because it applies to
+     * any task in a workflow, including the system tasks that have no registered definition.
+     */
+    @ProtoField(id = 36)
+    private String boundaryTimerDuration;
+
+    /** Status the task is settled on when the boundary timer fires. Defaults to COMPLETED. */
+    @ProtoField(id = 37)
+    private BoundaryTimerStatus boundaryTimerCompletionStatus;
+
+    /** Output given to the task when the boundary timer fires, in place of a worker's. */
+    @ProtoField(id = 38)
+    private Map<String, Object> boundaryTimerOutput = new HashMap<>();
+
+    /**
      * Editor and integration metadata associated with this task.
      *
      * <p>This data is descriptive and must not affect task scheduling or execution semantics. It is
@@ -642,6 +676,32 @@ public class WorkflowTask {
 
     public void setMetadata(Map<String, Object> metadata) {
         this.metadata = metadata != null ? metadata : new HashMap<>();
+    }
+
+    public String getBoundaryTimerDuration() {
+        return boundaryTimerDuration;
+    }
+
+    public void setBoundaryTimerDuration(String boundaryTimerDuration) {
+        this.boundaryTimerDuration = boundaryTimerDuration;
+    }
+
+    public BoundaryTimerStatus getBoundaryTimerCompletionStatus() {
+        return boundaryTimerCompletionStatus;
+    }
+
+    public void setBoundaryTimerCompletionStatus(
+            BoundaryTimerStatus boundaryTimerCompletionStatus) {
+        this.boundaryTimerCompletionStatus = boundaryTimerCompletionStatus;
+    }
+
+    public Map<String, Object> getBoundaryTimerOutput() {
+        return boundaryTimerOutput;
+    }
+
+    public void setBoundaryTimerOutput(Map<String, Object> boundaryTimerOutput) {
+        this.boundaryTimerOutput =
+                boundaryTimerOutput != null ? boundaryTimerOutput : new HashMap<>();
     }
 
     private Collection<List<WorkflowTask>> children() {
