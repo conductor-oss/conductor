@@ -63,6 +63,20 @@ public class Monitors {
         registry.add(meterRegistry);
     }
 
+    private static volatile boolean workflowNameTagEnabled = true;
+
+    /**
+     * Toggle whether the {@code workflowName} tag is attached to metrics. Called by
+     * MetricsCollector at startup.
+     */
+    public static void setWorkflowNameTagEnabled(boolean enabled) {
+        workflowNameTagEnabled = enabled;
+    }
+
+    private static String workflowNameTag(String workflowName) {
+        return workflowNameTagEnabled ? workflowName : null;
+    }
+
     private static final double[] percentiles = new double[] {0.5, 0.75, 0.90, 0.95, 0.99};
     private static final Map<String, AtomicDouble> gauges = new ConcurrentHashMap<>();
     private static final Map<String, Counter> counters = new ConcurrentHashMap<>();
@@ -249,13 +263,18 @@ public class Monitors {
                 "workflow_running",
                 count,
                 "workflowName",
-                name,
+                workflowNameTag(name),
                 "ownerApp",
                 StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
 
     public static void recordNumTasksInWorkflow(long count, String name, String version) {
-        distributionSummary("tasks_in_workflow", "workflowName", name, "version", version)
+        distributionSummary(
+                        "tasks_in_workflow",
+                        "workflowName",
+                        workflowNameTag(name),
+                        "version",
+                        version)
                 .record(count);
     }
 
@@ -268,7 +287,13 @@ public class Monitors {
     }
 
     public static void recordTaskPendingTime(String taskType, String workflowType, long duration) {
-        gauge("task_pending_time", duration, "workflowName", workflowType, "taskType", taskType);
+        gauge(
+                "task_pending_time",
+                duration,
+                "workflowName",
+                workflowNameTag(workflowType),
+                "taskType",
+                taskType);
     }
 
     public static void recordWorkflowTermination(
@@ -276,7 +301,7 @@ public class Monitors {
         counter(
                 "workflow_failure",
                 "workflowName",
-                workflowType,
+                workflowNameTag(workflowType),
                 "status",
                 status.name(),
                 "ownerApp",
@@ -288,7 +313,7 @@ public class Monitors {
         counter(
                 "workflow_start_success",
                 "workflowName",
-                workflowType,
+                workflowNameTag(workflowType),
                 "version",
                 version,
                 "ownerApp",
@@ -299,7 +324,7 @@ public class Monitors {
         counter(
                 "workflow_start_error",
                 "workflowName",
-                workflowType,
+                workflowNameTag(workflowType),
                 "ownerApp",
                 StringUtils.defaultIfBlank(ownerApp, "unknown"));
     }
@@ -309,7 +334,7 @@ public class Monitors {
         counter(
                 "task_update_conflict",
                 "workflowName",
-                workflowType,
+                workflowNameTag(workflowType),
                 "taskType",
                 taskType,
                 "workflowStatus",
@@ -321,7 +346,7 @@ public class Monitors {
         counter(
                 "task_update_conflict",
                 "workflowName",
-                workflowType,
+                workflowNameTag(workflowType),
                 "taskType",
                 taskType,
                 "taskStatus",
@@ -329,15 +354,30 @@ public class Monitors {
     }
 
     public static void recordTaskUpdateError(String taskType, String workflowType) {
-        counter("task_update_error", "workflowName", workflowType, "taskType", taskType);
+        counter(
+                "task_update_error",
+                "workflowName",
+                workflowNameTag(workflowType),
+                "taskType",
+                taskType);
     }
 
     public static void recordTaskExtendLeaseError(String taskType, String workflowType) {
-        counter("task_extendLease_error", "workflowName", workflowType, "taskType", taskType);
+        counter(
+                "task_extendLease_error",
+                "workflowName",
+                workflowNameTag(workflowType),
+                "taskType",
+                taskType);
     }
 
     public static void recordTaskQueueOpError(String taskType, String workflowType) {
-        counter("task_queue_op_error", "workflowName", workflowType, "taskType", taskType);
+        counter(
+                "task_queue_op_error",
+                "workflowName",
+                workflowNameTag(workflowType),
+                "taskType",
+                taskType);
     }
 
     public static void recordWorkflowCompletion(
@@ -345,14 +385,14 @@ public class Monitors {
         getTimer(
                         "workflow_execution",
                         "workflowName",
-                        workflowType,
+                        workflowNameTag(workflowType),
                         "ownerApp",
                         StringUtils.defaultIfBlank(ownerApp, "unknown"))
                 .record(duration, TimeUnit.MILLISECONDS);
     }
 
     public static void recordUnackTime(String workflowType, long duration) {
-        getTimer("workflow_unack", "workflowName", workflowType)
+        getTimer("workflow_unack", "workflowName", workflowNameTag(workflowType))
                 .record(duration, TimeUnit.MILLISECONDS);
     }
 
@@ -478,7 +518,12 @@ public class Monitors {
     }
 
     public static void recordWorkflowArchived(String workflowType, WorkflowModel.Status status) {
-        counter("workflow_archived", "workflowName", workflowType, "workflowStatus", status.name());
+        counter(
+                "workflow_archived",
+                "workflowName",
+                workflowNameTag(workflowType),
+                "workflowStatus",
+                status.name());
     }
 
     public static void recordWebhookPublishSuccess(
