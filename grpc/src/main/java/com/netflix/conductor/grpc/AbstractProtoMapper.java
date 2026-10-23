@@ -880,10 +880,10 @@ public abstract class AbstractProtoMapper {
         if (from.getParentTaskId() != null) {
             to.setParentTaskId( from.getParentTaskId() );
         }
-        to.putAllRuntimeMetadata( from.getRuntimeMetadata() );
         if (from.getParentTaskReferenceName() != null) {
             to.setParentTaskReferenceName( from.getParentTaskReferenceName() );
         }
+        to.putAllRuntimeMetadata( from.getRuntimeMetadata() );
         return to.build();
     }
 
@@ -948,8 +948,8 @@ public abstract class AbstractProtoMapper {
             to.setExecutionMetadata( fromProto( from.getExecutionMetadata() ) );
         }
         to.setParentTaskId( from.getParentTaskId() );
-        to.setRuntimeMetadata( from.getRuntimeMetadataMap() );
         to.setParentTaskReferenceName( from.getParentTaskReferenceName() );
+        to.setRuntimeMetadata( from.getRuntimeMetadataMap() );
         return to;
     }
 
@@ -1822,6 +1822,15 @@ public abstract class AbstractProtoMapper {
         if (from.getJoinMode() != null) {
             to.setJoinMode( toProto( from.getJoinMode() ) );
         }
+        if (from.getBoundaryTimerDuration() != null) {
+            to.setBoundaryTimerDuration( from.getBoundaryTimerDuration() );
+        }
+        if (from.getBoundaryTimerCompletionStatus() != null) {
+            to.setBoundaryTimerCompletionStatus( toProto( from.getBoundaryTimerCompletionStatus() ) );
+        }
+        for (Map.Entry<String, Object> pair : from.getBoundaryTimerOutput().entrySet()) {
+            to.putBoundaryTimerOutput( pair.getKey(), toProto( pair.getValue() ) );
+        }
         for (Map.Entry<String, Object> pair : from.getMetadata().entrySet()) {
             to.putMetadata( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -1877,6 +1886,13 @@ public abstract class AbstractProtoMapper {
         }
         to.setPermissive( from.getPermissive() );
         to.setJoinMode( fromProto( from.getJoinMode() ) );
+        to.setBoundaryTimerDuration( from.getBoundaryTimerDuration() );
+        to.setBoundaryTimerCompletionStatus( fromProto( from.getBoundaryTimerCompletionStatus() ) );
+        Map<String, Object> boundaryTimerOutputMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getBoundaryTimerOutputMap().entrySet()) {
+            boundaryTimerOutputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setBoundaryTimerOutput(boundaryTimerOutputMap);
         Map<String, Object> metadataMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getMetadataMap().entrySet()) {
             metadataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
@@ -1900,6 +1916,30 @@ public abstract class AbstractProtoMapper {
         switch (from) {
             case SYNC: to = WorkflowTask.JoinMode.SYNC; break;
             case ASYNC: to = WorkflowTask.JoinMode.ASYNC; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus toProto(
+            WorkflowTask.BoundaryTimerStatus from) {
+        WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus to;
+        switch (from) {
+            case COMPLETED: to = WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus.COMPLETED; break;
+            case FAILED: to = WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus.FAILED; break;
+            case COMPLETED_WITH_ERRORS: to = WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus.COMPLETED_WITH_ERRORS; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public WorkflowTask.BoundaryTimerStatus fromProto(
+            WorkflowTaskPb.WorkflowTask.BoundaryTimerStatus from) {
+        WorkflowTask.BoundaryTimerStatus to;
+        switch (from) {
+            case COMPLETED: to = WorkflowTask.BoundaryTimerStatus.COMPLETED; break;
+            case FAILED: to = WorkflowTask.BoundaryTimerStatus.FAILED; break;
+            case COMPLETED_WITH_ERRORS: to = WorkflowTask.BoundaryTimerStatus.COMPLETED_WITH_ERRORS; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;
