@@ -330,6 +330,8 @@ const QuickAddMenu = ({
             case "LLM Generate Embeddings":
               return "Generate Embeddings";
             case "LLM Get Embeddings":
+              return "Get Embeddings";
+            case "LLM Search Embeddings":
               return "Search Embeddings";
 
             default:
