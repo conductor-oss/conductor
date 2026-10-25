@@ -1,5 +1,6 @@
 import { randomChars as dynamicTaskSuffixGenerator } from "utils";
 import {
+  AWSLambdaTaskDef,
   BusinessRuleTaskDef,
   DoWhileTaskDef,
   DynamicTaskDef,
@@ -788,7 +789,21 @@ export const generateCancelAgentTask: GenerateTaskFn<CancelAgentTaskDef> = ({
   ...overrides,
 });
 
+export const generateAWSLambdaTask = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+}: GenerateTaskNoJoinParams<AWSLambdaTaskDef> = DEFAULT_ARGS): AWSLambdaTaskDef => ({
+  ...nameGenerator("aws_lambda"),
+  type: TaskType.AWS_LAMBDA,
+  inputParameters: {
+    invocationConfiguration: { integrationName: "", functionName: "" },
+    payload: {},
+  },
+  ...overrides,
+});
+
 export const taskGeneratorMap = {
+  [TaskType.AWS_LAMBDA]: generateAWSLambdaTask,
   [TaskType.WAIT]: generateWaitTask,
   [TaskType.HTTP]: generateHTTPTask,
   [TaskType.KAFKA_PUBLISH]: generateKafkaPublishTask,

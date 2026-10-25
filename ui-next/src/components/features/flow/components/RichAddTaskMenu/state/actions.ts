@@ -20,6 +20,7 @@ import { TaskType } from "types/common";
 import _first from "lodash/first";
 import { itemFilterMatcher } from "../helpers";
 import { uniqueTaskIdGenerator } from "../taskGenerator";
+import { pluginRegistry } from "plugins/registry";
 
 // Type for raw integration data from API
 interface RawIntegrationData {
@@ -45,16 +46,22 @@ export const persistTaskDefinitions = assign<
   RichAddTaskMenuMachineContext,
   DoneInvokeEvent<TaskDefinition[]>
 >((_context, event) => {
+  const hasLambdaTemplate = pluginRegistry
+    .getTaskMenuItems()
+    .some((item) => item.type === TaskType.AWS_LAMBDA);
   return {
     taskDefinitions: event.data,
-    workerMenuItems: event.data.map(
-      (task): BaseTaskMenuItem => ({
-        category: RichAddMenuTabs.WORKERS_TAB,
-        name: task.name,
-        description: task.description,
-        type: TaskType.SIMPLE,
-      }),
-    ),
+    // Hide only the duplicate menu entry; existing workflows still need the raw definition.
+    workerMenuItems: event.data
+      .filter((task) => task.name !== TaskType.AWS_LAMBDA || !hasLambdaTemplate)
+      .map(
+        (task): BaseTaskMenuItem => ({
+          category: RichAddMenuTabs.WORKERS_TAB,
+          name: task.name,
+          description: task.description,
+          type: TaskType.SIMPLE,
+        }),
+      ),
     isTaskDefFetched: true, // FIXME, remove flags.
   };
 });

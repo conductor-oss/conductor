@@ -203,6 +203,19 @@ export interface EventTaskDef extends CommonTaskDef {
   inputParameters?: Record<string, unknown>;
 }
 
+export interface AWSLambdaTaskDef extends CommonTaskDef {
+  type: TaskType.AWS_LAMBDA;
+  inputParameters: {
+    invocationConfiguration: {
+      integrationName: string;
+      functionName: string;
+      qualifier?: string;
+      asyncComplete?: boolean;
+    };
+    payload: Record<string, unknown>;
+  };
+}
+
 export interface SimpleTaskDef extends CommonTaskDef {
   type: TaskType.SIMPLE;
   inputParameters?: Record<string, unknown>;
@@ -606,6 +619,7 @@ export type LLMTaskTypes =
   | LLMChatComplete;
 
 export type FormTaskType =
+  | TaskType.AWS_LAMBDA
   | TaskType.WAIT
   | TaskType.HTTP
   | TaskType.KAFKA_PUBLISH

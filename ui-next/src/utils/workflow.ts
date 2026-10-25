@@ -1,3 +1,4 @@
+import { lambdaIntegrationName } from "./serverless";
 import { WorkflowDef } from "types/WorkflowDef";
 import _sortBy from "lodash/sortBy";
 import _uniqBy from "lodash/fp/uniqBy";
@@ -201,6 +202,10 @@ export const handlebarsMatcherExtractor = (
 };
 
 const extractIntegrationName = (task: CommonTaskDef): string[] => {
+  const lambdaIntegration = lambdaIntegrationName(task);
+  if (lambdaIntegration) {
+    return [lambdaIntegration];
+  }
   if (isLLMTask(task)) {
     if (
       "llmProvider" in task.inputParameters &&
@@ -421,6 +426,21 @@ export const replaceIntegrationName = (
   originalName: string,
   replaceName: string,
 ): CommonTaskDef => {
+  if (lambdaIntegrationName(task) === originalName) {
+    const lambdaTask = task as CommonTaskDef & {
+      inputParameters: { invocationConfiguration: Record<string, unknown> };
+    };
+    return {
+      ...task,
+      inputParameters: {
+        ...lambdaTask.inputParameters,
+        invocationConfiguration: {
+          ...lambdaTask.inputParameters.invocationConfiguration,
+          integrationName: replaceName,
+        },
+      },
+    } as typeof task;
+  }
   if (isLLMTask(task)) {
     const newInputParameters = { ...task.inputParameters };
     let changed = false;

@@ -53,6 +53,7 @@ import MCPIcon from "../shapes/TaskCard/icons/MCPIcon";
 import { ForkJoinIcon } from "../shapes/TaskCard/icons/ForkJoinIcon";
 
 export const iconForTaskTypeMap = {
+  [TaskType.AWS_LAMBDA]: Function,
   [TaskType.WAIT]: Hourglass,
   [TaskType.HTTP]: Globe,
   [TaskType.KAFKA_PUBLISH]: WorkerSimpleIcon, // This one is not really used

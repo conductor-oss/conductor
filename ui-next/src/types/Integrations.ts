@@ -59,6 +59,7 @@ export enum IntegrationType {
   STRIPE = "stripe-v2",
 }
 export enum IntegrationCategory {
+  CLOUD = "CLOUD",
   API = "API",
   AI_MODEL = "AI_MODEL",
   VECTOR_DB = "VECTOR_DB",
