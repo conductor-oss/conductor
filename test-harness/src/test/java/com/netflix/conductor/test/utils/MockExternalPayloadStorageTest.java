@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

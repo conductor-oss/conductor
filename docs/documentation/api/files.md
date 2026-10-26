@@ -1,3 +1,7 @@
+---
+description: "Conductor File API reference: create workflow-scoped file records, get upload and download URLs, and work with conductor://file handles."
+---
+
 # File API
 
 The file API creates workflow-scoped metadata records and issues upload and download URLs. The

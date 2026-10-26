@@ -39,8 +39,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.dao.EnvironmentDAO;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -163,7 +163,7 @@ public class ParametersUtilsTest {
                                             objectMapper.readValue(
                                                     objectMapper.writeValueAsString(input),
                                                     Object.class);
-                                } catch (JsonProcessingException e) {
+                                } catch (JacksonException e) {
                                     e.printStackTrace();
                                     return;
                                 }
@@ -597,6 +597,45 @@ public class ParametersUtilsTest {
         assertEquals("conductor ".repeat(50_000), replaced.get("many"));
         assertEquals("}".repeat(100_000) + "conductor", replaced.get("closingOnly"));
         // every level resolves to a path that does not exist, which yields null
+        assertTrue(replaced.containsKey("nested"));
+        assertNull(replaced.get("nested"));
+    }
+
+    @Test
+    public void testReplaceNestingDepthBoundary() {
+        Map<String, Object> io = new HashMap<>();
+        for (int i = 1; i <= 31; i++) {
+            io.put("k" + i, i == 31 ? "resolvedValue" : "k" + (i + 1));
+        }
+
+        // Nested depth 31 should evaluate within MAX_EXPRESSION_DEPTH
+        String nested31 = "${".repeat(31) + "k1" + "}".repeat(31);
+        Map<String, Object> input = new HashMap<>();
+        input.put("test31", nested31);
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+        assertNotNull(replaced);
+        assertEquals("resolvedValue", replaced.get("test31"));
+
+        // Nested depth 32 exceeds MAX_EXPRESSION_DEPTH and resolves cleanly to null
+        String nested32 = "${".repeat(32) + "k1" + "}".repeat(32);
+        input.put("test32", nested32);
+        replaced = parametersUtils.replace(input, io);
+        assertNotNull(replaced);
+        assertNull(replaced.get("test32"));
+    }
+
+    @Test(timeout = 10_000)
+    public void testReplaceDeepNestingDoesNotThrowStackOverflowOrOOM() {
+        Map<String, Object> io = new HashMap<>();
+        io.put("name", "conductor");
+
+        int depth = 100_000;
+        String nested = "${".repeat(depth) + "name" + "}".repeat(depth);
+        Map<String, Object> input = new HashMap<>();
+        input.put("nested", nested);
+
+        Map<String, Object> replaced = parametersUtils.replace(input, io);
+        assertNotNull(replaced);
         assertTrue(replaced.containsKey("nested"));
         assertNull(replaced.get("nested"));
     }

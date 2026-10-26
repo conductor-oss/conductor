@@ -1,6 +1,7 @@
 import _get from "lodash/get";
 import { timestampRendererLocal } from "utils/index";
 import { tryToJson } from "utils/index";
+import { CronSchedule } from "types/Schedulers";
 import { WorkflowDef } from "types/WorkflowDef";
 import { ScheduleType } from "../Schedule";
 
@@ -25,12 +26,44 @@ export function getDateFromField(d1: string | number | Date) {
 }
 
 /**
+ * The cron half of a save payload. One expression goes as cronExpression/zoneId exactly as it
+ * always has; several go as cronSchedules alone, the first entry being the one from the main
+ * section. The server ignores cronExpression once the list is set, so sending both would leave
+ * a second copy that nothing reads.
+ *
+ * Shared because the payload is assembled in three places — the save, the Code tab and the save
+ * confirmation diff — and they have to agree.
+ */
+export function cronFieldsFor(
+  scheduleState: ScheduleType,
+):
+  | { cronExpression: string; zoneId?: string }
+  | { cronSchedules: CronSchedule[] } {
+  const extras = scheduleState.extraCronSchedules ?? [];
+  if (!extras.length) {
+    return {
+      cronExpression: scheduleState.cronExpression,
+      zoneId: scheduleState.zoneId,
+    };
+  }
+  return {
+    cronSchedules: [
+      {
+        cronExpression: scheduleState.cronExpression,
+        zoneId: scheduleState.zoneId || "UTC",
+      },
+      ...extras,
+    ],
+  };
+}
+
+/**
  * Convert form data to code representation
  */
 export function formToCodeData(
   scheduleState: ScheduleType,
   schedule: any,
-): Partial<ScheduleType> | null {
+): (Partial<ScheduleType> & { cronSchedules?: CronSchedule[] }) | null {
   const start = getDateFromField(scheduleState.scheduleStartTime);
   const to = getDateFromField(scheduleState.scheduleEndTime);
 
@@ -48,13 +81,15 @@ export function formToCodeData(
     return null;
   }
 
+  const cronFields = cronFieldsFor(scheduleState);
+
   const body = {
     id: _get(schedule, "id"),
     paused: scheduleState.paused,
     runCatchupScheduleInstances: scheduleState.runCatchupScheduleInstances,
     name: scheduleState.name,
     description: scheduleState.description,
-    cronExpression: scheduleState.cronExpression,
+    ...cronFields,
     scheduleStartTime: start,
     scheduleEndTime: to,
     startWorkflowRequest: {
@@ -70,7 +105,6 @@ export function formToCodeData(
         scheduleState.externalInputPayloadStoragePath,
       priority: scheduleState.priority,
     },
-    zoneId: scheduleState.zoneId,
   };
 
   return body;
@@ -84,10 +118,15 @@ export function codeToFormData(
   scheduleState: ScheduleType,
 ): ScheduleType {
   const changedData = tryToJson<any>(data);
+  // The first entry of cronSchedules fills the main section; the rest become extra rows.
+  const saved: CronSchedule[] = changedData?.cronSchedules ?? [];
   const body = {
     name: changedData?.name || "",
     description: changedData?.description || "",
-    cronExpression: changedData?.cronExpression || "",
+    cronExpression: saved.length
+      ? saved[0].cronExpression
+      : changedData?.cronExpression || "",
+    extraCronSchedules: saved.slice(1),
     runCatchupScheduleInstances: !!changedData?.runCatchupScheduleInstances,
     paused: !!changedData?.paused,
     workflowType: changedData?.startWorkflowRequest?.name,
@@ -121,7 +160,7 @@ export function codeToFormData(
     scheduleEndTime: changedData?.scheduleEndTime
       ? timestampRendererLocal(changedData?.scheduleEndTime)
       : "",
-    zoneId: changedData?.zoneId,
+    zoneId: saved.length ? saved[0].zoneId : changedData?.zoneId,
   };
 
   return body;

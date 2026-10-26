@@ -17,6 +17,7 @@ import TaskDefinitionForm from "pages/definition/task/form/TaskDefinitionForm";
 import { taskDefinitionFormMachine } from "pages/definition/task/form/state/machine";
 import { TaskRetryLogic, TaskTimeoutPolicy } from "pages/definition/task/state";
 import { TaskDefinitionDto } from "types/TaskDefinition";
+import { FEATURES } from "utils/flags";
 
 vi.mock("utils/query", async (importOriginal) => ({
   ...(await importOriginal<typeof import("utils/query")>()),
@@ -146,5 +147,47 @@ describe("TaskDefinitionForm — fields that were JSON-only", () => {
     expect(field("Max retry delay seconds")).toBeEnabled();
     expect(field("Backoff jitter ms")).toBeEnabled();
     expect(field("Backoff scale factor")).toBeDisabled();
+  });
+});
+
+describe("TaskDefinitionForm — controls gated on the execution core", () => {
+  afterEach(() => {
+    delete window.conductor;
+  });
+
+  const turnOff = (...flags: string[]) => {
+    window.conductor = Object.fromEntries(flags.map((flag) => [flag, "false"]));
+  };
+
+  it("keeps every gated control when nothing turns the flags off", () => {
+    renderForm();
+
+    expect(
+      screen.getByLabelText("Enable task status listener"),
+    ).toBeInTheDocument();
+    expect(field("Max retry delay seconds")).toBeInTheDocument();
+    expect(field("Backoff jitter ms")).toBeInTheDocument();
+    expect(field("Total Timeout Seconds")).toBeInTheDocument();
+  });
+
+  it("drops the status listener switch, leaving the rest of basic settings", () => {
+    turnOff(FEATURES.TASK_STATUS_LISTENER);
+
+    renderForm();
+
+    expect(screen.queryByLabelText("Enable task status listener")).toBeNull();
+    expect(field("Description")).toBeInTheDocument();
+  });
+
+  it("drops the retry and timeout limits, leaving the rest of both sections", () => {
+    turnOff(FEATURES.TASK_RETRY_TIMEOUT_LIMITS);
+
+    renderForm();
+
+    expect(screen.queryByLabelText("Max retry delay seconds")).toBeNull();
+    expect(screen.queryByLabelText("Backoff jitter ms")).toBeNull();
+    expect(screen.queryByLabelText("Total Timeout Seconds")).toBeNull();
+    expect(field("Backoff scale factor")).toBeInTheDocument();
+    expect(field("Timeout Seconds")).toBeInTheDocument();
   });
 });

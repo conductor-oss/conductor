@@ -31,7 +31,7 @@ import { useAutoCompleteInputValidation } from "utils/hooks/useAutoCompleteInput
 import { useAgentNames, useWorkflowSearch } from "utils/query";
 import { getErrors } from "utils/utils";
 import { ApiSearchModalIntegration } from "../ApiSearchModalIntegration";
-import { DateControlComponent } from "../DateControlComponent";
+import { DateControlComponent } from "pages/executions/DateControlComponent";
 import ResultsTable from "../ResultsTable";
 
 const DEFAULT_SORT = "startTime:DESC";

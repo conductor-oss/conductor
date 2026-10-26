@@ -24,6 +24,10 @@ import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SWI
 @Component(TASK_TYPE_SWITCH)
 public class Switch extends WorkflowSystemTask {
 
+    public static final String SELECTED_CASE = "selectedCase";
+    public static final String EVALUATION_RESULT = "evaluationResult";
+    public static final String HAS_CHILDREN = "hasChildren";
+
     public Switch() {
         super(TASK_TYPE_SWITCH);
     }
