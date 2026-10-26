@@ -43,9 +43,14 @@ jobs:
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
       - name: Point SDK e2e workflows at this version
-        # Publishes the org-level CONDUCTOR_SERVER_VERSION variable that the SDK e2e
-        # workflows read (e.g. javascript-sdk: `vars.CONDUCTOR_SERVER_VERSION || ...`)
-        # so they target the server version just released.
+        # Publishes the org-level E2E_TEST_OSS_CONDUCTOR_VERSION variable -- the
+        # single version both SDK e2e paths read:
+        #   - pull_request.yml docker-compose e2e (a conductoross/conductor
+        #     Docker Hub image tag)
+        #   - agent-e2e.yml (a conductor-server boot JAR on Maven Central)
+        # A concrete release (e.g. 3.33.0) is valid in both registries, so one
+        # variable serves both. It must never be set to `latest` -- Maven Central
+        # has no `latest`, so the agent-e2e JAR download would 404.
         #
         # Requires ORG_VARS_TOKEN: a fine-grained PAT or GitHub App token with
         # organization "Variables: write" on conductor-oss. The default GITHUB_TOKEN
@@ -55,7 +60,7 @@ jobs:
           GH_TOKEN: ${{ secrets.ORG_VARS_TOKEN }}
         run: |
           VERSION="${{ github.ref_name }}"
-          gh variable set CONDUCTOR_SERVER_VERSION \
+          gh variable set E2E_TEST_OSS_CONDUCTOR_VERSION \
             --org conductor-oss \
             --body "${VERSION#v}"
 
