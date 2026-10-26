@@ -17,6 +17,7 @@ import java.util.Map;
 import org.conductoross.conductor.ai.a2a.A2AService;
 import org.conductoross.conductor.ai.agent.ConductorAgentCancelRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentClient;
+import org.conductoross.conductor.ai.agent.ConductorAgentRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentRespondRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartRequest;
 import org.conductoross.conductor.ai.agent.ConductorAgentStartResponse;
@@ -63,7 +64,8 @@ public class ServiceConductorAgentClient implements ConductorAgentClient {
     }
 
     @Override
-    public ConductorAgentStatusResponse getAgentStatus(String executionId) {
+    public ConductorAgentStatusResponse getAgentStatus(
+            String executionId, ConductorAgentRequest request) {
         AgentStatusResponse response = agentService.getStatus(executionId);
         Map<String, Object> pendingTool = response.getPendingTool();
         String pendingToolTaskRefName = value(pendingTool, "taskRefName");

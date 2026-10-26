@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The external agent clients register together with {@link CredentialResolutionService}, which they
  * both require, and neither needs credentials to be configured — a deployment using only Bedrock,
- * only Azure Foundry, both, or neither picks a runtime per workflow via {@code agentType}.
+ * only Microsoft Foundry, both, or neither picks a runtime per workflow via {@code agentType}.
  *
  * <p>Guards the wiring rather than the runtimes: before this was gated, the clients registered
  * while the credential service did not, so a host that component-scanned this package failed to
@@ -39,7 +39,9 @@ class ExternalAgentClientGatingTest {
     @Configuration
     @Import({
         BedrockAgentClient.class,
+        BedrockAgentCoreAgentClient.class,
         AzureFoundryAgentClient.class,
+        OpenAiAssistantsAgentClient.class,
         CredentialResolutionService.class
     })
     static class ExternalAgentBeans {}
@@ -56,7 +58,9 @@ class ExternalAgentClientGatingTest {
         runner.run(
                 ctx -> {
                     assertThat(ctx).doesNotHaveBean(BedrockAgentClient.class);
+                    assertThat(ctx).doesNotHaveBean(BedrockAgentCoreAgentClient.class);
                     assertThat(ctx).doesNotHaveBean(AzureFoundryAgentClient.class);
+                    assertThat(ctx).doesNotHaveBean(OpenAiAssistantsAgentClient.class);
                     assertThat(ctx).doesNotHaveBean(CredentialResolutionService.class);
                 });
     }
@@ -67,7 +71,9 @@ class ExternalAgentClientGatingTest {
                 .run(
                         ctx -> {
                             assertThat(ctx).hasSingleBean(BedrockAgentClient.class);
+                            assertThat(ctx).hasSingleBean(BedrockAgentCoreAgentClient.class);
                             assertThat(ctx).hasSingleBean(AzureFoundryAgentClient.class);
+                            assertThat(ctx).hasSingleBean(OpenAiAssistantsAgentClient.class);
                             assertThat(ctx).hasSingleBean(CredentialResolutionService.class);
                         });
     }
@@ -80,12 +86,22 @@ class ExternalAgentClientGatingTest {
                         ctx -> {
                             assertThat(ctx.getBean(BedrockAgentClient.class).agentType())
                                     .isEqualTo(A2AService.AGENT_TYPE_BEDROCK);
-                            assertThat(ctx.getBean(AzureFoundryAgentClient.class).agentType())
-                                    .isEqualTo(A2AService.AGENT_TYPE_AZURE_FOUNDRY);
+                            assertThat(ctx.getBean(BedrockAgentCoreAgentClient.class).agentType())
+                                    .isEqualTo("bedrock-agentcore");
+                            AzureFoundryAgentClient foundry =
+                                    ctx.getBean(AzureFoundryAgentClient.class);
+                            assertThat(foundry.agentType())
+                                    .isEqualTo(A2AService.AGENT_TYPE_MICROSOFT_FOUNDRY);
+                            // The name it went out under is still routed, so saved workflow
+                            // definitions do not have to be rewritten.
+                            assertThat(foundry.agentTypeAliases())
+                                    .containsExactly(A2AService.AGENT_TYPE_AZURE_FOUNDRY);
+                            assertThat(ctx.getBean(OpenAiAssistantsAgentClient.class).agentType())
+                                    .isEqualTo(A2AService.AGENT_TYPE_OPENAI_ASSISTANTS);
                         });
     }
 
-    /** A second OkHttpClient bean must not make the Azure Foundry injection ambiguous. */
+    /** A second OkHttpClient bean must not make the Microsoft Foundry injection ambiguous. */
     @Test
     void azureFoundryResolvesItsHttpClientAlongsideAnotherOkHttpClientBean() {
         runner.withPropertyValues("conductor.integrations.ai.enabled=true")

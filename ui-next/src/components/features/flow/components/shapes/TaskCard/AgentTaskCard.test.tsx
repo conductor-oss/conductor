@@ -71,7 +71,7 @@ describe("AGENT task diagram card", () => {
     expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
   });
 
-  it("renders configured identity as unresolved in the execution diagram", () => {
+  it("renders configured identity for a dynamic A2A agent in the execution diagram", () => {
     render(
       <TaskCard
         nodeData={{
@@ -103,8 +103,9 @@ describe("AGENT task diagram card", () => {
     );
 
     expect(
-      screen.getByText("UNRESOLVED: ${workflow.input.agentUrl}"),
+      screen.getByText("${workflow.input.agentUrl}"),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/UNRESOLVED/)).not.toBeInTheDocument();
     expect(screen.getByText("A2A AGENT")).toBeInTheDocument();
   });
 
