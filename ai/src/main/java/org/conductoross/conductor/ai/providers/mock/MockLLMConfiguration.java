@@ -19,8 +19,8 @@ import org.conductoross.conductor.ai.recording.LLMRecordingProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @ConditionalOnProperty(prefix = "conductor.ai", name = "enable-llm-mocks", havingValue = "true")

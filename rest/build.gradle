@@ -4,6 +4,8 @@ dependencies {
     implementation project(':conductor-core')
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-restclient'
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
     implementation "com.netflix.runtime:health-api:${revHealth}"
 
     implementation "io.projectreactor.netty:reactor-netty-http:${revReactor}"
