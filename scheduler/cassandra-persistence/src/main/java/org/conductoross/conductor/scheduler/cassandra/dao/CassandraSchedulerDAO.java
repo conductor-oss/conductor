@@ -25,11 +25,11 @@ import com.netflix.conductor.core.exception.NonTransientException;
 import com.netflix.conductor.metrics.Monitors;
 
 import com.datastax.driver.core.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Cassandra implementation of {@link SchedulerDAO}.
@@ -531,7 +531,7 @@ public class CassandraSchedulerDAO extends CassandraBaseDAO implements Scheduler
     private String toJson(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new NonTransientException("Failed to serialize to JSON", e);
         }
     }

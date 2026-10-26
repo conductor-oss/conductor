@@ -30,18 +30,20 @@ await workflow.register();
 
 **Step 2: Write a worker**
 
-Workers are TypeScript functions decorated with `@worker` that poll Conductor for tasks and execute them.
+Workers are TypeScript functions wrapped with `worker()` that poll Conductor for tasks and execute them.
 
 ```typescript
 import { worker } from "@io-orkes/conductor-javascript";
+import type { Task } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "greet" })
-async function greet(task: Task) {
-  return {
-    status: "COMPLETED",
-    outputData: { result: `Hello ${task.inputData.name}` },
-  };
-}
+const greet = worker({ taskDefName: "greet" })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name}` },
+    };
+  }
+);
 ```
 
 **Step 3: Run your first workflow app**
@@ -59,13 +61,14 @@ import {
 import type { Task } from "@io-orkes/conductor-javascript";
 
 // A worker is any TypeScript function.
-@worker({ taskDefName: "greet" })
-async function greet(task: Task) {
-  return {
-    status: "COMPLETED" as const,
-    outputData: { result: `Hello ${task.inputData.name}` },
-  };
-}
+const greet = worker({ taskDefName: "greet" })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name}` },
+    };
+  }
+);
 
 async function main() {
   // Configure the SDK (reads CONDUCTOR_SERVER_URL / CONDUCTOR_AUTH_* from env).
@@ -79,7 +82,7 @@ async function main() {
 
   await workflow.register();
 
-  // Start polling for tasks (auto-discovers @worker decorated functions).
+  // Start polling for tasks (auto-discovers workers created with worker()).
   const handler = new TaskHandler({
     client: clients.getClient(),
     scanForDecorated: true,
@@ -99,7 +102,7 @@ main();
 Run it:
 
 ```shell
-npx ts-node quickstart.ts
+npx tsx quickstart.ts
 ```
 
 That's it — you defined a worker, built a workflow, and executed it. Open the UI for the Conductor server you configured to inspect the execution.
@@ -158,26 +161,29 @@ All of these are type-safe, composable, and registered to the server as JSON —
 
 ## Workers
 
-Workers are TypeScript functions that execute Conductor tasks. Decorate any function with `@worker` to register it as a worker (auto-discovered by `TaskHandler`) and use it as a workflow task.
+Workers are TypeScript functions that execute Conductor tasks. Wrap any function with `worker()` to register it as a worker (auto-discovered by `TaskHandler`) and use it as a workflow task.
 
 ```typescript
 import { worker, TaskHandler } from "@io-orkes/conductor-javascript";
+import type { Task } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "greet", concurrency: 5, pollInterval: 100 })
-async function greet(task: Task) {
-  return {
-    status: "COMPLETED",
-    outputData: { result: `Hello ${task.inputData.name}` },
-  };
-}
+const greet = worker({ taskDefName: "greet", concurrency: 5, pollInterval: 100 })(
+  async (task: Task) => {
+    return {
+      status: "COMPLETED" as const,
+      outputData: { result: `Hello ${task.inputData?.name}` },
+    };
+  }
+);
 
-@worker({ taskDefName: "process_payment", domain: "payments" })
-async function processPayment(task: Task) {
-  const result = await paymentGateway.charge(task.inputData.customerId, task.inputData.amount);
-  return { status: "COMPLETED", outputData: { transactionId: result.id } };
-}
+const processPayment = worker({ taskDefName: "process_payment", domain: "payments" })(
+  async (task: Task) => {
+    const result = await paymentGateway.charge(task.inputData?.customerId, task.inputData?.amount);
+    return { status: "COMPLETED" as const, outputData: { transactionId: result.id } };
+  }
+);
 
-// Auto-discover and start all decorated workers
+// Auto-discover and start all registered workers
 const handler = new TaskHandler({ client, scanForDecorated: true });
 await handler.startWorkers();
 
@@ -191,13 +197,13 @@ process.on("SIGTERM", async () => {
 **Worker configuration:**
 
 ```typescript
-@worker({
+worker({
   taskDefName: "my_task",    // Required: task name
   concurrency: 5,             // Max concurrent tasks (default: 1)
   pollInterval: 100,          // Polling interval in ms (default: 100)
   domain: "production",       // Task domain for multi-tenancy
   workerId: "worker-123",     // Unique worker identifier
-})
+})(async (task: Task) => { /* ... */ })
 ```
 
 **Environment variable overrides** (no code changes needed):
@@ -217,14 +223,15 @@ export CONDUCTOR_WORKER_PROCESS_PAYMENT_DOMAIN=payments
 ```typescript
 import { NonRetryableException } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "validate_order" })
-async function validateOrder(task: Task) {
-  const order = await getOrder(task.inputData.orderId);
-  if (!order) {
-    throw new NonRetryableException("Order not found"); // FAILED_WITH_TERMINAL_ERROR
+const validateOrder = worker({ taskDefName: "validate_order" })(
+  async (task: Task) => {
+    const order = await getOrder(task.inputData?.orderId);
+    if (!order) {
+      throw new NonRetryableException("Order not found"); // FAILED_WITH_TERMINAL_ERROR
+    }
+    return { status: "COMPLETED" as const, outputData: { validated: true } };
   }
-  return { status: "COMPLETED", outputData: { validated: true } };
-}
+);
 ```
 
 - `throw new Error()` → Task status: `FAILED` (will retry)
@@ -235,18 +242,19 @@ async function validateOrder(task: Task) {
 ```typescript
 import { worker, getTaskContext } from "@io-orkes/conductor-javascript";
 
-@worker({ taskDefName: "process_video" })
-async function processVideo(task: Task) {
-  const ctx = getTaskContext();
-  ctx?.addLog("Starting video processing...");
+const processVideo = worker({ taskDefName: "process_video" })(
+  async (task: Task) => {
+    const ctx = getTaskContext();
+    ctx?.addLog("Starting video processing...");
 
-  if (!isComplete(task.inputData)) {
-    ctx?.setCallbackAfter(30); // check again in 30 seconds
-    return { status: "IN_PROGRESS", callbackAfterSeconds: 30 };
+    if (!isComplete(task.inputData)) {
+      ctx?.setCallbackAfter(30); // check again in 30 seconds
+      return { status: "IN_PROGRESS" as const, callbackAfterSeconds: 30 };
+    }
+
+    return { status: "COMPLETED" as const, outputData: { url: "..." } };
   }
-
-  return { status: "COMPLETED", outputData: { url: "..." } };
-}
+);
 ```
 
 `TaskContext` is also available for one-shot workers — use `ctx?.addLog()` to stream logs visible in the Conductor UI.
@@ -278,7 +286,7 @@ const handler = await TaskHandler.create({
 await handler.startWorkers();
 ```
 
-**Legacy TaskManager API** continues to work with full backward compatibility. New projects should use `@worker` + `TaskHandler` above.
+**Legacy TaskManager API** continues to work with full backward compatibility. New projects should use `worker()` + `TaskHandler` above.
 
 ## Monitoring Workers
 
@@ -302,6 +310,43 @@ await handler.startWorkers();
 ```
 
 Collects 18 metric types: poll counts, execution durations, error rates, output sizes, and more — with p50/p75/p90/p95/p99 quantiles. See [METRICS.md](https://github.com/conductor-oss/javascript-sdk/blob/main/METRICS.md) for the full reference.
+
+## Logging
+
+The SDK's default logger prints to the console. Set the log level with the `CONDUCTOR_LOG_LEVEL` environment variable, without any code changes.
+
+```shell
+export CONDUCTOR_LOG_LEVEL=DEBUG
+```
+
+Accepted values are `DEBUG`, `INFO`, `WARN`, and `ERROR`. Values are case-sensitive and must be uppercase. If the variable is unset or has any other value, the level is `INFO`.
+
+A level set in the logger config takes precedence over the environment variable. The variable is read once, when the logger is created, and does not apply to a custom logger that you pass to the SDK.
+
+### Custom logger
+
+To send SDK logs to your own logging library, pass it as the `logger` option of `TaskHandler`. The option accepts a `ConductorLogger`, which is any object with `info`, `error`, and `debug` methods, so libraries such as pino can be passed in directly. If you do not set it, `TaskHandler` uses the default logger.
+
+```typescript
+import pino from "pino";
+
+const logger = pino({ level: "debug" });
+
+const handler = new TaskHandler({
+  client,
+  scanForDecorated: true,
+  logger,
+});
+await handler.startWorkers();
+```
+
+`TaskHandler` and its workers write all their logs through this logger. A custom logger replaces the default logger, so `CONDUCTOR_LOG_LEVEL` no longer applies. Set the level on your own logger instead.
+
+Logs written while the client connects and authenticates use a separate logger. To send those to your logger as well, pass it when you create the client.
+
+```typescript
+const clients = await OrkesClients.from({ logger });
+```
 
 ## Managing Workflow Executions
 
@@ -348,7 +393,7 @@ See the [Examples Guide](https://github.com/conductor-oss/javascript-sdk/blob/ma
 | Example | Description | Run |
 |---------|-------------|-----|
 | [workers-e2e.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/workers-e2e.ts) | End-to-end: 3 chained workers with verification | `npx ts-node examples/workers-e2e.ts` |
-| [quickstart.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/quickstart.ts) | 60-second intro: @worker + workflow + execute | `npx ts-node examples/quickstart.ts` |
+| [quickstart.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/quickstart.ts) | 60-second intro: worker() + workflow + execute | `npx ts-node examples/quickstart.ts` |
 | [kitchensink.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/kitchensink.ts) | All major task types in one workflow | `npx ts-node examples/kitchensink.ts` |
 | [workflow-ops.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/workflow-ops.ts) | Lifecycle: pause, resume, terminate, retry, search | `npx ts-node examples/workflow-ops.ts` |
 | [test-workflows.ts](https://github.com/conductor-oss/javascript-sdk/blob/main/examples/test-workflows.ts) | Unit testing with mock outputs (no workers) | `npx ts-node examples/test-workflows.ts` |

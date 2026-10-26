@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * In-process {@link ConductorAgentClient} backed by {@link AgentService}.

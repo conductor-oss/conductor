@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -81,6 +82,7 @@ public class ExecutionServiceTest {
 
     @Before
     public void setup() {
+        MockitoAnnotations.openMocks(this);
         when(conductorProperties.getTaskExecutionPostponeDuration())
                 .thenReturn(Duration.ofSeconds(60));
         when(parametersUtils.substituteSecrets(any())).thenAnswer(inv -> inv.getArgument(0));
