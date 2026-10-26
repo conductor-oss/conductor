@@ -22,9 +22,9 @@ import com.netflix.conductor.core.utils.ParametersUtils
 import com.netflix.conductor.model.TaskModel
 import com.netflix.conductor.model.WorkflowModel
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import spock.lang.Specification
 import spock.lang.Subject
+import tools.jackson.databind.ObjectMapper
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_DO_WHILE
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HTTP

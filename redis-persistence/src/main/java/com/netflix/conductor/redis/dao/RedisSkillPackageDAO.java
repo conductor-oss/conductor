@@ -24,7 +24,7 @@ import com.netflix.conductor.redis.config.AnyRedisCondition;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Redis {@link SkillPackageDAO}. Package bytes (Base64-encoded) live in a single {@code SKILL_PKG}

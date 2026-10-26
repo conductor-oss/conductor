@@ -84,8 +84,6 @@ public class LiteLLM implements AIModel {
                 .presencePenalty(input.getPresencePenalty())
                 .topK(input.getTopK())
                 .toolCallbacks(toolCallbacks)
-                .toolNames(toolNames)
-                .internalToolExecutionEnabled(false)
                 .build();
     }
 

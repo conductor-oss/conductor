@@ -26,7 +26,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** Writes an independent JSON file for each real model response. */
 public final class FileLLMCallRecorder implements LLMCallRecorder {

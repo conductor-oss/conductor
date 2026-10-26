@@ -31,12 +31,12 @@ import org.springframework.util.MimeTypeUtils;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Data;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /** JSON storage for Spring AI responses, including their extensible metadata maps. */
 public final class RecordedResponseJson {
@@ -71,22 +71,22 @@ public final class RecordedResponseJson {
             List<Media> media = new ArrayList<>();
             for (JsonNode item : requireArray(output.get("media"), resultField + ".output.media")) {
                 ObjectNode recordedMedia = requireObject(item, resultField + ".output.media item");
-                media.add(
+                var mediaBuilder =
                         Media.builder()
                                 .mimeType(
                                         MimeTypeUtils.parseMimeType(
                                                 requireText(
                                                         recordedMedia.get("mimeType"), "mimeType")))
                                 .id(recordedMedia.path("id").asText(null))
-                                .name(recordedMedia.path("name").asText(null))
-                                .data(
-                                        requireBoolean(recordedMedia.get("binary"), "binary")
-                                                ? MAPPER.convertValue(
-                                                        requireValue(
-                                                                recordedMedia.get("data"), "data"),
-                                                        byte[].class)
-                                                : requireText(recordedMedia.get("data"), "data"))
-                                .build());
+                                .name(recordedMedia.path("name").asText(null));
+                if (requireBoolean(recordedMedia.get("binary"), "binary")) {
+                    mediaBuilder.data(
+                            MAPPER.convertValue(
+                                    requireValue(recordedMedia.get("data"), "data"), byte[].class));
+                } else {
+                    mediaBuilder.data(requireText(recordedMedia.get("data"), "data"));
+                }
+                media.add(mediaBuilder.build());
             }
             List<AssistantMessage.ToolCall> calls = new ArrayList<>();
             for (JsonNode call :
@@ -170,7 +170,7 @@ public final class RecordedResponseJson {
      * affects the response exposed to callers.
      */
     public static JsonNode responseContent(JsonNode response) {
-        ObjectNode content = response.deepCopy();
+        ObjectNode content = requireObject(response, "response").deepCopy();
         ObjectNode metadata = (ObjectNode) content.get("metadata");
         metadata.remove("id");
         metadata.remove("usage");
