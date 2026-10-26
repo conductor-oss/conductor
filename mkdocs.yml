@@ -40,6 +40,7 @@ nav:
       - Creating Tasks: devguide/how-tos/Tasks/creating-tasks.md
       - Task Inputs: devguide/how-tos/Tasks/task-inputs.md
       - Schema Validation: devguide/how-tos/schema-validation.md
+      - Schema Registry: devguide/how-tos/schema-registry.md
       - Managing Workflow Versions: devguide/how-tos/Workflows/versioning-workflows.md
       - Testing Workflows: devguide/how-tos/Workflows/testing-workflows.md
     - Run:
@@ -112,6 +113,7 @@ nav:
       - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
       - Saga & Compensation: devguide/cookbook/saga-compensation.md
       - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
+      - AI Decision Routing: devguide/cookbook/ai-decision-routing.md
       - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
       - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
       - Event-Driven Patterns: devguide/cookbook/event-driven.md

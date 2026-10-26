@@ -5,4 +5,5 @@ export const FlowExecutionContext =
   createContext<FlowExecutionContextProviderProps>({
     onExpandDynamic: () => {},
     onCollapseDynamic: () => {},
+    onSelectTask: () => {},
   });

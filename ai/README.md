@@ -18,10 +18,10 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 
 | Provider | Chat | Embeddings | Image Gen | Audio Gen | Video Gen | Models |
 |----------|:----:|:----------:|:---------:|:---------:|:---------:|--------|
-| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, DALL-E-3, Sora-2, text-embedding-3-small/large |
+| **OpenAI** | ✅ | ✅ | ✅ | ✅ | ✅ | GPT-4o, GPT-4o-mini, gpt-image-1, Sora-2, text-embedding-3-small/large |
 | **Anthropic** | ✅ | ❌ | ❌ | ❌ | ❌ | Claude 3.5 Sonnet, Claude 3 Opus/Sonnet/Haiku, Claude 4 Sonnet |
 | **Google Gemini** | ✅ | ✅ | ✅ | ✅ | ✅ | Gemini 2.5 Flash/Pro, Veo 2/3, Imagen, text-embedding-004 |
-| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, DALL-E-3 |
+| **Azure OpenAI** | ✅ | ✅ | ✅ | ❌ | ❌ | GPT-4o, GPT-4, GPT-3.5-turbo, text-embedding-ada-002, gpt-image-1 |
 | **AWS Bedrock** | ✅ | ✅ | ❌ | ❌ | ❌ | Claude 3.x, Titan, Llama 3.x, amazon.titan-embed-text-v2:0 |
 | **Mistral AI** | ✅ | ✅ | ❌ | ❌ | ❌ | Mistral Small/Medium/Large, Mixtral 8x7B, mistral-embed |
 | **Cohere** | ✅ | ✅ | ❌ | ❌ | ❌ | Command, Command-R, Command-R+, embed-english-v3.0 |
@@ -62,6 +62,7 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 | **List MCP Tools** | `LIST_MCP_TOOLS` | List tools from MCP server |
 | **Generate PDF** | `GENERATE_PDF` | Convert markdown to PDF document |
 | **Call MCP Tool** | `CALL_MCP_TOOL` | Call a tool on MCP server |
+| **AI Decision** | `SWITCH` with `evaluatorType: decision` | One structured choice question and its matching branch |
 
 ---
 
@@ -154,7 +155,7 @@ Generate images from text prompts.
 | Parameter | Type | Required | Description |
 |-----------|------|:--------:|-------------|
 | `llmProvider` | String | ✅ | Provider name (e.g., `openai`) |
-| `model` | String | ✅ | Image model (e.g., `dall-e-3`) |
+| `model` | String | ✅ | Image model (e.g., `gpt-image-1`) |
 | `prompt` | String | ✅ | Image description |
 | `width` | Integer | ❌ | Image width in pixels |
 | `height` | Integer | ❌ | Image height in pixels |
@@ -231,7 +232,7 @@ Generate videos from text or image prompts. This is an **async task** -- it subm
 
 **Provider-Specific Notes:**
 
-- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1792x1024`, `1024x1792`. Returns video + webp thumbnail.
+- **OpenAI Sora**: Supports `sora-2` and `sora-2-pro` models. Valid durations are 4, 8, or 12 seconds. Valid sizes: `1280x720`, `720x1280`, `1536x1024`, `1024x1792`. Returns video + webp thumbnail.
 - **Google Gemini Veo**: Supports `veo-2.0-generate-001`, `veo-3.0`, `veo-3.1`. Use `llmProvider` as `google_gemini` or `vertex_ai`. When using API key, no GCP credentials needed. Veo 3+ supports audio generation.
 
 ---
@@ -415,6 +416,28 @@ Call a specific tool on an MCP server.
 |-------|------|-------------|
 | `content` | Array | Result content items with `type` and `text` |
 | `isError` | Boolean | Whether the call resulted in an error |
+
+### Decision-backed SWITCH
+
+Route on a `choice` question in the same `SWITCH`. Other questions can be included in the request; `expression` names the choice question when there is more than one. See [DECISION_SWITCH.md](DECISION_SWITCH.md).
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `model` | String | ✅ | Decision model, e.g. `jev-1.13` |
+| `state` | String | ✅ | Observed state the question is asked about |
+| `questions` | Object | ✅ | Questions to ask; the routing question must have `type: choice`, `instructions`, and named `choices` |
+| `provider` | String | ❌ | Overrides `conductor.ai.decision.provider` |
+
+**Outputs:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `selectedCase` | String | Chosen choice name used by the task to select a branch |
+| `answers` | Object | Per-question answer with optional `confidence` |
+| `usage` | Object | `inputTokens`, `outputTokens`, `cost`, `currency` when reported |
+| `latencyMs` | Long | Provider round-trip time |
 
 
 ## Configuration
@@ -656,6 +679,20 @@ conductor.ai.stabilityai.api-key=${STABILITY_API_KEY}
 | `api-key` | Yes | - | Stability AI API key |
 
 Supported models: `sd3.5-large`, `sd3.5-large-turbo`, `sd3.5-medium`, `sd3-large`, `sd3-medium`, `core` (Stable Image Core), `ultra` (Stable Image Ultra). The endpoint is selected automatically based on the model name.
+#### Decision evaluator
+
+```properties
+conductor.ai.decision.api-key=${DECISION_API_KEY}
+conductor.ai.decision.provider=openrouter
+conductor.ai.decision.api-shape=system-one
+```
+
+| Property | Required | Default | Description |
+|----------|:--------:|---------|-------------|
+| `api-key` | ✅ | - | Decision provider API key |
+| `provider` | ❌ | `openrouter` | Default provider; per-provider overrides under `providers.<name>` |
+| `api-shape` | ❌ | `system-one` | Wire format adapter |
+
 
 ## Environment Variables
 
@@ -686,7 +723,10 @@ The AI module reads from standard environment variables automatically. Set the e
 | Google Gemini | `GOOGLE_CLOUD_PROJECT` | GCP project ID (only needed for Vertex AI path) |
 | Google Gemini | `GOOGLE_CLOUD_LOCATION` | GCP region (default: `us-central1`, Vertex AI path only) |
 | Google Gemini | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (Vertex AI path only) |
-| Ollama | `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
+| Ollama | `OLLAMA_BASE_URL` | Ollama server URL, e.g. `http://10.0.0.105:11434` (default: `http://localhost:11434`). `OLLAMA_HOST` is honored as a fallback. |
+| Decision | `DECISION_API_KEY` | API key for the decision evaluator |
+| Decision | `DECISION_PROVIDER` | Default decision provider (default: `openrouter`) |
+| Decision | `DECISION_API_SHAPE` | Wire format adapter (default: `system-one`) |
 
 ### Usage
 
@@ -894,7 +934,7 @@ docker run -d \
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A futuristic cityscape at sunset",
         "width": 1024,
         "height": 1024,
@@ -1437,9 +1477,9 @@ A workflow that generates an image and a video in sequence:
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "dall-e-3",
+        "model": "gpt-image-1",
         "prompt": "A serene mountain lake at dawn with mist rising from the water",
-        "width": 1792,
+        "width": 1536,
         "height": 1024,
         "n": 1
       }

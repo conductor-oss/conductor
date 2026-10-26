@@ -23,7 +23,13 @@
 
 import { expect, test, type Locator } from "@playwright/test";
 import { readFile } from "fs/promises";
-import { mockCommonApis, mockSwitchWorkflowDef } from "./helpers/mockApi";
+import {
+  mockCommonApis,
+  mockMissingSchemaRegistry,
+  mockSchemaReferencingTaskDef,
+  mockSchemaRegistry,
+  mockSwitchWorkflowDef,
+} from "./helpers/mockApi";
 
 /**
  * Wait until a locator stops changing on screen.
@@ -102,6 +108,102 @@ test.describe("app shell and main pages", () => {
     await expect(page.locator("#main-content")).toHaveScreenshot(
       "event-handler-defs.png",
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Schema management screen
+// ---------------------------------------------------------------------------
+
+test.describe("schema management screen", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockCommonApis(page);
+    // Specific registry routes registered last so they win over the catch-all.
+    await mockSchemaRegistry(page);
+  });
+
+  test("schemas page", async ({ page }) => {
+    await page.goto("/schemas");
+    await expect(page.locator("#main-content")).toBeVisible();
+    // One row per schema, carrying its latest version — so both fixture
+    // schemas must be on screen before the page is snapped.
+    await expect(page.getByRole("link", { name: "order_input" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "shipment_event" }),
+    ).toBeVisible();
+    await expect(page.locator("#main-content")).toHaveScreenshot("schemas.png");
+  });
+
+  // A schema of a type this server stores but cannot validate. The editor is
+  // read-only and says so, which is the state a screenshot is worth having:
+  // nothing about a read-only Monaco looks different from an editable one.
+  test("schema editor on a schema this server cannot validate", async ({
+    page,
+  }) => {
+    await page.goto("/schemas/shipment_event/1");
+    await expect(page.locator("#main-content")).toBeVisible();
+    await expect(page.locator("#schema-read-only-notice")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    // Monaco is loaded from its own chunk and shows "Loading..." until it
+    // arrives. Wait for the schema itself to be on screen, or the baseline
+    // records the placeholder.
+    await expect(page.locator(".monaco-editor .view-lines")).toContainText(
+      "record",
+    );
+    await expect(page.locator("#main-content")).toHaveScreenshot(
+      "schema-editor-read-only.png",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Schema pickers on a task definition
+//
+// The pair this unit of work exists for: the same form against a server with no
+// schema registry, and against one that serves it. The suite mocks the API, so
+// both states are reachable from one build.
+// ---------------------------------------------------------------------------
+
+test.describe("schema pickers", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockCommonApis(page);
+    await mockSchemaReferencingTaskDef(page);
+  });
+
+  test("pickers with no schema registry on the server", async ({ page }) => {
+    await mockMissingSchemaRegistry(page);
+
+    await page.goto("/taskDef/process_order");
+    const section = page.locator("#task-schema-section");
+    await expect(section).toBeVisible();
+
+    // The defect: the picker has nothing to offer and says nothing about why.
+    // The name it was given still shows, and its version cannot be resolved.
+    await section.getByLabel("Input Schema").click();
+    await expect(page.getByRole("option")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+
+    await expect(section).toHaveScreenshot(
+      "task-def-schema-pickers-no-registry.png",
+    );
+  });
+
+  test("pickers against a served schema registry", async ({ page }) => {
+    await mockSchemaRegistry(page);
+
+    await page.goto("/taskDef/process_order");
+    const section = page.locator("#task-schema-section");
+    await expect(section).toBeVisible();
+
+    // One option per registered name, and the referenced version resolves.
+    await section.getByLabel("Input Schema").click();
+    await expect(page.getByRole("option")).toHaveText([
+      "order_input",
+      "shipment_event",
+    ]);
+    await page.keyboard.press("Escape");
+
+    await expect(section).toHaveScreenshot("task-def-schema-pickers.png");
   });
 });
 

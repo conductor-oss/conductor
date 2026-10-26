@@ -27,4 +27,5 @@ public interface RequestMappingConstants {
     String FILES = API_PREFIX + "files";
     String ENVIRONMENT = API_PREFIX + "environment";
     String SECRETS = API_PREFIX + "secrets";
+    String SCHEMA = API_PREFIX + "schema";
 }

@@ -5,20 +5,21 @@ dependencies {
     implementation project(':conductor-core')
 
     compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.retry:spring-retry'
 
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind"
-    implementation "com.fasterxml.jackson.core:jackson-core"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.core:jackson-core"
 
     implementation "org.apache.commons:commons-lang3"
 
     implementation "mysql:mysql-connector-java:8.0.33"
     implementation "org.springframework.boot:spring-boot-starter-jdbc"
-    implementation "org.flywaydb:flyway-mysql:${revFlyway}"
+    implementation "org.flywaydb:flyway-mysql"
+    implementation "org.springframework.boot:spring-boot-flyway"
 
-    testImplementation "org.apache.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.apache.groovy:groovy"
+    testImplementation "org.apache.groovy:groovy-json"
 
 //    testImplementation "org.elasticsearch.client:elasticsearch-rest-client:6.8.23"
 //    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client:6.8.23"
@@ -32,8 +33,8 @@ dependencies {
 
     testImplementation project(':conductor-test-util').sourceSets.test.output
     testImplementation project(':conductor-common-persistence').sourceSets.test.output
-    testImplementation "redis.clients:jedis:${revJedis}"
-    testImplementation "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "redis.clients:jedis"
+    testImplementation "org.awaitility:awaitility"
 }
 
 test {

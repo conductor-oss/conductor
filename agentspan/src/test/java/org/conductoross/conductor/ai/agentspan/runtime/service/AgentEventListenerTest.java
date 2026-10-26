@@ -12,12 +12,20 @@
  */
 package org.conductoross.conductor.ai.agentspan.runtime.service;
 
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.conductoross.conductor.ai.agent.AgentEventStream;
 import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 import org.junit.jupiter.api.Test;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -31,22 +39,24 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class AgentEventListenerTest {
 
+    private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
+
     @Test
     void scheduledLlmAndCompletedToolPublishOrderedEventsToTheRealStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
-        AgentEventListener listener = new AgentEventListener(registry, new SimpleMeterRegistry());
+        AgentEventListener listener = listener(registry);
         AgentEventStream stream = registry.openStream("wf-events", null);
 
         TaskModel llm = task("wf-events", "LLM_CHAT_COMPLETE", "agent_llm");
         listener.onTaskScheduled(llm);
-        TaskModel tool = task("wf-events", "SIMPLE", "call_abc123__1");
+        TaskModel tool = workerTask("wf-events", "get_weather", "call_abc123_0");
         tool.setInputData(Map.of("method", "get_weather", "city", "NYC"));
         tool.setOutputData(Map.of("result", "72F and sunny"));
         listener.onTaskCompleted(tool);
 
-        AgentSSEEvent thinking = stream.nextEvent();
-        AgentSSEEvent toolCall = stream.nextEvent();
-        AgentSSEEvent toolResult = stream.nextEvent();
+        AgentSSEEvent thinking = next(stream);
+        AgentSSEEvent toolCall = next(stream);
+        AgentSSEEvent toolResult = next(stream);
         assertThat(thinking.getType()).isEqualTo("thinking");
         assertThat(thinking.getContent()).isEqualTo("agent_llm");
         assertThat(toolCall.getType()).isEqualTo("tool_call");
@@ -59,19 +69,19 @@ class AgentEventListenerTest {
     @Test
     void handoffAliasForwardsChildEventsAndRootCompletionClosesTheRealStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
-        AgentEventListener listener = new AgentEventListener(registry, new SimpleMeterRegistry());
+        AgentEventListener listener = listener(registry);
         AgentEventStream parentStream = registry.openStream("parent", null);
 
         WorkflowModel child = workflow("child", "support_wf");
         child.setParentWorkflowId("parent");
         listener.onWorkflowStartedIfEnabled(child);
-        TaskModel childTool = task("child", "SIMPLE", "child_lookup");
+        TaskModel childTool = workerTask("child", "child_lookup", "child_lookup_0");
         childTool.setOutputData(Map.of("result", "found"));
         listener.onTaskCompleted(childTool);
 
-        AgentSSEEvent handoff = parentStream.nextEvent();
-        AgentSSEEvent toolCall = parentStream.nextEvent();
-        AgentSSEEvent toolResult = parentStream.nextEvent();
+        AgentSSEEvent handoff = next(parentStream);
+        AgentSSEEvent toolCall = next(parentStream);
+        AgentSSEEvent toolResult = next(parentStream);
         assertThat(handoff.getType()).isEqualTo("handoff");
         assertThat(handoff.getTarget()).isEqualTo("support");
         assertThat(toolCall.getExecutionId()).isEqualTo("child");
@@ -80,27 +90,27 @@ class AgentEventListenerTest {
         WorkflowModel root = workflow("parent", "parent_agent");
         root.setOutput(Map.of("result", "complete"));
         listener.onWorkflowCompletedIfEnabled(root);
-        AgentSSEEvent done = parentStream.nextEvent();
+        AgentSSEEvent done = next(parentStream);
         assertThat(done.getType()).isEqualTo("done");
         assertThat(done.getOutput()).isEqualTo(Map.of("result", "complete"));
-        assertThat(parentStream.nextEvent()).isNull();
+        assertNoEvent(parentStream);
     }
 
     @Test
     void guardrailFailuresAndTaskFailuresReachTheSdkStream() {
         AgentStreamRegistry registry = new AgentStreamRegistry();
-        AgentEventListener listener = new AgentEventListener(registry, new SimpleMeterRegistry());
+        AgentEventListener listener = listener(registry);
         AgentEventStream stream = registry.openStream("wf-errors", null);
 
         TaskModel guardrail = task("wf-errors", "INLINE", "safety_guardrail");
         guardrail.setOutputData(Map.of("passed", false, "message", "Unsafe content"));
         listener.onTaskCompleted(guardrail);
-        TaskModel failed = task("wf-errors", "SIMPLE", "lookup");
+        TaskModel failed = workerTask("wf-errors", "lookup", "lookup_0");
         failed.setReasonForIncompletion("Connection timeout");
         listener.onTaskFailed(failed);
 
-        AgentSSEEvent guardrailEvent = stream.nextEvent();
-        AgentSSEEvent failure = stream.nextEvent();
+        AgentSSEEvent guardrailEvent = next(stream);
+        AgentSSEEvent failure = next(stream);
         assertThat(guardrailEvent.getType()).isEqualTo("guardrail_fail");
         assertThat(guardrailEvent.getContent()).isEqualTo("Unsafe content");
         assertThat(failure.getType()).isEqualTo("error");
@@ -108,11 +118,236 @@ class AgentEventListenerTest {
         stream.close();
     }
 
+    @Test
+    void mcpAndHumanToolCompletionsAreReportedUnderTheirDeclaredToolNames() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-tools", null);
+
+        listener.onTaskCompleted(mcpToolCall("wf-tools"));
+
+        TaskModel human = task("wf-tools", "HUMAN", "ask_question_0");
+        human.setTaskDefName("ask_question");
+        human.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "ask_question"));
+        human.setOutputData(Map.of("result", "yes"));
+        listener.onTaskCompleted(human);
+
+        assertThat(next(stream).getToolName()).isEqualTo("math_add");
+        assertThat(next(stream).getToolName()).isEqualTo("math_add");
+        assertThat(next(stream).getToolName()).isEqualTo("ask_question");
+        assertThat(next(stream).getToolName()).isEqualTo("ask_question");
+        stream.close();
+    }
+
+    /** HTTP tools complete as async system tasks and do not reach this listener yet. */
+    @Test
+    void httpToolIsNamedByItsToolNameRatherThanItsHttpVerb() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-http", null);
+
+        TaskModel http = task("wf-http", "HTTP", "get_weather_0");
+        http.setTaskDefName("get_weather");
+        http.setInputData(
+                Map.of(
+                        "http_request",
+                        Map.of("uri", "https://example.test/weather", "method", "GET"),
+                        AGENT_TOOL_NAME_KEY,
+                        "get_weather"));
+        http.setOutputData(Map.of("result", "72F"));
+        listener.onTaskCompleted(http);
+
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("get_weather");
+        assertThat(next(stream).getToolName()).isEqualTo("get_weather");
+        stream.close();
+    }
+
+    @Test
+    void agentAsToolIsAToolCallWhileAStrategyHandoffIsNot() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-sub", null);
+
+        TaskModel handoff = task("wf-sub", "SUB_WORKFLOW", "support_handoff_billing");
+        handoff.setTaskDefName("billing_wf");
+        handoff.setOutputData(Map.of("result", "handled"));
+        listener.onTaskCompleted(handoff);
+
+        TaskModel agentTool = task("wf-sub", "SUB_WORKFLOW", "research_0");
+        agentTool.setTaskDefName("research_agent_wf");
+        agentTool.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "research", "prompt", "hi"));
+        agentTool.setOutputData(Map.of("result", "done"));
+        listener.onTaskCompleted(agentTool);
+
+        // The handoff emitted nothing, so the first event on the stream is the agent tool's.
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("research");
+        assertThat(next(stream).getType()).isEqualTo("tool_result");
+        stream.close();
+    }
+
+    @Test
+    void theMcpDiscoveryTaskIsNotReportedAsAToolCall() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-discovery", null);
+
+        TaskModel discovery = task("wf-discovery", "LIST_MCP_TOOLS", "list_tools_ref");
+        discovery.setTaskDefName("LIST_MCP_TOOLS");
+        discovery.setInputData(Map.of("mcpServer", "http://mcp"));
+        discovery.setOutputData(Map.of("tools", List.of()));
+        listener.onTaskCompleted(discovery);
+
+        assertNoEvent(stream);
+        stream.close();
+    }
+
+    @Test
+    void orchestrationTasksAreNotReportedAsToolCalls() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-plumbing", null);
+
+        for (String taskType :
+                List.of(
+                        "SWITCH",
+                        "DO_WHILE",
+                        "INLINE",
+                        "SET_VARIABLE",
+                        "FORK_JOIN_DYNAMIC",
+                        "JOIN",
+                        "TERMINATE",
+                        "LLM_CHAT_COMPLETE",
+                        "AGENT")) {
+            TaskModel plumbing = task("wf-plumbing", taskType, taskType.toLowerCase() + "_ref");
+            plumbing.setTaskDefName(taskType);
+            plumbing.setOutputData(Map.of("result", "x"));
+            listener.onTaskCompleted(plumbing);
+            assertThat(read(stream, 200)).as("%s reported as a tool call", taskType).isNull();
+        }
+        stream.close();
+    }
+
+    @Test
+    void aToolWhoseConfigNamesItsOwnTaskTypeIsStillAToolCall() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-media", null);
+
+        // A media tool may carry taskType in its own config, so no static allowlist covers it.
+        TaskModel media = task("wf-media", "GENERATE_DIAGRAM", "make_diagram_0");
+        media.setTaskDefName("generate_diagram");
+        media.setInputData(Map.of("prompt", "a box", AGENT_TOOL_NAME_KEY, "make_diagram"));
+        media.setOutputData(Map.of("result", "diagram.png"));
+        listener.onTaskCompleted(media);
+
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("make_diagram");
+        assertThat(next(stream).getToolName()).isEqualTo("make_diagram");
+        stream.close();
+    }
+
+    @Test
+    void anUnmarkedToolWhoseConfigNamedItsTaskTypeIsStillAToolCall() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-dynamic", null);
+
+        // enrichToolsScriptDynamic sets no _agent_tool_name, so selection is on task type alone.
+        TaskModel media = task("wf-dynamic", "GENERATE_DIAGRAM", "make_diagram_0");
+        media.setTaskDefName("make_diagram");
+        media.setInputData(Map.of("prompt", "a box", "method", "make_diagram"));
+        media.setOutputData(Map.of("result", "diagram.png"));
+        listener.onTaskCompleted(media);
+
+        AgentSSEEvent toolCall = next(stream);
+        assertThat(toolCall.getType()).isEqualTo("tool_call");
+        assertThat(toolCall.getToolName()).isEqualTo("make_diagram");
+        stream.close();
+    }
+
+    @Test
+    void frameworkPassthroughWrappersStayOffTheStream() {
+        AgentStreamRegistry registry = new AgentStreamRegistry();
+        AgentEventListener listener = listener(registry);
+        AgentEventStream stream = registry.openStream("wf-fw", null);
+
+        TaskModel wrapper = workerTask("wf-fw", "get_weather", "_fw_get_weather_0");
+        wrapper.setInputData(Map.of(AGENT_TOOL_NAME_KEY, "get_weather"));
+        wrapper.setOutputData(Map.of("result", "72F"));
+        listener.onTaskCompleted(wrapper);
+
+        assertNoEvent(stream);
+        stream.close();
+    }
+
+    /** Next event. The generous bound only stops a missing event hanging the suite. */
+    private static AgentSSEEvent next(AgentEventStream stream) {
+        return read(stream, 5000);
+    }
+
+    /**
+     * Asserts the stream carries no further event. Events are queued synchronously by the listener,
+     * so a short bound is enough: anything coming has already arrived.
+     */
+    private static void assertNoEvent(AgentEventStream stream) {
+        assertThat(read(stream, 200)).isNull();
+    }
+
+    private static AgentSSEEvent read(AgentEventStream stream, long timeoutMillis) {
+        ExecutorService reader = Executors.newSingleThreadExecutor();
+        try {
+            return reader.submit(stream::nextEvent).get(timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError(e);
+        } catch (ExecutionException e) {
+            throw new AssertionError(e.getCause());
+        } finally {
+            reader.shutdownNow();
+        }
+    }
+
+    private static TaskModel mcpToolCall(String workflowId) {
+        TaskModel mcp = task(workflowId, "CALL_MCP_TOOL", "math_call_0");
+        mcp.setTaskDefName("call_mcp_tool");
+        mcp.setInputData(Map.of("mcpServer", "http://mcp", "method", "math_add"));
+        mcp.setOutputData(Map.of("result", 5));
+        return mcp;
+    }
+
+    private static AgentEventListener listener(AgentStreamRegistry registry) {
+        return new AgentEventListener(registry, new SimpleMeterRegistry());
+    }
+
+    /** A worker tool: {@code SimpleTaskMapper} sets the executed task's type to its own name. */
+    private static TaskModel workerTask(String workflowId, String name, String reference) {
+        TaskModel task = task(workflowId, name, reference);
+        task.setTaskDefName(name);
+        return task;
+    }
+
+    /**
+     * A scheduled task with a {@code TaskDef} present, as {@code MetadataMapperService} leaves
+     * every named task.
+     */
     private static TaskModel task(String workflowId, String type, String reference) {
         TaskModel task = new TaskModel();
         task.setWorkflowInstanceId(workflowId);
         task.setTaskType(type);
         task.setReferenceTaskName(reference);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName(type);
+        workflowTask.setType(type);
+        workflowTask.setTaskReferenceName(reference);
+        workflowTask.setTaskDefinition(new TaskDef(type));
+        task.setWorkflowTask(workflowTask);
         return task;
     }
 
