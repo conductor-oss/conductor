@@ -128,9 +128,35 @@ For full configuration and examples, see the [Operators reference](../../documen
 - **totalTimeoutSeconds** — Hard wall-clock budget across all retry attempts combined. Once exceeded, no further retries are attempted regardless of `retryCount`.
 - **timeoutSeconds** — Maximum wall-clock time per individual attempt before the task is marked `TIMED_OUT`.
 - **responseTimeoutSeconds** — Maximum time to wait for a worker to respond after picking up a task. Useful for detecting unresponsive workers.
-- **pollTimeoutSeconds** — Maximum time a worker can hold a long-poll connection before the server releases it.
+- **pollTimeoutSeconds** — Maximum time a task can wait in the queue for a worker to poll it. If no worker polls the task within this time, the task times out according to its `timeoutPolicy`.
 
-When using Worker tasks (`SIMPLE`), its task definition must be registered to the Conductor server before it can execute in a workflow. Because system tasks are managed by Conductor, it is not necessary to add a task definition for system tasks unless you wish to customize its default parameters.
+When using Worker tasks (`SIMPLE`), register a task definition for each task. Without one, the task still runs with default settings: 3 retries and a fixed 60 second delay between retries.
+
+Because system tasks are managed by Conductor, it is not necessary to add a task definition for system tasks unless you wish to customize its default parameters, such as `retryCount`, `retryLogic`, `retryDelaySeconds`, and more. For example, a system task is not retried without a task definition. To retry it, add a task definition (registered with the same name as the task, or embedded in the workflow task) and set `retryCount` there.
+
+### Embedded task definition
+
+Instead of registering a task definition, you can embed one in a workflow task with `taskDefinition`. The embedded definition replaces the registered definition with the same name for that task. It is not merged with it: every field you leave out gets its default value, not the registered value. The defaults are `retryCount` 3, `retryLogic` FIXED, `retryDelaySeconds` 60, `backoffScaleFactor` 1, `timeoutPolicy` TIME_OUT_WF, `responseTimeoutSeconds` 3600 and `timeoutSeconds` 0 (no timeout). `pollTimeoutSeconds` and `concurrentExecLimit` are not set, and the `inputTemplate` of the registered definition is not applied. To change only some settings, copy the full registered definition into `taskDefinition` and edit those fields.
+
+```json
+{
+  "name": "process_payment",
+  "taskReferenceName": "process_payment_ref",
+  "type": "SIMPLE",
+  "inputParameters": {
+    "orderId": "${workflow.input.orderId}"
+  },
+  "taskDefinition": {
+    "name": "process_payment",
+    "retryCount": 3,
+    "retryLogic": "FIXED",
+    "retryDelaySeconds": 10,
+    "timeoutSeconds": 120,
+    "responseTimeoutSeconds": 60,
+    "ownerEmail": "order-team@example.com"
+  }
+}
+```
 
 
 ## Task configuration
@@ -159,6 +185,8 @@ Data is passed between tasks using `${...}` expression syntax. This allows a tas
 ```
 
 For Worker tasks (`SIMPLE`), the configuration will simply contain its inputs/outputs and a reference to its task definition name, because the logic of its behavior will already be specified in the worker code of your application.
+
+A workflow task accepts one retry setting, `retryCount`, which overrides the `retryCount` of the task definition. All other retry and timeout settings (`retryLogic`, `retryDelaySeconds`, `backoffScaleFactor`, `timeoutSeconds`, `responseTimeoutSeconds`, `pollTimeoutSeconds` and `timeoutPolicy`) are read only from the task definition. If you put them on the workflow task, they are dropped.
 
 There must be at least one task configured in each workflow definition.
 
