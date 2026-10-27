@@ -56,7 +56,7 @@ import org.opensearch.search.sort.FieldSortBuilder;
 import org.opensearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -70,14 +70,14 @@ import com.netflix.conductor.core.exception.TransientException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.type.TypeFactory;
 
 @Trace
 public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
@@ -553,7 +553,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             byte[] docBytes;
             try {
                 docBytes = objectMapper.writeValueAsBytes(log);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 logger.error("Failed to convert task log to JSON for task {}", log.getTaskId());
                 continue;
             }
@@ -644,7 +644,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
 
     private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
         SearchHit[] hits = response.getHits().getHits();
-        TypeFactory factory = TypeFactory.defaultInstance();
+        TypeFactory factory = objectMapper.getTypeFactory();
         MapType type = factory.constructMapType(HashMap.class, String.class, String.class);
         List<Message> messages = new ArrayList<>(hits.length);
         for (SearchHit hit : hits) {
@@ -1138,7 +1138,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
                                         try {
                                             return objectMapper.readValue(
                                                     hit.getSourceAsString(), clazz);
-                                        } catch (JsonProcessingException e) {
+                                        } catch (JacksonException e) {
                                             logger.error(
                                                     "Failed to de-serialize opensearch from source: {}",
                                                     hit.getSourceAsString(),
@@ -1240,7 +1240,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
         byte[] docBytes;
         try {
             docBytes = objectMapper.writeValueAsBytes(doc);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             logger.error("Failed to convert {} '{}' to byte string", docType, docId);
             return;
         }
@@ -1285,8 +1285,7 @@ public class OpenSearchRestDAO extends OpenSearchBaseDAO implements IndexDAO {
             final BulkRequest request, final String operationDescription, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
-            retryTemplate.execute(
-                    context -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
+            retryTemplate.execute(() -> openSearchClient.bulk(request, RequestOptions.DEFAULT));
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing object of type: {}", endTime - startTime, docType);

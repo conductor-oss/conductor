@@ -17,6 +17,181 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 
+/** The persisted decision task's output, as carried in detail.output. */
+export function decisionInferenceOutput(event: AgentEvent) {
+  return (event.detail as { output?: unknown } | undefined)?.output as
+    | {
+        provider?: string;
+        model?: string;
+        answers?: unknown;
+        usage?: unknown;
+        latencyMs?: number;
+        requestId?: string;
+      }
+    | undefined;
+}
+
+function decisionTaskEvent(
+  task: ExecutionTask<Record<string, unknown>>,
+): AgentEvent {
+  const usage = task.outputData?.usage as
+    | { inputTokens?: number; outputTokens?: number }
+    | undefined;
+  const promptTokens = usage?.inputTokens ?? 0;
+  const completionTokens = usage?.outputTokens ?? 0;
+  const model = (task.outputData?.model ?? task.inputData?.model) as
+    | string
+    | undefined;
+  return {
+    id: `${task.taskId}-decision`,
+    type: EventType.DECISION,
+    toolName: model,
+    timestamp: task.startTime ?? 0,
+    summary: model ?? "decision",
+    detail: { input: task.inputData, output: task.outputData },
+    tokens: {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
+    },
+    durationMs: taskDuration(task),
+    success: taskSuccess(task.status),
+    taskMeta: {
+      taskId: task.taskId,
+      taskType: task.taskType,
+      referenceTaskName: task.referenceTaskName,
+      startTime: task.startTime ?? undefined,
+      endTime: task.endTime ?? undefined,
+      seq: task.seq,
+    },
+  };
+}
+
+function isDecisionTask(task: ExecutionTask): boolean {
+  return (
+    task.taskType === "SWITCH" &&
+    (task.inputData?._conductorDeferredEvaluator === true ||
+      task.outputData?.answers !== undefined)
+  );
+}
+
+function embeddedAgentDef(task: ExecutionTask) {
+  const definition = task.inputData?.subWorkflowDefinition as
+    | WorkflowExecution["workflowDefinition"]
+    | undefined;
+  return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
+}
+
+function isRouterSelector(task: ExecutionTask, routerReference: string) {
+  return task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
+}
+
+function routerSelectorEvent(task: ExecutionTask): AgentEvent {
+  const decisionTask = isDecisionTask(task);
+  const result = decisionTask ? task.outputData : task.outputData?.result;
+  const event: AgentEvent = decisionTask
+    ? decisionTaskEvent(task)
+    : {
+        id: `${task.taskId}-router`,
+        type: EventType.THINKING,
+        timestamp: task.startTime ?? 0,
+        summary: "Routing decision",
+        toolName: embeddedAgentDef(task)?.model as string | undefined,
+        detail: { input: task.inputData?.workflowInput, output: result },
+        success: taskSuccess(task.status),
+        durationMs: taskDuration(task),
+      };
+  const answers = (result as { answers?: Record<string, { choice?: string }> })
+    ?.answers;
+  const choice = decisionTask
+    ? Object.values(answers ?? {})[0]?.choice
+    : typeof result === "string"
+      ? result
+      : undefined;
+  if (choice) {
+    event.targetAgent = choice;
+    event.summary = `Selected: ${choice}`;
+  }
+  return event;
+}
+
+function routerChild(
+  task: ExecutionTask,
+  children: AgentRunData[],
+): AgentRunData | null {
+  const child = children.find(
+    (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
+  );
+  if (!child) return null;
+  const definition = embeddedAgentDef(task);
+  return {
+    ...child,
+    agentName: (definition?.name as string) ?? child.agentName,
+    agentDef: definition ?? child.agentDef,
+    model: definition?.model as string | undefined,
+    output: task.outputData?.result ?? child.output,
+  };
+}
+
+function taskDuration(task: ExecutionTask<unknown>): number {
+  return task.endTime && task.startTime ? task.endTime - task.startTime : 0;
+}
+
+function routerTurn(
+  task: ExecutionTask,
+  children: AgentRunData[],
+  routerReference: string,
+  turnNumber: number,
+): AgentTurn | null {
+  const event = isRouterSelector(task, routerReference)
+    ? routerSelectorEvent(task)
+    : null;
+  const child = event ? null : routerChild(task, children);
+  if (!event && !child) return null;
+  return {
+    id: `route-${task.taskId}`,
+    kind: AgentTimelineKind.TURN,
+    turnNumber,
+    status: mapTaskStatus(task.status),
+    durationMs: taskDuration(task),
+    tokens: event?.tokens ?? ZERO_TOKENS,
+    events: event ? [event] : [],
+    subAgents: child ? [child] : [],
+    strategy: AgentStrategy.SEQUENTIAL,
+  };
+}
+
+/** A selector is inference by the parent; its selected child runs in the next turn. */
+function routerTimeline(
+  tasks: ExecutionTask[],
+  turns: AgentTurn[],
+  routerReference: string,
+): AgentTurn[] {
+  const calls = deduplicateRetriedTasks(
+    sortTasksChronologically(tasks),
+  ).tasks.filter(
+    (task) =>
+      isAgentSubWorkflow(task) || isRouterSelector(task, routerReference),
+  );
+  if (!calls.some((task) => isRouterSelector(task, routerReference)))
+    return turns;
+  const children = turns.flatMap((turn) => turn.subAgents);
+  const routed = calls.reduce<AgentTurn[]>((timeline, task) => {
+    const turn = routerTurn(
+      task,
+      children,
+      routerReference,
+      timeline.length + 1,
+    );
+    return turn ? [...timeline, turn] : timeline;
+  }, []);
+  return [
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.PREPARATION),
+    ...routed,
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.FINALIZATION),
+  ];
+}
+
 /** Map a model name to its provider icon path in /integrations-icons/ */
 export function getModelIconPath(model: string | undefined): string | null {
   if (!model) return null;
@@ -791,6 +966,10 @@ export function transformWorkflowExecutionToAgentRun(
     | undefined;
   const strategyIndex = indexAgentDefStrategies(agentDefMeta);
   const childCountIndex = indexAgentDefChildCounts(agentDefMeta);
+  const agentNameForReference = String(
+    agentDefMeta?.name ?? execution.workflowName ?? execution.workflowType,
+  );
+  const routerReference = `${agentNameForReference.replace(/[^a-zA-Z0-9_]/g, "_")}_router`;
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -820,7 +999,7 @@ export function transformWorkflowExecutionToAgentRun(
     if (iter !== null) {
       if (!iterMap.has(iter)) iterMap.set(iter, []);
       iterMap.get(iter)!.push(task);
-    } else if (!ITER_INFRA.has(task.taskType)) {
+    } else if (!ITER_INFRA.has(task.taskType) || isDecisionTask(task)) {
       // Root-level non-infrastructure: final LLM tasks, or entire simple agents
       rootActiveTasks.push(task);
     }
@@ -832,18 +1011,7 @@ export function transformWorkflowExecutionToAgentRun(
   const rootAgentName: string =
     execution.workflowName ?? execution.workflowType ?? "";
 
-  // A real sub-agent turn renders its subAgent box AFTER its own events (a
-  // fixed convention in AgentExecutionDiagram, not something worth changing
-  // here) — so a "this agent is handing off" event attached to the SAME
-  // iteration as the sub-agent box would render ABOVE that box instead of
-  // below it, reading backwards ("here's the handoff" before "here's what
-  // the agent actually did"). Deferring it to the front of the NEXT
-  // iteration's events sidesteps that: it then renders right after the
-  // "TURN N+1" marker, immediately before that turn's own content — "here's
-  // who's taking over" followed by their work, which is the correct order
-  // either way. Self-call turns don't have this conflict (there's no
-  // sub-agent box competing for the same iteration), so their handoffs stay
-  // attached to the turn that produced them.
+  // Display a sub-agent's outgoing handoff at the start of the next turn.
   let pendingIncomingHandoff: AgentEvent | null = null;
 
   const turns: AgentTurn[] = sortedIters
@@ -856,6 +1024,11 @@ export function transformWorkflowExecutionToAgentRun(
         iterTasks.filter((t) => t.taskType === "LLM_CHAT_COMPLETE"),
       );
 
+      const { tasks: decisionTasks } = deduplicateRetriedTasks(
+        iterTasks.filter(isDecisionTask),
+      );
+      const decisionEvents = decisionTasks.map(decisionTaskEvent);
+
       // Tool worker tasks — any non-infra, non-subworkflow, non-LLM task
       const {
         tasks: toolWorkerTasks,
@@ -866,7 +1039,8 @@ export function transformWorkflowExecutionToAgentRun(
           (t) =>
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
-            t.taskType !== "LLM_CHAT_COMPLETE",
+            t.taskType !== "LLM_CHAT_COMPLETE" &&
+            !isDecisionTask(t),
         ),
       );
 
@@ -880,7 +1054,7 @@ export function transformWorkflowExecutionToAgentRun(
       const subAgentTasks = agentTasks.filter(
         (t) =>
           extractAgentName(t.referenceTaskName) !== rootAgentName &&
-          !t.referenceTaskName.includes("_router_"),
+          !isRouterSelector(t, routerReference),
       );
 
       const events: AgentEvent[] = [];
@@ -888,6 +1062,7 @@ export function transformWorkflowExecutionToAgentRun(
         events.push(pendingIncomingHandoff);
         pendingIncomingHandoff = null;
       }
+      events.push(...decisionEvents);
 
       // The swarm's own handoff_check task (a sibling INLINE task in this
       // same iteration) records whether a *condition-based* handoff
@@ -1403,11 +1578,17 @@ export function transformWorkflowExecutionToAgentRun(
       // Token counts from LLM tasks in this iteration
       const turnPromptTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.promptTokens as number) || 0),
-        0,
+        decisionEvents.reduce(
+          (sum, event) => sum + event.tokens!.promptTokens,
+          0,
+        ),
       );
       const turnCompletionTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.completionTokens as number) || 0),
-        0,
+        decisionEvents.reduce(
+          (sum, event) => sum + event.tokens!.completionTokens,
+          0,
+        ),
       );
 
       const subStatuses = subAgents.map((s) => s.status);
@@ -1550,7 +1731,7 @@ export function transformWorkflowExecutionToAgentRun(
     attemptCounts: rootAttemptCounts,
     attemptGroups: rootAttemptGroups,
   } = deduplicateRetriedTasks(sortTasksChronologically(rootActiveTasks));
-  let finalOutput: string | undefined;
+  let finalOutput: unknown;
   if (dedupedRootTasks.length > 0) {
     const rootEvents: AgentEvent[] = [];
     let rootPrompt = 0,
@@ -1561,7 +1742,13 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "LLM_CHAT_COMPLETE") {
+      if (isDecisionTask(task)) {
+        const event = decisionTaskEvent(task);
+        rootEvents.push(event);
+        rootPrompt += event.tokens!.promptTokens;
+        rootCompletion += event.tokens!.completionTokens;
+        finalOutput = task.outputData;
+      } else if (task.taskType === "LLM_CHAT_COMPLETE") {
         const condensed = maybeCondensationEvent(task);
         if (condensed) rootEvents.push(condensed);
 
@@ -1860,7 +2047,12 @@ export function transformWorkflowExecutionToAgentRun(
         ),
       ].filter((time) => time > 0);
       const tokens = orderedEvents
-        .filter((event) => event.type === EventType.THINKING && event.tokens)
+        .filter(
+          (event) =>
+            (event.type === EventType.THINKING ||
+              event.type === EventType.DECISION) &&
+            event.tokens,
+        )
         .reduce(
           (total, event) => ({
             promptTokens:
@@ -1943,6 +2135,11 @@ export function transformWorkflowExecutionToAgentRun(
   }
 
   const agentInput = execution.input ?? undefined;
+
+  if (agentDefMeta?.strategy === "router") {
+    const routed = routerTimeline(tasks, turns, routerReference);
+    if (routed !== turns) turns.splice(0, turns.length, ...routed);
+  }
 
   // Accumulate total tokens from all turns
   const totalPromptTokens = turns.reduce(
