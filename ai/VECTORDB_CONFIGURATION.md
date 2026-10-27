@@ -15,6 +15,7 @@ Conductor supports multiple vector database providers with the ability to config
 - **PostgreSQL** (with pgvector extension)
 - **MongoDB** (with Atlas Vector Search)
 - **Pinecone**
+- **Qdrant**
 
 ## Configuration Format
 
@@ -25,7 +26,7 @@ conductor:
   vectordb:
     instances:
       - name: "instance-name"        # Unique identifier for this instance
-        type: "database-type"        # Type: postgres, mongodb, or pinecone
+        type: "database-type"        # Type: postgres, mongodb, pinecone, or qdrant
         <type-specific-config>:      # Configuration block for the database type
           # ... type-specific properties
 ```
@@ -101,6 +102,37 @@ conductor:
           apiKey: "your-pinecone-api-key"
 ```
 
+### Qdrant
+
+A local Qdrant instance, for example one started with `docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant`:
+
+```yaml
+conductor:
+  vectordb:
+    instances:
+      - name: "qdrant-local"
+        type: "qdrant"
+        qdrant:
+          host: "localhost"
+          port: 6334                    # gRPC port
+          distance: "cosine"            # Options: cosine, euclid, dot, manhattan
+```
+
+A Qdrant Cloud cluster:
+
+```yaml
+conductor:
+  vectordb:
+    instances:
+      - name: "qdrant-cloud"
+        type: "qdrant"
+        qdrant:
+          host: "xyz-example.eu-central.aws.cloud.qdrant.io"
+          port: 6334
+          useTls: true
+          apiKey: "your-qdrant-api-key"
+```
+
 ### Mixed Configuration (Multiple Types)
 
 ```yaml
@@ -125,6 +157,11 @@ conductor:
         mongodb:
           connectionString: "mongodb://localhost:27017"
           database: "conductor"
+
+      - name: "qdrant-search"
+        type: "qdrant"
+        qdrant:
+          host: "localhost"
 ```
 
 ## Usage in Workflows
@@ -176,6 +213,17 @@ When using vector database tasks in your workflows, reference the instance by it
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `apiKey` | String | Required | Pinecone API key |
+
+## Qdrant Configuration Options
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `host` | String | "localhost" | Qdrant host name |
+| `port` | Integer | 6334 | Qdrant gRPC port |
+| `apiKey` | String | null | API key for Qdrant Cloud or a secured instance |
+| `useTls` | Boolean | false | Use TLS for the gRPC connection. Qdrant Cloud requires `true` |
+| `distance` | String | "cosine" | Distance for collections that Conductor creates (cosine, euclid, dot, manhattan). The aliases `l2` and `inner_product` map to euclid and dot |
+| `timeout` | Duration | 30s | Deadline for each call to Qdrant, for example `10s`. A call that takes longer fails, and Conductor retries the task. `0` means no deadline |
 
 ## Migration from Old Configuration
 
@@ -256,4 +304,11 @@ If you see an error like "Vector DB instance not found: xyz", check:
 
 - Verify API key is valid and has necessary permissions
 - Ensure index exists in your Pinecone account before using it
+
+### Qdrant
+
+- Use the gRPC port (6334 by default). The REST port (6333) does not accept gRPC connections.
+- Set `useTls: true` and `apiKey` for Qdrant Cloud. An error that says `First received frame was not SETTINGS` means the server uses TLS and `useTls` is false.
+- All vectors in one collection must have the same size. A vector of a different size fails with a dimension error from Qdrant.
+- Conductor writes one unnamed vector per point. A collection that you created with named vectors fails with a `Not existing vector name` error.
 

@@ -81,5 +81,6 @@ ext {
     revMCP = '1.0.0'
     revCommonsCompress = '1.26.1'
     pinecone = '3.0.0'
+    qdrant = '1.20.0'
     revFlexmark = '0.64.8'
 }

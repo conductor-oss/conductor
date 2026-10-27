@@ -21,7 +21,7 @@ The AI module is organized into several key packages:
 ```
 org.conductoross.conductor.ai/
 ├── providers/           # LLM provider implementations (OpenAI, Anthropic, etc.)
-├── vectordb/           # Vector database integrations (Pinecone, MongoDB, etc.)
+├── vectordb/           # Vector database integrations (Pinecone, MongoDB, Qdrant, etc.)
 ├── video/              # Video generation abstractions (VideoModel, AsyncVideoModel, etc.)
 ├── tasks/              # Worker task definitions
 │   ├── mapper/         # Input/output parameter mappers

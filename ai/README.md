@@ -39,6 +39,7 @@ The Conductor AI module provides built-in integration with 13 popular LLM provid
 | **PostgreSQL (pgvector)** | ✅ | ✅ | Postgres with vector extension |
 | **Pinecone** | ✅ | ✅ | Managed vector database |
 | **MongoDB Atlas** | ✅ | ✅ | MongoDB vector search |
+| **Qdrant** | ✅ | ✅ | Open source vector database, self-hosted or Qdrant Cloud |
 
 > **Note**: Multiple named instances of these providers can be configured. See [Vector Database Configuration](VECTORDB_CONFIGURATION.md) for details.
 
@@ -287,7 +288,7 @@ Semantic search using a text query (auto-generates embeddings).
 | `embeddingModelProvider` | String | ✅ | Provider for query embedding |
 | `embeddingModel` | String | ✅ | Embedding model name |
 | `query` | String | ✅ | Search query text |
-| `llmMaxResults` | Integer | ❌ | Maximum results to return (default: 10) |
+| `maxResults` | Integer | ❌ | Maximum results to return (default: 1) |
 
 ---
 
@@ -303,7 +304,7 @@ Search using pre-computed embedding vectors.
 | `namespace` | String | ✅ | Namespace to search |
 | `index` | String | ✅ | Index name |
 | `embeddings` | Array\<Number\> | ✅ | Query embedding vector |
-| `llmMaxResults` | Integer | ❌ | Maximum results to return |
+| `maxResults` | Integer | ❌ | Maximum results to return (default: 1) |
 
 ---
 
@@ -1018,7 +1019,7 @@ docker run -d \
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "query": "workflow orchestration",
-        "llmMaxResults": 5
+        "maxResults": 5
       }
     }
   ]
@@ -1059,7 +1060,7 @@ A basic RAG workflow that searches a knowledge base and generates an answer:
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "query": "${workflow.input.question}",
-        "llmMaxResults": 3
+        "maxResults": 3
       }
     },
     {
@@ -1122,7 +1123,7 @@ A self-contained workflow that indexes documents, searches them, and generates a
         "index": "demo_index",
         "namespace": "demo_docs",
         "docId": "features-002",
-        "text": "Conductor supports multiple vector databases including PostgreSQL (pgvector), MongoDB Atlas, and Pinecone. It also integrates with LLM providers like OpenAI, Anthropic, and Azure OpenAI.",
+        "text": "Conductor supports multiple vector databases including PostgreSQL (pgvector), MongoDB Atlas, Pinecone, and Qdrant. It also integrates with LLM providers like OpenAI, Anthropic, and Azure OpenAI.",
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "dimensions": 1536,
