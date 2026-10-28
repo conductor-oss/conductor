@@ -464,8 +464,11 @@ public class SqliteQueueDAO extends SqliteBaseDAO implements QueueDAO {
     private List<Message> popMessages(
             Connection connection, String queueName, int count, int timeout) {
 
+        // deliver_on is the time the row was taken. Reset it with the take,
+        // or the unack sweep hands the message out again when it had already
+        // been waiting for more than 60 seconds.
         String POP_QUERY =
-                "UPDATE queue_message SET popped = true WHERE message_id IN ("
+                "UPDATE queue_message SET popped = true, deliver_on = strftime('%Y-%m-%d %H:%M:%f', 'now') WHERE message_id IN ("
                         + "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = false AND "
                         + "deliver_on <= strftime('%Y-%m-%d %H:%M:%f', 'now') "
                         + "ORDER BY priority DESC, deliver_on, created_on LIMIT ?"

@@ -409,8 +409,11 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
         List<Message> poppedMessages = new ArrayList<>();
         for (Message message : messages) {
+            // deliver_on is the time the row was taken. Reset it with the take,
+            // or the unack sweep hands the message out again when it had already
+            // been waiting for more than 60 seconds.
             final String POP_MESSAGE =
-                    "UPDATE queue_message SET popped = true WHERE queue_name = ? AND message_id = ? AND popped = false";
+                    "UPDATE queue_message SET popped = true, deliver_on = CURRENT_TIMESTAMP WHERE queue_name = ? AND message_id = ? AND popped = false";
             int result =
                     query(
                             connection,
