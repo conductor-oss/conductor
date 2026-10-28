@@ -66,7 +66,7 @@ dependencies {
     testImplementation "org.glassfish.jaxb:jaxb-runtime"
 
     testImplementation 'org.springframework.boot:spring-boot-starter-validation'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
 
     testImplementation "org.apache.groovy:groovy"
     testImplementation "org.apache.groovy:groovy-json"
@@ -81,6 +81,23 @@ dependencies {
     // arch only; add other -macos-x86_64 / -linux-x86_64 / -linux-arm64 variants for prod.
     testImplementation "com.caoccao.javet:javet:4.1.2"
     testImplementation "com.caoccao.javet:javet-v8-macos-arm64:4.1.2"
+}
+
+// An isolated JVM prevents the opt-in policy from weakening the default-policy regression suite.
+def unrestrictedGraalJSTest = tasks.register('testUnrestrictedGraalJS', Test) {
+    group = 'verification'
+    description = 'Verifies the explicit unrestricted GraalJS host-access configuration'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.netflix.conductor.core.config.GraalJSUnrestrictedHostAccessTest'
+    }
+}
+
+test {
+    dependsOn unrestrictedGraalJSTest
+    exclude '**/GraalJSUnrestrictedHostAccessTest.class'
 }
 
 // Standalone benchmark runner for comparing JS engines on representative Inline-task scripts.

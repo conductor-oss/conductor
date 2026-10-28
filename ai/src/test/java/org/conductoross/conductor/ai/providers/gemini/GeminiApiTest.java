@@ -77,7 +77,8 @@ class GeminiApiTest {
         server.enqueue(
                 new MockResponse()
                         .setResponseCode(200)
-                        .setBody("""
+                        .setBody(
+                                """
                     {"embedding":{"values":[0.1,0.2,0.3]}}""")
                         .addHeader("Content-Type", "application/json"));
 

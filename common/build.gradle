@@ -50,7 +50,7 @@ task protogen(dependsOn: jar, type: JavaExec) {
             "${rootDir}/grpc/src/main/proto",
             "${rootDir}/grpc/src/main/java/com/netflix/conductor/grpc",
             "com.netflix.conductor.grpc",
-            jar.archivePath,
+            jar.archiveFile.get().asFile,
             "com.netflix.conductor.common",
     )
 }

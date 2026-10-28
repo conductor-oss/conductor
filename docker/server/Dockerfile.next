@@ -13,10 +13,30 @@
 #   PREBUILT=true:  Skips builds, uses pre-built artifacts (CI multi-arch)
 #
 
+# Both Java stages use the same patched JVM release and OS-managed trust bundle.
+FROM debian:trixie-slim AS java-base
+
+ARG TEMURIN_VERSION=25.0.5.0.0+8-0
+ARG CA_CERTIFICATES_MIN_VERSION=20250419+deb13u1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' ca-certificates)" ge "$CA_CERTIFICATES_MIN_VERSION" \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public -o /etc/apt/keyrings/adoptium.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb trixie main" > /etc/apt/sources.list.d/adoptium.list \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM java-base AS jdk
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends "temurin-25-jdk=${TEMURIN_VERSION}" \
+    && rm -rf /var/lib/apt/lists/*
+
 # ===========================================================================================================
 # 0. Server builder stage
 # ===========================================================================================================
-FROM azul/zulu-openjdk-debian:21 AS builder
+FROM jdk AS builder
 
 ARG PREBUILT=false
 ARG INDEXING_BACKEND=elasticsearch
@@ -60,14 +80,16 @@ RUN if [ "$PREBUILT" = "false" ]; then \
 # ===========================================================================================================
 # 2. Final stage
 # ===========================================================================================================
-FROM debian:stable-slim
+FROM java-base AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends openjdk-21-jre-headless nginx curl ca-certificates \
+    && apt-get install -y --no-install-recommends "temurin-25-jre=${TEMURIN_VERSION}" nginx \
     && rm -f /etc/nginx/sites-enabled/default \
     && rm -rf /var/lib/apt/lists/*
+
+FROM runtime AS final
 
 RUN mkdir -p /app/config /app/logs /app/libs
 

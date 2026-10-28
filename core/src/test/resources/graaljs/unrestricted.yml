@@ -1,0 +1,4 @@
+conductor:
+  app:
+    graaljs:
+      restricted-host-access: false

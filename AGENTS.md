@@ -6,7 +6,7 @@ Instructions for AI coding agents working on the Conductor codebase.
 
 Conductor is an open-source, distributed workflow orchestration engine designed for microservices.
 It uses a pluggable architecture with interface-based abstractions for persistence, queuing, and indexing.
-The project is built with Java 21 and uses Gradle as the build system.
+The project is built with Java 25 and uses Gradle as the build system.
 
 ## Setup Commands
 
@@ -22,7 +22,7 @@ The project is built with Java 21 and uses Gradle as the build system.
 
 ## Java Version References
 
-**Never link to a specific Java distribution** (e.g., Adoptium, Temurin, OpenJDK.org, Amazon Corretto) in docs, READMEs, or comments. Just say "Java 21+" and let users install it however they prefer.
+**Never link to a specific Java distribution** (e.g., Adoptium, Temurin, OpenJDK.org, Amazon Corretto) in docs, READMEs, or comments. Just say "Java 25+" and let users install it however they prefer.
 
 ## Code Style
 

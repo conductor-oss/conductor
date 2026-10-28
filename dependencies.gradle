@@ -44,8 +44,8 @@ ext {
     // Mixing versions (e.g. polyglot:24.x with js:25.x) causes a runtime
     // "polyglot version X is not compatible with Truffle Y" error.
     // When upgrading, bump revGraalVM everywhere it is referenced and test.
-    // core/build.gradle uses this variable for all five GraalVM artifacts.
-    revGraalVM = '25.0.2'
+    // core/build.gradle uses this variable for all six GraalVM artifacts, including Truffle runtime.
+    revGraalVM = '25.0.5'
     revJAXRS = '4.0.0'
     revJsonPath = '2.4.0'
     revJq = '2.0.0-alpha1'

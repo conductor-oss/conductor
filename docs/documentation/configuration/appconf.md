@@ -25,7 +25,7 @@ All of these parameters are grouped under the `conductor.app` namespace.
 | eventProcessorThreadCount                   | int      | The number of threads to configure the threadpool in the event processor. Example: `4`                                                                                          | Default is 2                                            |
 | eventMessageIndexingEnabled                 | boolean  | Whether to enable indexing of messages within event payloads. Example: `true` or `false`                                                                                        | Default is true                                         |
 | eventExecutionIndexingEnabled               | boolean  | Whether to enable indexing of event execution results. Example: `true` or `false`                                                                                               | Default is true                                         |
-| workflowExecutionLockEnabled                | boolean  | Whether to enable the workflow execution lock. Example: `true` or `false`                                                                                                       | Default is false                                        |
+| workflowExecutionLockEnabled                | boolean  | Whether to enable the workflow execution lock. Example: `true` or `false`                                                                                                       | Default is true                                         |
 | lockLeaseTime                               | Duration | The time for which the lock is leased. Example: `60000ms` or `1m`                                                                                                               | Default is 60000 milliseconds                           |
 | lockTimeToTry                               | Duration | The time for which the thread will block in an attempt to acquire the lock. Example: `500ms` or `1s`                                                                            | Default is 500 milliseconds                             |
 | activeWorkerLastPollTimeout                 | Duration | The time to consider if a worker is actively polling for a task. Example: `10s`                                                                                                 | Default is 10 seconds                                   |
@@ -57,6 +57,31 @@ All of these parameters are grouped under the `conductor.app` namespace.
 | maxTaskOutputPayloadSizeThreshold           | DataSize | The maximum threshold of the task output payload size beyond which the task output will be rejected and the task marked as FAILED_WITH_TERMINAL_ERROR. Example: `10240KB`       | Default is 10240 kilobytes                              |
 | maxWorkflowVariablesPayloadSizeThreshold    | DataSize | The maximum threshold of the workflow variables payload size beyond which the task changes will be rejected and the task marked as FAILED_WITH_TERMINAL_ERROR. Example: `256KB` | Default is 256 kilobytes                                |
 | taskExecLogSizeLimit                        | int      | The maximum size of task execution logs. Example: `10000`                                                                                                                       | Default is 10                                           |
+
+### GraalJS Java host access
+
+`conductor.app.graaljs.restricted-host-access` defaults to `true`:
+
+```yaml
+conductor:
+  app:
+    graaljs:
+      restricted-host-access: true
+```
+
+Restricted mode permits task-data collection access (including read-only collection getters and
+iterators) and `console.log`, `console.info`, and `console.error`, but does not expose arbitrary Java
+fields or methods. It applies to every caller of
+the shared JavaScript evaluator, including the `javascript` and `graaljs` evaluator types.
+
+Set this property to `false` only when all workflow and task definition authors are trusted. This
+explicitly enables unrestricted Java host access, including reflection through bound objects, and
+can allow scripts to execute arbitrary host code. Guest class lookup, class loading, native access,
+thread/process creation, direct I/O, and environment access remain disabled; those restrictions do
+not prevent Java methods from exercising the host application's privileges.
+
+This is a startup setting. Restart the application after changing it so all contexts, including
+pooled contexts, use the same policy. Restricted host access is not process or memory isolation.
 
 ### Example usage
 

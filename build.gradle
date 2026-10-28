@@ -9,7 +9,6 @@ buildscript {
     }
     dependencies {
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
 
@@ -20,7 +19,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'java-library'
-    id "com.diffplug.spotless" version "6.25.0"
+    id "com.diffplug.spotless" version "8.10.4"
     id 'org.springframework.boot' version '4.1.1'
 }
 
@@ -43,12 +42,15 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(25)
         }
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
     }
 
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 25
+    }
 
     group = 'org.conductoross'
 
@@ -157,15 +159,6 @@ allprojects {
     }
 }
 
-// all client and their related modules are published with Java 17 compatibility
-["annotations", "common", "grpc", "grpc-client"].each {
-    project(":conductor-$it") {
-        compileJava {
-            options.release = 21
-        }
-    }
-}
-
 // Aggregated coverage report across all subprojects.
 // Run AFTER tests: ./gradlew build jacocoAggregatedReport
 // This task does NOT trigger test execution — it only aggregates existing .exec files.
@@ -201,11 +194,18 @@ configure(allprojects - project(':conductor-grpc')) {
 
     spotless {
         java {
-            googleJavaFormat().aosp()
+            googleJavaFormat('1.30.0').aosp()
             removeUnusedImports()
             importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
             licenseHeaderFile("$rootDir/licenseheader.txt")
         }
+    }
+}
+
+// The image smoke check is compiled independently of Gradle, but follows the same Java style.
+spotless {
+    java {
+        target 'docker/server/tests/*.java'
     }
 }
 

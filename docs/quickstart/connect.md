@@ -30,7 +30,7 @@ npm install -g @conductor-oss/conductor-cli
 
 ## Local server alternative
 
-Use when you need a self-managed development server. It requires Java 21+ and Node.js.
+Use when you need a self-managed development server. It requires Java 25+ and Node.js.
 
 ```bash
 conductor server start

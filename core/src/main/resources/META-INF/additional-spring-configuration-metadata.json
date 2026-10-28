@@ -28,6 +28,13 @@
       "defaultValue": true
     },
     {
+      "name": "conductor.app.graaljs.restricted-host-access",
+      "type": "java.lang.Boolean",
+      "description": "Restrict GraalJS Java host access to task data and console logging. Setting false enables unrestricted host access and is unsafe for untrusted workflow authors. Requires an application restart.",
+      "sourceType": "com.netflix.conductor.core.config.GraalJSConfiguration",
+      "defaultValue": true
+    },
+    {
       "name": "conductor.app.isolated-system-task-enabled",
       "type": "java.lang.Boolean",
       "description": "Used to enable/disable use of isolation groups for system task workers."
