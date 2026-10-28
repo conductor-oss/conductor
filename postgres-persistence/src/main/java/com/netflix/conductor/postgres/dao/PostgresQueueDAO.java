@@ -488,6 +488,10 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             }
         }
 
+        // deliver_on is the time the row was taken. The unack sweep releases a
+        // taken row once that time is more than 60 seconds ago. Set it in this
+        // same update. Leaving the original ready time makes a message that
+        // already waited 60 seconds eligible again before this poll deletes it.
         String POP_QUERY =
                 "WITH cte AS ("
                         + "    SELECT queue_name, message_id "
@@ -500,7 +504,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                         + "    FOR UPDATE SKIP LOCKED "
                         + ") "
                         + "UPDATE queue_message "
-                        + "   SET popped = true "
+                        + "   SET popped = true, deliver_on = current_timestamp "
                         + "   FROM cte "
                         + "   WHERE queue_message.queue_name = cte.queue_name "
                         + "     AND queue_message.message_id = cte.message_id "
