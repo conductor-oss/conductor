@@ -28,6 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.model.BulkResponse;
@@ -589,5 +590,19 @@ public class MetadataServiceTest {
             assertNotNull(summary.getCreateTime());
         }
         verify(metadataDAO, times(1)).getWorkflowVersions("test_workflow_def");
+    }
+
+    @Test
+    public void testGetWorkflowDefListItemsDelegatesToDao() {
+        WorkflowDefListItem item = new WorkflowDefListItem();
+        item.setName("wf");
+        item.setVersion(2);
+        when(metadataDAO.getWorkflowDefListItems()).thenReturn(List.of(item));
+
+        List<WorkflowDefListItem> result = metadataService.getWorkflowDefListItems();
+
+        assertEquals(1, result.size());
+        assertEquals("wf", result.get(0).getName());
+        verify(metadataDAO, times(1)).getWorkflowDefListItems();
     }
 }
