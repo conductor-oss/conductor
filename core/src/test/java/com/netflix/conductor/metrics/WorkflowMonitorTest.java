@@ -29,6 +29,11 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.MetadataService;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @RunWith(SpringRunner.class)
 public class WorkflowMonitorTest {
 
@@ -42,7 +47,8 @@ public class WorkflowMonitorTest {
     public void beforeEach() {
         MockitoAnnotations.openMocks(this);
         workflowMonitor =
-                new WorkflowMonitor(metadataService, queueDAO, executionDAOFacade, 1000, Set.of());
+                new WorkflowMonitor(
+                        metadataService, queueDAO, executionDAOFacade, 1000, Set.of(), true);
     }
 
     private WorkflowDef makeDef(String name, int version, String ownerApp) {
@@ -72,5 +78,19 @@ public class WorkflowMonitorTest {
 
         Assert.assertEquals("name1", mapping.get("test1"));
         Assert.assertEquals("last", mapping.get("test2"));
+    }
+
+    @Test
+    public void testSkipsPendingWorkflowCountWhenWorkflowNameTagDisabled() {
+        WorkflowMonitor monitor =
+                new WorkflowMonitor(
+                        metadataService, queueDAO, executionDAOFacade, 1000, Set.of(), false);
+
+        when(metadataService.getWorkflowDefs()).thenReturn(List.of(makeDef("test1", 1, "owner")));
+        when(metadataService.getTaskDefs()).thenReturn(List.of());
+
+        monitor.reportMetrics();
+
+        verify(executionDAOFacade, never()).getPendingWorkflowCount(anyString());
     }
 }
