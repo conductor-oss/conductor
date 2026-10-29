@@ -6,8 +6,8 @@ import { taskStatusCompareFn } from "utils";
 
 import { KeyValueTable } from "components";
 import StatusBadge from "components/StatusBadge";
-import { useLocation } from "react-router";
-import { usePushHistory } from "utils/hooks/usePushHistory";
+import { useQueryState } from "react-router-use-location-state";
+import { ExecutionTabs } from "pages/execution/state/types";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import MuiTypography from "components/ui/MuiTypography";
 
@@ -20,8 +20,11 @@ export const SummaryTask: FunctionComponent<TaskSummaryProps> = ({
   selectedTask,
   onClose,
 }) => {
-  const location = useLocation();
-  const pushHistory = usePushHistory();
+  // Goes through useQueryState like the rest of the execution page, so the
+  // query param clearing done by onClose merges with "tab" instead of
+  // rebuilding the URL from the pre-click location and dropping it. Pushed so
+  // Back returns to the tab the summary was opened from.
+  const [, setTab] = useQueryState("tab", "");
 
   return (
     <Paper square elevation={0}>
@@ -45,7 +48,7 @@ export const SummaryTask: FunctionComponent<TaskSummaryProps> = ({
                 cursor: "pointer",
               }}
               onClick={() => {
-                pushHistory(`${location.pathname}?tab=taskList`);
+                setTab(ExecutionTabs.TASK_LIST_TAB, { method: "push" });
                 onClose();
               }}
             >
