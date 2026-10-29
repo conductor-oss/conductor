@@ -127,7 +127,14 @@ public class InMemorySchedulerDAO implements SchedulerDAO {
                                         workflowName == null
                                                 || workflowName.equals(
                                                         s.getStartWorkflowRequest().getName()))
-                        .filter(s -> scheduleName == null || s.getName().contains(scheduleName))
+                        .filter(
+                                s ->
+                                        scheduleName == null
+                                                || s.getName()
+                                                        .toLowerCase(Locale.ROOT)
+                                                        .contains(
+                                                                scheduleName.toLowerCase(
+                                                                        Locale.ROOT)))
                         .filter(s -> paused == null || s.isPaused() == paused)
                         .collect(Collectors.toList());
 
