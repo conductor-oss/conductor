@@ -88,29 +88,30 @@ export function useWorkflowDefs() {
   });
 }
 
-export function useLatestWorkflowDefs() {
-  const { data, ...rest } = useWorkflowDefs();
+export function useLatestWorkflowDefs(pagination, filter) {
+  const params = { ...pagination };
+  if (filter && filter.filterField && filter.filterValue) {
+    params.filterField = filter.filterField;
+    params.filterValue = filter.filterValue;
+  }
 
-  // Filter latest versions only
-  const workflows = useMemo(() => {
-    if (data) {
-      const unique = new Map();
-      for (let workflowDef of data) {
-        if (!unique.has(workflowDef.name)) {
-          unique.set(workflowDef.name, workflowDef);
-        } else if (unique.get(workflowDef.name).version < workflowDef.version) {
-          unique.set(workflowDef.name, workflowDef);
-        }
-      }
+  const hasParams = Object.keys(params).length > 0;
+  const path = hasParams
+    ? `/metadata/workflow/latest-versions?${qs.stringify(params)}`
+    : "/metadata/workflow/latest-versions";
 
-      return Array.from(unique.values());
+  const cacheKey = hasParams
+    ? `${params.start}-${params.size}-${params.filterField || ""}-${params.filterValue || ""}`
+    : "all";
+
+  return useFetch(
+    ["latestWorkflowDefs", cacheKey],
+    path,
+    {
+      staleTime: STALE_TIME_WORKFLOW_DEFS,
+      keepPreviousData: true,
     }
-  }, [data]);
-
-  return {
-    data: workflows,
-    ...rest,
-  };
+  );
 }
 
 export function useSaveWorkflow(callbacks) {
