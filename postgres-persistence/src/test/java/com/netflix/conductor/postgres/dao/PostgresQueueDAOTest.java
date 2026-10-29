@@ -13,6 +13,9 @@
 package com.netflix.conductor.postgres.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -583,6 +586,54 @@ public class PostgresQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void pushPoppedMessageResetsPoppedStateAndMakesImmediatelyAvailable() {
+        String queueName = "requeue_popped_test";
+        String messageId = "requeue-msg-1";
+
+        // Push a message 'requeue-msg-1' with offset 0
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Pop the message
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+
+        // Assert directly via query on table queue_message that popped = true
+        assertTrue(
+                "popped column in queue_message should be true after message was popped",
+                getPoppedState(queueName, messageId));
+
+        // Re-push the message
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Assert directly via query on table queue_message that popped = false
+        assertFalse(
+                "popped column in queue_message should be reset to false after re-push",
+                getPoppedState(queueName, messageId));
+
+        // Pop again: assert message is returned immediately
+        List<String> repopped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, repopped.size());
+        assertEquals(messageId, repopped.get(0));
+    }
+
+    private boolean getPoppedState(String queueName, String messageId) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement stmt =
+                        conn.prepareStatement(
+                                "SELECT popped FROM queue_message WHERE queue_name = ? AND message_id = ?")) {
+            stmt.setString(1, queueName);
+            stmt.setString(2, messageId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue("Message record must exist in queue_message", rs.next());
+                return rs.getBoolean("popped");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // @Test
