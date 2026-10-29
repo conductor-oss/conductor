@@ -90,11 +90,11 @@ jobs:
           sudo rm -rf /opt/ghc
       - name: Gradle wrapper validation
         uses: gradle/wrapper-validation-action@v3
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache SonarCloud packages
         uses: actions/cache@v5
         with:
@@ -156,11 +156,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -238,11 +238,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -321,11 +321,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -444,11 +444,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:

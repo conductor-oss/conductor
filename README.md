@@ -28,7 +28,7 @@ Conductor is an open-source durable execution platform for microservices, AI age
 
 # Get Running in 60 Seconds
 
-**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 21+ must be installed.
+**Prerequisites:** [Node.js](https://nodejs.org/) v16+ and Java 25+ must be installed.
 
 ```shell
 npm install -g @conductor-oss/conductor-cli
@@ -37,11 +37,12 @@ conductor server start
 
 Open [http://localhost:8080](http://localhost:8080) — your server is running with the built-in ui-next UI.
 
-> **Upgrading from a previous version?** The CLI caches the server JAR at `~/.conductor-cli/`. If you have an older version cached, force a fresh download:
+<!-- TODO: verify against live server -->
+> **Upgrading from a previous version?** Stop the server, refresh the CLI's cached server JAR, and restart:
 > ```shell
-> conductor server start latest
-> # or delete the cache manually
-> rm ~/.conductor-cli/conductor-server-latest.jar && conductor server start
+> conductor server stop
+> conductor server update
+> conductor server start
 > ```
 
 **Run your first workflow:**
@@ -242,7 +243,7 @@ powershell -c "irm https://conductor-oss.github.io/conductor-skills/install.ps1 
 <details>
 <summary><strong>Requirements and instructions</strong></summary>
 
-**Requirements:** Docker Desktop, Java (JDK) 21+, Node.js 18+ and pnpm (for UI)
+**Requirements:** Docker Desktop, Java (JDK) 25+, Node.js 18+ and pnpm (for UI)
 
 ```shell
 git clone https://github.com/conductor-oss/conductor
