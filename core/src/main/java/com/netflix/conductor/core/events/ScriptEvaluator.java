@@ -29,6 +29,8 @@ public class ScriptEvaluator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptEvaluator.class);
 
+    public static final boolean DEFAULT_RESTRICTED_HOST_ACCESS = false;
+
     private static final int DEFAULT_MAX_EXECUTION_SECONDS = 4;
     private static final int DEFAULT_CONTEXT_POOL_SIZE = 10;
     // Pool reuse changes JS semantics: a Context's global scope persists across calls, so a
@@ -40,7 +42,9 @@ public class ScriptEvaluator {
     private static final boolean DEFAULT_CONTEXT_POOL_ENABLED = false;
     private static final int DEFAULT_SOURCE_CACHE_SIZE = 1024;
     private static final HostAccess RESTRICTED_HOST_ACCESS = buildHostAccess();
-    private static volatile HostAccess hostAccess = RESTRICTED_HOST_ACCESS;
+    private static volatile HostAccess hostAccess =
+            DEFAULT_RESTRICTED_HOST_ACCESS ? RESTRICTED_HOST_ACCESS : HostAccess.ALL;
+    private static boolean hostAccessConfigured;
 
     private static Duration maxExecutionTimeSeconds;
     private static ExecutorService executorService;
@@ -89,27 +93,30 @@ public class ScriptEvaluator {
     private ScriptEvaluator() {}
 
     /**
-     * Configure Java host access before the evaluator is initialized. Unrestricted access is an
-     * explicit opt-in for fully trusted scripts; changing policies requires an application restart.
+     * Configure Java host access before the evaluator is initialized. Unrestricted access remains
+     * the compatibility default for this release and must only be used with fully trusted scripts.
+     * Changing policies requires an application restart.
      */
     public static synchronized void configureHostAccess(boolean restrictedHostAccess) {
         HostAccess configuredAccess =
                 restrictedHostAccess ? RESTRICTED_HOST_ACCESS : HostAccess.ALL;
-        if (hostAccess == configuredAccess) {
-            // Repeated Spring context setup must not change an already configured policy.
-            return;
-        }
-        if (initialized) {
+        if (initialized && hostAccess != configuredAccess) {
             throw new IllegalStateException(
                     "GraalJS host access must be configured before script evaluator initialization");
         }
         hostAccess = configuredAccess;
+        hostAccessConfigured = true;
         if (!restrictedHostAccess) {
+            // Warn during every application startup, even when the policy is already unrestricted.
             LOGGER.warn(
                     "GraalJS unrestricted Java host access is enabled "
                             + "(conductor.app.graaljs.restricted-host-access=false). "
+                            + "Unrestricted host access will be disabled by default in a future release. "
+                            + "To retain it after upgrading, explicitly set "
+                            + "conductor.app.graaljs.restricted-host-access=false. "
+                            + "Set conductor.app.graaljs.restricted-host-access=true to restrict it now. "
                             + "Scripts may invoke arbitrary Java methods on bound objects; "
-                            + "only use this mode with fully trusted workflow authors.");
+                            + "only use this mode with fully trusted scripts and workflow authors.");
         }
     }
 
@@ -126,6 +133,12 @@ public class ScriptEvaluator {
         if (initialized) {
             LOGGER.warn("ScriptEvaluator already initialized, skipping re-initialization");
             return;
+        }
+
+        if (!hostAccessConfigured) {
+            // Standalone callers do not have Spring's startup hook, but need the same
+            // warning/default.
+            configureHostAccess(DEFAULT_RESTRICTED_HOST_ACCESS);
         }
 
         maxExecutionTimeSeconds = Duration.ofSeconds(maxSeconds);

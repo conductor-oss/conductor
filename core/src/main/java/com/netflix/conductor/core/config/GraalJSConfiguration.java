@@ -31,6 +31,6 @@ public class GraalJSConfiguration {
                         environment.getProperty(
                                 "conductor.app.graaljs.restricted-host-access",
                                 Boolean.class,
-                                true));
+                                ScriptEvaluator.DEFAULT_RESTRICTED_HOST_ACCESS));
     }
 }

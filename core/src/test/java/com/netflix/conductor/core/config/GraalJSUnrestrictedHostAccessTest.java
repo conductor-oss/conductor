@@ -76,7 +76,7 @@ public class GraalJSUnrestrictedHostAccessTest {
                                             Map.of(),
                                             console));
 
-                            // The opt-in changes Java member access, not the other guest
+                            // Explicit unrestricted configuration does not change the other guest
                             // privileges.
                             assertThrows(
                                     TerminateWorkflowException.class,

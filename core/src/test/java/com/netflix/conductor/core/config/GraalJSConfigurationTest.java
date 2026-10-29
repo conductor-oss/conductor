@@ -12,13 +12,21 @@
  */
 package com.netflix.conductor.core.config;
 
+import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.netflix.conductor.core.events.ScriptEvaluator;
-import com.netflix.conductor.core.exception.TerminateWorkflowException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,29 +35,65 @@ class GraalJSConfigurationTest {
     private final ApplicationContextRunner contextRunner =
             new ApplicationContextRunner().withUserConfiguration(GraalJSConfiguration.class);
 
+    private final StringWriter logOutput = new StringWriter();
+    private Logger logger;
+    private Level previousLevel;
+    private WriterAppender appender;
+
+    @BeforeEach
+    void captureStartupWarning() {
+        logger = (Logger) LogManager.getLogger(ScriptEvaluator.class);
+        previousLevel = logger.getLevel();
+        appender =
+                WriterAppender.newBuilder()
+                        .setName("graaljs-startup-warning-test")
+                        .setTarget(logOutput)
+                        .setLayout(
+                                PatternLayout.newBuilder().withPattern("%level %message%n").build())
+                        .build();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.WARN);
+    }
+
+    @AfterEach
+    void restoreLogger() {
+        if (logger != null) {
+            if (appender != null) {
+                logger.removeAppender(appender);
+            }
+            logger.setLevel(previousLevel);
+        }
+        if (appender != null) {
+            appender.stop();
+        }
+    }
+
     @Test
-    void hostAccessIsRestrictedByDefault() {
+    void hostAccessIsEnabledByDefaultAndWarnsAtStartup() {
         contextRunner.run(
                 context -> {
                     assertNull(context.getStartupFailure());
-                    assertThrows(
-                            TerminateWorkflowException.class,
-                            () -> ScriptEvaluator.eval("$.put('value', 1)", new HashMap<>()));
+                    // The warning must appear at startup, before any script is evaluated.
+                    assertTransitionWarning();
+                    Map<String, Object> input = new HashMap<>();
+                    assertNull(ScriptEvaluator.eval("$.put('value', 1)", input));
+                    assertEquals(1, input.get("value"));
                 });
     }
 
     @Test
-    void restrictedHostAccessCanBeExplicitlyEnabled() {
+    void unrestrictedHostAccessCanBeExplicitlyRetained() {
         contextRunner
-                .withPropertyValues("conductor.app.graaljs.restricted-host-access=true")
+                .withPropertyValues("conductor.app.graaljs.restricted-host-access=false")
                 .run(
                         context -> {
                             assertNull(context.getStartupFailure());
-                            assertThrows(
-                                    TerminateWorkflowException.class,
-                                    () ->
-                                            ScriptEvaluator.eval(
-                                                    "$.put('value', 1)", new HashMap<>()));
+                            assertTransitionWarning();
+                            assertEquals(
+                                    "java.util.HashMap",
+                                    ScriptEvaluator.eval(
+                                            "$.getClass().getName()", new HashMap<>()));
                         });
     }
 
@@ -58,5 +102,16 @@ class GraalJSConfigurationTest {
         contextRunner
                 .withPropertyValues("conductor.app.graaljs.restricted-host-access=invalid")
                 .run(context -> assertNotNull(context.getStartupFailure()));
+    }
+
+    private void assertTransitionWarning() {
+        String output = logOutput.toString();
+        assertTrue(
+                output.contains("WARN GraalJS unrestricted Java host access is enabled"), output);
+        assertTrue(output.contains("will be disabled by default in a future release"), output);
+        assertTrue(
+                output.contains(
+                        "explicitly set conductor.app.graaljs.restricted-host-access=false"),
+                output);
     }
 }

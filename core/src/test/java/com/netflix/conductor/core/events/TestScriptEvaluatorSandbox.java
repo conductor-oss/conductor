@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 import org.graalvm.polyglot.HostAccess;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
@@ -31,6 +32,11 @@ import com.netflix.conductor.core.execution.evaluators.ConsoleBridge;
 import static org.junit.Assert.*;
 
 public class TestScriptEvaluatorSandbox {
+
+    @BeforeClass
+    public static void configureRestrictedHostAccess() {
+        ScriptEvaluator.configureHostAccess(true);
+    }
 
     @Test
     public void testUnlistedHostMethodsCannotBeCalled() {

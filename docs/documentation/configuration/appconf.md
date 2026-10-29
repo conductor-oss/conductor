@@ -60,22 +60,28 @@ All of these parameters are grouped under the `conductor.app` namespace.
 
 ### GraalJS Java host access
 
-`conductor.app.graaljs.restricted-host-access` defaults to `true`:
+`conductor.app.graaljs.restricted-host-access` defaults to `false` for compatibility in this release,
+so unrestricted Java host access remains enabled:
 
 ```yaml
 conductor:
   app:
     graaljs:
-      restricted-host-access: true
+      restricted-host-access: false
 ```
 
-Restricted mode permits task-data collection access (including read-only collection getters and
-iterators) and `console.log`, `console.info`, and `console.error`, but does not expose arbitrary Java
-fields or methods. It applies to every caller of
-the shared JavaScript evaluator, including the `javascript` and `graaljs` evaluator types.
+At startup, the server logs a warning that a future release will disable unrestricted Java host
+access by default. If your workflows need it, explicitly set
+`conductor.app.graaljs.restricted-host-access=false` before upgrading to retain it after that change.
 
-Set this property to `false` only when all workflow and task definition authors are trusted. This
-explicitly enables unrestricted Java host access, including reflection through bound objects, and
+Set the property to `true` to opt into restricted access now. Restricted mode permits task-data
+collection access (including read-only collection getters and iterators) and `console.log`,
+`console.info`, and `console.error`, but does not expose arbitrary Java fields or methods. It applies
+to every caller of the shared JavaScript evaluator, including the `javascript` and `graaljs`
+evaluator types.
+
+Unrestricted mode must only be used when all scripts and workflow/task definition authors are
+trusted. It enables unrestricted Java host access, including reflection through bound objects, and
 can allow scripts to execute arbitrary host code. Guest class lookup, class loading, native access,
 thread/process creation, direct I/O, and environment access remain disabled; those restrictions do
 not prevent Java methods from exercising the host application's privileges.

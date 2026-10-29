@@ -83,7 +83,7 @@ dependencies {
     testImplementation "com.caoccao.javet:javet-v8-macos-arm64:4.1.2"
 }
 
-// An isolated JVM prevents the opt-in policy from weakening the default-policy regression suite.
+// Each policy gets its own JVM because the evaluator's policy is fixed after initialization.
 def unrestrictedGraalJSTest = tasks.register('testUnrestrictedGraalJS', Test) {
     group = 'verification'
     description = 'Verifies the explicit unrestricted GraalJS host-access configuration'
@@ -95,9 +95,25 @@ def unrestrictedGraalJSTest = tasks.register('testUnrestrictedGraalJS', Test) {
     }
 }
 
+def restrictedGraalJSTest = tasks.register('testRestrictedGraalJS', Test) {
+    group = 'verification'
+    description = 'Verifies the opt-in restricted GraalJS host-access configuration'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching 'com.netflix.conductor.core.config.GraalJSRestrictedHostAccessTest'
+        includeTestsMatching 'com.netflix.conductor.core.events.TestScriptEvaluatorSandbox'
+        includeTestsMatching 'com.netflix.conductor.core.execution.tasks.InlineTest'
+    }
+}
+
 test {
-    dependsOn unrestrictedGraalJSTest
+    dependsOn unrestrictedGraalJSTest, restrictedGraalJSTest
     exclude '**/GraalJSUnrestrictedHostAccessTest.class'
+    exclude '**/GraalJSRestrictedHostAccessTest.class'
+    exclude '**/TestScriptEvaluatorSandbox.class'
+    exclude '**/InlineTest.class'
 }
 
 // Standalone benchmark runner for comparing JS engines on representative Inline-task scripts.

@@ -15,8 +15,10 @@ package com.netflix.conductor.core.execution.tasks;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.evaluators.Evaluator;
 import com.netflix.conductor.core.execution.evaluators.GraalJSEvaluator;
@@ -29,6 +31,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class InlineTest {
+
+    @BeforeClass
+    public static void configureRestrictedHostAccess() {
+        // RCE rejection is a restricted-mode guarantee, not the compatibility default.
+        ScriptEvaluator.configureHostAccess(true);
+    }
 
     private static final String RCE_EXPRESSION =
             "var ck = $.getClass(); var classClass = ck.getClass();"
