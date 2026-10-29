@@ -20,6 +20,7 @@ import { TaskType } from "types/common";
 import _first from "lodash/first";
 import { itemFilterMatcher } from "../helpers";
 import { uniqueTaskIdGenerator } from "../taskGenerator";
+import { createWorkerTaskMenuItems } from "./taskDefinitionMenu";
 
 // Type for raw integration data from API
 interface RawIntegrationData {
@@ -47,14 +48,7 @@ export const persistTaskDefinitions = assign<
 >((_context, event) => {
   return {
     taskDefinitions: event.data,
-    workerMenuItems: event.data.map(
-      (task): BaseTaskMenuItem => ({
-        category: RichAddMenuTabs.WORKERS_TAB,
-        name: task.name,
-        description: task.description,
-        type: TaskType.SIMPLE,
-      }),
-    ),
+    workerMenuItems: createWorkerTaskMenuItems(event.data),
     isTaskDefFetched: true, // FIXME, remove flags.
   };
 });

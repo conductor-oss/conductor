@@ -44,6 +44,7 @@ import {
 import { getSequentiallySuffix } from "utils/strings";
 import { pluralizeResults } from "utils/helpers";
 import { getInitials } from "utils/utils";
+import { isConnectedAppsEnabled } from "utils/serverlessIntegrations";
 import { ActorRef } from "xstate";
 import { itemFilterMatcher } from "./helpers";
 import { iconForTaskTypeMap } from "./iconsForTaskTypes";
@@ -576,7 +577,11 @@ const AddTaskSidebar = ({
         {/* Categories */}
         <Box sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid #F0F0F0" }}>
           <Grid container sx={{ width: "100%" }} spacing={0.75}>
-            {SIDEBAR_ITEMS.map((item) => (
+            {SIDEBAR_ITEMS.filter(
+              (item) =>
+                item.tab !== RichAddMenuTabs.INTEGRATIONS_TAB ||
+                isConnectedAppsEnabled(),
+            ).map((item) => (
               <Grid key={item.label} size={2.4}>
                 <Box
                   onClick={() => handleChangeTab(item.tab)}

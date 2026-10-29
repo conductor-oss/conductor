@@ -105,6 +105,11 @@ export const FEATURES = Object.freeze({
   AI_CODER_CLOUD_WORKER: "AI_CODER_CLOUD_WORKER",
   TAG_VISIBILITY: "TAG_VISIBILITY",
   CONNECTED_APPS_ENABLED: "CONNECTED_APPS_ENABLED",
+  SERVERLESS_AWS_LAMBDA_ENABLED: "SERVERLESS_AWS_LAMBDA_ENABLED",
+  SERVERLESS_AZURE_FUNCTIONS_ENABLED: "SERVERLESS_AZURE_FUNCTIONS_ENABLED",
+  SERVERLESS_GCP_FUNCTIONS_ENABLED: "SERVERLESS_GCP_FUNCTIONS_ENABLED",
+  SERVERLESS_FIREBASE_FUNCTIONS_ENABLED:
+    "SERVERLESS_FIREBASE_FUNCTIONS_ENABLED",
   // The next two gate task definition controls whose behavior lives in the
   // execution core. Both default on; a distribution that swaps in its own core
   // turns off the ones it does not honor, so the form never offers a setting
