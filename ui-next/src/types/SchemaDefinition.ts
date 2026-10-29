@@ -1,5 +1,7 @@
 import { JsonSchema } from "@jsonforms/core";
 
+import { TagDto } from "./Tag";
+
 /**
  * The three types the registry stores. The wire carries all three, so this has
  * to name all three — but only JSON is validated, and the schema editor only
@@ -26,4 +28,9 @@ export type SchemaDefinition = {
   updatedBy?: string;
   createTime?: number;
   updateTime?: number;
+  /**
+   * Tags belong to the schema name, so every version under a name carries the same set.
+   * An Orkes concept: the OSS server never sends them.
+   */
+  tags?: TagDto[];
 };
