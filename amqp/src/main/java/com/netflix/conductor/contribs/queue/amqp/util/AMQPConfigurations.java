@@ -25,7 +25,11 @@ public enum AMQPConfigurations {
     PARAM_DURABLE("durable"),
     PARAM_EXCLUSIVE("exclusive"),
     PARAM_AUTO_DELETE("autoDelete"),
-    PARAM_MAX_PRIORITY("maxPriority");
+    PARAM_MAX_PRIORITY("maxPriority"),
+    PARAM_DEAD_LETTER_EXCHANGE("deadLetterExchange"),
+    PARAM_DEAD_LETTER_ROUTING_KEY("deadLetterRoutingKey"),
+    PARAM_MESSAGE_TTL("messageTtl"),
+    PARAM_MAX_LENGTH("maxLength");
 
     String propertyName;
 
