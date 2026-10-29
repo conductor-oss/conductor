@@ -128,6 +128,6 @@ Choose the boundary that matches what you are building, then deepen only the par
     <span class="agent-overview-card__kicker">Operate</span>
     <strong>Design for production</strong>
     <span>Apply the reference architecture, then move through governance, evaluation, deployment, recovery, and operations.</span>
-    <span class="agent-overview-card__links"><a href="production-agent-architecture.html">Production architecture</a><a href="production-path.html">Production path</a></span>
+    <span class="agent-overview-card__links"><a href="production-agent-architecture.html">Production architecture</a></span>
   </div>
 </div>
