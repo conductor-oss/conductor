@@ -12,6 +12,12 @@ type PromptVariablesProps = {
     task: Partial<TaskDef>,
   ) => Partial<TaskDef>;
   task: Partial<TaskDef>;
+  /**
+   * Remount hint for the rows. Each row keeps its key name in local state seeded on
+   * mount, so when the variable set is replaced wholesale — switching prompt version —
+   * the rows have to be rebuilt or they keep showing the previous names.
+   */
+  someKey?: string;
 };
 
 const PromptVariables = ({
@@ -19,6 +25,7 @@ const PromptVariables = ({
   onChange,
   updateField,
   task,
+  someKey,
 }: PromptVariablesProps) => {
   return (
     <>
@@ -48,6 +55,7 @@ const PromptVariables = ({
               )
             }
             value={{ ...currentVariables }}
+            someKey={someKey}
             autoFocusField={false}
           />
         </Grid>
