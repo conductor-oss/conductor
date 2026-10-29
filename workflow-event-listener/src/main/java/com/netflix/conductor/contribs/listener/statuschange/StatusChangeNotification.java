@@ -22,12 +22,12 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.contribs.listener.StatusNotifier;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ser.FilterProvider;
+import tools.jackson.databind.ser.std.SimpleBeanPropertyFilter;
+import tools.jackson.databind.ser.std.SimpleFilterProvider;
 
 @JsonFilter("SecretRemovalFilter")
 class StatusChangeNotification extends WorkflowSummary {
@@ -44,7 +44,7 @@ class StatusChangeNotification extends WorkflowSummary {
                 statusNotifier =
                         objectMapper.readValue(
                                 statusNotifierVariable.toString(), new TypeReference<>() {});
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -62,7 +62,7 @@ class StatusChangeNotification extends WorkflowSummary {
             FilterProvider provider =
                     new SimpleFilterProvider().addFilter("SecretRemovalFilter", theFilter);
             jsonString = objectMapper.writer(provider).writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error(
                     "Failed to convert workflow {} id: {} to String. Exception: {}",
                     this.getWorkflowType(),
@@ -86,7 +86,7 @@ class StatusChangeNotification extends WorkflowSummary {
             FilterProvider provider =
                     new SimpleFilterProvider().addFilter("SecretRemovalFilter", emptyFilter);
             jsonString = objectMapper.writer(provider).writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error(
                     "Failed to convert workflow {} id: {} to String. Exception: {}",
                     this.getWorkflowType(),

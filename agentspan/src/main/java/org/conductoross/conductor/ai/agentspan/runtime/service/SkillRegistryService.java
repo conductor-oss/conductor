@@ -54,8 +54,9 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 @ConditionalOnProperty(name = "conductor.integrations.ai.enabled", havingValue = "true")
@@ -403,7 +404,7 @@ public class SkillRegistryService {
         }
         try {
             return MAPPER.readValue(manifestJson, MAP_TYPE);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Invalid skill manifest JSON: " + e.getMessage(), e);
         }
     }

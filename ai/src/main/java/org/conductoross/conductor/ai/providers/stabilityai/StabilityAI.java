@@ -145,7 +145,7 @@ public class StabilityAI implements AIModel {
         // in our StabilityAiApi (sd3 vs core vs ultra).
         return org.springframework.ai.image.ImageOptionsBuilder.builder()
                 .model(input.getModel())
-                .N(input.getN())
+                .n(input.getN())
                 .height(input.getHeight())
                 .width(input.getWidth())
                 .responseFormat("b64_json")

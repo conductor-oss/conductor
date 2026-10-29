@@ -35,14 +35,15 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.StringNode;
 
 /**
  * Normalizes transport fields and verified generated tool summaries, preserving user payloads.
@@ -67,7 +68,7 @@ public final class RecordedRequestNormalizer {
     private static final Map<String, String> DEFAULT_TOOL_INPUT_SCHEMA = Map.of("type", "object");
 
     private static final ObjectMapper MAPPER =
-            new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+            JsonMapper.builder().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
 
     private static final Set<String> VOLATILE_HTTP_HEADERS =
             Set.of(
@@ -146,14 +147,7 @@ public final class RecordedRequestNormalizer {
         // Prefer resolved callbacks when the provider exposes them through Spring AI options.
         if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
             tools = new ArrayList<>();
-            if (ObjectUtils.isNotEmpty(options.getToolNames())) {
-                throw new IllegalArgumentException(
-                        "LLM recordings require resolved tool definitions");
-            }
-            if (Boolean.TRUE.equals(options.getInternalToolExecutionEnabled())) {
-                throw new IllegalArgumentException(
-                        "LLM recordings require external tool execution");
-            }
+            // Spring AI 2 accepts resolved callbacks only; tool execution is external to ChatModel.
             if (ObjectUtils.isNotEmpty(options.getToolCallbacks())) {
                 for (ToolCallback callback : options.getToolCallbacks()) {
                     ToolDefinition definition = callback.getToolDefinition();
@@ -272,7 +266,7 @@ public final class RecordedRequestNormalizer {
         JsonNode entries;
         try {
             entries = MAPPER.readTree(text.substring(start + TOOL_RESULTS_START.length(), end));
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             return text;
         }
         if (entries == null || !entries.isArray() || entries.size() != history.size()) return text;
@@ -354,8 +348,8 @@ public final class RecordedRequestNormalizer {
         JsonNode copy = value.deepCopy();
         ObjectNode headers = (ObjectNode) copy.get("response").get("headers");
         List<String> remove = new ArrayList<>();
-        headers.fieldNames()
-                .forEachRemaining(
+        headers.propertyNames()
+                .forEach(
                         name -> {
                             if (VOLATILE_HTTP_HEADERS.contains(name.toLowerCase(Locale.ROOT)))
                                 remove.add(name);
@@ -369,7 +363,7 @@ public final class RecordedRequestNormalizer {
         if (value.isObject()) {
             ObjectNode sorted = MAPPER.createObjectNode();
             List<String> names = new ArrayList<>();
-            value.fieldNames().forEachRemaining(names::add);
+            names.addAll(value.propertyNames());
             names.sort(Comparator.naturalOrder());
             names.forEach(name -> sorted.set(name, sortedObjectKeys(value.get(name))));
             return sorted;
@@ -407,7 +401,7 @@ public final class RecordedRequestNormalizer {
             if (node != null && node.isObject()) {
                 return node;
             }
-        } catch (JsonProcessingException | IllegalArgumentException ignored) {
+        } catch (JacksonException | IllegalArgumentException ignored) {
             // Report the contract field, not a potentially sensitive payload or parser exception.
         }
         throw new IllegalArgumentException("Expected a JSON object for " + field);
@@ -418,9 +412,9 @@ public final class RecordedRequestNormalizer {
         try {
             JsonNode parsed = MAPPER.readTree(value);
             if (parsed != null) return parsed;
-        } catch (JsonProcessingException ignored) {
+        } catch (JacksonException ignored) {
             // Tool results can also be plain text. Preserve their exact content.
         }
-        return TextNode.valueOf(value);
+        return StringNode.valueOf(value);
     }
 }

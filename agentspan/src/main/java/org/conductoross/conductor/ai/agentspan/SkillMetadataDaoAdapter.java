@@ -18,8 +18,8 @@ import java.util.Optional;
 import org.conductoross.conductor.ai.agentspan.runtime.spi.SkillMetadataDAO;
 import org.conductoross.conductor.common.metadata.agent.SkillDetail;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Bridges Conductor-Agents' {@link SkillMetadataDAO} SPI onto Conductor's backend-agnostic {@link
@@ -80,7 +80,7 @@ public class SkillMetadataDaoAdapter implements SkillMetadataDAO {
     private String toJson(SkillDetail detail) {
         try {
             return objectMapper.writeValueAsString(detail);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize skill metadata", e);
         }
     }
@@ -88,7 +88,7 @@ public class SkillMetadataDaoAdapter implements SkillMetadataDAO {
     private SkillDetail fromJson(String json) {
         try {
             return objectMapper.readValue(json, SkillDetail.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to deserialize skill metadata", e);
         }
     }
