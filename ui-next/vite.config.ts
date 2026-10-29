@@ -175,7 +175,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      host: "0.0.0.0",
       port: 1234,
+      watch: {
+        ignored: [
+          "**/playwright-report/**",
+          "**/test-results/**",
+          "**/coverage/**",
+        ],
+      },
       proxy: {
         "/api": {
           target: env.VITE_WF_SERVER || "http://localhost:8080",
