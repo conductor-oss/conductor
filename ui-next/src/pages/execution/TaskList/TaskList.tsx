@@ -1,5 +1,6 @@
-import { Box, Stack } from "@mui/material";
+import { Box, Link, Stack } from "@mui/material";
 import { DataTable } from "components";
+import ClipboardCopy from "components/ui/ClipboardCopy";
 import { ColumnCustomType, LegacyColumn } from "components/ui/DataTable/types";
 import StatusBadge from "components/StatusBadge";
 import { FunctionComponent, useContext } from "react";
@@ -97,6 +98,25 @@ export const TaskList: FunctionComponent<TaskListProps> = ({
       minWidth: "100px",
       maxWidth: "200px",
       tooltip: "The Task type",
+    },
+    {
+      id: "subWorkflowId",
+      name: "outputData.subWorkflowId",
+      label: "Sub Workflow Id",
+      minWidth: "300px",
+      renderer: (subWorkflowId?: string) =>
+        subWorkflowId ? (
+          <ClipboardCopy value={subWorkflowId}>
+            <Link
+              href={`/execution/${subWorkflowId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {subWorkflowId}
+            </Link>
+          </ClipboardCopy>
+        ) : null,
+      tooltip: "The execution started by a SUB_WORKFLOW task",
     },
     {
       id: "scheduledTime",
@@ -210,6 +230,7 @@ export const TaskList: FunctionComponent<TaskListProps> = ({
             "taskId",
             "referenceTaskName",
             "taskType",
+            "subWorkflowId",
             "startTime",
             "endTime",
             "executionTime",
