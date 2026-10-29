@@ -51,7 +51,10 @@ public @interface ValidNameConstraint {
         public static final String INVALID_NAME_MESSAGE =
                 "Allowed characters are alphanumeric, underscores, spaces, hyphens, and special characters like <, >, {, }, #";
 
-        @Value("${conductor.app.workflow.name-validation.enabled}")
+        // Defaulted so consumers that don't define the property can still construct this
+        // validator; conductor-common is on their classpath too. See
+        // NameValidatorPlaceholderTest.
+        @Value("${conductor.app.workflow.name-validation.enabled:false}")
         private boolean nameValidationEnabled;
 
         @Override
