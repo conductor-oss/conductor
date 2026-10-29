@@ -27,12 +27,20 @@ ext['rabbit-amqp-client.version'] = revAmqpClient
 // Compat: Conductor ships selectable indexing backends (ES6/ES7/ES8 and OpenSearch) and picks one at
 // build time. The Spring Boot BOM tracks the latest Elasticsearch client, which does not speak to the
 // older clusters Conductor still supports, so the Elasticsearch coordinates are managed here instead.
-// Default is ES7; the ES8 branch below switches both the transport and the java client together.
+// These base values seed an ES version for non-ES backends (e.g. OpenSearch) that still resolve an
+// Elasticsearch version transitively; the indexingBackend branch below selects ES7 vs ES8.
 ext['elasticsearch.version'] = revElasticSearch7
 ext['elasticsearch-client.version'] = revElasticSearch7
 
-def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch'
-if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8') {
+// Elasticsearch is the default indexing backend and defaults to ES8 (revElasticSearch8), which clears
+// CVE-2025-37731 by dropping the ES7 core jar. ES7 stays available as an explicit opt-in. The Spring
+// Boot 4.1 BOM manages `org.elasticsearch.client:elasticsearch-rest-client` via `elasticsearch.version`
+// and `co.elastic.clients:elasticsearch-java` via `elasticsearch-client.version`.
+def indexingBackend = findProperty('indexingBackend') ?: 'elasticsearch8'
+if (indexingBackend == 'elasticsearch7' || indexingBackend == 'es7') {
+    ext['elasticsearch.version'] = revElasticSearch7
+} else if (indexingBackend == 'elasticsearch8' || indexingBackend == 'es8'
+        || indexingBackend == 'elasticsearch') {
     ext['elasticsearch.version'] = revElasticSearch8
     ext['elasticsearch-client.version'] = revElasticSearch8
 }
