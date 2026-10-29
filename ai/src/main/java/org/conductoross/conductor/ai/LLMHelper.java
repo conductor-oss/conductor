@@ -40,7 +40,6 @@ import org.conductoross.conductor.ai.recording.LLMCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.service.SchemaService;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -333,7 +332,6 @@ public class LLMHelper {
     @SneakyThrows
     private LLMResponse chatComplete(
             ChatModel chatModel, ChatOptions chatOptions, ChatCompletion input) {
-        ChatClient chatClient = ChatClient.create(chatModel);
         if (StringUtils.isNotBlank(input.getInstructions())) {
             input.getMessages()
                     .addFirst(new ChatMessage(ChatMessage.Role.system, input.getInstructions()));
@@ -345,7 +343,9 @@ public class LLMHelper {
         ensureLastMessageIsFromUser(messages);
 
         Prompt prompt = new Prompt(messages, chatOptions);
-        ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
+        // Options are already resolved by the provider. ChatClient's Spring AI 2 option merge
+        // discards custom option builders, including the model and provider-specific settings.
+        ChatResponse chatResponse = chatModel.call(prompt);
         if (chatResponse == null) {
             throw new RuntimeException("No response generated");
         }
