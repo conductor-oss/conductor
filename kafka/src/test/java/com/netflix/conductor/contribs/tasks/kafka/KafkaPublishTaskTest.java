@@ -24,6 +24,7 @@ import org.apache.kafka.common.serialization.LongSerializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -218,6 +219,10 @@ public class KafkaPublishTaskTest {
 
     private KafkaProducerManager getKafkaProducerManager() {
         return new KafkaProducerManager(
-                Duration.ofMillis(100), Duration.ofMillis(500), 120000, Duration.ofMillis(10));
+                Duration.ofMillis(100),
+                Duration.ofMillis(500),
+                120000,
+                Duration.ofMillis(10),
+                new MockEnvironment());
     }
 }
