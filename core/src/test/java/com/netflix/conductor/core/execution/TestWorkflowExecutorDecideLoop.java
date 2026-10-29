@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
@@ -103,7 +104,8 @@ public class TestWorkflowExecutorDecideLoop {
                         mock(ParametersUtils.class),
                         mock(IDGenerator.class),
                         Optional.empty(),
-                        mock(SchemaService.class));
+                        mock(SchemaService.class),
+                        mock(ExternalPayloadStorage.class));
     }
 
     /**
