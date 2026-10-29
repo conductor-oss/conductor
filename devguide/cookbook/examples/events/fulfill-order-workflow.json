@@ -1,0 +1,20 @@
+{
+  "name": "fulfill_order",
+  "version": 1,
+  "schemaVersion": 2,
+  "inputParameters": ["orderId", "sourceEventId"],
+  "tasks": [
+    {
+      "name": "record_fulfillment_start",
+      "taskReferenceName": "record_fulfillment_start",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "sourceEventId": "${workflow.input.sourceEventId}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "orderId": "${workflow.input.orderId}"
+  }
+}

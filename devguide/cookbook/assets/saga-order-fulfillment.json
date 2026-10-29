@@ -1,0 +1,75 @@
+{
+  "name": "saga_order_fulfillment",
+  "description": "Three-step order saga. Each step records what it did so compensation can undo it. On unrecoverable failure Conductor starts the compensation workflow with the full failed execution.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 600,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "failureWorkflow": "saga_order_compensation",
+  "inputParameters": [
+    "orderId",
+    "amount",
+    "shipmentStatus"
+  ],
+  "tasks": [
+    {
+      "name": "reserve_inventory",
+      "taskReferenceName": "reserve_inventory",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://localhost:8088/inventory/reserve",
+          "method": "POST",
+          "headers": { "Idempotency-Key": "${workflow.input.orderId}-reserve" },
+          "body": { "orderId": "${workflow.input.orderId}", "action": "reserve" },
+          "connectionTimeOut": 10000,
+          "readTimeOut": 40000
+        }
+      }
+    },
+    {
+      "name": "charge_payment",
+      "taskReferenceName": "charge_payment",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://localhost:8088/payments/charge",
+          "method": "POST",
+          "headers": { "Idempotency-Key": "${workflow.input.orderId}-charge" },
+          "body": { "orderId": "${workflow.input.orderId}", "amount": "${workflow.input.amount}" },
+          "connectionTimeOut": 10000,
+          "readTimeOut": 40000
+        }
+      }
+    },
+    {
+      "name": "book_shipment",
+      "taskReferenceName": "book_shipment",
+      "type": "HTTP",
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://localhost:8088/shipping/book?status=${workflow.input.shipmentStatus}",
+          "method": "POST",
+          "headers": { "Idempotency-Key": "${workflow.input.orderId}-ship" },
+          "body": { "orderId": "${workflow.input.orderId}" },
+          "connectionTimeOut": 10000,
+          "readTimeOut": 40000
+        }
+      },
+      "taskDefinition": {
+        "name": "book_shipment",
+        "retryCount": 1,
+        "retryLogic": "EXPONENTIAL_BACKOFF",
+        "retryDelaySeconds": 2,
+        "responseTimeoutSeconds": 30,
+        "timeoutSeconds": 60,
+        "timeoutPolicy": "TIME_OUT_WF"
+      }
+    }
+  ],
+  "outputParameters": {
+    "orderId": "${workflow.input.orderId}",
+    "reservationId": "${reserve_inventory.output.response.body.reservationId}",
+    "chargeId": "${charge_payment.output.response.body.chargeId}"
+  }
+}

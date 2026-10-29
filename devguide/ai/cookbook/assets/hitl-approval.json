@@ -1,0 +1,153 @@
+{
+  "name": "hitl_approved_action",
+  "description": "A model drafts a customer-facing action, a human decides, and only an explicit approval reaches the idempotent send. Rejection and expiry are distinct, recorded outcomes \u2014 neither is treated as consent.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 86400,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "customerId",
+    "conversation",
+    "actionKey",
+    "deliveryUrl"
+  ],
+  "variables": {
+    "approval": {
+      "status": "not_requested",
+      "approver": "",
+      "decidedAt": ""
+    },
+    "delivery": {
+      "status": "not_attempted"
+    }
+  },
+  "tasks": [
+    {
+      "name": "draft_customer_action",
+      "taskReferenceName": "draft",
+      "type": "LLM_CHAT_COMPLETE",
+      "inputParameters": {
+        "llmProvider": "openai",
+        "model": "gpt-4o-mini",
+        "messages": [
+          {
+            "role": "system",
+            "message": "Draft a customer-facing resolution for review. Return JSON: {\"summary\": string, \"proposedMessage\": string, \"riskFlags\": [string]}. Never promise a refund amount, credit, or deadline that is not stated in the conversation. Put anything you are unsure about in riskFlags."
+          },
+          {
+            "role": "user",
+            "message": "Customer: ${workflow.input.customerId}\nConversation: ${workflow.input.conversation}"
+          }
+        ],
+        "temperature": 0.2,
+        "maxTokens": 800,
+        "jsonOutput": true
+      }
+    },
+    {
+      "name": "request_approval",
+      "taskReferenceName": "request_approval",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "approval": {
+          "status": "pending",
+          "approver": "",
+          "decidedAt": ""
+        }
+      }
+    },
+    {
+      "name": "await_human_decision",
+      "taskReferenceName": "human_decision",
+      "type": "HUMAN",
+      "asyncComplete": true
+    },
+    {
+      "name": "normalize_decision",
+      "taskReferenceName": "normalize_decision",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "decision": "${human_decision.output}",
+        "queryExpression": "{approved: ((.decision.approved // false) == true), approver: (.decision.approver // \"unknown\"), note: (.decision.note // \"\")}"
+      }
+    },
+    {
+      "name": "record_decision",
+      "taskReferenceName": "record_decision",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "approval": {
+          "status": "decided",
+          "approved": "${normalize_decision.output.result.approved}",
+          "approver": "${normalize_decision.output.result.approver}",
+          "note": "${normalize_decision.output.result.note}"
+        }
+      }
+    },
+    {
+      "name": "route_on_decision",
+      "taskReferenceName": "route_decision",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "approved",
+      "inputParameters": {
+        "approved": "${normalize_decision.output.result.approved}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "send_approved_action",
+            "taskReferenceName": "send_action",
+            "type": "HTTP",
+            "inputParameters": {
+              "http_request": {
+                "uri": "${workflow.input.deliveryUrl}",
+                "method": "POST",
+                "headers": {
+                  "Idempotency-Key": "${workflow.input.actionKey}"
+                },
+                "body": {
+                  "customerId": "${workflow.input.customerId}",
+                  "message": "${draft.output.result.proposedMessage}",
+                  "approvedBy": "${normalize_decision.output.result.approver}"
+                },
+                "connectionTimeOut": 5000,
+                "readTimeOut": 15000
+              }
+            }
+          },
+          {
+            "name": "record_delivery",
+            "taskReferenceName": "record_delivery",
+            "type": "SET_VARIABLE",
+            "inputParameters": {
+              "delivery": {
+                "status": "sent",
+                "idempotencyKey": "${workflow.input.actionKey}"
+              }
+            }
+          }
+        ],
+        "false": [
+          {
+            "name": "record_rejection",
+            "taskReferenceName": "record_rejection",
+            "type": "SET_VARIABLE",
+            "inputParameters": {
+              "delivery": {
+                "status": "withheld_by_reviewer",
+                "note": "${normalize_decision.output.result.note}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "draft": "${draft.output.result}",
+    "approval": "${workflow.variables.approval}",
+    "delivery": "${workflow.variables.delivery}"
+  }
+}
