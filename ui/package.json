@@ -78,7 +78,9 @@
     "validator": "^13.7.0",
     "nth-check": "^2.0.1",
     "async": "^3.2.2",
-    "ejs": "^3.1.7"
+    "ejs": "^3.1.7",
+    "jsdom/ws": "^7.5.10",
+    "webpack-dev-server/ws": "^8.17.1"
   },
   "devDependencies": {
     "@babel/core": "^7.18.2",

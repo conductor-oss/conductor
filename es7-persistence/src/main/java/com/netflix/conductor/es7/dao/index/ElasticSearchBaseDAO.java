@@ -26,10 +26,10 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es7.dao.query.parser.Expression;
 import com.netflix.conductor.es7.dao.query.parser.internal.ParserException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 abstract class ElasticSearchBaseDAO implements IndexDAO {
 
@@ -41,7 +41,7 @@ abstract class ElasticSearchBaseDAO implements IndexDAO {
                 IOUtils.toString(ElasticSearchBaseDAO.class.getResourceAsStream(path)));
     }
 
-    private String applyIndexPrefixToTemplate(String text) throws JsonProcessingException {
+    private String applyIndexPrefixToTemplate(String text) throws JacksonException {
         String indexPatternsFieldName = "index_patterns";
         JsonNode root = objectMapper.readTree(text);
         if (root != null) {

@@ -38,7 +38,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * System task that compiles an LLM-produced plan (JSON describing tools, args, dependencies, and

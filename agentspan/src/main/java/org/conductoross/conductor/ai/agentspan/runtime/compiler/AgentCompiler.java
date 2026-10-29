@@ -29,7 +29,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowClassifier;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Compiles an AgentConfig into a Conductor WorkflowDef. Mirrors

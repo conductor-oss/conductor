@@ -1,0 +1,95 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are front-line customer support. Triage customer requests. Transfer to billing_specialist for account/payment questions, order_specialist for shipping/order questions.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What's the balance on account ACC-456?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "support_transfer_to_billing_specialist",
+      "description" : "Transfer the conversation to billing_specialist. You are a billing specialist. Use the check_balance tool to look up account balances. Include the balance amount in your response. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for billing_specialist: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "support_transfer_to_order_specialist",
+      "description" : "Transfer the conversation to order_specialist. You are an order specialist. Use the lookup_order tool to check order status. Include the shipping status and ETA in your response. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for order_specialist: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_09cc532840666cd3006aa82c2ed03c87d0a3846767f2c57099",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 227,
+        "completionTokens" : 47,
+        "totalTokens" : 274,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_09cc532840666cd3006aa82c2ed03c87d0a3846767f2c57099",
+        "reasoning_tokens" : 9
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_G4uhbuAYs13FSCtvOcdmw5MA",
+          "type" : "function",
+          "name" : "support_transfer_to_billing_specialist",
+          "arguments" : "{\"message\":\"Please look up and provide the current balance for account ACC-456.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

@@ -18,11 +18,11 @@ import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.sync.Lock;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresLockDAO extends PostgresBaseDAO implements Lock {
     private final long DAY_MS = 24 * 60 * 60 * 1000;

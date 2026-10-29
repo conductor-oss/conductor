@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You provide quick, 1-sentence assessments. Be brief and direct.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Is the mobile app market still growing?\n\n[coordinator -> quick_check]",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0aa1e9b05e28feae006aa82c6f15c087d0aadf059a4374b344",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 40,
+        "completionTokens" : 82,
+        "totalTokens" : 122,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0aa1e9b05e28feae006aa82c6f15c087d0aadf059a4374b344",
+        "reasoning_tokens" : 43
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "Yes—the mobile app market is still growing, though more slowly in mature regions, with expansion driven by subscriptions, mobile games, fintech, AI, and emerging markets.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

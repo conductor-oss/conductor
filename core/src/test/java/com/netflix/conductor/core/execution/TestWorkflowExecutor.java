@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import org.conductoross.conductor.common.metadata.agent.AgentStartRequest;
 import org.conductoross.conductor.common.metadata.agent.AgentStartResponse;
+import org.conductoross.conductor.service.SchemaService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,7 +65,7 @@ import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.service.ExecutionLockService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.*;
 import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
@@ -141,6 +142,11 @@ public class TestWorkflowExecutor {
                     task.setStatus(TaskModel.Status.COMPLETED);
                 }
             };
+        }
+
+        @Bean(TASK_TYPE_SWITCH)
+        public Switch switchBean() {
+            return new Switch();
         }
 
         @Bean
@@ -227,7 +233,8 @@ public class TestWorkflowExecutor {
                         systemTaskRegistry,
                         parametersUtils,
                         idGenerator,
-                        Optional.empty());
+                        Optional.empty(),
+                        mock(SchemaService.class));
     }
 
     @Test
@@ -2584,6 +2591,9 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testResumeWorkflow() {
+        when(executionLockService.acquireLock(anyString(), anyLong())).thenReturn(true);
+        doNothing().when(executionLockService).releaseLock(anyString());
+
         String workflowId = "testResumeWorkflowId";
         WorkflowModel workflow = new WorkflowModel();
         workflow.setWorkflowId(workflowId);
@@ -2598,6 +2608,14 @@ public class TestWorkflowExecutor {
             verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
             verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
         }
+
+        // if workflow is already RUNNING (e.g. a racing resume call already resumed it)
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        when(executionDAOFacade.getWorkflowModel(workflowId, false)).thenReturn(workflow);
+        workflowExecutor.resumeWorkflow(workflowId);
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+        verify(queueDAO, never()).push(anyString(), anyString(), anyInt(), anyLong());
 
         // if workflow is in PAUSED state
         workflow.setStatus(WorkflowModel.Status.PAUSED);
@@ -2660,6 +2678,19 @@ public class TestWorkflowExecutor {
         // And verify that the failure workflow definition was fetched without version
         verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
         assertNull(workflow.getWorkflowDefinition().getFailureWorkflowVersion());
+
+        // And the failure workflow input carries failedWorkflow as a Map, not a raw
+        // WorkflowModel POJO, so nested ${workflow.input.failedWorkflow.<field>} references
+        // are resolvable by JsonPath (issue #1164)
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        Object failedWorkflowInput =
+                failureWorkflowCaptor.getValue().getInput().get("failedWorkflow");
+        assertTrue(
+                "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
+                failedWorkflowInput instanceof Map);
+        assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
     }
 
     @Test
@@ -3188,5 +3219,41 @@ public class TestWorkflowExecutor {
         }
 
         return tasks;
+    }
+
+    private TaskModel switchTaskModel(WorkflowModel workflow, String ref, String evaluatorType) {
+        WorkflowTask wt = new WorkflowTask();
+        wt.setType(TASK_TYPE_SWITCH);
+        wt.setName(ref);
+        wt.setTaskReferenceName(ref);
+        wt.setEvaluatorType(evaluatorType);
+        wt.setExpression("route");
+        TaskModel task = new TaskModel();
+        task.setTaskType(TASK_TYPE_SWITCH);
+        task.setTaskDefName(TASK_TYPE_SWITCH);
+        task.setReferenceTaskName(ref);
+        task.setWorkflowInstanceId(workflow.getWorkflowId());
+        task.setTaskId(new IDGenerator().generate());
+        task.setWorkflowTask(wt);
+        return task;
+    }
+
+    /** SWITCH evaluation happens in its mapper, so it is never put on a system-task queue. */
+    @Test
+    public void testDecisionSwitchIsNeverQueued() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("sw-decision");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("sw");
+        def.setVersion(1);
+        workflow.setWorkflowDefinition(def);
+        TaskModel regular = switchTaskModel(workflow, "r1", "decision");
+        regular.setStatus(TaskModel.Status.IN_PROGRESS); // as SwitchTaskMapper produces it
+
+        workflowExecutor.scheduleTask(workflow, List.of(regular));
+
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyInt(), anyLong());
+        verify(queueDAO, never()).push(eq(TASK_TYPE_SWITCH), anyString(), anyLong());
+        assertEquals(TaskModel.Status.IN_PROGRESS, regular.getStatus());
     }
 }

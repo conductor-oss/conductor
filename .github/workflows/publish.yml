@@ -42,6 +42,27 @@ jobs:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+      - name: Point SDK e2e workflows at this version
+        # Publishes the org-level E2E_TEST_OSS_CONDUCTOR_VERSION variable -- the
+        # single version both SDK e2e paths read:
+        #   - pull_request.yml docker-compose e2e (a conductoross/conductor
+        #     Docker Hub image tag)
+        #   - agent-e2e.yml (a conductor-server boot JAR on Maven Central)
+        # A concrete release (e.g. 3.33.0) is valid in both registries, so one
+        # variable serves both. It must never be set to `latest` -- Maven Central
+        # has no `latest`, so the agent-e2e JAR download would 404.
+        #
+        # Requires ORG_VARS_TOKEN: a fine-grained PAT or GitHub App token with
+        # organization "Variables: write" on conductor-oss. The default GITHUB_TOKEN
+        # and CI_UTIL_DISPATCH_TOKEN do NOT carry this scope (that gap is what made
+        # this step 403 and red-flag otherwise-successful publishes).
+        env:
+          GH_TOKEN: ${{ secrets.ORG_VARS_TOKEN }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          gh variable set E2E_TEST_OSS_CONDUCTOR_VERSION \
+            --org conductor-oss \
+            --body "${VERSION#v}"
 
   publish-docker:
     runs-on: ubuntu-latest
@@ -63,7 +84,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 'lts/*'
+          node-version: '22'
 
       - name: Build ui-next and embed into server static resources
         run: |

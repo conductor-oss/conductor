@@ -28,8 +28,8 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * System task that fetches an API spec (OpenAPI 3.x, Swagger 2.0, or Postman Collection) from a
@@ -360,13 +360,13 @@ public class ListApiToolsTask extends WorkflowSystemTask {
         JsonNode paths = root.get("paths");
         if (paths == null || !paths.isObject()) return tools;
 
-        paths.fields()
-                .forEachRemaining(
+        paths.properties()
+                .forEach(
                         pathEntry -> {
                             String path = pathEntry.getKey();
                             JsonNode methods = pathEntry.getValue();
-                            methods.fields()
-                                    .forEachRemaining(
+                            methods.properties()
+                                    .forEach(
                                             methodEntry -> {
                                                 String method = methodEntry.getKey().toUpperCase();
                                                 if (isHttpMethod(method)) {
@@ -434,13 +434,13 @@ public class ListApiToolsTask extends WorkflowSystemTask {
         JsonNode paths = root.get("paths");
         if (paths == null || !paths.isObject()) return tools;
 
-        paths.fields()
-                .forEachRemaining(
+        paths.properties()
+                .forEach(
                         pathEntry -> {
                             String path = pathEntry.getKey();
                             JsonNode methods = pathEntry.getValue();
-                            methods.fields()
-                                    .forEachRemaining(
+                            methods.properties()
+                                    .forEach(
                                             methodEntry -> {
                                                 String method = methodEntry.getKey().toUpperCase();
                                                 if (isHttpMethod(method)) {
@@ -562,8 +562,8 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                     try {
                         JsonNode parsed = objectMapper.readTree(raw);
                         if (parsed.isObject()) {
-                            parsed.fields()
-                                    .forEachRemaining(
+                            parsed.properties()
+                                    .forEach(
                                             f -> {
                                                 Map<String, Object> prop = new LinkedHashMap<>();
                                                 prop.put("type", inferJsonType(f.getValue()));
@@ -681,7 +681,7 @@ public class ListApiToolsTask extends WorkflowSystemTask {
                     // Prefer application/json, fall back to first content type
                     JsonNode mediaType = content.get("application/json");
                     if (mediaType == null) {
-                        Iterator<JsonNode> it = content.elements();
+                        Iterator<JsonNode> it = content.values().iterator();
                         if (it.hasNext()) mediaType = it.next();
                     }
                     if (mediaType != null) {
@@ -709,8 +709,8 @@ public class ListApiToolsTask extends WorkflowSystemTask {
             JsonNode schema, Map<String, Object> properties, List<String> required) {
         JsonNode props = schema.get("properties");
         if (props != null && props.isObject()) {
-            props.fields()
-                    .forEachRemaining(
+            props.properties()
+                    .forEach(
                             f -> {
                                 Map<String, Object> prop = new LinkedHashMap<>();
                                 JsonNode fieldSchema = f.getValue();

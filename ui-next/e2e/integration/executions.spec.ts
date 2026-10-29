@@ -257,13 +257,40 @@ test("execution detail tabs — JSON tab contains workflowId key", async ({
   });
 
   await page.getByRole("tab", { name: "JSON" }).click();
-  // Monaco renders the raw execution JSON — workflowId key must appear.
-  await expect(page.getByText(/"workflowId"/).first()).toBeVisible({
+  await expect(page.locator(".monaco-editor").first()).toBeVisible({
     timeout: 15_000,
   });
-  await expect(page.getByText(/"status"/).first()).toBeVisible();
-  // The actual workflow ID value appears in the JSON body.
-  await expect(page.getByText(workflowId).first()).toBeVisible();
+  // Monaco virtualizes off-screen lines. JSON property ordering must not decide whether
+  // workflowId is visible, so verify the parsed editor model for this execution instead.
+  await expect
+    .poll(
+      () =>
+        page.evaluate((expectedId) => {
+          const monaco = (
+            window as {
+              monaco?: {
+                editor: { getModels(): Array<{ getValue(): string }> };
+              };
+            }
+          ).monaco;
+          for (const model of monaco?.editor.getModels() ?? []) {
+            try {
+              const workflow = JSON.parse(model.getValue());
+              if (workflow?.workflowId === expectedId) {
+                return {
+                  workflowId: workflow.workflowId,
+                  status: workflow.status,
+                };
+              }
+            } catch {
+              // Other editor models may still contain incomplete JSON while loading.
+            }
+          }
+          return null;
+        }, workflowId),
+      { timeout: 15_000 },
+    )
+    .toEqual({ workflowId, status: "COMPLETED" });
 });
 
 test("execution detail tabs — Variables tab renders for SET_VARIABLE", async ({

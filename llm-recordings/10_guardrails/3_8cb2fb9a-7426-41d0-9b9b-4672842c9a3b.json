@@ -1,0 +1,146 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a customer support assistant. Use the available tools to answer questions about orders and customers. Always include all details from the tool results in your response.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"estimated_delivery\":\"2026-02-22\",\"order_id\":\"ORD-42\",\"tracking\":\"1Z999AA10123456784\",\"status\":\"shipped\"},\"name\":\"get_order_status\"},{\"output\":{\"card_on_file\":\"4532-0150-1234-5678\",\"name\":\"Alice Johnson\",\"membership\":\"gold\",\"customer_id\":\"CUST-7\",\"email\":\"alice@example.com\"},\"name\":\"get_customer_info\"}]\n[/TOOL RESULTS]\n\nI need a full summary: What's the status of order ORD-42, and what's the profile for customer CUST-7?",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "get_order_status",
+        "arguments" : {
+          "method" : "get_order_status",
+          "order_id" : "ORD-42"
+        }
+      }, {
+        "reference" : "call_1",
+        "name" : "get_customer_info",
+        "arguments" : {
+          "method" : "get_customer_info",
+          "customer_id" : "CUST-7"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "get_order_status",
+        "value" : {
+          "order_id" : "ORD-42",
+          "status" : "shipped",
+          "tracking" : "1Z999AA10123456784",
+          "estimated_delivery" : "2026-02-22"
+        }
+      } ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_1",
+        "name" : "get_customer_info",
+        "value" : {
+          "customer_id" : "CUST-7",
+          "name" : "Alice Johnson",
+          "email" : "alice@example.com",
+          "card_on_file" : "4532-0150-1234-5678",
+          "membership" : "gold"
+        }
+      } ]
+    }, {
+      "role" : "assistant",
+      "text" : "### Order ORD-42\n- **Status:** Shipped\n- **Tracking number:** 1Z999AA10123456784\n- **Estimated delivery:** February 22, 2026\n\n### Customer CUST-7\n- **Name:** Alice Johnson\n- **Email:** alice@example.com\n- **Membership:** Gold\n- **Card on file:** 4532-0150-1234-5678",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "{result=[Output validation failed: Your response contains PII (credit card or SSN). Redact all card numbers and SSNs before responding.. Please revise your response.]}",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "get_order_status",
+      "description" : "Look up the current status of an order.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "order_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "order_id" ]
+      }
+    }, {
+      "name" : "get_customer_info",
+      "description" : "Retrieve customer details including payment info on file.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "customer_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "customer_id" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_01dda0b8683ec62c006aa82b6d780c87d0bf0e6ffe607184c7",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 534,
+        "completionTokens" : 163,
+        "totalTokens" : 697,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_01dda0b8683ec62c006aa82b6d780c87d0bf0e6ffe607184c7",
+        "reasoning_tokens" : 76
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "### Order ORD-42\n- **Status:** Shipped\n- **Tracking number:** 1Z999AA10123456784\n- **Estimated delivery:** February 22, 2026\n\n### Customer CUST-7\n- **Name:** Alice Johnson\n- **Email:** alice@example.com\n- **Membership:** Gold\n- **Card on file:** [REDACTED]",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

@@ -69,6 +69,36 @@ public class TestNameValueQueryBuilder extends AbstractParserTest {
     }
 
     @Test
+    public void workflowClassifierIncludesLegacyDocumentsWithoutClassifier() throws Exception {
+        NameValue nameValue = new NameValue(getInputStream("classifier IN (workflow)"));
+
+        Query query = nameValue.getFilterBuilder();
+
+        assertTrue(query.isBool());
+        assertEquals("1", query.bool().minimumShouldMatch());
+        assertEquals(2, query.bool().should().size());
+        assertTrue(query.bool().should().get(0).isTerms());
+        assertEquals(
+                "workflow",
+                query.bool().should().get(0).terms().terms().value().getFirst().stringValue());
+        assertTrue(query.bool().should().get(1).isBool());
+        assertTrue(query.bool().should().get(1).bool().mustNot().getFirst().isExists());
+        assertEquals(
+                "classifier",
+                query.bool().should().get(1).bool().mustNot().getFirst().exists().field());
+    }
+
+    @Test
+    public void agentClassifierDoesNotIncludeLegacyDocuments() throws Exception {
+        NameValue nameValue = new NameValue(getInputStream("classifier IN (agent)"));
+
+        Query query = nameValue.getFilterBuilder();
+
+        assertTrue(query.isTerms());
+        assertEquals("agent", query.terms().terms().value().getFirst().stringValue());
+    }
+
+    @Test
     public void equalsWithDoubleQuotesUsesTermQuery() throws Exception {
         String uuid = "09d13af8-3a2a-48bf-a91d-ef0a9114f07a";
         NameValue nameValue = new NameValue(getInputStream("workflowId=\"" + uuid + "\""));

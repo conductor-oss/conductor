@@ -15,7 +15,7 @@ Conductor supports two complementary AI paths:
 - **Native AI workflows:** compose LLM, MCP, vector, human approval, and control-flow system tasks in a workflow definition.
 - **Framework-authored agents:** compile a supported SDK or framework agent—such as OpenAI Agents, Google ADK, LangChain, or LangGraph—into a Conductor graph, then use it in a larger workflow.
 
-Use the [Agents & AI overview](index.md) for the product map and [framework agent recipes](agent-framework-recipes.md) for supported bridges.
+Use the [Agents & AI overview](index.md) for the product map and [framework agent recipes](agent-framework-recipes.md) for supported frameworks.
 
 ## Safe authoring rules
 
@@ -33,7 +33,7 @@ Use the [Agents & AI overview](index.md) for the product map and [framework agen
 |---|---|
 | Create a durable service workflow | [First workflow](../../quickstart/first-workflow.md) |
 | Build a governed plan/act/evaluate loop | [Durable Adaptive Graphs](dynamic-workflows.md) |
-| Bring an existing framework agent (LangChain, ADK, and more) | [Framework Agent Bridges](agent-framework-recipes.md) |
+| Bring an existing framework agent (LangChain, ADK, and more) | [Framework Agents](agent-framework-recipes.md) |
 | Add policy and approval | [Agent Guardrails](agent-guardrails.md) |
 | Test routes, tools, and output quality | [Agent Evals](agent-evals.md) |
 | Design a production agent system | [Production Agent Architecture](production-agent-architecture.md) |

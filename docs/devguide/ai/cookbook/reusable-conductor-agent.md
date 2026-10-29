@@ -1,3 +1,7 @@
+---
+description: "Deploy an SDK-authored agent once as a stable Conductor capability, then invoke it from any parent workflow as a durable agent run."
+---
+
 # Conductor agent
 
 ```mermaid
@@ -40,7 +44,7 @@ with AgentRuntime() as runtime:
     runtime.run(agent, "Summarize the incident and notify ops.").print_result()
 ```
 
-For a runnable local deployment, download the companion [`deploy_local_cookbook_agents.py`](assets/deploy_local_cookbook_agents.py) into your working directory. It deploys this capability as `guarded-incident-planner` and keeps its bridge worker available:
+For a runnable local deployment, download the companion [`deploy_local_cookbook_agents.py`](assets/deploy_local_cookbook_agents.py) into your working directory. It deploys this capability as `guarded-incident-planner` and keeps its tool worker available:
 
 ```bash
 python3 deploy_local_cookbook_agents.py deploy
