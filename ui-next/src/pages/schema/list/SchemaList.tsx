@@ -12,7 +12,7 @@ import SectionHeader from "components/layout/SectionHeader";
 import { ColumnCustomType } from "components/ui/DataTable/types";
 import NavLink from "components/ui/NavLink";
 import NoDataComponent from "components/ui/NoDataComponent";
-import ConfirmChoiceDialog from "components/ui/dialogs/ConfirmChoiceDialog";
+import DeleteVersionedDialog from "components/ui/dialogs/DeleteVersionedDialog";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import SectionHeaderActions from "components/ui/layout/SectionHeaderActions";
 import CloneDialog from "pages/definitions/dialog/CloneDialog";
@@ -141,32 +141,14 @@ export const SchemaList = () => {
       )}
 
       {!!confirmDeleteDialogData && (
-        <ConfirmChoiceDialog
-          handleConfirmationValue={(selectedChoice) => {
-            if (selectedChoice) {
-              handleDeleteSchema();
-            } else {
-              handleCloseConfirmDeleteDialog();
-            }
-          }}
-          message={
-            <>
-              Are you sure you want to delete{" "}
-              <strong style={{ color: "red" }}>
-                {confirmDeleteDialogData.name}
-              </strong>
-              ? All {confirmDeleteDialogData.versions.length} version
-              {confirmDeleteDialogData.versions.length === 1 ? "" : "s"} will be
-              removed. This cannot be undone.
-              <div style={{ marginTop: "15px" }}>
-                Please type <strong>{confirmDeleteDialogData.name}</strong> to
-                confirm.
-              </div>
-            </>
-          }
-          header={"Deletion confirmation"}
-          isInputConfirmation
-          valueToBeDeleted={confirmDeleteDialogData.name}
+        <DeleteVersionedDialog
+          name={confirmDeleteDialogData.name}
+          entityLabel="schema"
+          versions={confirmDeleteDialogData.versions}
+          allowDeleteAll
+          isDeleting={isMutating}
+          onCancel={handleCloseConfirmDeleteDialog}
+          onConfirm={handleDeleteSchema}
         />
       )}
 
