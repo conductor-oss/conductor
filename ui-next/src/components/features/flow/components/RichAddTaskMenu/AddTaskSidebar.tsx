@@ -402,20 +402,17 @@ const AddTaskSidebar = ({
     handleCloseMenu();
   }, [handleCloseMenu, setOpen, workflowDefinitionActor]);
 
-  const handleAddToolTask = (tool: any) => {
+  const handleAddIntegrationTask = (integration: IntegrationMenuItem) => {
+    // The add menu selects a connection; operation and inputs belong in the task editor.
     return handleAddTaskBelow(() =>
       getSequentialTask({
         overrides: {
-          name: tool?.api,
-          taskReferenceName: `${tool?.api}_ref`,
-          description: tool?.description,
+          name: integration.integrationType,
+          taskReferenceName: `${integration.integrationType}_ref`,
+          description: integration.description,
           inputParameters: {
-            integrationName:
-              integrationDrillDownMenu?.selectedIntegration?.name,
-            method: tool?.api,
-            integrationType:
-              integrationDrillDownMenu?.selectedIntegration?.integrationType,
-            // ...generateObjectFromSchema(tool?.inputSchema?.data),
+            integrationName: integration.name,
+            integrationType: integration.integrationType,
           },
         },
         handler: generateMCPTask,
@@ -836,7 +833,7 @@ const AddTaskSidebar = ({
                 integrationDrillDownMenu.selectedRootIntegration && (
                   <IntegrationDrillDownContent
                     richAddTaskMenuActor={richAddTaskMenuActor}
-                    onAddToolTask={handleAddToolTask}
+                    onAddIntegrationTask={handleAddIntegrationTask}
                     onAddNewIntegration={(template) => {
                       setBasicIntegrationTemplate({
                         name: template?.name,

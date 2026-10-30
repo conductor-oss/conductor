@@ -327,7 +327,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     />
                   </Box>
                   <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
-                    {task?.inputParameters?.method}
+                    {task?.inputParameters?.method || "Configure operation"}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 2, ml: "auto" }}>
                     <Box
@@ -407,7 +407,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     <ConductorAutoComplete
                       id="integration-tool-dropdown"
                       fullWidth
-                      label="Tool"
+                      label="Operation"
                       options={tools || []}
                       onChange={(__, val) => {
                         onChange({

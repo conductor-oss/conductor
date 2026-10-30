@@ -124,7 +124,7 @@ it("does not show a disabled warning before the connection query finishes", () =
 it("disables cached tool choices for an unavailable stored connection", () => {
   toolsHook.mockReturnValue({ tools: [{ api: "invoke" }], isLoading: false });
   show();
-  expect(screen.getByLabelText(/^Tool/)).toBeDisabled();
+  expect(screen.getByLabelText(/^Operation/)).toBeDisabled();
 });
 
 it("suppresses a cached operation schema when integrations become unavailable", () => {
@@ -150,4 +150,37 @@ it("suppresses a cached operation schema when integrations become unavailable", 
     when: true,
   });
   expect(screen.queryByText("Operation fields")).toBeNull();
+});
+
+it("opens a connection-only task with a required operation selector and no premature schema fetch", () => {
+  connections.mockReturnValue({
+    integrations: [{ name: "lambda", type: "aws-lambda", status: "active" }],
+    isLoading: false,
+  });
+  toolsHook.mockReturnValue({
+    tools: [{ api: "aws-lambda-Invoke Function" }],
+    isLoading: false,
+  });
+  const onChange = vi.fn();
+  render(
+    <ThemeProvider>
+      <MemoryRouter>
+        <MCPTaskForm
+          task={{
+            inputParameters: {
+              integrationName: "lambda",
+              integrationType: "aws-lambda",
+            },
+          }}
+          onChange={onChange}
+        />
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+  expect(screen.getByText("Configure operation")).toBeInTheDocument();
+  expect(screen.getByLabelText(/^Operation/)).toBeEnabled();
+  expect(fetchHook).toHaveBeenCalledWith(expect.any(String), {
+    enterpriseApiFeature: FEATURES.INTEGRATIONS,
+    when: false,
+  });
 });
