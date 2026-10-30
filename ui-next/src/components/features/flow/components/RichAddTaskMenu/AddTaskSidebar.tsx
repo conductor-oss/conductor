@@ -44,6 +44,7 @@ import {
 import { getSequentiallySuffix } from "utils/strings";
 import { pluralizeResults } from "utils/helpers";
 import { getInitials } from "utils/utils";
+import { isConnectedAppsEnabled } from "utils/serverlessIntegrations";
 import { ActorRef } from "xstate";
 import { itemFilterMatcher } from "./helpers";
 import { iconForTaskTypeMap } from "./iconsForTaskTypes";
@@ -401,20 +402,17 @@ const AddTaskSidebar = ({
     handleCloseMenu();
   }, [handleCloseMenu, setOpen, workflowDefinitionActor]);
 
-  const handleAddToolTask = (tool: any) => {
+  const handleAddIntegrationTask = (integration: IntegrationMenuItem) => {
+    // The add menu selects a connection; operation and inputs belong in the task editor.
     return handleAddTaskBelow(() =>
       getSequentialTask({
         overrides: {
-          name: tool?.api,
-          taskReferenceName: `${tool?.api}_ref`,
-          description: tool?.description,
+          name: integration.integrationType,
+          taskReferenceName: `${integration.integrationType}_ref`,
+          description: integration.description,
           inputParameters: {
-            integrationName:
-              integrationDrillDownMenu?.selectedIntegration?.name,
-            method: tool?.api,
-            integrationType:
-              integrationDrillDownMenu?.selectedIntegration?.integrationType,
-            // ...generateObjectFromSchema(tool?.inputSchema?.data),
+            integrationName: integration.name,
+            integrationType: integration.integrationType,
           },
         },
         handler: generateMCPTask,
@@ -576,7 +574,11 @@ const AddTaskSidebar = ({
         {/* Categories */}
         <Box sx={{ px: 2.5, py: 1.5, borderBottom: "1px solid #F0F0F0" }}>
           <Grid container sx={{ width: "100%" }} spacing={0.75}>
-            {SIDEBAR_ITEMS.map((item) => (
+            {SIDEBAR_ITEMS.filter(
+              (item) =>
+                item.tab !== RichAddMenuTabs.INTEGRATIONS_TAB ||
+                isConnectedAppsEnabled(),
+            ).map((item) => (
               <Grid key={item.label} size={2.4}>
                 <Box
                   onClick={() => handleChangeTab(item.tab)}
@@ -831,7 +833,7 @@ const AddTaskSidebar = ({
                 integrationDrillDownMenu.selectedRootIntegration && (
                   <IntegrationDrillDownContent
                     richAddTaskMenuActor={richAddTaskMenuActor}
-                    onAddToolTask={handleAddToolTask}
+                    onAddIntegrationTask={handleAddIntegrationTask}
                     onAddNewIntegration={(template) => {
                       setBasicIntegrationTemplate({
                         name: template?.name,

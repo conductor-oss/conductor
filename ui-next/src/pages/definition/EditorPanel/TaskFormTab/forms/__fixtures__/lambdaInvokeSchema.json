@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": true,
+  "else": {
+    "not": {
+      "anyOf": [
+        {
+          "required": ["resultQueueArn"]
+        },
+        {
+          "required": ["pollIntervalSeconds"]
+        },
+        {
+          "required": ["completionTimeoutSeconds"]
+        }
+      ]
+    }
+  },
+  "if": {
+    "properties": {
+      "invocationType": {
+        "const": "Event"
+      }
+    },
+    "required": ["invocationType"]
+  },
+  "properties": {
+    "completionTimeoutSeconds": {
+      "description": "Event only: completion deadline from task scheduling (default 900); server retention may impose a lower limit",
+      "maximum": 86400,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "functionName": {
+      "description": "Function name or ARN",
+      "type": "string"
+    },
+    "invocationType": {
+      "default": "RequestResponse",
+      "description": "Sync returns directly; Async waits through the Conductor-managed SQS result path",
+      "oneOf": [
+        {
+          "const": "RequestResponse",
+          "title": "Sync"
+        },
+        {
+          "const": "Event",
+          "title": "Async"
+        }
+      ],
+      "type": "string"
+    },
+    "payload": {
+      "description": "Payload as JSON string",
+      "type": "string"
+    },
+    "pollIntervalSeconds": {
+      "description": "Event only: seconds between Conductor result checks (default 5)",
+      "maximum": 300,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "qualifier": {
+      "description": "Optional function version or alias; omit to invoke the unqualified function",
+      "type": "string"
+    },
+    "resultQueueArn": {
+      "description": "Event only: existing standard SQS queue ARN configured for both success and failure destinations; not discovered or configured by Conductor",
+      "pattern": "^arn:(aws|aws-cn|aws-us-gov):sqs:[a-z0-9-]+:[0-9]{12}:[A-Za-z0-9_-]{1,80}$",
+      "type": "string"
+    }
+  },
+  "required": ["functionName", "payload"],
+  "then": {
+    "required": ["resultQueueArn"]
+  },
+  "type": "object"
+}

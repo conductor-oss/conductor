@@ -52,6 +52,7 @@ export enum IntegrationType {
   AZURE_FUNCTIONS = "azure-functions",
   GOOGLE_CLOUD_STORAGE = "google-cloud-storage",
   GOOGLE_CLOUD_FUNCTIONS = "google-cloud-functions",
+  FIREBASE_FUNCTIONS = "firebase-functions",
   AWS_LAMBDA = "aws-lambda",
   MYSQL = "mysql",
   POSTGRES = "postgres",

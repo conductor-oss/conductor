@@ -2,9 +2,18 @@ import { removeCopyFromStorage } from "pages/definition/ConfirmLocalCopyDialog/s
 import { fetchWithContext } from "plugins/fetch";
 import { WorkflowDef } from "types/WorkflowDef";
 import { resolveAgentSnapshotsInWorkflow } from "utils/agentMetadata";
+import { validateIntegrationInputs } from "utils/validateIntegrationInputs";
 import { SaveWorkflowMachineContext } from "./types";
 
 export { removeCopyFromStorage };
+
+const validateInputs = ({
+  editorChanges,
+  authHeaders,
+}: SaveWorkflowMachineContext) =>
+  validateIntegrationInputs(JSON.parse(editorChanges), (path) =>
+    fetchWithContext(path, {}, { method: "GET", headers: authHeaders }),
+  );
 
 export const resolveAgentSnapshots = async ({
   editorChanges,
@@ -34,6 +43,10 @@ export const createWorkflow = async (
   { editorChanges, authHeaders }: SaveWorkflowMachineContext,
   __: any,
 ) => {
+  await validateInputs({
+    editorChanges,
+    authHeaders,
+  } as SaveWorkflowMachineContext);
   try {
     return await fetchWithContext(
       "/metadata/workflow",
@@ -63,6 +76,10 @@ export const updateWorkflow = async (
   { editorChanges, authHeaders, isNewVersion }: SaveWorkflowMachineContext,
   __: any,
 ) => {
+  await validateInputs({
+    editorChanges,
+    authHeaders,
+  } as SaveWorkflowMachineContext);
   const queryParams = isNewVersion ? "?newVersion=true" : "";
   try {
     return await fetchWithContext(

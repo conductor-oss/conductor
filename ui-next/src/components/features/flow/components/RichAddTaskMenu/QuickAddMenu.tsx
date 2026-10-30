@@ -29,6 +29,7 @@ import { CommonTaskDef, SubWorkflowTaskDef, TaskType } from "types";
 import useArrowNavigation from "useArrowNavigation";
 import { getSequentiallySuffix } from "utils/strings";
 import { getInitials } from "utils/utils";
+import { isConnectedAppsEnabled } from "utils/serverlessIntegrations";
 import { ActorRef } from "xstate";
 import { itemFilterMatcher } from "./helpers";
 import { iconForTaskTypeMap } from "./iconsForTaskTypes";
@@ -404,6 +405,7 @@ const QuickAddMenu = ({
 
   const options = useMemo(() => {
     const showIntegrationsPanelShortcut =
+      isConnectedAppsEnabled() &&
       pluginRegistry.getNewIntegrationModal() != null;
     const integrationsPanelItem = showIntegrationsPanelShortcut
       ? [
@@ -434,6 +436,7 @@ const QuickAddMenu = ({
 
   const { coreQuickAddTasks, agenticQuickAddTasks } = useMemo(() => {
     const showIntegrationsPanelShortcut =
+      isConnectedAppsEnabled() &&
       pluginRegistry.getNewIntegrationModal() != null;
 
     const pluginQuickAddTypes = pluginRegistry
@@ -442,7 +445,7 @@ const QuickAddMenu = ({
       .map((item) => item.type as TaskType)
       .filter(
         (type) =>
-          !(showIntegrationsPanelShortcut && type === TaskType.INTEGRATION),
+          !(showIntegrationsPanelShortcut && type === TaskType.CONNECTED_APP),
       );
 
     const aiTaskTypesSet = new Set(AI_QUICK_ADD_TYPES as string[]);

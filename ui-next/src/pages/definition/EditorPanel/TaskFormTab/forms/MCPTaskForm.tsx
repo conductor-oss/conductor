@@ -23,12 +23,21 @@ import {
   useMCPTools,
 } from "utils/hooks/useMCPIntegrations";
 import { downgradeSchemaToDraft7 } from "utils/json";
-import { useFetch } from "utils/query";
+import {
+  integrationUISchema,
+  removeInactiveIntegrationFields,
+} from "utils/integrationSchema";
+import { computeFetchBaseEnabled, useAuthHeaders, useFetch } from "utils/query";
+import { useFetchContext } from "plugins/fetch";
+import { FEATURES, featureFlags } from "utils/flags";
 import { MaybeVariable } from "./MaybeVariable";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useMemo } from "react";
+import Alert from "@mui/material/Alert";
+import DeploymentPackageInput from "./DeploymentPackageInput";
+import { hasDeploymentPackage } from "utils/deploymentPackage";
 
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
@@ -191,11 +200,16 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
 
   const { integrations, isLoading: isLoadingIntegrations } =
     useMCPIntegrations();
+  const integrationAvailable = integrations.some(
+    (integration) =>
+      integration.name === task?.inputParameters?.integrationName,
+  );
   const { tools, isLoading: isLoadingTools } = useMCPTools(
-    task?.inputParameters?.integrationName,
+    integrationAvailable ? task?.inputParameters?.integrationName : undefined,
   );
 
   const hasValidIntegration = Boolean(
+    integrationAvailable &&
     task?.inputParameters?.integrationName &&
     task?.inputParameters?.integrationName !== null,
   );
@@ -206,12 +220,24 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const { data: toolData, isLoading: isToolDataLoading } = useFetch(
     `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
     {
-      enabled: hasValidIntegration && hasValidMethod,
+      enterpriseApiFeature: FEATURES.INTEGRATIONS,
+      when: hasValidIntegration && hasValidMethod,
     },
   );
 
+  // Disabling a query does not remove cached data. Apply the same readiness and
+  // feature predicates before rendering a saved operation's cached schema.
+  const fetchContext = useFetchContext();
+  const authHeaders = useAuthHeaders();
+  const schemaAvailable =
+    hasValidIntegration &&
+    hasValidMethod &&
+    featureFlags.isEnabled(FEATURES.INTEGRATIONS) &&
+    computeFetchBaseEnabled(fetchContext, authHeaders);
+
   // Prepare and validate the schema for JsonForms
   const processedSchema = useMemo(() => {
+    if (!schemaAvailable) return null;
     if (!toolData?.inputSchema?.data) return null;
 
     const schemaData = toolData.inputSchema.data;
@@ -236,15 +262,28 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
       console.error("[MCPTaskForm] Error processing schema:", error);
       return null;
     }
-  }, [toolData?.inputSchema?.data]);
+  }, [toolData?.inputSchema?.data, schemaAvailable]);
+
+  const uiSchema = useMemo(
+    () => (processedSchema ? integrationUISchema(processedSchema) : undefined),
+    [processedSchema],
+  );
 
   return (
     <Box width="100%">
+      {!isLoadingIntegrations &&
+        task?.inputParameters?.integrationName &&
+        !integrationAvailable && (
+          <Alert severity="warning">
+            This Connected App is unavailable or disabled. Select an enabled
+            serverless connection to configure this task.
+          </Alert>
+        )}
       <MaybeVariable
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
-        taskType={TaskType.INTEGRATION}
+        taskType={TaskType.CONNECTED_APP}
       >
         <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
           {isToolDataLoading ? (
@@ -299,7 +338,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     />
                   </Box>
                   <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
-                    {task?.inputParameters?.method}
+                    {task?.inputParameters?.method || "Configure operation"}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 2, ml: "auto" }}>
                     <Box
@@ -379,7 +418,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     <ConductorAutoComplete
                       id="integration-tool-dropdown"
                       fullWidth
-                      label="Tool"
+                      label="Operation"
                       options={tools || []}
                       onChange={(__, val) => {
                         onChange({
@@ -404,7 +443,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       disableClearable
                       getOptionLabel={(option) => option?.api || ""}
                       loading={isLoadingTools}
-                      disabled={!task?.inputParameters?.integrationName}
+                      disabled={!hasValidIntegration}
                     />
                   </Grid>
                 </Grid>
@@ -421,11 +460,33 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       }}
                     >
                       <ThemeProvider theme={customTheme}>
+                        {hasDeploymentPackage(processedSchema) && (
+                          <DeploymentPackageInput
+                            key={`${task.taskReferenceName}:${task.inputParameters!.integrationName}:${task.inputParameters!.method}`}
+                            input={task.inputParameters!}
+                            onChange={(input) =>
+                              onChange(
+                                updateField("inputParameters", input, task),
+                              )
+                            }
+                          />
+                        )}
                         <JsonForms
                           schema={processedSchema}
+                          uischema={uiSchema}
                           data={task?.inputParameters}
                           onChange={({ data }) =>
-                            onChange(updateField("inputParameters", data, task))
+                            onChange(
+                              updateField(
+                                "inputParameters",
+                                removeInactiveIntegrationFields(
+                                  processedSchema,
+                                  task?.inputParameters,
+                                  data,
+                                ),
+                                task,
+                              ),
+                            )
                           }
                           renderers={materialRenderers}
                           cells={materialCells}

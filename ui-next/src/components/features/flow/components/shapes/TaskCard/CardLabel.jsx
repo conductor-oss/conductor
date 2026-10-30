@@ -39,7 +39,7 @@ const CardLabel = ({
       }}
     >
       {label ||
-        (type !== TaskType.INTEGRATION
+        (type !== TaskType.CONNECTED_APP
           ? shortenedTypeTag[type] || type
           : integrationIconName?.toUpperCase() || "INTEGRATION")}
     </div>

@@ -23,6 +23,7 @@ export const integrationIconMap: Record<string, string> = {
   "pagerduty-inline": "pagerduty",
   "gmail-v2": "gmail",
   "firebase-firestore-v5": "firebase-firestore",
+  "firebase-functions": "firebase-firestore",
   "clickhouse-v2": "clickhouse",
   "stripe-v2": "stripe",
   "google-analytics": "googleanalytics",

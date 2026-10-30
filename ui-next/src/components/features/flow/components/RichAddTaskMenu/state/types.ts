@@ -5,6 +5,7 @@ import { AuthHeaders, FormTaskType, IntegrationDef, WorkflowDef } from "types";
 export type TaskDefinition = {
   name: string;
   description: string;
+  ownerEmail?: string;
 };
 
 export type OperationContextData = {

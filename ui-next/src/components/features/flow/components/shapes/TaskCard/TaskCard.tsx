@@ -142,7 +142,7 @@ const TaskCard = ({
           <CardIcon
             type={type}
             integrationType={
-              task.type === TaskType.INTEGRATION
+              task.type === TaskType.CONNECTED_APP
                 ? (task as MCPTaskDef).inputParameters?.integrationType
                 : undefined
             }
@@ -205,7 +205,7 @@ const TaskCard = ({
             label={agentPresentation?.badge}
             displayDescription={false}
             integrationIconName={
-              task.type === TaskType.INTEGRATION
+              task.type === TaskType.CONNECTED_APP
                 ? (task as MCPTaskDef).inputParameters?.integrationType
                 : undefined
             }

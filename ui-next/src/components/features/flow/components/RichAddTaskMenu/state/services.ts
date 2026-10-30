@@ -4,6 +4,10 @@ import { logger } from "utils/logger";
 
 import { featureFlags, FEATURES } from "utils/flags";
 import { RichAddTaskMenuMachineContext } from "./types";
+import {
+  isConnectedAppsEnabled,
+  isServerlessIntegrationEnabled,
+} from "utils/serverlessIntegrations";
 
 const fetchContext = fetchContextNonHook();
 
@@ -48,7 +52,10 @@ export const fetchForWorkflowDefinitions = async ({
 export const fetchForMCPIntegrations = async ({
   authHeaders: headers,
 }: RichAddTaskMenuMachineContext) => {
-  if (!featureFlags.isEnabled(FEATURES.INTEGRATIONS)) {
+  if (
+    !featureFlags.isEnabled(FEATURES.INTEGRATIONS) ||
+    !isConnectedAppsEnabled()
+  ) {
     return {
       supportedIntegrations: [],
       availableIntegrations: [],
@@ -75,11 +82,20 @@ export const fetchForMCPIntegrations = async ({
       supportedIntegrations:
         integrationsResult.status === "fulfilled"
           ? integrationsResult.value?.filter(
-              (integration: any) => integration.category === "MCP",
+              (integration: any) =>
+                integration.category === "MCP" &&
+                isServerlessIntegrationEnabled(integration.type),
             )
           : [],
       availableIntegrations:
-        providersResult.status === "fulfilled" ? providersResult.value : [],
+        providersResult.status === "fulfilled"
+          ? providersResult.value?.filter(
+              (integration: any) =>
+                integration.category === "MCP" &&
+                integration.enabled &&
+                isServerlessIntegrationEnabled(integration.type),
+            )
+          : [],
     };
   } catch (error) {
     logger.error("Fetching integrations", error);
@@ -91,6 +107,9 @@ export const fetchForIntegrationTools = async ({
   authHeaders: headers,
   integrationDrillDownMenu: { selectedIntegration },
 }: RichAddTaskMenuMachineContext) => {
+  if (!isServerlessIntegrationEnabled(selectedIntegration?.integrationType)) {
+    return [];
+  }
   const toolsUrl = `/integrations/${selectedIntegration?.name}/def/apis`;
 
   logger.info("Will search for integration tools", toolsUrl);
