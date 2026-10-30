@@ -37,6 +37,7 @@ import org.springframework.core.retry.RetryTemplate;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
 
+import jakarta.annotation.PostConstruct;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
@@ -45,6 +46,26 @@ import tools.jackson.databind.ObjectMapper;
 public class ElasticSearchV7Configuration {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchV7Configuration.class);
+
+    @PostConstruct
+    public void warnDeprecated() {
+        log.warn(
+                "\n"
+                        + "=====================================================================\n"
+                        + " DEPRECATION: the Elasticsearch 7 indexing backend is in use.\n"
+                        + "\n"
+                        + " 3.33 was the LAST release to default to Elasticsearch 7. Starting\n"
+                        + " with 3.34 the default is Elasticsearch 8; ES7 is now an opt-in\n"
+                        + " (-PindexingBackend=elasticsearch7) and is deprecated. It still runs\n"
+                        + " on the 3.x line but will be removed in a future release.\n"
+                        + "\n"
+                        + " Plan an upgrade to Elasticsearch 8. This is a cluster move, not a\n"
+                        + " config flip: the ES8 client cannot talk to a 7.17 server, so the\n"
+                        + " cluster itself must be upgraded to 8.x.\n"
+                        + "\n"
+                        + " Migration guide: https://github.com/conductor-oss/conductor/issues/1754\n"
+                        + "=====================================================================");
+    }
 
     @Bean
     public RestClient restClient(RestClientBuilder restClientBuilder) {
