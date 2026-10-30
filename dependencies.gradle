@@ -48,6 +48,13 @@ ext {
     revGraalVM = '25.0.2'
     revJAXRS = '4.0.0'
     revJsonPath = '2.4.0'
+    // ACCEPTED RISK (#1750): jackson-jq 2.0.0-alpha1 is the ONLY release built
+    // against Jackson 3 (tools.jackson). The stable 1.6.x line is Jackson 2 and
+    // is API-incompatible with the Jackson 3 JsonNode we now pass it. Upstream
+    // treats 1.x as the stable branch and keeps 2.x as alpha-only with no GA date;
+    // 2.0.0-alpha2 exists on GitHub but is not published to Maven Central. Behavior
+    // here is the jq 1.6 dialect, unchanged from the previous release. Revisit when
+    // a stable 2.x (Jackson 3) lands on Maven Central.
     revJq = '2.0.0-alpha1'
     revMockServerClient = '5.12.0'
     revSpringDoc = '3.1.0'
