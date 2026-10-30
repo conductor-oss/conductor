@@ -222,6 +222,17 @@ public class PostgresIndexDAOTest {
     }
 
     @Test
+    public void testIndexWorkflowWithLongestCorrelationIdTheStoreAccepts() throws SQLException {
+        // workflow.correlation_id is varchar(255); the index row must accept the same value.
+        WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-long-correlation-id");
+        wfs.setCorrelationId("c".repeat(255));
+
+        indexDAO.indexWorkflow(wfs);
+
+        compareWorkflowSummary(wfs);
+    }
+
+    @Test
     public void testIndexExistingWorkflow() throws SQLException {
         WorkflowSummary wfs = getMockWorkflowSummary("workflow-id-existing");
 
