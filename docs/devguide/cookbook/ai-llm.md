@@ -76,7 +76,7 @@ A vector database workflow for retrieval-augmented generation: vector search ret
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "query": "${workflow.input.question}",
-        "llmMaxResults": 3
+        "maxResults": 3
       }
     },
     {
@@ -114,7 +114,7 @@ curl -X POST 'http://localhost:8080/api/workflow/rag_workflow' \
 ```
 
 !!! note "Prerequisites"
-    Requires a vector database (pgvector, Pinecone, or MongoDB Atlas) configured as a Conductor integration, plus at least one LLM provider. See [AI provider configuration](#ai-provider-configuration) below.
+    Requires a vector database (pgvector, Pinecone, MongoDB Atlas, or Qdrant) configured under `conductor.vectordb.instances`, plus at least one LLM provider. See [AI provider configuration](#ai-provider-configuration) below.
 
 ---
 
@@ -706,6 +706,12 @@ conductor.vectordb.instances[0].postgres.datasourceURL=jdbc:postgresql://localho
 conductor.vectordb.instances[0].postgres.user=conductor
 conductor.vectordb.instances[0].postgres.password=secret
 conductor.vectordb.instances[0].postgres.dimensions=1536
+
+# Qdrant Vector DB (alternative to PostgreSQL)
+conductor.vectordb.instances[1].name=qdrant-local
+conductor.vectordb.instances[1].type=qdrant
+conductor.vectordb.instances[1].qdrant.host=localhost
+conductor.vectordb.instances[1].qdrant.port=6334
 ```
 
 ---

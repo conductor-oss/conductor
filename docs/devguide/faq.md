@@ -70,7 +70,7 @@ See [LLM orchestration](ai/llm-orchestration.md) for the source-backed provider 
 
 ## Does Conductor support vector databases and RAG?
 
-Yes. Built-in support for Pinecone, pgvector, and MongoDB Atlas Vector Search. System tasks handle embedding generation, storage, indexing, and semantic search — enabling RAG pipelines as standard workflows.
+Yes. Built-in support for Pinecone, pgvector, MongoDB Atlas Vector Search, and Qdrant. System tasks handle embedding generation, storage, indexing, and semantic search — enabling RAG pipelines as standard workflows.
 
 ## Is Conductor a durable execution engine?
 
