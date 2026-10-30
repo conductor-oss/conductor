@@ -445,7 +445,7 @@ const QuickAddMenu = ({
       .map((item) => item.type as TaskType)
       .filter(
         (type) =>
-          !(showIntegrationsPanelShortcut && type === TaskType.INTEGRATION),
+          !(showIntegrationsPanelShortcut && type === TaskType.CONNECTED_APP),
       );
 
     const aiTaskTypesSet = new Set(AI_QUICK_ADD_TYPES as string[]);

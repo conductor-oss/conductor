@@ -37,8 +37,17 @@
     },
     "invocationType": {
       "default": "RequestResponse",
-      "description": "RequestResponse returns directly; Event waits through the Conductor-managed SQS result path",
-      "enum": ["RequestResponse", "Event"],
+      "description": "Sync returns directly; Async waits through the Conductor-managed SQS result path",
+      "oneOf": [
+        {
+          "const": "RequestResponse",
+          "title": "Sync"
+        },
+        {
+          "const": "Event",
+          "title": "Async"
+        }
+      ],
       "type": "string"
     },
     "payload": {
@@ -50,6 +59,10 @@
       "maximum": 300,
       "minimum": 1,
       "type": "integer"
+    },
+    "qualifier": {
+      "description": "Optional function version or alias; omit to invoke the unqualified function",
+      "type": "string"
     },
     "resultQueueArn": {
       "description": "Event only: existing standard SQS queue ARN configured for both success and failure destinations; not discovered or configured by Conductor",

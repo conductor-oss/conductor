@@ -23,6 +23,10 @@ import {
   useMCPTools,
 } from "utils/hooks/useMCPIntegrations";
 import { downgradeSchemaToDraft7 } from "utils/json";
+import {
+  integrationUISchema,
+  removeInactiveIntegrationFields,
+} from "utils/integrationSchema";
 import { computeFetchBaseEnabled, useAuthHeaders, useFetch } from "utils/query";
 import { useFetchContext } from "plugins/fetch";
 import { FEATURES, featureFlags } from "utils/flags";
@@ -32,6 +36,8 @@ import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import { useMemo } from "react";
 import Alert from "@mui/material/Alert";
+import DeploymentPackageInput from "./DeploymentPackageInput";
+import { hasDeploymentPackage } from "utils/deploymentPackage";
 
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
@@ -258,6 +264,11 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     }
   }, [toolData?.inputSchema?.data, schemaAvailable]);
 
+  const uiSchema = useMemo(
+    () => (processedSchema ? integrationUISchema(processedSchema) : undefined),
+    [processedSchema],
+  );
+
   return (
     <Box width="100%">
       {!isLoadingIntegrations &&
@@ -272,7 +283,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
-        taskType={TaskType.INTEGRATION}
+        taskType={TaskType.CONNECTED_APP}
       >
         <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
           {isToolDataLoading ? (
@@ -449,11 +460,33 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       }}
                     >
                       <ThemeProvider theme={customTheme}>
+                        {hasDeploymentPackage(processedSchema) && (
+                          <DeploymentPackageInput
+                            key={`${task.taskReferenceName}:${task.inputParameters!.integrationName}:${task.inputParameters!.method}`}
+                            input={task.inputParameters!}
+                            onChange={(input) =>
+                              onChange(
+                                updateField("inputParameters", input, task),
+                              )
+                            }
+                          />
+                        )}
                         <JsonForms
                           schema={processedSchema}
+                          uischema={uiSchema}
                           data={task?.inputParameters}
                           onChange={({ data }) =>
-                            onChange(updateField("inputParameters", data, task))
+                            onChange(
+                              updateField(
+                                "inputParameters",
+                                removeInactiveIntegrationFields(
+                                  processedSchema,
+                                  task?.inputParameters,
+                                  data,
+                                ),
+                                task,
+                              ),
+                            )
                           }
                           renderers={materialRenderers}
                           cells={materialCells}

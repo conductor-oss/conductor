@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "additionalProperties": true,
+  "oneOf": [
+    {
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "s3Bucket"
+            ]
+          },
+          {
+            "required": [
+              "s3Key"
+            ]
+          },
+          {
+            "required": [
+              "s3ObjectVersion"
+            ]
+          }
+        ]
+      },
+      "required": [
+        "zipFileBase64"
+      ]
+    },
+    {
+      "not": {
+        "required": [
+          "zipFileBase64"
+        ]
+      },
+      "required": [
+        "s3Bucket",
+        "s3Key"
+      ]
+    }
+  ],
+  "properties": {
+    "description": {
+      "description": "Description of the function",
+      "type": "string"
+    },
+    "environmentVariables": {
+      "description": "Environment variables as JSON string (e.g., '{\"KEY\":\"value\"}')",
+      "type": "string"
+    },
+    "functionName": {
+      "description": "Function name",
+      "type": "string"
+    },
+    "handler": {
+      "description": "Handler name (e.g., 'com.example.Handler::handleRequest' for Java)",
+      "type": "string"
+    },
+    "memorySize": {
+      "description": "Memory size in MB (128-10240, default 128)",
+      "format": "int32",
+      "type": "integer"
+    },
+    "role": {
+      "description": "Optional Lambda execution role ARN. If omitted, Conductor creates a basic Lambda execution role with CloudWatch Logs permissions. Additional AWS access must be configured separately",
+      "title": "Lambda execution role ARN",
+      "type": "string"
+    },
+    "runtime": {
+      "description": "Runtime (e.g., java21, python3.12, nodejs20.x)",
+      "type": "string"
+    },
+    "s3Bucket": {
+      "description": "Existing deployment bucket in the function region; required with s3Key",
+      "minLength": 1,
+      "pattern": "\\S",
+      "type": "string"
+    },
+    "s3Key": {
+      "description": "S3 deployment ZIP object key; required with s3Bucket",
+      "minLength": 1,
+      "pattern": "\\S",
+      "type": "string"
+    },
+    "s3ObjectVersion": {
+      "description": "Optional S3 object version for reproducible deployments",
+      "minLength": 1,
+      "pattern": "\\S",
+      "type": "string"
+    },
+    "timeout": {
+      "description": "Timeout in seconds (1-900, default 3)",
+      "format": "int32",
+      "type": "integer"
+    },
+    "zipFileBase64": {
+      "contentEncoding": "base64",
+      "contentMediaType": "application/zip",
+      "description": "Inline ZIP content as base64; supply this or S3 bucket/key, not both",
+      "minLength": 1,
+      "pattern": "\\S",
+      "type": "string"
+    }
+  },
+  "required": [
+    "functionName",
+    "runtime",
+    "handler"
+  ],
+  "type": "object"
+}

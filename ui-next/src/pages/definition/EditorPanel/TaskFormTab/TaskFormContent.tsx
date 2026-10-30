@@ -118,7 +118,7 @@ const getTaskForm = (type: string) => {
       return GetSignedJwtForm;
     case TaskType.UPDATE_TASK:
       return UpdateTaskForm;
-    case TaskType.INTEGRATION:
+    case TaskType.CONNECTED_APP:
       return MCPTaskForm;
 
     // Operators
@@ -408,16 +408,16 @@ const TaskFormContent: FunctionComponent = () => {
   };
 
   const mcpIntegrationType =
-    taskType === TaskType.INTEGRATION
+    taskType === TaskType.CONNECTED_APP
       ? (task?.inputParameters?.integrationType as string | undefined)
       : undefined;
   const taskTypeLabelForDoc = mcpIntegrationType
     ? mcpIntegrationType.replace(/-mcp$/i, "").replace(/-/g, " ").toUpperCase()
-    : taskType === TaskType.INTEGRATION
+    : taskType === TaskType.CONNECTED_APP
       ? "INTEGRATION"
       : taskType;
   const taskTypeLabel =
-    taskType === TaskType.INTEGRATION ? "INTEGRATION" : taskType;
+    taskType === TaskType.CONNECTED_APP ? "INTEGRATION" : taskType;
   const taskDocUrl = getTaskDocUrl(mcpIntegrationType ?? taskType);
 
   return (

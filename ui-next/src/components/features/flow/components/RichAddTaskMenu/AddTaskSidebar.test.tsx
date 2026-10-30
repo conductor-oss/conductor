@@ -58,7 +58,7 @@ beforeEach(() => {
     },
   ]);
 });
-it("inserts a real INTEGRATION task with the chosen connection but no guessed operation", () => {
+it("inserts a real CONNECTED_APP task with the chosen connection but no guessed operation", () => {
   render(
     <ThemeProvider>
       <AddTaskSidebar
@@ -75,7 +75,7 @@ it("inserts a real INTEGRATION task with the chosen connection but no guessed op
       position: "selected-edge",
       operation: {
         payload: expect.objectContaining({
-          type: "INTEGRATION",
+          type: "CONNECTED_APP",
           name: "aws-lambda",
           inputParameters: {
             integrationName: "Production Lambda",

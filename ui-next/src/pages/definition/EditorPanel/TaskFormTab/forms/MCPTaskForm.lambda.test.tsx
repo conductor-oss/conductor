@@ -10,6 +10,9 @@ import { downgradeSchemaToDraft7 } from "utils/json";
 // the runtime mapper's additionalProperties=true normalization.
 import schema from "./__fixtures__/lambdaInvokeSchema.json";
 
+import createSchema from "./__fixtures__/lambdaCreateSchema.json";
+const response = vi.hoisted(() => ({ schema: undefined as any }));
+
 vi.mock("utils/hooks/useMCPIntegrations", () => ({
   useMCPIntegrations: () => ({
     integrations: [{ name: "lambda", type: "aws-lambda", status: "active" }],
@@ -24,7 +27,7 @@ vi.mock("utils/query", () => ({
   useAuthHeaders: () => ({}),
   computeFetchBaseEnabled: () => true,
   useFetch: () => ({
-    data: { inputSchema: { data: schema } },
+    data: { inputSchema: { data: response.schema ?? schema } },
     isLoading: false,
   }),
 }));
@@ -42,6 +45,7 @@ vi.mock("./TaskFormSection", () => ({
 }));
 
 beforeEach(() => {
+  response.schema = undefined;
   window.conductor = { INTEGRATIONS: true };
 });
 
@@ -53,6 +57,111 @@ const invocation = {
   payload: "42",
 };
 const queue = "arn:aws:sqs:us-east-1:123456789012:lambda-results";
+
+it.each([undefined, "RequestResponse"])(
+  "hides async-only controls for Sync (%s) and exposes the optional qualifier",
+  (invocationType) => {
+    render(
+      <ThemeProvider>
+        <MemoryRouter>
+          <MCPTaskForm
+            task={{ inputParameters: { ...invocation, invocationType } }}
+            onChange={vi.fn()}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(
+      screen.queryByRole("textbox", { name: /Result Queue Arn/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: /Poll Interval Seconds/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: /Completion Timeout Seconds/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: /Qualifier/ }),
+    ).not.toBeRequired();
+  },
+);
+
+it("clears inactive async settings when switching to Sync while retaining the qualifier and payload", async () => {
+  const onChange = vi.fn();
+  render(
+    <ThemeProvider>
+      <MemoryRouter>
+        <MCPTaskForm
+          task={{
+            inputParameters: {
+              ...invocation,
+              invocationType: "Event",
+              resultQueueArn: queue,
+              pollIntervalSeconds: 5,
+              completionTimeoutSeconds: 900,
+              qualifier: "prod",
+            },
+          }}
+          onChange={onChange}
+        />
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+  fireEvent.mouseDown(
+    screen.getByRole("combobox", { name: /Invocation Type/ }),
+  );
+  fireEvent.click(screen.getByRole("option", { name: "Sync" }));
+  await waitFor(() =>
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputParameters: {
+          ...invocation,
+          invocationType: "RequestResponse",
+          qualifier: "prod",
+        },
+      }),
+    ),
+  );
+});
+
+it.each([
+  ["RequestResponse", "Sync", "Async", "Event"],
+  ["Event", "Async", "Sync", "RequestResponse"],
+])(
+  "displays %s as %s and saves AWS values when selecting %s",
+  async (stored, label, nextLabel, nextValue) => {
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider>
+        <MemoryRouter>
+          <MCPTaskForm
+            task={{
+              inputParameters: { ...invocation, invocationType: stored },
+            }}
+            onChange={onChange}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const selection = screen.getByRole("combobox", { name: /Invocation Type/ });
+    expect(selection).toHaveValue(label);
+    fireEvent.mouseDown(selection);
+    expect(
+      screen.queryByRole("option", { name: "RequestResponse" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Event" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: nextLabel }));
+    await waitFor(() =>
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputParameters: { ...invocation, invocationType: nextValue },
+        }),
+      ),
+    );
+  },
+);
 
 it("validates Event-specific requirements without requiring a destination for synchronous calls", () => {
   const validate = new Ajv({ strict: false }).compile(
@@ -140,6 +249,62 @@ it("renders editable SQS completion settings through the real schema form and pr
           pollIntervalSeconds: 5,
           completionTimeoutSeconds: 900,
         },
+      }),
+    ),
+  );
+});
+
+it("renders the package source control for Create Function while retaining schema-driven inputs", () => {
+  response.schema = createSchema;
+  const onChange = vi.fn();
+  render(
+    <ThemeProvider>
+      <MemoryRouter>
+        <MCPTaskForm
+          task={{
+            taskReferenceName: "create",
+            inputParameters: {
+              integrationName: "lambda",
+              method: "Create Function",
+              integrationType: "aws-lambda",
+              functionName: "f",
+            },
+          }}
+          onChange={onChange}
+        />
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+  expect(
+    screen.getByRole("combobox", { name: "Package source" }),
+  ).toHaveTextContent("Upload ZIP");
+  expect(
+    screen.getByRole("textbox", { name: "Lambda execution role ARN" }),
+  ).not.toBeRequired();
+  expect(
+    screen.getByText(
+      /If omitted, Conductor creates a basic Lambda execution role with CloudWatch Logs permissions/,
+    ),
+  ).toBeVisible();
+  expect(screen.getByRole("textbox", { name: /Function Name/ })).toHaveValue(
+    "f",
+  );
+  expect(
+    screen.queryByRole("textbox", { name: /Zip File Base64/ }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Upload deployment ZIP"), {
+    target: {
+      files: [new File([new Uint8Array([0x50, 0x4b, 3, 4])], "code.zip")],
+    },
+  });
+  return waitFor(() =>
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        inputParameters: expect.objectContaining({
+          zipFileBase64: "UEsDBA==",
+          functionName: "f",
+          integrationName: "lambda",
+        }),
       }),
     ),
   );

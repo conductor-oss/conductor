@@ -122,7 +122,7 @@ const CardIcon = ({ type, integrationType }) => {
   };
 
   const IconComponent = iconMap[type];
-  if (type === TaskType.INTEGRATION) {
+  if (type === TaskType.CONNECTED_APP) {
     return MCPIntegrationIcon;
   }
 
