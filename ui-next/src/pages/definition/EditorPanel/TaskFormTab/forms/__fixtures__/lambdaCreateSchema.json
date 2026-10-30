@@ -6,36 +6,23 @@
       "not": {
         "anyOf": [
           {
-            "required": [
-              "s3Bucket"
-            ]
+            "required": ["s3Bucket"]
           },
           {
-            "required": [
-              "s3Key"
-            ]
+            "required": ["s3Key"]
           },
           {
-            "required": [
-              "s3ObjectVersion"
-            ]
+            "required": ["s3ObjectVersion"]
           }
         ]
       },
-      "required": [
-        "zipFileBase64"
-      ]
+      "required": ["zipFileBase64"]
     },
     {
       "not": {
-        "required": [
-          "zipFileBase64"
-        ]
+        "required": ["zipFileBase64"]
       },
-      "required": [
-        "s3Bucket",
-        "s3Key"
-      ]
+      "required": ["s3Bucket", "s3Key"]
     }
   ],
   "properties": {
@@ -101,10 +88,6 @@
       "type": "string"
     }
   },
-  "required": [
-    "functionName",
-    "runtime",
-    "handler"
-  ],
+  "required": ["functionName", "runtime", "handler"],
   "type": "object"
 }

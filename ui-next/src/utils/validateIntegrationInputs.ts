@@ -18,7 +18,12 @@ const authoringSchema = (schema: Schema, data: any): Schema => {
         return [
           key,
           schema.required?.includes(key) && !expression(data?.[key])
-            ? { allOf: [property, { not: { type: "string", pattern: "^\\s*$" } }] }
+            ? {
+                allOf: [
+                  property,
+                  { not: { type: "string", pattern: "^\\s*$" } },
+                ],
+              }
             : property,
         ];
       }),
