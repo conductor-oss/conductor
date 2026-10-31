@@ -67,10 +67,6 @@ public class DeciderService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
-    /** Measure a polled worker task's poll timeout from the worker's last update. */
-    @Value("${conductor.app.pollTimeoutFromLastUpdate:true}")
-    private boolean pollTimeoutFromLastUpdate = true;
-
     private final Map<String, TaskMapper> taskMappers;
 
     public DeciderService(
@@ -886,9 +882,7 @@ public class DeciderService {
      */
     public long pollWindowStart(TaskModel task) {
         long scheduled = task.getScheduledTime() + 1000L * task.getStartDelayInSeconds();
-        if (!pollTimeoutFromLastUpdate
-                || task.getPollCount() == 0
-                || systemTaskRegistry.isSystemTask(task.getTaskType())) {
+        if (task.getPollCount() == 0 || systemTaskRegistry.isSystemTask(task.getTaskType())) {
             return scheduled;
         }
         return Math.max(task.getUpdateTime(), scheduled);

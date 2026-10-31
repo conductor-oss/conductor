@@ -36,7 +36,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -620,20 +619,6 @@ public class TestDeciderService {
         task.setPollCount(0);
 
         deciderService.checkTaskPollTimeout(taskDef, task);
-
-        assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
-    }
-
-    @Test
-    public void testPollTimeoutFromLastUpdateCanBeTurnedOff() {
-        TaskDef taskDef = pollTimeoutTaskDef();
-        TaskModel task = callbackTask(taskDef);
-        ReflectionTestUtils.setField(deciderService, "pollTimeoutFromLastUpdate", false);
-        try {
-            deciderService.checkTaskPollTimeout(taskDef, task);
-        } finally {
-            ReflectionTestUtils.setField(deciderService, "pollTimeoutFromLastUpdate", true);
-        }
 
         assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
     }
