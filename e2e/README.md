@@ -22,8 +22,10 @@ From the **repo root**:
 ./e2e/run_tests.sh                  # Redis + Elasticsearch 7 (default)
 ./e2e/run_tests-es8.sh              # Redis + Elasticsearch 8
 ./e2e/run_tests-postgres-es7.sh     # Postgres + Elasticsearch 7 (explicit)
+./e2e/run_tests-postgres-es8.sh     # Postgres + Elasticsearch 8
 ./e2e/run_tests-redis-os2.sh        # Redis + OpenSearch 2.x
 ./e2e/run_tests-redis-os3.sh        # Redis + OpenSearch 3.x
+./e2e/run_tests-mysql-es8.sh        # MySQL + Elasticsearch 8
 ./e2e/run_tests-mysql.sh            # MySQL
 ```
 
