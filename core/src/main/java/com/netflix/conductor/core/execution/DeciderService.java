@@ -875,17 +875,13 @@ public class DeciderService {
     }
 
     /**
-     * Start of the task's current poll window. A worker task that returns IN_PROGRESS goes back to
-     * SCHEDULED with its scheduledTime unchanged, so once a worker has polled it the window starts
-     * at the worker's last update; counting from scheduledTime would time out a healthy callback
-     * task after pollTimeoutSeconds of total runtime.
+     * Start of the task's current poll window. A task that returns IN_PROGRESS goes back to
+     * SCHEDULED with its scheduledTime unchanged, so once polled its window starts at its last
+     * update.
      */
-    public long pollWindowStart(TaskModel task) {
+    public static long pollWindowStart(TaskModel task) {
         long scheduled = task.getScheduledTime() + 1000L * task.getStartDelayInSeconds();
-        if (task.getPollCount() == 0 || systemTaskRegistry.isSystemTask(task.getTaskType())) {
-            return scheduled;
-        }
-        return Math.max(task.getUpdateTime(), scheduled);
+        return task.getPollCount() == 0 ? scheduled : Math.max(task.getUpdateTime(), scheduled);
     }
 
     void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, TaskModel task) {

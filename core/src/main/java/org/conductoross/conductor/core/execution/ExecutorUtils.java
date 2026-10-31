@@ -13,10 +13,10 @@
 package org.conductoross.conductor.core.execution;
 
 import java.time.Duration;
-import java.util.function.ToLongFunction;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
+import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
@@ -90,22 +90,6 @@ public class ExecutorUtils {
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,
             Duration maxPostponeDuration) {
-        return computePostpone(
-                workflowModel,
-                workflowOffsetTimeout,
-                maxPostponeDuration,
-                TaskModel::getScheduledTime);
-    }
-
-    /**
-     * @param pollWindowStart start of a SCHEDULED task's poll window, the same clock {@code
-     *     DeciderService.checkTaskPollTimeout} uses
-     */
-    public static Duration computePostpone(
-            WorkflowModel workflowModel,
-            Duration workflowOffsetTimeout,
-            Duration maxPostponeDuration,
-            ToLongFunction<TaskModel> pollWindowStart) {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
         long maxPostponeSeconds = maxPostponeDuration.getSeconds();
@@ -153,7 +137,7 @@ public class ExecutorUtils {
                     long pollElapsedSeconds =
                             Math.max(
                                     0,
-                                    (currentTimeMillis - pollWindowStart.applyAsLong(taskModel))
+                                    (currentTimeMillis - DeciderService.pollWindowStart(taskModel))
                                             / 1000);
                     long remainingPollSeconds =
                             taskDef.getPollTimeoutSeconds()
