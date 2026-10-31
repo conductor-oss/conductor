@@ -881,7 +881,7 @@ public class DeciderService {
      */
     public static long pollWindowStart(TaskModel task) {
         long scheduled = task.getScheduledTime() + 1000L * task.getStartDelayInSeconds();
-        return task.getPollCount() == 0 ? scheduled : Math.max(task.getUpdateTime(), scheduled);
+        return task.getPollCount() == 0 ? scheduled : task.getUpdateTime();
     }
 
     void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, TaskModel task) {
