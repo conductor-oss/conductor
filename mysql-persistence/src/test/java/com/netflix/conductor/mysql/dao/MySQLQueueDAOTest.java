@@ -13,6 +13,9 @@
 package com.netflix.conductor.mysql.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,6 +80,49 @@ public class MySQLQueueDAOTest {
     public void before() {
         flyway.clean();
         flyway.migrate();
+    }
+
+    @Test
+    public void rePushMakesPoppedMessageImmediatelyAvailable() {
+        String queueName = "issue1777_repush_popped";
+        String messageId = "issue1777-msg";
+
+        queueDAO.push(queueName, messageId, 0L);
+
+        List<String> firstPop = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, firstPop.size());
+        assertEquals(messageId, firstPop.get(0));
+        assertTrue(
+                "Message must be marked popped after the first pop",
+                getPoppedState(queueName, messageId));
+
+        // A different payload guarantees the existing-row UPDATE path is exercised.
+        queueDAO.push(queueName, ImmutableList.of(new Message(messageId, "requeued", "")));
+
+        assertFalse(
+                "Re-push must reset popped without waiting for the unack reaper",
+                getPoppedState(queueName, messageId));
+
+        List<Message> secondPop = queueDAO.pollMessages(queueName, 1, 100);
+        assertEquals(1, secondPop.size());
+        assertEquals(messageId, secondPop.get(0).getId());
+        assertEquals("requeued", secondPop.get(0).getPayload());
+    }
+
+    private boolean getPoppedState(String queueName, String messageId) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                "SELECT popped FROM queue_message WHERE queue_name = ? AND message_id = ?")) {
+            statement.setString(1, queueName);
+            statement.setString(2, messageId);
+            try (ResultSet result = statement.executeQuery()) {
+                assertTrue("Message record must exist", result.next());
+                return result.getBoolean("popped");
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to read popped state", exception);
+        }
     }
 
     @Test

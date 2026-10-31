@@ -315,7 +315,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         createQueueIfNotExists(connection, queueName);
 
         String UPDATE_MESSAGE =
-                "UPDATE queue_message SET payload=?, deliver_on=TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET payload=?, deliver_on=TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), popped = false WHERE queue_name = ? AND message_id = ?";
         int rowsUpdated =
                 query(
                         connection,
@@ -329,7 +329,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
         if (rowsUpdated == 0) {
             String PUSH_MESSAGE =
-                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
+                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on), popped = false";
             execute(
                     connection,
                     PUSH_MESSAGE,
