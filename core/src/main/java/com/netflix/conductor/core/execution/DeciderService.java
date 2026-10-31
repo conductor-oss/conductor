@@ -67,6 +67,10 @@ public class DeciderService {
     private final SystemTaskRegistry systemTaskRegistry;
     private final long taskPendingTimeThresholdMins;
 
+    /** Measure a polled worker task's poll timeout from the worker's last update. */
+    @Value("${conductor.app.pollTimeoutFromLastUpdate:true}")
+    private boolean pollTimeoutFromLastUpdate = true;
+
     private final Map<String, TaskMapper> taskMappers;
 
     public DeciderService(
@@ -859,8 +863,7 @@ public class DeciderService {
         final long pollTimeout = 1000L * taskDef.getPollTimeoutSeconds();
         final long adjustedPollTimeout = pollTimeout + task.getCallbackAfterSeconds() * 1000L;
         final long now = System.currentTimeMillis();
-        final long pollElapsedTime =
-                now - (task.getScheduledTime() + ((long) task.getStartDelayInSeconds() * 1000L));
+        final long pollElapsedTime = now - pollWindowStart(task);
 
         if (pollElapsedTime < adjustedPollTimeout) {
             return;
@@ -873,6 +876,22 @@ public class DeciderService {
                         pollTimeout / 1000L,
                         taskDef.getTimeoutPolicy().name());
         timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
+    /**
+     * Start of the task's current poll window. A worker task that returns IN_PROGRESS goes back to
+     * SCHEDULED with its scheduledTime unchanged, so once a worker has polled it the window starts
+     * at the worker's last update; counting from scheduledTime would time out a healthy callback
+     * task after pollTimeoutSeconds of total runtime.
+     */
+    public long pollWindowStart(TaskModel task) {
+        long scheduled = task.getScheduledTime() + 1000L * task.getStartDelayInSeconds();
+        if (!pollTimeoutFromLastUpdate
+                || task.getPollCount() == 0
+                || systemTaskRegistry.isSystemTask(task.getTaskType())) {
+            return scheduled;
+        }
+        return Math.max(task.getUpdateTime(), scheduled);
     }
 
     void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, TaskModel task) {

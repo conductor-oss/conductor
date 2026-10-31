@@ -36,6 +36,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -567,6 +568,74 @@ public class TestDeciderService {
 
         assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
         assertNull(task.getReasonForIncompletion());
+    }
+
+    /** A worker task polled long ago that returned IN_PROGRESS with a callback 5s ago. */
+    private TaskModel callbackTask(TaskDef taskDef) {
+        long now = System.currentTimeMillis();
+        TaskModel task = new TaskModel();
+        task.setTaskType(taskDef.getName());
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setScheduledTime(now - 3_600_000);
+        task.setPollCount(5);
+        task.setCallbackAfterSeconds(60);
+        task.setUpdateTime(now - 5_000);
+        return task;
+    }
+
+    private TaskDef pollTimeoutTaskDef() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test");
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setPollTimeoutSeconds(600);
+        return taskDef;
+    }
+
+    @Test
+    public void testPollTimeoutCountsFromTheWorkersLastUpdate() {
+        TaskDef taskDef = pollTimeoutTaskDef();
+        TaskModel task = callbackTask(taskDef);
+
+        deciderService.checkTaskPollTimeout(taskDef, task);
+
+        assertEquals(TaskModel.Status.SCHEDULED, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
+    }
+
+    @Test
+    public void testPollTimeoutFiresWhenTheWorkerStopsUpdating() {
+        TaskDef taskDef = pollTimeoutTaskDef();
+        TaskModel task = callbackTask(taskDef);
+        task.setUpdateTime(System.currentTimeMillis() - 661_000);
+
+        deciderService.checkTaskPollTimeout(taskDef, task);
+
+        assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
+    }
+
+    @Test
+    public void testPollTimeoutOfANeverPolledTaskCountsFromScheduling() {
+        TaskDef taskDef = pollTimeoutTaskDef();
+        TaskModel task = callbackTask(taskDef);
+        task.setPollCount(0);
+
+        deciderService.checkTaskPollTimeout(taskDef, task);
+
+        assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
+    }
+
+    @Test
+    public void testPollTimeoutFromLastUpdateCanBeTurnedOff() {
+        TaskDef taskDef = pollTimeoutTaskDef();
+        TaskModel task = callbackTask(taskDef);
+        ReflectionTestUtils.setField(deciderService, "pollTimeoutFromLastUpdate", false);
+        try {
+            deciderService.checkTaskPollTimeout(taskDef, task);
+        } finally {
+            ReflectionTestUtils.setField(deciderService, "pollTimeoutFromLastUpdate", true);
+        }
+
+        assertEquals(TaskModel.Status.TIMED_OUT, task.getStatus());
     }
 
     @SuppressWarnings("unchecked")

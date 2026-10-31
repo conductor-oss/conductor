@@ -1425,7 +1425,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                 computePostpone(
                                         workflow,
                                         timeout,
-                                        properties.getMaxPostponeDurationSeconds());
+                                        properties.getMaxPostponeDurationSeconds(),
+                                        deciderService::pollWindowStart);
                         if (updatedOffset.getSeconds() != timeout.getSeconds()) {
                             // we have a new value, setUnack uses time in millis
                             LOGGER.debug(

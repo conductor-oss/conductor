@@ -13,6 +13,7 @@
 package org.conductoross.conductor.core.execution;
 
 import java.time.Duration;
+import java.util.function.ToLongFunction;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -89,6 +90,22 @@ public class ExecutorUtils {
             WorkflowModel workflowModel,
             Duration workflowOffsetTimeout,
             Duration maxPostponeDuration) {
+        return computePostpone(
+                workflowModel,
+                workflowOffsetTimeout,
+                maxPostponeDuration,
+                TaskModel::getScheduledTime);
+    }
+
+    /**
+     * @param pollWindowStart start of a SCHEDULED task's poll window, the same clock {@code
+     *     DeciderService.checkTaskPollTimeout} uses
+     */
+    public static Duration computePostpone(
+            WorkflowModel workflowModel,
+            Duration workflowOffsetTimeout,
+            Duration maxPostponeDuration,
+            ToLongFunction<TaskModel> pollWindowStart) {
         long currentTimeMillis = System.currentTimeMillis();
         long workflowOffsetTimeoutSeconds = workflowOffsetTimeout.getSeconds();
         long maxPostponeSeconds = maxPostponeDuration.getSeconds();
@@ -133,10 +150,16 @@ public class ExecutorUtils {
                 if (taskDef != null
                         && taskDef.getPollTimeoutSeconds() != null
                         && taskDef.getPollTimeoutSeconds() != 0) {
-                    long scheduledElapsedSeconds =
-                            Math.max(0, (currentTimeMillis - taskModel.getScheduledTime()) / 1000);
+                    long pollElapsedSeconds =
+                            Math.max(
+                                    0,
+                                    (currentTimeMillis - pollWindowStart.applyAsLong(taskModel))
+                                            / 1000);
                     long remainingPollSeconds =
-                            taskDef.getPollTimeoutSeconds() - scheduledElapsedSeconds + 1;
+                            taskDef.getPollTimeoutSeconds()
+                                    + taskModel.getCallbackAfterSeconds()
+                                    - pollElapsedSeconds
+                                    + 1;
                     candidateSeconds = Math.max(0, remainingPollSeconds);
                 } else {
                     long workflowTimeoutSeconds =

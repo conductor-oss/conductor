@@ -96,6 +96,29 @@ public class ExecutorUtilsTest {
     }
 
     @Test
+    public void computePostponeCountsAPollFromTheGivenWindowStartPlusTheCallback() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setPollTimeoutSeconds(600);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+
+        long now = System.currentTimeMillis();
+        TaskModel scheduled = newTask(TaskType.TASK_TYPE_SIMPLE, TaskModel.Status.SCHEDULED);
+        scheduled.setWorkflowTask(workflowTask);
+        scheduled.setScheduledTime(now - 3_600_000);
+        scheduled.setCallbackAfterSeconds(60);
+
+        WorkflowModel workflow = newWorkflow(Arrays.asList(scheduled), 0);
+
+        Duration result =
+                ExecutorUtils.computePostpone(
+                        workflow, Duration.ofSeconds(30), Duration.ofSeconds(3600), task -> now);
+
+        // the window started now: the next sweep is at the poll deadline, not at once
+        assertEquals(661, result.getSeconds());
+    }
+
+    @Test
     public void computePostponeUsesWorkflowOffsetForScheduledSubWorkflow() {
         TaskModel scheduledSubWorkflow =
                 newTask(TaskType.TASK_TYPE_SUB_WORKFLOW, TaskModel.Status.SCHEDULED);
