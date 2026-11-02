@@ -78,25 +78,28 @@ export const fetchForMCPIntegrations = async ({
       integrationsResult,
       providersResult,
     });
-    return {
-      supportedIntegrations:
-        integrationsResult.status === "fulfilled"
-          ? integrationsResult.value?.filter(
-              (integration: any) =>
-                integration.category === "MCP" &&
-                isServerlessIntegrationEnabled(integration.type),
-            )
-          : [],
-      availableIntegrations:
-        providersResult.status === "fulfilled"
-          ? providersResult.value?.filter(
-              (integration: any) =>
-                integration.category === "MCP" &&
-                integration.enabled &&
-                isServerlessIntegrationEnabled(integration.type),
-            )
-          : [],
-    };
+    // Definitions are authoritative: a saved connection alone must not advertise
+    // a provider that this backend does not support.
+    const supportedIntegrations =
+      integrationsResult.status === "fulfilled"
+        ? (integrationsResult.value || []).filter(
+            (integration: any) =>
+              integration.category === "MCP" &&
+              isServerlessIntegrationEnabled(integration.type),
+          )
+        : [];
+    const availableIntegrations =
+      providersResult.status === "fulfilled"
+        ? (providersResult.value || []).filter(
+            (integration: any) =>
+              integration.category === "MCP" &&
+              integration.enabled &&
+              supportedIntegrations.some(
+                (definition: any) => definition.type === integration.type,
+              ),
+          )
+        : [];
+    return { supportedIntegrations, availableIntegrations };
   } catch (error) {
     logger.error("Fetching integrations", error);
     return Promise.reject({ message: "Error fetching integrations" });

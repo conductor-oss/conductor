@@ -57,94 +57,103 @@ it("excludes cached providers and disables requests when the rollout is off", ()
     expect(options.when).toBe(false);
 });
 
-it("combines only enabled and active allowlisted connections with catalog icons", () => {
-  window.conductor = {
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-    [FEATURES.SERVERLESS_FIREBASE_FUNCTIONS_ENABLED]: true,
-  };
+it("uses all advertised MCP types, but only configured enabled connections", () => {
+  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
   const { result } = renderHook(useMCPIntegrations);
   expect(result.current.integrations.map((item) => item.name)).toEqual([
     "lambda",
+    "azure",
+    "gcp-functions",
+    "firebase",
+    "firestore",
   ]);
   expect(result.current.integrations[0]).toMatchObject({
     iconName: "lambda",
     status: "active",
   });
-  expect(result.current.isLoading).toBe(false);
+  expect(
+    result.current.integrations.some((item) => item.name === "slack"),
+  ).toBe(false);
 });
-
-it("reports loading and handles missing provider responses", () => {
+it("handles absent catalog without admitting orphaned configured providers", () => {
+  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
+  fetchHook.mockImplementation((url) => ({
+    data: url === "/integrations/def" ? undefined : providers,
+    isLoading: false,
+  }));
+  expect(renderHook(useMCPIntegrations).result.current.integrations).toEqual(
+    [],
+  );
+});
+it("rechecks the master against stable cached responses", () => {
+  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
+  const { result, rerender } = renderHook(useMCPIntegrations);
+  expect(result.current.integrations).toHaveLength(5);
+  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = false;
+  rerender();
+  expect(result.current.integrations).toEqual([]);
+});
+it("reports loading with missing responses", () => {
   fetchHook.mockReturnValue({ data: undefined, isLoading: true });
   const { result } = renderHook(useMCPIntegrations);
   expect(result.current.integrations).toEqual([]);
   expect(result.current.isLoading).toBe(true);
 });
-
-it("does not request tools without a name or while the master is disabled", () => {
-  const { result } = renderHook(() => useMCPTools());
-  expect(fetchHook).toHaveBeenLastCalledWith(
-    "",
-    expect.objectContaining({ when: false }),
-  );
-  expect(result.current.isLoading).toBe(false);
-  renderHook(() => useMCPTools("lambda"));
-  expect(fetchHook).toHaveBeenLastCalledWith(
-    "/integrations/lambda/def/apis",
-    expect.objectContaining({ when: false }),
-  );
-  window.conductor = {
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-  };
-  renderHook(() => useMCPTools("lambda"));
-  expect(fetchHook).toHaveBeenLastCalledWith(
-    "/integrations/lambda/def/apis",
-    expect.objectContaining({ when: true }),
-  );
-});
-
-it("suppresses cached tools when the current selection or rollout is unavailable", () => {
+it("suppresses tool fetches and cached tools without a selection or master", () => {
   fetchHook.mockReturnValue({ data: [{ api: "invoke" }], isLoading: false });
-  const disabled = renderHook(() => useMCPTools("lambda"));
-  expect(disabled.result.current.tools).toEqual([]);
-  disabled.unmount();
-  window.conductor = {
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-  };
-  const unavailable = renderHook(() => useMCPTools());
-  expect(unavailable.result.current.tools).toEqual([]);
+  expect(renderHook(() => useMCPTools("lambda")).result.current.tools).toEqual(
+    [],
+  );
+  expect(fetchHook).toHaveBeenLastCalledWith(
+    "/integrations/lambda/def/apis",
+    expect.objectContaining({ when: false }),
+  );
+  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = true;
+  expect(renderHook(() => useMCPTools()).result.current.tools).toEqual([]);
+  expect(renderHook(() => useMCPTools("azure")).result.current.tools).toEqual([
+    { api: "invoke" },
+  ]);
 });
 
-it("re-evaluates every rollout flag against stable cache references on a mounted hook", () => {
-  window.conductor = {
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-  };
-  const { result, rerender } = renderHook(useMCPIntegrations);
-  const names = () => result.current.integrations.map((item) => item.name);
-  expect(names()).toEqual(["lambda"]);
-  window.conductor[FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED] = false;
-  window.conductor[FEATURES.SERVERLESS_AZURE_FUNCTIONS_ENABLED] = true;
-  rerender();
-  expect(names()).toEqual([]);
-  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = false;
-  rerender();
-  expect(names()).toEqual([]);
-  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = true;
-  rerender();
-  expect(names()).toEqual([]);
-  window.conductor[FEATURES.SERVERLESS_AZURE_FUNCTIONS_ENABLED] = false;
-  window.conductor[FEATURES.SERVERLESS_FIREBASE_FUNCTIONS_ENABLED] = true;
-  rerender();
-  expect(names()).toEqual([]);
-  window.conductor[FEATURES.SERVERLESS_FIREBASE_FUNCTIONS_ENABLED] = false;
-  window.conductor[FEATURES.SERVERLESS_GCP_FUNCTIONS_ENABLED] = true;
-  rerender();
-  expect(names()).toEqual([]);
-  window.conductor[FEATURES.SERVERLESS_GCP_FUNCTIONS_ENABLED] = false;
-  window.conductor[FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED] = true;
-  rerender();
-  expect(names()).toEqual(["lambda"]);
+it("accepts every advertised migrated provider without frontend allowlists", () => {
+  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
+  const entries = [
+    "aws-lambda",
+    "aws-s3",
+    "azure-functions",
+    "azure-storage",
+    "commonroom",
+    "discourse",
+    "github",
+    "google-calendar",
+    "google-cloud-functions",
+    "google-cloud-storage",
+    "google-docs",
+    "google-drive",
+    "google-sheets",
+    "google-slides",
+    "hubspot",
+    "jira",
+    "mysql",
+    "notion",
+    "postgres",
+    "redis",
+    "slack",
+    "stripe-v2",
+    "wordpress-com",
+  ].map((type) => ({ type, name: type, category: "MCP", enabled: true }));
+  fetchHook.mockReturnValue({ data: entries, isLoading: false });
+  expect(
+    renderHook(useMCPIntegrations).result.current.integrations.map(
+      (item) => item.type,
+    ),
+  ).toEqual(entries.map((item) => item.type));
+});
+
+it("returns empty tools when an enabled selection has no response yet", () => {
+  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
+  fetchHook.mockReturnValue({ data: undefined, isLoading: true });
+  const { result } = renderHook(() => useMCPTools("azure"));
+  expect(result.current.tools).toEqual([]);
+  expect(result.current.isLoading).toBe(true);
 });

@@ -45,7 +45,7 @@ it("does not fetch Connected Apps when integration access or rollout is disabled
   expect(fetchRequest).not.toHaveBeenCalled();
 });
 
-it("filters both catalog and saved connections, including stale unrelated plugins", async () => {
+it("exposes advertised catalog independently of configured connections and excludes orphaned types", async () => {
   window.conductor = {
     [FEATURES.INTEGRATIONS]: true,
     [FEATURES.CONNECTED_APPS_ENABLED]: true,
@@ -54,22 +54,46 @@ it("filters both catalog and saved connections, including stale unrelated plugin
   };
   const entries = [
     "aws-lambda",
+    "aws-s3",
     "azure-functions",
-    "firebase-functions",
-    "firebase-firestore-v5",
+    "azure-storage",
+    "commonroom",
+    "discourse",
+    "github",
+    "google-calendar",
+    "google-cloud-functions",
+    "google-cloud-storage",
+    "google-docs",
+    "google-drive",
+    "google-sheets",
+    "google-slides",
+    "hubspot",
+    "jira",
+    "mysql",
+    "notion",
+    "postgres",
+    "redis",
+    "slack",
+    "stripe-v2",
+    "wordpress-com",
   ].map((type) => ({ type, category: "MCP", enabled: true }));
   fetchRequest.mockImplementation((url) =>
     Promise.resolve(
       url === "/integrations/def"
         ? entries
-        : [...entries, { ...entries[0], enabled: false }],
+        : [
+            entries[0],
+            entries[1],
+            { type: "unknown", category: "MCP", enabled: true },
+            { ...entries[0], enabled: false },
+          ],
     ),
   );
   const result = await fetchForMCPIntegrations(context);
   expect(
     result.supportedIntegrations.map((item: { type: string }) => item.type),
-  ).toEqual(["aws-lambda"]);
-  expect(result.availableIntegrations).toEqual(result.supportedIntegrations);
+  ).toEqual(entries.map((entry) => entry.type));
+  expect(result.availableIntegrations).toEqual(entries.slice(0, 2));
 });
 
 it("retains available catalog data when the saved connection request fails", async () => {
@@ -102,4 +126,32 @@ it("blocks stale drill-down requests for disabled providers", async () => {
     expect.anything(),
     expect.anything(),
   );
+});
+
+it("does not admit saved providers if the authoritative catalog request fails", async () => {
+  window.conductor = {
+    [FEATURES.INTEGRATIONS]: true,
+    [FEATURES.CONNECTED_APPS_ENABLED]: true,
+  };
+  fetchRequest.mockImplementation((url) =>
+    url === "/integrations/def"
+      ? Promise.reject(new Error("offline"))
+      : Promise.resolve([{ type: "slack", category: "MCP", enabled: true }]),
+  );
+  expect(await fetchForMCPIntegrations(context)).toEqual({
+    supportedIntegrations: [],
+    availableIntegrations: [],
+  });
+});
+
+it("handles empty fulfilled catalog and saved-provider responses", async () => {
+  window.conductor = {
+    [FEATURES.INTEGRATIONS]: true,
+    [FEATURES.CONNECTED_APPS_ENABLED]: true,
+  };
+  fetchRequest.mockResolvedValue(undefined);
+  expect(await fetchForMCPIntegrations(context)).toEqual({
+    supportedIntegrations: [],
+    availableIntegrations: [],
+  });
 });

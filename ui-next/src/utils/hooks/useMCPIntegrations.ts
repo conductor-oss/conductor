@@ -36,7 +36,9 @@ export const useMCPIntegrations = () => {
       (provider) =>
         provider.category === "MCP" &&
         provider.enabled &&
-        isServerlessIntegrationEnabled(provider.type),
+        supportedIntegrations.some(
+          (definition) => definition.type === provider.type,
+        ),
     )
     .map((integration) => ({
       ...integration,
