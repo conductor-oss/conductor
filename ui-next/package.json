@@ -3,13 +3,17 @@
   "version": "0.0.0",
   "description": "Open Source Conductor UI - Core components, pages, and plugin infrastructure",
   "type": "module",
-  "main": "./dist/conductor-ui.js",
-  "module": "./dist/conductor-ui.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/conductor-ui.js",
+      "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./*": {
+      "import": "./dist/*.js",
+      "types": "./dist/*.d.ts"
     },
     "./styles.css": "./dist/style.css",
     "./global.css": "./dist/global.css"
@@ -20,7 +24,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:lib": "vite build --mode lib && cp src/index.css dist/global.css",
+    "build:lib": "node scripts/clear-lib-watch.mjs && vite build --mode lib && tsc --emitDeclarationOnly --outDir dist --declaration --rootDir src --noEmit false && cp src/index.css dist/global.css",
+    "build:lib:watch": "node scripts/build-lib-watch.mjs",
     "build:all": "vite build && vite build --mode lib",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -31,7 +36,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:integration": "playwright test --config playwright.integration.config.ts",
+    "test:e2e:integration": "bash scripts/run-integration-e2e.sh",
+    "test:e2e:integration:coverage": "E2E_COVERAGE=true bash scripts/run-integration-e2e.sh; PW_STATUS=$?; node scripts/playwright-coverage-report.mjs; exit $PW_STATUS",
+    "test:e2e:integration:update-snapshots": "PLAYWRIGHT_FLAGS=--update-snapshots bash scripts/run-integration-e2e.sh",
     "test:e2e:integration:ui": "playwright test --config playwright.integration.config.ts --ui",
     "test:e2e:integration:headed": "playwright test --config playwright.integration.config.ts --headed",
     "test:e2e:snapshots": "docker compose -f docker-compose.snapshots.yml run --rm playwright",
@@ -65,7 +72,7 @@
     "@mui/material": "^7.3.1",
     "@mui/system": "^7.3.1",
     "@mui/x-date-pickers": "^6.16",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.56.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.72.1",
@@ -91,7 +98,6 @@
     "ajv-formats": "^3.0.1",
     "autosuggest-highlight": "^3.3.4",
     "classnames": "^2.3.1",
-    "color": "^4.2.3",
     "cron-validate": "^1.4.3",
     "cronstrue": "^2.32.0",
     "date-fns": "^2.29.3",
@@ -106,7 +112,7 @@
     "monaco-languages-jq": "^1.0.0",
     "prismjs": "^1.27.0",
     "prop-types": "^15.7.2",
-    "qs": "^6.15.1",
+    "qs": "^6.16.0",
     "react-container-query": "^0.12.0",
     "react-data-table-component": "^7.5.3",
     "react-datepicker": "^6.1.0",
@@ -123,7 +129,7 @@
     "remark-gfm": "^4.0.0",
     "ts-key-enum": "^2.0.12",
     "url-parse": "^1.5.9",
-    "uuid": "^8.3.2",
+    "uuid": "^11.1.1",
     "xstate": "^4.38.3"
   },
   "devDependencies": {
@@ -168,7 +174,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.4.0",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.56.0",
     "prettier": "^3.8.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -176,14 +182,18 @@
     "react-router": "^7.18.1",
     "react-router-dom": "^7.18.1",
     "react-router-use-location-state": "^3.1.2",
+    "istanbul-lib-coverage": "^3.2.2",
+    "istanbul-lib-report": "^3.0.1",
+    "istanbul-reports": "^3.1.7",
     "sass": "^1.99.0",
     "styled-components": "^5.3.8",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0",
-    "vite": "^7.1.11",
+    "v8-to-istanbul": "^9.3.0",
+    "vite": "^7.3.6",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.11",
     "yup": "^1.7.0"
   },
   "resolutions": {
@@ -193,8 +203,49 @@
   },
   "pnpm": {
     "overrides": {
-      "vis-timeline": "7.3.6",
-      "mini-css-extract-plugin": "2.4.5"
+      "vis-timeline": "7.7.4",
+      "mini-css-extract-plugin": "2.4.5",
+      "vis-data": "7.1.9",
+      "vis-util": ">=5.0.1 <6",
+      "undici": ">=8.10.2",
+      "form-data": ">=4.0.6",
+      "underscore": ">=1.13.8",
+      "jsonpath-plus": ">=10.3.0",
+      "axios": ">=1.20.0",
+      "brace-expansion@1": "1.1.21",
+      "brace-expansion@5": "5.0.12",
+      "react-router": "7.18.2",
+      "js-yaml": ">=4.3.2 <5",
+      "nanoid": ">=3.3.17",
+      "immutable@<4": "4.3.9",
+      "immutable@>=5": ">=5.1.8",
+      "fast-uri": ">=4.1.5",
+      "next": ">=16.2.11",
+      "sharp": ">=0.35.0",
+      "postcss": ">=8.5.18",
+      "browserslist": ">=4.28.7",
+      "dompurify": ">=3.4.13 <4",
+      "prismjs": ">=1.30.0",
+      "moment": ">=2.31.0 <3",
+      "qs": ">=6.16.0",
+      "uuid": ">=11.1.1 <12",
+      "esbuild": ">=0.28.1 <0.29",
+      "vitest": ">=4.1.11 <5",
+      "source-map-js": ">=1.2.2 <2"
+    },
+    "packageExtensions": {
+      "use-location-state": {
+        "peerDependenciesMeta": {
+          "next": {
+            "optional": true
+          }
+        }
+      }
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "next"
+      ]
     }
   },
   "packageManager": "pnpm@10.34.1+sha512.b58fbde6dca66a929538021581f648b4570b6ca19b18e7cbd7f2c07a7b24454155388dacdf08f2af3678e88a6d1fe04f9d609df24bf51735a060ea041b374ab7"

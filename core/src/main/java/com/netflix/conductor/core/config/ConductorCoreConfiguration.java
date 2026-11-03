@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.config;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.events.EventQueueProvider;
@@ -153,10 +155,12 @@ public class ConductorCoreConfiguration {
 
     @Bean
     public RetryTemplate onTransientErrorRetryTemplate() {
-        return RetryTemplate.builder()
-                .retryOn(TransientException.class)
-                .maxAttempts(3)
-                .noBackoff()
-                .build();
+        // Three attempts in total, so two retries, with no delay between them.
+        return new RetryTemplate(
+                RetryPolicy.builder()
+                        .includes(TransientException.class)
+                        .maxRetries(2)
+                        .delay(Duration.ZERO)
+                        .build());
     }
 }

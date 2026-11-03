@@ -6,8 +6,8 @@ import {
 import { selectNodes } from "components/features/flow/state/selectors";
 import { MessageContext } from "components/providers/messageContext";
 import _isEmpty from "lodash/isEmpty";
-import { useContext, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useContext, useEffect, useRef } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { NodeData } from "reaflow";
 import { ExecutionTask, TaskStatus } from "types";
@@ -17,7 +17,7 @@ import {
 } from "utils/constants/route";
 import { featureFlags, FEATURES } from "utils/flags";
 import { useAuthHeaders, useCurrentUserInfo } from "utils/query";
-import { taskWithLatestIteration } from "../helpers";
+import { isAgentWorkflowExecution, taskWithLatestIteration } from "../helpers";
 import {
   RightPanelContextEventTypes,
   SetSelectedTaskEvent,
@@ -35,6 +35,7 @@ export const useExecutionMachine = () => {
   const authHeaders = useAuthHeaders();
   const { setMessage } = useContext(MessageContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: currentUserInfo } = useCurrentUserInfo();
 
   const [tabIndex, setTabIndex] = useQueryState("tab", "");
@@ -112,9 +113,10 @@ export const useExecutionMachine = () => {
       send({
         type: ExecutionActionTypes.UPDATE_EXECUTION,
         executionId,
+        agentExecution: location.pathname.startsWith("/agentExecutions/"),
       });
     }
-  }, [executionId, send]);
+  }, [executionId, location.pathname, send]);
 
   const changeExecutionTab = (tab: ExecutionTabs) => {
     setTabIndex(tab);
@@ -128,14 +130,27 @@ export const useExecutionMachine = () => {
 
   const isNotFound = useSelector(service, (state) => state.matches("notFound"));
 
+  // The default tab is never written to the URL, so going back to an entry
+  // without "tab" (e.g. after a link pushed one) must restore the default tab
+  // the machine picks on load rather than leave the current one open.
+  const previousTabIndex = useRef(tabIndex);
   useEffect(() => {
-    if (!_isEmpty(tabIndex) && openedTab !== tabIndex && isReady) {
+    const tabWasCleared =
+      _isEmpty(tabIndex) && !_isEmpty(previousTabIndex.current);
+    previousTabIndex.current = tabIndex;
+    if (!isReady) return;
+    const targetTab = tabWasCleared
+      ? isAgentWorkflowExecution(execution)
+        ? ExecutionTabs.AGENT_EXECUTION_TAB
+        : ExecutionTabs.DIAGRAM_TAB
+      : tabIndex;
+    if (!_isEmpty(targetTab) && openedTab !== targetTab) {
       send({
         type: ExecutionActionTypes.CHANGE_EXECUTION_TAB,
-        tab: tabIndex as ExecutionTabs,
+        tab: targetTab as ExecutionTabs,
       });
     }
-  }, [tabIndex, openedTab, send, isReady]);
+  }, [tabIndex, openedTab, send, isReady, execution]);
 
   const refetch = () => send({ type: ExecutionActionTypes.REFETCH });
   const closeRightPanel = () => {

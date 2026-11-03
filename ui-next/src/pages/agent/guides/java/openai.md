@@ -1,7 +1,7 @@
 ## 1. Add dependencies
 
 ```groovy
-implementation 'org.conductoross:conductor-client-ai:6.0.0.rc4'
+implementation 'org.conductoross:conductor-ai'
 compileOnly 'dev.langchain4j:langchain4j:1.0.0'
 ```
 
@@ -31,4 +31,4 @@ try (AgentRuntime runtime = new AgentRuntime()) {
 }
 ```
 
-[OpenAI bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/openai.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples)
+[OpenAI bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/openai.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples/src/main/java/org/conductoross/conductor/ai/examples/openai)

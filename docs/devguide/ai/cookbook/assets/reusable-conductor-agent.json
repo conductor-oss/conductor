@@ -1,0 +1,23 @@
+{
+  "name": "invoke_reusable_conductor_agent",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Derived from ai/examples/31-conductor-agent-basic.json. An AGENT task invokes the deployed guarded-incident-planner agent to completion and surfaces its text, output, and state.",
+  "tasks": [
+    {
+      "name": "run_agent",
+      "taskReferenceName": "run_agent_ref",
+      "type": "AGENT",
+      "inputParameters": {
+        "agentType": "conductor",
+        "name": "guarded-incident-planner",
+        "prompt": "${workflow.input.prompt}"
+      }
+    }
+  ],
+  "outputParameters": {
+    "text": "${run_agent_ref.output.text}",
+    "output": "${run_agent_ref.output.output}",
+    "state": "${run_agent_ref.output.state}"
+  }
+}

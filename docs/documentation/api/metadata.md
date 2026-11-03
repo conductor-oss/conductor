@@ -4,6 +4,8 @@ description: "Conductor Metadata API — register, update, validate, and delete 
 
 # Metadata API
 
+Metadata endpoints manage definition objects. See [Schemas](../configuration/schemas.md) for the canonical `WorkflowDef.json` and `TaskDef.json` contracts.
+
 The Metadata API manages workflow and task definitions — the blueprints that Conductor uses to orchestrate executions. All endpoints use the base path `/api/metadata`.
 
 ## Workflow Definitions
@@ -17,6 +19,8 @@ The Metadata API manages workflow and task definitions — the blueprints that C
 | `/metadata/workflow/{name}/{version}` | `DELETE` | Delete a workflow definition by name and version |
 | `/metadata/workflow/validate` | `POST` | Validate a workflow definition without saving |
 | `/metadata/workflow/names-and-versions` | `GET` | Get all workflow names and versions (no definition bodies) |
+| `/metadata/workflow/names` | `GET` | Get distinct workflow names only |
+| `/metadata/workflow/{name}/versions` | `GET` | Get lightweight version summaries for one workflow |
 | `/metadata/workflow/latest-versions` | `GET` | Get only the latest version of each workflow definition |
 
 ### Get All Workflow Definitions
@@ -202,6 +206,15 @@ curl http://localhost:8080/api/metadata/workflow/latest-versions
 ```
 
 **Response** `200 OK` — returns a list of workflow definitions (one per workflow name, latest version only).
+
+### Get Names or Versions Without Definition Bodies
+
+```http
+GET /api/metadata/workflow/names
+GET /api/metadata/workflow/{name}/versions
+```
+
+The first route returns a JSON array of distinct workflow names. The second returns lightweight `WorkflowDefSummary` values for the named workflow. Use these routes when a caller needs discovery data without downloading full definitions.
 
 ---
 

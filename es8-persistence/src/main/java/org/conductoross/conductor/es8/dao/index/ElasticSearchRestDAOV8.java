@@ -30,7 +30,8 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -62,9 +63,9 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.*;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Trace
 public class ElasticSearchRestDAOV8 implements IndexDAO {
@@ -114,6 +115,23 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     private final Es8SearchSupport searchSupport;
     private final Es8BulkIngestionSupport bulkIngestionSupport;
 
+    /**
+     * The Elasticsearch java client serialises its own request and response types with Jackson 2,
+     * so it cannot be handed Conductor's Jackson 3 mapper. This transport mapper mirrors the two
+     * settings that matter for talking to a cluster: tolerate response fields the DTOs do not
+     * declare, and omit nulls from request bodies.
+     */
+    private static com.fasterxml.jackson.databind.ObjectMapper transportObjectMapper() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper =
+                new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.configure(
+                com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                false);
+        mapper.setSerializationInclusion(
+                com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL);
+        return mapper;
+    }
+
     public ElasticSearchRestDAOV8(
             RestClientBuilder restClientBuilder,
             RetryTemplate retryTemplate,
@@ -124,7 +142,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         this.elasticSearchAdminClient = restClientBuilder.build();
         this.transport =
                 new RestClientTransport(
-                        this.elasticSearchAdminClient, new JacksonJsonpMapper(objectMapper));
+                        this.elasticSearchAdminClient,
+                        new JacksonJsonpMapper(transportObjectMapper()));
         this.elasticSearchClient = new ElasticsearchClient(transport);
         this.elasticSearchAsyncClient = new ElasticsearchAsyncClient(transport);
         this.properties = properties;
@@ -301,15 +320,17 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private <T> T executeWithRetry(Callable<T> action) throws IOException {
         try {
-            return retryTemplate.execute(context -> action.call());
-        } catch (Exception e) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
+            return retryTemplate.execute(action::call);
+        } catch (RetryException e) {
+            // Retries are exhausted; the caller cares about what actually failed, not the wrapper.
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException ioException) {
+                throw ioException;
             }
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
             }
-            throw new IOException("Elasticsearch operation failed", e);
+            throw new IOException("Elasticsearch operation failed", cause);
         }
     }
 
@@ -318,19 +339,14 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             String workflowId = workflow.getWorkflowId();
-            Refresh refresh = properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
-            executeWithRetry(
-                    () ->
-                            elasticSearchClient.index(
-                                    i -> {
-                                        i.index(workflowIndexName)
-                                                .id(workflowId)
-                                                .document(workflow);
-                                        if (refresh != null) {
-                                            i.refresh(refresh);
-                                        }
-                                        return i;
-                                    }));
+            Refresh refresh = writeRefreshPolicy();
+            indexDocumentWithIlmFallback(
+                    workflowIndexName,
+                    WORKFLOW_DOC_TYPE,
+                    workflowId,
+                    workflow,
+                    refresh,
+                    workflow.getUpdateTime());
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing workflow: {}", endTime - startTime, workflowId);
@@ -340,6 +356,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         } catch (Exception e) {
             Monitors.error(className, "indexWorkflow");
             logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
+            throw new TransientException(
+                    String.format("Failed to index workflow %s", workflow.getWorkflowId()), e);
         }
     }
 
@@ -353,9 +371,14 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         try {
             long startTime = Instant.now().toEpochMilli();
             String taskId = task.getTaskId();
-
-            Refresh refreshPolicy = properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
-            indexObject(taskIndexName, TASK_DOC_TYPE, taskId, task, refreshPolicy);
+            Refresh refreshPolicy = writeRefreshPolicy();
+            indexDocumentWithIlmFallback(
+                    taskIndexName,
+                    TASK_DOC_TYPE,
+                    taskId,
+                    task,
+                    refreshPolicy,
+                    task.getUpdateTime());
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for  indexing task:{} in workflow: {}",
@@ -367,6 +390,8 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                     "indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to index task: {}", task.getTaskId(), e);
+            throw new TransientException(
+                    String.format("Failed to index task %s", task.getTaskId()), e);
         }
     }
 
@@ -389,7 +414,17 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         }
 
         try {
-            executeWithRetry(() -> elasticSearchClient.bulk(b -> b.operations(operations)));
+            Refresh refreshPolicy = writeRefreshPolicy();
+            executeWithRetry(
+                    () ->
+                            elasticSearchClient.bulk(
+                                    b -> {
+                                        b.operations(operations);
+                                        if (refreshPolicy != null) {
+                                            b.refresh(refreshPolicy);
+                                        }
+                                        return b;
+                                    }));
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime(
@@ -582,7 +617,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
                             + "."
                             + eventExecution.getId();
 
-            indexObject(eventIndexName, EVENT_DOC_TYPE, id, eventExecution, null);
+            indexObject(eventIndexName, EVENT_DOC_TYPE, id, eventExecution, writeRefreshPolicy());
             long endTime = Instant.now().toEpochMilli();
             logger.debug(
                     "Time taken {} for indexing event execution: {}",
@@ -901,6 +936,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private enum UpdateOutcome {
         UPDATED,
+        SKIPPED_STALE,
         NOT_FOUND
     }
 
@@ -917,6 +953,14 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
      */
     private UpdateOutcome updateByIdWithIlmFallback(
             String indexAlias, String id, Map<String, Object> source) throws IOException {
+        if (shouldSkipStaleWrite(indexAlias, id, source.get("updateTime"))) {
+            logger.warn(
+                    "Skipping stale partial update for document {} in alias {} because incoming updateTime is older than the indexed document",
+                    id,
+                    indexAlias);
+            return UpdateOutcome.SKIPPED_STALE;
+        }
+
         UpdateOutcome aliasOutcome = updateById(indexAlias, id, source);
         if (aliasOutcome != UpdateOutcome.NOT_FOUND) {
             return aliasOutcome;
@@ -933,11 +977,18 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
     private UpdateOutcome updateById(String indexOrAlias, String id, Map<String, Object> source)
             throws IOException {
         try {
+            Refresh refreshPolicy = writeRefreshPolicy();
             UpdateResponse<Map> response =
                     executeWithRetry(
                             () ->
                                     elasticSearchClient.update(
-                                            u -> u.index(indexOrAlias).id(id).doc(source),
+                                            u -> {
+                                                u.index(indexOrAlias).id(id).doc(source);
+                                                if (refreshPolicy != null) {
+                                                    u.refresh(refreshPolicy);
+                                                }
+                                                return u;
+                                            },
                                             Map.class));
             return response.result() == Result.NotFound
                     ? UpdateOutcome.NOT_FOUND
@@ -1001,9 +1052,18 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
     private DeleteOutcome deleteById(String indexName, String id) throws IOException {
         try {
+            Refresh refreshPolicy = writeRefreshPolicy();
             DeleteResponse response =
                     executeWithRetry(
-                            () -> elasticSearchClient.delete(d -> d.index(indexName).id(id)));
+                            () ->
+                                    elasticSearchClient.delete(
+                                            d -> {
+                                                d.index(indexName).id(id);
+                                                if (refreshPolicy != null) {
+                                                    d.refresh(refreshPolicy);
+                                                }
+                                                return d;
+                                            }));
             return response.result() == Result.Deleted
                     ? DeleteOutcome.DELETED
                     : DeleteOutcome.NOT_FOUND;
@@ -1035,6 +1095,74 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
         return response.found() ? response.source() : null;
     }
 
+    private <T> void indexDocumentWithIlmFallback(
+            String indexAlias,
+            String docType,
+            String id,
+            T doc,
+            Refresh refreshPolicy,
+            Object incomingUpdateTime)
+            throws IOException {
+        if (shouldSkipStaleWrite(indexAlias, id, incomingUpdateTime)) {
+            logger.warn(
+                    "Skipping stale {} index write for document {} in alias {} because incoming updateTime is older than the indexed document",
+                    docType,
+                    id,
+                    indexAlias);
+            return;
+        }
+
+        Optional<String> resolvedIndex = resolveSingleIndexForId(indexAlias, id);
+        String targetIndex = resolvedIndex.orElseGet(() -> indexAlias);
+        if (resolvedIndex.isEmpty()) {
+            targetIndex = resolveWriteIndexForAlias(indexAlias).orElse(indexAlias);
+        }
+        indexObject(targetIndex, docType, id, doc, refreshPolicy);
+    }
+
+    private boolean shouldSkipStaleWrite(String indexAlias, String id, Object incomingUpdateTime)
+            throws IOException {
+        Optional<Long> incomingUpdateTimeMs = toEpochMillis(incomingUpdateTime);
+        if (incomingUpdateTimeMs.isEmpty()) {
+            return false;
+        }
+
+        Map existingSource = getDocumentSourceByIdWithIlmFallback(indexAlias, id);
+        if (existingSource == null) {
+            return false;
+        }
+
+        Optional<Long> indexedUpdateTimeMs = toEpochMillis(existingSource.get("updateTime"));
+        return indexedUpdateTimeMs.isPresent()
+                && incomingUpdateTimeMs.get() < indexedUpdateTimeMs.get();
+    }
+
+    private Optional<Long> toEpochMillis(Object value) {
+        if (value == null) {
+            return Optional.empty();
+        }
+        if (value instanceof Number number) {
+            return Optional.of(number.longValue());
+        }
+
+        String text = value.toString();
+        if (StringUtils.isBlank(text)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(Instant.parse(text).toEpochMilli());
+        } catch (Exception ignored) {
+            // fall through
+        }
+
+        try {
+            return Optional.of(Long.parseLong(text));
+        } catch (NumberFormatException ignored) {
+            return Optional.empty();
+        }
+    }
+
     private Optional<String> resolveWriteIndexForAlias(String alias) throws IOException {
         Request request = new Request(HttpMethod.GET, "/_alias/" + alias);
         try {
@@ -1045,7 +1173,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             }
 
             List<String> writeIndices = new ArrayList<>();
-            Iterator<String> indexNames = root.fieldNames();
+            Iterator<String> indexNames = root.propertyNames().iterator();
             while (indexNames.hasNext()) {
                 String indexName = indexNames.next();
                 JsonNode indexNode = root.get(indexName);
@@ -1068,7 +1196,7 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
 
             if (writeIndices.isEmpty()) {
                 List<String> allIndices = new ArrayList<>();
-                root.fieldNames().forEachRemaining(allIndices::add);
+                allIndices.addAll(root.propertyNames());
                 if (allIndices.size() == 1) {
                     return Optional.of(allIndices.getFirst());
                 }
@@ -1209,5 +1337,12 @@ public class ElasticSearchRestDAOV8 implements IndexDAO {
             final Object doc,
             final Refresh refreshPolicy) {
         bulkIngestionSupport.indexObject(index, docType, docId, doc, refreshPolicy);
+    }
+
+    private Refresh writeRefreshPolicy() {
+        if (properties.isRefreshOnWrite()) {
+            return Refresh.True;
+        }
+        return properties.isWaitForIndexRefresh() ? Refresh.WaitFor : null;
     }
 }

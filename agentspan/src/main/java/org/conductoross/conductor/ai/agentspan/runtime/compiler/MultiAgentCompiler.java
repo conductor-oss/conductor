@@ -35,7 +35,7 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler.ref;
 import static org.conductoross.conductor.ai.agentspan.runtime.compiler.AgentCompiler.toRef;
@@ -311,7 +311,8 @@ public class MultiAgentCompiler {
         // 2a. Normalize the raw router output to a canonical agent name or DONE — the SWITCH,
         // the conversation annotation, and the loop condition all read the normalized value.
         String normRef = toRef(config.getName()) + "_route_norm";
-        WorkflowTask routeNorm = buildRouteNormalizer(normRef, routerRef, agentNames);
+        WorkflowTask routeNorm =
+                buildRouteNormalizer(normRef, ref(routerRef + ".output.result"), agentNames);
 
         // 2b. Record routing decision in conversation so the router sees its own history
         String routeAnnotateRef = toRef(config.getName()) + "_route_annotate";
@@ -824,7 +825,6 @@ public class MultiAgentCompiler {
     // ── Router strategy ─────────────────────────────────────────────
 
     private WorkflowDef compileRouter(AgentConfig config) {
-        ParsedModel parsed = ModelParser.parse(config.getModel());
         WorkflowDef wf = agentCompiler.createWorkflow(config);
         wf.setDescription("Router agent: " + config.getName());
         AgentCompiler.ResolvedInstructions parentInstructions =
@@ -874,11 +874,16 @@ public class MultiAgentCompiler {
         routerInitParams.put("_agent_state", "${" + routerCtxResolveRef + ".output.result}");
         initVar.setInputParameters(routerInitParams);
 
-        // 2. Build router task (supports WorkerRef, AgentConfig, or fallback)
+        // 2. Build router task (supports a decision selector, WorkerRef, AgentConfig, or fallback)
         Object router = config.getRouter();
 
         // Deserialize router from Map to typed object if needed
-        if (router instanceof Map<?, ?> routerMap) {
+        Map<?, ?> decisionRouterConfig =
+                router instanceof Map<?, ?> routerMap && isDecisionRouter(routerMap)
+                        ? routerMap
+                        : null;
+        boolean decisionRouter = decisionRouterConfig != null;
+        if (router instanceof Map<?, ?> routerMap && !decisionRouter) {
             if (routerMap.containsKey("taskName")) {
                 ObjectMapper mapper = new ObjectMapper();
                 router = mapper.convertValue(routerMap, WorkerRef.class);
@@ -889,7 +894,9 @@ public class MultiAgentCompiler {
         }
 
         WorkflowTask routerTask;
-        if (router instanceof WorkerRef workerRef) {
+        if (decisionRouter) {
+            routerTask = buildDecisionRouterTask(routerRef, decisionRouterConfig, agentNames);
+        } else if (router instanceof WorkerRef workerRef) {
             // Function-based router -> SIMPLE task reading conversation
             routerTask = new WorkflowTask();
             routerTask.setName(workerRef.getTaskName());
@@ -912,7 +919,7 @@ public class MultiAgentCompiler {
                 preTasks.addAll(routerInstructions.getPreTasks());
                 routerInstr = routerInstructions.getText();
             } else {
-                routerParsed = parsed;
+                routerParsed = ModelParser.parse(config.getModel());
                 routerInstr = parentInstructions.getText();
             }
             String systemPrompt =
@@ -923,7 +930,13 @@ public class MultiAgentCompiler {
         // 2a. Normalize the raw router output (LLM or user worker) to a canonical agent name
         // or DONE — the SWITCH, the annotation, and the loop condition read the normalized value.
         String normRef = toRef(config.getName()) + "_route_norm";
-        WorkflowTask routeNorm = buildRouteNormalizer(normRef, routerRef, agentNames);
+        WorkflowTask routeNorm =
+                buildRouteNormalizer(
+                        normRef,
+                        decisionRouter
+                                ? ref(routerRef + ".output.selectedCase")
+                                : ref(routerRef + ".output.result"),
+                        agentNames);
 
         // 2b. Record routing decision in conversation
         String routeAnnotateRef = toRef(config.getName()) + "_route_annotate";
@@ -996,28 +1009,8 @@ public class MultiAgentCompiler {
                         List.of(routerTask, routeNorm, routeAnnotate, routeAnnotateSet, switchTask),
                         loopInputs);
 
-        // 5. Final answer LLM
-        WorkflowTask finalLlm = new WorkflowTask();
-        finalLlm.setName("LLM_CHAT_COMPLETE");
-        finalLlm.setTaskReferenceName(toRef(config.getName()) + "_final");
-        finalLlm.setType("LLM_CHAT_COMPLETE");
-        Map<String, Object> finalInputs = new LinkedHashMap<>();
-        finalInputs.put("llmProvider", parsed.getProvider());
-        finalInputs.put("model", parsed.getModel());
-        finalInputs.put("maxTokens", config.getMaxTokens() != null ? config.getMaxTokens() : 16384);
-        String instructions = parentInstructions.getText();
-        String finalSystemPrompt =
-                (instructions.isEmpty() ? "" : instructions + "\n\n")
-                        + "Based on the work done by the agents above, provide your final response to the user. "
-                        + "IMPORTANT: Include ALL details from every agent's response — do NOT summarize or omit "
-                        + "code examples, technical specifications, or specific recommendations. "
-                        + "Organize the information coherently but preserve completeness.";
-        finalInputs.put(
-                "messages",
-                List.of(
-                        Map.of("role", "system", "message", finalSystemPrompt),
-                        Map.of("role", "user", "message", "${workflow.variables.conversation}")));
-        finalLlm.setInputParameters(finalInputs);
+        WorkflowTask finalLlm =
+                config.isSynthesize() ? buildRouterSynthesisTask(config, parentInstructions) : null;
 
         preTasks.add(routerCtxResolve);
         preTasks.add(initVar);
@@ -1031,7 +1024,9 @@ public class MultiAgentCompiler {
                         "result",
                         config.isSynthesize()
                                 ? ref(toRef(config.getName()) + "_final.output.result")
-                                : "${workflow.variables.conversation}",
+                                : maxTurns == 1
+                                        ? "${workflow.variables.selectedResult}"
+                                        : "${workflow.variables.conversation}",
                         "context",
                         "${workflow.variables._agent_state}"));
         agentCompiler.applyTimeout(wf, config);
@@ -1685,6 +1680,14 @@ public class MultiAgentCompiler {
                         "if ( $.%s['iteration'] < %d && ($.%s['finishReason'] == 'LENGTH' || $.%s['finishReason'] == 'MAX_TOKENS' || %s) ) { true; } else { false; }",
                         loopRef, maxTurns, llmRef, llmRef, continueAfterToolCalls);
 
+        // Context injection: without this, a resumed turn only ever sees the original prompt with
+        // no record of what happened on prior turns, so the LLM has no way to know it already
+        // made a tool call and just repeats it until max_turns instead of reading the result and
+        // answering. Shares AgentCompiler's ctx_inject wiring (and its configured size limits).
+        String ctxInjectRef = agent.getName() + "_ctx_inject";
+        WorkflowTask ctxInject = agentCompiler.buildContextInjectionTask(ctxInjectRef);
+        agentCompiler.injectContextIntoUserMessage(llmTask, ctxInjectRef);
+
         Map<String, Object> loopInputs = new LinkedHashMap<>();
         loopInputs.put(loopRef, "${" + loopRef + "}");
         loopInputs.put(llmRef, "${" + llmRef + "}");
@@ -1693,7 +1696,7 @@ public class MultiAgentCompiler {
                 agentCompiler.buildDoWhile(
                         loopRef,
                         termCondition,
-                        List.of(llmTask, checkTransferTask, toolRouter),
+                        List.of(ctxInject, llmTask, checkTransferTask, toolRouter),
                         loopInputs);
 
         // Initialize _agent_state for ToolContext.state from the caller-provided context
@@ -2158,20 +2161,37 @@ public class MultiAgentCompiler {
         return caseTasks;
     }
 
+    /**
+     * True when one of the parent's {@code on_tool_result} handoffs watches a tool owned by {@code
+     * sub}. Only then should the sub-agent's loop end right after its tool results — otherwise
+     * every sub-agent in the swarm would lose its follow-up turn just because some other agent's
+     * tool happens to be a handoff trigger, leaving that other agent's tool result never summarized
+     * in words (it calls the tool, then the loop ends before the LLM ever sees the tool's output).
+     */
+    private static boolean parentHandsOffOnToolOf(AgentConfig parent, AgentConfig sub) {
+        if (parent.getHandoffs() == null || sub.getTools() == null) {
+            return false;
+        }
+        Set<String> subToolNames =
+                sub.getTools().stream()
+                        .map(ToolConfig::getName)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        return parent.getHandoffs().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(
+                        handoff ->
+                                "on_tool_result".equals(handoff.getType())
+                                        && subToolNames.contains(handoff.getToolName()));
+    }
+
     private List<WorkflowTask> buildSwarmCaseTasks(
             AgentConfig parent, AgentConfig sub, int idx, List<ToolConfig> transferTools) {
         List<WorkflowTask> caseTasks = new ArrayList<>();
         String subRef = parent.getName() + "_agent_" + idx + "_" + sub.getName();
 
-        // Compile as SUB_WORKFLOW with inline transfer-aware workflow
-        boolean returnAfterToolResults =
-                parent.getHandoffs() != null
-                        && parent.getHandoffs().stream()
-                                .anyMatch(
-                                        handoff ->
-                                                handoff != null
-                                                        && "on_tool_result"
-                                                                .equals(handoff.getType()));
+        // Compile as SUB_WORKFLOW with inline transfer-aware workflow.
+        boolean returnAfterToolResults = parentHandsOffOnToolOf(parent, sub);
         WorkflowDef agentWf = compileSwarmAgentWorkflow(sub, transferTools, returnAfterToolResults);
         WorkflowTask task = new WorkflowTask();
         task.setType("SUB_WORKFLOW");
@@ -2316,16 +2336,100 @@ public class MultiAgentCompiler {
      * return contract the loop condition depends on.
      */
     private WorkflowTask buildRouteNormalizer(
-            String normRef, String routerRef, List<String> agentNames) {
+            String normRef, String rawRouterOutput, List<String> agentNames) {
         WorkflowTask norm = new WorkflowTask();
         norm.setType("INLINE");
         norm.setTaskReferenceName(normRef);
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("evaluatorType", "graaljs");
-        inputs.put("raw", ref(routerRef + ".output.result"));
+        inputs.put("raw", rawRouterOutput);
         inputs.put("expression", JavaScriptBuilder.normalizeRouterDecisionScript(agentNames));
         norm.setInputParameters(inputs);
         return norm;
+    }
+
+    private boolean isDecisionRouter(Map<?, ?> router) {
+        return "decision".equals(router.get("kind"));
+    }
+
+    private WorkflowTask buildDecisionRouterTask(
+            String routerRef, Map<?, ?> router, List<String> agentNames) {
+        Object model = router.get("model");
+        Object questions = router.get("questions");
+        if (!(model instanceof String modelName)
+                || modelName.isBlank()
+                || !(questions instanceof Map<?, ?>)) {
+            throw new IllegalArgumentException("Decision router requires model and questions");
+        }
+        WorkflowTask task = new WorkflowTask();
+        task.setType("SWITCH");
+        task.setTaskReferenceName(routerRef);
+        task.setEvaluatorType("decision");
+        task.setExpression(decisionRouterQuestion((Map<?, ?>) questions, agentNames));
+        Map<String, Object> inputs = new LinkedHashMap<>();
+        inputs.put("model", modelName);
+        inputs.put("state", "${workflow.variables.conversation}");
+        inputs.put("questions", questions);
+        if (router.get("provider") instanceof String provider && !provider.isBlank()) {
+            inputs.put("provider", provider);
+        }
+        task.setInputParameters(inputs);
+        Map<String, List<WorkflowTask>> cases = new LinkedHashMap<>();
+        agentNames.forEach(agent -> cases.put(agent, List.of()));
+        task.setDecisionCases(cases);
+        task.setDefaultCase(List.of());
+        return task;
+    }
+
+    private String decisionRouterQuestion(Map<?, ?> questions, List<String> agentNames) {
+        Set<String> agents = new LinkedHashSet<>(agentNames);
+        List<String> matching =
+                questions.entrySet().stream()
+                        .filter(entry -> entry.getKey() instanceof String)
+                        .filter(entry -> entry.getValue() instanceof Map<?, ?>)
+                        .filter(
+                                entry ->
+                                        "choice".equals(((Map<?, ?>) entry.getValue()).get("type")))
+                        .filter(
+                                entry -> {
+                                    Object choices = ((Map<?, ?>) entry.getValue()).get("choices");
+                                    return choices instanceof Map<?, ?>
+                                            && ((Map<?, ?>) choices).keySet().equals(agents);
+                                })
+                        .map(entry -> (String) entry.getKey())
+                        .toList();
+        if (matching.size() != 1) {
+            throw new IllegalArgumentException(
+                    "Decision router requires exactly one choice question whose choices are the configured agent names");
+        }
+        return matching.get(0);
+    }
+
+    private WorkflowTask buildRouterSynthesisTask(
+            AgentConfig config, AgentCompiler.ResolvedInstructions parentInstructions) {
+        ParsedModel parsed = ModelParser.parse(config.getModel());
+        WorkflowTask finalLlm = new WorkflowTask();
+        finalLlm.setName("LLM_CHAT_COMPLETE");
+        finalLlm.setTaskReferenceName(toRef(config.getName()) + "_final");
+        finalLlm.setType("LLM_CHAT_COMPLETE");
+        Map<String, Object> finalInputs = new LinkedHashMap<>();
+        finalInputs.put("llmProvider", parsed.getProvider());
+        finalInputs.put("model", parsed.getModel());
+        finalInputs.put("maxTokens", config.getMaxTokens() != null ? config.getMaxTokens() : 16384);
+        String instructions = parentInstructions.getText();
+        String finalSystemPrompt =
+                (instructions.isEmpty() ? "" : instructions + "\n\n")
+                        + "Based on the work done by the agents above, provide your final response to the user. "
+                        + "IMPORTANT: Include ALL details from every agent's response — do NOT summarize or omit "
+                        + "code examples, technical specifications, or specific recommendations. "
+                        + "Organize the information coherently but preserve completeness.";
+        finalInputs.put(
+                "messages",
+                List.of(
+                        Map.of("role", "system", "message", finalSystemPrompt),
+                        Map.of("role", "user", "message", "${workflow.variables.conversation}")));
+        finalLlm.setInputParameters(finalInputs);
+        return finalLlm;
     }
 
     private String buildSelectScript(
@@ -2483,6 +2587,11 @@ public class MultiAgentCompiler {
                 "conversation",
                 ref(parent.getName() + "_hconcat_" + idx + suffix + ".output.result"));
         setParams.put("_agent_state", "${" + hCtxMergeRef + ".output.result}");
+        if (parent.getStrategy() == AgentConfig.Strategy.ROUTER
+                && parent.getMaxTurns() == 1
+                && !parent.isSynthesize()) {
+            setParams.put("selectedResult", responseRef);
+        }
         setVar.setInputParameters(setParams);
         caseTasks.add(setVar);
 

@@ -39,7 +39,7 @@ import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.model.TaskModel;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.model.TaskModel.Status.FAILED_WITH_TERMINAL_ERROR;
 

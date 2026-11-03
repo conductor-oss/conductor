@@ -64,7 +64,8 @@ Tunables: `SELLER_DELAY` (seconds the order stays in preparation; default 45).
 The A2A protocol is stateless request/response; **durability is a property of the orchestrator,
 not the protocol**. Run the same concierge pattern on an in-memory host and the crash loses the
 order — there is no resume. On Conductor, the agent interaction is a persisted, resumable task.
-That is the "durable A2A" claim, demonstrated (see `design/a2a/09-durable-a2a.md`).
+That is the "durable A2A" claim, demonstrated (the proof obligations behind it are exercised by
+`ai/src/test/java/org/conductoross/conductor/ai/a2a/A2ADurabilityTest.java`).
 
 ## Notes
 

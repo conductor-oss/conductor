@@ -17,6 +17,181 @@ import {
   WorkflowExecutionStatus,
 } from "types/Execution";
 
+/** The persisted decision task's output, as carried in detail.output. */
+export function decisionInferenceOutput(event: AgentEvent) {
+  return (event.detail as { output?: unknown } | undefined)?.output as
+    | {
+        provider?: string;
+        model?: string;
+        answers?: unknown;
+        usage?: unknown;
+        latencyMs?: number;
+        requestId?: string;
+      }
+    | undefined;
+}
+
+function decisionTaskEvent(
+  task: ExecutionTask<Record<string, unknown>>,
+): AgentEvent {
+  const usage = task.outputData?.usage as
+    | { inputTokens?: number; outputTokens?: number }
+    | undefined;
+  const promptTokens = usage?.inputTokens ?? 0;
+  const completionTokens = usage?.outputTokens ?? 0;
+  const model = (task.outputData?.model ?? task.inputData?.model) as
+    | string
+    | undefined;
+  return {
+    id: `${task.taskId}-decision`,
+    type: EventType.DECISION,
+    toolName: model,
+    timestamp: task.startTime ?? 0,
+    summary: model ?? "decision",
+    detail: { input: task.inputData, output: task.outputData },
+    tokens: {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
+    },
+    durationMs: taskDuration(task),
+    success: taskSuccess(task.status),
+    taskMeta: {
+      taskId: task.taskId,
+      taskType: task.taskType,
+      referenceTaskName: task.referenceTaskName,
+      startTime: task.startTime ?? undefined,
+      endTime: task.endTime ?? undefined,
+      seq: task.seq,
+    },
+  };
+}
+
+function isDecisionTask(task: ExecutionTask): boolean {
+  return (
+    task.taskType === "SWITCH" &&
+    (task.inputData?._conductorDeferredEvaluator === true ||
+      task.outputData?.answers !== undefined)
+  );
+}
+
+function embeddedAgentDef(task: ExecutionTask) {
+  const definition = task.inputData?.subWorkflowDefinition as
+    | WorkflowExecution["workflowDefinition"]
+    | undefined;
+  return definition?.metadata?.agentDef as Record<string, unknown> | undefined;
+}
+
+function isRouterSelector(task: ExecutionTask, routerReference: string) {
+  return task.referenceTaskName.replace(/__\d+$/, "") === routerReference;
+}
+
+function routerSelectorEvent(task: ExecutionTask): AgentEvent {
+  const decisionTask = isDecisionTask(task);
+  const result = decisionTask ? task.outputData : task.outputData?.result;
+  const event: AgentEvent = decisionTask
+    ? decisionTaskEvent(task)
+    : {
+        id: `${task.taskId}-router`,
+        type: EventType.THINKING,
+        timestamp: task.startTime ?? 0,
+        summary: "Routing decision",
+        toolName: embeddedAgentDef(task)?.model as string | undefined,
+        detail: { input: task.inputData?.workflowInput, output: result },
+        success: taskSuccess(task.status),
+        durationMs: taskDuration(task),
+      };
+  const answers = (result as { answers?: Record<string, { choice?: string }> })
+    ?.answers;
+  const choice = decisionTask
+    ? Object.values(answers ?? {})[0]?.choice
+    : typeof result === "string"
+      ? result
+      : undefined;
+  if (choice) {
+    event.targetAgent = choice;
+    event.summary = `Selected: ${choice}`;
+  }
+  return event;
+}
+
+function routerChild(
+  task: ExecutionTask,
+  children: AgentRunData[],
+): AgentRunData | null {
+  const child = children.find(
+    (sub) => sub.id === (task.outputData?.subWorkflowId ?? task.taskId),
+  );
+  if (!child) return null;
+  const definition = embeddedAgentDef(task);
+  return {
+    ...child,
+    agentName: (definition?.name as string) ?? child.agentName,
+    agentDef: definition ?? child.agentDef,
+    model: definition?.model as string | undefined,
+    output: task.outputData?.result ?? child.output,
+  };
+}
+
+function taskDuration(task: ExecutionTask<unknown>): number {
+  return task.endTime && task.startTime ? task.endTime - task.startTime : 0;
+}
+
+function routerTurn(
+  task: ExecutionTask,
+  children: AgentRunData[],
+  routerReference: string,
+  turnNumber: number,
+): AgentTurn | null {
+  const event = isRouterSelector(task, routerReference)
+    ? routerSelectorEvent(task)
+    : null;
+  const child = event ? null : routerChild(task, children);
+  if (!event && !child) return null;
+  return {
+    id: `route-${task.taskId}`,
+    kind: AgentTimelineKind.TURN,
+    turnNumber,
+    status: mapTaskStatus(task.status),
+    durationMs: taskDuration(task),
+    tokens: event?.tokens ?? ZERO_TOKENS,
+    events: event ? [event] : [],
+    subAgents: child ? [child] : [],
+    strategy: AgentStrategy.SEQUENTIAL,
+  };
+}
+
+/** A selector is inference by the parent; its selected child runs in the next turn. */
+function routerTimeline(
+  tasks: ExecutionTask[],
+  turns: AgentTurn[],
+  routerReference: string,
+): AgentTurn[] {
+  const calls = deduplicateRetriedTasks(
+    sortTasksChronologically(tasks),
+  ).tasks.filter(
+    (task) =>
+      isAgentSubWorkflow(task) || isRouterSelector(task, routerReference),
+  );
+  if (!calls.some((task) => isRouterSelector(task, routerReference)))
+    return turns;
+  const children = turns.flatMap((turn) => turn.subAgents);
+  const routed = calls.reduce<AgentTurn[]>((timeline, task) => {
+    const turn = routerTurn(
+      task,
+      children,
+      routerReference,
+      timeline.length + 1,
+    );
+    return turn ? [...timeline, turn] : timeline;
+  }, []);
+  return [
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.PREPARATION),
+    ...routed,
+    ...turns.filter((turn) => turn.kind === AgentTimelineKind.FINALIZATION),
+  ];
+}
+
 /** Map a model name to its provider icon path in /integrations-icons/ */
 export function getModelIconPath(model: string | undefined): string | null {
   if (!model) return null;
@@ -428,6 +603,117 @@ function isChainWorkflow(tasks: ExecutionTask[]): boolean {
   );
 }
 
+function parseAgentStrategy(raw: unknown): AgentStrategy | undefined {
+  if (typeof raw !== "string") return undefined;
+  const normalized = raw.toLowerCase();
+  return (Object.values(AgentStrategy) as string[]).includes(normalized)
+    ? (normalized as AgentStrategy)
+    : undefined;
+}
+
+/** Recursively visits every agent definition node (root + agentDef.agents[], depth-first). */
+function walkAgentDefTree(
+  agentDef: Record<string, unknown> | undefined,
+  visit: (
+    def: Record<string, unknown>,
+    children: Array<Record<string, unknown>>,
+  ) => void,
+): void {
+  if (!agentDef) return;
+  const children =
+    (agentDef.agents as Array<Record<string, unknown>> | undefined) ?? [];
+  visit(agentDef, children);
+  for (const child of children) {
+    walkAgentDefTree(child, visit);
+  }
+}
+
+/**
+ * Recursively index each agent definition's OWN strategy by name, mirroring how
+ * the Definition tab walks agentDef.agents[]. Only agents that actually have
+ * their own sub-agents get an entry — leaves are intentionally left unindexed
+ * so the Execution view shows no strategy badge for them (issue #1454).
+ */
+function indexAgentDefStrategies(
+  agentDef: Record<string, unknown> | undefined,
+): Map<string, AgentStrategy> {
+  const index = new Map<string, AgentStrategy>();
+  walkAgentDefTree(agentDef, (def, children) => {
+    if (children.length === 0) return;
+    const name = def.name as string | undefined;
+    const strategy = parseAgentStrategy(def.strategy);
+    if (name && strategy) index.set(name.toLowerCase(), strategy);
+  });
+  return index;
+}
+
+function lookupOwnStrategy(
+  index: Map<string, AgentStrategy>,
+  name: string | undefined,
+): AgentStrategy | undefined {
+  return name ? index.get(name.toLowerCase()) : undefined;
+}
+
+/**
+ * Recursively index each agent definition's own direct sub-agent COUNT by name.
+ * Unlike the strategy index, this only needs one level of children to know
+ * whether an agent orchestrates anything — used to show an "Expand" control
+ * on a collapsed sub-agent node before its own execution has been fetched
+ * (issue #1452: nested sub-agents beyond one level were never drawn).
+ */
+function indexAgentDefChildCounts(
+  agentDef: Record<string, unknown> | undefined,
+): Map<string, number> {
+  const index = new Map<string, number>();
+  walkAgentDefTree(agentDef, (def, children) => {
+    const name = def.name as string | undefined;
+    if (name && children.length > 0)
+      index.set(name.toLowerCase(), children.length);
+  });
+  return index;
+}
+
+function lookupChildCount(
+  index: Map<string, number>,
+  name: string | undefined,
+): number | undefined {
+  return name ? index.get(name.toLowerCase()) : undefined;
+}
+
+/**
+ * Recursively locate the sub-agent run with the given id anywhere in the tree
+ * and return a new tree with that node replaced by `updater(node)`. Used to
+ * splice a freshly-fetched sub-agent's real turns/subAgents into the existing
+ * tree in place when the user expands a collapsed node (issue #1452), without
+ * navigating away like "drill in" does.
+ *
+ * Returns the original reference untouched when `targetId` isn't found so
+ * callers can no-op cheaply (e.g. React state updates that don't need to
+ * re-render when nothing changed).
+ */
+export function replaceAgentRunNode(
+  root: AgentRunData,
+  targetId: string,
+  updater: (node: AgentRunData) => AgentRunData,
+): AgentRunData {
+  if (root.id === targetId) return updater(root);
+
+  let rootChanged = false;
+  const turns = root.turns.map((turn) => {
+    let turnChanged = false;
+    const subAgents = turn.subAgents.map((sub) => {
+      const updated = replaceAgentRunNode(sub, targetId, updater);
+      if (updated !== sub) turnChanged = true;
+      return updated;
+    });
+    if (!turnChanged) return turn;
+    rootChanged = true;
+    return { ...turn, subAgents };
+  });
+
+  return rootChanged ? { ...root, turns } : root;
+}
+
 /**
  * Transform a sequential chain workflow into AgentRunData.
  * Each step becomes a "turn" whose only sub-agent is the step agent.
@@ -469,6 +755,11 @@ function transformChainWorkflowToAgentRun(
   // Grab the per-step agent configs from the definition metadata for gate label info
   const agentsDef = ((execution.workflowDefinition?.metadata?.agentDef as any)
     ?.agents ?? []) as Array<Record<string, unknown>>;
+  const chainAgentDef = execution.workflowDefinition?.metadata?.agentDef as
+    | Record<string, unknown>
+    | undefined;
+  const strategyIndex = indexAgentDefStrategies(chainAgentDef);
+  const childCountIndex = indexAgentDefChildCounts(chainAgentDef);
 
   const turns: AgentTurn[] = sortedSteps.map(
     ([stepN, task], idx): AgentTurn => {
@@ -513,7 +804,8 @@ function transformChainWorkflowToAgentRun(
         status: mapTaskStatus(task.status),
         totalTokens: ZERO_TOKENS,
         totalDurationMs: durationMs,
-        strategy: AgentStrategy.SINGLE,
+        strategy: lookupOwnStrategy(strategyIndex, agentName),
+        subAgentCount: lookupChildCount(childCountIndex, agentName),
         agentType: task.inputData?.agentType as string | undefined,
         invocationStrategy: AgentStrategy.SEQUENTIAL,
         input: task.inputData?.workflowInput ?? task.inputData,
@@ -672,6 +964,12 @@ export function transformWorkflowExecutionToAgentRun(
   const agentDefMeta = execution.workflowDefinition?.metadata?.agentDef as
     | Record<string, unknown>
     | undefined;
+  const strategyIndex = indexAgentDefStrategies(agentDefMeta);
+  const childCountIndex = indexAgentDefChildCounts(agentDefMeta);
+  const agentNameForReference = String(
+    agentDefMeta?.name ?? execution.workflowName ?? execution.workflowType,
+  );
+  const routerReference = `${agentNameForReference.replace(/[^a-zA-Z0-9_]/g, "_")}_router`;
   const guardrailFnNames = new Set<string>();
   for (const gList of [
     (agentDefMeta?.input_guardrails as
@@ -701,7 +999,7 @@ export function transformWorkflowExecutionToAgentRun(
     if (iter !== null) {
       if (!iterMap.has(iter)) iterMap.set(iter, []);
       iterMap.get(iter)!.push(task);
-    } else if (!ITER_INFRA.has(task.taskType)) {
+    } else if (!ITER_INFRA.has(task.taskType) || isDecisionTask(task)) {
       // Root-level non-infrastructure: final LLM tasks, or entire simple agents
       rootActiveTasks.push(task);
     }
@@ -713,6 +1011,9 @@ export function transformWorkflowExecutionToAgentRun(
   const rootAgentName: string =
     execution.workflowName ?? execution.workflowType ?? "";
 
+  // Display a sub-agent's outgoing handoff at the start of the next turn.
+  let pendingIncomingHandoff: AgentEvent | null = null;
+
   const turns: AgentTurn[] = sortedIters
     .map(([, iterTasks], idx) => {
       const agentTasks = iterTasks.filter(isAgentSubWorkflow);
@@ -722,6 +1023,11 @@ export function transformWorkflowExecutionToAgentRun(
       const { tasks: iterLlmTasks } = deduplicateRetriedTasks(
         iterTasks.filter((t) => t.taskType === "LLM_CHAT_COMPLETE"),
       );
+
+      const { tasks: decisionTasks } = deduplicateRetriedTasks(
+        iterTasks.filter(isDecisionTask),
+      );
+      const decisionEvents = decisionTasks.map(decisionTaskEvent);
 
       // Tool worker tasks — any non-infra, non-subworkflow, non-LLM task
       const {
@@ -733,7 +1039,8 @@ export function transformWorkflowExecutionToAgentRun(
           (t) =>
             !ITER_INFRA.has(t.taskType) &&
             t.taskType !== "SUB_WORKFLOW" &&
-            t.taskType !== "LLM_CHAT_COMPLETE",
+            t.taskType !== "LLM_CHAT_COMPLETE" &&
+            !isDecisionTask(t),
         ),
       );
 
@@ -747,10 +1054,41 @@ export function transformWorkflowExecutionToAgentRun(
       const subAgentTasks = agentTasks.filter(
         (t) =>
           extractAgentName(t.referenceTaskName) !== rootAgentName &&
-          !t.referenceTaskName.includes("_router_"),
+          !isRouterSelector(t, routerReference),
       );
 
       const events: AgentEvent[] = [];
+      if (pendingIncomingHandoff) {
+        events.push(pendingIncomingHandoff);
+        pendingIncomingHandoff = null;
+      }
+      events.push(...decisionEvents);
+
+      // The swarm's own handoff_check task (a sibling INLINE task in this
+      // same iteration) records whether a *condition-based* handoff
+      // (on_tool_result/on_condition) fired this turn, independently of
+      // whether the acting agent issued an explicit transfer tool call.
+      // Resolved once per iteration — both the self-call branch below and
+      // the real-sub-agent branch further down need it, and it's the same
+      // fact either way.
+      const handoffCheckTask = iterTasks.find(
+        (t) =>
+          t.taskType === "INLINE" &&
+          t.referenceTaskName.includes("_handoff_check__"),
+      );
+      const checkedHandoff = handoffCheckTask?.outputData?.result as
+        | { active_agent?: string; handoff?: boolean }
+        | undefined;
+      const resolveHandoffTarget = (activeAgent: string): string => {
+        const agents = agentDefMeta?.agents as
+          | Array<Record<string, unknown>>
+          | undefined;
+        const targetIdx = parseInt(activeAgent, 10);
+        return targetIdx === 0
+          ? rootAgentName
+          : ((agents?.[targetIdx - 1]?.name as string | undefined) ??
+              activeAgent);
+      };
 
       // Self-calls → HANDOFF events (the agent deciding where to route)
       for (const task of selfCalls) {
@@ -769,35 +1107,86 @@ export function transformWorkflowExecutionToAgentRun(
             detail: { transfer_to: transferTo, agent: rootAgentName },
             durationMs,
           });
+        } else if (checkedHandoff?.handoff && checkedHandoff.active_agent) {
+          // Self-call with no explicit transfer call, but a condition-based
+          // handoff fired anyway. Render the clean handoff arrow — "the
+          // swarm agents taking over" is the useful signal here, not the
+          // raw tool-call payload that drove the decision (drill into the
+          // agent's own execution for that).
+          const targetName = resolveHandoffTarget(checkedHandoff.active_agent);
+          events.push({
+            id: `${task.taskId}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: task.endTime ?? 0,
+            summary: `→ ${targetName}`,
+            targetAgent: targetName,
+            detail: { transfer_to: targetName, agent: rootAgentName },
+            durationMs,
+          });
         } else {
-          // Self-call with no transfer → agent responded directly (final response)
+          const result = task.outputData?.result;
+          const resultStr =
+            typeof result === "string" && result.length > 0
+              ? result
+              : undefined;
           events.push({
             id: `${task.taskId}-msg`,
             type: EventType.MESSAGE,
             timestamp: task.endTime ?? 0,
             summary: "Agent responded",
+            ...(resultStr ? { detail: resultStr } : {}),
             durationMs,
           });
         }
       }
 
-      // Also handle HANDOFF-strategy router tasks (team_t1 style)
+      // Real sub-agent turn (no self-call): what happens *after* that
+      // agent's own turn — an explicit transfer it issued itself, a
+      // condition-based handoff caught by the swarm's handoff_check, or a
+      // HANDOFF-strategy router decision (team_t1 style) — isn't visible
+      // anywhere else, since the subAgents built below only render that
+      // agent's own turn content. Without this, e.g. account_specialist's
+      // handoff to billing_specialist rendered nothing at all in between.
       if (selfCalls.length === 0) {
+        const explicitTransfer = subAgentTasks.find(
+          (t) => t.outputData?.is_transfer && t.outputData?.transfer_to,
+        );
         const routerTask = iterTasks.find((t) =>
           t.referenceTaskName.includes("_router_"),
         );
         const routingDecision = routerTask?.outputData?.result as
           | string
           | undefined;
-        if (routingDecision && subAgentTasks.length > 0) {
-          events.push({
+
+        if (explicitTransfer) {
+          const transferTo = explicitTransfer.outputData?.transfer_to as string;
+          pendingIncomingHandoff = {
+            id: `${explicitTransfer.taskId}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: explicitTransfer.endTime ?? 0,
+            summary: `→ ${transferTo}`,
+            targetAgent: transferTo,
+            detail: { transfer_to: transferTo },
+          };
+        } else if (checkedHandoff?.handoff && checkedHandoff.active_agent) {
+          const targetName = resolveHandoffTarget(checkedHandoff.active_agent);
+          pendingIncomingHandoff = {
+            id: `iter-${idx}-handoff`,
+            type: EventType.HANDOFF,
+            timestamp: handoffCheckTask?.endTime ?? 0,
+            summary: `→ ${targetName}`,
+            targetAgent: targetName,
+            detail: { transfer_to: targetName },
+          };
+        } else if (routingDecision && subAgentTasks.length > 0) {
+          pendingIncomingHandoff = {
             id: `iter-${idx}-route`,
             type: EventType.HANDOFF,
             timestamp: routerTask?.endTime ?? 0,
             summary: `→ ${routingDecision}`,
             targetAgent: routingDecision,
             detail: { routing_decision: routingDecision },
-          });
+          };
         }
       }
 
@@ -871,7 +1260,8 @@ export function transformWorkflowExecutionToAgentRun(
             status: mapTaskStatus(task.status),
             totalTokens: ZERO_TOKENS,
             totalDurationMs: durationMs,
-            strategy: AgentStrategy.SINGLE,
+            strategy: lookupOwnStrategy(strategyIndex, agentName),
+            subAgentCount: lookupChildCount(childCountIndex, agentName),
             agentType: task.inputData?.agentType as string | undefined,
             invocationStrategy: AgentStrategy.HANDOFF,
             input: agentInput,
@@ -907,11 +1297,17 @@ export function transformWorkflowExecutionToAgentRun(
             : 0;
         const isStop = finishReason === "stop";
 
-        // Show instructions (system prompt) + last user message only
+        // Show instructions (system prompt) + last user message only.
+        // instructions live on inputData (prepended in-memory by the worker),
+        // not as a stored system role in messages.
         const sysMsg = messages.find((m) => m.role === "system");
         const lastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        const instructionsText =
+          (typeof llmTask.inputData?.instructions === "string" &&
+            llmTask.inputData.instructions) ||
+          sysMsg?.message;
 
         // ONE block: LLM call — instructions + last message + output
         events.push({
@@ -923,9 +1319,14 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(sysMsg ? { instructions: sysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(lastMsg ? { message: lastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: llmTask.outputData,
           },
           result: isStop && typeof result === "string" ? result : result,
@@ -1177,11 +1578,17 @@ export function transformWorkflowExecutionToAgentRun(
       // Token counts from LLM tasks in this iteration
       const turnPromptTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.promptTokens as number) || 0),
-        0,
+        decisionEvents.reduce(
+          (sum, event) => sum + event.tokens!.promptTokens,
+          0,
+        ),
       );
       const turnCompletionTokens = iterLlmTasks.reduce(
         (s, t) => s + ((t.outputData?.completionTokens as number) || 0),
-        0,
+        decisionEvents.reduce(
+          (sum, event) => sum + event.tokens!.completionTokens,
+          0,
+        ),
       );
 
       const subStatuses = subAgents.map((s) => s.status);
@@ -1302,6 +1709,8 @@ export function transformWorkflowExecutionToAgentRun(
       totalTokens: ZERO_TOKENS,
       totalDurationMs: dur,
       agentType: task.inputData?.agentType as string | undefined,
+      strategy: lookupOwnStrategy(strategyIndex, agentName),
+      subAgentCount: lookupChildCount(childCountIndex, agentName),
       invocationStrategy:
         rootSubWorkflows.length > 1
           ? AgentStrategy.PARALLEL
@@ -1322,7 +1731,7 @@ export function transformWorkflowExecutionToAgentRun(
     attemptCounts: rootAttemptCounts,
     attemptGroups: rootAttemptGroups,
   } = deduplicateRetriedTasks(sortTasksChronologically(rootActiveTasks));
-  let finalOutput: string | undefined;
+  let finalOutput: unknown;
   if (dedupedRootTasks.length > 0) {
     const rootEvents: AgentEvent[] = [];
     let rootPrompt = 0,
@@ -1333,7 +1742,13 @@ export function transformWorkflowExecutionToAgentRun(
       // Its outputData is used for the final agent output below.
       if (task.referenceTaskName === "_fw_task") continue;
 
-      if (task.taskType === "LLM_CHAT_COMPLETE") {
+      if (isDecisionTask(task)) {
+        const event = decisionTaskEvent(task);
+        rootEvents.push(event);
+        rootPrompt += event.tokens!.promptTokens;
+        rootCompletion += event.tokens!.completionTokens;
+        finalOutput = task.outputData;
+      } else if (task.taskType === "LLM_CHAT_COMPLETE") {
         const condensed = maybeCondensationEvent(task);
         if (condensed) rootEvents.push(condensed);
 
@@ -1361,6 +1776,14 @@ export function transformWorkflowExecutionToAgentRun(
         const rootLastMsg = [...messages]
           .reverse()
           .find((m) => m.role !== "system");
+        // Task input stores system text in inputData.instructions; the worker
+        // prepends it as a system message only in-memory, so it never appears
+        // in stored messages. Surface instructions here so the UI matches what
+        // the model actually received.
+        const instructionsText =
+          (typeof task.inputData?.instructions === "string" &&
+            task.inputData.instructions) ||
+          rootSysMsg?.message;
 
         rootEvents.push({
           id: `${task.taskId}-llm`,
@@ -1371,9 +1794,14 @@ export function transformWorkflowExecutionToAgentRun(
           summary: `${model ?? "LLM"} · ${messages.length} messages${tools.length ? ` · ${tools.length} tools` : ""}`,
           detail: {
             input: {
-              ...(rootSysMsg ? { instructions: rootSysMsg.message } : {}),
+              ...(instructionsText ? { instructions: instructionsText } : {}),
               ...(rootLastMsg ? { message: rootLastMsg.message } : {}),
             },
+            // Every message, for the prompt preview. `input` above stays the
+            // concise payload the Input tab and event rows render.
+            ...(messages.length
+              ? { prompt: { instructions: instructionsText, messages } }
+              : {}),
             output: task.outputData,
           },
           tokens: {
@@ -1619,7 +2047,12 @@ export function transformWorkflowExecutionToAgentRun(
         ),
       ].filter((time) => time > 0);
       const tokens = orderedEvents
-        .filter((event) => event.type === EventType.THINKING && event.tokens)
+        .filter(
+          (event) =>
+            (event.type === EventType.THINKING ||
+              event.type === EventType.DECISION) &&
+            event.tokens,
+        )
         .reduce(
           (total, event) => ({
             promptTokens:
@@ -1703,6 +2136,11 @@ export function transformWorkflowExecutionToAgentRun(
 
   const agentInput = execution.input ?? undefined;
 
+  if (agentDefMeta?.strategy === "router") {
+    const routed = routerTimeline(tasks, turns, routerReference);
+    if (routed !== turns) turns.splice(0, turns.length, ...routed);
+  }
+
   // Accumulate total tokens from all turns
   const totalPromptTokens = turns.reduce(
     (s, t) => s + t.tokens.promptTokens,
@@ -1743,7 +2181,7 @@ export function transformWorkflowExecutionToAgentRun(
     turns,
     status: mapWorkflowStatus(execution.status),
     agentDef,
-    totalTokens: {
+    totalTokens: execution.aggregateTokenUsage ?? {
       promptTokens: totalPromptTokens,
       completionTokens: totalCompletionTokens,
       totalTokens: totalPromptTokens + totalCompletionTokens,
@@ -1751,11 +2189,12 @@ export function transformWorkflowExecutionToAgentRun(
     totalDurationMs,
     finishReason,
     strategy:
-      rootSubWorkflows.length > 1
+      lookupOwnStrategy(strategyIndex, rootAgentName) ??
+      (rootSubWorkflows.length > 1
         ? AgentStrategy.PARALLEL
         : sortedIters.length > 0
           ? AgentStrategy.HANDOFF
-          : AgentStrategy.SINGLE,
+          : AgentStrategy.SINGLE),
     input: agentInput,
     output: execution.output ?? finalOutput,
   };

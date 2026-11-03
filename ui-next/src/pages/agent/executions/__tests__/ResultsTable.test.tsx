@@ -23,9 +23,7 @@ vi.mock("components", () => ({
       {data.map((row: any) => (
         <div key={row.workflowId} data-testid={`row-${row.workflowId}`}>
           {expandableRows && (
-            <button aria-label={`Expand row ${row.workflowId}`}>
-              expand
-            </button>
+            <button aria-label={`Expand row ${row.workflowId}`}>expand</button>
           )}
         </div>
       ))}

@@ -1,9 +1,9 @@
 ---
-description: "Building from Source — build and run the Conductor server and UI locally from source for development and testing."
+description: "Building from Source — build and run the Conductor server and ui-next locally for development and testing."
 ---
 # Building from source
 
-Build and run Conductor server and UI locally from source. The default configuration uses in-memory persistence with no indexing — all data is lost when the server stops. This setup is for development and testing only.
+Build and run the Conductor server and `ui-next` locally from source. The default configuration uses in-memory persistence with no indexing — all data is lost when the server stops. This setup is for development and testing only.
 
 For persistent backends, use [Docker Compose](deploy.md) or configure a database backend.
 
@@ -40,7 +40,6 @@ For persistent backends, use [Docker Compose](deploy.md) or configure a database
 
     | URL | Description |
     |:----|:---|
-    | `http://localhost:8080` | Conductor UI |
     | `http://localhost:8080/swagger-ui/index.html` | REST API docs |
     | `http://localhost:8080/api/` | API base URL |
 
@@ -58,26 +57,40 @@ java -jar conductor-core-$CONDUCTOR_VER-boot.jar
 ```
 
 
-## Running the UI from source
+## Running ui-next from source
 
 ### Prerequisites
 
 - A running Conductor server on port 8080
-- [Node.js](https://nodejs.org) v18+
-- [Yarn](https://classic.yarnpkg.com/en/docs/install)
+- Node.js 18+
+- pnpm 10.x (activate the version pinned by `ui-next/package.json` with `corepack enable`)
 
 ### Steps
 
 ```shell
-cd ui
-yarn install
-yarn run start
+cd ui-next
+corepack enable
+pnpm install
 ```
 
-The UI is accessible at [http://localhost:5000](http://localhost:5000).
+Configure the backend URL in `.env` (the checked-in default targets a local server):
+
+```shell
+VITE_WF_SERVER=http://localhost:8080
+```
+
+Start the development server:
+
+```shell
+pnpm dev
+```
+
+The UI is accessible at [http://localhost:1234](http://localhost:1234). For runtime feature flags and authentication configuration, copy `public/context.js.example` to `public/context.js` and edit the copy.
 
 To build compiled assets for production hosting:
 
 ```shell
-yarn build
+pnpm build
 ```
+
+The production build is written to `ui-next/dist/`.

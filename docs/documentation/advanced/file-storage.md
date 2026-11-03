@@ -1,3 +1,7 @@
+---
+description: "Configure Conductor file storage so workflows pass opaque conductor://file handles instead of exposing storage buckets, object paths, or credentials."
+---
+
 # File Storage
 
 ## Context
@@ -234,8 +238,6 @@ attempt each.
 - Downloads write to a unique sibling temporary file and atomically replace the destination only
   after a complete response.
 - Content URLs are redacted from errors. When signing is enabled, URLs are bearer credentials.
-
-The detailed component and lifecycle rationale is in [File Storage Design](../../design/file-storage.md).
 
 ## Migration from smart file objects
 

@@ -13,6 +13,12 @@ window.conductor = {
   CREATOR_ENABLE_CREATOR: true,
   CREATOR_ENABLE_REAFLOW_DIAGRAM: true,
   TASK_INDEXING: false,
+  // OSS task search stores the workflow name as workflowType. conductor-ui
+  // leaves this unset and queries workflowName.
+  TASK_SEARCH_WORKFLOW_FIELD: "workflowType",
+  // The task reference name is not on the OSS task index. conductor-ui leaves
+  // this unset and keeps the filter.
+  SHOW_TASK_REFERENCE_NAME: false,
   SHOW_EVENT_MONITOR: true,
   ENABLE_DARK_MODE_TOGGLE: true,
 

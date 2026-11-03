@@ -51,8 +51,8 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -214,7 +214,7 @@ class A2ADurableEngineEndToEndTest {
      */
     private void drainQueue(String taskType) {
         WorkflowSystemTask task = systemTask(taskType);
-        for (String taskId : queueDAO.pop(taskType, 5, 100)) {
+        for (String taskId : queueDAO.pop(taskType, 5, 0)) {
             asyncSystemTaskExecutor.execute(task, taskId);
         }
     }

@@ -21,6 +21,7 @@ import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.test.base.AbstractSpecification
 
 import spock.lang.Shared
+import spock.util.concurrent.PollingConditions
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SUB_WORKFLOW
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
@@ -84,25 +85,35 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask)
 
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        def rootSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
-        if (rootSubWfTask) {
+        // The decide that schedules the SUB_WORKFLOW task runs asynchronously after task-1
+        // completes (it is deferred to the sweeper when the workflow lock is contended), and the
+        // system-task coordinator may even have started it already. Wait for the task to EXIST,
+        // then start it manually only if the coordinator has not.
+        def setupConditions = new PollingConditions(timeout: 30, delay: 0.2)
+        Task rootSubWfTask = null
+        setupConditions.eventually {
+            rootSubWfTask = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+                    .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW }
+            assert rootSubWfTask != null
+        }
+        if (rootSubWfTask.status == Task.Status.SCHEDULED) {
             asyncSystemTaskExecutor.execute(subWorkflowTask, rootSubWfTask.taskId)
         }
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS state"
-        def rootWorkflowInstance = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
-        with(rootWorkflowInstance) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 2
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.COMPLETED
-            tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
-            tasks[1].status == Task.Status.IN_PROGRESS
+        setupConditions.eventually {
+            def rootWorkflowInstance = workflowExecutionService.getExecutionStatus(rootWorkflowId, true)
+            assert rootWorkflowInstance.status == Workflow.WorkflowStatus.RUNNING
+            assert rootWorkflowInstance.tasks.size() == 2
+            assert rootWorkflowInstance.tasks[0].taskType == 'integration_task_1'
+            assert rootWorkflowInstance.tasks[0].status == Task.Status.COMPLETED
+            assert rootWorkflowInstance.tasks[1].taskType == TASK_TYPE_SUB_WORKFLOW
+            assert rootWorkflowInstance.tasks[1].status == Task.Status.IN_PROGRESS
+            assert rootWorkflowInstance.tasks[1].subWorkflowId != null
+            midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
         }
 
         and: "the mid-level subworkflow is decided so its first task is scheduled"
-        midLevelWorkflowId = rootWorkflowInstance.tasks[1].subWorkflowId
         sweep(midLevelWorkflowId)
 
         and: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"
@@ -117,12 +128,22 @@ class SubWorkflowRestartSpec extends AbstractSpecification {
         workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
 
         when: "the subworkflow task should be in SCHEDULED state and is started by issuing a system task call"
-        def midSubWfTask = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
-                .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW && it.status == Task.Status.SCHEDULED }
-        if (midSubWfTask) {
+        Task midSubWfTask = null
+        setupConditions.eventually {
+            midSubWfTask = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW }
+            assert midSubWfTask != null
+        }
+        if (midSubWfTask.status == Task.Status.SCHEDULED) {
             asyncSystemTaskExecutor.execute(subWorkflowTask, midSubWfTask.taskId)
         }
-        leafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true).getTasks().get(1).subWorkflowId
+        // Was a raw tasks.get(1) that raced the async decide: IndexOutOfBoundsException in CI
+        // when the SUB_WORKFLOW task had not been scheduled yet.
+        setupConditions.eventually {
+            leafWorkflowId = workflowExecutionService.getExecutionStatus(midLevelWorkflowId, true)
+                    .tasks.find { it.taskType == TASK_TYPE_SUB_WORKFLOW }?.subWorkflowId
+            assert leafWorkflowId != null
+        }
         sweep(leafWorkflowId)
 
         then: "verify that the mid-level workflow is RUNNING, and first task is in SCHEDULED state"

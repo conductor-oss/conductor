@@ -1,7 +1,7 @@
 ## 1. Add dependencies
 
 ```groovy
-implementation 'org.conductoross:conductor-client-ai:6.0.0.rc4'
+implementation 'org.conductoross:conductor-ai'
 compileOnly 'com.google.adk:google-adk:1.3.0'
 ```
 
@@ -33,4 +33,4 @@ try (AgentRuntime runtime = new AgentRuntime()) {
 }
 ```
 
-[Google ADK bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/google-adk.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/conductor-ai-examples)
+[Google ADK bridge documentation](https://github.com/conductor-oss/java-sdk/blob/main/docs/agents/frameworks/google-adk.md) · [Java examples](https://github.com/conductor-oss/java-sdk/tree/main/agent-examples/src/main/java/org/conductoross/conductor/ai/examples/adk)

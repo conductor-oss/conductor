@@ -2,7 +2,7 @@
   "name": "conductor_agent_cancel",
   "version": 1,
   "schemaVersion": 2,
-  "description": "Cancel an in-flight conductor agent run: a FORK_JOIN races a long-running AGENT (conductor) task (large maxDurationSeconds) against a control branch that TERMINATEs the workflow. Terminating the workflow cancels the still-running agent task, demonstrating the CANCELED -> task CANCELED mapping.",
+  "description": "Framework-agnostic Conductor Agents recipe: a FORK_JOIN races a long-running AGENT task against a control branch that TERMINATEs the workflow. Termination propagates cancellation to the in-flight agent task.",
   "tasks": [
     {
       "name": "fork_cancel",

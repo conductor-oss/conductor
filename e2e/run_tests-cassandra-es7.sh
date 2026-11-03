@@ -6,7 +6,11 @@ COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose-cassandra-es7.yaml"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
 
 echo "Starting Conductor (Cassandra + Elasticsearch 7)..."
-docker compose -f "$COMPOSE_FILE" build conductor-server
+# CI builds the server image once (build-server-image job) and pre-loads it;
+# SKIP_SERVER_BUILD=1 skips the per-flavor rebuild of the identical image.
+if [ "${SKIP_SERVER_BUILD:-0}" != "1" ]; then
+    docker compose -f "$COMPOSE_FILE" build conductor-server
+fi
 docker compose -f "$COMPOSE_FILE" up -d
 
 echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."
@@ -26,7 +30,10 @@ for i in $(seq 1 60); do
 done
 
 cd "$SCRIPT_DIR/.."
-./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
+# ai: config-cassandra-es7.properties sets conductor.integrations.ai.enabled=false (cassandra has
+#     no skill DAOs), so the agent endpoints do not exist on this flavor.
+# filestorage: the /api/files resource is not available on the cassandra server.
+./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" -DE2E_DISABLED_CAPABILITIES=ai,filestorage "$@"
 EXIT_CODE=$?
 
 docker compose -f "$COMPOSE_FILE" down -v

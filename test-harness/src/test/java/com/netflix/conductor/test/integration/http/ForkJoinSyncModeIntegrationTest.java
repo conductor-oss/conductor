@@ -51,7 +51,7 @@ import com.netflix.conductor.core.execution.AsyncSystemTaskExecutor;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.dao.QueueDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

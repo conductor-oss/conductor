@@ -152,12 +152,6 @@ export const mockPageComponents = () => {
       WebhookEditPage: "webhook-edit-page",
     },
 
-    // Kitchen sink
-    "../pages/kitchensink/Examples": "examples",
-    "../pages/kitchensink/Gantt": "gantt",
-    "../pages/kitchensink/KitchenSink": "kitchen-sink",
-    "../pages/kitchensink/ThemeSampler": "theme-sampler",
-
     // Queue and scheduler
     "../pages/queueMonitor/TaskQueue": "task-queue",
     "../pages/scheduler": { Schedule: "schedule" },

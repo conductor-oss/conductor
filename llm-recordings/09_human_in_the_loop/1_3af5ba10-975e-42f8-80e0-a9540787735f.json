@@ -1,0 +1,99 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a banking assistant. Use check_balance for balance inquiries. When asked to transfer money, first check the balance, then call transfer_funds to request the transfer. The runtime will pause for human approval before the transfer executes.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Transfer $500 from ACC-789 to ACC-456. Check the balance first.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "check_balance",
+      "description" : "Check the balance of an account.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "account_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "account_id" ]
+      }
+    }, {
+      "name" : "transfer_funds",
+      "description" : "Request a funds transfer; runtime pauses for human approval before execution.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "to_acct" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "from_acct" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "from_acct", "to_acct", "amount" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_023eafa89da1afb0006aa83027778487d08d860f4f7617ca3a",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 151,
+        "completionTokens" : 42,
+        "totalTokens" : 193,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_023eafa89da1afb0006aa83027778487d08d860f4f7617ca3a",
+        "reasoning_tokens" : 19
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_VN58X1pcf75n5rFoGrdECt7K",
+          "type" : "function",
+          "name" : "check_balance",
+          "arguments" : "{\"account_id\":\"ACC-789\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

@@ -14,16 +14,16 @@ package io.orkes.conductor.scheduler.config;
 
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.scheduler.SchedulerDAO;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

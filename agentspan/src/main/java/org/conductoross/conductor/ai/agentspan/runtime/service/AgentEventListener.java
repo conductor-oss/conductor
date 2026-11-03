@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.conductoross.conductor.ai.agentspan.runtime.compiler.ToolCompiler;
 import org.conductoross.conductor.common.metadata.agent.AgentSSEEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.listener.TaskStatusListener;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.TaskModel;
@@ -49,6 +51,12 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
     /** Conductor AI task types that consume LLM/generation API calls. */
     private static final Set<String> AI_TASK_TYPES =
             Set.of("LLM_CHAT_COMPLETE", "GENERATE_IMAGE", "GENERATE_AUDIO", "GENERATE_VIDEO");
+
+    /**
+     * Input key naming the tool a task was dispatched for, set by {@code
+     * JavaScriptBuilder.enrichToolsScript}. Absent on statically compiled tasks.
+     */
+    private static final String AGENT_TOOL_NAME_KEY = "_agent_tool_name";
 
     private final AgentStreamRegistry streamRegistry;
     private final MeterRegistry meterRegistry;
@@ -396,10 +404,7 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         }
     }
 
-    /**
-     * Determine if a completed task is a tool invocation (not an internal system task like SWITCH,
-     * DO_WHILE, INLINE, etc.).
-     */
+    /** Whether a completed task is a tool invocation rather than orchestration or plumbing. */
     private boolean isToolTask(TaskModel task) {
         String taskType = task.getTaskType();
         if (taskType == null) return false;
@@ -407,57 +412,40 @@ public class AgentEventListener implements TaskStatusListener, WorkflowStatusLis
         if (task.getReferenceTaskName() != null && task.getReferenceTaskName().startsWith("_fw_")) {
             return false;
         }
-        // System task types that are NOT tool invocations
-        switch (taskType) {
-            case "LLM_CHAT_COMPLETE":
-            case "SWITCH":
-            case "DO_WHILE":
-            case "INLINE":
-            case "SET_VARIABLE":
-            case "FORK_JOIN_DYNAMIC":
-            case "JOIN":
-            case "SUB_WORKFLOW":
-            case "HUMAN":
-            case "TERMINATE":
-            case "HTTP":
-            case "CALL_MCP_TOOL":
-                return false;
-            default:
-                // SIMPLE or other user-defined task types = tool invocation
-                return "SIMPLE".equals(taskType) || task.getTaskDefinition().isPresent();
+        Map<String, Object> input = task.getInputData();
+        if (input != null && input.containsKey(AGENT_TOOL_NAME_KEY)) {
+            // Covers tool kinds whose own config names the task type, which no allowlist can list.
+            return true;
         }
+        if (TaskType.TASK_TYPE_SUB_WORKFLOW.equals(taskType)) {
+            // SUB_WORKFLOW is also the multi-agent handoff. Unmarked means handoff, not a tool.
+            return false;
+        }
+        if (ToolCompiler.COMPILED_TOOL_TASK_TYPES.contains(taskType)) {
+            return true;
+        }
+        // A custom type is the user's own worker, or a tool whose config named the type. Every
+        // platform type is a TaskType constant, LIST_MCP_TOOLS included.
+        return TaskType.of(taskType) == TaskType.USER_DEFINED;
     }
 
     /**
-     * Resolve the actual tool/function name from a task.
-     *
-     * <p>Server-compiled workflows use SIMPLE tasks where the actual tool name is stored in {@code
-     * inputData.method} (set by the enrichment script). Locally-compiled workflows use SIMPLE tasks
-     * with a dispatch pattern where the function name is stored in the output data. SDK-compiled
-     * worker tasks use a custom task type matching the function name.
+     * Tool name for a dispatched task. Never the reference name, which carries the provider's own
+     * tool-call ids.
      */
     private String resolveToolName(TaskModel task) {
-        String taskType = task.getTaskType();
-
-        // Server-compiled SIMPLE tasks: tool name is in inputData.method
         Map<String, Object> input = task.getInputData();
-        if (input != null && input.containsKey("method")) {
-            return String.valueOf(input.get("method"));
+        if (input != null) {
+            Object toolName = input.get(AGENT_TOOL_NAME_KEY);
+            if (toolName != null) {
+                return String.valueOf(toolName);
+            }
+            Object method = input.get("method");
+            if (method != null) {
+                return String.valueOf(method);
+            }
         }
-
-        // Locally-compiled (dispatch): function name in output data
-        Map<String, Object> output = task.getOutputData();
-        if (output != null && output.containsKey("function")) {
-            return String.valueOf(output.get("function"));
-        }
-
-        // SDK-compiled workers: taskType is the function name (e.g. "get_weather")
-        if (!"SIMPLE".equals(taskType) && taskType != null) {
-            return taskType.toLowerCase();
-        }
-
-        // Fallback to task reference name
-        return task.getReferenceTaskName();
+        return task.getTaskDefName() != null ? task.getTaskDefName() : task.getTaskType();
     }
 
     /**

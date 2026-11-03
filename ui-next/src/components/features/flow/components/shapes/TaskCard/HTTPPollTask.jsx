@@ -1,8 +1,8 @@
-import { Link } from "@mui/material";
 import { Link as LinkIcon } from "@phosphor-icons/react";
 import { useContext } from "react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
+import { CardLink } from "./CardLink";
 import { isValidUri } from "./helpers";
 
 const HTTPPollTask = ({ nodeData }) => {
@@ -42,9 +42,7 @@ const HTTPPollTask = ({ nodeData }) => {
           }}
         >
           {isClickableUri ? (
-            <Link href={request?.uri} target="_blank" rel="noreferrer">
-              {request?.uri}
-            </Link>
+            <CardLink href={request?.uri}>{request?.uri}</CardLink>
           ) : (
             request?.uri
           )}

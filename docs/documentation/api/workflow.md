@@ -6,13 +6,36 @@ description: "Conductor Workflow API — manage workflow executions including pa
 
 The Workflow API manages workflow executions. All endpoints use the base path `/api/workflow`.
 
+Workflow responses are runtime objects; their detailed contract is [Workflow.json](../configuration/schemas.md#runtime-objects). The registered blueprint is [WorkflowDef.json](../configuration/schemas.md#definition-objects).
+
 For starting workflows, see [Start Workflow API](startworkflow.md).
+
+## Workflow Messages
+
+`POST /api/workflow/{workflowId}/messages` pushes an arbitrary JSON object into a running workflow's message queue. This endpoint is available only when `conductor.workflow-message-queue.enabled=true`; when the feature is disabled, the controller is not registered and the endpoint returns `404 Not Found`.
+
+```shell
+curl -X POST 'http://localhost:8080/api/workflow/3a5b8c2d-1234-5678-9abc-def012345678/messages' \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"hello"}'
+```
+
+**Response** `200 OK` — plain-text generated message ID.
+
+| Status | Condition |
+|---|---|
+| `404 Not Found` | The WMQ feature is disabled, or the workflow does not exist. |
+| `409 Conflict` | The workflow is not `RUNNING`, including a state change that races with the push. |
+| `429 Too Many Requests` | The workflow queue has reached `maxQueueSize`. |
+
+Conductor triggers an immediate workflow evaluation after a successful push so a waiting `PULL_WORKFLOW_MESSAGES` task can resume. See [Workflow Message Queue](../../wmq/workflow-message-queue.md) and [Pull Workflow Messages task](../configuration/workflowdef/systemtasks/pull-workflow-messages-task.md) for configuration and consumption.
 
 ## Retrieve Workflows
 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/{workflowId}` | `GET` | Get workflow execution by ID |
+| `/{workflowId}/status` | `GET` | Get a lightweight workflow status summary |
 | `/{workflowId}/tasks` | `GET` | Get tasks for a workflow execution (paginated) |
 | `/running/{name}` | `GET` | Get running workflow IDs by type |
 | `/{name}/correlated/{correlationId}` | `GET` | Get workflows by correlation ID |
@@ -57,6 +80,27 @@ curl 'http://localhost:8080/api/workflow/3a5b8c2d-1234-5678-9abc-def012345678'
   "correlationId": "order-123"
 }
 ```
+
+**Status and failure fields**
+
+| Field | Description |
+|---|---|
+| `status` | `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`, `TIMED_OUT`, or `TERMINATED`. |
+| `reasonForIncompletion` | Why the workflow stopped without completing: the failing task's reason, a timeout message, or the reason passed to terminate. Empty while running; cleared by retry, restart, and rerun. See [Understanding reasonForIncompletion](../../devguide/how-tos/Workflows/debugging-workflows.md#understanding-reasonforincompletion). |
+| `failedReferenceTaskNames` | Reference names of the tasks that failed. |
+| `failedTaskNames` | Definition names of the tasks that failed. |
+| `lastRetriedTime` | Epoch milliseconds of the most recent retry; `0` if never retried. |
+| `reRunFromWorkflowId` | Set when this execution was rerun from another execution. |
+| `parentWorkflowId`, `parentWorkflowTaskId` | Present on sub-workflows: the parent execution and its `SUB_WORKFLOW` task. |
+| `event` | Name of the event that started the workflow, when started by an event handler. |
+
+### Get Workflow Status Summary
+
+```http
+GET /api/workflow/{workflowId}/status?includeOutput=false&includeVariables=false
+```
+
+This endpoint returns `WorkflowStatus`, a lightweight summary. `includeOutput` and `includeVariables` both default to `false`; set either to `true` only when that data is required.
 
 ### Get Tasks for a Workflow
 
@@ -420,9 +464,10 @@ curl -X POST 'http://localhost:8080/api/workflow/test' \
     "version": 1,
     "workflowDef": {...},
     "taskRefToMockOutput": {
-      "my_task_ref": {
-        "key": "mocked_value"
-      }
+      "my_task_ref": [{
+        "status": "COMPLETED",
+        "output": {"key": "mocked_value"}
+      }]
     }
   }'
 ```

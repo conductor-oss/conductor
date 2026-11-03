@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">AI agent</title>
+  <path fill="#172033" d="M32 6c2.2 0 4 1.8 4 4v4h8c5.5 0 10 4.5 10 10v21c0 5.5-4.5 10-10 10H20c-5.5 0-10-4.5-10-10V24c0-5.5 4.5-10 10-10h8v-4c0-2.2 1.8-4 4-4Zm0 4v4h0v-4ZM20 20c-2.2 0-4 1.8-4 4v21c0 2.2 1.8 4 4 4h24c2.2 0 4-1.8 4-4V24c0-2.2-1.8-4-4-4H20Zm6 9a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm12 0a5 5 0 1 1 0 10 5 5 0 0 1 0-10ZM22 43h20v3H22v-3Z"/>
+  <path fill="#7c3aed" d="m53 7 1.9 5.1L60 14l-5.1 1.9L53 21l-1.9-5.1L46 14l5.1-1.9L53 7Z"/>
+</svg>

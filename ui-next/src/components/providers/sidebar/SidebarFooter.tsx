@@ -13,9 +13,10 @@ import { SnackbarMessage } from "components/ui/SnackbarMessage";
 import { SidebarVersionBlock } from "./SidebarVersionBlock";
 import TokenIcon from "images/svg/token.svg";
 import { getAccessToken } from "components/features/auth/tokenManagerJotai";
+import { logger } from "utils/logger";
 import { Auth0User } from "types/User";
 import { FEATURES, featureFlags } from "utils";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 const isPlayground = featureFlags.isEnabled(FEATURES.PLAYGROUND);
 
@@ -26,7 +27,8 @@ interface SidebarFooterProps {
   user: Auth0User | null;
   conductorUser: { id: string } | null;
   logOut?: () => void;
-  conductorVersion: string;
+  /** undefined = loading (skeleton), null = error/unavailable, string = loaded */
+  conductorVersion?: string | null;
   uiVersion: string;
   showCopyAlert: boolean;
   setShowCopyAlert: (show: boolean) => void;
@@ -48,6 +50,7 @@ export const SidebarFooter = ({
   customUserBlock,
 }: SidebarFooterProps) => {
   const theme = useTheme();
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   if (customUserBlock != null) {
     return (
@@ -205,11 +208,24 @@ export const SidebarFooter = ({
                   const copyTokenButton = (
                     <Button
                       id="user-info-copy-token-btn"
-                      onClick={() => {
-                        setShowCopyAlert(true);
+                      onClick={async () => {
+                        // Only report success once the write has actually
+                        // happened: the toast used to fire first, so a missing
+                        // token or a rejected write still looked like a copy.
                         const accessToken = getAccessToken();
-                        if (accessToken) {
-                          navigator.clipboard.writeText(accessToken);
+                        if (!accessToken) {
+                          setCopyError("No access token to copy.");
+                          return;
+                        }
+                        try {
+                          await navigator.clipboard.writeText(accessToken);
+                          setShowCopyAlert(true);
+                        } catch (error) {
+                          logger.error(
+                            "[CopyToken] Clipboard write failed",
+                            error,
+                          );
+                          setCopyError("Could not copy to clipboard.");
                         }
                       }}
                       variant="outlined"
@@ -277,6 +293,16 @@ export const SidebarFooter = ({
               message="Copied to Clipboard"
               severity="success"
               onDismiss={() => setShowCopyAlert(false)}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+            />
+          )}
+
+          {copyError && (
+            <SnackbarMessage
+              id="copy-clipboard-error-popup"
+              message={copyError}
+              severity="error"
+              onDismiss={() => setCopyError(null)}
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
             />
           )}

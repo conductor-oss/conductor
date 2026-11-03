@@ -1,14 +1,17 @@
-import { Box } from "@mui/material";
+import { Box, Grid } from "@mui/material";
+import ConductorInput from "components/ui/inputs/ConductorInput";
+import { path as _path } from "lodash/fp";
 import { LLMFormFields } from "pages/definition/EditorPanel/TaskFormTab/forms/LLMFormFields";
 import { UiIntegrationsFieldType } from "types/FormFieldTypes";
-import { fieldsToFieldsFieldsComponents } from "utils/fieldHelpers";
+import {
+  fieldsToFieldsFieldsComponents,
+  updateField,
+} from "utils/fieldHelpers";
 import { ConductorCacheOutput } from "./ConductorCacheOutputForm";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
 import LLMFormFieldsWrapper from "./LLMFormFields/LLMFormFieldsWrapper";
-
-const promptFields = [UiIntegrationsFieldType.PROMPT_NAME];
 
 const modelFields = [
   UiIntegrationsFieldType.LLM_PROVIDER,
@@ -22,18 +25,20 @@ const fineTuningFields = [
   UiIntegrationsFieldType.STOP_WORDS,
 ];
 
-const promptFieldComponents = fieldsToFieldsFieldsComponents(promptFields);
 const modelFieldComponents = fieldsToFieldsFieldsComponents(modelFields);
 const fineTuningFieldComponents =
   fieldsToFieldsFieldsComponents(fineTuningFields);
 
+// prompt is a plain textarea (below), not the saved-prompt picker (PROMPT_NAME).
+// Enterprise plugins override with the saved AI Prompt picker (see conductor-ui).
 const allFieldComponents = [
-  ...promptFieldComponents,
   ...modelFieldComponents,
   ...fineTuningFieldComponents,
 ];
 
 export const LLMTextCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
+  const prompt = _path("inputParameters.prompt", task) || "";
+
   return (
     <LLMFormFieldsWrapper
       task={task}
@@ -46,12 +51,22 @@ export const LLMTextCompleteTaskForm = ({ task, onChange }: TaskFormProps) => {
             accordionAdditionalProps={{ defaultExpanded: true }}
             title="Prompt"
           >
-            <LLMFormFields
-              task={task}
-              onChange={onChange}
-              fieldFieldComponents={promptFieldComponents}
-              actor={actor}
-            />
+            <Grid container sx={{ width: "100%" }}>
+              <Grid size={12}>
+                <ConductorInput
+                  label="Prompt"
+                  name="prompt"
+                  value={prompt}
+                  onTextInputChange={(v) =>
+                    onChange(updateField("inputParameters.prompt", v, task))
+                  }
+                  multiline
+                  rows={6}
+                  fullWidth
+                  placeholder="Enter the text prompt to complete..."
+                />
+              </Grid>
+            </Grid>
           </TaskFormSection>
           <TaskFormSection
             accordionAdditionalProps={{ defaultExpanded: true }}

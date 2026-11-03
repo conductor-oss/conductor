@@ -33,11 +33,9 @@ export default function LeftPanelTabs({
 
   const isAgentWorkflow = isAgentWorkflowExecution(execution);
 
-  // Agent-classified executions get a curated tab set that matches
-  // Conductor-Agents' UI 1:1: Agent Execution, Workflow View (Diagram, relabeled),
-  // Task List, Timeline, Agent Definition (Summary, relabeled), JSON — no
-  // Workflow Input/Output, Variables, or Tasks to Domain. Regular workflows
-  // keep the full Conductor tab set unchanged.
+  // Agent-classified executions use a focused tab set. Input/Output remains
+  // available because it exposes the submitted prompt and final agent result.
+  // Variables and Tasks to Domain remain workflow-only controls.
   const leftPanelTabItems = isAgentWorkflow
     ? [
         {
@@ -60,6 +58,12 @@ export default function LeftPanelTabs({
           label: "Timeline",
           onClick: () => onChangeExecutionTab(ExecutionTabs.TIMELINE_TAB),
           value: ExecutionTabs.TIMELINE_TAB,
+        },
+        {
+          label: "Input/Output",
+          onClick: () =>
+            onChangeExecutionTab(ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB),
+          value: ExecutionTabs.WORKFLOW_INPUT_OUTPUT_TAB,
         },
         {
           label: "Agent Definition",

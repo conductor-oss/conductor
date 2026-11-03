@@ -4,7 +4,25 @@ description: "Understand workflows in Conductor — JSON workflow definition, dy
 
 # Workflows
 
-A workflow is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
+<section class="concept-hero concept-hero--workflows">
+  <svg class="concept-hero__graphic" viewBox="0 36 440 122" role="img" aria-label="A workflow definition runs tasks through durable checkpoints to a completed outcome">
+    <defs><marker id="workflow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="currentColor" /></marker></defs>
+    <rect x="18" y="65" width="112" height="54" rx="10" class="concept-hero__node" />
+    <text x="74" y="89" text-anchor="middle" class="concept-hero__label">Definition</text>
+    <text x="74" y="107" text-anchor="middle" class="concept-hero__detail">JSON or code</text>
+    <path d="M130 92 H176" class="concept-hero__line" marker-end="url(#workflow-arrow)" />
+    <rect x="184" y="45" width="116" height="94" rx="10" class="concept-hero__node concept-hero__node--accent" />
+    <text x="242" y="74" text-anchor="middle" class="concept-hero__label">Tasks</text>
+    <path d="M209 91 H275 M209 112 H275" class="concept-hero__line concept-hero__line--inside" />
+    <text x="242" y="128" text-anchor="middle" class="concept-hero__detail">durable state</text>
+    <path d="M300 92 H346" class="concept-hero__line" marker-end="url(#workflow-arrow)" />
+    <circle cx="386" cy="92" r="32" class="concept-hero__outcome" />
+    <path d="M371 93 l10 10 20 -22" class="concept-hero__check" />
+    <text x="386" y="145" text-anchor="middle" class="concept-hero__detail">Outcome</text>
+  </svg>
+</section>
+
+A **workflow** is a sequence of tasks with a defined order and execution. Each workflow encapsulates a specific process, such as:
 
 - Classifying documents
 - Ordering from a self-checkout service

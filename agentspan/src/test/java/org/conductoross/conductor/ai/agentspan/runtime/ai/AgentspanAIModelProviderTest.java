@@ -49,4 +49,72 @@ class AgentspanAIModelProviderTest {
     void unknownProviderNeverAppearsConfigured() {
         assertThat(provider.isProviderConfigured("unknown-provider")).isFalse();
     }
+
+    // =================================================================
+    // OPENAI_BASE_URL env-var fallback (issue-1416 — Bug 2)
+    // =================================================================
+
+    /**
+     * resolveConfiguredBaseUrl returns the value from the env-var fallback path when the credential
+     * store has nothing — verified via a subclass that injects a fake env value.
+     */
+    @Test
+    void resolveConfiguredBaseUrl_returnsEnvVarFallbackWhenCredentialStoreEmpty() {
+        String fakeUrl = "http://localhost:9001/v1";
+
+        AgentspanAIModelProvider providerWithEnv =
+                new AgentspanAIModelProvider(
+                        List.of(),
+                        new StandardEnvironment(),
+                        new OkHttpClient(),
+                        new CredentialResolutionService(new NoopSecretsDAO())) {
+                    @Override
+                    protected String getSystemEnv(String name) {
+                        return "OPENAI_BASE_URL".equals(name) ? fakeUrl : null;
+                    }
+                };
+
+        assertThat(providerWithEnv.resolveConfiguredBaseUrl("openai")).isEqualTo(fakeUrl);
+    }
+
+    @Test
+    void resolveConfiguredBaseUrl_returnsNullWhenNeitherStoreNorEnvHasValue() {
+        assertThat(provider.resolveConfiguredBaseUrl("openai")).isNull();
+    }
+
+    // =================================================================
+    // API key trimming (issue-1437)
+    // =================================================================
+
+    private AgentspanAIModelProvider providerWithRawEnv(String envName, String rawValue) {
+        return new AgentspanAIModelProvider(
+                List.of(),
+                new StandardEnvironment(),
+                new OkHttpClient(),
+                new CredentialResolutionService(new NoopSecretsDAO())) {
+            @Override
+            String readRawEnv(String name) {
+                return envName.equals(name) ? rawValue : null;
+            }
+        };
+    }
+
+    @Test
+    void getSystemEnv_stripsTrailingNewline() {
+        assertThat(providerWithRawEnv("OPENAI_API_KEY", "sk-key\n").getSystemEnv("OPENAI_API_KEY"))
+                .isEqualTo("sk-key");
+    }
+
+    @Test
+    void getSystemEnv_stripsLeadingAndTrailingWhitespace() {
+        assertThat(
+                        providerWithRawEnv("OPENAI_API_KEY", "  sk-key  ")
+                                .getSystemEnv("OPENAI_API_KEY"))
+                .isEqualTo("sk-key");
+    }
+
+    @Test
+    void getSystemEnv_returnsNullWhenEnvVarAbsent() {
+        assertThat(provider.getSystemEnv("OPENAI_API_KEY_NONEXISTENT_XYZ")).isNull();
+    }
 }

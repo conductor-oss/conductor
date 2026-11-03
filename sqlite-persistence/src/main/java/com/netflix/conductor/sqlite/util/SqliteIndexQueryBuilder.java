@@ -15,7 +15,6 @@ package com.netflix.conductor.sqlite.util;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -44,6 +43,7 @@ public class SqliteIndexQueryBuilder {
         "correlation_id",
         "workflow_type",
         "start_time",
+        "end_time",
         "status",
         "task_id",
         "task_type",
@@ -57,16 +57,21 @@ public class SqliteIndexQueryBuilder {
     private static final String[] VALID_SORT_ORDER = {"ASC", "DESC"};
 
     private static class Condition {
+        private static final Pattern CONDITION_PATTERN =
+                Pattern.compile("^([a-zA-Z]++)\\s*(=|>|<|IN)\\s*(.*)$");
+
         private String attribute;
         private String operator;
         private List<String> values;
-        private final String CONDITION_REGEX = "([a-zA-Z]+)\\s?(=|>|<|IN)\\s?(.*)";
+
+        /** Must match {@code SqliteIndexDAO}'s write-path format exactly. */
+        private static final DateTimeFormatter SQLITE_UTC_TIMESTAMP =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneOffset.UTC);
 
         public Condition() {}
 
         public Condition(String query) {
-            Pattern conditionRegex = Pattern.compile(CONDITION_REGEX);
-            Matcher conditionMatcher = conditionRegex.matcher(query);
+            Matcher conditionMatcher = CONDITION_PATTERN.matcher(query);
             if (conditionMatcher.find()) {
                 String[] valueArr = conditionMatcher.group(3).replaceAll("[\"'()]", "").split(",");
                 ArrayList<String> values = new ArrayList<>(Arrays.asList(valueArr));
@@ -103,7 +108,12 @@ public class SqliteIndexQueryBuilder {
                 return "lower(" + attribute + ") LIKE ?";
             } else {
                 if (attribute.endsWith("_time")) {
-                    return attribute + " " + operator + " datetime(?)";
+                    // No datetime() wrapper: it truncates to whole seconds, so
+                    // 'start_time < ?' wrongly excluded a row stored at exactly '...03.000'
+                    // ('...03.000' < '...03' is false -- longer string, same prefix). With
+                    // identical canonical-UTC text on both sides the comparison is exact
+                    // (issue #1497).
+                    return attribute + " " + operator + " ?";
                 } else if (operator.equals("=")
                         && values.size() == 1
                         && values.get(0).contains("*")) {
@@ -151,10 +161,7 @@ public class SqliteIndexQueryBuilder {
         }
 
         private String millisToUtc(String millis) {
-            Long startTimeMilli = Long.parseLong(millis);
-            ZonedDateTime startDate =
-                    ZonedDateTime.ofInstant(Instant.ofEpochMilli(startTimeMilli), ZoneOffset.UTC);
-            return DateTimeFormatter.ISO_DATE_TIME.format(startDate);
+            return SQLITE_UTC_TIMESTAMP.format(Instant.ofEpochMilli(Long.parseLong(millis)));
         }
 
         private boolean isValid() {
