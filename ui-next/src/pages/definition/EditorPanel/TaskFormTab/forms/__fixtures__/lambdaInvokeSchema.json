@@ -10,6 +10,7 @@
       "default": "RequestResponse",
       "description": "Synchronous invocation only",
       "enum": ["RequestResponse"],
+      "oneOf": [{ "const": "RequestResponse", "title": "Sync" }],
       "type": "string"
     },
     "payload": {

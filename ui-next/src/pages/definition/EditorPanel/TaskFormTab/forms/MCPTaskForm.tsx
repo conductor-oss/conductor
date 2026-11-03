@@ -198,8 +198,17 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     },
   });
 
-  const { integrations, isLoading: isLoadingIntegrations } =
+  const { integrations: allIntegrations, isLoading: isLoadingIntegrations } =
     useMCPIntegrations();
+  const integrationType =
+    task?.inputParameters?.integrationType ||
+    allIntegrations.find(
+      (integration) =>
+        integration.name === task?.inputParameters?.integrationName,
+    )?.type;
+  const integrations = allIntegrations.filter(
+    (integration) => !integrationType || integration.type === integrationType,
+  );
   const integrationAvailable = integrations.some(
     (integration) =>
       integration.name === task?.inputParameters?.integrationName,

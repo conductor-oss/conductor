@@ -59,16 +59,35 @@ const invocation = {
 
 it.each([undefined, "RequestResponse"])(
   "offers synchronous invocation (%s) and exposes the optional qualifier",
-  (invocationType) => {
+  async (invocationType) => {
+    const onChange = vi.fn();
     render(
       <ThemeProvider>
         <MemoryRouter>
           <MCPTaskForm
             task={{ inputParameters: { ...invocation, invocationType } }}
-            onChange={vi.fn()}
+            onChange={onChange}
           />
         </MemoryRouter>
       </ThemeProvider>,
+    );
+    const invocationSelect = screen.getByRole("combobox", {
+      name: /Invocation Type/,
+    });
+    fireEvent.mouseDown(invocationSelect);
+    fireEvent.click(screen.getByRole("option", { name: "Sync" }));
+    expect(invocationSelect).toHaveValue("Sync");
+    fireEvent.change(screen.getByRole("textbox", { name: /Qualifier/ }), {
+      target: { value: "prod" },
+    });
+    await waitFor(() =>
+      expect(onChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          inputParameters: expect.objectContaining({
+            invocationType: "RequestResponse",
+          }),
+        }),
+      ),
     );
     expect(
       screen.queryByRole("textbox", { name: /Result Queue Arn/ }),

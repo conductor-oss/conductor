@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { PropsWithChildren } from "react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -183,4 +183,86 @@ it("opens a connection-only task with a required operation selector and no prema
     enterpriseApiFeature: FEATURES.INTEGRATIONS,
     when: false,
   });
+});
+
+it.each(["aws-s3", undefined])(
+  "limits the connection choices to the selected provider (%s)",
+  (integrationType) => {
+    connections.mockReturnValue({
+      integrations: [
+        { name: "s3-primary", type: "aws-s3", status: "active" },
+        { name: "s3-other", type: "aws-s3", status: "active" },
+        { name: "s3-disabled", type: "aws-s3", status: "inactive" },
+        { name: "lambda", type: "aws-lambda", status: "active" },
+        { name: "gcp", type: "google-cloud-functions", status: "active" },
+      ],
+      isLoading: false,
+    });
+    const onChange = vi.fn();
+    render(
+      <ThemeProvider>
+        <MemoryRouter>
+          <MCPTaskForm
+            task={{
+              inputParameters: {
+                integrationName: "s3-primary",
+                integrationType,
+                method: "aws-s3-List Buckets",
+              },
+            }}
+            onChange={onChange}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    fireEvent.keyDown(screen.getByLabelText(/^Integration/), {
+      key: "ArrowDown",
+    });
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["s3-primary", "s3-other"]);
+    fireEvent.click(screen.getByRole("option", { name: "s3-other" }));
+    expect(onChange).toHaveBeenLastCalledWith({
+      inputParameters: {
+        integrationName: "s3-other",
+        integrationType: "aws-s3",
+      },
+    });
+  },
+);
+
+it("does not fetch metadata for a connection belonging to a different provider", () => {
+  connections.mockReturnValue({
+    integrations: [{ name: "lambda", type: "aws-s3", status: "active" }],
+    isLoading: false,
+  });
+  show();
+  expect(toolsHook).toHaveBeenCalledWith(undefined);
+  expect(fetchHook).toHaveBeenCalledWith(expect.any(String), {
+    enterpriseApiFeature: FEATURES.INTEGRATIONS,
+    when: false,
+  });
+});
+
+it("retains initial connection selection for a generic task without a provider", () => {
+  connections.mockReturnValue({
+    integrations: [
+      { name: "s3-primary", type: "aws-s3", status: "active" },
+      { name: "lambda", type: "aws-lambda", status: "active" },
+    ],
+    isLoading: false,
+  });
+  render(
+    <ThemeProvider>
+      <MemoryRouter>
+        <MCPTaskForm task={{ inputParameters: {} }} onChange={vi.fn()} />
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+  fireEvent.keyDown(screen.getByLabelText(/^Integration/), {
+    key: "ArrowDown",
+  });
+  expect(
+    screen.getAllByRole("option").map((option) => option.textContent),
+  ).toEqual(["s3-primary", "lambda"]);
 });
