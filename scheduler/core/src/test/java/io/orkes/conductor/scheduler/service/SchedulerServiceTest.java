@@ -31,6 +31,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.validation.beanvalidation.MethodValidationInterceptor;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -48,6 +50,7 @@ import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import jakarta.validation.ConstraintViolationException;
 import tools.jackson.databind.ObjectMapper;
 
 import static io.orkes.conductor.scheduler.service.SchedulerService.CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME;
@@ -213,7 +216,13 @@ class SchedulerServiceTest {
     @Test
     @DisplayName("createOrUpdateWorkflowSchedule rejects a missing or blank name")
     void testCreateScheduleRequiresName() {
-        SchedulerService service = createServiceWithRedisHealthy(new SchedulerTimeProvider());
+        // Wrap the service the way Spring's MethodValidationPostProcessor does for @Validated
+        // beans.
+        ProxyFactory proxyFactory =
+                new ProxyFactory(createServiceWithRedisHealthy(new SchedulerTimeProvider()));
+        proxyFactory.setProxyTargetClass(true);
+        proxyFactory.addAdvice(new MethodValidationInterceptor());
+        SchedulerService service = (SchedulerService) proxyFactory.getProxy();
 
         for (String name : Arrays.asList(null, "", "   ")) {
             WorkflowSchedule schedule = new WorkflowSchedule();
@@ -222,11 +231,11 @@ class SchedulerServiceTest {
             schedule.setStartWorkflowRequest(new StartWorkflowRequest());
             schedule.getStartWorkflowRequest().setName("test_workflow");
 
-            IllegalArgumentException e =
+            ConstraintViolationException e =
                     assertThrows(
-                            IllegalArgumentException.class,
+                            ConstraintViolationException.class,
                             () -> service.createOrUpdateWorkflowSchedule(schedule));
-            assertEquals("Schedule name is required", e.getMessage());
+            assertTrue(e.getMessage().contains("Schedule name cannot be null or empty"));
         }
         assertEquals(0, queueDAO.getCounter("pushWithPriority"));
     }

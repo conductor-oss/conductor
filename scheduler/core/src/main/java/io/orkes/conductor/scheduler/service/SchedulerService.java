@@ -32,6 +32,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
@@ -57,6 +58,7 @@ import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -66,6 +68,7 @@ import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Conditional(SchedulerConditions.class)
+@Validated
 public class SchedulerService extends LifecycleAwareComponent {
 
     public static final String LOCK_CLEANUP_KEY = "SCHEDULER_ARCHIVAL_RECORDS_CLEANUP";
@@ -1041,10 +1044,8 @@ public class SchedulerService extends LifecycleAwareComponent {
         return workflowSchedule.getZoneId() != null ? workflowSchedule.getZoneId() : "UTC";
     }
 
-    public WorkflowSchedule createOrUpdateWorkflowSchedule(WorkflowSchedule workflowSchedule) {
-        if (StringUtils.isBlank(workflowSchedule.getName())) {
-            throw new IllegalArgumentException("Schedule name is required");
-        }
+    public WorkflowSchedule createOrUpdateWorkflowSchedule(
+            @Valid WorkflowSchedule workflowSchedule) {
         String userId = getCurrentUserId();
         checkScheduleLimit(workflowSchedule);
 
