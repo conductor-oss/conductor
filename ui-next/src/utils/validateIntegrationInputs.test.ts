@@ -62,23 +62,13 @@ describe("Connected App definition validation", () => {
     },
   );
 
-  it("requires the async queue but allows optional timings to be absent", async () => {
+  it("rejects deferred asynchronous Lambda invocation before save", async () => {
     await expect(
       validateIntegrationInputs(
         workflow({ ...input, invocationType: "Event" }),
         fetchSchema(),
       ),
     ).rejects.toMatchObject({ status: 400 });
-    await expect(
-      validateIntegrationInputs(
-        workflow({
-          ...input,
-          invocationType: "Event",
-          resultQueueArn: "arn:aws:sqs:us-east-1:123456789012:results",
-        }),
-        fetchSchema(),
-      ),
-    ).resolves.toBeUndefined();
   });
 
   it("allows expressions, qualifiers and dynamic routing without treating them as literals", async () => {
@@ -87,7 +77,7 @@ describe("Connected App definition validation", () => {
       {
         ...input,
         functionName: "${workflow.input.functionName}",
-        pollIntervalSeconds: "${workflow.input.poll}",
+        qualifier: "${workflow.input.qualifier}",
         invocationType: "${workflow.input.mode}",
       },
       { ...input, qualifier: "prod" },

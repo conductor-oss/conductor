@@ -3,7 +3,21 @@ import {
   integrationUISchema,
   removeInactiveIntegrationFields,
 } from "./integrationSchema";
-import schema from "pages/definition/EditorPanel/TaskFormTab/forms/__fixtures__/lambdaInvokeSchema.json";
+// Synthetic conditional schema covers generic form behavior independently of providers.
+const schema = {
+  type: "object",
+  properties: {
+    functionName: { type: "string" },
+    deliveryMode: { enum: ["Direct", "Routed"] },
+    destination: { type: "string" },
+    qualifier: { type: "string" },
+  },
+  if: {
+    required: ["deliveryMode"],
+    properties: { deliveryMode: { const: "Routed" } },
+  },
+  else: { not: { anyOf: [{ required: ["destination"] }] } },
+};
 
 describe("conditional integration forms", () => {
   it("preserves ordinary schemas and edits which do not change mode", () => {
@@ -15,8 +29,10 @@ describe("conditional integration forms", () => {
     const input = { name: "value" };
     expect(removeInactiveIntegrationFields(ordinary, {}, input)).toBe(input);
     expect(removeInactiveIntegrationFields(schema, {}, input)).toBe(input);
-    const async = { invocationType: "Event", resultQueueArn: "queue" };
-    expect(removeInactiveIntegrationFields(schema, async, async)).toBe(async);
+    const routed = { deliveryMode: "Routed", destination: "target" };
+    expect(removeInactiveIntegrationFields(schema, routed, routed)).toBe(
+      routed,
+    );
   });
   it("does not assign rules to unrelated controls and removes only excluded fields", () => {
     const ui = integrationUISchema(schema);
@@ -27,14 +43,14 @@ describe("conditional integration forms", () => {
     expect(
       removeInactiveIntegrationFields(
         schema,
-        { invocationType: "Event" },
+        { deliveryMode: "Routed" },
         {
-          invocationType: "RequestResponse",
-          resultQueueArn: "queue",
+          deliveryMode: "Direct",
+          destination: "target",
           qualifier: "7",
         },
       ),
-    ).toEqual({ invocationType: "RequestResponse", qualifier: "7" });
+    ).toEqual({ deliveryMode: "Direct", qualifier: "7" });
     expect(integrationUISchema({ type: "string" })).toBeDefined();
     expect(
       integrationUISchema({

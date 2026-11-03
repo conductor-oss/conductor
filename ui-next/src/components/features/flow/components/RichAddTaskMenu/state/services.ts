@@ -4,10 +4,7 @@ import { logger } from "utils/logger";
 
 import { featureFlags, FEATURES } from "utils/flags";
 import { RichAddTaskMenuMachineContext } from "./types";
-import {
-  isConnectedAppsEnabled,
-  isServerlessIntegrationEnabled,
-} from "utils/serverlessIntegrations";
+import { isServerlessIntegrationEnabled } from "utils/serverlessIntegrations";
 
 const fetchContext = fetchContextNonHook();
 
@@ -52,10 +49,7 @@ export const fetchForWorkflowDefinitions = async ({
 export const fetchForMCPIntegrations = async ({
   authHeaders: headers,
 }: RichAddTaskMenuMachineContext) => {
-  if (
-    !featureFlags.isEnabled(FEATURES.INTEGRATIONS) ||
-    !isConnectedAppsEnabled()
-  ) {
+  if (!featureFlags.isEnabled(FEATURES.INTEGRATIONS)) {
     return {
       supportedIntegrations: [],
       availableIntegrations: [],

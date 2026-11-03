@@ -56,10 +56,9 @@ const invocation = {
   functionName: "my-function",
   payload: "42",
 };
-const queue = "arn:aws:sqs:us-east-1:123456789012:lambda-results";
 
 it.each([undefined, "RequestResponse"])(
-  "hides async-only controls for Sync (%s) and exposes the optional qualifier",
+  "offers synchronous invocation (%s) and exposes the optional qualifier",
   (invocationType) => {
     render(
       <ThemeProvider>
@@ -86,84 +85,7 @@ it.each([undefined, "RequestResponse"])(
   },
 );
 
-it("clears inactive async settings when switching to Sync while retaining the qualifier and payload", async () => {
-  const onChange = vi.fn();
-  render(
-    <ThemeProvider>
-      <MemoryRouter>
-        <MCPTaskForm
-          task={{
-            inputParameters: {
-              ...invocation,
-              invocationType: "Event",
-              resultQueueArn: queue,
-              pollIntervalSeconds: 5,
-              completionTimeoutSeconds: 900,
-              qualifier: "prod",
-            },
-          }}
-          onChange={onChange}
-        />
-      </MemoryRouter>
-    </ThemeProvider>,
-  );
-  fireEvent.mouseDown(
-    screen.getByRole("combobox", { name: /Invocation Type/ }),
-  );
-  fireEvent.click(screen.getByRole("option", { name: "Sync" }));
-  await waitFor(() =>
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        inputParameters: {
-          ...invocation,
-          invocationType: "RequestResponse",
-          qualifier: "prod",
-        },
-      }),
-    ),
-  );
-});
-
-it.each([
-  ["RequestResponse", "Sync", "Async", "Event"],
-  ["Event", "Async", "Sync", "RequestResponse"],
-])(
-  "displays %s as %s and saves AWS values when selecting %s",
-  async (stored, label, nextLabel, nextValue) => {
-    const onChange = vi.fn();
-    render(
-      <ThemeProvider>
-        <MemoryRouter>
-          <MCPTaskForm
-            task={{
-              inputParameters: { ...invocation, invocationType: stored },
-            }}
-            onChange={onChange}
-          />
-        </MemoryRouter>
-      </ThemeProvider>,
-    );
-    const selection = screen.getByRole("combobox", { name: /Invocation Type/ });
-    expect(selection).toHaveValue(label);
-    fireEvent.mouseDown(selection);
-    expect(
-      screen.queryByRole("option", { name: "RequestResponse" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("option", { name: "Event" }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("option", { name: nextLabel }));
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({
-          inputParameters: { ...invocation, invocationType: nextValue },
-        }),
-      ),
-    );
-  },
-);
-
-it("validates Event-specific requirements without requiring a destination for synchronous calls", () => {
+it("validates synchronous invocations and rejects deferred Event invocation", () => {
   const validate = new Ajv({ strict: false }).compile(
     downgradeSchemaToDraft7(schema),
   );
@@ -171,87 +93,9 @@ it("validates Event-specific requirements without requiring a destination for sy
   expect(validate({ ...invocation, invocationType: "RequestResponse" })).toBe(
     true,
   );
+  expect(validate({ ...invocation, qualifier: "prod" })).toBe(true);
   expect(validate({ ...invocation, invocationType: "Event" })).toBe(false);
-  expect(
-    validate({ ...invocation, invocationType: "Event", resultQueueArn: queue }),
-  ).toBe(true);
-  expect(
-    validate({
-      ...invocation,
-      invocationType: "Event",
-      resultQueueArn: `${queue}.fifo`,
-    }),
-  ).toBe(false);
-  expect(
-    validate({
-      ...invocation,
-      invocationType: "RequestResponse",
-      resultQueueArn: queue,
-    }),
-  ).toBe(false);
-  expect(validate({ ...invocation, pollIntervalSeconds: 5 })).toBe(false);
-  expect(validate({ ...invocation, completionTimeoutSeconds: 900 })).toBe(
-    false,
-  );
-  for (const [field, value] of [
-    ["pollIntervalSeconds", 0],
-    ["pollIntervalSeconds", 301],
-    ["completionTimeoutSeconds", 0],
-    ["completionTimeoutSeconds", 86401],
-  ]) {
-    expect(
-      validate({
-        ...invocation,
-        invocationType: "Event",
-        resultQueueArn: queue,
-        [field]: value,
-      }),
-    ).toBe(false);
-  }
-});
-
-it("renders editable SQS completion settings through the real schema form and preserves routing and payload", async () => {
-  const onChange = vi.fn();
-  render(
-    <ThemeProvider>
-      <MemoryRouter>
-        <MCPTaskForm
-          task={{
-            inputParameters: {
-              ...invocation,
-              invocationType: "Event",
-              resultQueueArn: queue,
-              pollIntervalSeconds: 5,
-              completionTimeoutSeconds: 900,
-            },
-          }}
-          onChange={onChange}
-        />
-      </MemoryRouter>
-    </ThemeProvider>,
-  );
-  const destination = screen.getByRole("textbox", { name: /Result Queue Arn/ });
-  expect(destination).toHaveValue(queue);
-  expect(
-    screen.getByRole("spinbutton", { name: /Poll Interval Seconds/ }),
-  ).toHaveValue(5);
-  expect(
-    screen.getByRole("spinbutton", { name: /Completion Timeout Seconds/ }),
-  ).toHaveValue(900);
-  fireEvent.change(destination, { target: { value: `${queue}-new` } });
-  await waitFor(() =>
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        inputParameters: {
-          ...invocation,
-          invocationType: "Event",
-          resultQueueArn: `${queue}-new`,
-          pollIntervalSeconds: 5,
-          completionTimeoutSeconds: 900,
-        },
-      }),
-    ),
-  );
+  expect(schema.properties.invocationType.enum).toEqual(["RequestResponse"]);
 });
 
 it("renders the package source control for Create Function while retaining schema-driven inputs", () => {

@@ -27,15 +27,8 @@ beforeEach(() => {
   fetchRequest.mockReset();
 });
 
-it("does not fetch Connected Apps when integration access or rollout is disabled", async () => {
-  for (const config of [
-    {},
-    { [FEATURES.INTEGRATIONS]: true },
-    {
-      [FEATURES.CONNECTED_APPS_ENABLED]: true,
-      [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-    },
-  ]) {
+it("does not fetch Connected Apps when integration access is disabled", async () => {
+  for (const config of [{}, {}]) {
     window.conductor = config;
     expect(await fetchForMCPIntegrations(context)).toEqual({
       supportedIntegrations: [],
@@ -48,9 +41,6 @@ it("does not fetch Connected Apps when integration access or rollout is disabled
 it("exposes advertised catalog independently of configured connections and excludes orphaned types", async () => {
   window.conductor = {
     [FEATURES.INTEGRATIONS]: true,
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-    [FEATURES.SERVERLESS_FIREBASE_FUNCTIONS_ENABLED]: true,
   };
   const entries = [
     "aws-lambda",
@@ -99,8 +89,6 @@ it("exposes advertised catalog independently of configured connections and exclu
 it("retains available catalog data when the saved connection request fails", async () => {
   window.conductor = {
     [FEATURES.INTEGRATIONS]: true,
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
   };
   fetchRequest.mockImplementation((url) =>
     url === "/integrations/def"
@@ -112,13 +100,18 @@ it("retains available catalog data when the saved connection request fails", asy
   expect(result.availableIntegrations).toEqual([]);
 });
 
-it("blocks stale drill-down requests for disabled providers", async () => {
-  expect(await fetchForIntegrationTools(context)).toEqual([]);
+it("requires a provider selection before fetching tools", async () => {
+  expect(
+    await fetchForIntegrationTools({
+      ...context,
+      integrationDrillDownMenu: {
+        ...context.integrationDrillDownMenu,
+        selectedIntegration: null,
+      },
+    } as RichAddTaskMenuMachineContext),
+  ).toEqual([]);
   expect(fetchRequest).not.toHaveBeenCalled();
-  window.conductor = {
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
-    [FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED]: true,
-  };
+  window.conductor = {};
   fetchRequest.mockResolvedValue([{ api: "invoke" }]);
   expect(await fetchForIntegrationTools(context)).toEqual([{ api: "invoke" }]);
   expect(fetchRequest).toHaveBeenCalledWith(
@@ -131,7 +124,6 @@ it("blocks stale drill-down requests for disabled providers", async () => {
 it("does not admit saved providers if the authoritative catalog request fails", async () => {
   window.conductor = {
     [FEATURES.INTEGRATIONS]: true,
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
   };
   fetchRequest.mockImplementation((url) =>
     url === "/integrations/def"
@@ -147,7 +139,6 @@ it("does not admit saved providers if the authoritative catalog request fails", 
 it("handles empty fulfilled catalog and saved-provider responses", async () => {
   window.conductor = {
     [FEATURES.INTEGRATIONS]: true,
-    [FEATURES.CONNECTED_APPS_ENABLED]: true,
   };
   fetchRequest.mockResolvedValue(undefined);
   expect(await fetchForMCPIntegrations(context)).toEqual({

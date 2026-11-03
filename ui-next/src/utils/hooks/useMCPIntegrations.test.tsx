@@ -1,6 +1,5 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { FEATURES } from "utils/flags";
 import { useMCPIntegrations, useMCPTools } from "./useMCPIntegrations";
 
 const { fetchHook, definitions, providers } = vi.hoisted(() => ({
@@ -50,15 +49,7 @@ beforeEach(() => {
   }));
 });
 
-it("excludes cached providers and disables requests when the rollout is off", () => {
-  const { result } = renderHook(useMCPIntegrations);
-  expect(result.current.integrations).toEqual([]);
-  for (const [, options] of fetchHook.mock.calls)
-    expect(options.when).toBe(false);
-});
-
 it("uses all advertised MCP types, but only configured enabled connections", () => {
-  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
   const { result } = renderHook(useMCPIntegrations);
   expect(result.current.integrations.map((item) => item.name)).toEqual([
     "lambda",
@@ -76,7 +67,6 @@ it("uses all advertised MCP types, but only configured enabled connections", () 
   ).toBe(false);
 });
 it("handles absent catalog without admitting orphaned configured providers", () => {
-  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
   fetchHook.mockImplementation((url) => ({
     data: url === "/integrations/def" ? undefined : providers,
     isLoading: false,
@@ -85,30 +75,15 @@ it("handles absent catalog without admitting orphaned configured providers", () 
     [],
   );
 });
-it("rechecks the master against stable cached responses", () => {
-  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
-  const { result, rerender } = renderHook(useMCPIntegrations);
-  expect(result.current.integrations).toHaveLength(5);
-  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = false;
-  rerender();
-  expect(result.current.integrations).toEqual([]);
-});
+
 it("reports loading with missing responses", () => {
   fetchHook.mockReturnValue({ data: undefined, isLoading: true });
   const { result } = renderHook(useMCPIntegrations);
   expect(result.current.integrations).toEqual([]);
   expect(result.current.isLoading).toBe(true);
 });
-it("suppresses tool fetches and cached tools without a selection or master", () => {
+it("suppresses tool fetches and cached tools without a selection", () => {
   fetchHook.mockReturnValue({ data: [{ api: "invoke" }], isLoading: false });
-  expect(renderHook(() => useMCPTools("lambda")).result.current.tools).toEqual(
-    [],
-  );
-  expect(fetchHook).toHaveBeenLastCalledWith(
-    "/integrations/lambda/def/apis",
-    expect.objectContaining({ when: false }),
-  );
-  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = true;
   expect(renderHook(() => useMCPTools()).result.current.tools).toEqual([]);
   expect(renderHook(() => useMCPTools("azure")).result.current.tools).toEqual([
     { api: "invoke" },
@@ -116,7 +91,6 @@ it("suppresses tool fetches and cached tools without a selection or master", () 
 });
 
 it("accepts every advertised migrated provider without frontend allowlists", () => {
-  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
   const entries = [
     "aws-lambda",
     "aws-s3",
@@ -151,7 +125,6 @@ it("accepts every advertised migrated provider without frontend allowlists", () 
 });
 
 it("returns empty tools when an enabled selection has no response yet", () => {
-  window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
   fetchHook.mockReturnValue({ data: undefined, isLoading: true });
   const { result } = renderHook(() => useMCPTools("azure"));
   expect(result.current.tools).toEqual([]);

@@ -1,10 +1,7 @@
 import { FEATURES } from "utils/flags";
 import { IntegrationDef, IntegrationI } from "types/Integrations";
 import { useFetch } from "utils/query";
-import {
-  isConnectedAppsEnabled,
-  isServerlessIntegrationEnabled,
-} from "utils/serverlessIntegrations";
+import { isServerlessIntegrationEnabled } from "utils/serverlessIntegrations";
 
 export const useMCPIntegrations = () => {
   const integrationsUrl = `/integrations/def`;
@@ -14,17 +11,13 @@ export const useMCPIntegrations = () => {
     IntegrationDef[]
   >(integrationsUrl, {
     enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    when: isConnectedAppsEnabled(),
   });
   const { data: providersData, isLoading: isLoadingProviders } = useFetch<
     IntegrationI[]
   >(providersUrl, {
     enterpriseApiFeature: FEATURES.INTEGRATIONS,
-    when: isConnectedAppsEnabled(),
   });
 
-  // Cached responses can retain their identity while rollout flags change.
-  // Derive the exposed providers on every render, rather than memoizing only data.
   const supportedIntegrations =
     integrationsData?.filter(
       (integration) =>
@@ -60,8 +53,7 @@ export const useMCPTools = (integrationName?: string) => {
     ? `/integrations/${integrationName}/def/apis`
     : "";
 
-  const selectionAvailable =
-    Boolean(integrationName) && isConnectedAppsEnabled();
+  const selectionAvailable = Boolean(integrationName);
   const { data: tools, isLoading } = useFetch(toolsUrl, {
     enterpriseApiFeature: FEATURES.INTEGRATIONS,
     when: selectionAvailable,

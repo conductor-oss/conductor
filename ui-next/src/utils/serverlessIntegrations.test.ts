@@ -1,9 +1,5 @@
 import { beforeEach, expect, it } from "vitest";
-import { FEATURES } from "./flags";
-import {
-  isConnectedAppsEnabled,
-  isIntegrationVisible,
-} from "./serverlessIntegrations";
+import { isIntegrationVisible } from "./serverlessIntegrations";
 beforeEach(() => {
   window.conductor = {};
 });
@@ -33,22 +29,18 @@ const providers = [
   "wordpress-com",
 ];
 it.each(providers)(
-  "gates advertised MCP provider %s only on the master",
+  "shows advertised MCP provider %s without rollout configuration",
   (type) => {
-    expect(isIntegrationVisible({ type, category: "MCP" })).toBe(false);
-    window.conductor = { [FEATURES.CONNECTED_APPS_ENABLED]: true };
-    expect(isConnectedAppsEnabled()).toBe(true);
     expect(isIntegrationVisible({ type, category: "MCP" })).toBe(true);
-    window.conductor[FEATURES.SERVERLESS_AWS_LAMBDA_ENABLED] = false;
+
     expect(isIntegrationVisible({ type, category: "MCP" })).toBe(true);
   },
 );
-it("defaults off, rejects malformed MCP types, and preserves native integrations", () => {
-  expect(isConnectedAppsEnabled()).toBe(false);
+it("rejects malformed MCP types and preserves native integrations", () => {
   for (const type of ["aws", "gcp", "openai", "relational_db"]) {
     expect(isIntegrationVisible({ type, category: "CLOUD" })).toBe(true);
   }
-  window.conductor[FEATURES.CONNECTED_APPS_ENABLED] = true;
+
   expect(isIntegrationVisible({ category: "MCP" })).toBe(false);
   expect(isIntegrationVisible({ type: "", category: "MCP" })).toBe(false);
 });
