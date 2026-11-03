@@ -31,8 +31,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.validation.beanvalidation.MethodValidationInterceptor;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -216,13 +214,7 @@ class SchedulerServiceTest {
     @Test
     @DisplayName("createOrUpdateWorkflowSchedule rejects a missing or blank name")
     void testCreateScheduleRequiresName() {
-        // Wrap the service the way Spring's MethodValidationPostProcessor does for @Validated
-        // beans.
-        ProxyFactory proxyFactory =
-                new ProxyFactory(createServiceWithRedisHealthy(new SchedulerTimeProvider()));
-        proxyFactory.setProxyTargetClass(true);
-        proxyFactory.addAdvice(new MethodValidationInterceptor());
-        SchedulerService service = (SchedulerService) proxyFactory.getProxy();
+        SchedulerService service = createServiceWithRedisHealthy(new SchedulerTimeProvider());
 
         for (String name : Arrays.asList(null, "", "   ")) {
             WorkflowSchedule schedule = new WorkflowSchedule();

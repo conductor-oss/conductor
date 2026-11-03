@@ -32,7 +32,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.validation.annotation.Validated;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
@@ -58,7 +57,10 @@ import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
-import jakarta.validation.Valid;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -68,8 +70,13 @@ import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Conditional(SchedulerConditions.class)
-@Validated
 public class SchedulerService extends LifecycleAwareComponent {
+
+    // Validated by hand, not with @Validated: that wraps the bean in a CGLIB proxy, and the final
+    // start()/isRunning() inherited from LifecycleAwareComponent then run against the proxy
+    // instead of this instance, so the poller sees isRunning() == false and never fires schedules.
+    private static final Validator VALIDATOR =
+            Validation.buildDefaultValidatorFactory().getValidator();
 
     public static final String LOCK_CLEANUP_KEY = "SCHEDULER_ARCHIVAL_RECORDS_CLEANUP";
     public final ZoneId zoneId;
@@ -1044,8 +1051,12 @@ public class SchedulerService extends LifecycleAwareComponent {
         return workflowSchedule.getZoneId() != null ? workflowSchedule.getZoneId() : "UTC";
     }
 
-    public WorkflowSchedule createOrUpdateWorkflowSchedule(
-            @Valid WorkflowSchedule workflowSchedule) {
+    public WorkflowSchedule createOrUpdateWorkflowSchedule(WorkflowSchedule workflowSchedule) {
+        Set<ConstraintViolation<WorkflowSchedule>> violations =
+                VALIDATOR.validate(workflowSchedule);
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
         String userId = getCurrentUserId();
         checkScheduleLimit(workflowSchedule);
 
