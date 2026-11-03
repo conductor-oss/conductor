@@ -683,7 +683,7 @@ public class AMQPObservableQueue implements ObservableQueue {
 
                     public void handleCancel(String consumerTag) throws IOException {
                         LOGGER.error(
-                                "Recieved a consumer cancel notification for subscriber {}",
+                                "Received a consumer cancel notification for subscriber {}",
                                 consumerTag);
                     }
                 };
@@ -754,7 +754,7 @@ public class AMQPObservableQueue implements ObservableQueue {
 
                     public void handleCancel(String consumerTag) throws IOException {
                         LOGGER.error(
-                                "Recieved a consumer cancel notification for subscriber {}",
+                                "Received a consumer cancel notification for subscriber {}",
                                 consumerTag);
                     }
                 };
