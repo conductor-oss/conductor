@@ -28,8 +28,9 @@ export const useMCPIntegrations = () => {
       ) || [];
 
     const availableIntegrations =
-      providersData?.filter((provider: any) => provider.category === "MCP") ||
-      [];
+      providersData?.filter(
+        (provider: any) => provider.category === "MCP" && provider.enabled,
+      ) || [];
 
     // Combine both arrays with status information
     const combined = [
@@ -54,7 +55,7 @@ export const useMCPIntegrations = () => {
 
 export const useMCPTools = (integrationName?: string) => {
   const toolsUrl = integrationName
-    ? `/integrations/${integrationName}/def/apis`
+    ? `/integrations/${encodeURIComponent(integrationName)}/def/apis`
     : "";
 
   const { data: tools, isLoading } = useFetch(toolsUrl, {
@@ -63,7 +64,7 @@ export const useMCPTools = (integrationName?: string) => {
   });
 
   return {
-    tools: tools || [],
+    tools: integrationName ? tools || [] : [],
     isLoading: isLoading,
   };
 };

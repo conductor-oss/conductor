@@ -23,7 +23,10 @@ import {
   useMCPTools,
 } from "utils/hooks/useMCPIntegrations";
 import { downgradeSchemaToDraft7 } from "utils/json";
-import { useFetch } from "utils/query";
+import { computeFetchBaseEnabled, useAuthHeaders, useFetch } from "utils/query";
+import { useFetchContext } from "plugins/fetch";
+import { FEATURES, featureFlags } from "utils/flags";
+import Alert from "@mui/material/Alert";
 import { MaybeVariable } from "./MaybeVariable";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
@@ -189,13 +192,27 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     },
   });
 
-  const { integrations, isLoading: isLoadingIntegrations } =
+  const { integrations: allIntegrations, isLoading: isLoadingIntegrations } =
     useMCPIntegrations();
+  const integrationType =
+    task?.inputParameters?.integrationType ||
+    allIntegrations.find(
+      (integration) =>
+        integration.name === task?.inputParameters?.integrationName,
+    )?.type;
+  const integrations = allIntegrations.filter(
+    (integration) => !integrationType || integration.type === integrationType,
+  );
+  const integrationAvailable = integrations.some(
+    (integration) =>
+      integration.name === task?.inputParameters?.integrationName,
+  );
   const { tools, isLoading: isLoadingTools } = useMCPTools(
-    task?.inputParameters?.integrationName,
+    integrationAvailable ? task?.inputParameters?.integrationName : undefined,
   );
 
   const hasValidIntegration = Boolean(
+    integrationAvailable &&
     task?.inputParameters?.integrationName &&
     task?.inputParameters?.integrationName !== null,
   );
@@ -204,15 +221,25 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   );
 
   const { data: toolData, isLoading: isToolDataLoading } = useFetch(
-    `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
+    `/integrations/${encodeURIComponent(task?.inputParameters?.integrationName || "")}/def/api/${encodeURIComponent(task?.inputParameters?.method || "")}`,
     {
-      enabled: hasValidIntegration && hasValidMethod,
+      enterpriseApiFeature: FEATURES.INTEGRATIONS,
+      when: hasValidIntegration && hasValidMethod,
     },
   );
 
+  const fetchContext = useFetchContext();
+  const authHeaders = useAuthHeaders();
+  // Disabled queries can retain cached data; apply the same gate before rendering it.
+  const schemaAvailable =
+    hasValidIntegration &&
+    hasValidMethod &&
+    featureFlags.isEnabled(FEATURES.INTEGRATIONS) &&
+    computeFetchBaseEnabled(fetchContext, authHeaders);
+
   // Prepare and validate the schema for JsonForms
   const processedSchema = useMemo(() => {
-    if (!toolData?.inputSchema?.data) return null;
+    if (!schemaAvailable || !toolData?.inputSchema?.data) return null;
 
     const schemaData = toolData.inputSchema.data;
     if (
@@ -236,10 +263,18 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
       console.error("[MCPTaskForm] Error processing schema:", error);
       return null;
     }
-  }, [toolData?.inputSchema?.data]);
+  }, [toolData?.inputSchema?.data, schemaAvailable]);
 
   return (
     <Box width="100%">
+      {!isLoadingIntegrations &&
+        task?.inputParameters?.integrationName &&
+        !integrationAvailable && (
+          <Alert severity="warning">
+            This Connected App is unavailable or disabled. Select an enabled
+            connection.
+          </Alert>
+        )}
       <MaybeVariable
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
@@ -404,7 +439,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       disableClearable
                       getOptionLabel={(option) => option?.api || ""}
                       loading={isLoadingTools}
-                      disabled={!task?.inputParameters?.integrationName}
+                      disabled={!hasValidIntegration}
                     />
                   </Grid>
                 </Grid>
