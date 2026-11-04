@@ -1,6 +1,10 @@
 import { queryClient } from "queryClient";
 import { fetchWithContext, fetchContextNonHook } from "plugins/fetch";
 import { logger } from "utils/logger";
+import {
+  connectedAppOperationPath,
+  isConnectedAppDefinition,
+} from "utils/connectedApps";
 
 import { featureFlags, FEATURES } from "utils/flags";
 import { RichAddTaskMenuMachineContext } from "./types";
@@ -55,10 +59,10 @@ export const fetchForMCPIntegrations = async ({
     };
   }
   const integrationsUrl = `/integrations/def`;
-  const providersUrl = `/integrations/provider?category=MCP&activeOnly=false`;
+  const providersUrl = `/integrations/provider?category=CLOUD&activeOnly=false`;
 
   try {
-    const [integrationsResult, providersResult] = await Promise.allSettled([
+    const [definitions, providers] = await Promise.all([
       queryClient.fetchQuery([fetchContext.stack, integrationsUrl], () =>
         fetchWithContext(integrationsUrl, fetchContext, { headers }),
       ),
@@ -66,20 +70,18 @@ export const fetchForMCPIntegrations = async ({
         fetchWithContext(providersUrl, fetchContext, { headers }),
       ),
     ]);
-
-    logger.info("Returning integrations and providers", {
-      integrationsResult,
-      providersResult,
-    });
+    const supportedIntegrations = (definitions || []).filter(
+      isConnectedAppDefinition,
+    );
     return {
-      supportedIntegrations:
-        integrationsResult.status === "fulfilled"
-          ? integrationsResult.value?.filter(
-              (integration: any) => integration.category === "MCP",
-            )
-          : [],
-      availableIntegrations:
-        providersResult.status === "fulfilled" ? providersResult.value : [],
+      supportedIntegrations,
+      availableIntegrations: (providers || []).filter(
+        (provider: any) =>
+          provider.enabled !== false &&
+          supportedIntegrations.some(
+            (definition: any) => definition.type === provider.type,
+          ),
+      ),
     };
   } catch (error) {
     logger.error("Fetching integrations", error);
@@ -91,7 +93,7 @@ export const fetchForIntegrationTools = async ({
   authHeaders: headers,
   integrationDrillDownMenu: { selectedIntegration },
 }: RichAddTaskMenuMachineContext) => {
-  const toolsUrl = `/integrations/${selectedIntegration?.name}/def/apis`;
+  const toolsUrl = connectedAppOperationPath(selectedIntegration?.name || "");
 
   logger.info("Will search for integration tools", toolsUrl);
   try {

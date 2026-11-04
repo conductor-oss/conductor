@@ -119,6 +119,7 @@ const getTaskForm = (type: string) => {
     case TaskType.UPDATE_TASK:
       return UpdateTaskForm;
     case TaskType.INTEGRATION:
+    case TaskType.CONNECTED_APP:
       return MCPTaskForm;
 
     // Operators

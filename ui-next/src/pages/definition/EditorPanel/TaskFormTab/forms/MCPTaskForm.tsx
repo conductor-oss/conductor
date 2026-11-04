@@ -28,10 +28,30 @@ import { MaybeVariable } from "./MaybeVariable";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
+import { Button } from "@mui/material";
+import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
+import {
+  connectedAppInput,
+  connectedAppOperationPath,
+} from "utils/connectedApps";
+import { FEATURES } from "utils/flags";
 
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
+  const connectedApp = task.type === TaskType.CONNECTED_APP;
+  const [jsonArguments, setJsonArguments] = useState(false);
+  const [argumentsError, setArgumentsError] = useState(false);
+  const operation =
+    task.inputParameters?.[connectedApp ? "operation" : "method"];
+  useEffect(() => {
+    setArgumentsError(false);
+  }, [
+    task.taskReferenceName,
+    task.inputParameters?.integrationName,
+    operation,
+  ]);
   const customTheme = createTheme({
     components: {
       MuiTextField: {
@@ -189,24 +209,39 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     },
   });
 
-  const { integrations, isLoading: isLoadingIntegrations } =
-    useMCPIntegrations();
-  const { tools, isLoading: isLoadingTools } = useMCPTools(
-    task?.inputParameters?.integrationName,
-  );
+  const {
+    integrations,
+    isLoading: isLoadingIntegrations,
+    error: integrationsError,
+  } = useMCPIntegrations(connectedApp);
+  const {
+    tools,
+    isLoading: isLoadingTools,
+    error: toolsError,
+  } = useMCPTools(task?.inputParameters?.integrationName);
 
   const hasValidIntegration = Boolean(
     task?.inputParameters?.integrationName &&
     task?.inputParameters?.integrationName !== null,
   );
-  const hasValidMethod = Boolean(
-    task?.inputParameters?.method && task?.inputParameters?.method !== null,
-  );
+  const hasValidMethod = Boolean(operation && !operation.includes("${"));
 
-  const { data: toolData, isLoading: isToolDataLoading } = useFetch(
-    `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
+  const {
+    data: toolData,
+    isLoading: isToolDataLoading,
+    error: toolError,
+  } = useFetch(
+    connectedAppOperationPath(
+      task.inputParameters?.integrationName || "",
+      operation,
+    ),
     {
-      enabled: hasValidIntegration && hasValidMethod,
+      enterpriseApiFeature: FEATURES.INTEGRATIONS,
+      when:
+        hasValidIntegration &&
+        hasValidMethod &&
+        !task.inputParameters?.integrationName?.includes("${"),
+      keepPreviousData: false,
     },
   );
 
@@ -244,7 +279,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
         value={task?.inputParameters}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
-        taskType={TaskType.INTEGRATION}
+        taskType={connectedApp ? TaskType.CONNECTED_APP : TaskType.INTEGRATION}
       >
         <TaskFormSection accordionAdditionalProps={{ defaultExpanded: true }}>
           {isToolDataLoading ? (
@@ -270,6 +305,32 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
             </Grid>
           ) : (
             <Grid container sx={{ width: "100%" }} spacing={3}>
+              {connectedApp &&
+                (integrationsError || toolsError || toolError) && (
+                  <Grid size={12}>
+                    <Typography color="error">
+                      Unable to load Connected App metadata. Check access and
+                      try again.
+                    </Typography>
+                  </Grid>
+                )}
+              {connectedApp &&
+                !isLoadingIntegrations &&
+                !integrationsError &&
+                integrations.length === 0 && (
+                  <Grid size={12}>
+                    <Typography>No Connected Apps configured.</Typography>
+                  </Grid>
+                )}
+              {connectedApp && (
+                <Grid size={12}>
+                  <Typography variant="body2">
+                    Catalog availability does not guarantee execution is
+                    enabled. Asynchronous acceptance is not eventual business
+                    success.
+                  </Typography>
+                </Grid>
+              )}
               <Grid
                 sx={{
                   "&.MuiGrid-item": {
@@ -299,7 +360,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     />
                   </Box>
                   <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
-                    {task?.inputParameters?.method}
+                    {operation}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 2, ml: "auto" }}>
                     <Box
@@ -347,6 +408,21 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                   <Grid size={6}>
                     <ConductorAutoComplete
                       id="integration-name-dropdown"
+                      freeSolo={connectedApp}
+                      onInputChange={(_, value, reason) => {
+                        if (
+                          connectedApp &&
+                          reason === "input" &&
+                          value.includes("${")
+                        )
+                          onChange(
+                            updateField(
+                              "inputParameters",
+                              connectedAppInput(value),
+                              task,
+                            ),
+                          );
+                      }}
                       fullWidth
                       label="Integration"
                       options={(integrations || [])
@@ -361,10 +437,13 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                         // Only keep integration name and type in inputParameters
                         onChange({
                           ...task,
-                          inputParameters: {
-                            integrationName: val,
-                            integrationType: selectedIntegration?.type || null,
-                          },
+                          inputParameters: connectedApp
+                            ? connectedAppInput(val)
+                            : {
+                                integrationName: val,
+                                integrationType:
+                                  selectedIntegration?.type || null,
+                              },
                         });
                       }}
                       value={task?.inputParameters?.integrationName}
@@ -378,31 +457,56 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                   <Grid size={6}>
                     <ConductorAutoComplete
                       id="integration-tool-dropdown"
+                      freeSolo={connectedApp}
+                      onInputChange={(_, value, reason) => {
+                        if (
+                          connectedApp &&
+                          reason === "input" &&
+                          value.includes("${")
+                        )
+                          onChange(
+                            updateField(
+                              "inputParameters",
+                              connectedAppInput(
+                                task.inputParameters?.integrationName,
+                                value,
+                              ),
+                              task,
+                            ),
+                          );
+                      }}
                       fullWidth
-                      label="Tool"
+                      label={connectedApp ? "Operation" : "Tool"}
                       options={tools || []}
                       onChange={(__, val) => {
                         onChange({
                           ...task,
-                          inputParameters: {
-                            integrationName:
-                              task?.inputParameters?.integrationName,
-                            integrationType:
-                              task?.inputParameters?.integrationType,
-                            method: val?.api,
-                          },
+                          inputParameters: connectedApp
+                            ? connectedAppInput(
+                                task.inputParameters?.integrationName,
+                                typeof val === "string" ? val : val?.api,
+                              )
+                            : {
+                                integrationName:
+                                  task?.inputParameters?.integrationName,
+                                integrationType:
+                                  task?.inputParameters?.integrationType,
+                                method: val?.api,
+                              },
                         });
                       }}
                       value={
                         tools?.find(
-                          (t: { api: string }) =>
-                            t.api === task?.inputParameters?.method,
-                        ) || null
+                          (t: { api: string }) => t.api === operation,
+                        ) ||
+                        (connectedApp && operation ? { api: operation } : null)
                       }
                       autoFocus
                       required
                       disableClearable
-                      getOptionLabel={(option) => option?.api || ""}
+                      getOptionLabel={(option) =>
+                        typeof option === "string" ? option : option?.api || ""
+                      }
                       loading={isLoadingTools}
                       disabled={!task?.inputParameters?.integrationName}
                     />
@@ -412,7 +516,86 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
 
               <Grid mt={1} size={12}>
                 <Grid container sx={{ width: "100%" }} spacing={3}>
-                  {processedSchema && (
+                  {connectedApp && (
+                    <Grid size={12}>
+                      <Button onClick={() => setJsonArguments(!jsonArguments)}>
+                        {jsonArguments ? "Argument fields" : "Arguments JSON"}
+                      </Button>
+                      {jsonArguments ? (
+                        <ConductorCodeBlockInput
+                          label="Arguments JSON"
+                          language="json"
+                          height={220}
+                          value={JSON.stringify(
+                            task.inputParameters?.arguments ?? {},
+                            null,
+                            2,
+                          )}
+                          error={argumentsError}
+                          onChange={(value) => {
+                            try {
+                              const argumentsValue = JSON.parse(value || "{}");
+                              if (
+                                argumentsValue === null ||
+                                Array.isArray(argumentsValue) ||
+                                (typeof argumentsValue !== "object" &&
+                                  !(
+                                    typeof argumentsValue === "string" &&
+                                    argumentsValue.includes("${")
+                                  ))
+                              )
+                                throw new Error(
+                                  "Expected object or expression",
+                                );
+                              setArgumentsError(false);
+                              onChange(
+                                updateField(
+                                  "inputParameters.arguments",
+                                  argumentsValue,
+                                  task,
+                                ),
+                              );
+                            } catch {
+                              setArgumentsError(true);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <MaybeVariable
+                          value={task.inputParameters?.arguments}
+                          onChange={(value) =>
+                            onChange(
+                              updateField(
+                                "inputParameters.arguments",
+                                value,
+                                task,
+                              ),
+                            )
+                          }
+                          path="inputParameters.arguments"
+                          taskType={TaskType.CONNECTED_APP}
+                        >
+                          <ConductorFlatMapFormBase
+                            showFieldTypes
+                            keyColumnLabel="Argument"
+                            valueColumnLabel="Value"
+                            addItemLabel="Add argument"
+                            value={task.inputParameters?.arguments || {}}
+                            onChange={(value) =>
+                              onChange(
+                                updateField(
+                                  "inputParameters.arguments",
+                                  value,
+                                  task,
+                                ),
+                              )
+                            }
+                          />
+                        </MaybeVariable>
+                      )}
+                    </Grid>
+                  )}
+                  {!connectedApp && processedSchema && (
                     <Grid
                       size={{
                         xs: 12,

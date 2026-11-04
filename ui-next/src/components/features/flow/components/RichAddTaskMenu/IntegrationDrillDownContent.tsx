@@ -30,6 +30,7 @@ export const IntegrationDrillDownContent: React.FC<
       integrationDefs,
       integrationDrillDownMenu,
       isFetchingIntegrationTools,
+      integrationMetadataError,
       searchQuery,
     },
     {
@@ -289,7 +290,8 @@ export const IntegrationDrillDownContent: React.FC<
           <Typography
             sx={{ fontSize: "12px", fontWeight: 500, color: "#6B7280" }}
           >
-            Tools ({filteredTools?.length})
+            {integrationMetadataError ||
+              `Operations (${filteredTools?.length || 0})`}
           </Typography>
         </Box>
 

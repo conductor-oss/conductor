@@ -77,6 +77,7 @@ export interface RichAddTaskMenuMachineContext {
   supportedIntegrations: IntegrationMenuItem[];
   availableIntegrations: IntegrationMenuItem[];
   integrationDefs?: IntegrationDef[];
+  integrationMetadataError?: string;
   integrationDrillDownMenu: IntegrationDrillDownMenuProp;
 }
 

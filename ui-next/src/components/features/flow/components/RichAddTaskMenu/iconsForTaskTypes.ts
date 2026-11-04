@@ -95,6 +95,7 @@ export const iconForTaskTypeMap = {
   [TaskType.LLM_CHAT_COMPLETE]: LlmChatComplete,
   [TaskType.GRPC]: Globe,
   [TaskType.INTEGRATION]: MCPIcon,
+  [TaskType.CONNECTED_APP]: MCPIcon,
   [TaskType.CHUNK_TEXT]: RowsIcon,
   [TaskType.LIST_FILES]: FilesIcon,
   [TaskType.PARSE_DOCUMENT]: FileMagnifyingGlass,

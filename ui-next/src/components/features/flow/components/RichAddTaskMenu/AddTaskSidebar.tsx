@@ -59,7 +59,7 @@ import {
 } from "./state/types";
 import { getALL_TASKS } from "./supportedTasks";
 import {
-  generateMCPTask,
+  generateConnectedAppTask,
   generateSimpleTask,
   generateSubWorkflowTask,
   NameGeneratorFn,
@@ -134,6 +134,7 @@ const AddTaskSidebar = ({
       subWorkflowMenuItems,
       selectedTab,
       isFetching,
+      integrationMetadataError,
       searchQuery,
     },
     { refetchIntegrations, handleUpdateIntegrationDrillDown, handleTyping },
@@ -411,13 +412,11 @@ const AddTaskSidebar = ({
           inputParameters: {
             integrationName:
               integrationDrillDownMenu?.selectedIntegration?.name,
-            method: tool?.api,
-            integrationType:
-              integrationDrillDownMenu?.selectedIntegration?.integrationType,
-            // ...generateObjectFromSchema(tool?.inputSchema?.data),
+            operation: tool?.api,
+            arguments: {},
           },
         },
-        handler: generateMCPTask,
+        handler: generateConnectedAppTask,
       }),
     )();
   };
@@ -638,6 +637,12 @@ const AddTaskSidebar = ({
           onScroll={handleScroll}
           ref={listRef}
         >
+          {selectedTab === RichAddMenuTabs.INTEGRATIONS_TAB &&
+            integrationMetadataError && (
+              <Typography color="error" sx={{ p: 2 }}>
+                {integrationMetadataError}
+              </Typography>
+            )}
           {isFetching ? (
             <Box
               sx={{

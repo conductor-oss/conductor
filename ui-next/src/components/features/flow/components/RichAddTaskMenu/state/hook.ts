@@ -28,6 +28,10 @@ export const useRichAddTaskMenu = (
     (state) => state.context.availableIntegrations,
   );
 
+  const integrationMetadataError = useSelector(
+    richAddTaskMenuActor,
+    (state) => state.context.integrationMetadataError,
+  );
   const integrationDefs = useSelector(
     richAddTaskMenuActor,
     (state) => state.context.integrationDefs,
@@ -135,6 +139,7 @@ export const useRichAddTaskMenu = (
       supportedIntegrations: supportedIntegrations ?? [],
       availableIntegrations: availableIntegrations ?? [],
       integrationDefs: integrationDefs ?? [],
+      integrationMetadataError,
       integrationTypes: integrationTypes ?? [],
       integrationDrillDownMenu: integrationDrillDownMenu ?? {},
       scrollPosition,

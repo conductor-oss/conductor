@@ -112,7 +112,7 @@ export const persistIntegrations = assign<
           category: RichAddMenuTabs.INTEGRATIONS_TAB,
           name: integration.name,
           description: integration.description ?? "",
-          type: TaskType.INTEGRATION,
+          type: TaskType.CONNECTED_APP,
           integrationType: integration.type,
           iconName: integration.iconName ?? "",
           status: availableIntegrationTypes.includes(integration.type)
@@ -128,7 +128,7 @@ export const persistIntegrations = assign<
           category: RichAddMenuTabs.INTEGRATIONS_TAB,
           name: integration.name,
           description: integration.description ?? "",
-          type: TaskType.INTEGRATION,
+          type: TaskType.CONNECTED_APP,
           integrationType: integration.type,
           iconName:
             data?.supportedIntegrations?.find(
@@ -227,6 +227,7 @@ export const persistSelectedIntegration = assign<
   integrationDrillDownMenu: (context, event) => ({
     ...context.integrationDrillDownMenu,
     selectedIntegration: event.integration,
+    selectedIntegrationTools: [],
   }),
 });
 
@@ -254,6 +255,23 @@ export const persistSelectedIntegrationTools = assign<
 // >({
 //   selectedIntegrationTools: (_context) => undefined,
 // });
+
+export const clearIntegrationMetadataError =
+  assign<RichAddTaskMenuMachineContext>({
+    integrationMetadataError: () => undefined,
+  });
+
+export const setIntegrationMetadataError =
+  assign<RichAddTaskMenuMachineContext>({
+    integrationMetadataError: () =>
+      "Unable to load Connected App metadata. Check access and try again.",
+    supportedIntegrations: () => [],
+    availableIntegrations: () => [],
+    integrationDrillDownMenu: (context) => ({
+      ...context.integrationDrillDownMenu,
+      selectedIntegrationTools: [],
+    }),
+  });
 
 export const persistIntegrationDrillDown = assign<
   RichAddTaskMenuMachineContext,

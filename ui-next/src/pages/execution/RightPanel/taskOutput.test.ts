@@ -13,3 +13,17 @@ describe("getTaskOutputForDisplay", () => {
     expect(getTaskOutputForDisplay({ outputData })).toBe(outputData);
   });
 });
+
+describe("Connected App async acceptance output", () => {
+  it("preserves Event acceptance without synthesizing eventual business success", () => {
+    const outputData = {
+      invocationType: "Event",
+      statusCode: 202,
+      accepted: true,
+    };
+    expect(getTaskOutputForDisplay({ outputData })).toBe(outputData);
+    expect(getTaskOutputForDisplay({ outputData })).not.toHaveProperty(
+      "businessSuccess",
+    );
+  });
+});

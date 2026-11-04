@@ -100,6 +100,15 @@ export interface GrpcTaskDef extends CommonTaskDef {
   };
 }
 
+export interface ConnectedAppTaskDef extends CommonTaskDef {
+  type: TaskType.CONNECTED_APP;
+  inputParameters?: {
+    integrationName?: string;
+    operation?: string;
+    arguments?: Record<string, unknown> | string;
+  };
+}
+
 export interface MCPTaskDef extends CommonTaskDef {
   type: TaskType.INTEGRATION;
   inputParameters?: {
@@ -647,6 +656,7 @@ export type FormTaskType =
   | TaskType.GET_SIGNED_JWT
   | TaskType.GRPC
   | TaskType.INTEGRATION
+  | TaskType.CONNECTED_APP
   | TaskType.CHUNK_TEXT
   | TaskType.LIST_FILES
   | TaskType.PARSE_DOCUMENT

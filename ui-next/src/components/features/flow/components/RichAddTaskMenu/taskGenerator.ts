@@ -1,3 +1,4 @@
+import { ConnectedAppTaskDef } from "types/TaskType";
 import { randomChars as dynamicTaskSuffixGenerator } from "utils";
 import {
   BusinessRuleTaskDef,
@@ -155,6 +156,16 @@ export const generateGRPCTask: GenerateTaskFn<GrpcTaskDef> = ({
 } = DEFAULT_ARGS): GrpcTaskDef => ({
   ...nameGenerator("grpc"),
   type: TaskType.GRPC,
+  ...overrides,
+});
+
+export const generateConnectedAppTask: GenerateTaskFn<ConnectedAppTaskDef> = ({
+  overrides = {},
+  nameGenerator = generateNameAndTaskReference,
+} = DEFAULT_ARGS): ConnectedAppTaskDef => ({
+  ...nameGenerator("connected_app"),
+  type: TaskType.CONNECTED_APP,
+  inputParameters: { integrationName: "", operation: "", arguments: {} },
   ...overrides,
 });
 
@@ -835,6 +846,7 @@ export const taskGeneratorMap = {
   [TaskType.LLM_CHAT_COMPLETE]: generateAITask(TaskType.LLM_CHAT_COMPLETE),
   [TaskType.GRPC]: generateGRPCTask,
   [TaskType.INTEGRATION]: generateMCPTask,
+  [TaskType.CONNECTED_APP]: generateConnectedAppTask,
   [TaskType.CHUNK_TEXT]: generateChunkTextTask,
   [TaskType.LIST_FILES]: generateListFilesTask,
   [TaskType.PARSE_DOCUMENT]: generateParseDocumentTask,

@@ -149,6 +149,7 @@ export const richAddTaskMenuMachine = createMachine<
               },
 
               [MainStates.FETCH_FOR_INTEGRATIONS]: {
+                entry: "clearIntegrationMetadataError",
                 invoke: {
                   id: "fetchForMCPIntegrations",
                   src: "fetchForMCPIntegrations",
@@ -157,7 +158,7 @@ export const richAddTaskMenuMachine = createMachine<
                     target: MainStates.WITH_INTEGRATIONS,
                   },
                   onError: {
-                    // On error, still transition to WITH_INTEGRATIONS but keep existing data
+                    actions: "setIntegrationMetadataError",
                     target: MainStates.WITH_INTEGRATIONS,
                   },
                 },
@@ -258,6 +259,7 @@ export const richAddTaskMenuMachine = createMachine<
                 },
               },
               [MainStates.FETCH_FOR_INTEGRATION_TOOLS]: {
+                entry: "clearIntegrationMetadataError",
                 invoke: {
                   id: "fetchForIntegrationTools",
                   src: "fetchForIntegrationTools",
@@ -266,6 +268,7 @@ export const richAddTaskMenuMachine = createMachine<
                     target: MainStates.WITH_INTEGRATIONS,
                   },
                   onError: {
+                    actions: "setIntegrationMetadataError",
                     target: MainStates.WITH_INTEGRATIONS,
                   },
                 },
