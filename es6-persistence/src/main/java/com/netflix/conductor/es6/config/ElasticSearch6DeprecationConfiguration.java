@@ -25,7 +25,7 @@ import jakarta.annotation.PostConstruct;
  *
  * <p><b>Migration Required:</b>
  *
- * <p>Change your configuration to use Elasticsearch 7.x:
+ * <p>Change your configuration to use Elasticsearch 8.x:
  *
  * <pre>{@code
  * # FROM:
@@ -33,7 +33,7 @@ import jakarta.annotation.PostConstruct;
  * conductor.elasticsearch.url=http://localhost:9200
  *
  * # TO:
- * conductor.indexing.type=elasticsearch
+ * conductor.indexing.type=elasticsearch8
  * conductor.elasticsearch.url=http://localhost:9200
  * }</pre>
  *
@@ -57,13 +57,13 @@ public class ElasticSearch6DeprecationConfiguration {
                         + "║                                                                            ║\n"
                         + "║  Elasticsearch 6.x reached end-of-life in November 2020.                  ║\n"
                         + "║                                                                            ║\n"
-                        + "║  REQUIRED ACTION: Upgrade to Elasticsearch 7.x                            ║\n"
+                        + "║  REQUIRED ACTION: Upgrade to Elasticsearch 8.x                            ║\n"
                         + "║                                                                            ║\n"
                         + "║  FROM:                                                                     ║\n"
                         + "║    conductor.indexing.type=elasticsearch_v6                               ║\n"
                         + "║                                                                            ║\n"
                         + "║  TO:                                                                       ║\n"
-                        + "║    conductor.indexing.type=elasticsearch  # For Elasticsearch 7.x         ║\n"
+                        + "║    conductor.indexing.type=elasticsearch8  # For Elasticsearch 8.x        ║\n"
                         + "║                                                                            ║\n"
                         + "║  All other conductor.elasticsearch.* properties remain the same.          ║\n"
                         + "║                                                                            ║\n"

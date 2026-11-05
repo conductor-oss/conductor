@@ -13,7 +13,7 @@
 FROM azul/zulu-openjdk-debian:21 AS builder
 
 ARG PREBUILT=false
-ARG INDEXING_BACKEND=elasticsearch
+ARG INDEXING_BACKEND=elasticsearch8
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
@@ -35,7 +35,7 @@ RUN if [ "$PREBUILT" = "true" ]; then \
 # ===========================================================================================================
 # 1. UI builder stage
 # ===========================================================================================================
-FROM node:lts AS ui-builder
+FROM node:22 AS ui-builder
 
 ARG PREBUILT=false
 ARG SKIP_UI=false
