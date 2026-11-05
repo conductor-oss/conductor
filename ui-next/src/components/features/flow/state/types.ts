@@ -63,6 +63,11 @@ export type SelectNodeEvent = {
   node: NodeData;
 };
 
+export type SelectNodeInternalEvent = {
+  type: FlowActionTypes.SELECT_NODE_INTERNAL_EVT;
+  node: NodeData;
+};
+
 export type SelectTaskWithTaskRefEvent = {
   type: FlowActionTypes.SELECT_TASK_WITH_TASK_REF;
   node: NodeData;
@@ -143,6 +148,7 @@ export type ToggleShowDescriptionEvent = {
 
 export type FlowEvents =
   | SelectNodeEvent
+  | SelectNodeInternalEvent
   | SelectEdgeEvent
   | SelectTaskWithTaskRefEvent
   | PerformOperationEvent

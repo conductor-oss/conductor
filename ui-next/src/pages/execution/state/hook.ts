@@ -10,7 +10,7 @@ import { useContext, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
 import { NodeData } from "reaflow";
-import { ExecutionTask, TaskStatus } from "types";
+import { TaskStatus } from "types";
 import {
   RUN_WORKFLOW_URL,
   SCHEDULER_DEFINITION_URL,
@@ -52,7 +52,9 @@ export const useExecutionMachine = () => {
       authHeaders,
       currentUserInfo,
       selectedTaskReferenceName: taskReferenceName,
-      selectedTaskId: taskId,
+      selectedTaskId: new URLSearchParams(location.search).has("taskId")
+        ? taskId
+        : undefined,
     },
     actions: {
       setErrorMessage: (context, event: any) => {
@@ -66,24 +68,29 @@ export const useExecutionMachine = () => {
       },
       setQueryParam: ({ execution }, { node }: SelectNodeEvent) => {
         const taskRefName = node?.data?.task?.taskReferenceName;
-        handleTaskReferenceName(taskRefName || "");
-        const executionStatus = node?.data?.task?.executionData?.status;
-        if (executionStatus !== TaskStatus.PENDING) {
-          const selectedTask = taskWithLatestIteration(
-            execution?.tasks,
-            taskRefName,
-          );
-          handleTaskId(selectedTask?.taskId || "");
+        if (taskReferenceName !== (taskRefName || "")) {
+          handleTaskReferenceName(taskRefName || "");
         }
+        const executionStatus = node?.data?.task?.executionData?.status;
+        const selectedTask =
+          executionStatus !== TaskStatus.PENDING
+            ? taskWithLatestIteration(execution?.tasks, taskRefName)
+            : undefined;
+        const selectedTaskId = selectedTask?.taskId || "";
+        if (taskId !== selectedTaskId) handleTaskId(selectedTaskId);
       },
       setTaskIdQueryParam: (_context, data: SetSelectedTaskEvent) => {
-        if (data?.selectedTask?.taskId) {
+        if (data?.selectedTask?.taskId && data.selectedTask.taskId !== taskId) {
           handleTaskId(data?.selectedTask?.taskId);
         }
       },
       clearQueryParams: (_context) => {
-        handleTaskId("");
-        handleTaskReferenceName("");
+        if (new URLSearchParams(location.search).has("taskId")) {
+          handleTaskId("");
+        }
+        if (new URLSearchParams(location.search).has("taskReferenceName")) {
+          handleTaskReferenceName("");
+        }
       },
       // Badge count is now updated by HumanTasksPoller at its next poll cycle.
       notifyOnHumanTask: () => {},
@@ -152,6 +159,25 @@ export const useExecutionMachine = () => {
     }
   }, [tabIndex, openedTab, send, isReady, execution]);
 
+  const hasTaskId = new URLSearchParams(location.search).has("taskId");
+  const selectionQuery = JSON.stringify([
+    executionId,
+    hasTaskId,
+    taskId,
+    taskReferenceName,
+  ]);
+  const previousSelectionQuery = useRef(selectionQuery);
+  useEffect(() => {
+    if (!isReady || previousSelectionQuery.current === selectionQuery) return;
+    previousSelectionQuery.current = selectionQuery;
+    // Query-only navigation (including POP) must reach the mounted panel machine.
+    send({
+      type: ExecutionActionTypes.SYNC_TASK_SELECTION,
+      taskId: hasTaskId ? taskId : undefined,
+      taskReferenceName,
+    });
+  }, [isReady, selectionQuery, hasTaskId, taskId, taskReferenceName, send]);
+
   const refetch = () => send({ type: ExecutionActionTypes.REFETCH });
   const closeRightPanel = () => {
     send({
@@ -160,12 +186,22 @@ export const useExecutionMachine = () => {
   };
 
   const selectTask = (taskSel: { ref?: string; taskId?: string }) => {
-    const maybeSelectedTask = executionTasks?.find(
-      (task: ExecutionTask) =>
-        task.taskId === taskSel.taskId ||
-        task.referenceTaskName === taskSel.ref,
-    );
+    // Timeline supplies both fields; the shared reference must not override an exact attempt.
+    const maybeSelectedTask =
+      taskSel.taskId !== undefined
+        ? executionTasks?.find((task) => task.taskId === taskSel.taskId)
+        : taskWithLatestIteration(executionTasks, taskSel.ref);
     if (maybeSelectedTask) {
+      if (taskId !== maybeSelectedTask.taskId) {
+        handleTaskId(maybeSelectedTask.taskId || "");
+      }
+      if (
+        taskReferenceName !== maybeSelectedTask.workflowTask.taskReferenceName
+      ) {
+        handleTaskReferenceName(
+          maybeSelectedTask.workflowTask.taskReferenceName,
+        );
+      }
       send({
         type: RightPanelContextEventTypes.SET_SELECTED_TASK,
         selectedTask: maybeSelectedTask,

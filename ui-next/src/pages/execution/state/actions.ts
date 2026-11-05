@@ -10,9 +10,11 @@ import {
 import { NodeData } from "reaflow";
 import { DoWhileSelection, Execution, ExecutionTask } from "types";
 import { flattenGtagObject, gtagAbstract } from "utils";
+import { flatten } from "utils/workflow";
 import {
   ActorRef,
   assign,
+  cancel,
   DoneInvokeEvent,
   forwardTo,
   pure,
@@ -42,6 +44,7 @@ import {
   PersistErrorEvent,
   SetDoWhileIterationEvent,
   ToggleAssistantPanelEvent,
+  SyncTaskSelectionEvent,
   UpdateDurationEvent,
   UpdateExecutionEvent,
   UpdateSelectedTaskEvent,
@@ -426,7 +429,51 @@ export const closeAssistantPanel = assign<ExecutionMachineContext>({
   isAssistantPanelOpen: () => false,
 });
 
+export const cancelDelayedNodeSelection = cancel(
+  "debounce_delayed_node_selection",
+);
+
+export const persistSelectionQuery = assign<
+  ExecutionMachineContext,
+  SyncTaskSelectionEvent
+>({
+  selectedTaskId: (_context, event) => event.taskId,
+  selectedTaskReferenceName: (_context, event) => event.taskReferenceName,
+});
+
 export const delayedNodeSelection = pure((ctx: ExecutionMachineContext) => {
+  // A deep link pins an attempt; selecting its graph node would choose the latest retry.
+  if (ctx.selectedTaskId !== undefined) {
+    if (!ctx.selectedTaskId) {
+      return [send({ type: ExecutionActionTypes.CLOSE_RIGHT_PANEL })];
+    }
+    const selectedTask =
+      ctx.execution?.tasks?.find(
+        (task) => task.taskId === ctx.selectedTaskId,
+      ) ??
+      (ctx.executionStatusMap &&
+        findTaskFromExecutionStatusMapById(
+          ctx.executionStatusMap,
+          ctx.selectedTaskId,
+        ));
+    if (!selectedTask) {
+      return [send({ type: ExecutionActionTypes.CLOSE_RIGHT_PANEL })];
+    }
+    return [
+      sendTo(
+        ctx.flowChild!,
+        {
+          type: FlowActionTypes.SELECT_NODE_INTERNAL_EVT,
+          node: { id: selectedTask.workflowTask.taskReferenceName } as NodeData,
+        },
+        { delay: 150, id: "debounce_delayed_node_selection" },
+      ),
+      send({
+        type: RightPanelContextEventTypes.SET_SELECTED_TASK,
+        selectedTask,
+      }),
+    ];
+  }
   const identifyNodeTobeSelected = (
     maybeSelectedTask?: ExecutionTask,
     maybeSelectedNodeUsingTaskReference?: { id?: string },
@@ -455,7 +502,7 @@ export const delayedNodeSelection = pure((ctx: ExecutionMachineContext) => {
       };
     }
   };
-  let selectedTaskReferenceName = ctx.selectedTaskReferenceName;
+  const selectedTaskReferenceName = ctx.selectedTaskReferenceName;
   if (
     ctx?.executionStatusMap &&
     (ctx?.selectedTaskId || ctx?.selectedTaskReferenceName)
@@ -505,20 +552,14 @@ export const delayedNodeSelection = pure((ctx: ExecutionMachineContext) => {
       ];
     }
   }
-  const selectedTask =
-    ctx.selectedTaskId &&
-    ctx.execution?.tasks?.find((t) => t.taskId === ctx.selectedTaskId);
-
-  // If reference name is not set, use the task id to get the reference name
-  if (!ctx.selectedTaskReferenceName && selectedTask) {
-    selectedTaskReferenceName = selectedTask.workflowTask.taskReferenceName;
-  }
-
   // This will prevent opening the right panel for wrong reference name
   const selectedTaskExists =
-    (ctx.execution?.tasks ?? []).filter(
+    (ctx.execution?.tasks ?? []).some(
       (t) => t.workflowTask.taskReferenceName === selectedTaskReferenceName,
-    ).length > 0;
+    ) ||
+    flatten(ctx.workflowDefinition?.tasks ?? []).some(
+      (task) => task.taskReferenceName === selectedTaskReferenceName,
+    );
 
   return selectedTaskExists
     ? [
@@ -536,5 +577,5 @@ export const delayedNodeSelection = pure((ctx: ExecutionMachineContext) => {
           },
         ),
       ]
-    : [];
+    : [send({ type: ExecutionActionTypes.CLOSE_RIGHT_PANEL })];
 });

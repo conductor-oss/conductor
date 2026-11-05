@@ -1,4 +1,5 @@
 import { FunctionComponent } from "react";
+import { useMCPIntegrations } from "utils/hooks/useMCPIntegrations";
 import { integrationIconMap } from "./integrationIconMap";
 
 interface IntegrationIconProps {
@@ -29,6 +30,22 @@ export const IntegrationIcon: FunctionComponent<IntegrationIconProps> = ({
           currentTarget.src = `/integrations-icons/default.svg`;
         }
       }}
+    />
+  );
+};
+
+export const ConnectedAppIcon = ({
+  integrationName,
+  size,
+}: IntegrationIconProps) => {
+  const { integrations } = useMCPIntegrations(true);
+  const integration = integrations.find(
+    (item) => item.name === integrationName,
+  );
+  return (
+    <IntegrationIcon
+      integrationName={integration?.iconName ?? "default"}
+      size={size}
     />
   );
 };

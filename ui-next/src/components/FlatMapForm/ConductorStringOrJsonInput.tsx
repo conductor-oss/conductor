@@ -22,6 +22,7 @@ export type ConductorStringOrJsonInputProps = Omit<
   error?: boolean;
   customInput?: ReactNode;
   showFieldTypes: boolean;
+  preserveValueOnModeSwitch?: boolean;
   placeholder?: string;
 };
 
@@ -92,6 +93,7 @@ export const ConductorStringOrJsonInput = ({
   error = false,
   customInput,
   showFieldTypes,
+  preserveValueOnModeSwitch = false,
   placeholder = "e.g.: max-age=...",
 }: ConductorStringOrJsonInputProps) => {
   // Determine if value is JSON/object
@@ -188,7 +190,12 @@ export const ConductorStringOrJsonInput = ({
   };
 
   const handleToggleMode = () => {
-    onChange("");
+    if (preserveValueOnModeSwitch) {
+      // Refresh JSON from the current value, including text edits and primitives.
+      if (!isJsonMode) onObjChange(stringifyJson(value));
+    } else {
+      onChange("");
+    }
     setIsJsonMode(!isJsonMode);
   };
 
@@ -199,7 +206,11 @@ export const ConductorStringOrJsonInput = ({
       <Box sx={{ position: "relative" }}>
         <ConductorCodeBlockInput
           label={label}
-          value={isEmptyJsonValue ? jsonValue : objValue}
+          value={
+            !preserveValueOnModeSwitch && isEmptyJsonValue
+              ? jsonValue
+              : objValue
+          }
           onChange={onObjChange}
           error={error || cantCoerce}
           helperText={helperText}

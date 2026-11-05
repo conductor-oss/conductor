@@ -93,6 +93,19 @@ export const executionMachine = createMachine<
         states: {
           rightPanel: {
             initial: "closed",
+            on: {
+              [ExecutionActionTypes.CLOSE_RIGHT_PANEL]: {
+                target: ".closed",
+                actions: ["cancelDelayedNodeSelection", "clearQueryParams"],
+              },
+              [ExecutionActionTypes.SYNC_TASK_SELECTION]: {
+                actions: [
+                  "cancelDelayedNodeSelection",
+                  "persistSelectionQuery",
+                  "delayedNodeSelection",
+                ],
+              },
+            },
             states: {
               opened: {
                 on: {
@@ -110,9 +123,6 @@ export const executionMachine = createMachine<
                   },
                   [ExecutionActionTypes.FETCH_FOR_LOGS]: {
                     actions: ["forwardSelectionToPanel"],
-                  },
-                  [ExecutionActionTypes.CLOSE_RIGHT_PANEL]: {
-                    target: "closed",
                   },
                   [ExecutionActionTypes.EXECUTION_UPDATED]: {
                     actions: ["sendUpdatedExecution"],
@@ -164,6 +174,7 @@ export const executionMachine = createMachine<
                       "selectNodeInFlow",
                       "gtagEventLogger",
                       "clearQueryParams",
+                      "cancelDelayedNodeSelection",
                     ],
                     target: "closed",
                   },
@@ -213,7 +224,8 @@ export const executionMachine = createMachine<
                 always: [
                   {
                     cond: (ctx) =>
-                      !!ctx.selectedTaskReferenceName || !!ctx.selectedTaskId,
+                      !!ctx.selectedTaskReferenceName ||
+                      ctx.selectedTaskId !== undefined,
                     actions: ["notifyFlowUpdates", "delayedNodeSelection"],
                     target: "diagram",
                   },

@@ -51,6 +51,7 @@ export enum ExecutionActionTypes {
   SET_DO_WHILE_ITERATION = "SET_DO_WHILE_ITERATION",
   UPDATE_SELECTED_TASK = "UPDATE_SELECTED_TASK",
   UPDATE_QUERY_PARAM = "UPDATE_QUERY_PARAM",
+  SYNC_TASK_SELECTION = "SYNC_TASK_SELECTION",
   TOGGLE_ASSISTANT_PANEL = "TOGGLE_ASSISTANT_PANEL",
 }
 
@@ -250,6 +251,12 @@ export type UpdateQueryParamEvent = {
   taskReferenceName: string;
 };
 
+export type SyncTaskSelectionEvent = {
+  type: ExecutionActionTypes.SYNC_TASK_SELECTION;
+  taskId?: string;
+  taskReferenceName: string;
+};
+
 export type ToggleAssistantPanelEvent = {
   type: ExecutionActionTypes.TOGGLE_ASSISTANT_PANEL;
 };
@@ -278,4 +285,5 @@ export type ExecutionMachineEvents =
   | UpdateSelectedTaskEvent
   | UpdateQueryParamEvent
   | ToggleAssistantPanelEvent
+  | SyncTaskSelectionEvent
   | DoneInvokeEvent<any>;

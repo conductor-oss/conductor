@@ -36,6 +36,9 @@ export default function TimelineComponent({
   executionStatusMap = EMPTY_STATUS_MAP,
 }: TimelineComponentProps) {
   const timelineRef = useRef<Timeline>(null);
+  // react-vis-timeline binds clickHandler only on mount.
+  const onClickRef = useRef(onClick);
+  onClickRef.current = onClick;
 
   const handleChange = (_event: Event, newValue: number | number[]) => {
     const range = newValue as number[];
@@ -54,9 +57,10 @@ export default function TimelineComponent({
   const handleClick = (e: { group: string; item: string; what: string }) => {
     const { group, item, what } = e;
     if (group && what !== "background") {
-      onClick({
+      onClickRef.current({
         ref: group,
-        taskId: item,
+        // Queue-wait ranges use a synthetic ID for the same runtime attempt.
+        taskId: item?.endsWith("_scheduled") ? item.slice(0, -10) : item,
       });
     }
   };

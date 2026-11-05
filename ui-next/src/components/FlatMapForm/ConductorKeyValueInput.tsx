@@ -35,6 +35,7 @@ interface ConductorKeyValueInputProps {
   existingKeys: string[];
   hideButtons: boolean;
   showFieldTypes: boolean;
+  preserveValueOnModeSwitch?: boolean;
   focusOnField?: string;
   keyColumnLabel?: string;
   valueColumnLabel?: string;
@@ -153,6 +154,7 @@ export const ConductorKeyValueInput: FunctionComponent<
   existingKeys,
   hideButtons,
   showFieldTypes,
+  preserveValueOnModeSwitch,
   onDeleteItem,
   focusOnField,
   keyColumnLabel,
@@ -260,6 +262,7 @@ export const ConductorKeyValueInput: FunctionComponent<
                 customInput={customInput}
                 placeholder={placeholder}
                 showFieldTypes={showFieldTypes}
+                preserveValueOnModeSwitch={preserveValueOnModeSwitch}
               />
             </Grid>
           )}

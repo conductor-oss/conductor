@@ -1,0 +1,44 @@
+[
+  {
+    "api": "invoke_http_function",
+    "inputSchema": {
+      "createTime": 0,
+      "updateTime": 0,
+      "name": "plugin:firebase:invoke_http_function:input",
+      "version": 1,
+      "type": "JSON",
+      "data": {
+        "$schema": "https://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "JSON request body"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "api": "invoke_callable_function",
+    "inputSchema": {
+      "createTime": 0,
+      "updateTime": 0,
+      "name": "plugin:firebase:invoke_callable_function:input",
+      "version": 1,
+      "type": "JSON",
+      "data": {
+        "$schema": "https://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "data": {
+            "description": "JSON-serializable callable data; transmitted under the required data key"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  }
+]

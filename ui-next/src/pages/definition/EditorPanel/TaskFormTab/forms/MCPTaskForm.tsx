@@ -13,7 +13,7 @@ import {
 } from "@mui/material";
 import { GearIcon } from "@phosphor-icons/react";
 import { ConductorAutoComplete } from "components/ui/inputs";
-import { IntegrationIcon } from "components/IntegrationIcon";
+import { ConnectedAppIcon, IntegrationIcon } from "components/IntegrationIcon";
 import { useNavigate } from "react-router";
 import { colors } from "theme/tokens/variables";
 import { TaskType } from "types";
@@ -28,9 +28,7 @@ import { MaybeVariable } from "./MaybeVariable";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import { useEffect, useMemo, useState } from "react";
-import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
-import { Button } from "@mui/material";
+import { useMemo } from "react";
 import { ConductorFlatMapFormBase } from "components/FlatMapForm/ConductorFlatMapForm";
 import {
   connectedAppInput,
@@ -41,17 +39,8 @@ import { FEATURES } from "utils/flags";
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
   const connectedApp = task.type === TaskType.CONNECTED_APP;
-  const [jsonArguments, setJsonArguments] = useState(false);
-  const [argumentsError, setArgumentsError] = useState(false);
   const operation =
     task.inputParameters?.[connectedApp ? "operation" : "method"];
-  useEffect(() => {
-    setArgumentsError(false);
-  }, [
-    task.taskReferenceName,
-    task.inputParameters?.integrationName,
-    operation,
-  ]);
   const customTheme = createTheme({
     components: {
       MuiTextField: {
@@ -265,13 +254,44 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
       return null;
     }
 
+    // Only divert wholly freeform fields; constraints stay with JSON Forms.
+    const annotationKeys = ["title", "description", "$comment"];
+    const isFreeform = (property: unknown) =>
+      property === true ||
+      (typeof property === "object" &&
+        property !== null &&
+        !Array.isArray(property) &&
+        Object.keys(property).every((key) => annotationKeys.includes(key)));
+    if (
+      connectedApp &&
+      (schemaData.type === undefined || schemaData.type === "object") &&
+      Object.keys(schemaData).every((key) =>
+        [
+          "$schema",
+          "type",
+          "properties",
+          "required",
+          "additionalProperties",
+          ...annotationKeys,
+        ].includes(key),
+      ) &&
+      (!schemaData.required ||
+        (Array.isArray(schemaData.required) &&
+          schemaData.required.length === 0)) &&
+      (schemaData.additionalProperties === undefined ||
+        typeof schemaData.additionalProperties === "boolean") &&
+      Object.values(schemaData.properties).every(isFreeform)
+    ) {
+      return null;
+    }
+
     try {
       return downgradeSchemaToDraft7(schemaData);
     } catch (error) {
       console.error("[MCPTaskForm] Error processing schema:", error);
       return null;
     }
-  }, [toolData?.inputSchema?.data]);
+  }, [toolData?.inputSchema?.data, connectedApp]);
 
   return (
     <Box width="100%">
@@ -322,15 +342,6 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     <Typography>No Connected Apps configured.</Typography>
                   </Grid>
                 )}
-              {connectedApp && (
-                <Grid size={12}>
-                  <Typography variant="body2">
-                    Catalog availability does not guarantee execution is
-                    enabled. Asynchronous acceptance is not eventual business
-                    success.
-                  </Typography>
-                </Grid>
-              )}
               <Grid
                 sx={{
                   "&.MuiGrid-item": {
@@ -355,9 +366,15 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       justifyContent: "center",
                     }}
                   >
-                    <IntegrationIcon
-                      integrationName={task?.inputParameters?.integrationType}
-                    />
+                    {connectedApp ? (
+                      <ConnectedAppIcon
+                        integrationName={task.inputParameters?.integrationName}
+                      />
+                    ) : (
+                      <IntegrationIcon
+                        integrationName={task.inputParameters?.integrationType}
+                      />
+                    )}
                   </Box>
                   <Typography sx={{ fontSize: "16px", fontWeight: 500 }}>
                     {operation}
@@ -409,6 +426,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     <ConductorAutoComplete
                       id="integration-name-dropdown"
                       freeSolo={connectedApp}
+                      forcePopupIcon
                       onInputChange={(_, value, reason) => {
                         if (
                           connectedApp &&
@@ -429,6 +447,11 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                         .filter((i) => i.status === "active")
                         .map((i) => i.name)}
                       onChange={(__, val) => {
+                        if (
+                          connectedApp &&
+                          val === task.inputParameters?.integrationName
+                        )
+                          return;
                         // Get the selected integration's type
                         const selectedIntegration = (integrations || []).find(
                           (i) => i.name === val,
@@ -458,6 +481,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                     <ConductorAutoComplete
                       id="integration-tool-dropdown"
                       freeSolo={connectedApp}
+                      forcePopupIcon
                       onInputChange={(_, value, reason) => {
                         if (
                           connectedApp &&
@@ -476,9 +500,15 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                           );
                       }}
                       fullWidth
-                      label={connectedApp ? "Operation" : "Tool"}
+                      label="Tool"
                       options={tools || []}
                       onChange={(__, val) => {
+                        if (
+                          connectedApp &&
+                          (typeof val === "string" ? val : val?.api) ===
+                            operation
+                        )
+                          return;
                         onChange({
                           ...task,
                           inputParameters: connectedApp
@@ -518,65 +548,42 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                 <Grid container sx={{ width: "100%" }} spacing={3}>
                   {connectedApp && (
                     <Grid size={12}>
-                      <Button onClick={() => setJsonArguments(!jsonArguments)}>
-                        {jsonArguments ? "Argument fields" : "Arguments JSON"}
-                      </Button>
-                      {jsonArguments ? (
-                        <ConductorCodeBlockInput
-                          label="Arguments JSON"
-                          language="json"
-                          height={220}
-                          value={JSON.stringify(
-                            task.inputParameters?.arguments ?? {},
-                            null,
-                            2,
-                          )}
-                          error={argumentsError}
-                          onChange={(value) => {
-                            try {
-                              const argumentsValue = JSON.parse(value || "{}");
-                              if (
-                                argumentsValue === null ||
-                                Array.isArray(argumentsValue) ||
-                                (typeof argumentsValue !== "object" &&
-                                  !(
-                                    typeof argumentsValue === "string" &&
-                                    argumentsValue.includes("${")
-                                  ))
-                              )
-                                throw new Error(
-                                  "Expected object or expression",
-                                );
-                              setArgumentsError(false);
-                              onChange(
-                                updateField(
-                                  "inputParameters.arguments",
-                                  argumentsValue,
-                                  task,
-                                ),
-                              );
-                            } catch {
-                              setArgumentsError(true);
-                            }
-                          }}
-                        />
-                      ) : (
-                        <MaybeVariable
-                          value={task.inputParameters?.arguments}
-                          onChange={(value) =>
-                            onChange(
-                              updateField(
-                                "inputParameters.arguments",
-                                value,
-                                task,
-                              ),
-                            )
-                          }
-                          path="inputParameters.arguments"
-                          taskType={TaskType.CONNECTED_APP}
-                        >
+                      <MaybeVariable
+                        value={task.inputParameters?.arguments}
+                        onChange={(value) =>
+                          onChange(
+                            updateField(
+                              "inputParameters.arguments",
+                              value,
+                              task,
+                            ),
+                          )
+                        }
+                        path="inputParameters.arguments"
+                        taskType={TaskType.CONNECTED_APP}
+                      >
+                        {processedSchema ? (
+                          <ThemeProvider theme={customTheme}>
+                            <JsonForms
+                              schema={processedSchema}
+                              data={task.inputParameters?.arguments ?? {}}
+                              onChange={({ data }) =>
+                                onChange(
+                                  updateField(
+                                    "inputParameters.arguments",
+                                    data,
+                                    task,
+                                  ),
+                                )
+                              }
+                              renderers={materialRenderers}
+                              cells={materialCells}
+                            />
+                          </ThemeProvider>
+                        ) : (
                           <ConductorFlatMapFormBase
                             showFieldTypes
+                            preserveValueOnModeSwitch
                             keyColumnLabel="Argument"
                             valueColumnLabel="Value"
                             addItemLabel="Add argument"
@@ -591,8 +598,8 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                               )
                             }
                           />
-                        </MaybeVariable>
-                      )}
+                        )}
+                      </MaybeVariable>
                     </Grid>
                   )}
                   {!connectedApp && processedSchema && (

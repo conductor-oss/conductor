@@ -25,6 +25,11 @@ export const persistSelectedTask = assign<
   SetSelectedTaskEvent
 >({
   selectedTask: (_, { selectedTask }) => selectedTask,
+  // Logs belong to a runtime attempt, not to the shared task reference.
+  taskLogs: (context, { selectedTask }) =>
+    context.selectedTask?.taskId === selectedTask.taskId
+      ? context.taskLogs
+      : undefined,
   // Agent Card is task-type-specific. Return to Summary when navigation moves
   // from an agent to any other task while that tab is selected.
   currentTab: ({ currentTab }, { selectedTask }) =>
@@ -107,11 +112,16 @@ export const extractUpdates = assign<
 >((context, { execution, executionStatusMap }) => {
   return {
     executionStatusMap,
+    // Runtime IDs pin an attempt; unscheduled graph selections only have a definition ref.
     selectedTask:
-      taskWithLatestIteration(
-        execution.tasks,
-        context.selectedTask?.referenceTaskName,
-        context.selectedTask?.taskId,
-      ) || context.selectedTask,
+      (context.selectedTask?.taskId
+        ? execution.tasks?.find(
+            (task) => task.taskId === context.selectedTask?.taskId,
+          )
+        : taskWithLatestIteration(
+            execution.tasks,
+            context.selectedTask?.referenceTaskName ??
+              context.selectedTask?.workflowTask?.taskReferenceName,
+          )) ?? context.selectedTask,
   };
 });

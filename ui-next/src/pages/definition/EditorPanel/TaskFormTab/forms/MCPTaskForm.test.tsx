@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { MCPTaskForm } from "./MCPTaskForm";
 import { TaskType, TaskDef } from "types";
@@ -17,16 +17,16 @@ vi.mock("utils/hooks/useMCPIntegrations", () => ({
   useMCPIntegrations: metadata.integrations,
   useMCPTools: metadata.tools,
 }));
-vi.mock("components/IntegrationIcon", () => ({ IntegrationIcon: () => null }));
+vi.mock("components/IntegrationIcon", () => ({
+  IntegrationIcon: () => null,
+  ConnectedAppIcon: () => null,
+}));
 vi.mock("./OptionalFieldForm", () => ({ Optional: () => null }));
 vi.mock("./TaskFormSection", () => ({
   default: ({ children }: any) => <div>{children}</div>,
 }));
 vi.mock("./MaybeVariable", () => ({
   MaybeVariable: ({ children }: any) => <div>{children}</div>,
-}));
-vi.mock("@jsonforms/react", () => ({
-  JsonForms: () => <div>Legacy schema editor</div>,
 }));
 vi.mock("components/ui/inputs", () => ({
   ConductorAutoComplete: ({
@@ -41,6 +41,9 @@ vi.mock("components/ui/inputs", () => ({
       aria-label={label}
       disabled={disabled}
       value={typeof value === "object" ? getOptionLabel(value) : value || ""}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") onChange(null, event.currentTarget.value);
+      }}
       onChange={(event) =>
         onChange(
           null,
@@ -132,7 +135,9 @@ describe("existing task form Connected App adaptation", () => {
         enterpriseApiFeature: "INTEGRATIONS",
       }),
     );
-    expect(screen.queryByText("Legacy schema editor")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("spinbutton", { name: /Count/ }),
+    ).toBeInTheDocument();
     expect(saved().inputParameters.arguments.count).toBe(
       "${workflow.input.count}",
     );
@@ -150,7 +155,7 @@ describe("existing task form Connected App adaptation", () => {
   });
   it("resets arguments on operation change and emits only CONNECTED_APP input keys", () => {
     render(<Harness />);
-    fireEvent.change(screen.getByLabelText("Operation"), {
+    fireEvent.change(screen.getByLabelText("Tool"), {
       target: { value: "Other Operation" },
     });
     expect(saved().inputParameters).toEqual({
@@ -159,33 +164,17 @@ describe("existing task form Connected App adaptation", () => {
       arguments: {},
     });
   });
-  it("roundtrips nested JSON expressions and rejects invalid argument arrays", () => {
+  it("matches the reference core controls without duplicate advanced editors", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Arguments JSON" }));
-    const args = {
-      payload: { amount: "${workflow.input.amount}" },
-      invocationType: "Event",
-    };
-    fireEvent.change(screen.getByLabelText("Arguments JSON"), {
-      target: { value: JSON.stringify(args) },
-    });
-    expect(saved().inputParameters.arguments).toEqual(args);
-    fireEvent.change(screen.getByLabelText("Arguments JSON"), {
-      target: { value: "[]" },
-    });
-    expect(screen.getByLabelText("Arguments JSON")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
-    expect(saved().inputParameters.arguments).toEqual(args);
-    fireEvent.change(screen.getByLabelText("Integration"), {
-      target: { value: "firebase" },
-    });
-    expect(screen.getByLabelText("Arguments JSON")).toHaveAttribute(
-      "aria-invalid",
-      "false",
-    );
-    expect(saved().inputParameters.arguments).toEqual({});
+    expect(screen.getByLabelText("Tool")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Operation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Arguments JSON" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Custom arguments" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Use custom arguments/)).not.toBeInTheDocument();
   });
   it("shows empty and forbidden metadata honestly, not execution availability", () => {
     metadata.integrations.mockReturnValue({
@@ -196,11 +185,7 @@ describe("existing task form Connected App adaptation", () => {
     expect(
       screen.getByText("No Connected Apps configured."),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Asynchronous acceptance is not eventual business success/,
-      ),
-    ).toBeInTheDocument();
+
     unmount();
     metadata.integrations.mockReturnValue({
       integrations: [],
@@ -225,7 +210,9 @@ describe("existing task form Connected App adaptation", () => {
       />,
     );
     expect(metadata.integrations).toHaveBeenCalledWith(false);
-    expect(screen.getByText("Legacy schema editor")).toBeInTheDocument();
+    expect(
+      screen.getByRole("spinbutton", { name: /Count/ }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Arguments JSON" }),
     ).not.toBeInTheDocument();
@@ -244,4 +231,157 @@ it("roundtrips dynamic integration and operation expressions without metadata fe
     expect.objectContaining({ when: false, keepPreviousData: false }),
   );
   expect(saved().inputParameters).toEqual(inputParameters);
+});
+
+describe("Connected App operation schema editing", () => {
+  it("edits typed numeric arguments without losing unknown saved arguments or envelope fields", async () => {
+    render(
+      <Harness
+        task={{
+          ...initial,
+          inputParameters: {
+            ...initial.inputParameters,
+            arguments: { count: 3, oldSavedArgument: { nested: "keep" } },
+          },
+        }}
+      />,
+    );
+    fireEvent.change(screen.getByRole("spinbutton", { name: /Count/ }), {
+      target: { value: "10" },
+    });
+    await waitFor(() =>
+      expect(saved().inputParameters.arguments.count).toBe(10),
+    );
+    expect(saved().inputParameters).toEqual({
+      integrationName: "prod",
+      operation: "Invoke Function",
+      arguments: { count: 10, oldSavedArgument: { nested: "keep" } },
+    });
+  });
+  it("shows required validation, nested arrays and booleans using the real schema editor", async () => {
+    metadata.fetch.mockReturnValue({
+      data: {
+        inputSchema: {
+          data: {
+            type: "object",
+            properties: {
+              range: { type: "string" },
+              values: {
+                type: "array",
+                items: { type: "array", items: { type: "string" } },
+              },
+              includeValuesInResponse: { type: "boolean" },
+            },
+            required: ["range", "values"],
+          },
+        },
+      },
+      isLoading: false,
+    });
+    render(
+      <Harness
+        task={{
+          ...initial,
+          inputParameters: { ...initial.inputParameters, arguments: {} },
+        }}
+      />,
+    );
+    expect(
+      await screen.findByText(/is a required property/),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: /Range/ }), {
+      target: { value: "A1" },
+    });
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Include Values In Response/ }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Add to Values/ }));
+    await waitFor(() =>
+      expect(saved().inputParameters.arguments).toEqual({
+        range: "A1",
+        values: [[]],
+        includeValuesInResponse: true,
+      }),
+    );
+  });
+  it("preserves JSON, unknown fields and expressions supplied by the existing Code tab", async () => {
+    const argumentsValue = {
+      count: 4,
+      custom: { arbitrary: [1, true], expression: "${workflow.input.next}" },
+    };
+    render(
+      <Harness
+        task={{
+          ...initial,
+          inputParameters: {
+            ...initial.inputParameters,
+            arguments: argumentsValue,
+          },
+        }}
+      />,
+    );
+    fireEvent.change(screen.getByRole("spinbutton", { name: /Count/ }), {
+      target: { value: "7" },
+    });
+    await waitFor(() =>
+      expect(saved().inputParameters.arguments.count).toBe(7),
+    );
+    expect(saved().inputParameters.arguments.custom).toEqual(
+      argumentsValue.custom,
+    );
+  });
+  it("uses generic arguments for absent/freeform schemas", () => {
+    metadata.fetch.mockReturnValue({
+      data: { inputSchema: { data: { type: "object" } } },
+      isLoading: false,
+    });
+    render(<Harness />);
+    expect(screen.getByLabelText("Argument fields")).toBeInTheDocument();
+  });
+});
+
+it("does not discard arguments when the current connection or operation is reselected", () => {
+  render(<Harness />);
+  fireEvent.change(screen.getByLabelText("Integration"), {
+    target: { value: "prod" },
+  });
+  fireEvent.change(screen.getByLabelText("Tool"), {
+    target: { value: "Invoke Function" },
+  });
+  fireEvent.keyDown(screen.getByLabelText("Tool"), { key: "Enter" });
+  expect(saved().inputParameters).toEqual(initial.inputParameters);
+});
+
+it("opens older tasks with omitted arguments using operation fields without inventing values", () => {
+  render(
+    <Harness
+      task={{
+        ...initial,
+        inputParameters: {
+          integrationName: "prod",
+          operation: "Invoke Function",
+        },
+      }}
+    />,
+  );
+  expect(screen.getByRole("spinbutton", { name: /Count/ })).toHaveValue(null);
+});
+
+it("opens omitted arguments with the generic editor when no input schema is declared", () => {
+  metadata.fetch.mockReturnValue({
+    data: { inputSchema: { data: { type: "object" } } },
+    isLoading: false,
+  });
+  render(
+    <Harness
+      task={{
+        ...initial,
+        inputParameters: {
+          integrationName: "prod",
+          operation: "Invoke Function",
+        },
+      }}
+    />,
+  );
+  expect(screen.getByLabelText("Argument fields")).toHaveValue("{}");
 });

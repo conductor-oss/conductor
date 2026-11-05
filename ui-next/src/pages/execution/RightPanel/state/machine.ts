@@ -157,6 +157,9 @@ export const rightPanelMachine = createMachine<
                   [ExecutionActionTypes.FETCH_FOR_LOGS]: {
                     target: `.${RightPanelStates.FETCH_SELECTED_TASK_LOGS}`,
                   },
+                  [RightPanelContextEventTypes.SET_UPDATED_EXECUTION]: {
+                    target: `.${RightPanelStates.FETCH_SELECTED_TASK_LOGS}`,
+                  },
                   [RightPanelContextEventTypes.SET_SELECTED_TASK]: {
                     target: `.${RightPanelStates.FETCH_AFTER}`,
                   },

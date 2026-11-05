@@ -7,7 +7,7 @@ import { useContext } from "react";
 import { ColorModeContext } from "theme/material/ColorModeContext";
 import { colors } from "theme/tokens/variables";
 import { DynamicTaskDef, TaskStatus, TaskType, WaitTaskDef } from "types";
-import { MCPTaskDef } from "types/TaskType";
+import { ConnectedAppTaskDef, MCPTaskDef } from "types/TaskType";
 import { FlowExecutionContext } from "pages/execution/state/FlowExecutionContext/FlowExecutionContext";
 import SideTaskCards from "../SideTaskCards";
 import { getCardVariant } from "../styles";
@@ -141,6 +141,11 @@ const TaskCard = ({
         <div style={{ display: "flex", width: "100%", position: "relative" }}>
           <CardIcon
             type={type}
+            integrationName={
+              task.type === TaskType.CONNECTED_APP
+                ? (task as ConnectedAppTaskDef).inputParameters?.integrationName
+                : undefined
+            }
             integrationType={
               task.type === TaskType.INTEGRATION
                 ? (task as MCPTaskDef).inputParameters?.integrationType

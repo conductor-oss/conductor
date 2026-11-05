@@ -20,6 +20,7 @@ export interface ConductorFlatMapFormProps {
   hideValue?: boolean;
   hideButtons?: boolean;
   showFieldTypes?: boolean;
+  preserveValueOnModeSwitch?: boolean;
   value?: Record<string, string>;
   onChange?: (newValues: Record<string, string>) => void;
   hiddenKeys?: string[];
@@ -48,6 +49,7 @@ const ConductorFlatMapFormBase: FunctionComponent<
   hideButtons = false,
   hideValue = false,
   showFieldTypes = false,
+  preserveValueOnModeSwitch = false,
   value = {},
   onChange = (_newValues) => {},
   hiddenKeys,
@@ -147,6 +149,9 @@ const ConductorFlatMapFormBase: FunctionComponent<
                             onDeleteItem={deleteItem}
                             hideValue={hideValue}
                             showFieldTypes={showFieldTypes}
+                            preserveValueOnModeSwitch={
+                              preserveValueOnModeSwitch
+                            }
                             hideButtons={hideButtons}
                             autoFocusField={autoFocusField}
                             keyColumnLabel={keyColumnLabel}

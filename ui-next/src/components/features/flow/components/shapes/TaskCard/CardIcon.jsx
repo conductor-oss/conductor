@@ -47,10 +47,10 @@ import UpdateTaskIcon from "./icons/UpdateTaskIcon";
 import UpdateSecretIcon from "./icons/UpdateSecret";
 import LlmChatComplete from "./icons/LlmChatComplete";
 import MCPIcon from "./icons/MCPIcon";
-import { IntegrationIcon } from "components/IntegrationIcon";
+import { ConnectedAppIcon, IntegrationIcon } from "components/IntegrationIcon";
 import { useMemo } from "react";
 
-const CardIcon = ({ type, integrationType }) => {
+const CardIcon = ({ type, integrationType, integrationName = "" }) => {
   const MCPIntegrationIcon = useMemo(() => {
     return (
       <div
@@ -60,10 +60,14 @@ const CardIcon = ({ type, integrationType }) => {
           alignItems: "flex-start",
         }}
       >
-        <IntegrationIcon integrationName={integrationType} size={24} />
+        {type === TaskType.CONNECTED_APP ? (
+          <ConnectedAppIcon integrationName={integrationName} size={24} />
+        ) : (
+          <IntegrationIcon integrationName={integrationType} size={24} />
+        )}
       </div>
     );
-  }, [integrationType]);
+  }, [type, integrationType, integrationName]);
   const iconMap = {
     [TaskType.WAIT]: Hourglass,
     [TaskType.HTTP]: Globe,
@@ -122,7 +126,7 @@ const CardIcon = ({ type, integrationType }) => {
   };
 
   const IconComponent = iconMap[type];
-  if (type === TaskType.INTEGRATION) {
+  if (type === TaskType.INTEGRATION || type === TaskType.CONNECTED_APP) {
     return MCPIntegrationIcon;
   }
 
