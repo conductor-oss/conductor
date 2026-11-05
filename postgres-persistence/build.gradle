@@ -34,6 +34,15 @@ dependencies {
 
 }
 
+// These gRPC e2e tests run against the ES7 harness in AbstractEndToEndTest
+// (7.17 container, ES7 client, conductor.elasticsearch.version=7). conductor-server
+// now defaults to es8, which would put a second Elasticsearch IndexDAO configuration
+// on the test classpath and collide with es7 at Spring context load (duplicate
+// 'restClient' bean). Keep these tests on es7 only.
+configurations.testRuntimeClasspath {
+    exclude group: 'org.conductoross', module: 'conductor-es8-persistence'
+}
+
 test {
     //the SQL unit tests must run within the same JVM to share the same embedded DB
     maxParallelForks = 1
