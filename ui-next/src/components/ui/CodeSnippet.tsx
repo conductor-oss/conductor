@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
-import Highlight from "react-highlight";
+import { LazyHighlight } from "components/ui/LazyHighlight";
 
 const MONOSPACE_FONT = 'Menlo, Monaco, "Courier New", monospace';
 
@@ -167,7 +167,7 @@ export const CodeSnippet = ({
           )}
         </Stack>
       )}
-      <Highlight className={className}>{code}</Highlight>
+      <LazyHighlight className={className}>{code}</LazyHighlight>
 
       {!isGuide && !noCopyToClipboard && (
         <Stack
