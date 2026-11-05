@@ -13,7 +13,7 @@
 FROM azul/zulu-openjdk-debian:21 AS builder
 
 ARG PREBUILT=false
-ARG INDEXING_BACKEND=elasticsearch
+ARG INDEXING_BACKEND=elasticsearch8
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
