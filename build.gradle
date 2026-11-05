@@ -60,18 +60,22 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
-                // Security: CVE-2025-12183 - lz4-java minimum patched version. Not managed by the
-                // Spring Boot BOM, so the floor has to be enforced here.
+                // Security: lz4-java is not managed by the Spring Boot BOM. Kafka 4.x pulls the
+                // maintained at.yawk.lz4 fork; 1.11.4 clears CVE-2026-106451. The frozen org.lz4
+                // coordinate (last released 1.8.1) still gets its CVE-2025-12183 floor in case
+                // anything pulls it directly.
+                if (details.requested.group == 'at.yawk.lz4' && details.requested.name == 'lz4-java') {
+                    details.useVersion '1.11.4'
+                }
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
                 }
             }
-            // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
-            // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
-            // claim the same capability and Gradle cannot resolve the conflict automatically.
-            // Tell Gradle to always prefer the canonical org.lz4 artifact.
+            // Security: at.yawk.lz4:lz4-java and org.lz4:lz4-java both declare the Gradle capability
+            // org.lz4:lz4-java. If both land on the graph, prefer the maintained at.yawk fork (which
+            // carries the current CVE fixes) over the frozen org.lz4 1.8.1.
             resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
-                def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
+                def preferred = resolution.candidates.find { it.id.group == 'at.yawk.lz4' }
                 if (preferred) {
                     resolution.select(preferred)
                 }
@@ -126,6 +130,9 @@ allprojects {
             }
             implementation('commons-beanutils:commons-beanutils:1.11.0') {
                 because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
+            }
+            implementation('org.xerial.snappy:snappy-java:1.1.10.9') {
+                because 'CVE-2026-108106 / CVE-2026-93451: kafka transitive, not BOM-managed'
             }
         }
     }
