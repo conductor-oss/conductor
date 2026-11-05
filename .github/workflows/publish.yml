@@ -1,4 +1,4 @@
-name: Publish Conductor OSS toMaven Central
+name: Publish Conductor OSS to Maven Central
 on:
   release:
     types:
@@ -13,11 +13,39 @@ permissions:
   contents: read
 
 jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    name: Resolve release version
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - name: Resolve and validate release tag
+        id: resolve
+        # Release events publish the release's tag. Manual runs publish the
+        # `version` input -- the "Use workflow from" branch only picks which
+        # copy of this workflow runs. Anything that is not a release tag
+        # (e.g. a run from main, which used to publish version "ain") stops
+        # here, before any build or publish.
+        env:
+          TAG: ${{ inputs.version || github.ref_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$TAG' is not a release tag (expected e.g. v3.33.0, v3.33.0-rc1)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Publishing tag $TAG as version ${TAG#v}"
+
   publish:
+    needs: resolve-version
     runs-on: ubuntu-latest
     name: Gradle Build and Publish
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.resolve-version.outputs.tag }}
       - name: Set up Zulu JDK 21
         uses: actions/setup-java@v5
         with:
@@ -34,11 +62,10 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Publish release
         run: |
-          export VERSION="${{github.ref_name}}"
-          export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo Publishing version $PUBLISH_VERSION
           ./gradlew publish -PmavenCentral -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
         env:
+          PUBLISH_VERSION: ${{ needs.resolve-version.outputs.version }}
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingPassword: ${{ secrets.SIGNING_PASSWORD }}
@@ -58,17 +85,20 @@ jobs:
         # this step 403 and red-flag otherwise-successful publishes).
         env:
           GH_TOKEN: ${{ secrets.ORG_VARS_TOKEN }}
+          PUBLISH_VERSION: ${{ needs.resolve-version.outputs.version }}
         run: |
-          VERSION="${{ github.ref_name }}"
           gh variable set E2E_TEST_OSS_CONDUCTOR_VERSION \
             --org conductor-oss \
-            --body "${VERSION#v}"
+            --body "$PUBLISH_VERSION"
 
   publish-docker:
+    needs: resolve-version
     runs-on: ubuntu-latest
     name: Gradle Build and Publish to Container Registry
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ needs.resolve-version.outputs.tag }}
       - name: Set up Zulu JDK 21
         uses: actions/setup-java@v5
         with:
@@ -98,10 +128,9 @@ jobs:
           cp -r ui-next/dist/. server/src/main/resources/static/
 
       - name: Build Server JAR
+        env:
+          PUBLISH_VERSION: ${{ needs.resolve-version.outputs.version }}
         run: |
-          export VERSION="${{github.ref_name}}"
-          export PUBLISH_VERSION=`echo ${VERSION:1}`
-          echo "RELEASE_VERSION=$PUBLISH_VERSION" >> $GITHUB_ENV
           echo Publishing version $PUBLISH_VERSION
           ./gradlew :conductor-server:build -x test -x spotlessCheck -x shadowJar -x :conductor-os-persistence-v3:build \
             -Pversion=$PUBLISH_VERSION
@@ -127,9 +156,9 @@ jobs:
           build-args: |
             PREBUILT=true
           tags: |
-            conductoross/conductor:${{ env.RELEASE_VERSION }}
-            orkesio/orkes-conductor-community-standalone:${{ env.RELEASE_VERSION }}
-            orkesio/orkes-conductor-community:${{ env.RELEASE_VERSION }}
+            conductoross/conductor:${{ needs.resolve-version.outputs.version }}
+            orkesio/orkes-conductor-community-standalone:${{ needs.resolve-version.outputs.version }}
+            orkesio/orkes-conductor-community:${{ needs.resolve-version.outputs.version }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'conductoross/conductor:latest' || '' }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'orkesio/orkes-conductor-community-standalone:latest' || '' }}
             ${{ (github.event_name == 'release' && !github.event.release.prerelease && !contains(github.ref_name, 'rc') && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha')) && 'orkesio/orkes-conductor-community:latest' || '' }}
