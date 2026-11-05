@@ -1,4 +1,4 @@
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import {
   addMinutes,
   differenceInSeconds,
@@ -24,8 +24,8 @@ import {
   format as formatTz,
   formatInTimeZone as formatInTz,
   toDate,
-  utcToZonedTime,
-  zonedTimeToUtc,
+  toZonedTime,
+  fromZonedTime,
 } from "date-fns-tz";
 import { isNil as _isNil } from "lodash";
 import _isEmpty from "lodash/isEmpty";
@@ -561,7 +561,7 @@ export const getMomentStyleOffset = (
   timeZone: string,
   date: Date = new Date(),
 ): string => {
-  const zonedDate = utcToZonedTime(date, timeZone);
+  const zonedDate = toZonedTime(date, timeZone);
   const offsetMinutes = -zonedDate.getTimezoneOffset();
 
   const sign = offsetMinutes >= 0 ? "+" : "-";
@@ -662,5 +662,5 @@ export const parseDateInTimeZone = (
     return new Date(dateString);
   }
   // Otherwise, treat the string as being in the specified timezone
-  return zonedTimeToUtc(dateString, timeZone);
+  return fromZonedTime(dateString, timeZone);
 };

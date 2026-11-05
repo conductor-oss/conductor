@@ -93,11 +93,11 @@ importers:
         specifier: ^2.32.0
         version: 2.61.0
       date-fns:
-        specifier: ^2.29.3
-        version: 2.30.0
+        specifier: ^3.6.0
+        version: 3.6.0
       date-fns-tz:
-        specifier: ^2.0.0
-        version: 2.0.1(date-fns@2.30.0)
+        specifier: ^3.2.0
+        version: 3.2.0(date-fns@3.6.0)
       dom-to-image:
         specifier: ^2.6.0
         version: 2.6.0
@@ -212,7 +212,7 @@ importers:
         version: 3.7.0
       '@jsonforms/material-renderers':
         specifier: ^3.6.0
-        version: 3.7.0(bb582c1c6e9a4d0cf7da9cc4bbc35dca)
+        version: 3.7.0(4a1ad33da09f1faa6ea670161ad0a96a)
       '@jsonforms/react':
         specifier: ^3.6.0
         version: 3.7.0(@jsonforms/core@3.7.0)(react@18.3.1)
@@ -230,7 +230,7 @@ importers:
         version: 7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1)
       '@mui/x-date-pickers':
         specifier: ^6.16
-        version: 6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@2.30.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@3.6.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@playwright/test':
         specifier: ^1.59.1
         version: 1.60.0
@@ -2178,14 +2178,10 @@ packages:
     resolution: {integrity: sha512-BS8PfmtDGnrgYdOonGZQdLZslWIeCGFP9tpan0hi1Co2Zr2NKADsvGYA8XxuG/4UWgJ6Cjtv+YJnB6MM69QGlQ==}
     engines: {node: '>= 0.4'}
 
-  date-fns-tz@2.0.1:
-    resolution: {integrity: sha512-fJCG3Pwx8HUoLhkepdsP7Z5RsucUi+ZBOxyM5d0ZZ6c4SdYustq0VMmOu6Wf7bli+yS/Jwp91TOCqn9jMcVrUA==}
+  date-fns-tz@3.2.0:
+    resolution: {integrity: sha512-sg8HqoTEulcbbbVXeg84u5UnlsQa8GS5QXMqjjYIhS4abEVVKIUwe0/l/UhrZdKaL/W5eWZNlbTeEIiOXTcsBQ==}
     peerDependencies:
-      date-fns: 2.x
-
-  date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
+      date-fns: ^3.0.0 || ^4.0.0
 
   date-fns@3.6.0:
     resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
@@ -2519,8 +2515,8 @@ packages:
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
 
-  fast-uri@4.2.1:
-    resolution: {integrity: sha512-TmHQgewjHtMq1E5QKA0tOE0yeYGQs25KZC/ziJpubRtWI15W92e6vPFydWOeZBVROSHBYw/QhD9d5OefdD6LDg==}
+  fast-uri@4.2.3:
+    resolution: {integrity: sha512-I1PXwP5eAhlNlcdpjt9CgB59op2ZvZfxw+BkqGFVIUOgNpCVTcTqp3HhTX7brxj5vsip+nSY4nTvff+eIA76hg==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -4953,7 +4949,7 @@ snapshots:
       ajv-formats: 2.1.1(ajv@8.20.0)
       lodash: 4.18.1
 
-  '@jsonforms/material-renderers@3.7.0(bb582c1c6e9a4d0cf7da9cc4bbc35dca)':
+  '@jsonforms/material-renderers@3.7.0(4a1ad33da09f1faa6ea670161ad0a96a)':
     dependencies:
       '@date-io/dayjs': 3.2.0(dayjs@1.10.7)
       '@emotion/react': 11.14.0(@types/react@18.3.30)(react@18.3.1)
@@ -4962,7 +4958,7 @@ snapshots:
       '@jsonforms/react': 3.7.0(@jsonforms/core@3.7.0)(react@18.3.1)
       '@mui/icons-material': 7.3.11(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@types/react@18.3.30)(react@18.3.1)
       '@mui/material': 7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@mui/x-date-pickers': 6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@2.30.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@mui/x-date-pickers': 6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@3.6.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       dayjs: 1.10.7
       lodash: 4.18.1
       react: 18.3.1
@@ -5162,7 +5158,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.30
 
-  '@mui/x-date-pickers@6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@2.30.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@mui/x-date-pickers@6.20.2(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@mui/material@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(date-fns@3.6.0)(dayjs@1.10.7)(luxon@3.7.2)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@babel/runtime': 7.29.7
       '@mui/base': 5.0.0-beta.70(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -5178,7 +5174,7 @@ snapshots:
     optionalDependencies:
       '@emotion/react': 11.14.0(@types/react@18.3.30)(react@18.3.1)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@18.3.30)(react@18.3.1))(@types/react@18.3.30)(react@18.3.1)
-      date-fns: 2.30.0
+      date-fns: 3.6.0
       dayjs: 1.10.7
       luxon: 3.7.2
       moment: 2.31.0
@@ -5826,7 +5822,7 @@ snapshots:
   ajv@8.20.0:
     dependencies:
       fast-deep-equal: 3.1.3
-      fast-uri: 4.2.1
+      fast-uri: 4.2.3
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
@@ -6146,13 +6142,9 @@ snapshots:
       es-errors: 1.3.0
       is-data-view: 1.0.2
 
-  date-fns-tz@2.0.1(date-fns@2.30.0):
+  date-fns-tz@3.2.0(date-fns@3.6.0):
     dependencies:
-      date-fns: 2.30.0
-
-  date-fns@2.30.0:
-    dependencies:
-      '@babel/runtime': 7.29.7
+      date-fns: 3.6.0
 
   date-fns@3.6.0: {}
 
@@ -6614,7 +6606,7 @@ snapshots:
 
   fast-safe-stringify@2.1.1: {}
 
-  fast-uri@4.2.1: {}
+  fast-uri@4.2.3: {}
 
   fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
