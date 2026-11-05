@@ -24,8 +24,8 @@ import lombok.NoArgsConstructor;
 /**
  * Request model for calling a tool on an MCP server.
  *
- * <p>All fields except mcpServer, toolName, and headers are treated as tool arguments and passed to
- * the MCP tool.
+ * <p>Tool arguments are taken only from {@code arguments}. Other top-level input keys that this
+ * class does not declare are ignored and are not sent to the MCP server.
  */
 @Data
 @Builder
@@ -48,4 +48,13 @@ public class MCPToolCallRequest extends LLMWorkerInput {
     private Map<String, String> headers;
 
     private Map<String, Object> arguments = new HashMap<>();
+
+    /**
+     * Optional MCP client options, for example {@code {"protocolVersion": "2026-07-28"}}. Without
+     * it, or without {@code protocolVersion}, the call uses the legacy request. Kept as raw JSON so
+     * that {@link org.conductoross.conductor.ai.mcp.McpOptions} can reject wrong types and unknown
+     * keys with clear messages. Read only from the top-level task input; a key with the same name
+     * inside {@code arguments} is an ordinary tool argument.
+     */
+    private Object mcpOptions;
 }
