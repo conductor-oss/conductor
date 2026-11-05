@@ -331,7 +331,7 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-hook-form:
-        specifier: ^7.72.1
+        specifier: ^7.77.0
         version: 7.77.0(react@18.3.1)
       react-router:
         specifier: 7.18.2
