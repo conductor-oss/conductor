@@ -24,7 +24,6 @@ import {
   format as formatTz,
   formatInTimeZone as formatInTz,
   toDate,
-  toZonedTime,
   fromZonedTime,
 } from "date-fns-tz";
 import { isNil as _isNil } from "lodash";
@@ -554,25 +553,16 @@ export const addMinutesToDate = (date: Date, minutes: number): Date => {
 };
 
 /**
- * Returns a timezone offset like "+05:30" or "-04:00"
+ * Returns `timeZone`'s UTC offset at `date`, like "+05:30" or "-04:00".
  * Equivalent to Moment's `.format("Z")`
+ *
+ * Formats the offset in the target zone directly. Calling getTimezoneOffset()
+ * on a toZonedTime() result would return the machine's offset instead.
  */
 export const getMomentStyleOffset = (
   timeZone: string,
   date: Date = new Date(),
-): string => {
-  const zonedDate = toZonedTime(date, timeZone);
-  const offsetMinutes = -zonedDate.getTimezoneOffset();
-
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const abs = Math.abs(offsetMinutes);
-  const hours = Math.floor(abs / 60)
-    .toString()
-    .padStart(2, "0");
-  const minutes = (abs % 60).toString().padStart(2, "0");
-
-  return `${sign}${hours}:${minutes}`;
-};
+): string => formatInTz(date, timeZone, "xxx");
 
 /**
  * Returns a short time zone abbreviation (like "PDT", "IST", etc.)
