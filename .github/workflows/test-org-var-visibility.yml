@@ -1,7 +1,8 @@
 name: Test org var visibility
 
-# Throwaway test: does `gh variable set` (as publish.yml runs it, without
-# --visibility) reset the visibility of E2E_TEST_OSS_CONDUCTOR_VERSION?
+# Throwaway test: does `gh variable set --visibility all` keep
+# E2E_TEST_OSS_CONDUCTOR_VERSION visible to all repos? (Without the flag,
+# the first run reset it to private.)
 on:
   push:
     branches:
@@ -21,6 +22,7 @@ jobs:
         run: |
           gh variable set E2E_TEST_OSS_CONDUCTOR_VERSION \
             --org conductor-oss \
+            --visibility all \
             --body "$PUBLISH_VERSION"
       - name: Wait for manual check
         run: sleep 30
@@ -32,4 +34,5 @@ jobs:
         run: |
           gh variable set E2E_TEST_OSS_CONDUCTOR_VERSION \
             --org conductor-oss \
+            --visibility all \
             --body "$PUBLISH_VERSION"
