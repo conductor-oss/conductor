@@ -89,6 +89,14 @@ public class MetadataServiceImpl implements MetadataService {
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         taskDefinition.setCreateTime(existing.getCreateTime());
         taskDefinition.setCreatedBy(existing.getCreatedBy());
+        // Preserve server-configured credential names when worker re-registration supplies an
+        // empty value. A fresh TaskDef defaults runtimeMetadata to an empty list, so an empty
+        // update cannot distinguish "clear" from "not provided"; keep the stored names and
+        // require an explicit non-empty list to change them.
+        if (taskDefinition.getRuntimeMetadata() == null
+                || taskDefinition.getRuntimeMetadata().isEmpty()) {
+            taskDefinition.setRuntimeMetadata(existing.getRuntimeMetadata());
+        }
         metadataDAO.updateTaskDef(taskDefinition);
         metadataChangeListener.onTaskDefUpdated(taskDefinition);
     }
