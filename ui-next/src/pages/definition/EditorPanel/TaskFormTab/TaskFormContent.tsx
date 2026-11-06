@@ -70,6 +70,7 @@ import { FormTaskType, TaskDef, TaskType } from "types";
 import { updateField } from "utils/fieldHelpers";
 import { FEATURES, featureFlags } from "utils/flags";
 import { TaskStats } from "./TaskStats/TaskStats";
+import BoundaryTimerSection from "./forms/BoundaryTimerSection";
 import { ConductorCacheOutput } from "./forms/ConductorCacheOutputForm";
 import { MCPTaskForm } from "./forms/MCPTaskForm";
 import { MaybeVariable } from "./forms/MaybeVariable";
@@ -82,6 +83,9 @@ import { TaskFormContext } from "./state";
 import { taskDescriptions } from "./taskDescription";
 
 const ENABLE_TASK_STATS = featureFlags.isEnabled(FEATURES.DISABLE_TASK_STATS);
+// Only the enterprise core settles a task on its boundary timer, so the section
+// stays hidden unless a distribution that honors it turns the flag on.
+const ENABLE_BOUNDARY_TIMER = featureFlags.isEnabled(FEATURES.BOUNDARY_TIMER);
 
 /**
  * Get the task form component for a given task type.
@@ -592,6 +596,7 @@ const TaskFormContent: FunctionComponent = () => {
           )}
         </Box>
         {ENABLE_TASK_STATS && <TaskStats />}
+        {ENABLE_BOUNDARY_TIMER && <BoundaryTimerSection />}
         {/*<TaskFormFooter {...{ selectedNode, onChange }} />*/}
       </Box>
     </Box>
