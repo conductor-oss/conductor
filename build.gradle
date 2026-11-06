@@ -134,6 +134,18 @@ allprojects {
             implementation('org.xerial.snappy:snappy-java:1.1.10.9') {
                 because 'CVE-2026-108106 / CVE-2026-93451: kafka transitive, not BOM-managed'
             }
+            implementation('org.bouncycastle:bcprov-jdk18on:1.85') {
+                because 'CVE-2025-14813 / CVE-2026-8763 / CVE-2026-13506 / CVE-2026-5598: name-constraints bypass, GOSTCTR handling, ASN.1 DoS'
+            }
+            implementation('org.bouncycastle:bcpkix-jdk18on:1.85') {
+                because 'bouncycastle family kept in lockstep with bcprov-jdk18on'
+            }
+            implementation('org.bouncycastle:bcutil-jdk18on:1.85') {
+                because 'bouncycastle family kept in lockstep with bcprov-jdk18on'
+            }
+            implementation('org.jsoup:jsoup:1.23.2') {
+                because 'CVE-2026-75140: DoS via deeply nested XML'
+            }
         }
     }
     // processes additional configuration metadata json file as described here
