@@ -29,6 +29,8 @@ public class ScriptEvaluator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptEvaluator.class);
 
+    public static final boolean DEFAULT_RESTRICTED_HOST_ACCESS = false;
+
     private static final int DEFAULT_MAX_EXECUTION_SECONDS = 4;
     private static final int DEFAULT_CONTEXT_POOL_SIZE = 10;
     // Pool reuse changes JS semantics: a Context's global scope persists across calls, so a
@@ -39,6 +41,10 @@ public class ScriptEvaluator {
     // cheaper than before.
     private static final boolean DEFAULT_CONTEXT_POOL_ENABLED = false;
     private static final int DEFAULT_SOURCE_CACHE_SIZE = 1024;
+    private static final HostAccess RESTRICTED_HOST_ACCESS = buildHostAccess();
+    private static volatile HostAccess hostAccess =
+            DEFAULT_RESTRICTED_HOST_ACCESS ? RESTRICTED_HOST_ACCESS : HostAccess.ALL;
+    private static boolean hostAccessConfigured;
 
     private static Duration maxExecutionTimeSeconds;
     private static ExecutorService executorService;
@@ -87,6 +93,34 @@ public class ScriptEvaluator {
     private ScriptEvaluator() {}
 
     /**
+     * Configure Java host access before the evaluator is initialized. Unrestricted access remains
+     * the compatibility default for this release and must only be used with fully trusted scripts.
+     * Changing policies requires an application restart.
+     */
+    public static synchronized void configureHostAccess(boolean restrictedHostAccess) {
+        HostAccess configuredAccess =
+                restrictedHostAccess ? RESTRICTED_HOST_ACCESS : HostAccess.ALL;
+        if (initialized && hostAccess != configuredAccess) {
+            throw new IllegalStateException(
+                    "GraalJS host access must be configured before script evaluator initialization");
+        }
+        hostAccess = configuredAccess;
+        hostAccessConfigured = true;
+        if (!restrictedHostAccess) {
+            // Warn during every application startup, even when the policy is already unrestricted.
+            LOGGER.warn(
+                    "GraalJS unrestricted Java host access is enabled "
+                            + "(conductor.app.graaljs.restricted-host-access=false). "
+                            + "Unrestricted host access will be disabled by default in a future release. "
+                            + "To retain it after upgrading, explicitly set "
+                            + "conductor.app.graaljs.restricted-host-access=false. "
+                            + "Set conductor.app.graaljs.restricted-host-access=true to restrict it now. "
+                            + "Scripts may invoke arbitrary Java methods on bound objects; "
+                            + "only use this mode with fully trusted scripts and workflow authors.");
+        }
+    }
+
+    /**
      * Initialize the script evaluator with configuration. This should be called once at startup.
      *
      * @param maxSeconds Maximum execution time in seconds (default: 4)
@@ -99,6 +133,12 @@ public class ScriptEvaluator {
         if (initialized) {
             LOGGER.warn("ScriptEvaluator already initialized, skipping re-initialization");
             return;
+        }
+
+        if (!hostAccessConfigured) {
+            // Standalone callers do not have Spring's startup hook, but need the same
+            // warning/default.
+            configureHostAccess(DEFAULT_RESTRICTED_HOST_ACCESS);
         }
 
         maxExecutionTimeSeconds = Duration.ofSeconds(maxSeconds);
@@ -164,25 +204,42 @@ public class ScriptEvaluator {
         }
     }
 
+    private static HostAccess buildHostAccess() {
+        // Scripts may manipulate task data, not invoke arbitrary Java methods on reachable objects.
+        // Keep legacy collection reads used by workflow/compiler scripts, without exporting
+        // collection mutators, Object methods, or arbitrary members on the values they contain.
+        try {
+            return HostAccess.newBuilder()
+                    .allowArrayAccess(true)
+                    .allowListAccess(true)
+                    .allowMapAccess(true)
+                    .allowIterableAccess(true)
+                    .allowAccessInheritance(true)
+                    .allowAccess(Map.class.getMethod("get", Object.class))
+                    .allowAccess(Map.class.getMethod("keySet"))
+                    .allowAccess(Map.class.getMethod("entrySet"))
+                    .allowAccess(Map.Entry.class.getMethod("getKey"))
+                    .allowAccess(Map.Entry.class.getMethod("getValue"))
+                    .allowAccess(List.class.getMethod("get", int.class))
+                    .allowAccess(Collection.class.getMethod("size"))
+                    .allowAccess(Collection.class.getMethod("toArray"))
+                    .allowAccess(Iterable.class.getMethod("iterator"))
+                    .allowAccess(Iterator.class.getMethod("hasNext"))
+                    .allowAccess(Iterator.class.getMethod("next"))
+                    .allowAccess(ConsoleBridge.class.getMethod("log", Object.class))
+                    .allowAccess(ConsoleBridge.class.getMethod("info", Object.class))
+                    .allowAccess(ConsoleBridge.class.getMethod("error", Object.class))
+                    .build();
+        } catch (NoSuchMethodException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
     private static Context createNewContext() {
-        HostAccess hostAccess =
-                HostAccess.newBuilder(HostAccess.ALL)
-                        .denyAccess(Class.class)
-                        .denyAccess(ClassLoader.class)
-                        .denyAccess(java.lang.reflect.Method.class)
-                        .denyAccess(java.lang.reflect.Field.class)
-                        .denyAccess(java.lang.reflect.Constructor.class)
-                        .denyAccess(java.lang.reflect.Array.class)
-                        .denyAccess(Runtime.class)
-                        .denyAccess(ProcessBuilder.class)
-                        .denyAccess(Process.class)
-                        .denyAccess(System.class)
-                        .denyAccess(Thread.class)
-                        .denyAccess(ThreadGroup.class)
-                        .build();
         return Context.newBuilder("js")
                 .engine(ENGINE)
                 .allowHostAccess(hostAccess)
+                .allowHostClassLookup(className -> false)
                 .allowHostClassLoading(false)
                 .allowNativeAccess(false)
                 .allowCreateThread(false)

@@ -8,3 +8,8 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
 }
+
+test {
+    // This module supplies abstract DAO contract tests; persistence modules execute concrete suites.
+    failOnNoDiscoveredTests = false
+}

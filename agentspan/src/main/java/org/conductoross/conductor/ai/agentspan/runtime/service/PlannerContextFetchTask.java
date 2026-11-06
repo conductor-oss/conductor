@@ -114,7 +114,8 @@ public class PlannerContextFetchTask extends WorkflowSystemTask {
                 Collections.synchronizedMap(
                         new LinkedHashMap<String, Entry>(64, 0.75f, true) {
                             @Override
-                            protected boolean removeEldestEntry(Map.Entry<String, Entry> eldest) {
+                            protected boolean removeEldestEntry(
+                                    Map.Entry<String, PlannerContextFetchTask.Entry> eldest) {
                                 return size() > MAX_CACHE_ENTRIES;
                             }
                         });
@@ -225,9 +226,9 @@ public class PlannerContextFetchTask extends WorkflowSystemTask {
         // Sort to make order-independent — the same URL + headers in a
         // different insertion order is the same logical request.
         TreeMap<String, String> sorted = new TreeMap<>(headers);
-        StringBuilder sb = new StringBuilder(url).append(' ');
+        StringBuilder sb = new StringBuilder(url).append('\0');
         for (Map.Entry<String, String> h : sorted.entrySet()) {
-            sb.append(h.getKey()).append('=').append(h.getValue()).append('');
+            sb.append(h.getKey()).append('=').append(h.getValue()).append('\1');
         }
         return sb.toString();
     }

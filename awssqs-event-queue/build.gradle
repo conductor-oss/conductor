@@ -15,5 +15,5 @@ dependencies {
     implementation "io.reactivex:rxjava:${revRxJava}"
 
     testImplementation 'org.springframework.boot:spring-boot-starter'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
 }
