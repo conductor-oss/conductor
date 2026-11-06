@@ -24,7 +24,7 @@ ext {
     revCommonsIo = '2.18.0'
     revElasticSearch6 = '6.8.23'
     revGrpc = '1.75.0'
-    revGuava = '33.2.1-jre'
+    revGuava = '33.7.2-jre'   // 33.7.2 clears CVE-2026-102554 (was 33.2.1-jre)
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
     // Security: 42.7.11 is hit by CVE-2026-54291 (SCRAM MitM bypass). The Boot 4.1 BOM already
