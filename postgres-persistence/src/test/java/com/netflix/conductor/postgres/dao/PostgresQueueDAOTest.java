@@ -13,6 +13,9 @@
 package com.netflix.conductor.postgres.dao;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -42,8 +45,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
@@ -227,6 +230,63 @@ public class PostgresQueueDAOTest {
         } catch (Exception ex) {
             fail(ex.getMessage());
         }
+    }
+
+    /**
+     * Test fix for https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>When fewer than {@code count} messages are available, pollMessages should return as soon
+     * as at least one message is available rather than blocking for the full timeout waiting to
+     * fill the whole batch.
+     */
+    @Test
+    public void pollMessagesReturnsPromptlyWhenFewerThanCountAvailable() {
+        final String queueName = "issue142_testQueue";
+        // Only one message in the queue...
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        // ...but poll asking for a much larger batch with a long timeout.
+        final int requestedCount = 5;
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, requestedCount, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertEquals("Should return the one available message", 1, polled.size());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned promptly",
+                elapsed < timeoutMs / 2);
+    }
+
+    /**
+     * Companion to {@link #pollMessagesReturnsPromptlyWhenFewerThanCountAvailable()} for
+     * https://github.com/conductor-oss/conductor/issues/142
+     *
+     * <p>A poll for zero messages must return immediately with an empty result rather than blocking
+     * for the full timeout. The long-poll loop only waits while nothing has been popped, so a
+     * {@code count == 0} request (which can never pop anything) has to short-circuit up front --
+     * even when the queue has messages waiting.
+     */
+    @Test
+    public void pollMessagesReturnsImmediatelyWhenCountIsZero() {
+        final String queueName = "issue142_zeroCountQueue";
+        queueDAO.push(queueName, "issue142-msg-0", 0);
+        assertEquals("Queue size mismatch", 1, queueDAO.getSize(queueName));
+
+        final int timeoutMs = 10_000;
+
+        long start = System.currentTimeMillis();
+        List<Message> polled = queueDAO.pollMessages(queueName, 0, timeoutMs);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertNotNull("Poll was null", polled);
+        assertTrue("Zero-count poll should return no messages", polled.isEmpty());
+        assertTrue(
+                "pollMessages blocked for " + elapsed + "ms; should have returned immediately",
+                elapsed < timeoutMs / 2);
     }
 
     /**
@@ -526,6 +586,54 @@ public class PostgresQueueDAOTest {
         List<String> popped = queueDAO.pop(queueName, 1, 100);
         assertEquals(1, popped.size());
         assertEquals(messageId, popped.get(0));
+    }
+
+    @Test
+    public void pushPoppedMessageResetsPoppedStateAndMakesImmediatelyAvailable() {
+        String queueName = "requeue_popped_test";
+        String messageId = "requeue-msg-1";
+
+        // Push a message 'requeue-msg-1' with offset 0
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Pop the message
+        List<String> popped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, popped.size());
+        assertEquals(messageId, popped.get(0));
+
+        // Assert directly via query on table queue_message that popped = true
+        assertTrue(
+                "popped column in queue_message should be true after message was popped",
+                getPoppedState(queueName, messageId));
+
+        // Re-push the message
+        queueDAO.push(queueName, messageId, 0L);
+
+        // Assert directly via query on table queue_message that popped = false
+        assertFalse(
+                "popped column in queue_message should be reset to false after re-push",
+                getPoppedState(queueName, messageId));
+
+        // Pop again: assert message is returned immediately
+        List<String> repopped = queueDAO.pop(queueName, 1, 100);
+        assertEquals(1, repopped.size());
+        assertEquals(messageId, repopped.get(0));
+    }
+
+    private boolean getPoppedState(String queueName, String messageId) {
+        try (Connection conn = dataSource.getConnection();
+                PreparedStatement stmt =
+                        conn.prepareStatement(
+                                "SELECT popped FROM queue_message WHERE queue_name = ? AND message_id = ?")) {
+            stmt.setString(1, queueName);
+            stmt.setString(2, messageId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue("Message record must exist in queue_message", rs.next());
+                return rs.getBoolean("popped");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // @Test

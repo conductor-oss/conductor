@@ -91,12 +91,25 @@ test("DataTable Columns button opens ColumnSelector with MuiCheckbox items", asy
   // "Task name" column should appear as an entry.
   await expect(menu.getByText(/task name/i).first()).toBeVisible();
 
-  // Dismiss by sending Escape to the Menu itself so the keydown bubbles to the
-  // MUI Modal root that owns onClose. A corner mouse click is unreliable in CI
-  // (the invisible backdrop may not take the hit at 1,1) and a page-level
-  // Escape depends on where focus happens to be.
-  await menu.press("Escape");
-  await expect(menu).not.toBeVisible();
+  // Dismiss the menu by clicking into the quick search field rather than by
+  // pressing Escape, which MUI only honours when the keydown lands inside the
+  // Modal root *and* the menu is still the top-most registered modal.
+  //
+  // This takes two clicks. The menu paper is wide enough to cover most of the
+  // search field, and its invisible backdrop covers the rest of the viewport,
+  // so the first click has to land on the backdrop clear of the paper — aiming
+  // at the field directly would hit a column item and toggle it instead.
+  await page
+    .locator('.MuiPopover-root:has([role="menu"]) .MuiBackdrop-root')
+    .click({ position: { x: 5, y: 5 } });
+  await expect(menu).toBeHidden();
+
+  // With the menu gone the field is reachable, and the pointer has left the
+  // Columns button so its "Show columns" tooltip is dismissed too.
+  const quickSearch = page.locator("#quick-search-field");
+  await quickSearch.click();
+  await expect(quickSearch).toBeFocused();
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
 });
 
 test("clicking a task definition opens the task editor", async ({ page }) => {

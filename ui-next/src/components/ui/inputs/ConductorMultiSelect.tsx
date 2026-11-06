@@ -20,6 +20,7 @@ type ConductorMultiSelectProp = {
   dataTestId?: string;
   error?: boolean;
   helperText?: string;
+  required?: boolean;
 };
 
 type MenuPropsType = {
@@ -41,6 +42,7 @@ export default function ConductorMultiSelect({
   dataTestId,
   error,
   helperText = "",
+  required,
 }: ConductorMultiSelectProp) {
   const menuProps: MenuPropsType = {
     PaperProps: {
@@ -86,6 +88,7 @@ export default function ConductorMultiSelect({
       fullWidth
       data-testid={dataTestId}
       label={label}
+      required={required}
       SelectProps={{
         multiple: true,
         value: selected,

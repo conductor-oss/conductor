@@ -23,3 +23,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yml
           REQUIREMENTS: requirements.txt
+          # mkdocs.yml resolves `!!python/name:main.mermaid_fence` at config-parse
+          # time, so main.py must be importable.  This action runs the `mkdocs`
+          # console script inside a container, where sys.path[0] is the script's
+          # bin dir rather than the checkout, and the repo is mounted here.
+          PYTHONPATH: /github/workspace

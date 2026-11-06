@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       e2e_profiles:
-        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, redis-os3'
+        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, postgres-es8, mysql-es8, redis-os3'
         required: false
         default: all
         type: string
@@ -27,6 +27,12 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Least-privilege default for the GITHUB_TOKEN. Every job inherits contents: read;
+# jobs that need more (e.g. checks: write to publish test-result checks) elevate
+# their own permissions block below.
+permissions:
+  contents: read
 
 jobs:
   detect-changes:
@@ -67,6 +73,11 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    # checks: write is required for the "Publish Test Report" step below; without
+    # it the default read-only token fails with "Resource not accessible by integration".
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,11 +90,11 @@ jobs:
           sudo rm -rf /opt/ghc
       - name: Gradle wrapper validation
         uses: gradle/wrapper-validation-action@v3
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache SonarCloud packages
         uses: actions/cache@v5
         with:
@@ -145,11 +156,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -227,11 +238,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -310,11 +321,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:
@@ -378,7 +389,9 @@ jobs:
           # redis-es8 flavor and cassandra support is partial. Re-enable by adding them back
           # to the optional list (scripts remain in e2e/).
           always='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]'
-          optional='[{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
+          optional='[{"name":"postgres-es8","script":"./e2e/run_tests-postgres-es8.sh"},
+                     {"name":"mysql-es8","script":"./e2e/run_tests-mysql-es8.sh"},
+                     {"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
                      {"name":"mysql","script":"./e2e/run_tests-mysql.sh"},
                      {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"}]'
 
@@ -433,11 +446,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
-      - name: Set up Zulu JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
-          distribution: "zulu"
-          java-version: "21"
+          distribution: "temurin"
+          java-version: "25"
       - name: Cache Gradle packages
         uses: actions/cache@v5
         with:

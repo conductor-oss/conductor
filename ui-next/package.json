@@ -98,7 +98,6 @@
     "ajv-formats": "^3.0.1",
     "autosuggest-highlight": "^3.3.4",
     "classnames": "^2.3.1",
-    "color": "^4.2.3",
     "cron-validate": "^1.4.3",
     "cronstrue": "^2.32.0",
     "date-fns": "^2.29.3",
@@ -113,7 +112,7 @@
     "monaco-languages-jq": "^1.0.0",
     "prismjs": "^1.27.0",
     "prop-types": "^15.7.2",
-    "qs": "^6.15.1",
+    "qs": "^6.16.0",
     "react-container-query": "^0.12.0",
     "react-data-table-component": "^7.5.3",
     "react-datepicker": "^6.1.0",
@@ -130,7 +129,7 @@
     "remark-gfm": "^4.0.0",
     "ts-key-enum": "^2.0.12",
     "url-parse": "^1.5.9",
-    "uuid": "^8.3.2",
+    "uuid": "^11.1.1",
     "xstate": "^4.38.3"
   },
   "devDependencies": {
@@ -191,10 +190,10 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0",
     "v8-to-istanbul": "^9.3.0",
-    "vite": "^7.1.11",
+    "vite": "^7.3.6",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.4",
+    "vitest": "^4.1.11",
     "yup": "^1.7.0"
   },
   "resolutions": {
@@ -204,8 +203,49 @@
   },
   "pnpm": {
     "overrides": {
-      "vis-timeline": "7.3.6",
-      "mini-css-extract-plugin": "2.4.5"
+      "vis-timeline": "7.7.4",
+      "mini-css-extract-plugin": "2.4.5",
+      "vis-data": "7.1.9",
+      "vis-util": ">=5.0.1 <6",
+      "undici": ">=8.10.2",
+      "form-data": ">=4.0.6",
+      "underscore": ">=1.13.8",
+      "jsonpath-plus": ">=10.3.0",
+      "axios": ">=1.20.0",
+      "brace-expansion@1": "1.1.21",
+      "brace-expansion@5": "5.0.12",
+      "react-router": "7.18.2",
+      "js-yaml": ">=4.3.2 <5",
+      "nanoid": ">=3.3.17",
+      "immutable@<4": "4.3.9",
+      "immutable@>=5": ">=5.1.8",
+      "fast-uri": ">=4.1.5",
+      "next": ">=16.2.11",
+      "sharp": ">=0.35.0",
+      "postcss": ">=8.5.18",
+      "browserslist": ">=4.28.7",
+      "dompurify": ">=3.4.13 <4",
+      "prismjs": ">=1.30.0",
+      "moment": ">=2.31.0 <3",
+      "qs": ">=6.16.0",
+      "uuid": ">=11.1.1 <12",
+      "esbuild": ">=0.28.1 <0.29",
+      "vitest": ">=4.1.11 <5",
+      "source-map-js": ">=1.2.2 <2"
+    },
+    "packageExtensions": {
+      "use-location-state": {
+        "peerDependenciesMeta": {
+          "next": {
+            "optional": true
+          }
+        }
+      }
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "next"
+      ]
     }
   },
   "packageManager": "pnpm@10.34.1+sha512.b58fbde6dca66a929538021581f648b4570b6ca19b18e7cbd7f2c07a7b24454155388dacdf08f2af3678e88a6d1fe04f9d609df24bf51735a060ea041b374ab7"

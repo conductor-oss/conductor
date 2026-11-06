@@ -1,0 +1,64 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "Output ONLY valid JSON matching this shape: {\"text\":\"string\"}. No markdown fences, no explanation, just the JSON object.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Write a concise prose summary about factorial growth. Mention that factorials multiply all positive integers up to n, and include the values 1!, 2!, 3!, 4!, and 5! to illustrate how quickly the results grow. The summary must be at least 30 characters long.\n\nRespond as json.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : true,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 256,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0474697617b74c10006aa82b65746487d08a09812769d62961",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 100,
+        "completionTokens" : 81,
+        "totalTokens" : 181,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0474697617b74c10006aa82b65746487d08a09812769d62961",
+        "reasoning_tokens" : 25
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "{\"text\":\"Factorials multiply all positive integers up to n: 1!=1, 2!=2, 3!=6, 4!=24, and 5!=120, showing how quickly factorial growth increases.\"}",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

@@ -7,7 +7,13 @@ import _isNil from "lodash/isNil";
 import { FunctionComponent, useState } from "react";
 import { getColumnId, getColumnLabel, getColumnLabelById } from "./helpers";
 import { FilterObjectItem } from "./state";
-import { RenderableColumn } from "./types";
+import { ColumnCustomType, RenderableColumn } from "./types";
+
+const BOOLEAN_OPTIONS = [
+  { value: "", label: "Any" },
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
 
 export interface FilterProps {
   columns: RenderableColumn[];
@@ -36,6 +42,11 @@ export const Filter: FunctionComponent<FilterProps> = ({
       substring: v,
     });
   };
+
+  const selectedColumn = columns.find(
+    (col) => getColumnId(col) === filterObj?.columnName,
+  );
+  const isBooleanColumn = selectedColumn?.type === ColumnCustomType.BOOLEAN;
 
   const handleColumnChange = (c: string) => {
     setFilterObj({
@@ -92,12 +103,31 @@ export const Filter: FunctionComponent<FilterProps> = ({
               </MenuItem>
             ))}
         </Select>
-        <Input
-          clearable
-          label="Substring"
-          value={filterObj!.substring}
-          onChange={handleValueChange}
-        />
+        {isBooleanColumn ? (
+          <Select
+            label="Value"
+            sx={{ width: 200 }}
+            onChange={(e: any) => handleValueChange(e.target.value)}
+            value={filterObj!.substring}
+            renderValue={(v: any) =>
+              BOOLEAN_OPTIONS.find((option) => option.value === v)?.label
+            }
+            displayEmpty={true}
+          >
+            {BOOLEAN_OPTIONS.map(({ value, label }) => (
+              <MenuItem value={value} key={label}>
+                {label}
+              </MenuItem>
+            ))}
+          </Select>
+        ) : (
+          <Input
+            clearable
+            label="Contains"
+            value={filterObj!.substring}
+            onChange={handleValueChange}
+          />
+        )}
       </Popover>
     </>
   );

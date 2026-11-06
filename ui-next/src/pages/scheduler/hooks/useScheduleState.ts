@@ -1,13 +1,22 @@
 import React, { useMemo, useState } from "react";
 import { timestampRendererLocal } from "utils/date";
 import { getTemplateFromInputParams } from "../../runWorkflow/runWorkflowUtils";
+import { CronSchedule } from "types/Schedulers";
 import { ScheduleType } from "../Schedule";
+
+/**
+ * The schedule as it came back from the server, kept to compare the form against. It is wire
+ * shaped rather than form shaped, so it carries cronSchedules rather than extraCronSchedules.
+ */
+type OriginalSchedule = Partial<ScheduleType> & {
+  cronSchedules?: CronSchedule[];
+};
 
 export interface UseScheduleStateReturn {
   scheduleState: ScheduleType;
   setScheduleState: React.Dispatch<React.SetStateAction<ScheduleType>>;
-  original: Partial<ScheduleType>;
-  setOriginal: React.Dispatch<React.SetStateAction<Partial<ScheduleType>>>;
+  original: OriginalSchedule;
+  setOriginal: React.Dispatch<React.SetStateAction<OriginalSchedule>>;
   initializeFromSchedule: (schedule: any) => void;
   initializeFromExecution: (latestExecution: any) => void;
 }
@@ -32,6 +41,7 @@ const initialState: ScheduleType = {
   scheduleEndTime: "",
   priority: "",
   zoneId: "UTC",
+  extraCronSchedules: [],
 };
 
 export function useScheduleState(
@@ -61,7 +71,7 @@ export function useScheduleState(
 
   const [scheduleState, setScheduleState] =
     useState<ScheduleType>(memorizedState);
-  const [original, setOriginal] = useState<Partial<ScheduleType>>({
+  const [original, setOriginal] = useState<OriginalSchedule>({
     paused: false,
     runCatchupScheduleInstances: false,
     name: "",
@@ -70,6 +80,7 @@ export function useScheduleState(
     scheduleStartTime: "",
     scheduleEndTime: "",
     zoneId: "UTC",
+    extraCronSchedules: [],
     startWorkflowRequest: {
       name: null,
       version: null,
@@ -89,10 +100,14 @@ export function useScheduleState(
       const taskToDomainStr = swr.taskToDomain
         ? JSON.stringify(swr.taskToDomain, null, 2)
         : "";
-      let cronExpression = schedule.cronExpression;
-      if (cronExpression === null) {
+      const saved: CronSchedule[] = schedule.cronSchedules ?? [];
+      let cronExpression = saved.length
+        ? saved[0].cronExpression
+        : schedule.cronExpression;
+      if (cronExpression === null || cronExpression === undefined) {
         cronExpression = "";
       }
+      const zoneId = saved.length ? saved[0].zoneId : schedule.zoneId;
 
       const newState = {
         name: schedule.name,
@@ -117,7 +132,8 @@ export function useScheduleState(
         scheduleEndTime: schedule.scheduleEndTime
           ? timestampRendererLocal(schedule.scheduleEndTime)
           : "",
-        zoneId: schedule.zoneId,
+        zoneId: zoneId,
+        extraCronSchedules: saved.slice(1),
       };
 
       setScheduleState((prevState) => ({ ...prevState, ...newState }));
@@ -127,6 +143,9 @@ export function useScheduleState(
         name: schedule.name,
         description: schedule.description,
         cronExpression: cronExpression,
+        // The baseline has to carry the list too, or codeToFormData splits a different head and
+        // tail from it than the form holds, and an untouched multi-cron schedule looks edited.
+        cronSchedules: saved,
         scheduleStartTime: schedule.scheduleStartTime
           ? schedule.scheduleStartTime
           : "",

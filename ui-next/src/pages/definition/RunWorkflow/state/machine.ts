@@ -24,6 +24,7 @@ export const runMachine = createMachine<RunMachineContext, RunMachineEvents>(
       popoverMessage: null,
       idempotencyKey: undefined,
       idempotencyStrategy: undefined,
+      focusInput: false,
     },
     states: {
       [RunMachineStates.IDLE]: {

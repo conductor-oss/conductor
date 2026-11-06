@@ -1,0 +1,12 @@
+name: Check LLM playback
+description: Validate completed workflows and guardrail rejections from persisted server state.
+inputs:
+  server-url:
+    description: Conductor API URL reachable from this runner, including /api.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Check playback
+      shell: sh
+      run: sh "$GITHUB_ACTION_PATH/check-playback.sh" "${{ inputs.server-url }}"

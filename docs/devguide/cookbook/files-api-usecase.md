@@ -1,3 +1,7 @@
+---
+description: "Five real-world scenarios where Conductor workflows create, process, and deliver files, from refund processing to invoices and shipping labels."
+---
+
 # Conductor OSS — File Management Use Cases
 
 Five real-world scenarios where Conductor orchestrates file creation, processing, and delivery across workflow stages.

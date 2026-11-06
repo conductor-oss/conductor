@@ -30,6 +30,7 @@ const baseState: ScheduleType = {
   scheduleEndTime: "",
   priority: "",
   zoneId: "UTC",
+  extraCronSchedules: [],
 };
 
 /** Wrapper that wires up all the state needed by useScheduleFormHandlers */
@@ -442,6 +443,51 @@ describe("useScheduleState", () => {
     });
 
     expect(result.current.scheduleState.cronExpression).toBe("");
+  });
+
+  it("initializeFromSchedule splits cronSchedules into the first expression and extra rows", () => {
+    const { result } = renderHook(() => useScheduleState(null, null));
+
+    act(() => {
+      result.current.initializeFromSchedule({
+        name: "s",
+        cronExpression: "0 0 9 * * ?",
+        zoneId: "Asia/Kolkata",
+        cronSchedules: [
+          { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+          { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+        ],
+        startWorkflowRequest: {},
+      });
+    });
+
+    expect(result.current.scheduleState.cronExpression).toBe("0 0 9 * * ?");
+    expect(result.current.scheduleState.zoneId).toBe("Asia/Kolkata");
+    expect(result.current.scheduleState.extraCronSchedules).toEqual([
+      { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+    ]);
+  });
+
+  it("initializeFromSchedule keeps cronSchedules on the comparison baseline", () => {
+    // Without it the derived baseline splits a different head and tail than the form holds,
+    // and an untouched multi-cron schedule reports unsaved changes.
+    const cronSchedules = [
+      { cronExpression: "0 0 9 * * ?", zoneId: "Asia/Kolkata" },
+      { cronExpression: "0 0 18 * * ?", zoneId: "America/New_York" },
+    ];
+    const { result } = renderHook(() => useScheduleState(null, null));
+
+    act(() => {
+      result.current.initializeFromSchedule({
+        name: "s",
+        cronExpression: "0 0 9 * * ?",
+        zoneId: "Asia/Kolkata",
+        cronSchedules,
+        startWorkflowRequest: {},
+      });
+    });
+
+    expect(result.current.original.cronSchedules).toEqual(cronSchedules);
   });
 
   it("initializeFromSchedule does nothing when called with null", () => {

@@ -71,6 +71,12 @@ description: "Complete, runnable Conductor workflow definitions for common orche
     <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
   </a>
 
+  <a class="cookbook-card" href="ai-decision-routing.html">
+    <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h6"/><path d="M10 12l4-6h6"/><path d="M10 12l4 6h6"/></svg></span>
+    <span class="cookbook-card__body"><strong>AI decision routing</strong><span>Answer one fixed choice question and route with a decision-backed SWITCH.</span></span>
+    <span class="cookbook-card__arrow" aria-hidden="true">&#8594;</span>
+  </a>
+
   <a class="cookbook-card" href="workflow-scheduling.html">
     <span class="cookbook-card__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 14h3M13 14h3M8 18h3"/></svg></span>
     <span class="cookbook-card__body"><strong>Scheduled workflows</strong><span>Cron execution, downtime catchup, bounded windows, and concurrent runs.</span></span>

@@ -5,8 +5,9 @@ import { useQuery } from "react-query";
 import { IScheduleDto, SchedulerSearchResult } from "types/Schedulers";
 import { STALE_TIME_SEARCH, useAuthHeaders } from "utils/query";
 
-const SCHEDULER_PATH = "/scheduler/schedules";
 const SCHEDULER_SEARCH_PATH = "/scheduler/schedules/search?";
+/** Server-side cap for scheduler search page size. */
+const SCHEDULER_SEARCH_MAX_SIZE = 1000;
 
 /** Full schedule list (used by Scheduler Executions name dropdown / similar lookups). */
 export const useGetSchedulerDefinitions = () => {
@@ -14,10 +15,17 @@ export const useGetSchedulerDefinitions = () => {
   const fetchParams = { headers: useAuthHeaders() };
 
   return useQuery<IScheduleDto[]>(
-    [fetchContext.stack, SCHEDULER_PATH],
-    () => {
-      const path = SCHEDULER_PATH;
-      return fetchWithContext(path, fetchContext, fetchParams);
+    [fetchContext.stack, SCHEDULER_SEARCH_PATH, "all-names"],
+    async () => {
+      const path =
+        SCHEDULER_SEARCH_PATH +
+        qs.stringify({ start: 0, size: SCHEDULER_SEARCH_MAX_SIZE });
+      const result = (await fetchWithContext(
+        path,
+        fetchContext,
+        fetchParams,
+      )) as SchedulerSearchResult | null;
+      return result?.results ?? [];
     },
     {
       enabled: fetchContext.ready,

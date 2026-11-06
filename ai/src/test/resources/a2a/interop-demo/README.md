@@ -21,7 +21,7 @@ just our own fixtures.
 ./run-interop-demo.sh
 ```
 
-Requires Java 21+, curl, and either [`uv`](https://docs.astral.sh/uv/) (auto-creates a Python venv
+Requires Java 25+, curl, and either [`uv`](https://docs.astral.sh/uv/) (auto-creates a Python venv
 with the `a2a-sdk`) or `A2A_VENV` pointing at a Python that already has `a2a-sdk` + `uvicorn`. No
 Docker, no Redis, no API keys.
 

@@ -1,4 +1,5 @@
 gradlew eol=lf
+gradlew.bat eol=crlf
 *.gradle eol=lf
 *.java eol=lf
 *.groovy eol=lf
@@ -7,5 +8,4 @@ spring.factories eol=lf
 
 docs/* linguist-documentation
 server/src/main/resources/swagger-ui/* linguist-vendored
-
 
