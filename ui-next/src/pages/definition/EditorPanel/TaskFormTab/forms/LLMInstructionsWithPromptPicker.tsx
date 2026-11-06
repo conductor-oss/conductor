@@ -20,6 +20,12 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import { ConductorAutocompleteVariables } from "components/FlatMapForm/ConductorAutocompleteVariables";
 import MuiTypography from "components/ui/MuiTypography";
 import PromptVariables from "components/PromptVariables";
+import {
+  isPromptVersioningEnabled,
+  PROMPT_FIELD_COLUMNS,
+  withoutPromptVersion,
+} from "./promptVersioning";
+import { PromptVersionSelect } from "./PromptVersionSelect";
 import { path as _path } from "lodash/fp";
 import { useCallback, useMemo, useState } from "react";
 import { TaskDef } from "types";
@@ -79,16 +85,22 @@ export const LLMInstructionsWithPromptPicker = ({
   const handleSelectPrompt = useCallback(
     (value: unknown) => {
       setCustomExpandedOverride(false);
+      let next = updateField(
+        `inputParameters.${UiIntegrationsFieldType.INSTRUCTIONS}`,
+        value,
+        task,
+      );
+      // The pin was chosen for the previous prompt, so it does not survive a change of
+      // reference — including clearing the field.
+      if (value !== instructions) {
+        next = withoutPromptVersion(next);
+      }
       actor.send({
         type: LLMFormFieldsMachineEventTypes.SELECT_INSTRUCTIONS,
-        task: updateField(
-          `inputParameters.${UiIntegrationsFieldType.INSTRUCTIONS}`,
-          value,
-          task,
-        ),
+        task: next,
       });
     },
-    [actor, task],
+    [actor, task, instructions],
   );
 
   const handleCustomInstructions = useCallback(
@@ -96,7 +108,7 @@ export const LLMInstructionsWithPromptPicker = ({
       let updated = updateField("inputParameters.instructions", value, task);
       updated = updateField("inputParameters.allowRawPrompts", true, updated);
       updated = updateField("inputParameters.promptVariables", {}, updated);
-      onChange(updated);
+      onChange(withoutPromptVersion(updated));
     },
     [onChange, task],
   );
@@ -120,20 +132,35 @@ export const LLMInstructionsWithPromptPicker = ({
             create a new one.
           </Link>
         </MuiTypography>
-        <ConductorAutocompleteVariables
-          openOnFocus
-          onChange={handleSelectPrompt}
-          value={isUsingPrompt ? instructions : ""}
-          otherOptions={promptOptions}
-          label="Prompt Template"
-          placeholder="Select a saved AI Prompt..."
-          onFocus={() =>
-            actor.send({
-              type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
-              task,
-            })
-          }
-        />
+        <Grid container spacing={3}>
+          {/* The picker takes the whole row when there is no version field beside it. */}
+          <Grid
+            size={{
+              xs: 12,
+              md: isPromptVersioningEnabled() ? PROMPT_FIELD_COLUMNS : 12,
+            }}
+          >
+            <ConductorAutocompleteVariables
+              openOnFocus
+              onChange={handleSelectPrompt}
+              value={isUsingPrompt ? instructions : ""}
+              otherOptions={promptOptions}
+              label="Prompt Template"
+              placeholder="Select a saved AI Prompt..."
+              onFocus={() =>
+                actor.send({
+                  type: LLMFormFieldsMachineEventTypes.FOCUS_PROMPT_NAMES,
+                  task,
+                })
+              }
+            />
+          </Grid>
+          <PromptVersionSelect
+            task={task}
+            onChange={onChange}
+            promptName={isUsingPrompt ? instructions : ""}
+          />
+        </Grid>
       </Grid>
 
       {/* Prompt variables (visible when a saved prompt is selected) */}
@@ -149,6 +176,7 @@ export const LLMInstructionsWithPromptPicker = ({
               onChange={onChange}
               updateField={updateField}
               task={task}
+              someKey={`v${task.inputParameters?.promptVersion ?? "latest"}`}
             />
           </Grid>
         )}
