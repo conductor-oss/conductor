@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -37,7 +38,9 @@ import lombok.ToString;
 @Builder
 public class WorkflowSchedule {
 
+    @NotBlank(message = "Schedule name cannot be null or empty")
     private String name;
+
     private String cronExpression;
     private boolean runCatchupScheduleInstances;
     private boolean paused;

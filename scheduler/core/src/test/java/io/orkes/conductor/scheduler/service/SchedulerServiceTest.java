@@ -48,6 +48,7 @@ import io.orkes.conductor.scheduler.model.NextScheduleResult;
 import io.orkes.conductor.scheduler.model.WorkflowSchedule;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleModel;
+import jakarta.validation.ConstraintViolationException;
 import tools.jackson.databind.ObjectMapper;
 
 import static io.orkes.conductor.scheduler.service.SchedulerService.CONDUCTOR_SYSTEM_SCHEDULER_ARCHIVAL_QUEUE_NAME;
@@ -209,6 +210,27 @@ class SchedulerServiceTest {
     // -------------------------------------------------------------------------
     // Core scheduling lifecycle
     // -------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("createOrUpdateWorkflowSchedule rejects a missing or blank name")
+    void testCreateScheduleRequiresName() {
+        SchedulerService service = createServiceWithRedisHealthy(new SchedulerTimeProvider());
+
+        for (String name : Arrays.asList(null, "", "   ")) {
+            WorkflowSchedule schedule = new WorkflowSchedule();
+            schedule.setName(name);
+            schedule.setCronExpression("@daily");
+            schedule.setStartWorkflowRequest(new StartWorkflowRequest());
+            schedule.getStartWorkflowRequest().setName("test_workflow");
+
+            ConstraintViolationException e =
+                    assertThrows(
+                            ConstraintViolationException.class,
+                            () -> service.createOrUpdateWorkflowSchedule(schedule));
+            assertTrue(e.getMessage().contains("Schedule name cannot be null or empty"));
+        }
+        assertEquals(0, queueDAO.getCounter("pushWithPriority"));
+    }
 
     @Test
     @DisplayName("basic schedule: create, execute on poll, produce archival message")

@@ -21,6 +21,7 @@ dependencies {
 
 
     testImplementation 'org.hamcrest:hamcrest'
+    testImplementation 'org.springframework.boot:spring-boot-starter-validation'
     testImplementation "org.awaitility:awaitility:3.1.6"
 
     testFixturesImplementation project(':conductor-common')
