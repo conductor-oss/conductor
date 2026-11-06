@@ -536,8 +536,8 @@ export const ChunkTextTaskForm = ({ task, onChange }: TaskFormProps) => {
                 CHUNK_TEXT_MEDIA_TYPES.find((opt) => opt.value === option)
                   ?.label ?? option.toString()
               }
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
+              renderOption={({ key, ...props }, option) => (
+                <Box component="li" key={key} {...props}>
                   <Typography>
                     {CHUNK_TEXT_MEDIA_TYPES.find((opt) => opt.value === option)
                       ?.label ?? option}
