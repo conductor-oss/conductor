@@ -867,6 +867,7 @@ export default function ScheduleDefinitions() {
                 paginationTotalRows={totalCount}
                 paginationDefaultPage={page}
                 paginationPerPage={rowsPerPage}
+                useGlobalRowsPerPage={false}
                 onChangePage={handlePageChange}
                 onChangeRowsPerPage={handleRowsPerPageChange}
                 sortServer

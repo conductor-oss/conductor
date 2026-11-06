@@ -27,7 +27,7 @@ export const persistFilterStatus = assign<
 });
 
 export const persistNextPage = assign<TaskListMachineContext, NextPageEvent>({
-  startIndex: ({ rowsPerPage = 15 }, { page }) => (page - 1) * rowsPerPage,
+  startIndex: ({ rowsPerPage = 20 }, { page }) => (page - 1) * rowsPerPage,
 });
 
 export const persistRowPerPage = assign<
