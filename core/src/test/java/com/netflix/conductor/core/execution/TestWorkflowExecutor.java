@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -2691,6 +2692,261 @@ public class TestWorkflowExecutor {
                 "failedWorkflow input must be a Map, was: " + failedWorkflowInput.getClass(),
                 failedWorkflowInput instanceof Map);
         assertEquals("1", ((Map<String, Object>) failedWorkflowInput).get("workflowId"));
+    }
+
+    /**
+     * A failureWorkflow configured as a bare "$" carries no path components at all. Resolving it
+     * must not fail with an ArrayIndexOutOfBoundsException (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithBareFailureWorkflowParameterPath() {
+        assertMalformedFailureWorkflowTerminatesSafely("bare-param-path", "$");
+    }
+
+    /**
+     * A failureWorkflow configured as "$.input" has no parameter name component. Resolving it must
+     * not fail with an ArrayIndexOutOfBoundsException (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithMalformedFailureWorkflowParameterPath() {
+        assertMalformedFailureWorkflowTerminatesSafely("malformed-param-path", "$.input");
+    }
+
+    /**
+     * A failureWorkflow configured as "$.workflow" is missing the parameter name component required
+     * to resolve the failure workflow from the workflow input (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithMalformedWorkflowFailureWorkflowParameterPath() {
+        assertMalformedFailureWorkflowTerminatesSafely(
+                "malformed-workflow-param-path", "$.workflow");
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path must survive a workflow that carries no input at
+     * all: the input map can be null, so the parameter name cannot be read from it (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndNullInput()
+            throws Exception {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("null-input-param-path", "$.workflow.paramName");
+        clearWorkflowInput(workflow);
+        assertNull(workflow.getInput());
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path that points at a parameter the workflow input
+     * does not carry must terminate the workflow without starting a failure workflow (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndMissingParameter() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("missing-param-path", "$.workflow.paramName");
+        workflow.setInput(
+                new HashMap<>(Collections.singletonMap("otherParam", "failure_workflow")));
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path that points at a parameter carrying a null value
+     * must terminate the workflow without starting a failure workflow (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndNullParameterValue() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("null-param-value-path", "$.workflow.paramName");
+        workflow.setInput(new HashMap<>(Collections.singletonMap("paramName", (Object) null)));
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path that points at a numeric parameter must
+     * terminate the workflow without starting a failure workflow: a number is not a workflow name
+     * (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndIntegerParameter() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("integer-param-path", "$.workflow.paramName");
+        workflow.setInput(new HashMap<>(Collections.singletonMap("paramName", 42)));
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path that points at a boolean parameter must
+     * terminate the workflow without starting a failure workflow: a boolean is not a workflow name
+     * (issue #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndBooleanParameter() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("boolean-param-path", "$.workflow.paramName");
+        workflow.setInput(new HashMap<>(Collections.singletonMap("paramName", Boolean.TRUE)));
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path that points at a nested object must terminate
+     * the workflow without starting a failure workflow: an object is not a workflow name (issue
+     * #789).
+     */
+    @Test
+    public void testTerminateWorkflowWithFailureWorkflowParameterPathAndNestedObjectParameter() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("nested-object-param-path", "$.workflow.paramName");
+        workflow.setInput(
+                new HashMap<>(
+                        Collections.singletonMap(
+                                "paramName", Collections.singletonMap("nested", "value"))));
+
+        assertUnresolvableFailureWorkflowParameterTerminatesSafely(workflow);
+    }
+
+    /**
+     * A well formed failureWorkflow parameter path keeps its existing behaviour: the parameter name
+     * is read from the workflow input and used as the name of the failure workflow to start.
+     */
+    @Test
+    public void testTerminateWorkflowWithValidFailureWorkflowParameterPath() {
+        WorkflowModel workflow =
+                workflowWithFailureWorkflow("valid-param-path", "$.workflow.paramName");
+        workflow.setInput(new HashMap<>(Collections.singletonMap("paramName", "failure_workflow")));
+
+        WorkflowDef failureWorkflowDef = new WorkflowDef();
+        failureWorkflowDef.setName("failure_workflow");
+
+        when(metadataDAO.getLatestWorkflowDef(failureWorkflowDef.getName()))
+                .thenReturn(Optional.of(failureWorkflowDef));
+
+        decideAndTerminate(workflow);
+
+        // The workflow terminates and the failure workflow named by the workflow input is started
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
+        assertTrue(workflow.getOutput().containsKey("conductor.failure_workflow"));
+        verify(metadataDAO).getLatestWorkflowDef("failure_workflow");
+
+        ArgumentCaptor<WorkflowModel> failureWorkflowCaptor =
+                ArgumentCaptor.forClass(WorkflowModel.class);
+        verify(executionDAOFacade, atLeastOnce()).createWorkflow(failureWorkflowCaptor.capture());
+        assertEquals("failure_workflow", failureWorkflowCaptor.getValue().getWorkflowName());
+    }
+
+    /**
+     * Asserts that a workflow whose failureWorkflow is a malformed parameter expression is still
+     * terminated safely: the termination completes, the workflow ends up FAILED and no failure
+     * workflow is started (issue #789).
+     *
+     * @param workflowId the id of the workflow to terminate
+     * @param failureWorkflowExpression the malformed failureWorkflow parameter expression
+     */
+    private void assertMalformedFailureWorkflowTerminatesSafely(
+            String workflowId, String failureWorkflowExpression) {
+        WorkflowModel workflow = workflowWithFailureWorkflow(workflowId, failureWorkflowExpression);
+        workflow.setInput(new HashMap<>(Collections.singletonMap("paramName", "failure_workflow")));
+
+        // Must not throw ArrayIndexOutOfBoundsException
+        decideAndTerminate(workflow);
+
+        assertEquals(
+                "workflow should still terminate for failureWorkflow expression "
+                        + failureWorkflowExpression,
+                WorkflowModel.Status.FAILED,
+                workflow.getStatus());
+        assertNotNull(workflow.getFailedTaskId());
+
+        // No failure workflow can be resolved from a malformed expression, so none is started
+        verify(executionDAOFacade, never()).createWorkflow(any(WorkflowModel.class));
+        assertFalse(workflow.getOutput().containsKey("conductor.failure_workflow"));
+    }
+
+    /**
+     * Asserts that a workflow whose failureWorkflow parameter path does not resolve to a workflow
+     * name is still terminated safely: the termination completes without a
+     * NullPointerException/ClassCastException, the workflow ends up FAILED and no failure workflow
+     * is started (issue #789).
+     *
+     * @param workflow the workflow to terminate
+     */
+    private void assertUnresolvableFailureWorkflowParameterTerminatesSafely(
+            WorkflowModel workflow) {
+        // Must not throw NullPointerException or ClassCastException
+        decideAndTerminate(workflow);
+
+        assertEquals(
+                "workflow should still terminate when the failureWorkflow parameter cannot be"
+                        + " resolved",
+                WorkflowModel.Status.FAILED,
+                workflow.getStatus());
+        assertNotNull(workflow.getFailedTaskId());
+
+        // No failure workflow can be resolved, so none is started
+        verify(executionDAOFacade, never()).createWorkflow(any(WorkflowModel.class));
+        verify(metadataDAO, never()).getLatestWorkflowDef(anyString());
+        assertFalse(workflow.getOutput().containsKey("conductor.failure_workflow"));
+    }
+
+    /**
+     * Builds a RUNNING workflow with a single failed task and the given failureWorkflow
+     * configuration, ready to be terminated through decide().
+     *
+     * @param workflowId the id of the workflow
+     * @param failureWorkflowExpression the failureWorkflow configuration of the workflow
+     * @return the workflow to terminate
+     */
+    @SuppressWarnings("unchecked")
+    private WorkflowModel workflowWithFailureWorkflow(
+            String workflowId, String failureWorkflowExpression) {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("workflow");
+        workflowDef.setFailureWorkflow(failureWorkflowExpression);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(workflowId);
+        workflow.setCorrelationId("testid");
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+
+        TaskModel failedTask = new TaskModel();
+        failedTask.setTaskId("taskid1");
+        failedTask.setReferenceTaskName("failed");
+        failedTask.setStatus(TaskModel.Status.FAILED);
+        workflow.getTasks().add(failedTask);
+        return workflow;
+    }
+
+    /**
+     * Terminates the given workflow through the public decide() entry point.
+     *
+     * @param workflow the workflow to terminate
+     */
+    private void decideAndTerminate(WorkflowModel workflow) {
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+
+        workflowExecutor.decide(workflow.getWorkflowId());
+    }
+
+    /**
+     * {@link WorkflowModel#setInput(Map)} normalizes a null input into an empty map, so the null
+     * input case is reproduced by clearing the backing field of the workflow model.
+     *
+     * @param workflow the workflow to clear the input of
+     */
+    private void clearWorkflowInput(WorkflowModel workflow) throws Exception {
+        Field inputField = WorkflowModel.class.getDeclaredField("input");
+        inputField.setAccessible(true);
+        inputField.set(workflow, null);
     }
 
     @Test
