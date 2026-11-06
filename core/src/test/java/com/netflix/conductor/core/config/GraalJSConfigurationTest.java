@@ -108,7 +108,7 @@ class GraalJSConfigurationTest {
         String output = logOutput.toString();
         assertTrue(
                 output.contains("WARN GraalJS unrestricted Java host access is enabled"), output);
-        assertTrue(output.contains("will be disabled by default in a future release"), output);
+        assertTrue(output.contains("will be disabled by default in Conductor 3.35"), output);
         assertTrue(
                 output.contains(
                         "explicitly set conductor.app.graaljs.restricted-host-access=false"),
