@@ -89,7 +89,7 @@ RUN if [ "$PREBUILT" = "false" ]; then \
 #
 # Pinned to the same 25.0.5+8 Temurin release as the Debian builder stage above (Alpine tag
 # format 25.0.5_8) so the shipped JRE is a known, reproducible, patched build.
-FROM eclipse-temurin:25.0.5_8-jre-alpine
+FROM eclipse-temurin:25.0.5_8-jre-alpine AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
