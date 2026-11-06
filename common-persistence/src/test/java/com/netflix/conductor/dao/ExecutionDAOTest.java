@@ -81,6 +81,49 @@ public abstract class ExecutionDAOTest {
         }
     }
 
+    // DOMAIN scope: each domain gets an independent concurrency budget for the same task def.
+    @Test
+    public void testTaskExceedsLimitPerDomain() {
+        TaskDef taskDefinition = new TaskDef();
+        taskDefinition.setName("domain_scoped_task");
+        taskDefinition.setConcurrentExecLimit(1);
+        taskDefinition.setConcurrencyLimitScope(TaskDef.ConcurrencyLimitScope.DOMAIN);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("domain_scoped_task");
+        workflowTask.setTaskDefinition(taskDefinition);
+
+        TaskModel taskA1 = domainScopedTask("dt_a1", "A", workflowTask);
+        TaskModel taskA2 = domainScopedTask("dt_a2", "A", workflowTask);
+        TaskModel taskB1 = domainScopedTask("dt_b1", "B", workflowTask);
+        TaskModel taskNull = domainScopedTask("dt_null", null, workflowTask);
+
+        getExecutionDAO().createTasks(List.of(taskA1, taskA2, taskB1, taskNull));
+
+        // Occupy the single slot in domain "A".
+        taskA1.setStatus(TaskModel.Status.IN_PROGRESS);
+        getExecutionDAO().updateTask(taskA1);
+
+        // Domain "A" is now at its limit -> another "A" task is throttled...
+        assertTrue(getConcurrentExecutionLimitDAO().exceedsLimit(taskA2));
+        // ...but domain "B" and the null-domain bucket have independent budgets.
+        assertFalse(getConcurrentExecutionLimitDAO().exceedsLimit(taskB1));
+        assertFalse(getConcurrentExecutionLimitDAO().exceedsLimit(taskNull));
+    }
+
+    private TaskModel domainScopedTask(String taskId, String domain, WorkflowTask workflowTask) {
+        TaskModel task = new TaskModel();
+        task.setScheduledTime(1L);
+        task.setTaskId(taskId);
+        task.setWorkflowInstanceId("wf_" + taskId);
+        task.setReferenceTaskName(workflowTask.getName());
+        task.setTaskDefName("domain_scoped_task");
+        task.setDomain(domain);
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        task.setWorkflowTask(workflowTask);
+        return task;
+    }
+
     @Test
     public void testCreateTaskException() {
         TaskModel task = new TaskModel();
