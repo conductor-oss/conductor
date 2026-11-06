@@ -27,6 +27,7 @@ import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDefListItem;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDefSummary;
 import com.netflix.conductor.common.model.BulkResponse;
 import com.netflix.conductor.core.WorkflowContext;
@@ -240,6 +241,11 @@ public class MetadataServiceImpl implements MetadataService {
     @Override
     public List<WorkflowDef> getWorkflowDefsLatestVersions() {
         return metadataDAO.getAllWorkflowDefsLatestVersions();
+    }
+
+    @Override
+    public List<WorkflowDefListItem> getWorkflowDefListItems() {
+        return metadataDAO.getWorkflowDefListItems();
     }
 
     public Map<String, ? extends Iterable<WorkflowDefSummary>> getWorkflowNamesAndVersions() {
