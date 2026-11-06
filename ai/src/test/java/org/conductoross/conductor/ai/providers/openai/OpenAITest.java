@@ -54,6 +54,15 @@ class OpenAITest {
         }
 
         @Test
+        void testApiKeyStrippingTrailingNewline() {
+            OpenAIConfiguration config = new OpenAIConfiguration();
+            config.setApiKey("test-api-key\n");
+            var api = new org.conductoross.conductor.ai.providers.openai.api.OpenAIChatCompletionsApi(
+                    new OkHttpClient(), config.getApiKey(), "https://api.openai.com/v1");
+            assertNotNull(api);
+        }
+
+        @Test
         void testGetChatOptions_basicOptions() {
             ChatCompletion input = new ChatCompletion();
             input.setModel("gpt-4o-mini");

@@ -52,7 +52,7 @@ public class OpenAIChatCompletionsApi {
                 baseUrl != null && baseUrl.endsWith("/")
                         ? baseUrl.substring(0, baseUrl.length() - 1)
                         : baseUrl;
-        this.apiKey = apiKey;
+        this.apiKey = apiKey != null ? apiKey.strip() : null;
         this.completionsPath = completionsPath != null ? completionsPath : "/chat/completions";
         this.httpClient = httpClient;
         this.objectMapper = new ObjectMapperProvider().getObjectMapper();
