@@ -330,8 +330,8 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             } catch (IllegalArgumentException e) {
-                String message = "Either date or duration is passed as null ";
-                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                context.buildConstraintViolationWithTemplate(e.getMessage())
+                        .addConstraintViolation();
                 valid = false;
             } catch (ParseException e) {
                 String message = "Unable to parse date ";
