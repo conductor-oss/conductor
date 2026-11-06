@@ -28,7 +28,7 @@
         "embeddingModelProvider": "openai",
         "embeddingModel": "text-embedding-3-small",
         "query": "workflow orchestration",
-        "llmMaxResults": 5
+        "maxResults": 5
       }
     }
   ]
