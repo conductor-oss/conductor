@@ -56,7 +56,7 @@ export const SYSTEM_TASKS: BaseTaskMenuItem[] = [
   },
   {
     name: "Business Rule Task",
-    description: "Evaluate business rules using Drools.",
+    description: "Evaluate DMN (business rules).",
     type: TaskType.BUSINESS_RULE,
     category: "System",
   },
