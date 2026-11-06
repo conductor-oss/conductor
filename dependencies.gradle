@@ -27,7 +27,9 @@ ext {
     revGuava = '33.2.1-jre'
     revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.4'
-    revPostgres = '42.7.11'
+    // Security: 42.7.11 is hit by CVE-2026-54291 (SCRAM MitM bypass). The Boot 4.1 BOM already
+    // manages 42.7.13; this explicit pin was holding the driver below the fix.
+    revPostgres = '42.7.13'
 
     // -----------------------------------------------------------------
     // PINNED DEPENDENCIES - do not upgrade without reading the notes.
