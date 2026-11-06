@@ -29,9 +29,9 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import static org.junit.Assert.assertEquals;
 
@@ -85,14 +85,22 @@ public class SubWorkflowParamsTest {
         def.getTasks().add(task);
         subWorkflowParams.setWorkflowDefinition(def);
 
-        objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-        objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
-        objectMapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+        // Jackson 3 mappers are immutable, so the ordering features are applied to a derived copy
+        // rather than to the autowired mapper.
+        ObjectMapper orderedMapper =
+                objectMapper
+                        .rebuild()
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+                        .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+                        .build();
 
         String serializedParams =
-                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(subWorkflowParams);
+                orderedMapper
+                        .writerWithDefaultPrettyPrinter()
+                        .writeValueAsString(subWorkflowParams);
         SubWorkflowParams deserializedParams =
-                objectMapper.readValue(serializedParams, SubWorkflowParams.class);
+                orderedMapper.readValue(serializedParams, SubWorkflowParams.class);
         var x = (WorkflowDef) deserializedParams.getWorkflowDefinition();
         assertEquals(def, x);
 

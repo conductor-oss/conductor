@@ -53,10 +53,29 @@ public class ElasticSearchConditionsTest {
     }
 
     @Test
-    public void shouldNotActivateForElasticsearchV7Selector() {
+    public void shouldActivateForGenericElasticsearchSelector() {
+        // In an es8 build only the es8 module is on the classpath, so the generic
+        // conductor.indexing.type=elasticsearch selector resolves to ES 8. This keeps pre-existing
+        // configs working after the default backend moved from ES 7 to ES 8.
         contextRunner
                 .withPropertyValues(
                         "conductor.indexing.enabled=true", "conductor.indexing.type=elasticsearch")
+                .run(context -> assertTrue(context.containsBean("es8Marker")));
+    }
+
+    @Test
+    public void shouldNotActivateForNonElasticsearchSelector() {
+        contextRunner
+                .withPropertyValues(
+                        "conductor.indexing.enabled=true", "conductor.indexing.type=opensearch")
+                .run(context -> assertFalse(context.containsBean("es8Marker")));
+    }
+
+    @Test
+    public void shouldNotActivateWhenIndexingDisabledWithGenericSelector() {
+        contextRunner
+                .withPropertyValues(
+                        "conductor.indexing.enabled=false", "conductor.indexing.type=elasticsearch")
                 .run(context -> assertFalse(context.containsBean("es8Marker")));
     }
 

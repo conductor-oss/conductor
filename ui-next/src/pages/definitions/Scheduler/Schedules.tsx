@@ -104,13 +104,31 @@ export const columns = [
     id: "cronExpression",
     name: "cronExpression",
     label: "Cron expression",
-    renderer: (cron: string) => {
-      if (!cron) {
+    renderer: (cron: string, row: IScheduleDto) => {
+      // A schedule can run on several expressions. cronSchedules is the whole set when it has
+      // more than one, and comes back as an empty list otherwise.
+      const schedules = row?.cronSchedules?.length
+        ? row.cronSchedules
+        : cron
+          ? [{ cronExpression: cron, zoneId: row?.zoneId }]
+          : [];
+      if (!schedules.length) {
         return "";
       }
+      const describe = (expression: string) => {
+        try {
+          return cronstrue.toString(expression);
+        } catch {
+          return expression;
+        }
+      };
       return (
-        <Tooltip title={cron}>
-          <span>{cron ? cronstrue.toString(cron) : ""}</span>
+        <Tooltip
+          title={schedules.map((each) => each.cronExpression).join(", ")}
+        >
+          <span>
+            {schedules.map((each) => describe(each.cronExpression)).join("; ")}
+          </span>
         </Tooltip>
       );
     },

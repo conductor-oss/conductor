@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
@@ -30,11 +30,11 @@ import com.netflix.conductor.postgres.util.ExecutorsUtil;
 import com.netflix.conductor.postgres.util.PostgresQueueListener;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
@@ -440,8 +440,9 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
         createQueueIfNotExists(connection, queueName);
 
+        // Bug #1667: Reset popped = false on re-push so messages become immediately poppable
         String UPDATE_MESSAGE =
-                "UPDATE queue_message SET payload=?, deliver_on=(current_timestamp + (? ||' seconds')::interval) WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET payload=?, deliver_on=(current_timestamp + (? ||' seconds')::interval), popped = false WHERE queue_name = ? AND message_id = ?";
         int rowsUpdated =
                 query(
                         connection,
@@ -455,7 +456,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
         if (rowsUpdated == 0) {
             String PUSH_MESSAGE =
-                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES ((current_timestamp + (? ||' seconds')::interval), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on";
+                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES ((current_timestamp + (? ||' seconds')::interval), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on, popped = false";
             execute(
                     connection,
                     PUSH_MESSAGE,

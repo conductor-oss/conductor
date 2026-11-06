@@ -38,9 +38,9 @@ import org.springframework.util.MimeTypeUtils;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -161,7 +161,10 @@ class RecordedResponseJsonTest {
         assertNotEquals("original-call", replayId);
         // The complete stored snapshot must match after replay, apart from the fresh tool ID.
         ((ObjectNode) savedResponse.at("/results/0/output/toolCalls/0")).put("id", replayId);
-        assertEquals(savedResponse, RecordedResponseJson.write(replay));
+        // Compare persisted JSON values, independent of in-memory numeric widths and binary nodes.
+        assertEquals(
+                mapper.readTree(mapper.writeValueAsBytes(savedResponse)),
+                mapper.readTree(mapper.writeValueAsBytes(RecordedResponseJson.write(replay))));
     }
 
     @ParameterizedTest
@@ -196,7 +199,7 @@ class RecordedResponseJsonTest {
     @Test
     void responseContentIgnoresVolatileResponseMetadata() {
         JsonNode first = RecordedResponseJson.write(responseWithReasoning("explanation"));
-        ObjectNode second = first.deepCopy();
+        ObjectNode second = ((ObjectNode) first).deepCopy();
         ObjectNode metadata = (ObjectNode) second.get("metadata");
         metadata.put("id", "another-response");
         metadata.putObject("usage").put("totalTokens", 999);
@@ -234,7 +237,7 @@ class RecordedResponseJsonTest {
 
     private static Set<String> fieldNames(JsonNode node) {
         Set<String> names = new java.util.HashSet<>();
-        node.fieldNames().forEachRemaining(names::add);
+        names.addAll(node.propertyNames());
         return names;
     }
 }

@@ -13,6 +13,7 @@
 package com.netflix.conductor.es7.config;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 
 import org.apache.http.HttpHost;
@@ -30,13 +31,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.es7.dao.index.ElasticSearchRestDAOV7;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ElasticSearchProperties.class)
@@ -44,6 +46,32 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ElasticSearchV7Configuration {
 
     private static final Logger log = LoggerFactory.getLogger(ElasticSearchV7Configuration.class);
+
+    @PostConstruct
+    public void warnDeprecated() {
+        log.warn(
+                "\n"
+                        + "=====================================================================\n"
+                        + " DEPRECATION: the Elasticsearch 7 indexing backend is in use.\n"
+                        + "\n"
+                        + " 3.33 was the LAST release to default to Elasticsearch 7. Starting\n"
+                        + " with 3.34 the default is Elasticsearch 8; ES7 is now an opt-in\n"
+                        + " (-PindexingBackend=elasticsearch7) and is deprecated. It still runs\n"
+                        + " on the 3.x line but will be removed in a future release.\n"
+                        + "\n"
+                        + " What to do:\n"
+                        + "   1. Upgrade your Elasticsearch cluster to 8.x. This is a cluster\n"
+                        + "      move, not a config flip -- the ES8 client cannot talk to a\n"
+                        + "      7.17 server, so the server itself must be upgraded.\n"
+                        + "   2. Rebuild Conductor with the default (ES8) indexing backend and\n"
+                        + "      point it at the upgraded cluster.\n"
+                        + "   3. Not ready to upgrade yet? You can keep running this ES7 build\n"
+                        + "      for now -- just plan the move before adopting a release that\n"
+                        + "      drops ES7.\n"
+                        + "\n"
+                        + " Migration guide: https://github.com/conductor-oss/conductor/issues/1754\n"
+                        + "=====================================================================");
+    }
 
     @Bean
     public RestClient restClient(RestClientBuilder restClientBuilder) {
@@ -94,11 +122,10 @@ public class ElasticSearchV7Configuration {
 
     @Bean
     public RetryTemplate es7RetryTemplate() {
-        RetryTemplate retryTemplate = new RetryTemplate();
-        FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(1000L);
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-        return retryTemplate;
+        // Three attempts in total, so two retries, a second apart. The cluster is
+        // usually briefly unavailable rather than gone, so a flat delay is enough.
+        return new RetryTemplate(
+                RetryPolicy.builder().maxRetries(2).delay(Duration.ofSeconds(1)).build());
     }
 
     private HttpHost[] convertToHttpHosts(List<URL> hosts) {

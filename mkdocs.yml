@@ -113,6 +113,7 @@ nav:
       - Task Timeouts & Retries: devguide/cookbook/task-timeouts-and-retries.md
       - Saga & Compensation: devguide/cookbook/saga-compensation.md
       - Polling a Long-Running Job: devguide/cookbook/http-poll-long-running-job.md
+      - AI Decision Routing: devguide/cookbook/ai-decision-routing.md
       - Scheduled Workflows: devguide/cookbook/workflow-scheduling.md
       - Dynamic Workflows in Code: devguide/cookbook/dynamic-workflows.md
       - Event-Driven Patterns: devguide/cookbook/event-driven.md

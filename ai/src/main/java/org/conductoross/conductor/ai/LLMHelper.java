@@ -40,7 +40,6 @@ import org.conductoross.conductor.ai.recording.LLMCallRecorder;
 import org.conductoross.conductor.common.utils.StringTemplate;
 import org.conductoross.conductor.core.exception.SchemaValidationException;
 import org.conductoross.conductor.service.SchemaService;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -64,9 +63,6 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +70,9 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_SIMPLE;
 
@@ -305,7 +304,7 @@ public class LLMHelper {
             // llmResponse.setResult(map);
             return map;
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             if (chatCompletion.isJsonOutput()) {
                 log.error(
                         "error converting to json, response: {}, error: {}",
@@ -333,7 +332,6 @@ public class LLMHelper {
     @SneakyThrows
     private LLMResponse chatComplete(
             ChatModel chatModel, ChatOptions chatOptions, ChatCompletion input) {
-        ChatClient chatClient = ChatClient.create(chatModel);
         if (StringUtils.isNotBlank(input.getInstructions())) {
             input.getMessages()
                     .addFirst(new ChatMessage(ChatMessage.Role.system, input.getInstructions()));
@@ -345,7 +343,9 @@ public class LLMHelper {
         ensureLastMessageIsFromUser(messages);
 
         Prompt prompt = new Prompt(messages, chatOptions);
-        ChatResponse chatResponse = chatClient.prompt(prompt).call().chatResponse();
+        // Options are already resolved by the provider. ChatClient's Spring AI 2 option merge
+        // discards custom option builders, including the model and provider-specific settings.
+        ChatResponse chatResponse = chatModel.call(prompt);
         if (chatResponse == null) {
             throw new RuntimeException("No response generated");
         }
@@ -381,7 +381,7 @@ public class LLMHelper {
                                 objectMapper.readValue(argsAsString, Map.class);
                         // Recursively parse any nested JSON strings
                         args = parseNestedJsonStrings(parsedArgs);
-                    } catch (JsonProcessingException ignored) {
+                    } catch (JacksonException ignored) {
                         log.warn(ignored.getMessage(), ignored);
                     }
                     args.put("method", name);
@@ -627,7 +627,7 @@ public class LLMHelper {
                 return "{}";
             }
             return objectMapper.writeValueAsString(input);
-        } catch (JsonProcessingException jpe) {
+        } catch (JacksonException jpe) {
             return String.valueOf(input);
         }
     }

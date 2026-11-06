@@ -147,6 +147,7 @@ public class ToolCompiler {
                     Map.entry("api", "HTTP"), // API tools execute as HTTP tasks
                     Map.entry("mcp", "CALL_MCP_TOOL"),
                     Map.entry("agent_tool", "SUB_WORKFLOW"),
+                    Map.entry("decision", "SWITCH"),
                     Map.entry("human", "HUMAN"),
                     Map.entry("generate_image", "GENERATE_IMAGE"),
                     Map.entry("generate_audio", "GENERATE_AUDIO"),
@@ -156,15 +157,15 @@ public class ToolCompiler {
                     Map.entry("pull_workflow_messages", "PULL_WORKFLOW_MESSAGES"));
 
     /**
-     * Task types a declared tool compiles to. Excludes SIMPLE, whose executed task carries the
-     * tool's own name as its type. A floor, not a closed set: a media or RAG tool's config may name
-     * its own task type.
+     * Task types counted as tool calls for the purpose of emitting tool call and tool result
+     * events. SIMPLE uses the worker's name as its type. SWITCH can also be a router, so decision
+     * tool calls use an explicit marker. Custom media and RAG task types are detected separately.
      */
     public static final Set<String> COMPILED_TOOL_TASK_TYPES =
             Stream.concat(
                             TYPE_MAP.values().stream(),
                             MEDIA_TOOL_TYPES.stream().map(t -> t.toUpperCase(Locale.ROOT)))
-                    .filter(taskType -> !"SIMPLE".equals(taskType))
+                    .filter(taskType -> !"SIMPLE".equals(taskType) && !"SWITCH".equals(taskType))
                     .collect(Collectors.toUnmodifiableSet());
 
     // ── Public API ───────────────────────────────────────────────────────
@@ -381,6 +382,7 @@ public class ToolCompiler {
         Map<String, Object> cliConfig = new LinkedHashMap<>();
         Map<String, Object> humanConfig = new LinkedHashMap<>();
         Map<String, Object> wmqConfig = new LinkedHashMap<>();
+        Map<String, Object> decisionConfig = new LinkedHashMap<>();
 
         if (tools != null) {
             Set<String> serverSideTypes =
@@ -397,7 +399,8 @@ public class ToolCompiler {
                                     "rag_index",
                                     "rag_search",
                                     "human",
-                                    "pull_workflow_messages"));
+                                    "pull_workflow_messages",
+                                    "decision"));
 
             for (ToolConfig tool : tools) {
                 String toolType = tool.getToolType() != null ? tool.getToolType() : "worker";
@@ -468,6 +471,8 @@ public class ToolCompiler {
                     Map<String, Object> wmqEntry = new LinkedHashMap<>();
                     wmqEntry.put("batchSize", cfg.getOrDefault("batchSize", 1));
                     wmqConfig.put(tool.getName(), wmqEntry);
+                } else if ("decision".equals(toolType)) {
+                    decisionConfig.put(tool.getName(), cfg);
                 }
             }
         }
@@ -480,6 +485,7 @@ public class ToolCompiler {
         String cliJson = JavaScriptBuilder.toJson(cliConfig);
         String humanJson = JavaScriptBuilder.toJson(humanConfig);
         String wmqJson = JavaScriptBuilder.toJson(wmqConfig);
+        String decisionJson = JavaScriptBuilder.toJson(decisionConfig);
 
         // Build the set of all known tool names so the enrich script can
         // catch hallucinated tool names (LLM emits e.g. "find" when only
@@ -503,6 +509,7 @@ public class ToolCompiler {
                         cliJson,
                         humanJson,
                         wmqJson,
+                        decisionJson,
                         knownToolNamesJson);
 
         String enrichRef = agentName + "_" + p + "enrich_tools";
@@ -1613,6 +1620,7 @@ public class ToolCompiler {
         Map<String, Object> ragConfig = new LinkedHashMap<>();
         Map<String, Object> humanConfig = new LinkedHashMap<>();
         Map<String, Object> wmqConfig = new LinkedHashMap<>();
+        Map<String, Object> decisionConfig = new LinkedHashMap<>();
 
         if (tools != null) {
             for (ToolConfig tool : tools) {
@@ -1663,6 +1671,8 @@ public class ToolCompiler {
                     Map<String, Object> wmqEntry = new LinkedHashMap<>();
                     wmqEntry.put("batchSize", cfg.getOrDefault("batchSize", 1));
                     wmqConfig.put(tool.getName(), wmqEntry);
+                } else if ("decision".equals(toolType)) {
+                    decisionConfig.put(tool.getName(), cfg);
                 }
                 // MCP config comes from runtime — skip here
             }
@@ -1674,6 +1684,7 @@ public class ToolCompiler {
         String ragJson = JavaScriptBuilder.toJson(ragConfig);
         String humanJson = JavaScriptBuilder.toJson(humanConfig);
         String wmqJson = JavaScriptBuilder.toJson(wmqConfig);
+        String decisionJson = JavaScriptBuilder.toJson(decisionConfig);
         Map<String, Object> knownToolNames = new LinkedHashMap<>();
         if (tools != null) {
             for (ToolConfig t : tools) {
@@ -1689,6 +1700,7 @@ public class ToolCompiler {
                         ragJson,
                         humanJson,
                         wmqJson,
+                        decisionJson,
                         knownToolNamesJson);
 
         String enrichRef = agentName + "_" + p + "enrich_tools";

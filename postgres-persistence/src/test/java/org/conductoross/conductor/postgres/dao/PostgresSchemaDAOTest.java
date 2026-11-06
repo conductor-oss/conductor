@@ -20,17 +20,17 @@ import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.postgres.config.PostgresConfiguration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /** Runs the {@link SchemaDAO} contract against a real PostgreSQL container. */
 @ContextConfiguration(

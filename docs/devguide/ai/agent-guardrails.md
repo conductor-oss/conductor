@@ -1,3 +1,7 @@
+---
+description: "Add guardrails to Conductor agents to validate inputs, constrain model output, block unsafe tool calls, and pause risky actions for human approval."
+---
+
 # Agent Guardrails
 
 <section class="integration-hero integration-hero--guardrails" aria-label="Agent guardrails">

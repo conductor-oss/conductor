@@ -122,18 +122,15 @@ export function useCronExpression(
   );
   const [highlightedPart, setHighlightedPart] = useState<number | null>(null);
 
-  // Sync with props changes
-  const prevInitialRef = useRef(initialCronExpression);
-  const prevTimezoneRef = useRef(timezone);
+  // Sync with props changes. What was last seen is state, not a ref: StrictMode throws away a
+  // render pass, and a ref written during that pass survives it, so the second pass would see
+  // the new value already recorded and skip the update that was thrown away with it.
+  const [seen, setSeen] = useState({ cron: initialCronExpression, timezone });
 
-  if (
-    initialCronExpression !== prevInitialRef.current ||
-    timezone !== prevTimezoneRef.current
-  ) {
+  if (initialCronExpression !== seen.cron || timezone !== seen.timezone) {
+    setSeen({ cron: initialCronExpression, timezone });
     setCronExpressionState(initialCronExpression);
     setActiveTimezone(resolveTimezone(timezone));
-    prevInitialRef.current = initialCronExpression;
-    prevTimezoneRef.current = timezone;
   }
 
   const validation = useMemo(() => {
