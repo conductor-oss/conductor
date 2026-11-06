@@ -13,13 +13,13 @@ param(
 
 $REPO_URL = "https://conductor-server.s3.us-east-2.amazonaws.com"
 
-# Check for Java and version 21+
+# Check for Java and version 25+
 try {
     $javaVersionOutput = & java -version 2>&1 | Select-Object -First 1
     if ($javaVersionOutput -match '"(\d+)') {
         $javaMajor = [int]$Matches[1]
-        if ($javaMajor -lt 21) {
-            Write-Host "Error: JDK 21 or higher is required. Current version: $javaVersionOutput"
+        if ($javaMajor -lt 25) {
+            Write-Host "Error: JDK 25 or higher is required. Current version: $javaVersionOutput"
             exit 1
         }
     } else {

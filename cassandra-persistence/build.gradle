@@ -22,8 +22,8 @@ dependencies {
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
     implementation "org.apache.commons:commons-lang3"
 
-    testImplementation project(':conductor-core').sourceSets.test.output
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-core').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
 
     testImplementation "org.apache.groovy:groovy"
     testImplementation "org.apache.groovy:groovy-json"

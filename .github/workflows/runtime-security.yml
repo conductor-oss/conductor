@@ -1,0 +1,37 @@
+name: Runtime security
+
+on:
+  pull_request:
+    paths:
+      - "docker/server/Dockerfile*"
+      - "docker/server/tests/**"
+      - ".github/workflows/runtime-security.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docker/server/Dockerfile*"
+      - "docker/server/tests/**"
+      - ".github/workflows/runtime-security.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-security:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile, Dockerfile.next]
+        platform: [linux/amd64, linux/arm64]
+        stage: [jdk, runtime]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "25"
+      - uses: docker/setup-qemu-action@v4
+      - name: Check runtime and default trust store
+        run: bash docker/server/tests/check-runtime-security.sh '${{ matrix.dockerfile }}' '${{ matrix.platform }}' '${{ matrix.stage }}'

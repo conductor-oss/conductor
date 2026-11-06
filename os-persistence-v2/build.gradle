@@ -1,12 +1,12 @@
 plugins {
-    id 'com.gradleup.shadow' version '8.3.6'
+    id 'com.gradleup.shadow' version '9.6.1'
     id 'java'
 }
 
 configurations {
     // Prevent shaded dependencies from being published, while keeping them available to tests
     shadow.extendsFrom compileOnly
-    testRuntime.extendsFrom compileOnly
+    testRuntimeClasspath.extendsFrom compileOnly
 }
 
 dependencies {
@@ -33,14 +33,19 @@ dependencies {
     testImplementation "org.awaitility:awaitility"
     testImplementation "org.opensearch:opensearch-testcontainers:2.1.2"
     testImplementation "org.testcontainers:testcontainers:2.0.5"
-    testImplementation project(':conductor-test-util').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-test-util').sourceSets.test.output
 
 }
 
 // Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
 shadowJar {
     configurations = [project.configurations.shadow]
-    archiveClassifier = null
+    archiveClassifier = ''
+
+    // Shadow 9 excludes duplicates before transformers; retain mergeable provider/metadata files.
+    filesMatching(['META-INF/services/**', 'META-INF/*.kotlin_module']) {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
 
     // Relocate opensearch-java 2.x to avoid conflicts with v3
     relocate 'org.opensearch.client', 'org.conductoross.conductor.os2.shaded.opensearch.client'
