@@ -7,7 +7,8 @@
 #   Default:        Builds JAR and UI from source (docker-compose, local dev)
 #
 
-# Both Java stages use the same patched JVM release and OS-managed trust bundle.
+# The builder stages below run on Debian + Temurin 25 (JDK). The shipped runtime (final stage)
+# runs on the Alpine Temurin 25 JRE pinned to the same 25.0.5+8 release.
 FROM debian:trixie-slim AS java-base
 
 ARG TEMURIN_VERSION=25.0.5.0.0+8-0
@@ -33,7 +34,7 @@ RUN apt-get update \
 FROM jdk AS builder
 
 ARG PREBUILT=false
-ARG INDEXING_BACKEND=elasticsearch
+ARG INDEXING_BACKEND=elasticsearch8
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
@@ -78,14 +79,29 @@ RUN if [ "$SKIP_UI" = "true" ]; then \
 # ===========================================================================================================
 # 2. Final stage
 # ===========================================================================================================
-FROM java-base AS runtime
+# Alpine base to shed the OS-level CVEs that debian:stable-slim carried: perl
+# (CVE-2026-13221 / CVE-2026-57432), libssh2 (CVE-2026-58050), and an nginx that debian-slim
+# could not patch past 1.26.3 (CVE-2026-60005). The temurin JRE ships in the base image, so the
+# only package we add is nginx. The healthcheck uses busybox wget (built in) instead of curl,
+# which also removes curl's libcurl/libssh2 chain from the image entirely.
+#
+# Pinned to the same 25.0.5+8 Temurin release as the Debian builder stage above (Alpine tag
+# format 25.0.5_8) so the shipped JRE is a known, reproducible, patched build.
+FROM eclipse-temurin:25.0.5_8-jre-alpine
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends "temurin-25-jre=${TEMURIN_VERSION}" nginx \
-    && rm -f /etc/nginx/sites-enabled/default \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache nginx ca-certificates \
+    && rm -f /etc/nginx/http.d/default.conf \
+    && mkdir -p /run/nginx
+
+# DO NOT REMOVE WHILE WE ARE RUNNING ALPINE!
+# grpc-java (bundled via conductor-grpc-server) is not officially supported on Alpine/musl and
+# recommends a glibc-based image. Its native netty bits can segfault the JVM at load time under
+# musl. gcompat + libunwind provide the glibc-compat shims; startup.sh LD_PRELOADs them around the
+# java invocation only (not nginx/busybox). Without these packages the preload paths would not
+# exist and the dynamic loader would error.
+RUN apk add --no-cache gcompat libunwind
 
 FROM runtime AS final
 
@@ -101,12 +117,14 @@ COPY --from=builder /conductor/server/build/libs/*boot*.jar /app/libs/conductor-
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=ui-builder /conductor/ui-next/dist .
-COPY docker/server/nginx/nginx.conf  /etc/nginx/conf.d/default.conf
+COPY docker/server/nginx/nginx.conf  /etc/nginx/http.d/default.conf
 
 # Copy the files for the server into the app folders
 RUN chmod +x /app/startup.sh
 
-HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD curl -I -XGET http://localhost:8080/health || exit 1
+# Uses 127.0.0.1 (not localhost): busybox wget resolves localhost to ::1 first and does not fall
+# back to IPv4 the way curl did, so localhost would fail against the IPv4-bound server.
+HEALTHCHECK --interval=60s --timeout=30s --retries=10 CMD wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1
 
 CMD [ "/app/startup.sh" ]
 ENTRYPOINT [ "/bin/sh"]

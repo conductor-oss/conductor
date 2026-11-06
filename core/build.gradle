@@ -45,6 +45,10 @@ dependencies {
 
     implementation "io.micrometer:micrometer-core"
     implementation "com.google.guava:guava:${revGuava}"
+    // FileStorageServiceImpl uses org.checkerframework.checker.nullness.qual annotations, which
+    // guava transitively supplied before 33.6.0 but no longer does. Declare it explicitly
+    // (compile-time only -- the annotations are not needed at runtime).
+    compileOnly "org.checkerframework:checker-qual:3.51.1"
 
     //GraalVM dependencies for executing JavaScript and Python
     // PINNED (#964): all GraalVM artifacts must use the same version (revGraalVM in dependencies.gradle)

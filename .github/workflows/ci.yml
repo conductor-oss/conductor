@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       e2e_profiles:
-        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, redis-os3'
+        description: 'E2E profiles to run in addition to redis-es8 (which always runs): "all", "none", or a comma separated subset of postgres, mysql, postgres-es8, mysql-es8, redis-os3'
         required: false
         default: all
         type: string
@@ -389,7 +389,9 @@ jobs:
           # redis-es8 flavor and cassandra support is partial. Re-enable by adding them back
           # to the optional list (scripts remain in e2e/).
           always='[{"name":"redis-es8","script":"./e2e/run_tests-es8.sh"}]'
-          optional='[{"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
+          optional='[{"name":"postgres-es8","script":"./e2e/run_tests-postgres-es8.sh"},
+                     {"name":"mysql-es8","script":"./e2e/run_tests-mysql-es8.sh"},
+                     {"name":"postgres","script":"./e2e/run_tests-postgres.sh"},
                      {"name":"mysql","script":"./e2e/run_tests-mysql.sh"},
                      {"name":"redis-os3","script":"./e2e/run_tests-redis-os3.sh"}]'
 
