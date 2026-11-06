@@ -119,6 +119,11 @@ export default function DataTable(props) {
   }, [tableState, columns]);
 
   const filteredItems = useMemo(() => {
+    // When paginationServer is true, the server handles filtering — skip client-side filtering
+    if (paginationServer) {
+      return data;
+    }
+
     const column = dataTableColumns.find(
       (col) => col.id === filterObj.columnName
     );
@@ -154,7 +159,7 @@ export default function DataTable(props) {
         return [];
       }
     }
-  }, [data, dataTableColumns, filterObj]);
+  }, [data, dataTableColumns, filterObj, paginationServer]);
 
   return (
     <RawDataTable
@@ -165,9 +170,10 @@ export default function DataTable(props) {
       paginationServer={paginationServer}
       paginationPerPage={paginationPerPage}
       paginationRowsPerPageOptions={[15, 30, 100, 1000]}
+      sortServer={paginationServer}
       actions={
         <>
-          {!paginationServer && showFilter && (
+          {showFilter && (!paginationServer || onFilterChange) && (
             <Filter
               columns={columns}
               filterObj={filterObj}
