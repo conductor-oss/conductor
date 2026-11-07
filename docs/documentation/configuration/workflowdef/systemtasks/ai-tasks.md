@@ -48,6 +48,8 @@ Provider-backed media tasks require the corresponding provider configuration. PD
 
 Supply the MCP server connection details in task input. The server must be reachable from Conductor.
 
+`CALL_MCP_TOOL` also accepts an optional `mcpOptions` object. Without it, the call sends the legacy request, as before. `"mcpOptions": {"protocolVersion": "2026-07-28"}` selects MCP protocol revision `2026-07-28`, with the MCP Tasks extension: the server decides per call whether to answer immediately or to run the tool as a task. See [Selecting the MCP protocol version: `mcpOptions`](../../../../devguide/ai/mcp-guide.md#selecting-the-mcp-protocol-version-mcpoptions).
+
 ## Decision
 
 | Type | Purpose |
