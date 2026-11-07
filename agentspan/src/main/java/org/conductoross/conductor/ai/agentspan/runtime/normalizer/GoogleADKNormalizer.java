@@ -42,6 +42,8 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
      */
     private static final String DEFAULT_MODEL_ENV = "AGENT_DEFAULT_MODEL";
 
+    private static final String DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
+
     @Override
     public String frameworkId() {
         return "google_adk";
@@ -60,7 +62,7 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
         config.setSynthesize(Boolean.TRUE.equals(raw.get("synthesize")));
 
         // Model: check for env override, then prefix with "google_gemini/" if no provider
-        String model = getString(raw, "model", "gemini-2.0-flash");
+        String model = getString(raw, "model", DEFAULT_GEMINI_MODEL);
         String envModel = System.getenv(DEFAULT_MODEL_ENV);
         if (envModel != null && !envModel.isEmpty()) {
             // Use the env-specified model, ignoring the ADK agent's model field
@@ -431,7 +433,7 @@ public class GoogleADKNormalizer implements AgentConfigNormalizer {
 
     private String ensureProvider(String model, String defaultProvider) {
         if (model == null || model.isEmpty()) {
-            return defaultProvider + "/gemini-2.0-flash";
+            return defaultProvider + "/" + DEFAULT_GEMINI_MODEL;
         }
         return model.contains("/") ? model : defaultProvider + "/" + model;
     }
