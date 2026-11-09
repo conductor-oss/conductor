@@ -73,59 +73,81 @@ subprojects {
 
     }
 
-    task promoteToMavenCentral {
-        group = 'publishing'
-        description = 'Promotes staged artifacts to Maven Central'
+}
 
-        onlyIf {
-            project.hasProperty('mavenCentral') &&
-                    project.hasProperty('username') &&
-                    project.hasProperty('password') &&
-                    !project.version.endsWith('-SNAPSHOT')
+// Promote staged artifacts to Maven Central -- ONCE for the whole build.
+//
+// All subprojects upload into a single shared staging repository
+// (`org.conductoross--default-repository`). Promotion therefore needs to happen
+// exactly once, after every module has finished uploading. This task used to
+// live inside `subprojects {}` and was `finalizedBy` each module's `publish`,
+// which fired the promote endpoint once PER module -- 51 separate Central
+// deployments for a single release, each counting against the org's monthly
+// release quota (see PLANNING/maven-central-quota-incident.md). A single
+// root-level task collapses that back to one deployment per release.
+//
+// Run it explicitly after `publish` in the same invocation:
+//     ./gradlew publish promoteToMavenCentral -PmavenCentral ...
+// `mustRunAfter` guarantees it executes last, once all uploads are staged.
+task promoteToMavenCentral {
+    group = 'publishing'
+    description = 'Promotes staged artifacts to Maven Central (once for the whole build)'
+
+    mustRunAfter(subprojects.collect { sp -> sp.tasks.matching { it.name == 'publish' } })
+
+    onlyIf {
+        project.hasProperty('mavenCentral') &&
+                project.hasProperty('username') &&
+                project.hasProperty('password') &&
+                !project.version.endsWith('-SNAPSHOT')
+    }
+
+    doLast {
+        def username = project.properties['username']
+        def password = project.properties['password']
+
+        // Create base64 encoded token for authentication
+        def token = "${username}:${password}".bytes.encodeBase64().toString()
+
+        // Get open staging repositories
+        def response = new URL("https://ossrh-staging-api.central.sonatype.com/manual/search/repositories")
+                .openConnection()
+        response.setRequestProperty("Authorization", "Basic ${token}")
+        response.setRequestProperty("Content-Type", "application/json")
+
+        def repositories = new groovy.json.JsonSlurper().parse(response.inputStream)
+
+        def openRepositories = repositories.repositories.findAll { it.state == "open" }
+        if (openRepositories.isEmpty()) {
+            project.logger.lifecycle("No open staging repositories to promote.")
+            return
         }
 
-        doLast {
-            def username = project.properties['username']
-            def password = project.properties['password']
+        // Promote each open repository. In a normal release there is exactly one
+        // (the shared default repository); we still iterate to clean up any
+        // stragglers left open by a prior failed run.
+        openRepositories.each { repo ->
+            project.logger.lifecycle("Promoting repository ${repo.key}")
 
-            // Create base64 encoded token for authentication
-            def token = "${username}:${password}".bytes.encodeBase64().toString()
+            def promoteUrl = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/repository/${repo.key}?publishing_type=automatic")
+            def connection = promoteUrl.openConnection()
+            connection.setRequestMethod("POST")
+            connection.setRequestProperty("Authorization", "Basic ${token}")
+            connection.setRequestProperty("Content-Type", "application/json")
 
-            // Get open staging repositories
-            def response = new URL("https://ossrh-staging-api.central.sonatype.com/manual/search/repositories")
-                    .openConnection()
-            response.setRequestProperty("Authorization", "Basic ${token}")
-            response.setRequestProperty("Content-Type", "application/json")
-
-            def repositories = new groovy.json.JsonSlurper().parse(response.inputStream)
-
-            // Promote each open repository
-            repositories.repositories.each { repo ->
-                if (repo.state == "open") {
-                    project.logger.lifecycle("Promoting repository ${repo.key}")
-
-                    def promoteUrl = new URL("https://ossrh-staging-api.central.sonatype.com/manual/upload/repository/${repo.key}?publishing_type=automatic")
-                    def connection = promoteUrl.openConnection()
-                    connection.setRequestMethod("POST")
-                    connection.setRequestProperty("Authorization", "Basic ${token}")
-                    connection.setRequestProperty("Content-Type", "application/json")
-
-                    def responseCode = connection.responseCode
-                    if (responseCode == 200) {
-                        project.logger.lifecycle("Successfully promoted repository ${repo.key}")
-                    } else {
-                        def errorStream = connection.errorStream
-                        def errorBody = errorStream ? errorStream.text : "No error body available"
-                        def errorMessage = "Failed to promote repository ${repo.key}. Response code: ${responseCode}. Response message: ${connection.responseMessage}. Error body: ${errorBody}"
-                        project.logger.error(errorMessage)
-                        //throw new GradleException(errorMessage)
-                    }
-                }
+            def responseCode = connection.responseCode
+            if (responseCode == 200) {
+                project.logger.lifecycle("Successfully promoted repository ${repo.key}")
+            } else {
+                def errorStream = connection.errorStream
+                def errorBody = errorStream ? errorStream.text : "No error body available"
+                def errorMessage = "Failed to promote repository ${repo.key}. Response code: ${responseCode}. Response message: ${connection.responseMessage}. Error body: ${errorBody}"
+                project.logger.error(errorMessage)
+                // Fail the build on a non-2xx promote so a Central rejection
+                // (quota exhaustion, validation error, ...) turns the job red
+                // instead of being swallowed under BUILD SUCCESSFUL.
+                throw new GradleException(errorMessage)
             }
         }
     }
-    tasks.matching { it.name == 'publish' }.configureEach { publishTask ->
-        publishTask.finalizedBy tasks.promoteToMavenCentral
-    }
-
 }
