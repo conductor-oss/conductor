@@ -83,8 +83,8 @@ subprojects {
 // live inside `subprojects {}` and was `finalizedBy` each module's `publish`,
 // which fired the promote endpoint once PER module -- 51 separate Central
 // deployments for a single release, each counting against the org's monthly
-// release quota (see PLANNING/maven-central-quota-incident.md). A single
-// root-level task collapses that back to one deployment per release.
+// release quota (see PR #1826). A single root-level task collapses that back
+// to one deployment per release.
 //
 // Run it explicitly after `publish` in the same invocation:
 //     ./gradlew publish promoteToMavenCentral -PmavenCentral ...
@@ -143,7 +143,7 @@ task promoteToMavenCentral {
                 def errorBody = errorStream ? errorStream.text : "No error body available"
                 def errorMessage = "Failed to promote repository ${repo.key}. Response code: ${responseCode}. Response message: ${connection.responseMessage}. Error body: ${errorBody}"
                 project.logger.error(errorMessage)
-                // Fail the build on a non-2xx promote so a Central rejection
+                // Fail the build on a non-200 promote so a Central rejection
                 // (quota exhaustion, validation error, ...) turns the job red
                 // instead of being swallowed under BUILD SUCCESSFUL.
                 throw new GradleException(errorMessage)
