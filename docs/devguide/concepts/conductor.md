@@ -63,7 +63,7 @@ LLM calls run as native system tasks. Configure a provider and model on the task
 
 MCP support is built in. `LIST_MCP_TOOLS` discovers a server's tools and `CALL_MCP_TOOL` invokes one, with the same retries and state tracking as any other task.
 
-Vector search tasks support Pinecone, pgvector, and MongoDB Atlas, so a single workflow can index embeddings, run similarity search, and pass the results to an LLM. Content generation tasks produce images, audio, video, and PDFs. All AI tasks share the standard durability guarantees: automatic retries, timeouts, and a complete execution record.
+Vector search tasks support Pinecone, pgvector, MongoDB Atlas, and Qdrant, so a single workflow can index embeddings, run similarity search, and pass the results to an LLM. Content generation tasks produce images, audio, video, and PDFs. All AI tasks share the standard durability guarantees: automatic retries, timeouts, and a complete execution record.
 
 ### Event-driven workflows
 Workflows can be triggered by external events and can publish events of their own. Kafka, NATS, AMQP, and SQS are supported. See [Event orchestration](../how-tos/event-bus.md).

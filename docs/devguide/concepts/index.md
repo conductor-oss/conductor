@@ -386,7 +386,7 @@ A quick reference for what Conductor supports out of the box:
 | [Worker SDKs](../../documentation/clientsdks/index.md) | Java, Python, Go, JavaScript, C#, Clojure, Ruby, Rust |
 | [LLM providers](../ai/llm-orchestration.md#supported-llm-providers) | 14+, including OpenAI, Anthropic, Gemini, Bedrock, Mistral, and Azure OpenAI |
 | [Tool calling](../ai/mcp-guide.md) | MCP (Model Context Protocol) |
-| [Vector databases](../ai/llm-orchestration.md) | Pinecone, pgvector, MongoDB Atlas |
+| [Vector databases](../ai/llm-orchestration.md) | Pinecone, pgvector, MongoDB Atlas, Qdrant |
 | [Event brokers](../how-tos/event-bus.md) | Kafka, NATS JetStream, SQS, AMQP, Azure Service Bus |
 | [Persistence backends](../running/deploy.md) | PostgreSQL, MySQL, Redis, Cassandra, SQLite |
 

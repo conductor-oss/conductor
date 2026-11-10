@@ -192,7 +192,7 @@ Retrieval-augmented generation as two system tasks, no external framework:
 ]
 ```
 
-Pinecone, pgvector, and MongoDB Atlas are supported through the vector workflow tasks. The same pattern can compose with an existing agent framework when retrieval is only one part of the graph.
+Pinecone, pgvector, MongoDB Atlas, and Qdrant are supported through the vector workflow tasks. The same pattern can compose with an existing agent framework when retrieval is only one part of the graph.
 
 
 ## Multi-agent delegation — sub-workflows with lifecycle
