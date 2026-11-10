@@ -9,7 +9,7 @@
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "gpt-image-1",
+        "model": "gpt-image-2.5-sunburst",
         "prompt": "A futuristic cityscape at sunset",
         "width": 1024,
         "height": 1024,

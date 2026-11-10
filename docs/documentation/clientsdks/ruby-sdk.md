@@ -302,7 +302,7 @@ workflow = Conductor.workflow :ai_assistant, executor: executor do
   # Generate image
   generate_image :create_image,
     provider: 'openai',
-    model: 'gpt-image-1',
+    model: 'gpt-image-2.5-sunburst',
     prompt: 'A sunset over mountains',
     size: '1024x1024'
 
@@ -324,6 +324,7 @@ workflow = Conductor.workflow :ai_assistant, executor: executor do
   output answer: response[:content]
 end
 ```
+<!-- TODO: verify against live server (gpt-image-2.5-sunburst not yet run: the test project hit its OpenAI spend limit) -->
 
 ### Output References
 
