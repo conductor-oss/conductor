@@ -33,11 +33,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: Publish release
+        # `publish` uploads all modules into the single shared staging repo;
+        # `promoteToMavenCentral` then promotes it ONCE. Running both in one
+        # invocation lets `mustRunAfter` order promote last -- one Central
+        # deployment per release instead of one per module (51x quota burn).
         run: |
           export VERSION="${{github.ref_name}}"
           export PUBLISH_VERSION=`echo ${VERSION:1}`
           echo Publishing version $PUBLISH_VERSION
-          ./gradlew publish -PmavenCentral -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
+          ./gradlew publish promoteToMavenCentral -PmavenCentral -Pversion=$PUBLISH_VERSION -Pusername=${{ secrets.SONATYPE_USERNAME }} -Ppassword=${{ secrets.SONATYPE_PASSWORD }}
         env:
           ORG_GRADLE_PROJECT_signingKeyId: ${{ secrets.SIGNING_KEY_ID }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
