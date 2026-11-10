@@ -67,3 +67,11 @@ dependencies {
     testImplementation "com.h2database:h2:2.4.240"
 
 }
+
+// McpProtocolHeaders reports this version as clientInfo.version on MCP 2026-07-28 requests.
+jar {
+    manifest {
+        attributes('Implementation-Title': project.name,
+                'Implementation-Version': project.version)
+    }
+}
