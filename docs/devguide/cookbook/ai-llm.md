@@ -199,7 +199,7 @@ curl -X POST 'http://localhost:8080/api/workflow/mcp_ai_agent_workflow' \
 
 ### Image generation
 
-Generate images from a text prompt using gpt-image-1 or another supported provider.
+Generate images from a text prompt using gpt-image-2.5-sunburst or another supported provider.
 
 ```json
 {
@@ -214,7 +214,7 @@ Generate images from a text prompt using gpt-image-1 or another supported provid
       "type": "GENERATE_IMAGE",
       "inputParameters": {
         "llmProvider": "openai",
-        "model": "gpt-image-1",
+        "model": "gpt-image-2.5-sunburst",
         "prompt": "${workflow.input.prompt}",
         "width": 1024,
         "height": 1024,
@@ -228,6 +228,7 @@ Generate images from a text prompt using gpt-image-1 or another supported provid
   }
 }
 ```
+<!-- TODO: verify against live server (gpt-image-2.5-sunburst not yet run: the test project hit its OpenAI spend limit) -->
 
 **Register and run:**
 
