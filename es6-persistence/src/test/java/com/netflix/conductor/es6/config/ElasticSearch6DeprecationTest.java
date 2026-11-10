@@ -60,12 +60,12 @@ public class ElasticSearch6DeprecationTest {
                     message.contains("conductor.indexing.type=elasticsearch_v6"));
 
             assertTrue(
-                    "Error should show elasticsearch option",
-                    message.contains("conductor.indexing.type=elasticsearch"));
+                    "Error should show elasticsearch8 option",
+                    message.contains("conductor.indexing.type=elasticsearch8"));
 
             assertTrue(
-                    "Error should mention Elasticsearch 7.x",
-                    message.contains("Elasticsearch 7.x") || message.contains("7.x"));
+                    "Error should mention Elasticsearch 8.x",
+                    message.contains("Elasticsearch 8.x") || message.contains("8.x"));
 
             assertTrue(
                     "Error should mention EOL",

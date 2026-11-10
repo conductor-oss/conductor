@@ -22,7 +22,7 @@ dependencies {
 
     // Test dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation project(':conductor-common').sourceSets.test.output
+    testImplementation rootProject.project(':conductor-common').sourceSets.test.output
     
 
     // Add Kafka client dependency
@@ -41,4 +41,3 @@ dependencies {
 //         showStandardStreams = true // Enable standard output
 //     }
 // }
-
