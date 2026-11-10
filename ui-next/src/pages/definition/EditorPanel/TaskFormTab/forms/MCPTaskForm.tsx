@@ -28,7 +28,7 @@ import { MaybeVariable } from "./MaybeVariable";
 import { Optional } from "./OptionalFieldForm";
 import TaskFormSection from "./TaskFormSection";
 import { TaskFormProps } from "./types";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
   const navigate = useNavigate();
@@ -207,6 +207,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     `/integrations/${task?.inputParameters?.integrationName}/def/api/${task?.inputParameters?.method}`,
     {
       enabled: hasValidIntegration && hasValidMethod,
+      keepPreviousData: false,
     },
   );
 
@@ -238,10 +239,41 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
     }
   }, [toolData?.inputSchema?.data]);
 
+  const inputs = task.inputParameters;
+  const formData = useMemo(() => {
+    if (
+      !hasValidIntegration ||
+      !hasValidMethod ||
+      !inputs ||
+      typeof inputs !== "object" ||
+      Array.isArray(inputs)
+    ) {
+      return inputs;
+    }
+    // Apply defaults only to missing inputs; explicit false, null and expressions must survive.
+    const defaults = Object.entries<{ default?: unknown }>(
+      processedSchema?.properties ?? {},
+    )
+      .filter(
+        ([key, schema]) =>
+          inputs[key] === undefined && schema?.default !== undefined,
+      )
+      .map(([key, schema]) => [key, structuredClone(schema.default)]);
+    return defaults.length
+      ? { ...inputs, ...Object.fromEntries(defaults) }
+      : inputs;
+  }, [hasValidIntegration, hasValidMethod, inputs, processedSchema]);
+
+  useEffect(() => {
+    if (formData !== inputs) {
+      onChange(updateField("inputParameters", formData, task));
+    }
+  }, [formData, inputs, task, onChange]);
+
   return (
     <Box width="100%">
       <MaybeVariable
-        value={task?.inputParameters}
+        value={formData}
         onChange={(val) => onChange(updateField("inputParameters", val, task))}
         path={"inputParameters"}
         taskType={TaskType.INTEGRATION}
@@ -423,7 +455,7 @@ export const MCPTaskForm = ({ task, onChange }: TaskFormProps) => {
                       <ThemeProvider theme={customTheme}>
                         <JsonForms
                           schema={processedSchema}
-                          data={task?.inputParameters}
+                          data={formData}
                           onChange={({ data }) =>
                             onChange(updateField("inputParameters", data, task))
                           }
