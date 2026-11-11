@@ -7,7 +7,7 @@
 # Because the workflow/task state is durably persisted (SQLite here), the order RESUMES and
 # COMPLETES after the restart. An in-memory A2A host (the reference samples) would have lost it.
 #
-# Requires: Java 21+, python3, curl. No Docker, no Redis, no API keys.
+# Requires: Java 25+, python3, curl. No Docker, no Redis, no API keys.
 # Usage:    ./run-durable-demo.sh
 #
 set -euo pipefail

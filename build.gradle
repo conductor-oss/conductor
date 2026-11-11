@@ -9,7 +9,6 @@ buildscript {
     }
     dependencies {
         classpath 'org.springframework.boot:spring-boot-gradle-plugin:4.1.1'
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:6.+'
     }
 }
 
@@ -20,7 +19,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'java-library'
-    id "com.diffplug.spotless" version "6.25.0"
+    id "com.diffplug.spotless" version "8.10.4"
     id 'org.springframework.boot' version '4.1.1'
 }
 
@@ -43,12 +42,15 @@ allprojects {
 
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(25)
         }
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
     }
 
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 25
+    }
 
     group = 'org.conductoross'
 
@@ -60,18 +62,22 @@ allprojects {
             exclude group: 'org.slf4j', module: 'slf4j-log4j12'
 
             resolutionStrategy.eachDependency { details ->
-                // Security: CVE-2025-12183 - lz4-java minimum patched version. Not managed by the
-                // Spring Boot BOM, so the floor has to be enforced here.
+                // Security: lz4-java is not managed by the Spring Boot BOM. Kafka 4.x pulls the
+                // maintained at.yawk.lz4 fork; 1.11.4 clears CVE-2026-106451. The frozen org.lz4
+                // coordinate (last released 1.8.1) still gets its CVE-2025-12183 floor in case
+                // anything pulls it directly.
+                if (details.requested.group == 'at.yawk.lz4' && details.requested.name == 'lz4-java') {
+                    details.useVersion '1.11.4'
+                }
                 if (details.requested.group == 'org.lz4' && details.requested.name == 'lz4-java') {
                     details.useVersion '1.8.1'
                 }
             }
-            // Security: at.yawk.lz4:lz4-java declares Gradle capability org.lz4:lz4-java in its
-            // module metadata. When lz4-java is upgraded to 1.8.1 (CVE-2025-12183), both modules
-            // claim the same capability and Gradle cannot resolve the conflict automatically.
-            // Tell Gradle to always prefer the canonical org.lz4 artifact.
+            // Security: at.yawk.lz4:lz4-java and org.lz4:lz4-java both declare the Gradle capability
+            // org.lz4:lz4-java. If both land on the graph, prefer the maintained at.yawk fork (which
+            // carries the current CVE fixes) over the frozen org.lz4 1.8.1.
             resolutionStrategy.capabilitiesResolution.withCapability('org.lz4:lz4-java') { resolution ->
-                def preferred = resolution.candidates.find { it.id.group == 'org.lz4' }
+                def preferred = resolution.candidates.find { it.id.group == 'at.yawk.lz4' }
                 if (preferred) {
                     resolution.select(preferred)
                 }
@@ -127,6 +133,21 @@ allprojects {
             implementation('commons-beanutils:commons-beanutils:1.11.0') {
                 because 'CVE-2025-48734: PropertyUtilsBean enum suppression'
             }
+            implementation('org.xerial.snappy:snappy-java:1.1.10.9') {
+                because 'CVE-2026-108106 / CVE-2026-93451: kafka transitive, not BOM-managed'
+            }
+            implementation('org.bouncycastle:bcprov-jdk18on:1.85') {
+                because 'CVE-2025-14813 / CVE-2026-8763 / CVE-2026-13506 / CVE-2026-5598: name-constraints bypass, GOSTCTR handling, ASN.1 DoS'
+            }
+            implementation('org.bouncycastle:bcpkix-jdk18on:1.85') {
+                because 'bouncycastle family kept in lockstep with bcprov-jdk18on'
+            }
+            implementation('org.bouncycastle:bcutil-jdk18on:1.85') {
+                because 'bouncycastle family kept in lockstep with bcprov-jdk18on'
+            }
+            implementation('org.jsoup:jsoup:1.23.2') {
+                because 'CVE-2026-75140: DoS via deeply nested XML'
+            }
         }
     }
     // processes additional configuration metadata json file as described here
@@ -154,15 +175,6 @@ allprojects {
 
     bootJar {
         enabled = false
-    }
-}
-
-// all client and their related modules are published with Java 17 compatibility
-["annotations", "common", "grpc", "grpc-client"].each {
-    project(":conductor-$it") {
-        compileJava {
-            options.release = 21
-        }
     }
 }
 
@@ -201,11 +213,18 @@ configure(allprojects - project(':conductor-grpc')) {
 
     spotless {
         java {
-            googleJavaFormat().aosp()
+            googleJavaFormat('1.30.0').aosp()
             removeUnusedImports()
             importOrder('java', 'javax', 'org', 'com.netflix', '', '\\#com.netflix', '\\#')
             licenseHeaderFile("$rootDir/licenseheader.txt")
         }
+    }
+}
+
+// The image smoke check is compiled independently of Gradle, but follows the same Java style.
+spotless {
+    java {
+        target 'docker/server/tests/*.java'
     }
 }
 

@@ -224,8 +224,9 @@ dependencies {
     functionalTestImplementation 'org.junit.jupiter:junit-jupiter-params'
 
     // Lombok (used by e2e test classes)
-    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.30'
-    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+    // Compat: use the same Java 25-capable Lombok processor as the main and test source sets.
+    functionalTestCompileOnly 'org.projectlombok:lombok:1.18.42'
+    functionalTestAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
 
     functionalTestImplementation 'org.awaitility:awaitility'
 
