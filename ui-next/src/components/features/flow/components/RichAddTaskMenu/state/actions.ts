@@ -47,14 +47,16 @@ export const persistTaskDefinitions = assign<
 >((_context, event) => {
   return {
     taskDefinitions: event.data,
-    workerMenuItems: event.data.map(
-      (task): BaseTaskMenuItem => ({
-        category: RichAddMenuTabs.WORKERS_TAB,
-        name: task.name,
-        description: task.description,
-        type: TaskType.SIMPLE,
-      }),
-    ),
+    workerMenuItems: event.data
+      .filter((task) => task.name !== TaskType.BUSINESS_RULE)
+      .map(
+        (task): BaseTaskMenuItem => ({
+          category: RichAddMenuTabs.WORKERS_TAB,
+          name: task.name,
+          description: task.description,
+          type: TaskType.SIMPLE,
+        }),
+      ),
     isTaskDefFetched: true, // FIXME, remove flags.
   };
 });
