@@ -69,7 +69,8 @@ public class ElasticSearchV7Configuration {
                         + "      for now -- just plan the move before adopting a release that\n"
                         + "      drops ES7.\n"
                         + "\n"
-                        + " Migration guide: https://github.com/conductor-oss/conductor/issues/1754\n"
+                        + " Migration guide:\n"
+                        + "   https://conductor-oss.github.io/conductor/devguide/running/upgrade-3.34.0.html\n"
                         + "=====================================================================");
     }
 
