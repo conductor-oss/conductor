@@ -134,7 +134,6 @@ export interface ConductorArrayFieldProps {
   enableAutocomplete?: boolean;
   typeLabel?: ReactNode;
   helperText?: ReactNode;
-  otherOptions?: string[];
 }
 
 const ConductorArrayFieldBase: FunctionComponent<ConductorArrayFieldProps> = ({
@@ -151,7 +150,6 @@ const ConductorArrayFieldBase: FunctionComponent<ConductorArrayFieldProps> = ({
   disabledAddButton,
   enableAutocomplete,
   helperText,
-  otherOptions,
 }) => {
   const handleValueChange = (index: number) => (newValue: string) => {
     onChange(adjust(index, () => newValue, value));
@@ -193,7 +191,6 @@ const ConductorArrayFieldBase: FunctionComponent<ConductorArrayFieldProps> = ({
                     label={inputLabel}
                     value={val}
                     fullWidth
-                    otherOptions={otherOptions}
                     onChange={handleValueChange(index)}
                   />
                 ) : (

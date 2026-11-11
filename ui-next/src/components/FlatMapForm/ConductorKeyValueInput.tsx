@@ -3,7 +3,6 @@ import MuiCheckbox from "components/ui/MuiCheckbox";
 import IconButton from "components/ui/buttons/MuiIconButton";
 import { ConductorCodeBlockInput } from "components/ui/inputs/ConductorCodeBlockInput";
 import ConductorInput from "components/ui/inputs/ConductorInput";
-import { ConductorAutocompleteVariables } from "./ConductorAutocompleteVariables";
 import ConductorInputNumber from "components/ui/inputs/ConductorInputNumber";
 import TrashIcon from "components/icons/TrashIcon";
 import { ConductorTooltipProps } from "components/ui/ConductorTooltip";
@@ -49,7 +48,6 @@ interface ConductorKeyValueInputProps {
   };
   customInput?: ReactNode;
   placeholder?: string;
-  keyOptions?: string[];
 }
 
 export type MaybeInputProps = {
@@ -163,7 +161,6 @@ export const ConductorKeyValueInput: FunctionComponent<
   tooltip,
   customInput,
   placeholder,
-  keyOptions,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [valueAnEr, setValueAnEr] = useState<[string, string]>([mKey, ""]);
@@ -227,36 +224,25 @@ export const ConductorKeyValueInput: FunctionComponent<
               md: dynamicWidth(),
             }}
           >
-            {keyOptions ? (
-              <ConductorAutocompleteVariables
-                value={valueAnEr[0]}
-                label={keyColumnLabel}
-                otherOptions={keyOptions}
-                onChange={handleUpdateValue}
-                error={containsError}
-                helperText={valueAnEr[1]}
-              />
-            ) : (
-              <ConductorInput
-                onTextInputChange={handleUpdateValue}
-                value={valueAnEr[0]}
-                autoFocus={
-                  (focusOnField === valueAnEr[0] || valueAnEr[0] != null) &&
-                  autoFocusField
-                }
-                onFocus={(
-                  e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-                ) => handleFocus(e)}
-                fullWidth
-                placeholder="e.g.: Cache-Control..."
-                error={containsError}
-                helperText={valueAnEr[1]}
-                ref={inputRef}
-                label={keyColumnLabel}
-                showClearButton
-                tooltip={tooltip?.key}
-              />
-            )}
+            <ConductorInput
+              onTextInputChange={handleUpdateValue}
+              value={valueAnEr[0]}
+              autoFocus={
+                (focusOnField === valueAnEr[0] || valueAnEr[0] != null) &&
+                autoFocusField
+              }
+              onFocus={(
+                e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+              ) => handleFocus(e)}
+              fullWidth
+              placeholder="e.g.: Cache-Control..."
+              error={containsError}
+              helperText={valueAnEr[1]}
+              ref={inputRef}
+              label={keyColumnLabel}
+              showClearButton
+              tooltip={tooltip?.key}
+            />
           </Grid>
 
           {!hideValue && (
