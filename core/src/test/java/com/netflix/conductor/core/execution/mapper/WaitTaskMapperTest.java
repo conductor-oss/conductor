@@ -64,7 +64,10 @@ public class WaitTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        WaitTaskMapper waitTaskMapper =
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties());
         // When
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
 
@@ -96,7 +99,10 @@ public class WaitTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        WaitTaskMapper waitTaskMapper =
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties());
         // When
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
@@ -137,7 +143,10 @@ public class WaitTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        WaitTaskMapper waitTaskMapper =
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties());
         // When
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
@@ -171,7 +180,10 @@ public class WaitTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        WaitTaskMapper waitTaskMapper =
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties());
         // When
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
@@ -207,10 +219,48 @@ public class WaitTaskMapperTest {
                         .withTaskId(taskId)
                         .build();
 
-        WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
+        WaitTaskMapper waitTaskMapper =
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties());
         // When
         List<TaskModel> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);
         assertEquals(1, mappedTasks.size());
         assertEquals(mappedTasks.get(0).getStatus(), TaskModel.Status.FAILED_WITH_TERMINAL_ERROR);
+    }
+
+    @Test
+    public void timeScaleDividesTheDurationOnlyWhenEnabled() {
+        com.netflix.conductor.core.config.ConductorProperties props =
+                new com.netflix.conductor.core.config.ConductorProperties();
+        WaitTaskMapper mapper = new WaitTaskMapper(mock(ParametersUtils.class), props);
+        TaskModel task = new TaskModel();
+        task.getInputData().put("duration", "100s");
+
+        mapper.setCallbackAfter(task, 1.0);
+        assertEquals(100, task.getCallbackAfterSeconds());
+
+        mapper.setCallbackAfter(task, 20.0);
+        assertEquals(5, task.getCallbackAfterSeconds());
+
+        // an until deadline is brought closer by the scale too
+        TaskModel untilTask = new TaskModel();
+        java.time.ZonedDateTime inTwoHours =
+                java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).plusHours(2);
+        untilTask
+                .getInputData()
+                .put(
+                        "until",
+                        inTwoHours.format(
+                                java.time.format.DateTimeFormatter.ofPattern(
+                                        "yyyy-MM-dd HH:mm 'UTC'")));
+        mapper.setCallbackAfter(untilTask, 60.0);
+        assertTrue(untilTask.getCallbackAfterSeconds() <= 125);
+        assertTrue(untilTask.getCallbackAfterSeconds() >= 115);
+
+        // never scaled down to zero, which would wait forever
+        task.getInputData().put("duration", "3s");
+        mapper.setCallbackAfter(task, 20.0);
+        assertEquals(1, task.getCallbackAfterSeconds());
     }
 }

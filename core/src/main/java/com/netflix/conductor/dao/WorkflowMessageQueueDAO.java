@@ -60,4 +60,36 @@ public interface WorkflowMessageQueueDAO {
      * @param workflowId the workflow instance ID whose queue should be removed
      */
     void delete(String workflowId);
+
+    /**
+     * Returns up to {@code maxCount} messages for {@code claimant}, without losing them if the
+     * caller fails before recording them. The first call claims messages from the head of the
+     * queue; a repeated call with the same claimant returns the same messages; messages claimed by
+     * any other claimant of this workflow are deleted first, since a later claimant only runs after
+     * the earlier one's result was recorded. A PULL_WORKFLOW_MESSAGES task claims under its
+     * reference name, so a re-run of the task, after its server died mid-run or when two servers
+     * run it at once, gets the same messages instead of losing some.
+     *
+     * <p>The default pops, for queues without claims.
+     */
+    default List<WorkflowMessage> claim(String workflowId, int maxCount, String claimant) {
+        return claim(workflowId, maxCount, claimant, 0);
+    }
+
+    /**
+     * As {@link #claim(String, int, String)}, fenced by {@code ordinal} (a PULL task's loop
+     * iteration): once a claimant with a higher ordinal has claimed, a claimant with a lower one
+     * gets only what it claimed before, never new messages. A stale run of an old pull, resumed
+     * after a pause, would otherwise claim fresh messages whose claim the current pull then deletes
+     * as delivered, though no handler ever saw them.
+     */
+    default List<WorkflowMessage> claim(
+            String workflowId, int maxCount, String claimant, long ordinal) {
+        return pop(workflowId, maxCount);
+    }
+
+    /** Whether {@link #claim} can be repeated safely. */
+    default boolean supportsClaims() {
+        return false;
+    }
 }

@@ -2,6 +2,7 @@ import { KeyValueTable, NavLink, Paper } from "components";
 import { type KeyValueTableRow } from "components/KeyValueTable";
 import { WorkflowExecution } from "types/Execution";
 import { useFetch } from "utils/query";
+import { heldReason } from "./held";
 import {
   WorkflowSizeIndicator,
   type WorkflowSizeResponse,
@@ -28,6 +29,8 @@ export default function ExecutionSummary({
     },
   );
 
+  const held = heldReason(execution);
+
   // To accommodate unexecuted tasks, read type & name out of workflowTask
   const data: KeyValueTableRow[] = (
     [
@@ -36,6 +39,11 @@ export default function ExecutionSummary({
       execution.reasonForIncompletion && {
         label: "Reason for incompletion",
         value: execution.reasonForIncompletion,
+        type: "error",
+      },
+      held && {
+        label: "Waiting for compatible code",
+        value: held,
         type: "error",
       },
       { label: "Version", value: execution.workflowVersion },
@@ -73,6 +81,21 @@ export default function ExecutionSummary({
       execution.event && {
         label: "Trigger event",
         value: execution.event,
+      },
+      // Native (code-first) workflows: the code type, and where its first continuation stands
+      execution.nativeState && {
+        label: "Native workflow",
+        value: `${execution.nativeState.codeType ?? "code"} · ${execution.nativeState.step ?? 0} continuation(s) applied`,
+      },
+      execution.nativeState?.bootstrap &&
+        !execution.nativeState.bootstrap.done &&
+        execution.nativeState.bootstrap.state !== "APPLIED" && {
+          label: "First continuation",
+          value: execution.nativeState.bootstrap.state.toLowerCase(),
+        },
+      execution.nativeState?.handlers && {
+        label: "Handler lane",
+        value: `run #${execution.nativeState.handlers.n} ${execution.nativeState.handlers.state.toLowerCase()}`,
       },
     ] as (KeyValueTableRow | false)[]
   ).filter(Boolean) as KeyValueTableRow[];

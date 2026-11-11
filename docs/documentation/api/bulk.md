@@ -50,10 +50,12 @@ curl -X PUT 'http://localhost:8080/api/workflow/bulk/pause' \
 {
   "bulkSuccessfulResults": ["workflow-id-1", "workflow-id-2"],
   "bulkErrorResults": {
-    "workflow-id-3": "Workflow is already paused"
+    "workflow-id-3": "Workflow order_flow.1/workflow-id-3 has ended, status cannot be updated."
   }
 }
 ```
+
+A workflow that is already paused counts as a success. A workflow that has ended is listed in `bulkErrorResults`.
 
 ### Bulk Resume
 
@@ -101,7 +103,7 @@ curl -X POST 'http://localhost:8080/api/workflow/bulk/retry' \
   -d '["workflow-id-1", "workflow-id-2"]'
 ```
 
-**Response** `200 OK` — returns a `BulkResponse`.
+**Response** `200 OK` — returns a `BulkResponse`. A workflow that cannot be retried is listed under `bulkErrorResults` with the reason, and the rest are still retried. This includes a `COMPLETED` workflow (`Workflow <id> is COMPLETED and cannot be retried; rerun or restart it instead`) and one that is still running (`Workflow is still running.  status=RUNNING`). See [Retry](workflow.md#retry).
 
 ### Bulk Terminate
 
@@ -119,7 +121,7 @@ curl -X POST 'http://localhost:8080/api/workflow/bulk/terminate?reason=batch+cle
   -d '["workflow-id-1", "workflow-id-2", "workflow-id-3"]'
 ```
 
-**Response** `200 OK` — returns a `BulkResponse`.
+**Response** `200 OK` — returns a `BulkResponse`. A workflow that has already ended (`COMPLETED`, `FAILED` or `TIMED_OUT`) is listed under the failed ones, and is left as it is.
 
 ### Bulk Remove
 
@@ -148,7 +150,7 @@ curl -X DELETE 'http://localhost:8080/api/workflow/bulk/remove' \
 DELETE /api/workflow/bulk/terminate-remove?reason=&archiveWorkflow=true
 ```
 
-Terminates running workflows and removes them in one call.
+Terminates running workflows and removes them in one call. A workflow that has already ended is removed without being terminated.
 
 | Parameter | Description | Default |
 |---|---|---|

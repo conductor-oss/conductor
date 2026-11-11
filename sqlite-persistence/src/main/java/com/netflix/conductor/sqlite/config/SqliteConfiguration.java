@@ -203,6 +203,21 @@ public class SqliteConfiguration {
                         .build());
     }
 
+    /**
+     * Durable workflow message queue, replacing the in-memory fallback when the queue is enabled,
+     * so signals, updates and queries pushed to running workflows survive a server restart.
+     */
+    @Bean
+    @org.springframework.context.annotation.Primary
+    @DependsOn("flywayForPrimaryDb")
+    @ConditionalOnProperty(name = "conductor.workflow-message-queue.enabled", havingValue = "true")
+    public com.netflix.conductor.dao.WorkflowMessageQueueDAO sqliteWorkflowMessageQueueDAO(
+            ObjectMapper objectMapper,
+            com.netflix.conductor.core.config.WorkflowMessageQueueProperties properties) {
+        return new com.netflix.conductor.core.dao.JdbcWorkflowMessageQueueDAO(
+                dataSource, objectMapper, properties, false);
+    }
+
     @Bean
     @DependsOn({"flywayForPrimaryDb"})
     @ConditionalOnProperty(name = "conductor.file-storage.enabled", havingValue = "true")

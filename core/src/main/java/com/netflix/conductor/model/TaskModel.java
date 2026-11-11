@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.StateChangeEvent;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -199,6 +200,11 @@ public class TaskModel {
     @JsonIgnore private Map<String, Object> outputData = new HashMap<>();
 
     private boolean idempotent = false;
+
+    /**
+     * Set on a task native workflow code paused on: the continuation that runs when it finishes.
+     */
+    private TaskContinuation continuation;
 
     @Getter @Setter private String parentTaskReferenceName;
 
@@ -817,5 +823,13 @@ public class TaskModel {
 
     public void removeOutput(String key) {
         this.outputData.remove(key);
+    }
+
+    public TaskContinuation getContinuation() {
+        return continuation;
+    }
+
+    public void setContinuation(TaskContinuation continuation) {
+        this.continuation = continuation;
     }
 }

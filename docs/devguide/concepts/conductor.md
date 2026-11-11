@@ -47,7 +47,7 @@ See [Architecture](../architecture/index.md) for details.
 ## What Conductor gives you
 
 ### Durable execution
-Every workflow execution is persisted, so progress survives failure. A failed task is retried under a configurable backoff policy, a crashed worker's task is rescheduled to another worker, and a server restart resumes executions from their last recorded state. Your code carries no retry logic, because Conductor applies it for you. The same guarantee extends to agents.
+Every workflow execution is persisted, so progress survives failure. A failed task is retried under a configurable backoff policy, a crashed worker's task is rescheduled to another worker (with `timeoutPolicy: RETRY` on the task definition), and a server restart resumes executions from their last recorded state. Your code carries no retry logic, because Conductor applies it for you. The same guarantee extends to agents.
 
 ### Language-agnostic workers
 Workers can be written in Python, Java, Go, JavaScript, C#, or Clojure, and each task in a workflow can use a different language. Workers talk to Conductor over REST or gRPC, so they can run in containers, VMs, serverless functions, or on a laptop.

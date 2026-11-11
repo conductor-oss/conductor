@@ -259,6 +259,88 @@ public class Monitors {
                 .record(count);
     }
 
+    public static void recordNativeFragmentApplied(String workflowName, long taskCount) {
+        distributionSummary("native_fragment_applied", "workflowName", workflowName)
+                .record(taskCount);
+    }
+
+    public static void recordNativeFragmentRejected(String workflowName, String reason) {
+        counter("native_fragment_rejected", "workflowName", workflowName, "reason", reason);
+    }
+
+    /** A continuation handed back to run again; {@code reason} says why. */
+    public static void recordNativeCompletionDeferred(String workflowName, String reason) {
+        counter("native_completion_deferred", "workflowName", workflowName, "reason", reason);
+    }
+
+    public static void recordNativeContinuationLeased(String workflowName, String laneKind) {
+        counter("native_continuation_leased", "workflowName", workflowName, "lane", laneKind);
+    }
+
+    /** A delivered continuation that was not handed to a worker: lock_busy or slot_busy. */
+    public static void recordNativeContinuationNotLeased(String reason) {
+        counter("native_continuation_not_leased", "reason", reason);
+    }
+
+    /** A continuation leased again because its previous lease ran out: a dead or slow worker. */
+    public static void recordNativeLeaseExpired(String workflowName, String laneKind) {
+        counter("native_lease_expired", "workflowName", workflowName, "lane", laneKind);
+    }
+
+    /** From a continuation becoming runnable to a worker taking it, including lost leases. */
+    public static void recordNativeContinuationQueueWait(
+            String workflowName, String laneKind, long millis) {
+        getTimer("native_continuation_queue_wait", "workflowName", workflowName, "lane", laneKind)
+                .record(millis, TimeUnit.MILLISECONDS);
+    }
+
+    /** From lease to completion; {@code outcome} is applied, rejected or a deferral reason. */
+    public static void recordNativeContinuationRun(
+            String workflowName, String laneKind, String outcome, long millis) {
+        getTimer(
+                        "native_continuation_run",
+                        "workflowName",
+                        workflowName,
+                        "lane",
+                        laneKind,
+                        "outcome",
+                        outcome)
+                .record(millis, TimeUnit.MILLISECONDS);
+    }
+
+    /** An execution became held: its code no longer matches its recording. Once per hold. */
+    public static void recordNativeExecutionHeld(String workflowName) {
+        counter("native_execution_held", "workflowName", workflowName);
+    }
+
+    /** A hold ended: {@code outcome} is resumed, or the status the execution ended with. */
+    public static void recordNativeExecutionHoldEnded(String workflowName, String outcome) {
+        counter("native_execution_hold_ended", "workflowName", workflowName, "outcome", outcome);
+    }
+
+    /**
+     * How long an execution has been held, recorded on every retry (at least once a minute while a
+     * worker is polling) and when the hold ends. The timer's maximum is the oldest hold.
+     */
+    public static void recordNativeExecutionHeldAge(String workflowName, long millis) {
+        getTimer("native_execution_held_age", "workflowName", workflowName)
+                .record(millis, TimeUnit.MILLISECONDS);
+    }
+
+    public static void recordNativeHandlerMessages(String workflowName, long count) {
+        distributionSummary("native_handler_messages", "workflowName", workflowName).record(count);
+    }
+
+    public static void recordNativeStaleCompletion(String workflowName) {
+        counter("native_stale_completion", "workflowName", workflowName);
+    }
+
+    public static void recordWorkflowMessagesDiscarded(String workflowName, long count) {
+        counter("workflow_messages_discarded", "workflowName", workflowName);
+        distributionSummary("workflow_messages_discarded_count", "workflowName", workflowName)
+                .record(count);
+    }
+
     public static void recordTaskTimeout(String taskType) {
         counter("task_timeout", "taskType", taskType);
     }

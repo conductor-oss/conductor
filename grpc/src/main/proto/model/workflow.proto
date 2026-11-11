@@ -3,6 +3,7 @@ package conductor.proto;
 
 import "model/workflowdef.proto";
 import "model/task.proto";
+import "model/nativestate.proto";
 import "google/protobuf/struct.proto";
 
 option java_package = "com.netflix.conductor.proto";
@@ -40,4 +41,5 @@ message Workflow {
     int64 last_retried_time = 24;
     repeated string failed_task_names = 25;
     repeated Workflow history = 26;
+    NativeState native_state = 27;
 }

@@ -32,11 +32,12 @@ This page defines exactly what happens when things go wrong in an agent workflow
   "retryCount": 3,
   "retryLogic": "EXPONENTIAL_BACKOFF",
   "retryDelaySeconds": 5,
-  "responseTimeoutSeconds": 60
+  "responseTimeoutSeconds": 60,
+  "timeoutPolicy": "RETRY"
 }
 ```
 
-This retries the LLM call up to 3 times with exponential backoff (5s, 10s, 20s). If the LLM doesn't respond within 60 seconds, the task times out and retries.
+This retries the LLM call up to 3 times with exponential backoff (5s, 10s, 20s). If the task is not updated within 60 seconds, the task times out and, because `timeoutPolicy` is `RETRY`, is retried like any failed attempt. Under the default `timeoutPolicy` (`TIME_OUT_WF`), the response timeout would time the workflow out instead.
 
 
 ## LLM returns malformed output
@@ -75,8 +76,8 @@ If validation fails, use a `SWITCH` to re-run the LLM with a corrective prompt, 
 
 **What happens:**
 
-1. `responseTimeoutSeconds` fires. The task moves to `TIMED_OUT`.
-2. If retries are configured, the task is retried. A new request is sent to the tool.
+1. `responseTimeoutSeconds` fires and the task's `timeoutPolicy` applies. Under `RETRY` and `TIME_OUT_WF` (the default), the task moves to `TIMED_OUT`. Under `ALERT_ONLY`, the timeout is only logged and counted and the task stays `IN_PROGRESS`.
+2. Under `RETRY`, the task is retried while `retryCount` allows. A new request is sent to the tool. Under `TIME_OUT_WF`, the workflow moves to `TIMED_OUT` and nothing is retried.
 3. The original (timed-out) request may still be in flight. The tool may eventually process it.
 
 **Critical implication:** The tool call may execute more than once. **Tool workers and MCP tools should be idempotent.** Use the task's `taskId` or a correlation ID as an idempotency key.
@@ -92,7 +93,7 @@ If validation fails, use a `SWITCH` to re-run the LLM with a corrective prompt, 
 
 1. The worker polls the task, begins execution, and sends the email.
 2. The worker crashes before calling `POST /api/tasks` to report completion.
-3. `responseTimeoutSeconds` fires. The task moves to `TIMED_OUT`, then `SCHEDULED` (retry).
+3. `responseTimeoutSeconds` fires. The task moves to `TIMED_OUT` and, with `timeoutPolicy: RETRY`, a new attempt is `SCHEDULED`. (Under the default `TIME_OUT_WF`, the workflow times out here instead.)
 4. A new worker picks up the task and sends the email again.
 
 **This is at-least-once delivery.** Conductor guarantees the task will execute at least once, but it may execute more than once if the worker fails after performing side effects.
@@ -195,8 +196,8 @@ Running executions are **not affected**. Each execution uses an immutable snapsh
 **What happens:**
 
 1. Old workers are shut down. Tasks they were processing are abandoned.
-2. `responseTimeoutSeconds` fires for abandoned tasks. Tasks move to `TIMED_OUT`, then `SCHEDULED` (retry).
-3. New worker instances poll for tasks and pick up the requeued tasks.
+2. `responseTimeoutSeconds` fires for abandoned tasks. Tasks move to `TIMED_OUT` and, with `timeoutPolicy: RETRY`, a new attempt is `SCHEDULED`. Under the default `TIME_OUT_WF`, the workflow times out instead.
+3. New worker instances poll for tasks and pick up the retried tasks.
 4. Execution continues.
 
 **Window of vulnerability:** The time between old worker shutdown and `responseTimeoutSeconds` firing. During this window, the task appears `IN_PROGRESS` but no worker is processing it.
@@ -204,10 +205,11 @@ Running executions are **not affected**. Each execution uses an immutable snapsh
 **How to minimize impact:**
 
 - Keep `responseTimeoutSeconds` short (10-60 seconds for most tasks).
+- Set `timeoutPolicy: RETRY` (with `retryCount` > 0) on tasks that should survive a worker deploy, so an abandoned task is retried rather than timing the workflow out.
 - Use graceful shutdown in your workers — complete in-progress tasks before stopping.
 - For the Conductor server itself: the sweeper service re-evaluates in-progress workflows on startup and requeues stalled tasks.
 
-**What is never lost:** Completed task outputs. The workflow state. The execution history. Only the in-progress task is affected, and it is automatically retried.
+**What is never lost:** Completed task outputs. The workflow state. The execution history. Only the in-progress task is affected, and with `timeoutPolicy: RETRY` it is automatically retried.
 
 
 ## Dynamic task type no longer exists
@@ -230,7 +232,7 @@ The `DYNAMIC` task fails with a resolution error — the specified task type can
 1. The worker completes the LLM call and receives the response.
 2. The worker attempts to report `COMPLETED` to the server. The request fails due to the network partition.
 3. The worker retries the status update (SDK-level retry).
-4. If the partition persists longer than `responseTimeoutSeconds`, the server marks the task as `TIMED_OUT` and requeues it.
+4. If the partition persists longer than `responseTimeoutSeconds`, the server marks the task as `TIMED_OUT`. With `timeoutPolicy: RETRY`, it schedules a new attempt; under the default `TIME_OUT_WF`, it times the workflow out.
 5. When the partition heals, a worker (possibly the same one) picks up the task and re-executes the LLM call.
 
 **Tokens are consumed twice in this scenario.** The original LLM call succeeded but the result was lost. This is the cost of at-least-once delivery. For long-running or expensive LLM calls, consider implementing client-side caching in your worker to avoid re-execution.
@@ -261,15 +263,15 @@ This is a normal operating mode for Conductor. The workflow stays `RUNNING` with
 |---------|--------------------|--------------------|
 | LLM call fails | Retries with configured backoff | Set retry policy on task definition |
 | LLM returns bad output | Downstream task fails on input resolution | Add a validation step after LLM calls |
-| Tool call times out | Retries after `responseTimeoutSeconds` | Make tools idempotent |
-| Tool call has side effects, then crashes | Retries — side effect may execute twice | Use idempotency keys |
+| Tool call times out | Applies `timeoutPolicy` after `responseTimeoutSeconds`: retries under `RETRY`, times the workflow out under `TIME_OUT_WF` (default) | Set `timeoutPolicy: RETRY`; make tools idempotent |
+| Tool call has side effects, then crashes | Retries after response timeout (with `timeoutPolicy: RETRY`) — side effect may execute twice | Use idempotency keys |
 | Human never responds | Task stays `IN_PROGRESS` forever | Set `timeoutSeconds` or build escalation |
 | Duplicate callback | Second call rejected, no duplicate execution | Safe by default |
 | FORK branch fails | JOIN waits for all branches; workflow fails if branch exhausts retries | Configure retry policies per branch |
 | Definition changes while running | Running executions unaffected (snapshot) | Use restart to apply new definitions |
-| Worker deploy | In-flight tasks requeued after response timeout | Keep response timeouts short; use graceful shutdown |
+| Worker deploy | In-flight tasks retried after response timeout (with `timeoutPolicy: RETRY`) | Set `timeoutPolicy: RETRY`; keep response timeouts short; use graceful shutdown |
 | Dynamic task doesn't exist | Task fails, retries | Validate LLM output before DYNAMIC resolution |
-| Network partition | Task requeued after timeout, may re-execute | Make workers idempotent; consider client-side caching |
+| Network partition | Task retried after response timeout (with `timeoutPolicy: RETRY`), may re-execute | Make workers idempotent; consider client-side caching |
 | Multi-day execution | Normal operation, fully durable | Offload large payloads; set appropriate timeouts |
 
 ## Retrying an adaptive loop

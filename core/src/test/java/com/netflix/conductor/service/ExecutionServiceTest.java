@@ -50,6 +50,7 @@ import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -86,6 +87,7 @@ public class ExecutionServiceTest {
         when(conductorProperties.getTaskExecutionPostponeDuration())
                 .thenReturn(Duration.ofSeconds(60));
         when(parametersUtils.substituteSecrets(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(executionDAOFacade.updateTaskIfStatus(any(), any())).thenReturn(true);
         executionService =
                 new ExecutionService(
                         workflowExecutor,
@@ -385,6 +387,26 @@ public class ExecutionServiceTest {
         // Assert: null returned, no ack called
         assertNull(result);
         verify(queueDAO, times(0)).ack(anyString(), anyString());
+    }
+
+    @Test
+    public void testPollDoesNotHandOutATaskThatChangedSinceItWasRead() {
+        // DECIDER_BUGS item 7: the workflow ended and cancelled the task between the poll's read
+        // and its write; the write is refused, so the cancellation stands
+        String taskId = "task-1";
+        TaskModel taskModel = new TaskModel();
+        taskModel.setTaskId(taskId);
+        taskModel.setTaskType("t");
+        taskModel.setStatus(TaskModel.Status.SCHEDULED);
+        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of(taskId));
+        when(executionDAOFacade.getTaskModel(taskId)).thenReturn(taskModel);
+        when(executionDAOFacade.updateTaskIfStatus(taskModel, TaskModel.Status.SCHEDULED))
+                .thenReturn(false);
+
+        List<Task> polled = executionService.poll("t", "worker", null, 1, 100);
+
+        assertTrue(polled.isEmpty());
+        verify(queueDAO).remove(anyString(), eq(taskId));
     }
 
     @Test

@@ -82,6 +82,37 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
+    public void testUpdateTaskIfStatusNeverOverwritesAChangedStatus() {
+        TaskModel task = new TaskModel();
+        task.setScheduledTime(1L);
+        task.setSeq(1);
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setTaskDefName("task1");
+        task.setReferenceTaskName("ref1");
+        task.setWorkflowInstanceId(UUID.randomUUID().toString());
+        task.setStatus(TaskModel.Status.SCHEDULED);
+        getExecutionDAO().createTasks(Collections.singletonList(task));
+
+        // a poll read it SCHEDULED; meanwhile its workflow ended and cancelled it
+        TaskModel cancelled = getExecutionDAO().getTask(task.getTaskId());
+        cancelled.setStatus(TaskModel.Status.CANCELED);
+        getExecutionDAO().updateTask(cancelled);
+
+        TaskModel polled = getExecutionDAO().getTask(task.getTaskId());
+        polled.setStatus(TaskModel.Status.IN_PROGRESS);
+        assertFalse(getExecutionDAO().updateTaskIfStatus(polled, TaskModel.Status.SCHEDULED));
+        assertEquals(
+                TaskModel.Status.CANCELED,
+                getExecutionDAO().getTask(task.getTaskId()).getStatus());
+
+        // a task still as it was read is updated
+        assertTrue(getExecutionDAO().updateTaskIfStatus(polled, TaskModel.Status.CANCELED));
+        assertEquals(
+                TaskModel.Status.IN_PROGRESS,
+                getExecutionDAO().getTask(task.getTaskId()).getStatus());
+    }
+
+    @Test
     public void testCreateTaskException() {
         TaskModel task = new TaskModel();
         task.setScheduledTime(1L);

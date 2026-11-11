@@ -23,6 +23,8 @@ import {
   StatusMap,
   TypeStatusMap,
 } from "./StatusMapTypes";
+import { canBeHeld, heldReasonOfMarker } from "../held";
+import { codeLoopStatus, groupCodeLoops, isCodeLoop } from "./codeLoops";
 import { detachedTasksByParent } from "./detachedTasks";
 import { TaskDefExecutionContext, WorkflowDefExecutionContext } from "./types";
 
@@ -134,13 +136,37 @@ const entireCollapsedStatus = (
   }
 };
 
+/** Where held code would continue: a pseudo step drawn right after the task it paused on. */
+const withHeldSteps = (
+  tasks: TaskDefExecutionContext[],
+): TaskDefExecutionContext[] =>
+  tasks.flatMap((task) =>
+    task.executionData?.held
+      ? [
+          task,
+          {
+            name: "Waiting for compatible code",
+            taskReferenceName: `${task.taskReferenceName}__held`,
+            type: TaskType.HELD_STEP,
+            executionData: {
+              status: TaskStatus.IN_PROGRESS,
+              executed: false,
+              attempts: 0,
+              held: task.executionData.held,
+              pausedOn: task.taskReferenceName,
+            },
+          } as TaskDefExecutionContext,
+        ]
+      : [task],
+  );
+
 export const taskStatusUpdater = (
   tasks: TaskDef[] = [],
   statusMap: StatusMap,
   expandDynamic: string[],
   sideTasks: Record<string, ExecutionTask[]> = {},
 ): TaskDefExecutionContext[] => {
-  return tasks.map((task) => {
+  const updated = tasks.map((task) => {
     const { type, taskReferenceName } = task;
     const executionTask = statusMap[taskReferenceName];
 
@@ -159,6 +185,7 @@ export const taskStatusUpdater = (
       outputData: executionTask?.outputData,
       parentLoop: executionTask?.parentLoop,
       sideTasks: sideTasks[taskReferenceName],
+      held: heldReasonOfMarker(executionTask?.continuation),
     };
 
     if (type === TaskType.FORK_JOIN) {
@@ -189,15 +216,18 @@ export const taskStatusUpdater = (
         executionData,
       } as TaskDefExecutionContext;
     } else if (type === TaskType.DO_WHILE) {
+      const loopOver = taskStatusUpdater(
+        task.loopOver!,
+        statusMap,
+        expandDynamic,
+        sideTasks,
+      );
       return {
         ...task,
-        loopOver: taskStatusUpdater(
-          task.loopOver!,
-          statusMap,
-          expandDynamic,
-          sideTasks,
-        ),
-        executionData,
+        loopOver,
+        executionData: isCodeLoop(task)
+          ? { ...executionData, status: codeLoopStatus(loopOver) }
+          : executionData,
       } as TaskDefExecutionContext;
     } else if (
       type === TaskType.FORK_JOIN_DYNAMIC &&
@@ -293,6 +323,7 @@ export const taskStatusUpdater = (
       executionData,
     } as TaskDefExecutionContext;
   });
+  return withHeldSteps(updated);
 };
 
 const getTasksOfCurrentIteration = (
@@ -443,8 +474,13 @@ export const executionToWorkflowDef = (
     {
       ...execution.workflowDefinition,
       tasks: taskStatusUpdater(
-        execution.workflowDefinition.tasks,
-        taskExecutionMap,
+        groupCodeLoops(execution.workflowDefinition.tasks),
+        canBeHeld(execution)
+          ? taskExecutionMap
+          : (_mapValues(taskExecutionMap, (task) => ({
+              ...task,
+              continuation: undefined,
+            })) as StatusMap),
         expandDynamic,
         detachedTasksByParent(execution.tasks, execution.workflowDefinition),
       ),

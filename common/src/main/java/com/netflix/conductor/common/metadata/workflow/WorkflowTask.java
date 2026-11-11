@@ -644,7 +644,12 @@ public class WorkflowTask {
         this.metadata = metadata != null ? metadata : new HashMap<>();
     }
 
-    private Collection<List<WorkflowTask>> children() {
+    /**
+     * The live child lists of this task: fork branches, decision cases with the default case, or
+     * the loop body. Package-private so that {@link WorkflowDef} can modify a nested list in place
+     * when a native workflow's definition grows at run time.
+     */
+    Collection<List<WorkflowTask>> children() {
         Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
 
         switch (TaskType.of(type)) {

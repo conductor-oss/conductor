@@ -172,6 +172,7 @@ public class TestWorkflowExecutor {
         taskStatusListener = mock(TaskStatusListener.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         executionLockService = mock(ExecutionLockService.class);
+        when(executionDAOFacade.updateTaskIfStatus(any(), any())).thenReturn(true);
 
         ParametersUtils parametersUtils = new ParametersUtils(objectMapper);
         IDGenerator idGenerator = new IDGenerator();
@@ -195,7 +196,11 @@ public class TestWorkflowExecutor {
         taskMappers.put(
                 SUB_WORKFLOW.name(), new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
-        taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
+        taskMappers.put(
+                WAIT.name(),
+                new WaitTaskMapper(
+                        parametersUtils,
+                        new com.netflix.conductor.core.config.ConductorProperties()));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(LAMBDA.name(), new LambdaTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
@@ -207,6 +212,11 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
+                        new NativeContinuationService(
+                                objectMapper,
+                                new ConductorProperties(),
+                                new MetadataMapperService(metadataDAO),
+                                taskMappers),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -404,6 +414,151 @@ public class TestWorkflowExecutor {
                 .when(queueDAO)
                 .push(anyString(), anyString(), anyInt(), anyLong());
         assertFalse(workflowExecutor.scheduleTask(workflow, tasks));
+    }
+
+    @Test
+    public void anOpenContinuationReplacesALongerDeciderPostpone() {
+        // an earlier decide postponed the workflow by an hour; a continuation is now runnable, and
+        // the next decide must come soon enough to move it off a worker that has gone
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-postpone");
+        def.setSchemaVersion(2);
+        def.getMetadata()
+                .put("native", Map.of("protocol", 2, "codeType", "native-postpone.v1.code"));
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("t0");
+        entry.setType("SIMPLE");
+        entry.setTaskReferenceName("t0");
+        entry.getMetadata().put("lane", "main");
+        def.getTasks().add(entry);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-postpone-1");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.getNativeState().setCodeType("native-postpone.v1.code");
+        TaskModel task = new TaskModel();
+        task.setTaskId("t0-id");
+        task.setReferenceTaskName("t0");
+        task.setTaskType("t0");
+        task.setWorkflowTask(entry);
+        task.setWorkflowInstanceId("native-postpone-1");
+        task.setStatus(TaskModel.Status.COMPLETED);
+        task.setExecuted(true);
+        com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
+        marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.RUNNABLE);
+        task.setContinuation(marker);
+        workflow.getTasks().add(task);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        workflowExecutor.decide("native-postpone-1");
+
+        verify(queueDAO).setUnackTimeoutIfShorter(DECIDER_QUEUE, "native-postpone-1", 30_000L);
+    }
+
+    @Test
+    public void aContinuationCompletionAppendsTheFragmentAndSavesTheWorkflowFirst() {
+        // The code paused on task t0 (its marker is leased); its completion arrives through the
+        // ordinary task update with the next piece of the definition in the output.
+        when(metadataDAO.getTaskDef(anyString()))
+                .thenAnswer(
+                        i ->
+                                new com.netflix.conductor.common.metadata.tasks.TaskDef(
+                                        i.getArgument(0)));
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-order");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("protocol", 2, "codeType", "native-order.v1.code"));
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("t0");
+        entry.setType("SIMPLE");
+        entry.setTaskReferenceName("t0");
+        entry.getMetadata().put("lane", "main");
+        def.getTasks().add(entry);
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-1");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.getNativeState().setCodeType("native-order.v1.code");
+        workflow.getNativeState().setActiveContinuation("t0-id");
+        TaskModel awaited = new TaskModel();
+        awaited.setTaskId("t0-id");
+        awaited.setReferenceTaskName("t0");
+        awaited.setTaskType("t0");
+        awaited.setWorkflowTask(entry);
+        awaited.setWorkflowInstanceId("native-1");
+        awaited.setStatus(TaskModel.Status.COMPLETED);
+        awaited.setExecuted(true);
+        com.netflix.conductor.common.metadata.tasks.TaskContinuation marker =
+                new com.netflix.conductor.common.metadata.tasks.TaskContinuation("main", 2);
+        marker.setState(com.netflix.conductor.common.metadata.tasks.TaskContinuation.LEASED);
+        marker.setEpoch(4);
+        marker.setQueue("native-order.v1.code:w1");
+        awaited.setContinuation(marker);
+        workflow.getTasks().add(awaited);
+
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel("t0-id")).thenReturn(awaited);
+        when(executionDAOFacade.getTask("t0-id")).thenReturn(awaited.toTask());
+        List<String> writes = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            WorkflowModel w = i.getArgument(0);
+                            writes.add(
+                                    "workflow:" + w.getWorkflowDefinition().containsTaskRef("t1"));
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateWorkflow(any());
+        doAnswer(
+                        i -> {
+                            writes.add("tasks");
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        TaskResult result = new TaskResult();
+        result.setWorkflowInstanceId("native-1");
+        result.setTaskId("t0-id");
+        result.setWorkerId("w1");
+        result.setStatus(TaskResult.Status.COMPLETED);
+        result.getOutputData().put("protocol", 2);
+        result.getOutputData().put("n", 2);
+        result.getOutputData().put("epoch", 4L);
+        result.getOutputData()
+                .put(
+                        "fragment",
+                        List.of(
+                                Map.of(
+                                        "name", "t1",
+                                        "taskReferenceName", "t1",
+                                        "type", "SIMPLE",
+                                        "metadata",
+                                                Map.of(
+                                                        "lane",
+                                                        "main",
+                                                        "continuation",
+                                                        Map.of("lane", "main", "n", 3)))));
+        workflowExecutor.updateTask(result);
+
+        assertTrue(writes.toString(), writes.indexOf("workflow:true") >= 0);
+        assertTrue(writes.toString(), writes.indexOf("workflow:true") < writes.indexOf("tasks"));
+        assertTrue(marker.isApplied());
+        // the decide that follows re-evaluates t0 and schedules the appended t1 after it
+        assertTrue(awaited.isExecuted());
+        assertTrue(
+                workflow.getTasks().stream().anyMatch(t -> "t1".equals(t.getReferenceTaskName())));
+        assertEquals(
+                TaskModel.Status.COMPLETED, awaited.getStatus()); // the task's own result stands
+        verify(queueDAO).remove("native-order.v1.code:w1", "t0-id");
     }
 
     @Test
@@ -1029,6 +1184,124 @@ public class TestWorkflowExecutor {
         verify(executionDAOFacade).createWorkflow(any());
         verify(executionDAOFacade, never()).getWorkflowModel("new-workflow-id", false);
         verify(executionLockService, atLeastOnce()).releaseLock("new-workflow-id");
+    }
+
+    /**
+     * A workflow that was written is not deleted when a later step of the start fails (Jepsen's
+     * "lost workflows"): it stays queued for the sweeper, and the start reports it.
+     */
+    @Test
+    public void startDoesNotDeleteAWorkflowItCreatedWhenALaterStepFails() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("kept-workflow");
+        workflowDef.setVersion(1);
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("kept-workflow-id");
+
+        when(executionLockService.acquireLock("kept-workflow-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("kept-workflow-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        org.mockito.Mockito.doThrow(new RuntimeException("database hiccup"))
+                .when(executionDAOFacade)
+                .populateWorkflowAndTaskPayloadData(any());
+
+        WorkflowModel created = workflowExecutor.startWorkflowIdempotent(input);
+
+        assertEquals("kept-workflow-id", created.getWorkflowId());
+        verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+    }
+
+    @Test
+    public void startDoesNotDeleteWhenWritingTheWorkflowFails() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("ambiguous-workflow");
+        workflowDef.setVersion(1);
+        StartWorkflowInput input = new StartWorkflowInput();
+        input.setWorkflowDefinition(workflowDef);
+        input.setName(workflowDef.getName());
+        input.setVersion(workflowDef.getVersion());
+        input.setWorkflowInput(Collections.emptyMap());
+        input.setWorkflowId("ambiguous-id");
+
+        when(executionLockService.acquireLock("ambiguous-id")).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModelFromExecutionDAO("ambiguous-id", false))
+                .thenThrow(new NotFoundException("missing"));
+        org.mockito.Mockito.doThrow(new RuntimeException("connection reset"))
+                .when(executionDAOFacade)
+                .createWorkflow(any());
+
+        try {
+            workflowExecutor.startWorkflowIdempotent(input);
+            fail("the start's outcome is indefinite and must be reported as an error");
+        } catch (RuntimeException expected) {
+            // indefinite: the row may or may not exist
+        }
+        verify(executionDAOFacade, never()).removeWorkflow(anyString(), anyBoolean());
+    }
+
+    @Test
+    public void aNativeTaskUpdateTakesNoLockAndIsSavedOnlyIfTheTaskIsAsRead() {
+        // Found by the durability bench: a late completion overwrote a timeout that decide had
+        // just applied, so a superseded attempt counted as completed next to its retry. The
+        // update is saved only if the task is still as it was read.
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("wf-n");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-lock");
+        workflow.setWorkflowDefinition(def);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        TaskModel task = new TaskModel();
+        task.setTaskId("t-1");
+        task.setTaskType("step");
+        task.setReferenceTaskName("step");
+        task.setWorkflowInstanceId("wf-n");
+        task.setStatus(TaskModel.Status.IN_PROGRESS);
+        when(executionDAOFacade.getTaskModel("t-1")).thenReturn(task);
+        when(executionDAOFacade.updateTaskIfStatus(task, TaskModel.Status.IN_PROGRESS))
+                .thenReturn(false);
+
+        TaskResult result = new TaskResult();
+        result.setTaskId("t-1");
+        result.setWorkflowInstanceId("wf-n");
+        result.setStatus(TaskResult.Status.COMPLETED);
+        workflowExecutor.updateTask(result);
+
+        verify(executionDAOFacade).updateTaskIfStatus(task, TaskModel.Status.IN_PROGRESS);
+        verify(executionDAOFacade, never()).updateTask(any());
+        verify(executionLockService, never()).acquireLock(anyString());
+    }
+
+    @Test
+    public void classifiesStorageOutagesAsTransient() {
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new com.netflix.conductor.core.exception.NonTransientException(
+                                "wrapped",
+                                new java.sql.SQLException("connection refused", "08001"))));
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(
+                                new java.sql.SQLException("deadlock detected", "40P01"))));
+        assertTrue(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(
+                                new java.sql.SQLException("terminating connection", "57P01"))));
+        assertTrue( // HikariCP, no SQL state
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new com.netflix.conductor.core.exception.NonTransientException(
+                                "Connection is closed",
+                                new java.sql.SQLException("Connection is closed"))));
+        assertFalse(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new RuntimeException(new java.sql.SQLException("syntax error", "42601"))));
+        assertFalse(
+                WorkflowExecutorOps.isTransientStorageFailure(
+                        new IllegalArgumentException("bad task")));
     }
 
     @Test
@@ -1984,6 +2257,458 @@ public class TestWorkflowExecutor {
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
         assertEquals(new HashSet<>(), workflow.getFailedTaskNames());
+    }
+
+    @Test
+    public void testRerunFromATaskInsideACompletedLoopReopensTheLoop() {
+        WorkflowTask body = new WorkflowTask();
+        body.setName("a");
+        body.setTaskReferenceName("a");
+        body.setType(TaskType.SIMPLE.name());
+        WorkflowTask loopEntry = new WorkflowTask();
+        loopEntry.setName("loop");
+        loopEntry.setTaskReferenceName("loop");
+        loopEntry.setType(TaskType.DO_WHILE.name());
+        loopEntry.setLoopOver(List.of(body));
+        WorkflowTask afterEntry = new WorkflowTask();
+        afterEntry.setName("after");
+        afterEntry.setTaskReferenceName("after");
+        afterEntry.setType(TaskType.SIMPLE.name());
+        WorkflowDef def = new WorkflowDef();
+        def.setName("loop_rerun");
+        def.setVersion(1);
+        def.setTasks(new ArrayList<>(List.of(loopEntry, afterEntry)));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("loop-rerun");
+        workflow.setWorkflowDefinition(def);
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+
+        TaskModel loop = new TaskModel();
+        loop.setTaskId("loop-id");
+        loop.setSeq(1);
+        loop.setTaskType(TaskType.TASK_TYPE_DO_WHILE);
+        loop.setReferenceTaskName("loop");
+        loop.setWorkflowTask(loopEntry);
+        loop.setStatus(TaskModel.Status.COMPLETED);
+        loop.setExecuted(true);
+        loop.setEndTime(500);
+        loop.setIteration(3);
+        loop.getOutputData().put("iteration", 3);
+        for (int i = 1; i <= 3; i++) {
+            loop.getOutputData().put(String.valueOf(i), Map.of("a", Map.of("n", i)));
+        }
+        workflow.getTasks().add(loop);
+        for (int i = 1; i <= 3; i++) {
+            TaskModel a = new TaskModel();
+            a.setTaskId("a-" + i);
+            a.setSeq(1 + i);
+            a.setTaskType(TaskType.SIMPLE.name());
+            a.setTaskDefName("a");
+            a.setReferenceTaskName("a__" + i);
+            a.setIteration(i);
+            a.setWorkflowTask(body);
+            a.setStatus(TaskModel.Status.COMPLETED);
+            workflow.getTasks().add(a);
+        }
+        TaskModel after = new TaskModel();
+        after.setTaskId("after-id");
+        after.setSeq(5);
+        after.setTaskType(TaskType.SIMPLE.name());
+        after.setTaskDefName("after");
+        after.setReferenceTaskName("after");
+        after.setWorkflowTask(afterEntry);
+        after.setStatus(TaskModel.Status.COMPLETED);
+        workflow.getTasks().add(after);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(workflow.getWorkflowId());
+        request.setReRunFromTaskId("a-2");
+        workflowExecutor.rerun(request);
+
+        // the rest of iteration 2, iteration 3 and the task after the loop are gone
+        assertEquals(
+                List.of("loop", "a__1", "a__2"),
+                workflow.getTasks().stream().map(TaskModel::getReferenceTaskName).toList());
+        // the loop goes on from iteration 2: it waits for it, then decides by its condition
+        assertEquals(TaskModel.Status.IN_PROGRESS, loop.getStatus());
+        assertEquals(2, loop.getIteration());
+        assertEquals(0, loop.getEndTime());
+        assertFalse(loop.isExecuted());
+        assertEquals(Set.of("iteration", "1"), loop.getOutputData().keySet());
+        assertEquals(2, loop.getOutputData().get("iteration"));
+    }
+
+    private static WorkflowTask simpleEntry(String ref) {
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName(ref);
+        entry.setTaskReferenceName(ref);
+        entry.setType(TaskType.SIMPLE.name());
+        TaskDef taskDef = new TaskDef(ref);
+        taskDef.setRetryCount(0);
+        entry.setTaskDefinition(taskDef);
+        return entry;
+    }
+
+    private static TaskModel ran(WorkflowTask entry, String ref, int seq, TaskModel.Status status) {
+        TaskModel task = new TaskModel();
+        task.setTaskId(ref + "-" + seq);
+        task.setSeq(seq);
+        task.setTaskType(
+                TaskType.FORK_JOIN.name().equals(entry.getType())
+                        ? TaskType.TASK_TYPE_FORK
+                        : entry.getType());
+        task.setTaskDefName(entry.getName());
+        task.setReferenceTaskName(ref);
+        task.setWorkflowTask(entry);
+        task.setStatus(status);
+        task.setExecuted(true);
+        task.setScheduledTime(seq);
+        task.setFirstScheduledTime(seq);
+        task.setEndTime(100 + seq);
+        return task;
+    }
+
+    /** fork of [b1a, b1b] and [b2a, b2b], then a JOIN on b1b and b2b */
+    private WorkflowModel forkOfTwoBranchesOfTwo(String id) {
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork");
+        fork.setTaskReferenceName("fork");
+        fork.setType(TaskType.FORK_JOIN.name());
+        fork.setForkTasks(
+                List.of(
+                        List.of(simpleEntry("b1a"), simpleEntry("b1b")),
+                        List.of(simpleEntry("b2a"), simpleEntry("b2b"))));
+        WorkflowTask join = new WorkflowTask();
+        join.setName("join");
+        join.setTaskReferenceName("join");
+        join.setType(TaskType.JOIN.name());
+        join.setJoinOn(List.of("b1b", "b2b"));
+        WorkflowDef def = new WorkflowDef();
+        def.setName("fork_rerun");
+        def.setVersion(1);
+        def.setTasks(new ArrayList<>(List.of(fork, join)));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(id);
+        workflow.setWorkflowDefinition(def);
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        return workflow;
+    }
+
+    @Test
+    public void testRerunFromABranchSchedulesAgainWhatTheOtherBranchScheduledAfterIt() {
+        WorkflowModel workflow = forkOfTwoBranchesOfTwo("fork-rerun");
+        WorkflowTask fork = workflow.getWorkflowDefinition().getTasks().get(0);
+        WorkflowTask joinEntry = workflow.getWorkflowDefinition().getTasks().get(1);
+        workflow.getTasks().add(ran(fork, "fork", 1, TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(0).get(0), "b1a", 2, TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(1).get(0), "b2a", 3, TaskModel.Status.COMPLETED));
+        TaskModel join = ran(joinEntry, "join", 4, TaskModel.Status.COMPLETED);
+        join.setTaskType(TaskType.TASK_TYPE_JOIN);
+        join.getInputData().put("joinOn", List.of("b1b", "b2b"));
+        workflow.getTasks().add(join);
+        TaskModel b1b =
+                ran(fork.getForkTasks().get(0).get(1), "b1b", 5, TaskModel.Status.COMPLETED);
+        workflow.getTasks().add(b1b);
+        // the other branch's second task was scheduled after b1b
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(1).get(1), "b2b", 6, TaskModel.Status.COMPLETED));
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(workflow.getWorkflowId());
+        request.setReRunFromTaskId(b1b.getTaskId());
+        workflowExecutor.rerun(request);
+
+        // b2b, removed because it was scheduled later, is scheduled again (DECIDER_BUGS item 3)
+        TaskModel b2b = workflow.getTaskByRefName("b2b");
+        assertNotNull(b2b);
+        assertEquals(TaskModel.Status.SCHEDULED, b2b.getStatus());
+        assertNotEquals("b2b-6", b2b.getTaskId());
+        // the JOIN waits again, for b1b's new run and for b2b
+        assertEquals(TaskModel.Status.IN_PROGRESS, join.getStatus());
+        assertFalse(join.isExecuted());
+        assertEquals(TaskModel.Status.SCHEDULED, b1b.getStatus());
+        // a rerun gives the task a fresh total time budget (DECIDER_BUGS item 12)
+        assertTrue(b1b.getFirstScheduledTime() > 1_000);
+        assertEquals(
+                List.of("fork", "b1a", "b2a", "join", "b1b", "b2b"),
+                workflow.getTasks().stream().map(TaskModel::getReferenceTaskName).toList());
+    }
+
+    @Test
+    public void testRerunFromAnAttemptARetryReplacedRerunsFromTheLatestAttempt() {
+        WorkflowModel workflow = forkOfTwoBranchesOfTwo("old-attempt-rerun");
+        WorkflowTask fork = workflow.getWorkflowDefinition().getTasks().get(0);
+        WorkflowTask joinEntry = workflow.getWorkflowDefinition().getTasks().get(1);
+        WorkflowTask b1bEntry = fork.getForkTasks().get(0).get(1);
+        workflow.getTasks().add(ran(fork, "fork", 1, TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(0).get(0), "b1a", 2, TaskModel.Status.COMPLETED));
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(1).get(0), "b2a", 3, TaskModel.Status.COMPLETED));
+        TaskModel join = ran(joinEntry, "join", 4, TaskModel.Status.COMPLETED);
+        join.setTaskType(TaskType.TASK_TYPE_JOIN);
+        join.getInputData().put("joinOn", List.of("b1b", "b2b"));
+        workflow.getTasks().add(join);
+        TaskModel firstAttempt = ran(b1bEntry, "b1b", 5, TaskModel.Status.FAILED);
+        firstAttempt.setExecuted(false);
+        firstAttempt.setRetried(true);
+        workflow.getTasks().add(firstAttempt);
+        workflow.getTasks()
+                .add(ran(fork.getForkTasks().get(1).get(1), "b2b", 6, TaskModel.Status.COMPLETED));
+        TaskModel secondAttempt = ran(b1bEntry, "b1b", 7, TaskModel.Status.COMPLETED);
+        secondAttempt.setRetryCount(1);
+        workflow.getTasks().add(secondAttempt);
+
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(workflow.getWorkflowId());
+        request.setReRunFromTaskId(firstAttempt.getTaskId());
+        workflowExecutor.rerun(request);
+
+        // the rerun starts from the latest attempt; the replaced one stays as it was
+        // (DECIDER_BUGS item 8)
+        assertEquals(TaskModel.Status.SCHEDULED, secondAttempt.getStatus());
+        assertEquals(TaskModel.Status.FAILED, firstAttempt.getStatus());
+        assertTrue(firstAttempt.isRetried());
+        assertEquals(TaskModel.Status.IN_PROGRESS, join.getStatus());
+        // b2b was scheduled before the latest attempt, so it is kept
+        assertEquals(TaskModel.Status.COMPLETED, workflow.getTaskByRefName("b2b").getStatus());
+    }
+
+    @Test
+    public void testAnOptionalTaskThatFailsLastIsSavedAsCompletedWithErrors() {
+        WorkflowTask first = simpleEntry("first");
+        first.setOptional(true);
+        WorkflowTask last = simpleEntry("last");
+        last.setOptional(true);
+        WorkflowDef def = new WorkflowDef();
+        def.setName("optional_last");
+        def.setVersion(1);
+        def.setTasks(new ArrayList<>(List.of(first, last)));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("optional-last");
+        workflow.setCreateTime(1L);
+        workflow.setWorkflowDefinition(def);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.getTasks().add(ran(first, "first", 1, TaskModel.Status.COMPLETED_WITH_ERRORS));
+        TaskModel failed = ran(last, "last", 2, TaskModel.Status.FAILED);
+        failed.setExecuted(false);
+        workflow.getTasks().add(failed);
+
+        when(executionDAOFacade.getWorkflowModel(workflow.getWorkflowId(), true))
+                .thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        assertEquals(WorkflowModel.Status.COMPLETED, workflow.getStatus());
+        assertEquals(TaskModel.Status.COMPLETED_WITH_ERRORS, failed.getStatus());
+        // the change is saved, not only made in memory (DECIDER_BUGS item 1)
+        verify(executionDAOFacade)
+                .updateTasks(
+                        org.mockito.ArgumentMatchers.argThat(
+                                (List<TaskModel> tasks) -> tasks.contains(failed)));
+    }
+
+    private WorkflowModel running(String id, WorkflowTask... tasks) {
+        WorkflowDef def = new WorkflowDef();
+        def.setName(id.replace('-', '_'));
+        def.setVersion(1);
+        def.setTasks(new ArrayList<>(List.of(tasks)));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId(id);
+        workflow.setWorkflowDefinition(def);
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setCreateTime(1L);
+        when(executionDAOFacade.getWorkflowModel(eq(id), anyBoolean())).thenReturn(workflow);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        return workflow;
+    }
+
+    private static TaskModel skipped(String ref) {
+        TaskModel task = new TaskModel();
+        task.setTaskId(ref + "-skipped");
+        task.setReferenceTaskName(ref);
+        task.setTaskType(ref);
+        task.setStatus(TaskModel.Status.SKIPPED);
+        return task;
+    }
+
+    private static List<String> refs(WorkflowModel workflow) {
+        return workflow.getTasks().stream().map(TaskModel::getReferenceTaskName).toList();
+    }
+
+    @Test
+    public void testASkippedFirstTaskOfABranchLetsTheBranchGoOn() {
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork");
+        fork.setTaskReferenceName("fork");
+        fork.setType(TaskType.FORK_JOIN.name());
+        fork.setForkTasks(
+                List.of(List.of(simpleEntry("a"), simpleEntry("b")), List.of(simpleEntry("c"))));
+        WorkflowTask join = new WorkflowTask();
+        join.setName("join");
+        join.setTaskReferenceName("join");
+        join.setType(TaskType.JOIN.name());
+        join.setJoinOn(List.of("b", "c"));
+        WorkflowModel workflow = running("skip-branch-head", fork, join);
+        workflow.getTasks().add(skipped("a"));
+
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        // the skipped task counts as finished when reached: its branch goes on with b
+        // (DECIDER_BUGS item 13)
+        assertEquals(List.of("a", "fork", "b", "c", "join"), refs(workflow));
+        assertEquals(TaskModel.Status.SCHEDULED, workflow.getTaskByRefName("b").getStatus());
+    }
+
+    @Test
+    public void testASkippedFirstTaskOfACaseLetsTheCaseGoOn() {
+        WorkflowTask choose = new WorkflowTask();
+        choose.setName("choose");
+        choose.setTaskReferenceName("choose");
+        choose.setType(TaskType.SWITCH.name());
+        choose.setEvaluatorType("value-param");
+        choose.setExpression("pick");
+        choose.getInputParameters().put("pick", "x");
+        choose.setDecisionCases(Map.of("x", List.of(simpleEntry("a"), simpleEntry("b"))));
+        WorkflowModel workflow = running("skip-case-head", choose, simpleEntry("after"));
+        workflow.getTasks().add(skipped("a"));
+
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        assertTrue(refs(workflow).contains("b"));
+        assertEquals(TaskModel.Status.SCHEDULED, workflow.getTaskByRefName("b").getStatus());
+        assertFalse(refs(workflow).contains("after"));
+    }
+
+    @Test
+    public void testSkippingAForkSkipsItsJoinAndTheFlowGoesOnAfterIt() {
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("fork");
+        fork.setTaskReferenceName("fork");
+        fork.setType(TaskType.FORK_JOIN.name());
+        fork.setForkTasks(List.of(List.of(simpleEntry("a")), List.of(simpleEntry("b"))));
+        WorkflowTask join = new WorkflowTask();
+        join.setName("join");
+        join.setTaskReferenceName("join");
+        join.setType(TaskType.JOIN.name());
+        join.setJoinOn(List.of("a", "b"));
+        WorkflowModel workflow =
+                running("skip-fork", simpleEntry("pre"), fork, join, simpleEntry("after"));
+        TaskModel pre = ran(simpleEntry("pre"), "pre", 1, TaskModel.Status.IN_PROGRESS);
+        pre.setExecuted(false);
+        pre.setStartTime(System.currentTimeMillis());
+        pre.setUpdateTime(System.currentTimeMillis());
+        pre.setEndTime(0);
+        workflow.getTasks().add(pre);
+
+        workflowExecutor.skipTaskFromWorkflow(workflow.getWorkflowId(), "fork", null);
+
+        org.mockito.ArgumentCaptor<List<TaskModel>> created =
+                org.mockito.ArgumentCaptor.forClass(List.class);
+        verify(executionDAOFacade).createTasks(created.capture());
+        assertEquals(
+                List.of("fork", "join"),
+                created.getValue().stream().map(TaskModel::getReferenceTaskName).toList());
+        assertTrue(
+                created.getValue().stream()
+                        .allMatch(t -> t.getStatus() == TaskModel.Status.SKIPPED));
+
+        // once pre finishes, the flow goes on after the JOIN, not to a JOIN waiting alone
+        workflow.getTasks().addAll(created.getValue());
+        pre.setStatus(TaskModel.Status.COMPLETED);
+        workflowExecutor.decide(workflow.getWorkflowId());
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        assertEquals(List.of("pre", "fork", "join", "after"), refs(workflow));
+    }
+
+    @Test
+    public void testATerminateThatRanEndsTheWorkflowAsItSaysAfterARetry() {
+        WorkflowTask terminate = new WorkflowTask();
+        terminate.setName("stop");
+        terminate.setTaskReferenceName("stop");
+        terminate.setType(TaskType.TERMINATE.name());
+        WorkflowTask joinEntry = new WorkflowTask();
+        joinEntry.setName("join");
+        joinEntry.setTaskReferenceName("join");
+        joinEntry.setType(TaskType.JOIN.name());
+        WorkflowModel workflow = running("terminate-retry", terminate, joinEntry);
+        TaskModel stop = ran(terminate, "stop", 1, TaskModel.Status.COMPLETED);
+        stop.setTaskType(TaskType.TASK_TYPE_TERMINATE);
+        stop.getInputData().put("terminationStatus", "FAILED");
+        workflow.getTasks().add(stop);
+        // what a retry reopens: the JOIN the TERMINATE cancelled, judged again
+        TaskModel join = ran(joinEntry, "join", 2, TaskModel.Status.CANCELED);
+        join.setTaskType(TaskType.TASK_TYPE_JOIN);
+        join.setExecuted(false);
+        workflow.getTasks().add(join);
+
+        workflowExecutor.decide(workflow.getWorkflowId());
+
+        // DECIDER_BUGS item 6: the TERMINATE decides, not the cancelled JOIN
+        assertEquals(WorkflowModel.Status.FAILED, workflow.getStatus());
+    }
+
+    @Test
+    public void testACompletedWorkflowCannotBeRetried() {
+        // a TERMINATE with status COMPLETED ended it and cancelled the other branch's task
+        WorkflowTask entry = simpleEntry("t");
+        WorkflowModel workflow = running("completed-retry", entry);
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        TaskModel cancelled = ran(entry, "t", 1, TaskModel.Status.CANCELED);
+        workflow.getTasks().add(cancelled);
+
+        // DECIDER_BUGS item 11
+        assertThrows(
+                ConflictException.class,
+                () -> workflowExecutor.retry(workflow.getWorkflowId(), false));
+        assertEquals(WorkflowModel.Status.COMPLETED, workflow.getStatus());
+        assertEquals(List.of(cancelled), workflow.getTasks());
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+    }
+
+    @Test
+    public void testAWorkflowThatAlreadyEndedCannotBeTerminated() {
+        // DECIDER_BUGS item 10
+        for (WorkflowModel.Status ended :
+                List.of(WorkflowModel.Status.FAILED, WorkflowModel.Status.TIMED_OUT)) {
+            WorkflowModel workflow = running("ended-" + ended, simpleEntry("t"));
+            workflow.setStatus(ended);
+            workflow.setReasonForIncompletion("card declined");
+
+            assertThrows(
+                    ConflictException.class,
+                    () -> workflowExecutor.terminateWorkflow(workflow.getWorkflowId(), "cleanup"));
+            assertEquals(ended, workflow.getStatus());
+            assertEquals("card declined", workflow.getReasonForIncompletion());
+        }
+        verify(executionDAOFacade, never()).updateWorkflow(any(WorkflowModel.class));
+    }
+
+    @Test
+    public void testAnOperatorRetryGivesTheTaskAFreshTotalTimeBudget() {
+        WorkflowTask entry = simpleEntry("t");
+        WorkflowModel workflow = running("retry-budget", entry);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        TaskModel failed = ran(entry, "t", 1, TaskModel.Status.FAILED);
+        failed.setFirstScheduledTime(5);
+        workflow.getTasks().add(failed);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(workflow.getWorkflowDefinition()));
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        TaskModel attempt =
+                workflow.getTasks().stream()
+                        .filter(t -> !t.isRetried() && t != failed)
+                        .findFirst()
+                        .orElseThrow();
+        // DECIDER_BUGS item 12
+        assertTrue(attempt.getFirstScheduledTime() > 1_000);
     }
 
     @Test
@@ -3038,7 +3763,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).updateTaskIfStatus(argumentCaptor.capture(), any());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(
                 taskResult.getCallbackAfterSeconds(),
@@ -3077,7 +3802,7 @@ public class TestWorkflowExecutor {
         workflowExecutor.updateTask(taskResult);
         verify(queueDAO, times(1)).postpone(anyString(), anyString(), anyInt(), anyLong());
         ArgumentCaptor<TaskModel> argumentCaptor = ArgumentCaptor.forClass(TaskModel.class);
-        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        verify(executionDAOFacade, times(1)).updateTaskIfStatus(argumentCaptor.capture(), any());
         assertEquals(TaskModel.Status.SCHEDULED, argumentCaptor.getAllValues().get(0).getStatus());
         assertEquals(0, argumentCaptor.getAllValues().get(0).getCallbackAfterSeconds());
         assertEquals(taskResult.getWorkerId(), argumentCaptor.getAllValues().get(0).getWorkerId());

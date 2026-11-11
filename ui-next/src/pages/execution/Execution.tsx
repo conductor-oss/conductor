@@ -2,6 +2,8 @@ import LaunchIcon from "@mui/icons-material/Launch";
 import { Box, Stack, Tooltip } from "@mui/material";
 import { AutoRefreshButton, Button, Heading, LinearProgress } from "components";
 import StatusBadge from "components/StatusBadge";
+import TagChip from "components/ui/TagChip";
+import { heldReason } from "./held";
 import Agent from "components/features/agent/Agent";
 import { AgentDisplayMode } from "components/features/agent/agent-types";
 import {
@@ -556,6 +558,7 @@ export default function Execution() {
               workflowStatus={execution?.status as string}
               doWhileSelection={doWhileSelection}
               workflowDefinition={execution?.workflowDefinition}
+              execution={execution}
             />
           </Box>
         )
@@ -707,6 +710,15 @@ export default function Execution() {
                   <StatusBadge
                     status={execution?.status as unknown as TaskStatus}
                   />
+                  {heldReason(execution) ? (
+                    <Tooltip title={heldReason(execution)}>
+                      <TagChip
+                        style={{ backgroundColor: "#F5BF42" }}
+                        label="Waiting for compatible code"
+                        id="held-chip"
+                      />
+                    </Tooltip>
+                  ) : null}
                 </Stack>
               }
               breadcrumbItems={[

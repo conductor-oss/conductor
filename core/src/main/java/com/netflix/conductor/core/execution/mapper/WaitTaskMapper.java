@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.model.TaskModel;
@@ -47,8 +48,15 @@ public class WaitTaskMapper implements TaskMapper {
 
     private final ParametersUtils parametersUtils;
 
-    public WaitTaskMapper(ParametersUtils parametersUtils) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public WaitTaskMapper(
+            ParametersUtils parametersUtils, Optional<ConductorProperties> properties) {
+        this(parametersUtils, properties.orElse(null));
+    }
+
+    public WaitTaskMapper(ParametersUtils parametersUtils, ConductorProperties properties) {
         this.parametersUtils = parametersUtils;
+        this.properties = properties;
     }
 
     @Override
@@ -80,11 +88,36 @@ public class WaitTaskMapper implements TaskMapper {
             waitTask.setIsolationGroupId(
                     taskMapperContext.getTaskDefinition().getIsolationGroupId());
         }
-        setCallbackAfter(waitTask);
+        setCallbackAfter(waitTask, timeScale(workflowModel));
         return List.of(waitTask);
     }
 
+    private final ConductorProperties properties;
+
+    /**
+     * The execution's time scale for development and tests: WAIT durations are divided by the
+     * {@code __timeScale} workflow variable when {@code
+     * conductor.app.nativeWorkflow.waitTimeScaleEnabled} is true. Production leaves the property
+     * off, so the variable has no effect there.
+     */
+    private double timeScale(WorkflowModel workflow) {
+        if (properties == null || !properties.getNativeWorkflow().isWaitTimeScaleEnabled()) {
+            return 1.0;
+        }
+        Object scale = workflow.getVariables().get(TIME_SCALE_VARIABLE);
+        if (scale instanceof Number && ((Number) scale).doubleValue() > 1.0) {
+            return ((Number) scale).doubleValue();
+        }
+        return 1.0;
+    }
+
+    public static final String TIME_SCALE_VARIABLE = "__timeScale";
+
     void setCallbackAfter(TaskModel task) {
+        setCallbackAfter(task, 1.0);
+    }
+
+    void setCallbackAfter(TaskModel task, double timeScale) {
         String duration =
                 Optional.ofNullable(task.getInputData().get(DURATION_INPUT)).orElse("").toString();
         String until =
@@ -100,6 +133,11 @@ public class WaitTaskMapper implements TaskMapper {
         if (StringUtils.isNotBlank(duration)) {
 
             Duration timeDuration = parseDuration(duration);
+            if (timeScale > 1.0) {
+                // never scale a positive wait down to zero: a zero timeout waits forever
+                long scaled = Math.max(1L, Math.round(timeDuration.getSeconds() / timeScale));
+                timeDuration = Duration.ofSeconds(timeDuration.isZero() ? 0 : scaled);
+            }
             long waitTimeout = System.currentTimeMillis() + (timeDuration.getSeconds() * 1000);
             task.setWaitTimeout(waitTimeout);
             long seconds = timeDuration.getSeconds();
@@ -111,6 +149,10 @@ public class WaitTaskMapper implements TaskMapper {
                 Date expiryDate = parseDate(until);
                 long timeInMS = expiryDate.getTime();
                 long now = System.currentTimeMillis();
+                if (timeScale > 1.0 && timeInMS > now) {
+                    // development only: bring the deadline closer by the time scale, never to now
+                    timeInMS = now + Math.max(1000L, Math.round((timeInMS - now) / timeScale));
+                }
                 long seconds = ((timeInMS - now) / 1000);
                 if (seconds < 0) {
                     seconds = 0;

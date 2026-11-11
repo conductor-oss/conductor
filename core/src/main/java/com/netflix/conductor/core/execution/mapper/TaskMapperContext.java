@@ -116,6 +116,19 @@ public class TaskMapperContext {
         // the following properties are overridden by some TaskMapper implementations
         taskModel.setTaskType(workflowTask.getType());
         taskModel.setTaskDefName(workflowTask.getName());
+        // Native workflows: the entry the code paused on names the continuation that runs when
+        // this task finishes; the marker starts out waiting for the task.
+        Object marker =
+                workflowTask.getMetadata() == null
+                        ? null
+                        : workflowTask.getMetadata().get("continuation");
+        if (marker instanceof Map<?, ?> m
+                && m.get("lane") != null
+                && m.get("n") instanceof Number n) {
+            taskModel.setContinuation(
+                    new com.netflix.conductor.common.metadata.tasks.TaskContinuation(
+                            String.valueOf(m.get("lane")), n.intValue()));
+        }
         return taskModel;
     }
 

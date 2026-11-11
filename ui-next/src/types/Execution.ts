@@ -13,6 +13,10 @@ export type ExecutedData = {
   collapsedTasksStatus?: string[];
   outputData?: Record<string, any>;
   parentLoop?: TaskDef;
+  /** Why native workflow code is held at this task, when it is. */
+  held?: string;
+  /** The task a held step comes after. */
+  pausedOn?: string;
   /**
    * Tasks that ran inside this workflow for this task without being steps of the definition — a
    * guardrail detector, say. Drawn beside the task rather than in the flow, because the workflow
@@ -74,6 +78,44 @@ export interface ExecutionTask<
   workerId?: string;
   correlationId?: string;
   queueWaitTime?: number;
+  /** Native (code-first) workflows: set on a task the workflow code paused on. */
+  continuation?: TaskContinuation;
+}
+
+/**
+ * Where a native workflow's code paused: when the task finishes, the server hands continuation
+ * `n` of `lane` to a host of the code, which appends what the code does next after the task.
+ */
+export interface TaskContinuation {
+  lane: string;
+  n: number;
+  state: "WAITING" | "RUNNABLE" | "LEASED" | "APPLIED";
+  epoch?: number;
+  worker?: string;
+  queuedAt?: number;
+  leasedAt?: number;
+  appliedAt?: number;
+  attempts?: number;
+  deferred?: string;
+  queue?: string;
+  step?: number;
+  done?: boolean;
+  recorded?: Record<string, unknown>;
+  resumedWith?: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  error?: Record<string, unknown>;
+}
+
+/** The engine's state of a native (code-first) workflow execution. */
+export interface NativeState {
+  protocol?: number;
+  codeType?: string;
+  continuationTimeoutSeconds?: number;
+  step?: number;
+  bootstrap?: TaskContinuation;
+  handlers?: TaskContinuation;
+  replies?: Record<string, unknown>;
+  seen?: string[];
 }
 
 // @deprecated use WorkflowExecution instead
@@ -120,6 +162,8 @@ export interface WorkflowExecution {
   idempotencyKey?: string;
   event?: string;
   variables?: Record<string, unknown>;
+  /** Native (code-first) workflows only. */
+  nativeState?: NativeState;
   workflowIntrospection?: WorkflowIntrospectionRecord[];
   aggregateTokenUsage?: {
     promptTokens: number;

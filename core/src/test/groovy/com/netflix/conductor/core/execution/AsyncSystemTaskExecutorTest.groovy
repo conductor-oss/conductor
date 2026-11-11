@@ -303,6 +303,53 @@ class AsyncSystemTaskExecutorTest extends Specification {
         1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
     }
 
+    def "Does not save its copy when another run completed the task meanwhile"() {
+        given: "a server paused mid-run; its reservation lapsed and another run completed the task"
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.IN_PROGRESS, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 120)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+        def completedByTheOtherRun = new com.netflix.conductor.common.metadata.tasks.Task(taskId: taskId,
+                status: com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        1 * workflowSystemTask.execute(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED; true }
+        1 * executionDAOFacade.getTask(taskId) >> completedByTheOtherRun
+        0 * executionDAOFacade.updateTask(_)
+        1 * queueDAO.remove(queueName, taskId)
+    }
+
+    def "Reserves the in-flight message briefly for a task that is safe to re-run"() {
+        given:
+        // e.g. PULL_WORKFLOW_MESSAGES with claims, or JOIN: if this server dies mid-run, another
+        // picks the task up in seconds instead of after the hour-long default (found by the
+        // durability bench on a three-server cluster)
+        String workflowId = "workflowId"
+        String taskId = "taskId"
+        TaskModel task = new TaskModel(taskType: "type1", status: TaskModel.Status.SCHEDULED, taskId: taskId, workflowInstanceId: workflowId,
+                taskDefName: "taskDefName", workflowPriority: 10, responseTimeoutSeconds: 0)
+        WorkflowModel workflow = new WorkflowModel(workflowId: workflowId, status: WorkflowModel.Status.RUNNING)
+        String queueName = QueueUtils.getQueueName(task)
+
+        when:
+        executor.execute(workflowSystemTask, taskId)
+
+        then:
+        _ * workflowSystemTask.isExecuteIdempotent() >> true
+        1 * executionDAOFacade.getTaskModel(taskId) >> task
+        1 * executionDAOFacade.getWorkflowModel(workflowId, true) >> workflow
+        // 2 x systemTaskWorkerCallbackDuration (1s in this spec), not the 3600s default
+        1 * queueDAO.setUnackTimeout(queueName, taskId, 2_000L)
+        1 * workflowSystemTask.start(workflow, task, workflowExecutor) >> { task.status = TaskModel.Status.COMPLETED }
+    }
+
     def "Does not start the task when reserving the in-flight message fails"() {
         given:
         String workflowId = "workflowId"

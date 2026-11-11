@@ -21,7 +21,7 @@ When used with a Static Fork, use these parameters in top level of the Join task
 
 | Parameter          | Type                | Description                                       | Required / Optional  |
 | ------------------ | ------------------- | ------------------------------------------------- | -------------------- |
-| joinOn    | List[String] | (For Static Forks only) A list of task reference names that the Join task will wait for completion before proceeding with the next task. If not specified, the Join will move on to the next task without waiting for any forked tasks to complete. | Optional. |
+| joinOn    | List[String] | (For Static Forks only) A list of task reference names that the Join task will wait for completion before proceeding with the next task. If not specified, the Join will move on to the next task without waiting for any forked tasks to complete. A Switch named here is waited for until the last task of the case it took completes; its output in the Join's output is still the Switch's own. | Optional. |
 
 ## JSON configuration
 

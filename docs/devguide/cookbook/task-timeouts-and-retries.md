@@ -42,7 +42,7 @@ Retries with exponential backoff for a task that calls an external API. The cap 
 
 ### Lease extension for long-running workers
 
-`responseTimeoutSeconds` is the heartbeat window: if the worker doesn't report back within this duration, Conductor marks the task `TIMED_OUT` and retries it. For tasks that take longer than the heartbeat window, workers extend the lease by posting an `IN_PROGRESS` update with `callbackAfterSeconds`.
+`responseTimeoutSeconds` is the heartbeat window: if the worker doesn't report back within this duration, Conductor applies the task's `timeoutPolicy`. With `timeoutPolicy: RETRY` (as in this recipe), it marks the task `TIMED_OUT` and retries it while `retryCount` allows. Under the default `TIME_OUT_WF`, it marks the task `TIMED_OUT` and times the workflow out. For tasks that take longer than the heartbeat window, workers extend the lease by posting an `IN_PROGRESS` update with `callbackAfterSeconds`.
 
 **Task definition**
 
@@ -59,7 +59,7 @@ Retries with exponential backoff for a task that calls an external API. The cap 
 }
 ```
 
-`responseTimeoutSeconds: 30` — Conductor will reschedule the task if the worker is silent for 30 seconds.
+`responseTimeoutSeconds: 30` — Conductor will time the task out if the worker is silent for 30 seconds; `timeoutPolicy: RETRY` makes it schedule a retry.
 `timeoutSeconds: 3600` — the task itself can take up to 1 hour across all heartbeats.
 
 **Worker: extend the lease every 25 seconds**
@@ -99,7 +99,7 @@ def transcode_video(task):
 
 ```
 t=0s   Worker polls task → IN_PROGRESS
-t=30s  responseTimeoutSeconds expires → TIMED_OUT → retry scheduled
+t=30s  responseTimeoutSeconds expires → TIMED_OUT → retry scheduled (timeoutPolicy RETRY)
 t=40s  Worker finishes (too late, task already terminated)
 ```
 
@@ -133,9 +133,9 @@ Use `totalTimeoutSeconds` when you need a guaranteed upper bound on how long a t
 ```
 
 `retryCount: 20` — would normally allow 20 retries.
-`totalTimeoutSeconds: 120` — but if the 2-minute wall-clock budget is consumed first, no more retries are queued and the workflow is failed.
+`totalTimeoutSeconds: 120` — but if the 2-minute wall-clock budget is consumed first, no more retries are queued and, with `timeoutPolicy: TIME_OUT_WF`, the task and the workflow are marked `TIMED_OUT`. The budget runs from when the task was first scheduled and carries across automatic retries. An operator's retry (`POST /api/workflow/{workflowId}/retry`) or a rerun starts the task with a fresh budget.
 
-This is useful for SLA-sensitive tasks where you need to know that, regardless of transient failures, the workflow will either succeed or surface as failed within a bounded time window.
+This is useful for SLA-sensitive tasks where you need to know that, regardless of transient failures, the workflow will either succeed or surface as timed out within a bounded time window.
 
 **Timeline example** (`retryDelaySeconds=5`, `totalTimeoutSeconds=30`):
 
@@ -146,8 +146,8 @@ t=10s  Attempt 3 → FAILED
 t=15s  Attempt 4 → FAILED
 t=20s  Attempt 5 → FAILED
 t=25s  Attempt 6 → FAILED
-t=30s  totalTimeoutSeconds exceeded → workflow FAILED, no more retries
-        (10 retries still remained in retryCount)
+t=30s  totalTimeoutSeconds exceeded → workflow TIMED_OUT, no more retries
+        (most of the 20 retries in retryCount still remained)
 ```
 
 ---
@@ -179,7 +179,7 @@ With `backoffJitterMs: 5000`, 500 tasks that all fail at `t=0` will retry at uni
 | Scenario | Recommended config |
 | :--- | :--- |
 | External API with rate limits | `EXPONENTIAL_BACKOFF` + `maxRetryDelaySeconds` + `backoffJitterMs` |
-| Long-running processing job | `responseTimeoutSeconds` (short) + heartbeats from worker + `timeoutSeconds` (long) |
+| Long-running processing job | `responseTimeoutSeconds` (short) + heartbeats from worker + `timeoutSeconds` (long) + `timeoutPolicy: RETRY` to retry a silent worker |
 | SLA-bounded task | `totalTimeoutSeconds` + `FIXED` or `EXPONENTIAL_BACKOFF` |
 | High fan-out with many concurrent failures | `backoffJitterMs` + `concurrentExecLimit` |
 | Non-retryable error | Return `FAILED_WITH_TERMINAL_ERROR` from the worker |

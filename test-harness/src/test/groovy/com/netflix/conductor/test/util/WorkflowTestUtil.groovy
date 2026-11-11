@@ -100,6 +100,9 @@ class WorkflowTestUtil {
         taskWithResponseTimeOut.retryCount = RETRY_COUNT
         taskWithResponseTimeOut.retryDelaySeconds = 0
         taskWithResponseTimeOut.responseTimeoutSeconds = 10
+        // a response timeout follows the timeout policy: RETRY schedules another attempt (the
+        // default, TIME_OUT_WF, times the workflow out)
+        taskWithResponseTimeOut.timeoutPolicy = TaskDef.TimeoutPolicy.RETRY
         taskWithResponseTimeOut.ownerEmail = DEFAULT_EMAIL_ADDRESS
 
         TaskDef optionalTask = new TaskDef()

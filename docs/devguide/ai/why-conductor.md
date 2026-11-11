@@ -240,8 +240,8 @@ Conductor records task state and exposes retry, timeout, failure-workflow, pause
 
 The guarantees:
 
-- **At-least-once task delivery** — Every task is persisted to durable storage before execution. If a worker crashes, the task is automatically requeued and delivered to another worker. Tasks do not disappear.
-- **Sweeper recovery** — A background sweeper service continuously scans for stalled tasks. If a task is `IN_PROGRESS` but its worker has gone silent (no heartbeat, past `responseTimeoutSeconds`), the sweeper requeues it. If the Conductor server itself restarts, the sweeper recovers all in-flight work on startup.
+- **At-least-once task delivery** — Every task is persisted to durable storage before execution. If a worker crashes, the response timeout fires and the task's `timeoutPolicy` applies: under `RETRY` the task is retried and delivered to another worker; under the default `TIME_OUT_WF` the workflow times out. Tasks do not disappear.
+- **Sweeper recovery** — A background sweeper service continuously scans for stalled tasks. If a task is `IN_PROGRESS` but its worker has gone silent (no heartbeat, past `responseTimeoutSeconds`), the sweeper times it out and applies its `timeoutPolicy`: `RETRY` schedules a new attempt, `TIME_OUT_WF` (the default) times the workflow out, and `ALERT_ONLY` only logs it. If the Conductor server itself restarts, the sweeper recovers all in-flight work on startup.
 - **Configurable retry policies** — Every task has retry count, delay, and backoff strategy. Retries are managed by the engine, not your code. Exponential backoff, fixed delay, and linear backoff are built in.
 - **Failure workflows** — When a workflow fails after exhausting retries, a `failureWorkflow` runs automatically. This is where you put compensation logic: undo API calls, release resources, send alerts. The failure workflow has the full context of what failed and why.
 - **Terminal handling** — Use terminal states, workflow timeouts, and alerts to make the outcome actionable for operators.
@@ -253,18 +253,22 @@ The guarantees:
   "tasks": [
     {
       "name": "risky_action",
+      "taskReferenceName": "risky_action_ref",
       "type": "CALL_MCP_TOOL",
       "retryCount": 5,
-      "retryLogic": "EXPONENTIAL_BACKOFF",
-      "retryDelaySeconds": 10,
-      "responseTimeoutSeconds": 30,
-      "timeoutPolicy": "RETRY"
+      "taskDefinition": {
+        "name": "risky_action",
+        "retryLogic": "EXPONENTIAL_BACKOFF",
+        "retryDelaySeconds": 10,
+        "responseTimeoutSeconds": 30,
+        "timeoutPolicy": "RETRY"
+      }
     }
   ]
 }
 ```
 
-Configure retry and compensation with the idempotency behavior of each external system in mind. The workflow records the outcome and failure path for operators to inspect.
+A workflow task accepts only `retryCount` directly; the other retry and timeout settings must be in a task definition (registered, or embedded with `taskDefinition` as here). See [Embedded task definition](../concepts/tasks.md#embedded-task-definition). Configure retry and compensation with the idempotency behavior of each external system in mind. The workflow records the outcome and failure path for operators to inspect.
 
 
 ## Explicit orchestration, ordinary workers
