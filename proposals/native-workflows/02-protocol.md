@@ -389,7 +389,7 @@ What each SDK call emits (`Replayer`, `Entries`). "pauses" means the entry carri
 
 | SDK call | Fragment entries |
 |---|---|
-| `task(Tasks::task1, a, b)` | `SIMPLE` `task_1` with `inputParameters {a, b}`, `optional: true`; pauses |
+| `tasks.task1(a, b)` on a task stub, or `task(Tasks::task1, a, b)` | `SIMPLE` `task_1` with `inputParameters {a, b}`, `optional: true`; pauses |
 | `task("name")…as(T)` | same, `name` from the call |
 | `once(name, …)`, `now()`, `random()` | nothing; the value goes in the completion's `recorded` under `name`, `now` or `random` (then `now_2`, `random_2`, …) |
 | `async` ×2 then `join` | `FORK_JOIN` `fork` (then `fork_2`, …) with one branch per lane that paused, each branch the lane's entries ending in its marker; lanes that finished contribute their entries before the fork; `JOIN` `fork_join` with `joinOn: []`; the join pauses the lane that called it |
@@ -402,7 +402,7 @@ What each SDK call emits (`Replayer`, `Entries`). "pauses" means the entry carri
 | `startWorkflow(name, v, in)` / `startWorkflow(Other::method, in)` | `START_WORKFLOW`, `optional: true`; no pause; failure visible in the UI only |
 | `sleep(d)`, `sleepUntil(t)` | `WAIT` `sleep` (then `sleep_2`, …) with `duration` in `"1d 2h 3m 4s"` form, or `until`; pauses |
 | `repeatUntil(body, cond, backoff)` | `DO_WHILE` `poll` with `loopCondition` over the check task's output; `loopOver: [INLINE poll_backoff (next duration from the iteration, never zero), WAIT poll_wait duration=${poll_backoff.output.result}, SIMPLE check]`, so the first check happens after one interval; the loop pauses |
-| `forEach(name, items, Tasks::method)` | `DO_WHILE` with `inputParameters._items`, `loopCondition: "true"`, `loopOver: [the task]`; pauses |
+| `forEach(name, items, tasks::method)` on a task stub, or `forEach(name, items, Tasks::method)` | `DO_WHILE` with `inputParameters._items`, `loopCondition: "true"`, `loopOver: [the task]`; pauses |
 | `awaitExternal(ref, T).await(timeout)` | `WAIT` `ref` with `duration` = timeout; completed by `POST /api/tasks/{workflowId}/{ref}/COMPLETED`; pauses |
 | `awaitCondition(cond, timeout)` | `WAIT` `condition` (then `condition_2`, …) with `duration`; the handler lane's completion names it in `releases` when `cond` holds; pauses |
 | `human(ref)…await(T, timeout)` | `HUMAN` `ref` with assignment and form input, `optional: true`, inline `taskDefinition` (`timeoutSeconds` = timeout, `timeoutPolicy: RETRY`, `retryCount: 0`); `TIMED_OUT` becomes an empty `Optional`; pauses |
