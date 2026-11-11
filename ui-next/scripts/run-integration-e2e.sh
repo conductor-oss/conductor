@@ -11,8 +11,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Export keys from .env / .env.local so compose can interpolate OPENAI_API_KEY
-# into conductor-server and playwright (CI/shell exports still win).
+# Export keys from .env / .env.local so compose can interpolate them (e.g.
+# E2E_OPENAI_BASE_URL / OPENAI_API_KEY to opt into real OpenAI instead of the
+# mock-openai stub). CI/shell exports still win.
 load_env_file() {
   local file="$1"
   [[ -f "$file" ]] || return 0
