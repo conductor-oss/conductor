@@ -113,9 +113,6 @@ jobs:
           E2E_COVERAGE: "true"
           # dist/ already built above — skip rebuild inside the wrapper script.
           SKIP_WEBSERVER_BUILD: "true"
-          # Forwarded into docker-compose.integration.yml for LLM task execution;
-          # also gates the LLM "completes successfully" Playwright tests.
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Generate frontend coverage report and enforce threshold
         if: success() || failure()

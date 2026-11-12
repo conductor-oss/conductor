@@ -5,8 +5,9 @@
  * /runAgent page: list → preselect → start. Asserts the UI posts
  * /api/agent/start and surfaces the returned execution id.
  *
- * A second test (skipped without OPENAI_API_KEY) waits for the execution to
- * complete and checks API status/output plus the agent execution detail page.
+ * A second test waits for the execution to complete and checks API
+ * status/output plus the agent execution detail page. The agent's LLM calls go
+ * to the mock-openai stub (e2e/integration/mock-openai), which replies "ok".
  *
  * Requires conductor.integrations.ai.enabled=true on the ui-e2e server
  * (application.properties default) so /api/agent/* is registered.
@@ -26,9 +27,6 @@ const RUN_AGENT_URL = "/runAgent";
 const AGENT_DEFINITION_URL = "/agents";
 const AGENT_EXECUTIONS_URL = "/agentExecutions";
 
-const HAS_OPENAI = Boolean(process.env.OPENAI_API_KEY?.trim());
-const OPENAI_SKIP_REASON =
-  "OPENAI_API_KEY is required to wait for a real agent LLM completion";
 const AGENT_EXECUTION_TIMEOUT_MS = 180_000;
 
 test.beforeAll(async () => {
@@ -104,7 +102,6 @@ test("lists the deployed agent and runs it from the Run Agent page", async ({
 });
 
 test("agent execution completes and results are visible", async ({ page }) => {
-  test.skip(!HAS_OPENAI, OPENAI_SKIP_REASON);
   test.setTimeout(AGENT_EXECUTION_TIMEOUT_MS + 60_000);
 
   const executionId = await startAgentFromUi(

@@ -20,6 +20,7 @@ import { TaskType } from "types/common";
 import _first from "lodash/first";
 import { itemFilterMatcher } from "../helpers";
 import { uniqueTaskIdGenerator } from "../taskGenerator";
+import { getALL_TASKS } from "../supportedTasks";
 
 // Type for raw integration data from API
 interface RawIntegrationData {
@@ -45,16 +46,24 @@ export const persistTaskDefinitions = assign<
   RichAddTaskMenuMachineContext,
   DoneInvokeEvent<TaskDefinition[]>
 >((_context, event) => {
+  // A server may register task definitions for its own system tasks (e.g. a
+  // definition named BUSINESS_RULE). Those already have a dedicated menu entry,
+  // so don't also list them as remote workers.
+  const menuTaskTypes = new Set<string>(
+    getALL_TASKS().map((item) => item.type),
+  );
   return {
     taskDefinitions: event.data,
-    workerMenuItems: event.data.map(
-      (task): BaseTaskMenuItem => ({
-        category: RichAddMenuTabs.WORKERS_TAB,
-        name: task.name,
-        description: task.description,
-        type: TaskType.SIMPLE,
-      }),
-    ),
+    workerMenuItems: event.data
+      .filter((task) => !menuTaskTypes.has(task.name))
+      .map(
+        (task): BaseTaskMenuItem => ({
+          category: RichAddMenuTabs.WORKERS_TAB,
+          name: task.name,
+          description: task.description,
+          type: TaskType.SIMPLE,
+        }),
+      ),
     isTaskDefFetched: true, // FIXME, remove flags.
   };
 });

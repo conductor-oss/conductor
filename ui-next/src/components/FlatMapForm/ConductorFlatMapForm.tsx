@@ -35,6 +35,7 @@ export interface ConductorFlatMapFormProps {
   compact?: boolean;
   emptyListMessage?: ReactNode;
   otherOptions?: string[];
+  keyOptions?: string[];
 }
 
 const ConductorFlatMapFormBase: FunctionComponent<
@@ -63,6 +64,7 @@ const ConductorFlatMapFormBase: FunctionComponent<
   compact,
   emptyListMessage,
   otherOptions = [],
+  keyOptions,
 }: ConductorFlatMapFormProps) => {
   const [valueEntries, entryKeys] = useMemo(() => {
     const entries = Object.entries(value);
@@ -168,6 +170,7 @@ const ConductorFlatMapFormBase: FunctionComponent<
                               )
                             }
                             focusOnField={focusOnField}
+                            keyOptions={keyOptions}
                           />
                         </Grid>,
                       )

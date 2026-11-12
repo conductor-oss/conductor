@@ -7,7 +7,7 @@ import ConductorInput from "components/ui/inputs/ConductorInput";
 import ResetIcon from "components/icons/ResetIcon";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import IdempotencyForm from "pages/runWorkflow/IdempotencyForm";
-import { editor, type EditorOptions } from "shared/editor";
+import { ShowLightbulbIconMode, type EditorOptions } from "shared/editor";
 import { SMALL_EDITOR_DEFAULT_OPTIONS } from "utils/constants";
 import { useLocalStorage } from "utils/localstorage";
 import { ActorRef } from "xstate";
@@ -30,7 +30,7 @@ interface RunWorkFlowFormProps {
 const additionalEditorOptions: EditorOptions = {
   scrollBeyondLastLine: false,
   wrappingStrategy: "advanced",
-  lightbulb: { enabled: editor.ShowLightbulbIconMode.On },
+  lightbulb: { enabled: ShowLightbulbIconMode.On },
   quickSuggestions: true,
   lineNumbers: "on",
   wordWrap: "on",
