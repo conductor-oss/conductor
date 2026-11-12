@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate } from "react-router";
 import { useQueryState } from "react-router-use-location-state";
-import { editor } from "shared/editor";
+import { ShowLightbulbIconMode } from "shared/editor";
 import SectionContainer from "components/ui/layout/SectionContainer";
 import SectionHeader from "components/layout/SectionHeader";
 import { useAuth } from "components/features/auth";
@@ -667,7 +667,7 @@ export function RunWorkflow() {
                           scrollBeyondLastLine: false,
                           wrappingStrategy: "advanced",
                           lightbulb: {
-                            enabled: editor.ShowLightbulbIconMode.On,
+                            enabled: ShowLightbulbIconMode.On,
                           },
                           quickSuggestions: true,
                           lineNumbers: "on",
