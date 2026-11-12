@@ -36,6 +36,7 @@ import {
 } from "utils/workflow";
 import {
   TASK_EXECUTIONS_SEARCH_URL,
+  WORKFLOW_METADATA_LIST_URL,
   WORKFLOW_METADATA_SHORT_URL,
 } from "./constants/api";
 import { HttpStatusCode } from "./constants/httpStatusCode";
@@ -468,6 +469,20 @@ export function useWorkflowDefs(
   const path = classifier
     ? `${WORKFLOW_METADATA_SHORT_URL}&classifier=${classifier}`
     : WORKFLOW_METADATA_SHORT_URL;
+  return useFetch<WorkflowDef[]>(path, {
+    staleTime: DEFAULT_STALE_TIME,
+    ...optionsOverride,
+  });
+}
+
+export function useWorkflowDefListItems(
+  optionsOverride: Partial<UseQueryOptions<WorkflowDef[], FetchError>> = {},
+  classifier?: "workflow" | "agent",
+): UseQueryResult<WorkflowDef[], FetchError> {
+  // New endpoint has no existing query string, so start with `?`
+  const path = classifier
+    ? `${WORKFLOW_METADATA_LIST_URL}?classifier=${classifier}`
+    : WORKFLOW_METADATA_LIST_URL;
   return useFetch<WorkflowDef[]>(path, {
     staleTime: DEFAULT_STALE_TIME,
     ...optionsOverride,
