@@ -25,10 +25,10 @@ import com.netflix.conductor.common.config.TestObjectMapperConfiguration
 
 import com.datastax.driver.core.ConsistencyLevel
 import com.datastax.driver.core.Session
-import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.transform.PackageScope
 import spock.lang.Shared
 import spock.lang.Specification
+import tools.jackson.databind.ObjectMapper
 
 @ContextConfiguration(classes = [TestObjectMapperConfiguration.class])
 @Testcontainers

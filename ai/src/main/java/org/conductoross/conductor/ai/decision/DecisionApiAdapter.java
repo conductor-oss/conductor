@@ -14,7 +14,7 @@ package org.conductoross.conductor.ai.decision;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /** Maps a provider API shape to the shared structured decision contract. */
 public interface DecisionApiAdapter {

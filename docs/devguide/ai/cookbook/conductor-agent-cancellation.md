@@ -1,3 +1,7 @@
+---
+description: "Terminate a parent workflow and propagate the cancellation to a long-running deployed Conductor agent so the agent run stops too."
+---
+
 # Agent cancellation
 
 ```mermaid

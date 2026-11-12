@@ -3,7 +3,7 @@ import {
   DateTimePickerProps,
   LocalizationProvider,
 } from "@mui/x-date-pickers";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import React, { RefAttributes, forwardRef } from "react";
 import { TextFieldProps } from "@mui/material";
 

@@ -32,7 +32,7 @@ import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Factory for creating workflow status listener instances. Provides centralized listener creation

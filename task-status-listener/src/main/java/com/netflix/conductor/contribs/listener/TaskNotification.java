@@ -19,11 +19,11 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.TaskSummary;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ser.FilterProvider;
+import tools.jackson.databind.ser.std.SimpleBeanPropertyFilter;
+import tools.jackson.databind.ser.std.SimpleFilterProvider;
 
 @JsonFilter("SecretRemovalFilter")
 public class TaskNotification extends TaskSummary {
@@ -79,7 +79,7 @@ public class TaskNotification extends TaskSummary {
                 new SimpleFilterProvider().addFilter("SecretRemovalFilter", theFilter);
         try {
             jsonString = objectMapper.writer(provider).writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error("Failed to convert Task: {} to String. Exception: {}", this, e);
             throw new RuntimeException(e);
         }
@@ -99,7 +99,7 @@ public class TaskNotification extends TaskSummary {
                     new SimpleFilterProvider().addFilter("SecretRemovalFilter", emptyFilter);
 
             jsonString = objectMapper.writer(provider).writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error("Failed to convert Task: {} to String. Exception: {}", this, e);
             throw new RuntimeException(e);
         }

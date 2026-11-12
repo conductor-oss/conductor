@@ -32,13 +32,13 @@ import com.netflix.conductor.common.config.ObjectMapperProvider;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.NotFoundException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.networknt.schema.JsonSchemaException;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.SchemaException;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Schema registry: versioning, lookup, and removal of {@link SchemaDef}s backed by {@link
@@ -325,7 +325,7 @@ public class SchemaService {
         String schemaContent;
         try {
             schemaContent = OBJECT_MAPPER.writeValueAsString(resolved.getData());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // Bad schema data — log it and skip validation rather than failing the payload.
             log.error(
                     "Error parsing the json schema {} version {}: {}",
@@ -336,10 +336,10 @@ public class SchemaService {
             return;
         }
 
-        Set<ValidationMessage> failures;
+        List<Error> failures;
         try {
             failures = jsonSchemaValidator.validate(schemaContent, withoutInternalFields(data));
-        } catch (JsonSchemaException e) {
+        } catch (SchemaException e) {
             // Bad schema document — skip validation. networknt getMessage() is often empty,
             // so log the validation messages instead.
             log.error(
@@ -359,7 +359,7 @@ public class SchemaService {
                     "Schema %s validation failed %s",
                     resolved.getName() + ":" + resolved.getVersion(),
                     failures.stream()
-                            .map(ValidationMessage::getMessage)
+                            .map(SchemaService::describe)
                             .collect(Collectors.joining(", ")));
         }
     }
@@ -408,8 +408,20 @@ public class SchemaService {
         return stripped;
     }
 
-    private static String describe(JsonSchemaException e) {
-        String messages = String.valueOf(e.getValidationMessages());
+    /**
+     * Renders a validation failure as "path: message".
+     *
+     * <p>json-schema-validator 1.x put the instance path in the message itself, so a caller could
+     * see which property was rejected. 3.x reports the path separately and leaves the message as
+     * bare text like "null found, string expected", which on its own does not say what failed.
+     */
+    private static String describe(Error error) {
+        String path = String.valueOf(error.getInstanceLocation());
+        return path.isEmpty() ? error.getMessage() : path + ": " + error.getMessage();
+    }
+
+    private static String describe(SchemaException e) {
+        String messages = String.valueOf(e.getErrors());
         return StringUtils.isNotBlank(e.getMessage()) ? e.getMessage() : messages;
     }
 }

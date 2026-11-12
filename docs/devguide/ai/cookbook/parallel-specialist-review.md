@@ -1,3 +1,7 @@
+---
+description: "Run a security reviewer and a reliability reviewer as two deployed Conductor agents in parallel and return both recommendations side by side."
+---
+
 # Specialist review
 
 ```mermaid
