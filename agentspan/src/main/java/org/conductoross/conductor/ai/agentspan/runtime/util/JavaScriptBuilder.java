@@ -15,8 +15,8 @@ package org.conductoross.conductor.ai.agentspan.runtime.util;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Helper for building JavaScript snippets for Conductor InlineTask scripts. All scripts are wrapped
@@ -30,7 +30,7 @@ public class JavaScriptBuilder {
     public static String toJson(Object value) {
         try {
             return MAPPER.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Failed to serialize to JSON", e);
         }
     }

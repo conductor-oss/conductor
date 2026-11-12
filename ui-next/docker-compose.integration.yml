@@ -10,6 +10,23 @@
 #   - dist/ present (script runs pnpm build if missing)
 
 services:
+  mock-openai:
+    image: node:20-slim
+    command: ["node", "/mock/server.mjs"]
+    volumes:
+      - ./e2e/integration/mock-openai:/mock:ro
+    networks:
+      - internal
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8090/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
   conductor-postgres:
     image: postgres:16
     environment:
@@ -36,13 +53,17 @@ services:
     environment:
       - CONFIG_PROP=config-postgres.properties
       - conductor.app.ownerEmailMandatory=false
-      # Forwarded from the host when set. Empty/absent ⇒ OpenAI stays unconfigured and
-      # LLM execution tests that need a live provider self-skip.
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # OpenAI calls (LLM_* tasks via conductor.ai.openai.*, agents via OPENAI_BASE_URL)
+      # go to the mock-openai stub so LLM execution tests are deterministic and need
+      # no key. To hit real OpenAI instead, set E2E_OPENAI_BASE_URL=https://api.openai.com/v1
+      # and OPENAI_API_KEY on the host.
+      - CONDUCTOR_AI_OPENAI_BASEURL=${E2E_OPENAI_BASE_URL:-http://mock-openai:8090/v1}
+      - OPENAI_BASE_URL=${E2E_OPENAI_BASE_URL:-http://mock-openai:8090/v1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-e2e-mock-key}
     networks:
       - internal
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
       interval: 10s
       timeout: 10s
       retries: 24
@@ -50,6 +71,8 @@ services:
       - conductor-postgres:postgresdb
     depends_on:
       conductor-postgres:
+        condition: service_healthy
+      mock-openai:
         condition: service_healthy
     logging:
       driver: "json-file"
@@ -109,7 +132,6 @@ services:
       SKIP_DOCKER: "true"
       SKIP_WEBSERVER: "true"
       E2E_COVERAGE: ${E2E_COVERAGE:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       PLAYWRIGHT_FLAGS: ${PLAYWRIGHT_FLAGS:-}
     command: >
       sh -c "corepack enable &&

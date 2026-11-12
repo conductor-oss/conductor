@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableConfigurationProperties(ConductorQueueStatusPublisherProperties.class)

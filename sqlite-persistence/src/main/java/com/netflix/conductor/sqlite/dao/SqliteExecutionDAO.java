@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -39,11 +39,11 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.sqlite.util.ExecutorsUtil;
 import com.netflix.conductor.sqlite.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.ObjectMapper;
 
 public class SqliteExecutionDAO extends SqliteBaseDAO
         implements ExecutionDAO, RateLimitingDAO, ConcurrentExecutionLimitDAO {

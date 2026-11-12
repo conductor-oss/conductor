@@ -115,8 +115,10 @@ const UntilWaitTaskForm: FunctionComponent<{
                 onChange(`${datetime} ${typed}`);
               }
             }}
-            renderOption={(props, option) => (
-              <li {...props}>{option?.label}</li>
+            renderOption={({ key, ...props }, option) => (
+              <li key={key} {...props}>
+                {option?.label}
+              </li>
             )}
           />
         </Grid>

@@ -24,8 +24,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -33,7 +33,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.netflix.conductor.common.config.ObjectMapperBuilderConfiguration;
-import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.SchemaDef;
 import com.netflix.conductor.core.exception.NotFoundException;
 import com.netflix.conductor.rest.controllers.ApplicationExceptionMapper;
@@ -76,8 +75,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>The context is a real one rather than {@code MockMvcBuilders.standaloneSetup} because the
  * request body is the subject. Standalone setup builds its own plain {@link
- * com.fasterxml.jackson.databind.ObjectMapper}, so a body-shape assertion made against it says
- * nothing about the mapper the server actually parses with — including whether {@code
+ * tools.jackson.databind.ObjectMapper}, so a body-shape assertion made against it says nothing
+ * about the mapper the server actually parses with — including whether {@code
  * ACCEPT_SINGLE_VALUE_AS_ARRAY} is enabled, which is the whole reason half the client estate works.
  * Importing the two mapper configurations is what puts the production mapper under test.
  */
@@ -413,8 +412,7 @@ public class SchemaResourceTest {
     @Import({
         SchemaResource.class,
         ApplicationExceptionMapper.class,
-        ObjectMapperBuilderConfiguration.class,
-        ObjectMapperConfiguration.class
+        ObjectMapperBuilderConfiguration.class
     })
     static class TestConfig {
 

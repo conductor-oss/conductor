@@ -12,7 +12,6 @@
  */
 package com.netflix.conductor.tasks.http;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,9 +36,10 @@ import com.netflix.conductor.model.WorkflowModel;
 import com.netflix.conductor.tasks.http.providers.RestTemplateProvider;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskType.TASK_TYPE_HTTP;
 
@@ -180,10 +180,10 @@ public class HttpTask extends WorkflowSystemTask {
                 response.body = extractBody(responseEntity.getBody());
             }
 
-            response.statusCode = responseEntity.getStatusCodeValue();
+            response.statusCode = responseEntity.getStatusCode().value();
             response.reasonPhrase =
                     HttpStatus.valueOf(responseEntity.getStatusCode().value()).getReasonPhrase();
-            response.headers = responseEntity.getHeaders();
+            response.headers = responseEntity.getHeaders().asMultiValueMap();
             return response;
         } catch (RestClientException ex) {
             LOGGER.error(
@@ -209,7 +209,7 @@ public class HttpTask extends WorkflowSystemTask {
             } else {
                 return node.asText();
             }
-        } catch (IOException jpe) {
+        } catch (JacksonException jpe) {
             LOGGER.error("Error extracting response body", jpe);
             return responseBody;
         }

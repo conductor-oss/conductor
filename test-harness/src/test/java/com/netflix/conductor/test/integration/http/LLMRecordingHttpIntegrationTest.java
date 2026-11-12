@@ -36,9 +36,9 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
+import org.springframework.boot.web.server.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 import com.netflix.conductor.ConductorTestApp;
@@ -53,8 +53,8 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.QueueDAO;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -133,9 +133,9 @@ class LLMRecordingHttpIntegrationTest {
                         .withName(definition.getName())
                         .withWorkflowDef(definition);
         RestTemplate http = new RestTemplate();
-        http.getMessageConverters().removeIf(MappingJackson2HttpMessageConverter.class::isInstance);
+        http.getMessageConverters().removeIf(JacksonJsonHttpMessageConverter.class::isInstance);
         http.getMessageConverters()
-                .add(new MappingJackson2HttpMessageConverter(server.getBean(ObjectMapper.class)));
+                .add(new JacksonJsonHttpMessageConverter(server.getBean(JsonMapper.class)));
         String baseUrl = "http://localhost:" + server.getWebServer().getPort() + "/api/workflow";
         String workflowId = http.postForObject(baseUrl, request, String.class);
         assertNotNull(workflowId);

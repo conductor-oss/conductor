@@ -27,7 +27,7 @@ import {
   useState,
 } from "react";
 import {
-  editor,
+  ShowLightbulbIconMode,
   defaultEditorOptions,
   type EditorOptions,
 } from "shared/editor";
@@ -70,7 +70,7 @@ const smallEditorOptions: EditorOptions = {
   ...defaultEditorOptions,
   tabSize: 2,
   minimap: { enabled: false },
-  lightbulb: { enabled: editor.ShowLightbulbIconMode.On },
+  lightbulb: { enabled: ShowLightbulbIconMode.On },
   quickSuggestions: true,
   lineNumbers: "on",
   glyphMargin: false,
