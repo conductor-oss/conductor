@@ -216,7 +216,7 @@ public class AIModelIntegrationTest {
             // Use generic ImageOptions to set model and parameters
             var imageOptions =
                     ImageOptionsBuilder.builder()
-                            .model("gpt-image-1")
+                            .model("gpt-image-2.5-sunburst")
                             .height(1024)
                             .width(1024)
                             .build();
