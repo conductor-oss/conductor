@@ -101,55 +101,26 @@ public class TestSystemTaskWorker {
     }
 
     // -----------------------------------------------------------------------
-    // Scenario 2: no taskWorkerConfigs entry — shared pool, per-queue semaphore
-    //             sized to systemTaskWorkerThreadCount (same default as before)
+    // Scenario 2: no taskWorkerConfigs entry — shared pool AND one shared semaphore sized to
+    //             systemTaskWorkerThreadCount, so admission across all types is bounded by the
+    //             pool's threads (issue #1649)
     // -----------------------------------------------------------------------
 
     @Test
-    public void testDefaultNonIsolatedQueueUsesSharedPoolWithPerQueueSemaphore() {
+    public void testDefaultNonIsolatedQueuesShareOnePoolAndOneSemaphore() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(5);
         systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
 
         ExecutionConfig http = systemTaskWorker.getExecutionConfig("HTTP");
         ExecutionConfig subWorkflow = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
 
-        // Both queues get permits == systemTaskWorkerThreadCount (same value as the old single
-        // shared semaphore — the default is unchanged).
         assertEquals(5, http.getSemaphoreUtil().availableSlots());
-        assertEquals(5, subWorkflow.getSemaphoreUtil().availableSlots());
-        // Semaphores are independent: exhausting HTTP permits does not affect SUB_WORKFLOW.
-        assertNotSame(http.getSemaphoreUtil(), subWorkflow.getSemaphoreUtil());
-        http.getSemaphoreUtil().acquireSlots(5);
-        assertEquals(0, http.getSemaphoreUtil().availableSlots());
-        assertEquals(5, subWorkflow.getSemaphoreUtil().availableSlots());
-        // Thread pool is shared.
+        assertSame(http.getSemaphoreUtil(), subWorkflow.getSemaphoreUtil());
         assertSame(http.getExecutorService(), subWorkflow.getExecutorService());
-    }
 
-    @Test
-    public void testNonIsolatedQueuesHaveIndependentSemaphoresButShareExecutor() {
-        when(properties.getSystemTaskWorkerThreadCount()).thenReturn(3);
-        when(properties.getTaskWorkerConfigs()).thenReturn(new HashMap<>());
-        systemTaskWorker = new SystemTaskWorker(queueDAO, asyncSystemTaskExecutor, properties);
-
-        ExecutionConfig httpConfig = systemTaskWorker.getExecutionConfig("HTTP");
-        ExecutionConfig subWorkflowConfig = systemTaskWorker.getExecutionConfig("SUB_WORKFLOW");
-
-        // Each non-isolated queue must have its own semaphore — a slow/busy queue draining all
-        // of its permits must not reduce the available slots of any other queue's semaphore.
-        assertNotSame(httpConfig.getSemaphoreUtil(), subWorkflowConfig.getSemaphoreUtil());
-        httpConfig.getSemaphoreUtil().acquireSlots(3);
-        assertEquals(
-                "HTTP semaphore should be exhausted",
-                0,
-                httpConfig.getSemaphoreUtil().availableSlots());
-        assertEquals(
-                "SUB_WORKFLOW semaphore must be unaffected",
-                3,
-                subWorkflowConfig.getSemaphoreUtil().availableSlots());
-
-        // Thread pool is still shared — there is only one pool for all non-isolated queues.
-        assertSame(httpConfig.getExecutorService(), subWorkflowConfig.getExecutorService());
+        // Permits taken by one type are gone for every other type on the shared pool.
+        http.getSemaphoreUtil().acquireSlots(5);
+        assertEquals(0, subWorkflow.getSemaphoreUtil().availableSlots());
     }
 
     // -----------------------------------------------------------------------
@@ -540,28 +511,24 @@ public class TestSystemTaskWorker {
     }
 
     @Test
-    public void testPermitAcquireFailureRequeuesPolledTasks() {
-        // Simulate a race where availableSlots() > 0 but acquireSlots() fails (e.g. another thread
-        // sneaked in). Tasks must be reset so they are immediately re-deliverable — not stuck
-        // invisible for the full 30-second unack timeout.
+    public void testPermitAcquireFailureSkipsPoll() {
+        // Several pollers share the shared-pool semaphore, so availableSlots() > 0 can be stale
+        // by the time acquireSlots() runs. Losing that race must not pop anything — popping first
+        // would leave messages popped without permits, which then have to be reset.
         SemaphoreUtil mockSemaphore = mock(SemaphoreUtil.class);
         when(mockSemaphore.availableSlots()).thenReturn(5);
         when(mockSemaphore.acquireSlots(anyInt())).thenReturn(false);
-
-        ExecutionConfig spyConfig =
+        ExecutionConfig racingConfig =
                 new ExecutionConfig(
                         systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService(),
                         mockSemaphore);
-        systemTaskWorker.queueExecutionConfigMap.put(TEST_TASK, spyConfig);
+        systemTaskWorker.queueExecutionConfigMap.put(TEST_TASK, racingConfig);
 
-        when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(List.of("r1", "r2"));
+        boolean executed = systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
 
-        systemTaskWorker.pollAndExecute(new TestTask(), TEST_TASK);
-
-        // Tasks must be reset, not left invisible.
-        verify(queueDAO).resetOffsetTime(TEST_TASK, "r1");
-        verify(queueDAO).resetOffsetTime(TEST_TASK, "r2");
-        // Nothing should have been dispatched.
+        assertFalse("Losing the permit race must report no progress", executed);
+        verify(queueDAO, Mockito.never()).pop(anyString(), anyInt(), anyInt());
+        verify(queueDAO, Mockito.never()).resetOffsetTime(anyString(), anyString());
         verify(asyncSystemTaskExecutor, Mockito.never()).execute(any(), anyString());
     }
 
@@ -581,6 +548,7 @@ public class TestSystemTaskWorker {
         when(flakySemaphore.availableSlots())
                 .thenThrow(new RuntimeException("boom"))
                 .thenReturn(10);
+        when(flakySemaphore.acquireSlots(anyInt())).thenReturn(true);
         ExecutionConfig flakyConfig =
                 new ExecutionConfig(
                         systemTaskWorker.getExecutionConfig(TEST_TASK).getExecutorService(),
@@ -736,6 +704,19 @@ public class TestSystemTaskWorker {
                 "A task polled after restart must actually be dispatched, not silently dropped"
                         + " against a dead executor",
                 executed.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRestartRebuildsSharedSemaphore() {
+        systemTaskWorker.getExecutionConfig("HTTP").getSemaphoreUtil().acquireSlots(10);
+
+        systemTaskWorker.stop();
+        systemTaskWorker.start();
+
+        // Permits held by tasks on the dead pool must not leak into the rebuilt one.
+        assertEquals(
+                10,
+                systemTaskWorker.getExecutionConfig("HTTP").getSemaphoreUtil().availableSlots());
     }
 
     // -----------------------------------------------------------------------
