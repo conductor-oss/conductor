@@ -257,6 +257,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         workflow.setStatus(WorkflowModel.Status.RUNNING);
         workflow.setOutput(null);
         workflow.setExternalOutputPayloadStoragePath(null);
+        // Restart runs the workflow from the beginning, so seed the variables from the definition
+        // being run (the latest one if useLatestDefinitions is set), the same way start does.
+        // Values written by SET_VARIABLE during the previous run are discarded.
+        workflow.setVariables(workflowDef.getVariables());
 
         try {
             executionDAOFacade.createWorkflow(workflow);
