@@ -859,8 +859,7 @@ public class DeciderService {
         final long pollTimeout = 1000L * taskDef.getPollTimeoutSeconds();
         final long adjustedPollTimeout = pollTimeout + task.getCallbackAfterSeconds() * 1000L;
         final long now = System.currentTimeMillis();
-        final long pollElapsedTime =
-                now - (task.getScheduledTime() + ((long) task.getStartDelayInSeconds() * 1000L));
+        final long pollElapsedTime = now - pollWindowStart(task);
 
         if (pollElapsedTime < adjustedPollTimeout) {
             return;
@@ -873,6 +872,16 @@ public class DeciderService {
                         pollTimeout / 1000L,
                         taskDef.getTimeoutPolicy().name());
         timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
+    /**
+     * Start of the task's current poll window. A task that returns IN_PROGRESS goes back to
+     * SCHEDULED with its scheduledTime unchanged, so once polled its window starts at its last
+     * update.
+     */
+    public static long pollWindowStart(TaskModel task) {
+        long scheduled = task.getScheduledTime() + 1000L * task.getStartDelayInSeconds();
+        return task.getPollCount() == 0 ? scheduled : task.getUpdateTime();
     }
 
     void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, TaskModel task) {
