@@ -85,9 +85,11 @@ RUN if [ "$SKIP_UI" = "true" ]; then \
 # only package we add is nginx. The healthcheck uses busybox wget (built in) instead of curl,
 # which also removes curl's libcurl/libssh2 chain from the image entirely.
 #
-# Pinned to the same 25.0.5+8 Temurin release as the Debian builder stage above (Alpine tag
-# format 25.0.5_8) so the shipped JRE is a known, reproducible, patched build.
-FROM eclipse-temurin:25.0.5_8-jre-alpine AS runtime
+# Floating 25-jre-alpine tag so each rebuild picks up the latest 25.x JVM patch and Alpine
+# package updates automatically -- the point of this image is to stay current on OS/JVM CVEs.
+# The builder stage pins its JDK for a reproducible bytecode target; the shipped runtime does not
+# need to match that patch level (it only runs the compiled jar), so the two can drift.
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 LABEL maintainer="Orkes OSS <oss@orkes.io>"
 
