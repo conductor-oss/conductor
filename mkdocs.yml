@@ -201,6 +201,7 @@ nav:
     - Deploy:
       - Production Deployment: devguide/running/deploy.md
       - From Source: devguide/running/source.md
+      - Upgrading to 3.34.0: devguide/running/upgrade-3.34.0.md
       - Hosted: devguide/running/hosted.md
       - CI/CD Integration: devguide/how-tos/cicd-integration.md
       - Best Practices: devguide/bestpractices.md
