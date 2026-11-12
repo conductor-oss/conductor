@@ -585,9 +585,8 @@ public class MySQLQueueDAOTest {
         // processAllUnacks only un-pops messages whose deliver_on is more than 60 s in the past.
         executeSql(
                 "UPDATE queue_message SET deliver_on = NOW() - INTERVAL 2 MINUTE"
-                        + " WHERE queue_name = '"
-                        + queueName
-                        + "'");
+                        + " WHERE queue_name = ?",
+                queueName);
         assertEquals(1L, poppedCount(queueName));
 
         AtomicInteger guardedRuns = new AtomicInteger();
@@ -599,7 +598,7 @@ public class MySQLQueueDAOTest {
             try {
                 unguarded =
                         scheduler.scheduleAtFixedRate(
-                                queueDAO::processAllUnacks, 0, 50, TimeUnit.MILLISECONDS);
+                                queueDAO::processAllUnacks, 0, 200, TimeUnit.MILLISECONDS);
                 guarded =
                         scheduler.scheduleAtFixedRate(
                                 () -> {
@@ -607,7 +606,7 @@ public class MySQLQueueDAOTest {
                                     guardedRuns.incrementAndGet();
                                 },
                                 0,
-                                50,
+                                200,
                                 TimeUnit.MILLISECONDS);
                 // The guarded task must get through more than one failed run.
                 await().atMost(10, TimeUnit.SECONDS)
@@ -632,10 +631,15 @@ public class MySQLQueueDAOTest {
         }
     }
 
-    private void executeSql(String sql) {
+    private void executeSql(String sql, String... params) {
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
-            conn.prepareStatement(sql).executeUpdate();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (int i = 0; i < params.length; i++) {
+                    ps.setString(i + 1, params[i]);
+                }
+                ps.executeUpdate();
+            }
             conn.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);

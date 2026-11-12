@@ -27,6 +27,7 @@ import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.mysql.util.ExecutorsUtil;
 import com.netflix.conductor.mysql.util.Query;
 
 import com.google.common.collect.ImmutableMap;
@@ -42,7 +43,8 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
             RetryTemplate retryTemplate, ObjectMapper objectMapper, DataSource dataSource) {
         super(retryTemplate, objectMapper, dataSource);
 
-        Executors.newSingleThreadScheduledExecutor()
+        Executors.newSingleThreadScheduledExecutor(
+                        ExecutorsUtil.newNamedThreadFactory("mysql-queue-"))
                 .scheduleAtFixedRate(
                         this::runScheduledProcessAllUnacks,
                         UNACK_SCHEDULE_MS,
