@@ -111,6 +111,10 @@ export const FEATURES = Object.freeze({
   // the server will silently ignore.
   TASK_STATUS_LISTENER: "TASK_STATUS_LISTENER",
   TASK_RETRY_TIMEOUT_LIMITS: "TASK_RETRY_TIMEOUT_LIMITS",
+  // Boundary timer settles a task on a chosen status once its duration passes.
+  // Only the enterprise core acts on it, so unlike the two above this defaults
+  // off and a distribution that honors it turns it on.
+  BOUNDARY_TIMER: "BOUNDARY_TIMER",
 });
 
 const mapOfLocalStorageValues = Object.fromEntries(
