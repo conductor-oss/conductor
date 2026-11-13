@@ -1,0 +1,20 @@
+{
+  "name": "complete_order_approval",
+  "event": "kafka:order-approvals",
+  "condition": "$.approved == true",
+  "actions": [
+    {
+      "action": "complete_task",
+      "complete_task": {
+        "workflowId": "${workflowId}",
+        "taskRefName": "approval",
+        "output": {
+          "approved": "${approved}",
+          "approvedBy": "${approvedBy}",
+          "eventId": "${eventId}"
+        }
+      }
+    }
+  ],
+  "active": true
+}

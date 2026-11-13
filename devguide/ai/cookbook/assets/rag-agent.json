@@ -1,0 +1,165 @@
+{
+  "name": "rag_agent",
+  "description": "Grounded RAG with a bounded retrieval-refinement loop. Retrieves context, grades whether it can actually answer, rewrites the query and retries when it cannot, and refuses to answer rather than answering ungrounded.",
+  "version": 1,
+  "schemaVersion": 2,
+  "timeoutSeconds": 600,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "inputParameters": [
+    "question",
+    "vectorDB",
+    "index",
+    "namespace"
+  ],
+  "variables": {
+    "search_query": "",
+    "sources": [],
+    "grounding": {
+      "sufficient": false,
+      "reason": "not_attempted",
+      "attempts": 0
+    }
+  },
+  "tasks": [
+    {
+      "name": "seed_search_query",
+      "taskReferenceName": "seed_query",
+      "type": "SET_VARIABLE",
+      "inputParameters": {
+        "search_query": "${workflow.input.question}"
+      }
+    },
+    {
+      "name": "retrieve_and_grade_loop",
+      "taskReferenceName": "retrieval_loop",
+      "type": "DO_WHILE",
+      "evaluatorType": "graaljs",
+      "inputParameters": {
+        "retrieval_loop": "${retrieval_loop.output}",
+        "sufficient": "${grade_context.output.result.sufficient}"
+      },
+      "loopCondition": "(function(){ return $.retrieval_loop['iteration'] < 3 && $.sufficient !== true; })();",
+      "loopOver": [
+        {
+          "name": "retrieve_sources",
+          "taskReferenceName": "retrieve_sources",
+          "type": "LLM_SEARCH_INDEX",
+          "inputParameters": {
+            "vectorDB": "${workflow.input.vectorDB}",
+            "index": "${workflow.input.index}",
+            "namespace": "${workflow.input.namespace}",
+            "embeddingModelProvider": "openai",
+            "embeddingModel": "text-embedding-3-small",
+            "dimensions": 1536,
+            "query": "${workflow.variables.search_query}",
+            "maxResults": 5
+          }
+        },
+        {
+          "name": "grade_retrieved_context",
+          "taskReferenceName": "grade_context",
+          "type": "LLM_CHAT_COMPLETE",
+          "inputParameters": {
+            "llmProvider": "openai",
+            "model": "gpt-4o-mini",
+            "messages": [
+              {
+                "role": "system",
+                "message": "You grade retrieval quality. You do NOT answer the question. Decide only whether the supplied sources contain enough specific evidence to answer it fully. Return JSON: {\"sufficient\": boolean, \"reason\": string, \"refinedQuery\": string}. If sufficient is false, refinedQuery must be a different, more targeted search phrasing that would find the missing evidence. Prefer sufficient=false when the sources are only tangentially related."
+              },
+              {
+                "role": "user",
+                "message": "Question: ${workflow.input.question}\nCurrent search query: ${workflow.variables.search_query}\nRetrieved sources: ${retrieve_sources.output.result}"
+              }
+            ],
+            "temperature": 0.0,
+            "maxTokens": 500,
+            "jsonOutput": true
+          }
+        },
+        {
+          "name": "record_grounding_state",
+          "taskReferenceName": "record_grounding",
+          "type": "SET_VARIABLE",
+          "inputParameters": {
+            "search_query": "${grade_context.output.result.refinedQuery}",
+            "sources": "${retrieve_sources.output.result}",
+            "grounding": {
+              "sufficient": "${grade_context.output.result.sufficient}",
+              "reason": "${grade_context.output.result.reason}",
+              "attempts": "${retrieval_loop.output.iteration}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "route_on_grounding",
+      "taskReferenceName": "route_grounding",
+      "type": "SWITCH",
+      "evaluatorType": "value-param",
+      "expression": "sufficient",
+      "inputParameters": {
+        "sufficient": "${workflow.variables.grounding.sufficient}"
+      },
+      "decisionCases": {
+        "true": [
+          {
+            "name": "answer_from_sources",
+            "taskReferenceName": "answer",
+            "type": "LLM_CHAT_COMPLETE",
+            "inputParameters": {
+              "llmProvider": "openai",
+              "model": "gpt-4o-mini",
+              "messages": [
+                {
+                  "role": "system",
+                  "message": "Answer strictly from the supplied sources. Return JSON: {\"answer\": string, \"citations\": [string]}. Every citation must be a document id present in the sources. If a claim is not supported by a source, omit the claim. Never use outside knowledge."
+                },
+                {
+                  "role": "user",
+                  "message": "Question: ${workflow.input.question}\nSources: ${workflow.variables.sources}"
+                }
+              ],
+              "temperature": 0.1,
+              "maxTokens": 900,
+              "jsonOutput": true
+            }
+          },
+          {
+            "name": "verify_citations_present",
+            "taskReferenceName": "verify_citations",
+            "type": "JSON_JQ_TRANSFORM",
+            "inputParameters": {
+              "answer": "${answer.output.result}",
+              "queryExpression": "{cited: ((.answer.citations // []) | length), grounded: (((.answer.citations // []) | length) > 0)}"
+            }
+          }
+        ],
+        "false": [
+          {
+            "name": "refuse_ungrounded_answer",
+            "taskReferenceName": "refuse",
+            "type": "TERMINATE",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "error": "insufficient_grounding",
+                "detail": "${workflow.variables.grounding.reason}",
+                "attempts": "${workflow.variables.grounding.attempts}"
+              }
+            }
+          }
+        ]
+      },
+      "defaultCase": []
+    }
+  ],
+  "outputParameters": {
+    "answer": "${answer.output.result.answer}",
+    "citations": "${answer.output.result.citations}",
+    "citationCount": "${verify_citations.output.result.cited}",
+    "grounding": "${workflow.variables.grounding}",
+    "sources": "${workflow.variables.sources}"
+  }
+}
