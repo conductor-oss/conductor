@@ -134,8 +134,6 @@ public class MCPService {
     /** Upper bound on the {@code tools/list} pages read to find one tool. */
     static final int MAX_TOOLS_LIST_PAGES = 100;
 
-    private static final String JSON_RPC_VERSION = "2.0";
-
     /**
      * The JSON-RPC id of every request. Each request is a single HTTP exchange that carries its own
      * response, so a fixed id is enough.
@@ -339,7 +337,7 @@ public class MCPService {
 
     /** The {@code resultType} of a result; an absent value means {@code complete}. */
     private static String resultType(JsonNode result) {
-        JsonNode type = result.get("resultType");
+        JsonNode type = result.get(McpResultType.FIELD);
         return type == null || type.isNull() ? McpResultType.COMPLETE.value() : type.asString();
     }
 
@@ -349,7 +347,7 @@ public class MCPService {
      * value, including {@code input_required}, is invalid.
      */
     private static void checkResultType(JsonNode result, McpMethod method, String serverUrl) {
-        JsonNode typeNode = result.get("resultType");
+        JsonNode typeNode = result.get(McpResultType.FIELD);
         if (typeNode != null && !typeNode.isNull() && !typeNode.isString()) {
             throw new McpCallException(
                     "MCP server "
@@ -486,7 +484,7 @@ public class MCPService {
      */
     private Request.Builder jsonRpcPost(String serverUrl, McpMethod method, ObjectNode params) {
         ObjectNode request = objectMapper.createObjectNode();
-        request.put("jsonrpc", JSON_RPC_VERSION);
+        request.put("jsonrpc", McpJsonRpc.VERSION);
         request.put("method", method.value());
         request.put("id", REQUEST_ID);
         if (params != null) {
@@ -510,6 +508,8 @@ public class MCPService {
         return switch (method) {
             case TOOLS_LIST -> false;
             case TOOLS_CALL, TASKS_GET, TASKS_CANCEL -> true;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
         };
     }
 
@@ -521,7 +521,14 @@ public class MCPService {
         return switch (method) {
             case TOOLS_CALL -> true;
             case TOOLS_LIST, TASKS_GET, TASKS_CANCEL -> false;
+            case SERVER_DISCOVER, TASKS_UPDATE, INITIALIZE, PING, UNKNOWN ->
+                    throw notSentByTheClient(method);
         };
+    }
+
+    private static IllegalArgumentException notSentByTheClient(McpMethod method) {
+        return new IllegalArgumentException(
+                "The MCP client does not send " + method.name() + " (" + method + ")");
     }
 
     /**

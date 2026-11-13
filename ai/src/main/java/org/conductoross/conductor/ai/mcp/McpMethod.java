@@ -12,16 +12,25 @@
  */
 package org.conductoross.conductor.ai.mcp;
 
+import java.util.Arrays;
+
 /**
- * The JSON-RPC methods that Conductor sends in the MCP {@code 2026-07-28} form. Only the method
- * names; how each request is built (for example, which ones declare the Tasks extension) is decided
- * by the sender.
+ * The MCP JSON-RPC methods that Conductor sends as a client or handles as a server. Only the method
+ * names; how each request is built or served is decided by the client and the server.
  */
 public enum McpMethod {
+    // The 2026-07-28 methods.
+    SERVER_DISCOVER("server/discover"),
     TOOLS_LIST("tools/list"),
     TOOLS_CALL("tools/call"),
     TASKS_GET("tasks/get"),
-    TASKS_CANCEL("tasks/cancel");
+    TASKS_UPDATE("tasks/update"),
+    TASKS_CANCEL("tasks/cancel"),
+    // Methods of the earlier, session-based revisions that the server still answers.
+    INITIALIZE("initialize"),
+    PING("ping"),
+    /** A method this enum does not name. Never sent; its {@link #value()} is empty. */
+    UNKNOWN("");
 
     private final String value;
 
@@ -32,6 +41,14 @@ public enum McpMethod {
     /** The method name on the wire. */
     public String value() {
         return value;
+    }
+
+    /** The method with this name on the wire, or {@link #UNKNOWN} for any other name. */
+    public static McpMethod of(String value) {
+        return Arrays.stream(values())
+                .filter(m -> m.value.equals(value))
+                .findFirst()
+                .orElse(UNKNOWN);
     }
 
     /** The method name on the wire, so that messages read {@code tools/call}, not the constant. */

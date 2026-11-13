@@ -2,12 +2,13 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose.yaml"
+# docker compose reads COMPOSE_FILE; the e2e overlay turns on the features the tests need.
+export COMPOSE_FILE="$SCRIPT_DIR/../docker/docker-compose.yaml:$SCRIPT_DIR/../docker/docker-compose-e2e.yaml"
 export SERVER_ROOT_URI="${SERVER_ROOT_URI:-http://localhost:8000}"
 
 echo "Starting Conductor (Redis + Elasticsearch 7 (default))..."
-docker compose -f "$COMPOSE_FILE" build conductor-server
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose build conductor-server
+docker compose up -d
 
 echo "Waiting for Conductor server at $SERVER_ROOT_URI/health ..."
 for i in $(seq 1 60); do
@@ -17,8 +18,8 @@ for i in $(seq 1 60); do
     fi
     if [ "$i" -eq 60 ]; then
         echo "ERROR: Conductor did not start in time"
-        docker compose -f "$COMPOSE_FILE" logs conductor-server 2>/dev/null || docker compose -f "$COMPOSE_FILE" logs
-        docker compose -f "$COMPOSE_FILE" down -v
+        docker compose logs conductor-server 2>/dev/null || docker compose logs
+        docker compose down -v
         exit 1
     fi
     echo "  Attempt $i/60 — waiting 5s..."
@@ -29,5 +30,5 @@ cd "$SCRIPT_DIR/.."
 ./gradlew :conductor-e2e:test -PrunE2E -DSERVER_ROOT_URI="$SERVER_ROOT_URI" "$@"
 EXIT_CODE=$?
 
-docker compose -f "$COMPOSE_FILE" down -v
+docker compose down -v
 exit $EXIT_CODE

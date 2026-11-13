@@ -34,6 +34,11 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import static org.conductoross.conductor.ai.mcp.McpJsonRpc.HEADER_MISMATCH;
+import static org.conductoross.conductor.ai.mcp.McpJsonRpc.INVALID_PARAMS;
+import static org.conductoross.conductor.ai.mcp.McpJsonRpc.MISSING_REQUIRED_CLIENT_CAPABILITY;
+import static org.conductoross.conductor.ai.mcp.McpJsonRpc.UNSUPPORTED_PROTOCOL_VERSION;
+
 /**
  * Lifecycle of a {@code CALL_MCP_TOOL} call that selects {@code mcpOptions.protocolVersion} (the
  * MCP {@code 2026-07-28} form, which declares the MCP Tasks extension). MCP-specific; structured
@@ -140,7 +145,7 @@ final class McpTasksCall {
             if (e.hasDefinedMeaning()) {
                 // A JSON-RPC error with a defined meaning is the MCP server's own answer, so its
                 // code decides, whatever the HTTP status.
-                if (code == McpRequestException.INVALID_PARAMS) {
+                if (code == INVALID_PARAMS) {
                     return fail(
                             taskId,
                             failures,
@@ -564,7 +569,7 @@ final class McpTasksCall {
     }
 
     private static boolean isHeaderMismatch(McpRequestException e) {
-        return e.getCode() != null && e.getCode() == McpRequestException.HEADER_MISMATCH;
+        return e.getCode() != null && e.getCode() == HEADER_MISMATCH;
     }
 
     /**
@@ -576,7 +581,7 @@ final class McpTasksCall {
             MCPToolCallRequest request, McpRequestException e) {
         String server = request.getMcpServer();
         Integer code = e.getCode();
-        if (code != null && code == McpRequestException.UNSUPPORTED_PROTOCOL_VERSION) {
+        if (code != null && code == UNSUPPORTED_PROTOCOL_VERSION) {
             JsonNode supported = e.getData() != null ? e.getData().get("supported") : null;
             return new RuntimeException(
                     "MCP server "
@@ -587,7 +592,7 @@ final class McpTasksCall {
                             + (supported != null ? supported : "not given by the server")
                             + "). Remove mcpOptions.protocolVersion to use the legacy MCP request.");
         }
-        if (code != null && code == McpRequestException.MISSING_REQUIRED_CLIENT_CAPABILITY) {
+        if (code != null && code == MISSING_REQUIRED_CLIENT_CAPABILITY) {
             JsonNode required =
                     e.getData() != null ? e.getData().get("requiredCapabilities") : null;
             return new RuntimeException(
