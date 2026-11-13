@@ -515,7 +515,7 @@ Apache 2.0 - see [LICENSE](https://github.com/conductor-oss/ruby-sdk/blob/main/L
 - [Orkes Cloud](https://orkes.io)
 - [Documentation](https://conductor-oss.org)
 - [Python SDK](https://github.com/conductor-sdk/conductor-python)
-- [Community Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-2vdbx239s-Eacdyqya9giNLHfrCavfaA)
+- [Community Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg)
 
 
 ## Examples

@@ -10,7 +10,7 @@ Pick the channel that matches what you need. The wrong one mostly costs you time
 
 -   **Slack**
 
-    Real-time questions, quick unblocking, and talking to other users. [Join the Slack community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA).
+    Real-time questions, quick unblocking, and talking to other users. [Join the Slack community](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg).
 
 -   **GitHub Discussions**
 
@@ -30,7 +30,7 @@ Pick the channel that matches what you need. The wrong one mostly costs you time
 
 | You want to | Use |
 |---|---|
-| Ask how something works | [Discussions](https://github.com/conductor-oss/conductor/discussions) or [Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA) |
+| Ask how something works | [Discussions](https://github.com/conductor-oss/conductor/discussions) or [Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg) |
 | Report a bug you can reproduce | [Issues](https://github.com/conductor-oss/conductor/issues) |
 | Propose a feature | [Discussions](https://github.com/conductor-oss/conductor/discussions) first, then an issue once there is agreement |
 | Get a pull request reviewed | Open the PR; mention it in Slack if it goes quiet |
