@@ -1346,6 +1346,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         final long maxRuntime = properties.getLockLeaseTime().toMillis() - 100;
         StopWatch decideWatch = new StopWatch();
         decideWatch.start();
+        // Tasks this pass created, so a pass that turns out to be stale can cancel them again.
+        List<TaskModel> scheduledInPass = new ArrayList<>();
 
         try {
             boolean continueLoop = true;
@@ -1363,6 +1365,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 List<TaskModel> tasksToBeUpdated = outcome.tasksToBeUpdated;
 
                 tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+                scheduledInPass.addAll(tasksToBeScheduled);
 
                 boolean stateChanged = scheduleTask(workflow, tasksToBeScheduled);
 
@@ -1399,7 +1402,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                                     + "re-queuing for continued processing",
                             workflow.getWorkflowId(),
                             decideWatch.getTime());
-                    WorkflowModel finished = storedWorkflowIfTerminal(workflow);
+                    WorkflowModel finished = finishedByConcurrentDecide(workflow, scheduledInPass);
                     if (finished != null) {
                         return finished;
                     }
@@ -1410,7 +1413,8 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
 
                 if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                     if (decideWatch.getTime() >= maxRuntime) {
-                        WorkflowModel finished = storedWorkflowIfTerminal(workflow);
+                        WorkflowModel finished =
+                                finishedByConcurrentDecide(workflow, scheduledInPass);
                         if (finished != null) {
                             return finished;
                         }
@@ -1469,22 +1473,26 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * <p>Once the lease has expired, the lock may belong to another decide (for example the
      * sweeper), which can complete or terminate the workflow while this pass is still running.
      * Writing this pass's in-memory copy afterwards would set the stored status back to RUNNING and
-     * leave a finished workflow that nothing decides again. The check re-reads the primary store
-     * and returns the stored workflow if it is already terminal, so the caller can skip the write.
+     * leave a finished workflow that nothing decides again. The check re-reads the workflow row
+     * (without tasks) and returns it if it is already terminal, so the caller can skip the write.
      * It only runs on the slow path (the pass took at least lease time - 100 ms), so normal decides
      * pay no extra read.
+     *
+     * <p>Tasks this pass created were persisted and queued before the check, and nothing would ever
+     * decide them. They are canceled here, see {@link #cancelTasksOfStalePass}.
      *
      * <p>This narrows the race to the time between the read and the write. Closing it fully needs a
      * conditional write in the execution DAO, which is out of scope here.
      *
-     * @return the stored workflow if it is terminal, otherwise {@code null}
+     * @return the stored workflow (without tasks) if it is terminal, otherwise {@code null}
      */
-    private WorkflowModel storedWorkflowIfTerminal(WorkflowModel workflow) {
+    private WorkflowModel finishedByConcurrentDecide(
+            WorkflowModel workflow, List<TaskModel> scheduledInPass) {
         WorkflowModel stored;
         try {
             stored =
                     executionDAOFacade.getWorkflowModelFromExecutionDAO(
-                            workflow.getWorkflowId(), true);
+                            workflow.getWorkflowId(), false);
         } catch (NotFoundException e) {
             return null;
         }
@@ -1498,7 +1506,50 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 stored.getStatus(),
                 workflow.getStatus());
         Monitors.recordStaleDecideWriteSkipped(workflow.getWorkflowName());
+        cancelTasksOfStalePass(stored, scheduledInPass);
         return stored;
+    }
+
+    /**
+     * Cancels the tasks a stale decide pass created for a workflow that another decide has already
+     * finished, so workers stop picking them up.
+     *
+     * <p>Each task is re-read first and only canceled if its stored status is still non-terminal:
+     * the in-memory copies are stale too, and a worker or the other decide may have finished a task
+     * in the meantime. A worker that polled a task before this point can still run it; its update
+     * is then ignored because the workflow is terminal.
+     *
+     * <p>{@link #cancelNonTerminalTasks} is not used because it walks the stale in-memory task list
+     * and would overwrite tasks the other decide has already finished.
+     */
+    private void cancelTasksOfStalePass(WorkflowModel finished, List<TaskModel> scheduledInPass) {
+        for (TaskModel scheduled : scheduledInPass) {
+            try {
+                TaskModel task = executionDAOFacade.getTaskModel(scheduled.getTaskId());
+                if (task == null || task.getStatus().isTerminal()) {
+                    continue;
+                }
+                task.setStatus(CANCELED);
+                if (systemTaskRegistry.isSystemTask(task.getTaskType())) {
+                    systemTaskRegistry.get(task.getTaskType()).cancel(finished, task, this);
+                }
+                executionDAOFacade.updateTask(task);
+                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
+                notifyTaskStatusListener(task);
+                LOGGER.warn(
+                        "Canceled task {} ({}) of finished workflow {}: it was scheduled by a"
+                                + " decide that held an expired lock",
+                        task.getTaskId(),
+                        task.getReferenceTaskName(),
+                        finished.getWorkflowId());
+            } catch (Exception e) {
+                LOGGER.error(
+                        "Error canceling task {} scheduled by a stale decide of workflow {}",
+                        scheduled.getTaskId(),
+                        finished.getWorkflowId(),
+                        e);
+            }
+        }
     }
 
     private void adjustStateIfSubWorkflowChanged(WorkflowModel workflow) {

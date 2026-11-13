@@ -18,8 +18,10 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +44,7 @@ import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.sync.local.LocalOnlyLock;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.ParametersUtils;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.model.TaskModel;
@@ -228,7 +231,31 @@ public class TestWorkflowExecutorDecideLoop {
      */
     @Test
     public void testSlowPassDoesNotOverwriteConcurrentCompletion() throws Exception {
-        String workflowId = "test-wf-stale-slow-pass-" + System.nanoTime();
+        slowPassRace("test-wf-stale-slow-pass-" + System.nanoTime()).run();
+    }
+
+    /**
+     * When the slow pass skips its write because the workflow is already finished, the worker task
+     * it created and queued belongs to nothing. It must be canceled and taken off its queue, so no
+     * worker polls it and runs it against the finished workflow.
+     */
+    @Test
+    public void testSlowPassCancelsTaskItScheduledForFinishedWorkflow() throws Exception {
+        LeaseRace race = slowPassRace("test-wf-stale-orphan-task-" + System.nanoTime());
+
+        race.run();
+
+        TaskModel task = race.storedTasks.get("task-1");
+        assertNotNull("task-1 was not persisted", task);
+        assertEquals(TaskModel.Status.CANCELED, task.getStatus());
+        verify(queueDAO).remove(QueueUtils.getQueueName(task), "task-1");
+    }
+
+    /**
+     * Decide A schedules a worker task and the task write blocks past the lease (as a slow database
+     * would); decide B then completes the workflow.
+     */
+    private LeaseRace slowPassRace(String workflowId) throws Exception {
         LeaseRace race = new LeaseRace(workflowId);
         when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
         when(deciderService.decide(any(WorkflowModel.class)))
@@ -239,13 +266,14 @@ public class TestWorkflowExecutorDecideLoop {
                                         : completeOutcome());
         doAnswer(
                         inv -> {
+                            List<TaskModel> tasks = inv.getArgument(0);
+                            tasks.forEach(race::storeTask);
                             race.blockFirstDecide();
-                            return inv.getArgument(0);
+                            return tasks;
                         })
                 .when(executionDAOFacade)
                 .createTasks(anyList());
-
-        race.run();
+        return race;
     }
 
     /**
@@ -261,6 +289,7 @@ public class TestWorkflowExecutorDecideLoop {
         final AtomicReference<WorkflowModel.Status> storedStatus =
                 new AtomicReference<>(WorkflowModel.Status.RUNNING);
         final List<WorkflowModel.Status> writes = new CopyOnWriteArrayList<>();
+        final Map<String, TaskModel> storedTasks = new ConcurrentHashMap<>();
         final CountDownLatch aBlocked = new CountDownLatch(1);
         final CountDownLatch bDone = new CountDownLatch(1);
         final WorkflowExecutorOps executor;
@@ -291,6 +320,23 @@ public class TestWorkflowExecutorDecideLoop {
                             })
                     .when(executionDAOFacade)
                     .updateWorkflow(any(WorkflowModel.class));
+            when(executionDAOFacade.getTaskModel(anyString()))
+                    .thenAnswer(
+                            inv -> {
+                                TaskModel stored = storedTasks.get(inv.<String>getArgument(0));
+                                return stored == null ? null : stored.copy();
+                            });
+            doAnswer(
+                            inv -> {
+                                storeTask(inv.getArgument(0));
+                                return null;
+                            })
+                    .when(executionDAOFacade)
+                    .updateTask(any(TaskModel.class));
+        }
+
+        void storeTask(TaskModel task) {
+            storedTasks.put(task.getTaskId(), task.copy());
         }
 
         /** Called from inside decide A: holds it until decide B has finished. */
@@ -321,6 +367,8 @@ public class TestWorkflowExecutorDecideLoop {
                     "decide A should report the finished workflow",
                     WorkflowModel.Status.COMPLETED,
                     resultA.getStatus());
+            // The status check needs the workflow row only, not the full task graph.
+            verify(executionDAOFacade, never()).getWorkflowModelFromExecutionDAO(workflowId, true);
         }
     }
 
