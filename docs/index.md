@@ -132,7 +132,7 @@ description: Conductor is an open-source platform for building production-grade 
     <h2>Join the community</h2>
   </div>
   <div class="integration-action-grid integration-action-grid--three">
-    <a class="integration-action-card" href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA">
+    <a class="integration-action-card" href="https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg">
       <span class="home-card-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.9-.9L3 21l2-5.4a8.3 8.3 0 0 1-1-4A8.4 8.4 0 0 1 12.5 3a8.4 8.4 0 0 1 8.5 8.5Z"/></svg></span>
       <span class="integration-action-card__title">Community</span>
       <span>Join the public Slack community to ask questions and share resources.</span>

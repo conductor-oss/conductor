@@ -33,7 +33,7 @@ Every entry in **Design Patterns** is a complete, runnable example:
 
 ## Community
 
-- [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-3dpcskdyd-W895bJDm8psAV7viYG3jFA) — ask questions and see how others use Conductor.
+- [Join the Conductor Slack](https://join.slack.com/t/orkes-conductor/shared_invite/zt-4gilmdmpj-Fu_PxACC60BG4ctur8OeDg) — ask questions and see how others use Conductor.
 - [Get help](../resources/contribute/get-help.md) — support channels and where to report issues.
 
 ## Contribute
