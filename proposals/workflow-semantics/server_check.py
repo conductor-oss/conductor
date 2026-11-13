@@ -33,8 +33,10 @@ SETTLE = 2.0   # seconds of quiet after a workflow ends before reading its final
 class Program:
     """A generated program, named as enumerate.render names it, in both forms."""
 
-    def __init__(self, tid, shape, kinds, failure_wf, rng):
-        self.tid, self.prefix = tid, f'spec{tid}_'
+    def __init__(self, tid, shape, kinds, failure_wf, rng, name=None):
+        # tid: the test's identity, from the seed: it decides every answer and choice, so a seed
+        # reproduces the test. name: unique per run, for the server's definitions.
+        self.tid, self.prefix = tid, f'spec{name or tid}_'
         self.failure_wf = failure_wf
         self.nodes = {}          # name -> (kind, info)
         self.leaf_defs = set()   # task definition names a worker answers
@@ -285,7 +287,12 @@ def run_test(srv, prog, op, deadline_s):
                     srv.call('POST', f'/workflow/{wid}/rerun', {'reRunFromWorkflowId': wid, 'reRunFromTaskId': t['taskId']}, text=True)
                     kind = ('rerun', spec_key(t))
         except urllib.error.HTTPError as e:
-            kind = None   # refused: the spec allows doing nothing
+            if e.code == 409:
+                kind = None   # refused as not allowed in the workflow's state: the spec allows doing nothing
+            else:
+                # anything else (a missing endpoint or task, no permission, throttling, a server
+                # error) is not an answer from the workflow's semantics: the test fails
+                return wid, None, f'operator call {op} failed: HTTP {e.code} {e.read()[:200]!r}'
         if kind:
             state['epoch'] = 1
             done_op = kind
@@ -349,6 +356,9 @@ def mc_module(name, prog, obs, status, failure, epoch, op):
     lines.append(f'CaseOf == {cases}\nItersOf == {iters}\nWidthOf == {widths}')
     lines.append('MCCases(i, k) == {CaseOf[k[1]]}\nMCWidths(i, k) == {WidthOf[k[1]]}')
     lines.append('MCGoesOn(i, k) == {inst[i].act[k].iter < ItersOf[k[1]]}')
+    # a rerun from a task is from that task only, as the server was asked
+    target = f'{{{key_tla(list(op[1]))}}}' if isinstance(op, tuple) and op[0] == 'rerun' else 'DOMAIN inst[i].act'
+    lines.append(f'MCRerunTargets(i) == {target}')
     o = ' @@ '.join(f'({key_tla(list(k))} :> [status |-> "{s}", attempt |-> {a}])' for k, (s, a, _) in obs.items()) \
         or '[x \\in {} |-> NONE]'
     lines.append(f'Obs == {o}')
@@ -378,6 +388,7 @@ def mc_cfg(ops):
     Cases <- MCCases
     Widths <- MCWidths
     GoesOn <- MCGoesOn
+    RerunTargets <- MCRerunTargets
 SPECIFICATION Spec
 INVARIANT Witness
 CHECK_DEADLOCK FALSE
@@ -427,25 +438,26 @@ def main():
         shape = rng.choice(shapes)
         kinds = [rng.choice([k for k in KINDS if k in slot]) for slot in gen.slots(shape)]
         op = rng.choice(['retry', 'restart', 'rerun']) if rng.random() < a.ops else None
-        tests.append((f'{run_id}x{i}', shape, kinds, rng.random() < 0.5, op))
+        tests.append((f's{a.seed}x{i}', f'{run_id}x{i}', shape, kinds, rng.random() < 0.5, op))
     srv = Server(a.server)
     results, lock = [], threading.Lock()
 
     def one(t):
-        tid, shape, kinds, fw, op = t
-        prog = Program(tid, shape, kinds, fw, random.Random(tid))
+        tid, name, shape, kinds, fw, op = t
+        prog = Program(tid, shape, kinds, fw, random.Random(tid), name)
         try:
             wid, res, err = run_test(srv, prog, op, a.deadline)
         except Exception as e:  # noqa
             return tid, 'driver error', repr(e), None
         if err:
-            return tid, 'server did not settle', f'{wid}: {err}', None
+            label = 'operator call failed' if err.startswith('operator call') else 'server did not settle'
+            return tid, label, f'{wid}: {err}', None
         wf, done_op = res
         obs, status, failure = observe(prog, wf, failure_started(srv, prog))
-        name = 'S' + tid.replace('x', '_')
-        text = mc_module(name, prog, obs, status, failure, 1 if done_op else 0, done_op)
-        d = tempfile.mkdtemp(prefix=name + '-')
-        verdict, out = tlc_reaches(name, text, 1 if done_op else 0, d)
+        module = 'S' + tid.replace('x', '_')
+        text = mc_module(module, prog, obs, status, failure, 1 if done_op else 0, done_op)
+        d = tempfile.mkdtemp(prefix=module + '-')
+        verdict, out = tlc_reaches(module, text, 1 if done_op else 0, d)
         detail = f'{wid} op={done_op} status={status} failure_wf={failure} tasks=' + \
             ', '.join(f'{k[0]}/{k[1]}.{k[2]}:{s}#{n}' for k, (s, n, _) in sorted(obs.items()))
         if verdict == 'reached':
@@ -463,14 +475,14 @@ def main():
                 k = r.choice(sorted(obs))
                 st, cnt, rc = obs[k]
                 bad_obs = {**obs, k: (st, cnt + 5, rc) if choice == 'attempts' else ('SKIPPED', cnt, rc)}
-            d2 = tempfile.mkdtemp(prefix=name + '-control-')
-            v2, _ = tlc_reaches(name, mc_module(name, prog, bad_obs, bad_status, failure, 1 if done_op else 0, done_op),
+            d2 = tempfile.mkdtemp(prefix=module + '-control-')
+            v2, _ = tlc_reaches(module, mc_module(module, prog, bad_obs, bad_status, failure, 1 if done_op else 0, done_op),
                                 1 if done_op else 0, d2)
             shutil.rmtree(d2, ignore_errors=True)
             if v2 != 'not reached':
                 return tid, 'control ' + v2, detail, d
         elif a.keep:
-            shutil.copytree(d, os.path.join(a.keep, name), dirs_exist_ok=True)
+            shutil.copytree(d, os.path.join(a.keep, module), dirs_exist_ok=True)
         return tid, verdict, detail, d
 
     with ThreadPoolExecutor(a.jobs) as pool:

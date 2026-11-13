@@ -15,7 +15,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SPEC = 'Workflow.tla'   # the module mutants change; check.py of another spec sets this
 JAVA = os.environ.get('JAVA', 'java')
 TOOLS = os.environ['TLA2TOOLS']
-MODELS = ['MC_Compose', 'MC_Loop', 'MC_LoopFork', 'MC_Sub', 'MC_Timeout', 'MC_Term', 'MC_ForkEnd', 'MC_Skip', 'MC_Dyn', 'MC_Budget', 'MC_Unjoined', 'MC_Ops', 'MC_LoopOps']
+MODELS = ['MC_Compose', 'MC_Loop', 'MC_LoopFork', 'MC_Sub', 'MC_Timeout', 'MC_Term', 'MC_ForkEnd', 'MC_Skip', 'MC_Dyn', 'MC_Budget', 'MC_Unjoined', 'MC_Ops', 'MC_LoopOps',
+          'MC_TermReady', 'MC_ForkLast', 'MC_DynLast', 'MC_SkipHead']
 
 # (name, model, text in Workflow.tla, replacement, property expected to fail)
 MUTANTS = [
@@ -36,9 +37,9 @@ MUTANTS = [
      '/\\ BodyDone(i) /\\ Quiet(i)\n    /\\ inst\' =', '/\\ BodyDone(i)\n    /\\ inst\' =',
      ('CompletedSound', 'EndedIsQuiet')),
     ('an unjoined branch never starts', 'MC_Compose',
-     ['[] o[1] = "branch" -> Open(i, <<o[2], it, 0>>)', 'HeadsOf(n) == {b \\in 1..Len(Nodes[n].branches) :'],
-     ['[] o[1] = "branch" -> Open(i, <<o[2], it, 0>>) /\\ o[3] = 1', 'HeadsOf(n) == {b \\in {1} :'],
-     ('CompletedSound', 'ForkStartsTogether')),
+     ['[] o[1] = "branch" -> Open(i, <<o[2], it, 0>>)', 'IF b > Len(Nodes[n].branches) THEN {w}'],
+     ['[] o[1] = "branch" -> Open(i, <<o[2], it, 0>>) /\\ o[3] = 1', 'IF b > 1 THEN {w}'],
+     ('CompletedSound', 'ScheduledTogether')),
 
     ('ending does not cancel', 'MC_Compose',
      'Cancelled(a) == IF a.status = "SCHEDULED" THEN [a EXCEPT !.status = "CANCELED"] ELSE a',
@@ -46,7 +47,7 @@ MUTANTS = [
     ('optional failure ends the workflow', 'MC_Compose',
      'ELSE inst\' = IF nd.optional', 'ELSE inst\' = IF FALSE', 'FailedSound'),
     ('output from nowhere', 'MC_Compose',
-     '![i].out = IF Defs[inst[i].wf].outParams THEN <<"params">> ELSE LastKey(i)]',
+     '![i].out = IF Defs[inst[i].wf].outParams THEN <<"params">> ELSE LastOut(i)]',
      '![i].out = NoKey]', 'OutputSound'),
     ('the server may stop', 'MC_Compose',
      'Spec == Init /\\ [][Next]_vars /\\ WF_vars(Server) /\\ WF_vars(Respond)',
@@ -102,7 +103,8 @@ MUTANTS = [
     ('a spent budget fails an optional task\'s workflow', 'MC_Ops',
      'ELSE inst\' = IF nd.optional', 'ELSE inst\' = IF nd.optional /\\ ~a.spent', 'FailedSound'),
     ('a skipped task runs', 'MC_Ops',
-     '    /\\ IF k[3] = 0 /\\ n \\in inst[i].skipped\n', '    /\\ IF FALSE\n', 'SkippedNeverRuns'),
+     'ELSE IF s[j] \\in inst[i].skipped', 'ELSE IF FALSE',
+     'SkippedNeverRuns'),
     ('a rerun starts from a skipped task', 'MC_Ops',
      '/\\ IsLeaf(k[1]) /\\ inst[i].act[k].status # "SKIPPED"', '/\\ IsLeaf(k[1])', 'SkippedNeverRuns'),
     ('an optional task gives up before its retries', 'MC_Ops',
@@ -145,7 +147,7 @@ MUTANTS = [
      '\nTimeOut(i, k) ==\n    /\\ inst[i].status = "RUNNING"', '\nTimeOut(i, k) ==\n    /\\ inst[i].status \\in {"RUNNING", "PAUSED"}',
      'PausedIsFrozen'),
     ('a restart keeps its skips', 'MC_Ops',
-     '!.act = [k \\in {} |-> NONE], !.skipped = {}]', '!.act = [k \\in {} |-> NONE]]', 'ReopenSound'),
+     '!.act = [k \\in {} |-> NONE], !.skipped = {},', '!.act = [k \\in {} |-> NONE],', 'ReopenSound'),
     ('a retry reopens a COMPLETED workflow', 'MC_ForkEnd',
      'Retry(i) ==\n    /\\ Op /\\ inst[i].parent = NoKey\n    /\\ inst[i].status \\in WfFailed',
      'Retry(i) ==\n    /\\ Op /\\ inst[i].parent = NoKey\n    /\\ inst[i].status \\in WfTerminal', 'ReopenSound'),
@@ -166,7 +168,8 @@ MUTANTS = [
      'Retriable    == {"FAILED", "TIMED_OUT"}', 'Retriable    == {"FAILED", "TIMED_OUT", "FAILED_WITH_TERMINAL_ERROR"}',
      'RetryOnlyWhenAllowed'),
     ('a fork starts its branches one by one', 'MC_ForkEnd',
-     'HeadsOf(n) == {b \\in 1..Len(Nodes[n].branches) :', 'HeadsOf(n) == {b \\in {} :', 'ForkStartsTogether'),
+     'StartBranches(i, Add(w, k, Act("RUNNING")), n, it, 1)', 'StartBranches(i, Add(w, k, Act("RUNNING")), n, it, 99)',
+     'ScheduledTogether'),
     ('an operator terminate ends the workflow FAILED', 'MC_Term',
      'inst\' = EndIn(inst, i, "TERMINATED", Cause("operator", NoKey), FALSE)', 'inst\' = EndIn(inst, i, "FAILED", Cause("operator", NoKey), FALSE)',
      'FailedSound'),
@@ -185,6 +188,37 @@ MUTANTS = [
     ('a rerun leaves its loop stopped', 'MC_LoopOps',
      '!.stopped = @ /\\ ~\\E r \\in gone \\cup {x \\in kept : redo(x)} : r[1] \\in Under[q[1]]]',
      '!.stopped = @ /\\ ~\\E r \\in gone : r[1] \\in Under[q[1]]]', ('LoopInOrder', 'EarlierIterationsSettled')),
+    ('a reopened workflow starts what was ready before its TERMINATE ends it', 'MC_TermReady',
+     '    /\\ ~inst[i].endsAgain   \\* (the server\'s first decide after the reopen ends it, scheduling nothing)\n', '',
+     'ReopenedEndsAgain'),
+    ('a sub-workflow task reattaches an ended child', 'MC_Sub',
+     "/\\ inst' = Append([inst EXCEPT ![i].act[k].child = Len(inst) + 1],\n                      NewInst(Nodes[k[1]].wf, <<i, k>>, 0))",
+     "/\\ \\/ inst' = Append([inst EXCEPT ![i].act[k].child = Len(inst) + 1],\n                         NewInst(Nodes[k[1]].wf, <<i, k>>, 0))\n"
+     "       \\/ \\E c \\in 1..Len(inst) : /\\ inst[c].parent = <<i, k>> /\\ inst[c].status \\in WfTerminal\n"
+     "                             /\\ inst' = [inst EXCEPT ![i].act[k].child = c]",
+     'NewRunNewChild'),
+    ('an end starts two failure workflows', 'MC_Term',
+     'THEN Append(e, NewInst(fw, NoKey, i))', 'THEN Append(Append(e, NewInst(fw, NoKey, i)), NewInst(fw, NoKey, i))',
+     'FailureWorkflowSound'),
+    ('the output ignores the JOIN', 'MC_ForkLast',
+     '            \\cup {<<"join", k>> : k \\in {q \\in DOMAIN inst[i].act : inst[i].act[q].join > 0}}\n', '',
+     'OutputSound'),
+    ('a switch\'s case is scheduled in a later decision', 'MC_ForkLast',
+     'UNION {StartFrom(i, Add(w, k, [Act("RUNNING") EXCEPT !.choice = c]), Nodes[n].cases[c], 1, it) :',
+     'UNION {{Add(w, k, [Act("RUNNING") EXCEPT !.choice = c])} :', 'ScheduledTogether'),
+    ('a fork\'s JOIN is scheduled before its branches', 'MC_ForkLast',
+     '{JoinAt(x, k) : x \\in StartBranches(i, Add(w, k, Act("RUNNING")), n, it, 1)}',
+     'StartBranches(i, JoinAt(Add(w, k, Act("RUNNING")), k), n, it, 1)', 'ScheduledTogether'),
+    ('a dynamic fork\'s copies are scheduled in later decisions', 'MC_Dyn',
+     '{JoinAt(Copies(Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]), Nodes[n].leaf, it, x), k) :',
+     '{JoinAt(Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]), k) :', 'ScheduledTogether'),
+    ('a decision stops at a skipped task', 'MC_SkipHead',
+     'THEN StartFrom(i, Add(w, <<s[j], it, 0>>, Act("SKIPPED")), s, j + 1, it)',
+     'THEN {Add(w, <<s[j], it, 0>>, Act("SKIPPED"))}', 'ScheduledTogether'),
+    ('an empty dynamic fork schedules no JOIN', 'MC_DynLast',
+     '{JoinAt(Copies(Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]), Nodes[n].leaf, it, x), k) :',
+     '{IF x = 0 THEN Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]) ELSE JoinAt(Copies(Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]), Nodes[n].leaf, it, x), k) :',
+     'ScheduledTogether'),
 ]
 
 # (model, outcome, state predicate that must be reachable)
@@ -224,9 +258,30 @@ WITNESSES = [
     ('MC_Skip', 'a rerun after a TERMINATE completes the workflow again',
      'inst[1].epoch > 0 /\\ inst[1].status = "COMPLETED" /\\ inst[1].cause.kind = "terminate"'),
     ('MC_LoopOps', 'a rerun inside a loop completes', 'inst[1].epoch > 0 /\\ inst[1].status = "COMPLETED" /\\ Has(1, <<"p", 1, 0>>)'),
+    ('MC_TermReady', 'a task ready with a TERMINATE starts with it, and is cancelled',
+     'inst[1].epoch = 0 /\\ inst[1].status = "FAILED" /\\ Has(1, <<"b", 0, 0>>) /\\ inst[1].act[<<"b", 0, 0>>].status = "CANCELED"'),
+    ('MC_TermReady', 'a retry ends again at its TERMINATE, the ready task never started',
+     'inst[1].how = "retry" /\\ inst[1].status = "FAILED" /\\ inst[1].cause.kind = "terminate"'
+     ' /\\ Has(1, <<"a", 0, 0>>) /\\ inst[1].act[<<"a", 0, 0>>].status = "COMPLETED" /\\ ~Has(1, <<"b", 0, 0>>)'),
+    ('MC_ForkLast', 'the JOIN supplies the output, with a switch\'s case scheduled with the fork',
+     'inst[1].status = "COMPLETED" /\\ inst[1].out = <<"join", <<"f", 0, 0>>>> /\\ Has(1, <<"c", 0, 0>>)'),
+    ('MC_SkipHead', 'a fork passes over a skipped branch head to the next task; the task after it supplies the output',
+     'inst[1].status = "COMPLETED" /\\ Has(1, <<"b", 0, 0>>) /\\ inst[1].act[<<"b", 0, 0>>].status = "SKIPPED"'
+     ' /\\ ~("b2" \\in inst[1].skipped) /\\ inst[1].act[<<"b2", 0, 0>>].seq < inst[1].act[<<"f", 0, 0>>].join'
+     ' /\\ inst[1].out = <<"c", 0, 0>>'),
+    ('MC_SkipHead', 'a fork passes over two skipped tasks, and the JOIN supplies the output',
+     'inst[1].status = "COMPLETED" /\\ Has(1, <<"b", 0, 0>>) /\\ inst[1].act[<<"b", 0, 0>>].status = "SKIPPED"'
+     ' /\\ Has(1, <<"b2", 0, 0>>) /\\ inst[1].act[<<"b2", 0, 0>>].status = "SKIPPED"'
+     ' /\\ inst[1].out = <<"join", <<"f", 0, 0>>>>'),
+    ('MC_DynLast', 'an empty dynamic fork\'s JOIN supplies the output',
+     'inst[1].status = "COMPLETED" /\\ inst[1].act[<<"d", 0, 0>>].choice = 0 /\\ inst[1].out = <<"join", <<"d", 0, 0>>>>'),
+    ('MC_DynLast', 'a dynamic fork\'s JOIN after its copies supplies the output',
+     'inst[1].status = "COMPLETED" /\\ inst[1].act[<<"d", 0, 0>>].choice = 2 /\\ inst[1].out = <<"join", <<"d", 0, 0>>>>'),
+    ('MC_ForkLast', 'a retried branch task supplies the output', 'inst[1].status = "COMPLETED" /\\ inst[1].out = <<"b", 0, 0>>'),
 ]
 
 TIMES = []
+TEMPORAL = 'violated a temporal property'
 
 
 def tlc(directory, model, workers=1):
@@ -246,6 +301,8 @@ def verdict(out):
     m = re.search(r'(?:Invariant|Action property|Temporal property) (\w+) (?:is|was) violated', out)
     if m:
         return 'violated ' + m.group(1)
+    if 'Temporal properties were violated' in out:
+        return TEMPORAL   # some TLC versions do not name the temporal property
     if 'No error has been found' in out:
         return 'ok'
     return 'error: ' + '\n'.join(out.splitlines()[-15:])
@@ -306,7 +363,9 @@ def check_mutant(mutant):
         expected = expected if isinstance(expected, tuple) else (expected,)
         only_properties(d, model, expected)
         v = verdict(tlc(d, model))
-    caught = any(v == 'violated ' + e for e in expected)
+    # (a mutant's model keeps only the properties it expects to trip, so an unnamed
+    # temporal violation is one of them)
+    caught = any(v == 'violated ' + e for e in expected) or v == TEMPORAL
     return f'mutant "{name}": {"caught by " + " or ".join(expected) if caught else "NOT caught (" + v + ")"}', not caught
 
 

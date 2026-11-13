@@ -183,7 +183,10 @@ def main():
     print(counts)
     for name, verdict, info in bad:
         print(name, verdict, '' if verdict == 'timeout' else info)   # a timeout is unchecked, not a failure
-    sys.exit(1 if any(verdict != 'timeout' for _, verdict, _ in bad) else 0)
+    checked = counts.get('ok', 0)
+    print(f'{checked} of {len(jobs)} checked, {counts.get("timeout", 0)} timed out unchecked')
+    failed = any(verdict != 'timeout' for _, verdict, _ in bad)
+    sys.exit(1 if failed or checked == 0 else 0)   # nothing checked is not a pass
 
 
 if __name__ == '__main__':

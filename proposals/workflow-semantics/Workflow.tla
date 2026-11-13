@@ -170,11 +170,13 @@ NewInst(w, parent, origin) ==
      out |-> NoKey,            \* where its output comes from: a key, <<"params">>
      epoch |-> 0,              \* bumped when an operator reopens it
      how |-> NONE,             \* how it was last reopened: "retry", "rerun", "restart"
+     endsAgain |-> FALSE,      \* reopened with a TERMINATE on record: it ends again, starting nothing
      clock |-> 1]
 
 \* A new activation; leaves hold the latest attempt. Put sets its seq.
 Act(st) == [status |-> st, attempt |-> 1, auto |-> 0, spent |-> FALSE, child |-> 0,
-            choice |-> 0, iter |-> 0, stopped |-> FALSE, seq |-> 0]
+            choice |-> 0, iter |-> 0, stopped |-> FALSE, seq |-> 0,
+            join |-> 0]   \* a fork's or dynamic fork's JOIN: where the server scheduled it, after its branches
 
 \* The next attempt of a leaf, created at seq.
 Fresh(a, seq) == [a EXCEPT !.status = "SCHEDULED", !.attempt = @ + 1, !.spent = FALSE,
@@ -270,8 +272,14 @@ Quiet(i) ==
 
 BodyDone(i) == SeqDone(i, Defs[inst[i].wf].body, 0)
 
-LastKey(i) == CHOOSE k \in DOMAIN inst[i].act :
-                 \A q \in DOMAIN inst[i].act : inst[i].act[q].seq <= inst[i].act[k].seq
+\* The places of what the server scheduled, in its order: each activation's,
+\* and each fork's JOIN's. A workflow that returns, with no outputParameters,
+\* outputs what was scheduled last: a task, or a JOIN (its branches' outputs).
+Spots(i) == {<<"act", k>> : k \in DOMAIN inst[i].act}
+            \cup {<<"join", k>> : k \in {q \in DOMAIN inst[i].act : inst[i].act[q].join > 0}}
+At(i, s) == IF s[1] = "act" THEN inst[i].act[s[2]].seq ELSE inst[i].act[s[2]].join
+OutOfSpot(s) == IF s[1] = "act" THEN s[2] ELSE <<"join", s[2]>>
+LastOut(i) == OutOfSpot(CHOOSE s \in Spots(i) : \A t \in Spots(i) : At(i, t) <= At(i, s))
 
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -317,56 +325,64 @@ Answers(i, k) == {"COMPLETED", "FAILED", "FAILED_WITH_TERMINAL_ERROR"}
 Cases(i, k)   == 1..Len(Nodes[k[1]].cases)
 Widths(i, k)  == 0..MaxBranches
 GoesOn(i, k)  == {TRUE, FALSE}
+RerunTargets(i) == DOMAIN inst[i].act   \* the activations an operator may rerun from
 
 -----------------------------------------------------------------------------
 (* The server *)
 
-\* A fork starts its branches together: in the same step as the fork, the
-\* first node of each branch starts when it is a task or a TERMINATE (as the
-\* server schedules them in one decision); a branch that starts with an
-\* operator starts it next. Several TERMINATEs may run together this way; the
-\* workflow then ends as one of them says. A TERMINATE that starts after
-\* another has run, in the same decision, may run too or be cancelled.
-HeadsOf(n) == {b \in 1..Len(Nodes[n].branches) :
-                  /\ Len(Nodes[n].branches[b]) > 0
-                  /\ \/ IsLeaf(Nodes[n].branches[b][1])
-                     \/ Kind(Nodes[n].branches[b][1]) = "terminate"}
+\* What the server schedules in one decision when it reaches node n of
+\* iteration it (getTasksToBeScheduled): the node and, recursively, a SWITCH's
+\* chosen case's first node; each branch's first node of a fork, then its
+\* JOIN; a dynamic fork's copies, then its JOIN. A DO_WHILE schedules its body
+\* in a later decision. Each gets the next seq in that order, a JOIN its own.
+\* A skipped node is SKIPPED, and the decision goes on to the next node of its
+\* sequence (passOverSkipped), past any number of them. A TERMINATE runs when none
+\* had run before the decision; after one ran, one started in the decision may
+\* run too, or be cancelled first. w holds the activations and clock as the
+\* decision builds them; the result is every way the decision can end.
+RECURSIVE StartNode(_, _, _, _), StartFrom(_, _, _, _, _), StartBranches(_, _, _, _, _)
 
-StartFork(i, k) ==
-  \E ran \in SUBSET HeadsOf(k[1]) :
-    LET n      == k[1]
-        c      == inst[i].clock
-        hs     == HeadsOf(n)
-        hk(b)  == <<Nodes[n].branches[b][1], k[2], 0>>
-        st(b)  == IF Nodes[n].branches[b][1] \in inst[i].skipped THEN "SKIPPED"
-                  ELSE IF Kind(Nodes[n].branches[b][1]) = "terminate"
-                       THEN IF Terminated(i) = {} \/ b \in ran THEN "COMPLETED" ELSE "CANCELED"
-                  ELSE "SCHEDULED"
-        heads  == [q \in {hk(b) : b \in hs} |->
-                     LET b == CHOOSE x \in hs : hk(x) = q IN [Act(st(b)) EXCEPT !.seq = c + b]]
-    IN inst' = [inst EXCEPT ![i].act = ((k :> [Act("RUNNING") EXCEPT !.seq = c]) @@ heads) @@ @,
-                            ![i].clock = @ + 1 + Len(Nodes[n].branches)]
+Add(w, k, a) == [w EXCEPT !.act = (k :> [a EXCEPT !.seq = w.clock]) @@ @, !.clock = @ + 1]
+JoinAt(w, k) == [w EXCEPT !.act[k].join = w.clock, !.clock = @ + 1]
+Copies(w, leaf, it, width) ==
+    [w EXCEPT !.act = [q \in {<<leaf, it, j>> : j \in 1..width} |-> [Act("SCHEDULED") EXCEPT !.seq = w.clock + q[3] - 1]] @@ @,
+              !.clock = @ + width]
 
-\* Start a node that has been reached. Data-dependent choices are the world's.
+StartNode(i, w, n, it) ==
+    LET k == <<n, it, 0>> IN
+         CASE IsLeaf(n)              -> {Add(w, k, Act("SCHEDULED"))}
+           [] Kind(n) = "terminate" -> {Add(w, k, Act(st)) :
+                                           st \in IF Terminated(i) = {} THEN {"COMPLETED"} ELSE {"COMPLETED", "CANCELED"}}
+           [] Kind(n) = "switch"    -> UNION {StartFrom(i, Add(w, k, [Act("RUNNING") EXCEPT !.choice = c]), Nodes[n].cases[c], 1, it) :
+                                                 c \in Cases(i, k)}
+           [] Kind(n) = "fork"      -> {JoinAt(x, k) : x \in StartBranches(i, Add(w, k, Act("RUNNING")), n, it, 1)}
+           [] Kind(n) = "dynfork"   -> {JoinAt(Copies(Add(w, k, [Act("RUNNING") EXCEPT !.choice = x]), Nodes[n].leaf, it, x), k) :
+                                           x \in Widths(i, k)}
+           [] Kind(n) = "loop"      -> {Add(w, k, [Act("RUNNING") EXCEPT !.iter = 1])}
+
+\* From the node at index j of sequence s: the first one not skipped starts.
+StartFrom(i, w, s, j, it) ==
+    IF j > Len(s) THEN {w}
+    ELSE IF s[j] \in inst[i].skipped
+         THEN StartFrom(i, Add(w, <<s[j], it, 0>>, Act("SKIPPED")), s, j + 1, it)
+         ELSE StartNode(i, w, s[j], it)
+
+StartBranches(i, w, n, it, b) ==
+    IF b > Len(Nodes[n].branches) THEN {w}
+    ELSE UNION {StartBranches(i, x, n, it, b + 1) : x \in StartFrom(i, w, Nodes[n].branches[b], 1, it)}
+
+\* Start a node that has been reached, with what the server schedules with it.
+\* Data-dependent choices are the world's. (A copy is reached on its own only
+\* when a rerun forgot it.)
 Activate(i, k) ==
-    LET n == k[1] IN
     /\ inst[i].status = "RUNNING"
+    /\ ~inst[i].endsAgain   \* (the server's first decide after the reopen ends it, scheduling nothing)
     /\ Ready(i, k)
     /\ UNCHANGED ops
-    /\ IF k[3] = 0 /\ n \in inst[i].skipped
-       THEN Put(i, k, Act("SKIPPED"))
-       ELSE CASE IsLeaf(n)              -> Put(i, k, Act("SCHEDULED"))
-              [] Kind(n) = "switch"    -> \E c \in Cases(i, k) :
-                                             Put(i, k, [Act("RUNNING") EXCEPT !.choice = c])
-              [] Kind(n) = "fork"      -> StartFork(i, k)
-              [] Kind(n) = "dynfork"   -> \E w \in Widths(i, k) :
-                                             Put(i, k, [Act("RUNNING") EXCEPT !.choice = w])
-              [] Kind(n) = "loop"      -> Put(i, k, [Act("RUNNING") EXCEPT !.iter = 1])
-              [] Kind(n) = "terminate" ->
-                    \* after another TERMINATE ran, one started in the same decision may
-                    \* run too, or be cancelled first
-                    \E st \in IF Terminated(i) = {} THEN {"COMPLETED"} ELSE {"COMPLETED", "CANCELED"} :
-                        Put(i, k, Act(st))
+    /\ IF k[3] # 0
+       THEN Put(i, k, Act("SCHEDULED"))
+       ELSE \E w \in StartFrom(i, [act |-> inst[i].act, clock |-> inst[i].clock], SeqOf(Owner[k[1]]), Index[k[1]], k[2]) :
+               inst' = [inst EXCEPT ![i].act = w.act, ![i].clock = w.clock]
 
 \* A SUB_WORKFLOW attempt starts its child.
 Launch(i, k) ==
@@ -419,7 +435,7 @@ Complete(i) ==
     /\ Live(i)
     /\ BodyDone(i) /\ Quiet(i)
     /\ inst' = [inst EXCEPT ![i].status = "COMPLETED", ![i].cause = Cause("returned", NoKey),
-                            ![i].out = IF Defs[inst[i].wf].outParams THEN <<"params">> ELSE LastKey(i)]
+                            ![i].out = IF Defs[inst[i].wf].outParams THEN <<"params">> ELSE LastOut(i)]
     /\ UNCHANGED ops
 
 \* A TERMINATE that ran ends the workflow as it says: when it runs, and again
@@ -526,19 +542,26 @@ RerunFrom(w, k) ==
             ELSE [w.act[q] EXCEPT
                     !.iter = Max({1} \cup {r[2] : r \in {x \in kept : x[1] \in Under[q[1]] \ {q[1]}}}),
                     !.stopped = @ /\ ~\E r \in gone \cup {x \in kept : redo(x)} : r[1] \in Under[q[1]]]
+        \* a JOIN scheduled after the task goes too, and the rerun schedules it again
+        late == {q \in kept : w.act[q].join > cut}
+        rejoin(q, a) == IF q \in late
+                        THEN [a EXCEPT !.join = w.clock + Cardinality({r \in late : w.act[r].join < w.act[q].join})]
+                        ELSE a
     IN [w EXCEPT !.status = "RUNNING", !.cause = NoCause, !.out = NoKey, !.epoch = @ + 1, !.how = "rerun",
-                 !.act = [q \in kept |-> IF redo(q) THEN Reset(w.act[q]) ELSE fix(q)]]
+                 !.act = [q \in kept |-> rejoin(q, IF redo(q) THEN Reset(w.act[q]) ELSE fix(q))],
+                 !.clock = @ + Cardinality(late),
+                 !.endsAgain = \E q \in kept : Kind(q[1]) = "terminate" /\ w.act[q].status = "COMPLETED"]
 
 \* Rerun from the start.
 Restart(w) ==
     [w EXCEPT !.status = "RUNNING", !.cause = NoCause, !.out = NoKey, !.epoch = @ + 1, !.how = "restart",
-              !.act = [k \in {} |-> NONE], !.skipped = {}]
+              !.act = [k \in {} |-> NONE], !.skipped = {}, !.endsAgain = FALSE]
 
 Rerun(i) ==
     /\ Op /\ inst[i].parent = NoKey
     /\ inst[i].status \in WfTerminal
     /\ \/ inst' = [inst EXCEPT ![i] = Restart(@)]
-       \/ \E k \in DOMAIN inst[i].act :
+       \/ \E k \in RerunTargets(i) \cap DOMAIN inst[i].act :
              /\ IsLeaf(k[1]) /\ inst[i].act[k].status # "SKIPPED"
              /\ inst' = [inst EXCEPT ![i] = RerunFrom(@, k)]
 
@@ -552,7 +575,7 @@ Retry(i) ==
           /\ LET rank(q) == Cardinality({r \in redo : w.act[r].seq < w.act[q].seq}) IN
              inst' = [inst EXCEPT ![i] =
                         [w EXCEPT !.status = "RUNNING", !.cause = NoCause, !.out = NoKey, !.epoch = @ + 1, !.how = "retry",
-                                  !.clock = @ + Cardinality(redo),
+                                  !.clock = @ + Cardinality(redo), !.endsAgain = Terminated(i) # {},
                                   !.act = [q \in DOMAIN w.act |->
                                              IF q \in redo THEN Fresh(w.act[q], w.clock + rank(q))
                                              ELSE w.act[q]]]]
@@ -652,14 +675,34 @@ EarlierIterationsSettled ==
                     => inst[i].act[k].status \in {"COMPLETED", "COMPLETED_WITH_ERRORS", "SKIPPED"}
 
 \* A fork starts together the first task of each branch that starts with a task
-\* or a TERMINATE. (A rerun may forget some, which then start again.)
-ForkStartsTogether ==
+\* What the server schedules in one decision starts together, in its order:
+\* a switch's chosen case's first node after the switch; each branch's first
+\* node of a fork after the fork and before its JOIN; a dynamic fork's copies
+\* after it and before its JOIN. A node after only skipped ones counts as first. (Until a rerun, which forgets some of it; a
+\* later attempt of a task is scheduled when it is retried, after the JOIN.)
+ScheduledTogether ==
     \A i \in 1..Len(inst) : inst[i].epoch = 0 =>
         \A k \in DOMAIN inst[i].act :
-            (Nodes[k[1]].kind = "fork" /\ inst[i].act[k].status # "SKIPPED") =>
-                \A b \in 1..Len(Nodes[k[1]].branches) :
-                    LET h == Nodes[k[1]].branches[b][1] IN
-                    Nodes[h].kind \in {"task", "sub", "terminate"} => <<h, k[2], 0>> \in DOMAIN inst[i].act
+            LET a == inst[i].act[k]
+                n == k[1]
+                after(q) == q \in DOMAIN inst[i].act /\ inst[i].act[q].seq > a.seq
+                first(q) == ~IsLeaf(q[1]) \/ inst[i].act[q].attempt = 1
+                \* the nodes of sequence s that only skipped ones come before
+                heads(s) == {j \in 1..Len(s) : \A x \in 1..(j - 1) :
+                                <<s[x], k[2], 0>> \in DOMAIN inst[i].act /\ inst[i].act[<<s[x], k[2], 0>>].status = "SKIPPED"}
+            IN a.status # "SKIPPED" =>
+               CASE Kind(n) = "switch" ->
+                       \A j \in heads(Nodes[n].cases[a.choice]) : after(<<Nodes[n].cases[a.choice][j], k[2], 0>>)
+                 [] Kind(n) = "fork" ->
+                       /\ a.join > a.seq
+                       /\ \A b \in 1..Len(Nodes[n].branches) : \A j \in heads(Nodes[n].branches[b]) :
+                             LET q == <<Nodes[n].branches[b][j], k[2], 0>> IN
+                             after(q) /\ (first(q) => inst[i].act[q].seq < a.join)
+                 [] Kind(n) = "dynfork" ->
+                       /\ a.join > a.seq
+                       /\ \A j \in 1..a.choice :
+                             LET q == <<Nodes[n].leaf, k[2], j>> IN after(q) /\ (first(q) => inst[i].act[q].seq < a.join)
+                 [] OTHER -> TRUE
 
 \* A dynamic fork makes no more copies than its width.
 CopiesWithinWidth ==
@@ -681,12 +724,17 @@ FailureIsNotSuccess ==
            /\ inst'[i].act[k].status \in Successful)
               => inst'[i].act[k].status = "COMPLETED_WITH_ERRORS"]_vars
 
-\* Every new run of a SUB_WORKFLOW task gets a new child.
+\* Every new run of a SUB_WORKFLOW task gets a new child: the run starts with
+\* none, and the child it gets is the instance created in that step, for it.
 NewRunNewChild ==
     [][\A i \in 1..Len(inst) : \A k \in DOMAIN inst[i].act :
-          (Kind(k[1]) = "sub" /\ Has(i, k)' /\ inst[i].act[k].status # "SCHEDULED"
-           /\ inst'[i].act[k].status = "SCHEDULED")
-              => inst'[i].act[k].child = 0]_vars
+          /\ (Kind(k[1]) = "sub" /\ Has(i, k)' /\ inst[i].act[k].status # "SCHEDULED"
+              /\ inst'[i].act[k].status = "SCHEDULED")
+                 => inst'[i].act[k].child = 0
+          /\ (Kind(k[1]) = "sub" /\ Has(i, k)' /\ inst'[i].act[k].child \notin {0, inst[i].act[k].child})
+                 => /\ Len(inst') = Len(inst) + 1
+                    /\ inst'[i].act[k].child = Len(inst')
+                    /\ inst'[Len(inst')].parent = <<i, k>>]_vars
 
 \* A switch runs only the case it chose.
 SwitchExclusive ==
@@ -810,8 +858,9 @@ OutputSound ==
     \A i \in 1..Len(inst) : inst[i].status = "COMPLETED" =>
         IF inst[i].cause.kind = "terminate" THEN inst[i].out = inst[i].cause.key
         ELSE IF Defs[inst[i].wf].outParams THEN inst[i].out = <<"params">>
-        ELSE /\ inst[i].out \in DOMAIN inst[i].act
-             /\ \A q \in DOMAIN inst[i].act : inst[i].act[q].seq <= inst[i].act[inst[i].out].seq
+        ELSE LET places == {<<k, inst[i].act[k].seq>> : k \in DOMAIN inst[i].act}
+                           \cup {<<<<"join", k>>, inst[i].act[k].join>> : k \in {q \in DOMAIN inst[i].act : inst[i].act[q].join > 0}}
+             IN \E p \in places : (\A q \in places : q[2] <= p[2]) /\ inst[i].out = p[1]
 
 \* A SUB_WORKFLOW task's outcome is its child's: COMPLETED, FAILED, TIMED_OUT,
 \* or CANCELED for TERMINATED; an optional one that failed shows its errors.
@@ -845,7 +894,8 @@ NeverStuck ==
     \A i \in 1..Len(inst) : (Live(i) /\ Quiet(i)) => BodyDone(i)
 
 \* A failure workflow starts exactly when a workflow that has one ends with a
-\* failure of its own, not when an operator or its parent terminated it.
+\* failure of its own, not when an operator or its parent terminated it; one
+\* per such end.
 FailureWorkflowSound ==
     [][/\ \A j \in (Len(inst) + 1)..Len(inst') :
             inst'[j].origin # 0 =>
@@ -857,7 +907,14 @@ FailureWorkflowSound ==
             (/\ inst[o].status \notin WfFailed /\ inst'[o].status \in WfFailed
              /\ inst'[o].cause.kind \notin {"operator", "parent"}
              /\ Defs[inst[o].wf].failureWf # NONE)
-                => \E j \in (Len(inst) + 1)..Len(inst') : inst'[j].origin = o]_vars
+                => Cardinality({j \in (Len(inst) + 1)..Len(inst') : inst'[j].origin = o}) = 1]_vars
+
+\* A workflow an operator reopened with a TERMINATE on record ends again as
+\* that TERMINATE says, and nothing new starts first: the server's first decide
+\* after the reopen schedules nothing and ends it.
+ReopenedEndsAgain ==
+    [][\A i \in 1..Len(inst) :
+          (inst[i].status = "RUNNING" /\ inst[i].endsAgain) => DOMAIN inst'[i].act \subseteq DOMAIN inst[i].act]_vars
 
 \* An ended workflow stays ended until an operator reopens it.
 EndIsFinal ==

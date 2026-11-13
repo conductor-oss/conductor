@@ -33,12 +33,15 @@ times out and may be retried; a spent total budget allows no further attempt, so
 like any other, and an optional one completes with errors. Under `TIME_OUT_WF` the task and the
 workflow time out. Under `ALERT_ONLY` nothing changes.
 
-A fork starts the first task of each branch in the same step as itself, as the server schedules
-them in one decision, so a `TERMINATE` at the head of one branch does not stop the other branches'
-first tasks from starting; they are then cancelled. Several `TERMINATE`s can run together this way,
-and the workflow ends as one of them says. A `TERMINATE` that starts after another has run, in
-the same decision (inside a switch case or loop at the head of a branch), may run too or be
-cancelled.
+Reaching a node starts, in one step and in the server's order, what the server schedules with it
+in one decision: a `SWITCH` with its chosen case's first node; a fork with each branch's first node
+and then its `JOIN`; a dynamic fork with its copies and then its `JOIN` (only the `JOIN` when there
+are none); recursively. A skipped node is passed over in the same decision: the next node of its
+sequence starts instead, past any number of skipped ones. A `DO_WHILE` schedules its body in a
+later decision. So a `TERMINATE` at
+the head of one branch does not stop the other branches' first tasks from starting; they are then
+cancelled. Several `TERMINATE`s can run together this way, and the workflow ends as one of them
+says; after one has run, one started in the same decision may run too or be cancelled.
 
 A loop iteration is a scope: the next iteration starts only once everything the last one started has
 settled, including fork branches no JOIN waits for. Ending a workflow cancels its running tasks and
@@ -47,7 +50,8 @@ terminates the children of its sub-workflow tasks.
 Operators can pause, resume, terminate, skip a task that has not run, rerun from the start or from a
 task, and retry. A retry gives each task that had not succeeded one new attempt; a rerun runs them
 again in place and uses no retry, and cannot start from a skipped task. A `TERMINATE` that ran
-ends the workflow again whenever it is reopened; a skipped one does nothing. A workflow that ends with a failure of its own starts its failure workflow.
+ends the workflow again whenever it is reopened, and nothing new starts first (the server's first
+decide after the reopen schedules nothing); a skipped one does nothing. A workflow that ends with a failure of its own starts its failure workflow.
 
 ## What it promises
 
@@ -58,7 +62,7 @@ ends the workflow again whenever it is reopened; a skipped one does nothing. A w
 | `CopiesWithinWidth` | a dynamic fork makes no more copies than its width |
 | `TerminateDecides` | once a `TERMINATE` has run, the workflow ends as it says, unless its parent ended it first |
 | `NoAnswerAfterTerminate` | once a `TERMINATE` has run, a running attempt can only be cancelled |
-| `ForkStartsTogether` | a fork starts together the first task of each branch that starts with a task or a `TERMINATE` |
+| `ScheduledTogether` | what the server schedules in one decision starts together, in its order: a switch's chosen case after the switch; each branch's first node after its fork and before its `JOIN`; a dynamic fork's copies after it and before its `JOIN`. A node after only skipped ones counts as first |
 | `EarlierIterationsSettled` | every task in a loop's finished iterations succeeded |
 | `SwitchExclusive` | a switch runs only the case it chose |
 | `JoinWaits` | what follows a fork starts only after the branches its `JOIN` names have finished |
@@ -71,14 +75,15 @@ ends the workflow again whenever it is reopened; a skipped one does nothing. A w
 | `EndedIsQuiet` | nothing runs in an ended workflow |
 | `CompletedSound` | `COMPLETED` means everything that started finished, every branch of every fork included, and nothing is left, or a `TERMINATE` that ran said so |
 | `FailedSound` | a failed end has a reason: a task with no recovery left, a `TERMINATE`, a timeout, an operator, or the parent ending |
-| `OutputSound` | the output comes from the `TERMINATE`, the `outputParameters`, or the task scheduled last |
+| `OutputSound` | the output comes from the `TERMINATE`, the `outputParameters`, or what was scheduled last: a task, or a fork's `JOIN` |
 | `FailureIsNotSuccess` | after a failure, the only way to a successful status is `COMPLETED_WITH_ERRORS` |
 | `SubMirrorsChild` | a `SUB_WORKFLOW` task's outcome is its child's |
-| `NewRunNewChild` | every new run of a `SUB_WORKFLOW` task gets a new child |
+| `NewRunNewChild` | every new run of a `SUB_WORKFLOW` task gets a new child: the instance created for it in that step, never an earlier one |
 | `ParentEndTerminates` | a child its parent ended is `TERMINATED` |
 | `ChildrenFollowParent` | a child runs only while its parent's `SUB_WORKFLOW` task waits for it |
 | `NeverStuck` | a running workflow with nothing running and nothing to start has finished its body, so it can complete |
-| `FailureWorkflowSound` | the failure workflow starts exactly when the workflow ends with a failure of its own, not an operator's or its parent's terminate |
+| `FailureWorkflowSound` | the failure workflow starts exactly when the workflow ends with a failure of its own, not an operator's or its parent's terminate, and only once per such end |
+| `ReopenedEndsAgain` | a workflow reopened with a `TERMINATE` on record starts nothing new before it ends again |
 | `EndIsFinal` | an ended workflow stays ended until an operator reruns or retries it |
 | `SuccessIsFinal` | a task that succeeded keeps its result until an operator reopens the workflow |
 | `ReopenSound` | a retry gives each task that had not succeeded one new attempt; a rerun runs it again in place; both give a fresh time budget and keep what had succeeded, except the task a rerun starts from |
@@ -92,42 +97,53 @@ allow.
 
 | Model | Program | States |
 |---|---|---|
-| `MC_Compose` | a task retried once; a switch whose default is empty; an optional task; a fork whose `JOIN` waits for one of two branches; a last task | 416 |
-| `MC_Loop` | a loop of up to two iterations whose body is a switch and a dynamic fork of up to two optional copies | 7,384 |
-| `MC_LoopFork` | a loop around a fork whose first branch ends in a switch and whose `JOIN` waits for that branch only; then a sub-workflow | 1,219 |
-| `MC_Sub` | a sub-workflow retried once, whose child may `TERMINATE` as failed; a task; a failure workflow; one operator action | 12,530 |
+| `MC_Compose` | a task retried once; a switch whose default is empty; an optional task; a fork whose `JOIN` waits for one of two branches; a last task | 414 |
+| `MC_Loop` | a loop of up to two iterations whose body is a switch and a dynamic fork of up to two optional copies | 2,731 |
+| `MC_LoopFork` | a loop around a fork whose first branch ends in a switch and whose `JOIN` waits for that branch only; then a sub-workflow | 1,184 |
+| `MC_Sub` | a sub-workflow retried once, whose child may `TERMINATE` as failed; a task; a failure workflow; one operator action | 12,143 |
 | `MC_Timeout` | a sub-workflow; a task that can time the workflow out; a workflow timeout; a failure workflow | 194 |
-| `MC_Term` | a fork of a task and a `TERMINATE` as failed, then a task; a failure workflow; one operator action | 1,149 |
-| `MC_ForkEnd` | a fork of a `TERMINATE` as completed, a `TERMINATE` as failed then a task, and a task; one operator action | 45 |
-| `MC_Skip` | a task, a `TERMINATE` as completed, a task; a failure workflow; two operator actions | 21,416 |
-| `MC_Dyn` | a dynamic fork of up to two copies of a task retried once, then a task; one operator action | 8,025 |
+| `MC_Term` | a fork of a task and a `TERMINATE` as failed, then a task; a failure workflow; one operator action | 1,148 |
+| `MC_ForkEnd` | a fork of a `TERMINATE` as completed, a `TERMINATE` as failed then a task, and a task; one operator action | 42 |
+| `MC_Skip` | a task, a `TERMINATE` as completed, a task; a failure workflow; two operator actions | 21,362 |
+| `MC_Dyn` | a dynamic fork of up to two copies of a task retried once, then a task; one operator action | 4,095 |
 | `MC_Budget` | a task with a retry and a total budget under `TIME_OUT_WF`, then a task | 30 |
-| `MC_Unjoined` | a fork of a task and a loop, joining only the task, then a task | 689 |
-| `MC_Ops` | a task with a retry and a total budget; a fork of an optional task with a retry and a total budget and a plain task; a task with timeouts and a total budget under `ALERT_ONLY`; two operator actions of any kind | 93,047 |
-| `MC_LoopOps` | a loop of up to two iterations around a switch whose case retries once, then a task; two operator actions of any kind | 24,449 |
+| `MC_Unjoined` | a fork of a task and a loop, joining only the task, then a task | 527 |
+| `MC_Ops` | a task with a retry and a total budget; a fork of an optional task with a retry and a total budget and a plain task; a task with timeouts and a total budget under `ALERT_ONLY`; two operator actions of any kind | 101,474 |
+| `MC_LoopOps` | a loop of up to two iterations around a switch whose case retries once, then a task; two operator actions of any kind | 23,979 |
+| `MC_TermReady` | a fork of a task then a `TERMINATE` as failed, a task then another, and a task; then a task; one operator action. The `TERMINATE` can end the workflow with a task ready but not started | 10,662 |
+| `MC_ForkLast` | a task; then, last, a fork of a task retried once and a switch (a task, or nothing): the output comes from the `JOIN` or from the retry | 82 |
+| `MC_DynLast` | a task; then, last, a dynamic fork of up to two copies: the output comes from the `JOIN`, also with no copies | 49 |
+| `MC_SkipHead` | a task; then, last, a fork of three tasks in a row and a task; two operator actions, such as skipping the first one or two of the row while the first task runs | 41,363 |
 
 **Are the properties able to fail?** `check.py` runs the models, then:
 
-- 63 mutants each break one rule, and each must be caught by a property it names, or must make an
+- 72 mutants each break one rule, and each must be caught by a property it names, or must make an
   outcome unreachable that the rule allows.
-- 26 witnesses each name an outcome a model must reach: the workflow completes, fails, and times
+- 34 witnesses each name an outcome a model must reach: the workflow completes, fails, and times
   out; a branch runs on past its join; a child is terminated with its parent; a reopened workflow
-  ends again at its `TERMINATE`; a skipped `TERMINATE` is passed over.
+  ends again at its `TERMINATE`, and a task ready with a `TERMINATE` still starts with it in the
+  run where it ran; a skipped `TERMINATE` is passed over; the output comes from a fork's `JOIN`
+  with a switch's case scheduled with the fork, from an empty dynamic fork's `JOIN`, and from a
+  fork's `JOIN` after it passed over skipped tasks at the head of a branch.
 
 **Every program, not chosen ones.** `enumerate.py` generates every program up to a size from all the
 constructs and every task kind, and checks each one with all the properties.
 
-On this version: every program up to 3 nodes (1,314), a sample of 600 programs of 4 nodes, and a
-sample of 400 programs of 3 nodes with one operator action. 2,303 pass, none breaks a property, and
-11 hit the 15-minute limit and remain unchecked, all of them with an operator action.
+On this version: every program up to 3 nodes (1,314) passes, none timed out. The samples of 600
+programs of 4 nodes and 400 programs of 3 nodes with one operator action were run on the version
+before a decision scheduled what the server schedules with it: none broke a property, and 11 hit
+the 15-minute limit and remain unchecked, all of them with an operator action.
 
 **Against a real server.** `server_check.py` runs generated programs on a server as ordinary
 workflows. It fixes the world's choices in advance: each attempt's answer, each switch's case, each
 loop's iterations, each dynamic fork's width. It answers every task as planned, and some tests then
 retry or rerun the ended workflow. TLC then confirms that the server's final state (each task's
 status and attempts, the workflow's status, whether the failure workflow started) is one the spec
-reaches under those choices. Each test also checks an observation the spec cannot reach, which must
-not match.
+reaches under those choices. A rerun from a task is checked as a rerun from that task only. An
+operator call the server refuses as not allowed in the workflow's state (409) is allowed as doing
+nothing; any other error (a missing endpoint or task, no permission, throttling, a server error)
+fails the test. A test's answers and choices come from `--seed` alone, so a seed reproduces its
+tests; only the names registered on the server differ from run to run. Each test also checks an observation the spec cannot reach, which must not match.
 
 On this version, before the fix of item 5, 384 of 400 tests matched (200 of 3 nodes, 200 of 4).
 The other 16 are server behaviours listed below: 6 of item 1, 2 of item 2, 1 of item 6, and 2 of
@@ -153,14 +169,16 @@ TLA2TOOLS=/path/to/tla2tools.jar python3 server_check.py --server http://localho
 
 `TLA2TOOLS=/path/to/tla2tools.jar ./verify.sh` validates the spec in about a minute: every model,
 mutant and witness, and 100 generated programs at 20 seconds each. Give it a server URL to add 40
-tests against that server. The commands above are the full runs, for a final sign-off.
+tests against that server. It fails when any of them fails, and `enumerate.py` fails when no program
+was checked (a program that times out is unchecked, not passed). The commands above are the full runs, for a final sign-off.
 
 `./run.sh MC_Compose` checks one model.
 
 **What these checks do not show.** TLC checks small programs, within bounds of two loop iterations,
 two dynamic copies and two operator actions. Nothing here is a proof for programs of any size.
 Some properties still mirror the rule they check (`RetryOnlyWhenAllowed`, `TimeoutsFollowPolicy`,
-`FailureWorkflowSound`, `LoopInOrder`, `Justified`); for those, the independent evidence is the server
+`FailureWorkflowSound`, `LoopInOrder`, `Justified`, and `ReopenedEndsAgain`, which reads the record
+a reopen keeps of a `TERMINATE` on record); for those, the independent evidence is the server
 tests. The server tests compare final states only, so ordering during a run is not compared, and they
 check only that the server stays within the spec, so a spec that allows too much goes unnoticed. They
 use no timeouts, pause, skip or operator terminate, no dynamic fork inside a loop, and each switch
@@ -231,7 +249,10 @@ was fixed (see `DECIDER_BUGS.md`).
   workflow: that is an action taken on the workflow, not a business failure of its
   own.
 - A workflow with no `outputParameters` outputs the last scheduled task's output, so with parallel
-  branches the output depends on timing.
+  branches the output depends on timing. A fork's `JOIN` is scheduled right after what the fork
+  schedules with it (each branch's first node, recursively, or a dynamic fork's copies), so when
+  nothing is scheduled after those the `JOIN`'s output, the branches' outputs together, is the
+  workflow's. After a rerun forgets a `JOIN`, it is scheduled again at the rerun.
 - A rerun from a task forgets everything scheduled after it, in time order, not program order: a
   rerun from a task in one branch also redoes tasks another branch scheduled later.
 - A retry counts against the retry budget, so a task retried after using its retries gets one

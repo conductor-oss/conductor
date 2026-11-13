@@ -9,9 +9,12 @@ CHECK=${PIPESTATUS[0]}
 echo "check.py: exit $CHECK after $((SECONDS - START))s"
 python3 enumerate.py --size 3 --limit 100 --timeout 20 --jobs 16 --seed $RANDOM
 SWEPT=$?
+echo "enumerate.py: exit $SWEPT"
+SERVER=0
 if [ -n "$1" ]; then
   python3 server_check.py --server "$1" --tests 40 --size 3 --jobs 6 --settle 1 --deadline 25 --seed $RANDOM
-  echo "server_check.py: any mismatches are listed above"
+  SERVER=$?
+  echo "server_check.py: exit $SERVER (any mismatches are listed above)"
 fi
 echo "total $((SECONDS - START))s"
-[ $CHECK -eq 0 ] && [ $SWEPT -eq 0 ]
+[ $CHECK -eq 0 ] && [ $SWEPT -eq 0 ] && [ $SERVER -eq 0 ]
