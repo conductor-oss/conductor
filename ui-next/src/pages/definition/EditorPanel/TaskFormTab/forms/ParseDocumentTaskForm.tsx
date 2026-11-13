@@ -405,8 +405,8 @@ export const ParseDocumentTaskForm = ({ task, onChange }: TaskFormProps) => {
                 PARSE_DOCUMENT_MEDIA_TYPES.find((opt) => opt.value === option)
                   ?.label ?? option.toString()
               }
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
+              renderOption={({ key, ...props }, option) => (
+                <Box component="li" key={key} {...props}>
                   <Typography>
                     {PARSE_DOCUMENT_MEDIA_TYPES.find(
                       (opt) => opt.value === option,
