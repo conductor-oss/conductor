@@ -15,7 +15,12 @@ package org.conductoross.conductor.core.execution;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -33,8 +38,14 @@ import com.netflix.conductor.service.ExecutionLockService;
 
 import tools.jackson.databind.ObjectMapper;
 
+import static com.netflix.conductor.core.utils.Utils.DECIDER_QUEUE;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -72,6 +83,7 @@ public class WorkflowSweeperTest {
         when(properties.getMaxPostponeDurationSeconds()).thenReturn(Duration.ofSeconds(3600));
         when(properties.getLockLeaseTime()).thenReturn(Duration.ofSeconds(60));
         when(properties.getSweeperThreadCount()).thenReturn(0);
+        when(sweeperProperties.getShutdownTimeout()).thenReturn(30_000L);
 
         workflowSweeper =
                 new WorkflowSweeper(
@@ -216,6 +228,79 @@ public class WorkflowSweeperTest {
         verify(queueDAO).containsMessage(TaskType.TASK_TYPE_HTTP, httpTask.getTaskId());
         verify(queueDAO, never()).push(anyString(), anyString(), anyLong());
         verify(executionLockService).releaseLock(WORKFLOW_ID);
+    }
+
+    @Test
+    public void stopDrainsInFlightSweepWithoutInterrupting() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        WorkflowSweeper sweeper = newSweeper(executor);
+        CountDownLatch started = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean(false);
+        AtomicBoolean completed = new AtomicBoolean(false);
+        executor.execute(
+                () -> {
+                    started.countDown();
+                    try {
+                        Thread.sleep(500);
+                        completed.set(true);
+                    } catch (InterruptedException e) {
+                        interrupted.set(true);
+                    }
+                });
+        assertTrue(started.await(5, TimeUnit.SECONDS));
+
+        sweeper.stop();
+
+        assertTrue(executor.isTerminated());
+        assertTrue(completed.get());
+        assertFalse(interrupted.get());
+    }
+
+    @Test
+    public void stopSkipsRemainingWorkflowsInPoppedBatch() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        when(properties.getSweeperThreadCount()).thenReturn(1);
+        when(sweeperProperties.getSweepBatchSize()).thenReturn(2);
+        when(sweeperProperties.getQueuePopTimeout()).thenReturn(10);
+        when(queueDAO.pop(eq(DECIDER_QUEUE), anyInt(), anyInt()))
+                .thenReturn(List.of("wf-1", "wf-2"));
+        CountDownLatch sweepStarted = new CountDownLatch(1);
+        CountDownLatch releaseSweep = new CountDownLatch(1);
+        when(executionLockService.acquireLock("wf-1"))
+                .thenAnswer(
+                        invocation -> {
+                            sweepStarted.countDown();
+                            releaseSweep.await();
+                            return false;
+                        });
+        WorkflowSweeper sweeper = newSweeper(executor);
+        sweeper.start();
+        assertTrue(sweepStarted.await(5, TimeUnit.SECONDS));
+
+        Thread stopper = new Thread(sweeper::stop);
+        stopper.start();
+        while (sweeper.isRunning()) {
+            Thread.sleep(10);
+        }
+        Thread.sleep(100);
+        releaseSweep.countDown();
+        stopper.join(5_000);
+
+        assertTrue(executor.isTerminated());
+        verify(executionLockService, never()).acquireLock("wf-2");
+    }
+
+    private WorkflowSweeper newSweeper(Executor executor) {
+        return new WorkflowSweeper(
+                executor,
+                queueDAO,
+                workflowExecutor,
+                executionDAO,
+                properties,
+                sweeperProperties,
+                systemTaskRegistry,
+                objectMapper,
+                executionLockService);
     }
 
     private WorkflowModel newWorkflow(List<TaskModel> tasks) {
