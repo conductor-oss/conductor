@@ -702,7 +702,7 @@ class MCPWorkersTest {
     @Test
     void pollIntervalIsRoundedUpOrDefaults() {
         assertInProgress(startCreatedTask(1500L), 2);
-        assertInProgress(startCreatedTask(null), McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(startCreatedTask(null), McpTasksCall.DEFAULT_POLL.toSeconds());
     }
 
     @Test
@@ -775,7 +775,17 @@ class MCPWorkersTest {
 
         poll(task);
 
-        assertPollFailed(task, "-32603", "boom");
+        assertPollFailed(task, "failed: JSON-RPC error -32603 boom");
+    }
+
+    @Test
+    void failedTaskWithMalformedErrorFieldsUsesPlaceholders() {
+        TaskModel task = startCreatedTask(5000L);
+        enqueueTaskStatus("\"status\":\"failed\",\"error\":{\"code\":\"abc\"}");
+
+        poll(task);
+
+        assertPollFailed(task, "failed: JSON-RPC error (no code) (no message)");
     }
 
     @Test
@@ -835,7 +845,7 @@ class MCPWorkersTest {
         enqueueTaskStatus("\"status\":\"working\",\"statusMessage\":\"still going\"");
         poll(task);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(
                 json(
                         "{\"mcpTask\":{\"taskId\":\"t-1\",\"pollFailures\":0,\"retryCount\":0,\"pollIntervalMs\":5000}}"),
@@ -877,18 +887,18 @@ class MCPWorkersTest {
                                 + "\"pollIntervalMs\":1e30}"));
         TaskModel task = runCallTool(optedInInput());
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals("t-1", output(task).at("/mcpTask/taskId").asString());
 
         // An integer out of the long range.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":99999999999999999999");
         poll(task);
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
 
         // A fraction is ignored, not truncated to 1500.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":1500.5");
         poll(task);
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
 
         // A whole number written as a float is used.
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":2000.0");
@@ -910,7 +920,7 @@ class MCPWorkersTest {
                                 + "}"));
         TaskModel task = runCallTool(optedInInput());
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(
                 json("{\"mcpTask\":{\"taskId\":\"t-1\",\"pollFailures\":0,\"retryCount\":0}}"),
                 output(task));
@@ -927,7 +937,7 @@ class MCPWorkersTest {
         TaskModel task = runCallTool(optedInInput());
 
         // CreateTaskResult has no result for any status; the result comes from tasks/get.
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         enqueueTaskStatus(
                 "\"status\":\"completed\",\"result\":{\"content\":"
                         + "[{\"type\":\"text\",\"text\":\"done\"}],\"isError\":false}");
@@ -1008,7 +1018,7 @@ class MCPWorkersTest {
 
         assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, task.getStatus());
         assertTrue(task.getReasonForIncompletion().contains("maximum duration"));
-        assertTrue(task.getReasonForIncompletion().contains("24 h"));
+        assertTrue(task.getReasonForIncompletion().contains("24 hours"));
         takeRequests(3);
         assertEquals(
                 "tasks/cancel", json(takeRequest().getBody().readUtf8()).get("method").asString());
@@ -1052,7 +1062,7 @@ class MCPWorkersTest {
     void lastCallbackIsLimitedSoTheDeadlineCheckRuns() {
         TaskModel task = startCreatedTask(5000L);
         task.setStartTime(
-                System.currentTimeMillis() - (McpTasksCall.MAX_DURATION_SECONDS - 3) * 1000L);
+                System.currentTimeMillis() - McpTasksCall.MAX_DURATION.minusSeconds(3).toMillis());
         enqueueTaskStatus("\"status\":\"working\",\"pollIntervalMs\":600000");
 
         poll(task);
@@ -1097,7 +1107,7 @@ class MCPWorkersTest {
 
         poll(task);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
     }
 
@@ -1205,7 +1215,7 @@ class MCPWorkersTest {
     void noIntervalFromTheServerIsLeftOutOfTheState() {
         TaskModel task = startCreatedTask(null);
 
-        assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertTrue(output(task).at("/mcpTask/pollIntervalMs").isMissingNode());
     }
 
@@ -1231,7 +1241,7 @@ class MCPWorkersTest {
 
             poll(task);
 
-            assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+            assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
             assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
             assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
         }
@@ -1278,7 +1288,7 @@ class MCPWorkersTest {
         before = server.getRequestCount();
         server.enqueue(rpcErrorResponse(500, "{\"code\":-32000,\"message\":\"replay failed\"}"));
         poll(serverError);
-        assertInProgress(serverError, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(serverError, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(1, output(serverError).at("/mcpTask/pollFailures").asInt());
         assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
     }
@@ -1308,7 +1318,7 @@ class MCPWorkersTest {
         int before = server.getRequestCount();
         server.enqueue(rpcErrorResponse(503, "{\"code\":-1,\"message\":\"overloaded\"}"));
         poll(busy);
-        assertInProgress(busy, McpTasksCall.DEFAULT_POLL_SECONDS);
+        assertInProgress(busy, McpTasksCall.DEFAULT_POLL.toSeconds());
         assertEquals(before + 1, server.getRequestCount(), "no tasks/cancel");
 
         // The same code with HTTP 200 cancels and fails.
@@ -1329,7 +1339,7 @@ class MCPWorkersTest {
 
             poll(task);
 
-            assertInProgress(task, McpTasksCall.DEFAULT_POLL_SECONDS);
+            assertInProgress(task, McpTasksCall.DEFAULT_POLL.toSeconds());
             assertEquals(1, output(task).at("/mcpTask/pollFailures").asInt());
         }
     }

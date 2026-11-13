@@ -20,6 +20,7 @@ import org.conductoross.conductor.ai.mcp.MCPService;
 import org.conductoross.conductor.ai.mcp.McpOptions;
 import org.conductoross.conductor.ai.model.MCPListToolsRequest;
 import org.conductoross.conductor.ai.model.MCPToolCallRequest;
+import org.conductoross.conductor.ai.tasks.mapper.CallMCPToolTaskMapper;
 import org.conductoross.conductor.config.AIIntegrationEnabledCondition;
 import org.conductoross.conductor.core.execution.tasks.AnnotatedSystemTaskWorker;
 import org.conductoross.conductor.core.execution.tasks.TaskCancellationHandler;
@@ -31,6 +32,7 @@ import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
 import com.netflix.conductor.sdk.workflow.task.OutputParam;
 import com.netflix.conductor.sdk.workflow.task.WorkerTask;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 
@@ -124,7 +126,7 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
      */
     @Override
     public void cancel(Task task, String reason) {
-        if (!"CALL_MCP_TOOL".equals(task.getTaskType())) {
+        if (!CallMCPToolTaskMapper.TASK_TYPE.equals(task.getTaskType())) {
             return;
         }
         mcpTasksCall.cancel(task, reason);
@@ -147,8 +149,9 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
 
     /**
      * Persisted polling state of a remote MCP task (output key {@code mcpTask}): an immutable
-     * snapshot, written to task output on each run and read back from the output map. Part of the
-     * persisted contract: fields never change type or meaning; new optional fields may be added.
+     * snapshot, written to task output on each run and read back from the output map by {@link
+     * #from}. Part of the persisted contract: a running poll may have been written by an earlier
+     * release, so fields never change name, type or meaning; new optional fields may be added.
      *
      * @param taskId the remote task ID
      * @param pollFailures consecutive transient {@code tasks/get} failures; {@code 0} after a
@@ -162,7 +165,28 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
      *     after a failed check.
      */
     public record McpTaskState(
-            String taskId, Integer pollFailures, Integer retryCount, Long pollIntervalMs) {}
+            String taskId, Integer pollFailures, Integer retryCount, Long pollIntervalMs) {
+
+        /**
+         * Reads the state back from task output, where it is a plain map. Lenient, because the
+         * output can be edited: a missing or blank {@code taskId} reads as {@code null}, a missing
+         * or negative {@code pollFailures} as {@code 0}, a missing {@code retryCount} as {@code
+         * null}, and a missing or non-positive {@code pollIntervalMs} as {@code null}. A value that
+         * is not a map reads as all of these.
+         */
+        static McpTaskState from(Object state) {
+            if (!(state instanceof Map<?, ?> map)) {
+                return new McpTaskState(null, 0, null, null);
+            }
+            return new McpTaskState(
+                    map.get("taskId") instanceof String id && !id.isBlank() ? id : null,
+                    map.get("pollFailures") instanceof Number n ? Math.max(0, n.intValue()) : 0,
+                    map.get("retryCount") instanceof Number n ? n.intValue() : null,
+                    map.get("pollIntervalMs") instanceof Number n && n.longValue() > 0
+                            ? n.longValue()
+                            : null);
+        }
+    }
 
     /** Tool call result for output. */
     public static class ToolCallResult {
@@ -173,6 +197,7 @@ public class MCPWorkers implements AnnotatedSystemTaskWorker, TaskCancellationHa
          * Polling state of a remote MCP task, for calls that select a protocol version and whose
          * server creates a task. {@code null} otherwise, and then omitted from task output.
          */
+        @JsonProperty(McpTasksCall.STATE_KEY)
         public McpTaskState mcpTask;
 
         public static ToolCallResult from(McpSchema.CallToolResult result) {

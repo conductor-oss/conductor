@@ -12,6 +12,7 @@
  */
 package org.conductoross.conductor.ai.tasks.worker;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.conductoross.conductor.ai.mcp.MCPService;
@@ -20,6 +21,8 @@ import org.conductoross.conductor.ai.mcp.McpHeaderParams;
 import org.conductoross.conductor.ai.mcp.McpOptions;
 import org.conductoross.conductor.ai.mcp.McpProtocolHeaders;
 import org.conductoross.conductor.ai.mcp.McpRequestException;
+import org.conductoross.conductor.ai.mcp.McpRpcError;
+import org.conductoross.conductor.ai.mcp.McpTaskStatus;
 import org.conductoross.conductor.ai.model.MCPToolCallRequest;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -50,21 +53,28 @@ import tools.jackson.databind.ObjectMapper;
 final class McpTasksCall {
 
     static final String STATE_KEY = "mcpTask";
-    static final long DEFAULT_POLL_SECONDS = 5;
-    static final long MAX_DURATION_SECONDS = 24L * 60 * 60;
+
+    /** The wait between checks when the server gives no {@code pollIntervalMs}. */
+    static final Duration DEFAULT_POLL = Duration.ofSeconds(5);
+
+    /** How long a call may poll before it fails with a terminal error. */
+    static final Duration MAX_DURATION = Duration.ofHours(24);
+
     static final int MAX_POLL_FAILURES = 30;
 
     /**
      * Upper bound of the wait after failed checks. The wait starts at the poll interval and doubles
      * after each consecutive failure, but never drops below the server's interval.
      */
-    static final long MAX_BACKOFF_SECONDS = 300;
+    static final Duration MAX_BACKOFF = Duration.ofMinutes(5);
 
-    private static final String WORKING = "working";
-    private static final String COMPLETED = "completed";
-    private static final String FAILED = "failed";
-    private static final String CANCELLED = "cancelled";
-    private static final String INPUT_REQUIRED = "input_required";
+    /**
+     * Upper bound of the doublings in {@link #backoffMs}, so that the shift cannot overflow; the
+     * wait reaches {@link #MAX_BACKOFF} long before.
+     */
+    private static final int MAX_BACKOFF_DOUBLINGS = 20;
+
+    private static final long MILLIS_PER_SECOND = Duration.ofSeconds(1).toMillis();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().getObjectMapper();
 
@@ -82,7 +92,7 @@ final class McpTasksCall {
         Task task = TaskContext.get().getTask();
         // Reading the state from output data relies on in-progress output never being
         // externalized: while a call polls, its output holds only the small mcpTask object, as
-        // A2A's polling state is small (design D5). Externalized output would read as empty here.
+        // A2A's polling state is small. Externalized output would read as empty here.
         Object state = task.getOutputData() == null ? null : task.getOutputData().get(STATE_KEY);
         // Resume only on a later run of this execution (IN_PROGRESS). A run that starts from
         // SCHEDULED is a first run, even if the output still holds an mcpTask: a task that the
@@ -112,9 +122,10 @@ final class McpTasksCall {
 
     /** Later runs: one {@code tasks/get} for the stored task ID, mapped to a Conductor outcome. */
     private MCPWorkers.ToolCallResult poll(MCPToolCallRequest request, Task task, Object state) {
-        String taskId = stateTaskId(state);
-        int failures = statePollFailures(state);
-        Long interval = statePollIntervalMs(state);
+        MCPWorkers.McpTaskState stored = MCPWorkers.McpTaskState.from(state);
+        String taskId = stored.taskId();
+        int failures = stored.pollFailures();
+        Long interval = stored.pollIntervalMs();
         if (taskId == null) {
             return fail(
                     null,
@@ -147,8 +158,7 @@ final class McpTasksCall {
             }
             // No JSON-RPC error (a gateway or proxy may have answered), or a code with no defined
             // meaning: the HTTP status decides.
-            int status = e.getHttpStatus();
-            if (status == 401 || status == 403) {
+            if (e.isAuthRejection()) {
                 return fail(
                         taskId,
                         failures,
@@ -157,11 +167,11 @@ final class McpTasksCall {
                                 + " rejected tasks/get for task '"
                                 + taskId
                                 + "' with HTTP "
-                                + status
+                                + e.getHttpStatus()
                                 + ": "
                                 + e.getMessage());
             }
-            if ((status >= 500 && status < 600) || status == 408 || status == 429) {
+            if (e.isTransientHttpError()) {
                 return transientFailure(request, task, taskId, failures, interval, e);
             }
             // Any other HTTP error: the remote task may still be running.
@@ -179,7 +189,7 @@ final class McpTasksCall {
             return fail(taskId, failures, reason);
         }
 
-        switch (remote.status()) {
+        switch (McpTaskStatus.of(remote.status())) {
             case WORKING:
                 if (deadlineExceeded(task)) {
                     return deadlineFailure(request, taskId, 0);
@@ -229,6 +239,7 @@ final class McpTasksCall {
                                 + taskId
                                 + "' requires input, but task input requests are not supported;"
                                 + " Conductor sent tasks/cancel");
+            case UNKNOWN:
             default:
                 // Not one of the statuses the Tasks extension defines: the remote task may still be
                 // running.
@@ -259,8 +270,8 @@ final class McpTasksCall {
                 "MCP task '"
                         + taskId
                         + "' did not finish within the maximum duration of "
-                        + MAX_DURATION_SECONDS
-                        + " seconds (24 h); Conductor sent tasks/cancel");
+                        + MAX_DURATION.toHours()
+                        + " hours; Conductor sent tasks/cancel");
     }
 
     /**
@@ -305,16 +316,16 @@ final class McpTasksCall {
 
     /**
      * The wait after {@code failures} consecutive failed checks: the server's interval (or the
-     * default), doubled for each failure after the first, up to {@link #MAX_BACKOFF_SECONDS} but
-     * never below the server's interval.
+     * default), doubled for each failure after the first, up to {@link #MAX_BACKOFF} but never
+     * below the server's interval.
      */
     static long backoffMs(Long pollIntervalMs, int failures) {
         long base =
                 pollIntervalMs != null && pollIntervalMs > 0
-                        ? Math.min(pollIntervalMs, MAX_DURATION_SECONDS * 1000)
-                        : DEFAULT_POLL_SECONDS * 1000;
-        long cap = Math.max(base, MAX_BACKOFF_SECONDS * 1000);
-        int doublings = Math.min(Math.max(0, failures - 1), 20);
+                        ? Math.min(pollIntervalMs, MAX_DURATION.toMillis())
+                        : DEFAULT_POLL.toMillis();
+        long cap = Math.max(base, MAX_BACKOFF.toMillis());
+        int doublings = Math.min(Math.max(0, failures - 1), MAX_BACKOFF_DOUBLINGS);
         return Math.min(cap, base << doublings);
     }
 
@@ -372,11 +383,15 @@ final class McpTasksCall {
     static long callbackSeconds(Task task, Long pollIntervalMs) {
         long seconds =
                 pollIntervalMs != null && pollIntervalMs > 0
-                        ? (Math.min(pollIntervalMs, MAX_DURATION_SECONDS * 1000) + 999) / 1000
-                        : DEFAULT_POLL_SECONDS;
+                        ? Math.ceilDiv(
+                                Math.min(pollIntervalMs, MAX_DURATION.toMillis()),
+                                MILLIS_PER_SECOND)
+                        : DEFAULT_POLL.toSeconds();
         long startTime = task.getStartTime();
         if (startTime > 0) {
-            long remaining = MAX_DURATION_SECONDS - (System.currentTimeMillis() - startTime) / 1000;
+            long remaining =
+                    MAX_DURATION.toSeconds()
+                            - Duration.ofMillis(System.currentTimeMillis() - startTime).toSeconds();
             seconds = Math.min(seconds, Math.max(1, remaining + 1));
         }
         return Math.max(1, seconds);
@@ -384,8 +399,7 @@ final class McpTasksCall {
 
     private static boolean deadlineExceeded(Task task) {
         long startTime = task.getStartTime();
-        return startTime > 0
-                && System.currentTimeMillis() - startTime > MAX_DURATION_SECONDS * 1000L;
+        return startTime > 0 && System.currentTimeMillis() - startTime > MAX_DURATION.toMillis();
     }
 
     /** The polling state for this execution: the remote task ID, failures and retry count. */
@@ -421,13 +435,15 @@ final class McpTasksCall {
             if (McpOptions.protocolVersion(request.getMcpOptions()) == null) {
                 return;
             }
-            Object state =
-                    task.getOutputData() == null ? null : task.getOutputData().get(STATE_KEY);
-            String taskId = stateTaskId(state);
-            if (taskId == null || !createdByThisExecution(state, task)) {
+            MCPWorkers.McpTaskState stored =
+                    MCPWorkers.McpTaskState.from(
+                            task.getOutputData() == null
+                                    ? null
+                                    : task.getOutputData().get(STATE_KEY));
+            if (stored.taskId() == null || !createdByThisExecution(stored, task)) {
                 return;
             }
-            cancelBestEffort(request, taskId, reason);
+            cancelBestEffort(request, stored.taskId(), reason);
         } catch (RuntimeException e) {
             log.warn(
                     "Could not propagate cancellation of CALL_MCP_TOOL task {} ({}): {}",
@@ -437,11 +453,8 @@ final class McpTasksCall {
         }
     }
 
-    private static boolean createdByThisExecution(Object state, Task task) {
-        if (state instanceof Map<?, ?> map && map.get("retryCount") instanceof Number recorded) {
-            return recorded.intValue() == task.getRetryCount();
-        }
-        return true;
+    private static boolean createdByThisExecution(MCPWorkers.McpTaskState stored, Task task) {
+        return stored.retryCount() == null || stored.retryCount() == task.getRetryCount();
     }
 
     /** Sends {@code tasks/cancel}; failures are logged, never raised. */
@@ -463,43 +476,10 @@ final class McpTasksCall {
     }
 
     private static String describe(MCPService.McpTask remote) {
-        JsonNode error = remote.error();
-        if (error == null) {
+        if (remote.error() == null) {
             return remote.statusMessage() != null ? remote.statusMessage() : "no error given";
         }
-        JsonNode code = error.get("code");
-        JsonNode message = error.get("message");
-        return "JSON-RPC error "
-                + (code != null ? code : "(no code)")
-                + " "
-                + (message != null && message.isString()
-                        ? message.asString()
-                        : String.valueOf(message));
-    }
-
-    private static String stateTaskId(Object state) {
-        if (state instanceof Map<?, ?> map
-                && map.get("taskId") instanceof String id
-                && !id.isBlank()) {
-            return id;
-        }
-        return null;
-    }
-
-    private static Long statePollIntervalMs(Object state) {
-        if (state instanceof Map<?, ?> map
-                && map.get("pollIntervalMs") instanceof Number n
-                && n.longValue() > 0) {
-            return n.longValue();
-        }
-        return null;
-    }
-
-    private static int statePollFailures(Object state) {
-        if (state instanceof Map<?, ?> map && map.get("pollFailures") instanceof Number n) {
-            return Math.max(0, n.intValue());
-        }
-        return 0;
+        return McpRpcError.from(remote.error()).describe();
     }
 
     /**

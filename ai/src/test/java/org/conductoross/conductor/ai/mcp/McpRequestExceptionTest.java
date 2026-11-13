@@ -46,7 +46,7 @@ class McpRequestExceptionTest {
     void classifiesJsonRpcErrorBodies(int status, int code, boolean recognized) {
         McpRequestException e =
                 McpRequestException.fromHttpError(
-                        "tools/call",
+                        McpMethod.TOOLS_CALL,
                         status,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":"
                                 + code
@@ -62,7 +62,7 @@ class McpRequestExceptionTest {
     void keepsMessageAndDataOfARecognizedError() {
         McpRequestException e =
                 McpRequestException.fromHttpError(
-                        "tools/call",
+                        McpMethod.TOOLS_CALL,
                         400,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32022,"
                                 + "\"message\":\"Unsupported protocol version\","
@@ -83,7 +83,7 @@ class McpRequestExceptionTest {
             delimiter = '|')
     void unrecognizedFourHundredOnToolsCallIsTheOlderServerOutcome(int status, String body) {
         McpRequestException e =
-                McpRequestException.fromHttpError("tools/call", status, body, MAPPER);
+                McpRequestException.fromHttpError(McpMethod.TOOLS_CALL, status, body, MAPPER);
 
         assertNull(e.getCode());
         assertFalse(e.isRecognizedProtocolError());
@@ -97,13 +97,13 @@ class McpRequestExceptionTest {
             delimiter = '|')
     void unrecognizedFourHundredOnTheSchemaLookupIsTheOlderServerOutcome(int status, String body) {
         assertTrue(
-                McpRequestException.fromHttpError("tools/list", status, body, MAPPER)
+                McpRequestException.fromHttpError(McpMethod.TOOLS_LIST, status, body, MAPPER)
                         .isOlderServerRejection());
     }
 
     @ParameterizedTest(name = "HTTP {0} on {1}")
-    @CsvSource({"406,tools/call", "415,tools/call", "406,tools/list", "415,tools/list"})
-    void otherRequestFormStatusesAreTheOlderServerOutcome(int status, String method) {
+    @CsvSource({"406,TOOLS_CALL", "415,TOOLS_CALL", "406,TOOLS_LIST", "415,TOOLS_LIST"})
+    void otherRequestFormStatusesAreTheOlderServerOutcome(int status, McpMethod method) {
         assertTrue(
                 McpRequestException.fromHttpError(method, status, "", MAPPER)
                         .isOlderServerRejection());
@@ -111,16 +111,16 @@ class McpRequestExceptionTest {
 
     @ParameterizedTest(name = "HTTP {0} on {1}")
     @CsvSource({
-        "401,tools/call",
-        "403,tools/call",
-        "407,tools/call",
-        "408,tools/call",
-        "429,tools/call",
-        "401,tools/list",
-        "403,tools/list",
-        "429,tools/list"
+        "401,TOOLS_CALL",
+        "403,TOOLS_CALL",
+        "407,TOOLS_CALL",
+        "408,TOOLS_CALL",
+        "429,TOOLS_CALL",
+        "401,TOOLS_LIST",
+        "403,TOOLS_LIST",
+        "429,TOOLS_LIST"
     })
-    void credentialAndLimitStatusesAreNotTheOlderServerOutcome(int status, String method) {
+    void credentialAndLimitStatusesAreNotTheOlderServerOutcome(int status, McpMethod method) {
         assertFalse(
                 McpRequestException.fromHttpError(method, status, "", MAPPER)
                         .isOlderServerRejection());
@@ -138,7 +138,7 @@ class McpRequestExceptionTest {
     void nonStringMessageIsKeptAsTextAndTheErrorIsStillClassified(String message, String expected) {
         McpRequestException e =
                 McpRequestException.fromHttpError(
-                        "tasks/get",
+                        McpMethod.TASKS_GET,
                         503,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,"
                                 + "\"message\":"
@@ -155,7 +155,7 @@ class McpRequestExceptionTest {
     void codeOutsideTheIntRangeIsKeptAsNoCodeAndTheErrorIsStillClassified() {
         McpRequestException e =
                 McpRequestException.fromHttpError(
-                        "tasks/get",
+                        McpMethod.TASKS_GET,
                         503,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":99999999999,"
                                 + "\"message\":\"busy\"}}",
@@ -169,23 +169,24 @@ class McpRequestExceptionTest {
     @Test
     void olderServerOutcomeExcludesTaskRequestsAndOtherStatuses() {
         assertFalse(
-                McpRequestException.fromHttpError("tasks/get", 400, "", MAPPER)
+                McpRequestException.fromHttpError(McpMethod.TASKS_GET, 400, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError("tasks/cancel", 404, "", MAPPER)
+                McpRequestException.fromHttpError(McpMethod.TASKS_CANCEL, 404, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError("tools/call", 500, "", MAPPER)
+                McpRequestException.fromHttpError(McpMethod.TOOLS_CALL, 500, "", MAPPER)
                         .isOlderServerRejection());
         assertFalse(
-                McpRequestException.fromHttpError("tools/list", 500, "", MAPPER)
+                McpRequestException.fromHttpError(McpMethod.TOOLS_LIST, 500, "", MAPPER)
                         .isOlderServerRejection());
     }
 
     @Test
     void longBodiesAreTruncatedInTheMessage() {
         McpRequestException e =
-                McpRequestException.fromHttpError("tools/call", 502, "x".repeat(2000), MAPPER);
+                McpRequestException.fromHttpError(
+                        McpMethod.TOOLS_CALL, 502, "x".repeat(2000), MAPPER);
 
         assertTrue(e.getMessage().length() < 600, e.getMessage());
     }
@@ -215,7 +216,7 @@ class McpRequestExceptionTest {
             int code, boolean internal, boolean definedMeaning) {
         McpRequestException e =
                 McpRequestException.fromHttpError(
-                        "tasks/get",
+                        McpMethod.TASKS_GET,
                         200,
                         "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":"
                                 + code
@@ -228,7 +229,8 @@ class McpRequestExceptionTest {
 
     @Test
     void noJsonRpcErrorHasNoDefinedMeaning() {
-        McpRequestException e = McpRequestException.fromHttpError("tasks/get", 503, "busy", MAPPER);
+        McpRequestException e =
+                McpRequestException.fromHttpError(McpMethod.TASKS_GET, 503, "busy", MAPPER);
 
         assertFalse(e.isInternalError());
         assertFalse(e.hasDefinedMeaning());
