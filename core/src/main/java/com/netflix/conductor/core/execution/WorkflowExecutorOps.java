@@ -468,14 +468,15 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         if (workflow.getWorkflowDefinition().containsType(TaskType.TASK_TYPE_JOIN)
                 || workflow.getWorkflowDefinition()
                         .containsType(TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC)) {
-            workflow.getTasks().stream()
-                    .filter(UNSUCCESSFUL_JOIN_TASK)
-                    .peek(
-                            task -> {
-                                task.setStatus(TaskModel.Status.IN_PROGRESS);
-                                addTaskToQueue(task);
-                            })
-                    .forEach(executionDAOFacade::updateTask);
+            // saved before queued: a JOIN the async executor picks up must see itself reopened
+            List<TaskModel> joins =
+                    workflow.getTasks().stream().filter(UNSUCCESSFUL_JOIN_TASK).toList();
+            joins.forEach(
+                    task -> {
+                        task.setStatus(TaskModel.Status.IN_PROGRESS);
+                        executionDAOFacade.updateTask(task);
+                    });
+            joins.forEach(this::addTaskToQueue);
         }
     }
 
@@ -491,6 +492,10 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // Throw an exception if there are no FAILED tasks.
         // Handle JOIN task CANCELED status as special case.
         Map<String, TaskModel> retriableMap = new HashMap<>();
+        // JOINs and loops reopened in place: queued only once the retry is saved, or the async
+        // executor runs one on the stored workflow, where the attempts the retry replaces have
+        // not yet been marked retried, and it ends the workflow again on them
+        List<TaskModel> reopened = new ArrayList<>();
         for (TaskModel task : workflow.getTasks()) {
             switch (task.getStatus()) {
                 case FAILED:
@@ -502,7 +507,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                         boolean joinOnFailedPermissive = isJoinOnFailedPermissive(joinOn, workflow);
                         if (joinOnFailedPermissive) {
                             task.setStatus(IN_PROGRESS);
-                            addTaskToQueue(task);
+                            reopened.add(task);
                             break;
                         }
                     }
@@ -514,7 +519,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())
                             || task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
                         task.setStatus(IN_PROGRESS);
-                        addTaskToQueue(task);
+                        reopened.add(task);
                         // Task doesn't have to be updated yet. Will be updated along with other
                         // Workflow tasks downstream.
                     } else {
@@ -565,6 +570,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
         // exist in primary store.
         executionDAOFacade.updateTasks(workflow.getTasks());
         scheduleTask(workflow, retriableTasks);
+        reopened.forEach(this::addTaskToQueue);
         // Push AFTER tasks are reset so async decider sees SCHEDULED/IN_PROGRESS, not stale state
         queueDAO.push(
                 DECIDER_QUEUE,
@@ -1444,7 +1450,9 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * its list, a fork's branches, a switch's chosen case. A finished JOIN that waits for a task
      * now gone or running again goes back to waiting.
      */
-    private void scheduleForgotten(WorkflowModel workflow, TaskModel rerunFromTask) {
+    private List<TaskModel> scheduleForgotten(WorkflowModel workflow, TaskModel rerunFromTask) {
+        // the JOINs reopened here: the caller saves and queues them once the rerun task is saved
+        List<TaskModel> reopened = new ArrayList<>();
         Map<String, TaskModel> byRef = new HashMap<>();
         workflow.getTasks().forEach(t -> byRef.put(t.getReferenceTaskName(), t));
         for (TaskModel join : workflow.getTasks()) {
@@ -1463,7 +1471,7 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                 join.setEndTime(0);
                 join.setReasonForIncompletion(null);
                 join.clearOutput();
-                addTaskToQueue(join);
+                reopened.add(join);
             }
         }
         Map<String, TaskModel> missing = new LinkedHashMap<>();
@@ -1494,12 +1502,13 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
             }
         }
         if (missing.isEmpty()) {
-            return;
+            return reopened;
         }
         List<TaskModel> tasks = new ArrayList<>(missing.values());
         setTaskDomains(tasks, workflow);
         workflow.getTasks().addAll(tasks);
         scheduleTask(workflow, tasks);
+        return reopened;
     }
 
     /** The references a JOIN waits for, with the iteration when it runs in a loop. */
@@ -1891,6 +1900,14 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      *     No locking is required or lock is acquired externally
      */
     private WorkflowModel decide(WorkflowModel workflow) {
+        WorkflowModel decided = decideOnce(workflow);
+        if (DecideTrace.enabled()) {
+            DecideTrace.record(decided != null ? decided : workflow);
+        }
+        return decided;
+    }
+
+    private WorkflowModel decideOnce(WorkflowModel workflow) {
         if (workflow.getStatus().isTerminal()) {
             if (!workflow.getStatus().isSuccessful()) {
                 cancelNonTerminalTasks(workflow);
@@ -3199,12 +3216,16 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
                     rerunFromTask.setStatus(SCHEDULED);
                 }
             }
-            if (plan == null) {
-                scheduleForgotten(workflow, rerunFromTask);
-            }
+            List<TaskModel> reopened =
+                    plan == null ? scheduleForgotten(workflow, rerunFromTask) : List.of();
             // Write the new state to DB before queueing so any async worker sees SCHEDULED,
             // not the stale CANCELED/FAILED state that was in the DB before this rerun.
             executionDAOFacade.updateTask(rerunFromTask);
+            reopened.forEach(
+                    join -> {
+                        executionDAOFacade.updateTask(join);
+                        addTaskToQueue(join);
+                    });
             if (rerunFromTask.getStatus() == SCHEDULED) {
                 addTaskToQueue(rerunFromTask);
             }

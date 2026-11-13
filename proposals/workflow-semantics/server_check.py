@@ -7,7 +7,7 @@ how many iterations each loop runs, and the width of each dynamic fork. The
 program runs on the server as an ordinary workflow, with this script answering
 every task as planned; some tests then retry or rerun the ended workflow. TLC
 then checks that the server's final state -- each task's status and number of
-attempts, the workflow's status, whether the failure workflow started -- is a
+attempts, the workflow's status, how many failure workflows started -- is a
 state the spec reaches under the same choices.
 
     TLA2TOOLS=/path/to/tla2tools.jar python3 server_check.py --server http://localhost:8099/api --tests 100
@@ -303,8 +303,9 @@ def run_test(srv, prog, op, deadline_s):
 
 
 def failure_started(srv, prog):
+    """How many failure workflows the test's workflow started."""
     q = urllib.parse.quote(f"workflowType='{prog.prefix}onfail'")
-    return srv.call('GET', f'/workflow/search?query={q}&size=5')['totalHits'] > 0
+    return srv.call('GET', f'/workflow/search?query={q}&size=5')['totalHits']
 
 
 def observe(prog, wf, failure):
@@ -318,9 +319,52 @@ def observe(prog, wf, failure):
     return obs, wf['status'], failure
 
 
+# ---------------------------------------------------------------------------- the trace
+
+TRACE_DIR = None
+TASK_STATUS = {'IN_PROGRESS': 'SCHEDULED'}
+
+
+def trace_views(prog, wid):
+    """What each decide left the main workflow in, as TraceView shows it; None without a trace."""
+    path = os.path.join(TRACE_DIR, wid + '.jsonl')
+    if not os.path.exists(path):
+        return None
+    views = []
+    for raw in open(path):
+        line = json.loads(raw)
+        latest, count = {}, {}
+        for ref, typ, seq, status, _ in sorted(line['tasks'], key=lambda r: r[2]):
+            latest[ref] = (typ, seq, status)
+            count[ref] = count.get(ref, 0) + 1
+        order, tasks = [], {}
+        for ref, (typ, seq, status) in sorted(latest.items(), key=lambda kv: kv[1][1]):
+            node, it, copy = parse_ref(ref)
+            key = (node, int(it) if it else 0, copy)
+            if typ == 'JOIN':
+                order.append(('join', (node[:-len('_join')], key[1], key[2])))
+                continue
+            order.append(key)
+            if typ in prog.leaf_defs or typ in ('SUB_WORKFLOW', 'TERMINATE'):
+                tasks[key] = (TASK_STATUS.get(status, status), count[ref])
+        view = (line['status'], tuple(order), tuple(sorted(tasks.items())))
+        if not views or views[-1] != view:
+            views.append(view)
+    return views
+
+
+def view_tla(view):
+    status, order, tasks = view
+    def spot(x):
+        return f'<<"join", {key_tla(list(x[1]))}>>' if x[0] == 'join' else key_tla(list(x))
+    o = '<< ' + ', '.join(spot(x) for x in order) + ' >>'
+    t = ' @@ '.join(f'({key_tla(list(k))} :> <<"{st}", {n}>>)' for k, (st, n) in tasks) or '[x \\in {} |-> <<>>]'
+    return f'[status |-> "{status}", order |-> {o}, tasks |-> {t}]'
+
+
 # ---------------------------------------------------------------------------- TLC
 
-def mc_module(name, prog, obs, status, failure, epoch, op):
+def mc_module(name, prog, obs, status, failure, epoch, op, views=None):
     lines = [f'---- MODULE {name} ----', 'EXTENDS Common', 'MCNodes ==']
     entries = [f'("{n}" :> {prog.tla_node(n)})' for n in prog.nodes] + ['("cx" :> Task(0, FALSE))', '("w" :> Task(0, FALSE))']
     lines.append('       ' + '\n    @@ '.join(entries))
@@ -370,13 +414,27 @@ Match ==
     /\\ {how}
     /\\ Seen(1) = DOMAIN Obs
     /\\ \\A k \\in DOMAIN Obs : inst[1].act[k].status = Obs[k].status /\\ inst[1].act[k].attempt = Obs[k].attempt
-    /\\ (\\E j \\in 1..Len(inst) : inst[j].wf = "onfail") = {"TRUE" if failure else "FALSE"}
+    /\\ Cardinality({{j \\in 1..Len(inst) : inst[j].wf = "onfail"}}) = {failure}
 Witness == ~Match''')
+    if views is not None:
+        # the run, step by step: the spec goes through every state a decide left, in order
+        lines[-1] = lines[-1].replace('Witness == ~Match', '''VARIABLE l
+Trace == << ''' + ',\n    '.join(view_tla(v) for v in views) + ''' >>
+TInit == Init /\\ l = 0
+TNext == \\/ Next /\\ UNCHANGED l
+         \\/ l < Len(Trace) /\\ TraceView(1) = Trace[l + 1] /\\ l' = l + 1 /\\ UNCHANGED vars
+TSpec == TInit /\\ [][TNext]_<<vars, l>>
+\\* between two decides the spec only adds what the next one shows (activations go only when an
+\\* operator reopens an ended workflow, and its end was traced): other states lead nowhere
+SpotSet(o) == {o[j] : j \\in 1..Len(o)}
+TConstraint == SpotSet(TraceOrder(1)) \\subseteq
+    (IF l = 0 THEN {} ELSE SpotSet(Trace[l].order)) \\cup (IF l < Len(Trace) THEN SpotSet(Trace[l + 1].order) ELSE {})
+Witness == ~(l = Len(Trace) /\\ Match)''')
     lines.append('====')
     return '\n'.join(lines) + '\n'
 
 
-def mc_cfg(ops):
+def mc_cfg(ops, traced=False):
     return f'''CONSTANTS
     Nodes <- MCNodes
     Defs <- MCDefs
@@ -389,20 +447,25 @@ def mc_cfg(ops):
     Widths <- MCWidths
     GoesOn <- MCGoesOn
     RerunTargets <- MCRerunTargets
-SPECIFICATION Spec
+SPECIFICATION {'TSpec' if traced else 'Spec'}
+{'CONSTRAINT TConstraint' if traced else ''}
 INVARIANT Witness
 CHECK_DEADLOCK FALSE
 '''
 
 
 def tlc_reaches(name, text, ops, d):
+    traced = 'TSpec ==' in text
     for f in ('Workflow.tla', 'Common.tla'):
         shutil.copy(os.path.join(HERE, f), d)
     open(os.path.join(d, name + '.tla'), 'w').write(text)
-    open(os.path.join(d, name + '.cfg'), 'w').write(mc_cfg(ops))
-    out = subprocess.run([JAVA, '-XX:+UseParallelGC', '-cp', TOOLS, 'tlc2.TLC', '-workers', '2',
-                          '-metadir', os.path.join(d, 'states'), name],
-                         cwd=d, capture_output=True, text=True, timeout=600).stdout
+    open(os.path.join(d, name + '.cfg'), 'w').write(mc_cfg(ops, traced))
+    try:
+        out = subprocess.run([JAVA, '-XX:+UseParallelGC', '-cp', TOOLS, 'tlc2.TLC', '-workers', '2',
+                              '-metadir', os.path.join(d, 'states'), name],
+                             cwd=d, capture_output=True, text=True, timeout=600).stdout
+    except subprocess.TimeoutExpired:
+        return 'unchecked (TLC timeout)', ''   # not a pass: counted apart
     if 'Invariant Witness is violated' in out:
         return 'reached', out
     if 'No error has been found' in out:
@@ -423,9 +486,12 @@ def main():
     ap.add_argument('--deadline', type=int, default=120, help='seconds before a test counts as not settling')
     ap.add_argument('--ops', type=float, default=0.4, help='share of tests that retry or rerun at the end')
     ap.add_argument('--keep', default=None, help='directory for the models of tests that did not match')
+    ap.add_argument('--trace-dir', default=None,
+                    help="the server's conductor.trace.dir: each run is then checked step by step, not by its end alone")
     a = ap.parse_args()
-    global SETTLE
+    global SETTLE, TRACE_DIR
     SETTLE = a.settle
+    TRACE_DIR = a.trace_dir
     rng = random.Random(a.seed)
     shapes = []
     for n in range(1, a.size + 1):
@@ -455,7 +521,12 @@ def main():
         wf, done_op = res
         obs, status, failure = observe(prog, wf, failure_started(srv, prog))
         module = 'S' + tid.replace('x', '_')
-        text = mc_module(module, prog, obs, status, failure, 1 if done_op else 0, done_op)
+        views = None
+        if TRACE_DIR:
+            views = trace_views(prog, wid)
+            if not views:
+                return tid, 'no trace', f'{wid}: no trace in {TRACE_DIR}', None
+        text = mc_module(module, prog, obs, status, failure, 1 if done_op else 0, done_op, views)
         d = tempfile.mkdtemp(prefix=module + '-')
         verdict, out = tlc_reaches(module, text, 1 if done_op else 0, d)
         detail = f'{wid} op={done_op} status={status} failure_wf={failure} tasks=' + \
@@ -476,7 +547,7 @@ def main():
                 st, cnt, rc = obs[k]
                 bad_obs = {**obs, k: (st, cnt + 5, rc) if choice == 'attempts' else ('SKIPPED', cnt, rc)}
             d2 = tempfile.mkdtemp(prefix=module + '-control-')
-            v2, _ = tlc_reaches(module, mc_module(module, prog, bad_obs, bad_status, failure, 1 if done_op else 0, done_op),
+            v2, _ = tlc_reaches(module, mc_module(module, prog, bad_obs, bad_status, failure, 1 if done_op else 0, done_op, views),
                                 1 if done_op else 0, d2)
             shutil.rmtree(d2, ignore_errors=True)
             if v2 != 'not reached':

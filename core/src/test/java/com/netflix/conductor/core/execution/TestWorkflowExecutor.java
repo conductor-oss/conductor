@@ -1805,6 +1805,58 @@ public class TestWorkflowExecutor {
         assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
     }
 
+    /**
+     * A retry reopens a cancelled JOIN in place. It reaches the system-task queue only once the
+     * retry is saved: otherwise the async executor can run it on the stored workflow, where the
+     * attempt the retry replaces is not yet marked retried, and fail the workflow again on it.
+     */
+    @Test
+    public void testRetryQueuesAReopenedJoinOnlyAfterSavingTheRetry() {
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("testRetryJoinOrder");
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testRetryJoinOrder");
+        workflowDef.setVersion(1);
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+
+        TaskModel forkTask = new TaskModel();
+        forkTask.setTaskType(TaskType.FORK_JOIN.toString());
+        forkTask.setTaskId(UUID.randomUUID().toString());
+        forkTask.setSeq(1);
+        forkTask.setStatus(TaskModel.Status.COMPLETED);
+        forkTask.setReferenceTaskName("task_fork");
+
+        TaskModel branch = new TaskModel();
+        branch.setTaskId(UUID.randomUUID().toString());
+        branch.setSeq(2);
+        branch.setTaskType(TaskType.SIMPLE.toString());
+        branch.setStatus(TaskModel.Status.FAILED);
+        branch.setTaskDefName("task1");
+        branch.setWorkflowTask(new WorkflowTask());
+        branch.setReferenceTaskName("task1_ref");
+
+        TaskModel joinTask = new TaskModel();
+        joinTask.setTaskType(TaskType.JOIN.toString());
+        joinTask.setTaskId(UUID.randomUUID().toString());
+        joinTask.setSeq(3);
+        joinTask.setStatus(TaskModel.Status.CANCELED);
+        joinTask.setReferenceTaskName("task_join");
+        joinTask.getInputData().put("joinOn", List.of(branch.getReferenceTaskName()));
+
+        workflow.getTasks().addAll(Arrays.asList(forkTask, branch, joinTask));
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt()))
+                .thenReturn(Optional.of(new WorkflowDef()));
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, joinTask.getStatus());
+        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        order.verify(executionDAOFacade).updateTasks(any());
+        order.verify(queueDAO).push(anyString(), eq(joinTask.getTaskId()), anyInt(), anyLong());
+    }
+
     @Test
     public void testRetryFromLastFailedSubWorkflowTaskThenStartWithLastFailedTask() {
         IDGenerator idGenerator = new IDGenerator();

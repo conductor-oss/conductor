@@ -246,6 +246,27 @@ task, a case's first task, a fork), each failing without the fix, and live: a wo
 branch head, a case head and a fork skipped completes, with the skipped fork's branches never
 run.
 
+## Observed by the step-by-step check
+
+### 14. A retry after a failure at a fork can fail the workflow again at once
+
+- **Actual:** a switch leads to a dynamic fork whose only copy fails with no retries left; the
+  workflow fails and its `JOIN` is cancelled. A retry gives the copy a second attempt and reopens the
+  `JOIN`; 15 ms later the `JOIN` fails with the first attempt's reason and ends the workflow
+  `FAILED` again, cancelling the second attempt, which was to complete.
+- **Cause:** `retry` set the cancelled `JOIN` to `IN_PROGRESS` and put it on the system-task queue
+  while still walking the tasks, before it created the new attempt, marked the old one retried and
+  saved them. The async executor ran the `JOIN` on the stored workflow, where the failed attempt was
+  settled and not yet retried. On a rerun, `resetUnsuccessfulJoinTasks` and `scheduleForgotten` also
+  queued a `JOIN` before saving it, or before the rerun task's reset was saved.
+- **Example:** `f17be104-d6b4-45d1-a260-25b664f80344` (its decide trace shows the `JOIN` failing
+  after the retry).
+- **Fix:** `retry` queues the `JOIN`s and loops it reopens after it saved the retry;
+  `resetUnsuccessfulJoinTasks` saves before it queues; `scheduleForgotten` returns the `JOIN`s it
+  reopened, and the rerun saves and queues them after the rerun task. Checked by
+  `TestWorkflowExecutor.testRetryQueuesAReopenedJoinOnlyAfterSavingTheRetry` and by the
+  step-by-step check: the same test matches on the fixed server.
+
 ## How to check a fix
 
 ```
@@ -253,5 +274,6 @@ TLA2TOOLS=/path/to/tla2tools.jar python3 server_check.py --server http://localho
 TLA2TOOLS=/path/to/tla2tools.jar python3 server_check.py --server http://localhost:8099/api --tests 200 --size 4
 ```
 
-Each test that does not match prints its execution id and final state. The check compares final
-states and uses no timeouts, pause, skip or operator terminate, so bugs 9 to 13 need their own tests.
+Each test that does not match prints its execution id and final state. With `--trace-dir` (a
+server started with `-Dconductor.trace.dir`) it checks every step of each run, not only its end. It
+uses no timeouts, pause, skip or operator terminate, so bugs 9 to 13 need their own tests.

@@ -145,6 +145,29 @@ nothing; any other error (a missing endpoint or task, no permission, throttling,
 fails the test. A test's answers and choices come from `--seed` alone, so a seed reproduces its
 tests; only the names registered on the server differ from run to run. Each test also checks an observation the spec cannot reach, which must not match.
 
+**Step by step.** With `--trace-dir`, each test is checked at every step of its run, not by its end
+alone. A server started with `-Dconductor.trace.dir=<dir>` (the class `DecideTrace`; off by
+default, it changes nothing the server does) appends, after every decide, the workflow's status and
+each task's reference, type, `seq`, status and retry count. `TraceView` in `Workflow.tla` gives the
+same view of a spec state: its status, what was scheduled in the order it was (each activation's
+latest attempt, and each `JOIN`), and each task's status and attempt. The model generated for a test
+must go through every state a decide left, in order, and then reach the final state; between two
+decides the spec may take any number of steps. A test with no trace fails, and a model TLC cannot
+finish in ten minutes is reported unchecked, not passed. Traces changed by hand (two scheduled tasks
+swapped, a status changed, a state added) are rejected. On 2026-11-13, 99 of 100 traced tests of up
+to 4 nodes, with retries, restarts and reruns, matched at every step; the other is unchecked (a loop
+around a fork with a `SUB_WORKFLOW`, rerun: TLC did not finish).
+
+**Server mutants.** `server_mutants.py` shows the step-by-step check catches a server that breaks
+the spec. It breaks one rule in the server at a time, builds and starts it with tracing on, and
+runs traced tests, which must not all match; then it reverts the change and builds the server
+again. On 2026-11-13 it caught 5 of 5:
+- a fork scheduling its `JOIN` before its branches (2 of 30 tests);
+- a switch scheduling its case before itself (9 of 30);
+- a failure leaving running tasks running (3 of 30);
+- an end starting two failure workflows (7 of 30);
+- a retry after a `TERMINATE` scheduling what was ready (5 of 60).
+
 On this version, before the fix of item 5, 384 of 400 tests matched (200 of 3 nodes, 200 of 4).
 The other 16 are server behaviours listed below: 6 of item 1, 2 of item 2, 1 of item 6, and 2 of
 item 5 where the loop is the last task. 4 reruns never settled and 1 rerun of a `SUB_WORKFLOW` in a
@@ -179,8 +202,8 @@ two dynamic copies and two operator actions. Nothing here is a proof for program
 Some properties still mirror the rule they check (`RetryOnlyWhenAllowed`, `TimeoutsFollowPolicy`,
 `FailureWorkflowSound`, `LoopInOrder`, `Justified`, and `ReopenedEndsAgain`, which reads the record
 a reopen keeps of a `TERMINATE` on record); for those, the independent evidence is the server
-tests. The server tests compare final states only, so ordering during a run is not compared, and they
-check only that the server stays within the spec, so a spec that allows too much goes unnoticed. They
+tests. The server tests check only that the server stays within the spec, so a spec that allows too much goes unnoticed.
+(Without `--trace-dir` they compare final states only.) They
 use no timeouts, pause, skip or operator terminate, no dynamic fork inside a loop, and each switch
 takes the same case in every iteration.
 
@@ -230,6 +253,15 @@ Details, evidence, fixes and examples are in [DECIDER_BUGS.md](DECIDER_BUGS.md).
 13. *(fixed)* **Skipping can leave the workflow waiting.** Only the decider's sequential path (`getNextTask`)
     passes over a skipped task. Skipping the first task of a switch case or a fork branch stops that
     case or branch, and skipping a `FORK_JOIN` schedules its `JOIN` alone (*inferred*).
+
+**Observed by the step-by-step check:**
+
+14. *(fixed)* **A retry after a failure at a fork can fail the workflow again at once.** `retry`
+    reopened a cancelled `JOIN` and put it on the system-task queue before saving the retry. The
+    async executor could run the `JOIN` on the stored workflow, where the failed attempt was not yet
+    marked retried, and end the workflow again, cancelling the new attempt. A rerun queued the
+    `JOIN`s it reopened the same way. Both now save first. Seen once, a dynamic fork whose only copy
+    failed; it is a race.
 
 ## Decisions
 

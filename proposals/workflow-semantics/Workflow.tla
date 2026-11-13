@@ -281,6 +281,17 @@ At(i, s) == IF s[1] = "act" THEN inst[i].act[s[2]].seq ELSE inst[i].act[s[2]].jo
 OutOfSpot(s) == IF s[1] = "act" THEN s[2] ELSE <<"join", s[2]>>
 LastOut(i) == OutOfSpot(CHOOSE s \in Spots(i) : \A t \in Spots(i) : At(i, t) <= At(i, s))
 
+\* What a server trace shows of instance i after a decide: its status, what was
+\* scheduled in the order it was (each activation's latest attempt, and each
+\* JOIN), and each task's status and attempt. A running task shows SCHEDULED.
+TraceOrder(i) ==
+    LET S == Spots(i) IN
+    [j \in 1..Cardinality(S) |-> OutOfSpot(CHOOSE s \in S : Cardinality({t \in S : At(i, t) < At(i, s)}) = j - 1)]
+TraceTasks(i) ==
+    [k \in {q \in DOMAIN inst[i].act : IsLeaf(q[1]) \/ Kind(q[1]) = "terminate"} |->
+        <<inst[i].act[k].status, inst[i].act[k].attempt>>]
+TraceView(i) == [status |-> inst[i].status, order |-> TraceOrder(i), tasks |-> TraceTasks(i)]
+
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* Ending an instance: every running attempt is cancelled, and a failure   *)
