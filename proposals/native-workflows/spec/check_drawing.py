@@ -1224,7 +1224,7 @@ def main():
     # D: every recorded execution replays against its code with no divergence
     r = subprocess.run([java, '-cp', classes + os.pathsep + lib, 'drawing.ReplayCheck', replays],
                        env=env, capture_output=True, text=True)
-    replayed = 0
+    replayed, diverged = 0, 0
     for line in r.stdout.split('\n'):
         if line.startswith('OK '):
             replayed += 1
@@ -1236,8 +1236,15 @@ def main():
                 entry = (cls, int(seed), ids.get((cls, int(seed))), [])
                 bad.append(entry)
             entry[3].append('D: replay diverges: ' + why[:300])
-    if r.returncode and replayed == 0:
+            diverged += 1
+    # every recorded execution must get a verdict from a replay tool that ran to the end
+    handed = len([f for f in os.listdir(replays) if f.endswith('.json')])
+    if r.returncode or replayed + diverged != handed:
         print(r.stderr[:2000])
+        bad.append(('ReplayCheck', 0, None, [f'D: {replayed + diverged} of {handed} executions got a replay verdict'
+                                             f' (exit {r.returncode})']))
+    if not jobs:
+        bad.append(('(nothing)', 0, None, ['no program was run: that is not a pass']))
 
     for cls, seed, wid, problems in bad:
         print(f'{cls} seed {seed} ({wid}):')

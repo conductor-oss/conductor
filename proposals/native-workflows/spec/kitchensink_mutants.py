@@ -2,7 +2,7 @@
 
     python3 kitchensink_mutants.py [--server http://localhost:8099/api] <odd-path workflow id>
 """
-import copy, json, sys
+import copy, json, sys, urllib.error
 import kitchensink_spec as spec
 
 real_get = spec.get
@@ -57,6 +57,13 @@ if __name__ == '__main__':
         MUTANTS = [m for m in MUTANTS if m.__name__ != 'm_extra_retry']
     wid = args[0]
     base = real_get(f'/workflow/{wid}?includeTasks=true')
+    # the recording as it is must pass, or every mutant would look rejected
+    spec.get = lambda path, w=base: w if path.startswith(f'/workflow/{wid}') else real_get(path)
+    try:
+        spec.kitchensink(copy.deepcopy(base), {}, [])
+    except Exception as x:
+        print(f'the recording itself does not pass, so the mutants show nothing: {type(x).__name__}: {str(x)[:200]}')
+        sys.exit(1)
     caught = 0
     for m in MUTANTS:
         w = copy.deepcopy(base); m(w)
@@ -67,6 +74,8 @@ if __name__ == '__main__':
         except spec.Violation as v:
             caught += 1
             print(f'  caught  {m.__name__:22} {str(v)[:110]}')
+        except (urllib.error.URLError, OSError):
+            raise   # the server, not the mutant: rejects nothing
         except Exception as x:
             caught += 1
             print(f'  caught  {m.__name__:22} (shape) {type(x).__name__}: {str(x)[:90]}')

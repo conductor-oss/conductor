@@ -24,23 +24,30 @@ variables come later; task retries are in `Workflow.tla`.
 | `ReplayIsStable` | replaying the same marker on the same code gives the same decisions |
 | `AsIfRunOnce` | every task is one the code reaches, on one build, given the results recorded: crashes, duplicates and replays add nothing |
 | `OutcomeMatchesCode` | the workflow completed only if the code returned, and failed only if it raised, whatever crashes and replays happened |
-| `JoinWaitsForLanes` | a join completes only when its lanes, and what they started, are over |
+| `JoinWaitsForLanes` | a join completes only when its lanes, and what they started, are over (their previews never run); a lane that never paused, because it only started other lanes, is over when they are |
 | `CompletedSound` | `COMPLETED` means the code returned and no lane has work left, and no mark of an earlier failure is left |
 | `FailedSound` | `FAILED` comes only from the main lane raising, so a lane nothing joined cannot fail the workflow |
-| `FailedNamesItsCause` | a `FAILED` workflow names a failed task the code reached: the task whose failure it did not catch, or the mark where it threw |
+| `FailedNamesItsCause` | a `FAILED` workflow names what the main lane's raise names: the task whose failure it did not catch, or the mark where it threw; never another failed task, such as one whose failure the code caught |
 | `MarksAndPreviewsNeverRun` | a mark is failed from the start and a preview, of a case not taken or of what thrown code skipped, never starts: they are drawn, never run |
+| `EndedIsQuiet` | an ended workflow has nothing running: the main lane raising cancels what other lanes still run |
+| `UntakenStayDrawn` | a switch shows the cases it did not take for as long as it is drawn: a retry removes only the mark and what the throw skipped |
 | `NeverStuck` | every entry lands where it will run: with nothing left to do, the workflow can complete |
 | `SequenceOrder` | a task runs only after the entry before it ended |
 | `OneContinuationAtATime` | only the worker holding the slot can have its result count |
 | `AppliedOnFreshHistory` | a result applies only if nothing else was applied since its worker read the history |
 | `Settles` | each time it runs, including after a retry, a workflow ends, unless it is held waiting for a compatible build (`running ~> ended or held`) |
 
-Nine small models (`MC_N*`) check these with up to two faults, up to about 10,000 states each.
+Fourteen small models (`MC_N*`) check these with up to two faults, up to about 12,000 states each.
 `MC_NThrow` has code that throws between two calls, a deploy that fixes it, and up to two retries;
-`MC_NSwitch`'s switch has a case it does not take.
+`MC_NSwitch`'s switch has a case it does not take; in `MC_NNestedSwitch` a switch inside another's
+case is followed by a call in the outer case, so the code goes on in the outer case after the inner
+one (a switch belongs to the case it is in, like any other entry). `MC_NSpawnOnly` has a lane that
+only starts another and returns, `MC_NLanePreview` a joined lane whose switch draws a preview,
+`MC_NThrowSwitch` a switch preview before code that throws and is retried, and `MC_NFailRunning` a
+main lane that raises while another lane's task runs.
 
-`TLA2TOOLS=/path/to/tla2tools.jar python3 check.py` runs every model, 26 mutants that each break one
-rule and must be caught, and 20 outcomes the models must reach. It takes a few seconds.
+`TLA2TOOLS=/path/to/tla2tools.jar python3 check.py` runs every model, 31 mutants that each break one
+rule and must be caught, and 25 outcomes the models must reach. It takes a few seconds.
 
 `check_runs.py` compares real native executions on a server with these promises, using what they
 stored: tasks, the definition that grew, and the markers with their lease and apply times. On the
@@ -55,7 +62,9 @@ every switch took exactly the arm of its `selectedCase`, each lane's entries sta
 the tasks of a list ran in its order, loop tags nest, and a failed run names its failed task. On
 2026-11-11 it passed the 690 executions made under the current rules on the test server, and flagged
 the earlier ones: failed runs from before the mark existed, and one run a retry bug had corrupted.
-`check_paths_mutants.py` shows it rejects 17 of 17 executions broken in one way each.
+`check_paths_mutants.py` shows it rejects 21 of 21 executions broken in one way each, among them a
+reference drawn twice. `check_runs.py` takes every task to be in the definition (a fan-out's copies
+are drawn too): on 2026-11-13 it passed the 1,105 native executions on the test server.
 
 `kitchensink_spec.py` goes further for the kitchen sink: a reference semantics of
 `KitchenSinkWorkflow`, `SubFlow` and `KitchenSinkTasks`, written from the Java source without the
@@ -66,7 +75,9 @@ input in every lane, task outputs, the arm every `if` and `switch` took and the 
 its SWITCH shows, order within lanes and at joins, attempts, the output and the variables, and each
 child `sub_flow_1`. On 2026-11-11 the odd, even and failure executions of a `kitchensink.Main` run
 and their 13 children passed (838, 777 and 810 checks), and `kitchensink_mutants.py` showed it
-rejects 18 of 18 recordings broken in one way each. It covers those executions, not every run.
+rejects 19 of 19 recordings broken in one way each (18 under `--chaos`, where an extra attempt is
+allowed). It first checks that the recording as it is passes, so a recording that does not cannot
+make every mutant look rejected, and a server error never counts as a rejection. It covers those executions, not every run.
 
     python3 kitchensink_spec.py --server http://localhost:8099/api <odd id> <even id> <failure id>
     python3 kitchensink_mutants.py --server http://localhost:8099/api <odd id>
@@ -76,6 +87,10 @@ With `--chaos` it checks executions run under faults (`durability.KitchenSinkCha
 infrastructure failures decide is then part of what the code does not determine (extra failed
 attempts of a task whose worker died, when the per-process `check_status` counter reports done, a
 `charge` that fails because its worker died), and everything else is checked as before.
+
+None of these checkers passes on no evidence: `check_runs.py` fails when it finds no native
+execution, `check_paths.py` when given none, and `check_drawing.py` when it ran no program or when
+an execution it recorded got no verdict from the replay (the replay tool failing or stopping early).
 
 **Found by this work, and fixed.**
 
@@ -97,7 +112,7 @@ the lease), but stale results and duplicates are still checked only in the model
 Not modelled: the handler lane (signals, updates, variables, queries), which runs between the main
 lane's continuations, and whose messages a completion waits for (modelled only as a worker's
 deferred report); retrying a run from a task that failed, which reruns that task by the decider's
-rules (`Workflow.tla`); server-side loops (`forEach`, `repeatUntil`), which are DO_WHILE tasks to the
+rules (`Workflow.tla`); an operator skipping a task the code waits for; server-side loops (`forEach`, `repeatUntil`), which are DO_WHILE tasks to the
 protocol. The model leaves out calls that do not pause the code, the separate database writes of a lease or a
 completion (it treats each as one step), a worker reading state that is newer than its lease, and
 a queue delivering one message twice (a duplicate result is modelled). Reference names are fixed per

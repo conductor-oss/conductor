@@ -6,7 +6,7 @@
 The first execution is a completed kitchensink run (its switches, forks and loops), the second a
 run whose code threw between two tasks (its mark and preview).
 """
-import copy, sys
+import copy, json, sys
 
 import check_paths as cp
 
@@ -29,6 +29,12 @@ def first_preview(w, switch_ref):
 
 
 # --- on the completed kitchensink run
+def m_duplicate_ref(w):
+    # the same reference drawn twice: a second entry that names a task already drawn
+    tasks = w['workflowDefinition']['tasks']
+    tasks.append(json.loads(json.dumps(next(e for e in tasks if e['type'] == 'SIMPLE'))))
+
+
 def m_task_without_entry(w):
     t = copy.deepcopy(task(w, 'step_2')); t['referenceTaskName'] = 'stray'; t['taskId'] = 'stray'; t['seq'] = 9_000
     w['tasks'].append(t)

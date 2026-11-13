@@ -69,7 +69,7 @@ def check(w):
         if t['taskType'].endswith('.code'):
             continue
         ref = base_ref(t['referenceTaskName'])
-        if ref not in known and not re.search(r'_\d+$', ref):
+        if ref not in known:   # (a fan-out's copies are drawn too: every task is in the definition)
             bad.append(('AsIfRunOnce', f'{ref} is not in the definition'))
         if ref in previews:
             bad.append(('AsIfRunOnce', f'preview {ref} ran'))
@@ -198,7 +198,9 @@ def main():
         seen[prop] += 1
         if seen[prop] <= 5:
             print(f'  {prop} {wid} {name}: {msg}')
-    sys.exit(1 if found else 0)
+    if runs == 0:
+        print('no native executions to check: that is not a pass')
+    sys.exit(1 if found or runs == 0 else 0)
 
 
 if __name__ == '__main__':

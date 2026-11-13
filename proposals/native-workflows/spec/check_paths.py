@@ -7,7 +7,7 @@ call the server (with every arm, the untaken ones holding previews of what they 
 when the code threw, a mark where it threw followed by previews of what it skipped. This checker
 reads one finished execution and checks that this drawing and the tasks that ran agree:
 
-  P1 Ran as drawn     every task that ran has an entry; every entry that is not a preview ran,
+  P1 Ran as drawn     every reference is drawn once; every task that ran has an entry; every entry that is not a preview ran,
                       in a COMPLETED execution (a FAILED one may stop short); types match.
   P2 Previews         no preview ran; each sits in an arm the switch did not take, or after the
                       mark of the exception that ended the run (metadata.previewAfter).
@@ -28,7 +28,7 @@ reads one finished execution and checks that this drawing and the tasks that ran
 
     python3 check_paths.py [--server http://localhost:8099/api] <workflow id>...
 """
-import json, re, sys, urllib.request
+import collections, json, re, sys, urllib.request
 
 SERVER = 'http://localhost:8099/api'
 SUCCESS = {'COMPLETED', 'COMPLETED_WITH_ERRORS', 'SKIPPED'}
@@ -86,6 +86,9 @@ def check(w):
     last = {r: a[-1] for r, a in attempts.items()}
     first = {r: a[0] for r, a in attempts.items()}
     entries = list(walk(w['workflowDefinition']['tasks']))
+    drawn = collections.Counter(e['taskReferenceName'] for e in entries)
+    for ref, n in drawn.items():
+        ok('P1', n == 1, ref, f'drawn {n} times: a reference names one entry')
     by_ref = {e['taskReferenceName']: e for e in entries}
     status = w['status']
 
@@ -240,6 +243,8 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     if args[:1] == ['--server']:
         SERVER, args = args[1], args[2:]
+    if not args:
+        sys.exit('no execution ids given: nothing would be checked')
     bad = 0
     for wid in args:
         w = get(f'/workflow/{wid}?includeTasks=true')

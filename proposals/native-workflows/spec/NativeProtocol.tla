@@ -117,7 +117,7 @@ Walk(v, l, n, s) ==
             LET r == Walk(v, l, nd.next, s) IN
             IF n \in s.refs
             THEN [r EXCEPT !.seen = @ \cup {n}]
-            ELSE [r EXCEPT !.entries = <<Entry(n, "switch", l, l, {}, FALSE)>> \o Previews(nd, l) \o @]
+            ELSE [r EXCEPT !.entries = <<Entry(n, "switch", l, OwnerOf(nd, l), {}, FALSE)>> \o Previews(nd, l) \o @]
       [] nd.op = "async" ->
             LET r == Walk(v, l, nd.next, s) IN
             IF n \in s.refs
@@ -204,12 +204,13 @@ NewMark(l) == [lane |-> l, state |-> "WAITING", epoch |-> 0, finished |-> FALSE,
 
 LaneMarks(l) == {k \in DOMAIN mark : mark[k].lane = l}
 
-\* A lane has settled: it returned or raised, and all its tasks ended.
+\* A lane has settled: it returned or raised, and all its tasks ended. A lane that never
+\* paused (it raised at once, or only started other lanes) ran to its end when it started.
 Settled(l) ==
-    \/ LaneRefs(l) = {}
-    \/ /\ \E k \in LaneMarks(l) : mark[k].state = "APPLIED" /\ mark[k].finished
-       /\ \A k \in LaneMarks(l) : mark[k].state = "APPLIED"
-       /\ \A r \in LaneRefs(l) : st[r] \in Terminal
+    /\ \/ LaneMarks(l) = {}
+       \/ /\ \E k \in LaneMarks(l) : mark[k].state = "APPLIED" /\ mark[k].finished
+          /\ \A k \in LaneMarks(l) : mark[k].state = "APPLIED"
+    /\ \A r \in LaneRefs(l) : st[r] \in Terminal
 
 Waits(j) == UNION {Closure(l) : l \in def[j].lanes}
 
@@ -301,13 +302,16 @@ Apply(r) ==
         pauses == {x \in newRefs : entry(x).pause}
         anchor == IF Len(es) = 0 THEN NONE ELSE AnchorOf(k, es[1])
         m == [mark[k] EXCEPT !.state = "APPLIED", !.finished = r.res \in {"done", "err"}, !.err = r.res = "err", !.held = 0]
+        failing == mark[k].lane = "main" /\ r.res = "err"
     IN /\ def' = [x \in DOMAIN def \cup newRefs |->
                     IF x \in newRefs
                     THEN [kind |-> entry(x).kind, lane |-> entry(x).lane, owner |-> entry(x).owner, lanes |-> entry(x).lanes]
                     ELSE def[x]]
        /\ seqs' = Placed(es, anchor)
        /\ st' = [x \in DOMAIN st \cup newRefs |->
-                   IF x \in newRefs THEN (IF entry(x).kind = "mark" THEN "fail" ELSE "none") ELSE st[x]]
+                   IF x \in newRefs THEN (IF entry(x).kind = "mark" THEN "fail" ELSE "none")
+                   ELSE IF failing /\ st[x] = "sched" THEN "fail"   \* cancelled: the workflow failed
+                   ELSE st[x]]
        /\ done' = [x \in DOMAIN done \cup newRefs |->
                      IF x \in newRefs THEN entry(x).kind \in {"mark", "preview"}
                      ELSE IF x = k THEN FALSE ELSE done[x]]
@@ -417,7 +421,8 @@ Rollback ==
 Retry ==
     /\ wf = "FAILED" /\ retries < MaxRetries
     /\ failedTask \in DOMAIN def /\ def[failedTask].kind = "mark"
-    /\ LET gone == {r \in DOMAIN def : def[r].kind \in {"mark", "preview"}}
+    /\ LET gone == {r \in DOMAIN def : \/ def[r].kind = "mark"
+                                       \/ def[r].kind = "preview" /\ def[r].owner # "untaken"}
            k == CHOOSE x \in DOMAIN mark : mark[x].lane = "main" /\ mark[x].err
        IN /\ def' = [r \in DOMAIN def \ gone |-> def[r]]
           /\ seqs' = [o \in Owners |-> SelectSeq(seqs[o], LAMBDA x : x \notin gone)]
@@ -509,7 +514,7 @@ JoinWaitsForLanes ==
         (def[j].kind = "join" /\ st[j] = "ok") =>
             \A l \in UNION {Closure(x) : x \in def[j].lanes} :
                 \A r \in DOMAIN def :
-                    def[r].lane = l => (st[r] \in {"ok", "fail"}
+                    (def[r].lane = l /\ def[r].kind # "preview") => (st[r] \in {"ok", "fail"}
                                         /\ (r \in DOMAIN mark => mark[r].state = "APPLIED"))
 
 \* COMPLETED means the code returned and no lane has work left; no mark of an
@@ -523,13 +528,15 @@ CompletedSound ==
              \A n \in Follow(v, Roots["main"]) :
                  Prog(v)[n].op \in Durable => n \in DOMAIN def
 
-\* A FAILED workflow names where it failed: a failed task the code reached, either the task
-\* whose failure it did not catch or the mark where it raised.
+\* A FAILED workflow names where it failed: what the main lane's raise names, the task
+\* whose failure it did not catch or the mark where it raised; not another failed task.
 FailedNamesItsCause ==
     wf = "FAILED" =>
         /\ failedTask \in DOMAIN def
         /\ st[failedTask] = "fail"
-        /\ \E v \in DOMAIN Programs : failedTask \in Follow(v, Roots["main"])
+        /\ \E v \in DOMAIN Programs : \E n \in Follow(v, Roots["main"]) :
+              /\ Prog(v)[n].op = "raise"
+              /\ failedTask = IF Cause(Prog(v)[n]) # NONE THEN Cause(Prog(v)[n]) ELSE n
 
 \* Marks and previews are drawn, never run: a mark is failed from the start, and a preview, of
 \* a switch case not taken or of what code that threw skipped, never starts.
@@ -564,6 +571,16 @@ OneContinuationAtATime ==
 \* A result is applied only if nothing else was applied since its worker read
 \* the history: continuations take effect one after another.
 AppliedOnFreshHistory == \A k \in DOMAIN applied : ~applied[k].stale
+
+\* An ended workflow has nothing running: what was still running when it failed is cancelled.
+EndedIsQuiet == wf \in {"COMPLETED", "FAILED"} => \A r \in DOMAIN st : st[r] # "sched"
+
+\* A switch the code took shows the cases it did not take, as long as it is drawn: a retry
+\* removes the mark and what the throw skipped, not these.
+UntakenStayDrawn ==
+    \A r \in DOMAIN def : def[r].kind = "switch" =>
+        \E v \in DOMAIN Programs : r \in DOMAIN Prog(v) /\
+            \A j \in 1..Len(Untaken(Prog(v)[r])) : Untaken(Prog(v)[r])[j] \in DOMAIN def
 
 \* With a live worker every workflow ends, unless it is held: the code running
 \* now cannot replay what it recorded, so it waits for a compatible build. Each

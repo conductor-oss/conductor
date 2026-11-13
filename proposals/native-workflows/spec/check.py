@@ -11,7 +11,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'workflow-semantics'))
 import check as engine  # noqa: E402
 
-MODELS = ['MC_NSeq', 'MC_NAsync', 'MC_NNested', 'MC_NUnjoined', 'MC_NSwitch', 'MC_NHold', 'MC_NRaise', 'MC_NHoldLanes', 'MC_NThrow']
+MODELS = ['MC_NSeq', 'MC_NAsync', 'MC_NNested', 'MC_NUnjoined', 'MC_NSwitch', 'MC_NHold', 'MC_NRaise', 'MC_NHoldLanes', 'MC_NThrow',
+          'MC_NNestedSwitch', 'MC_NSpawnOnly', 'MC_NLanePreview', 'MC_NThrowSwitch', 'MC_NFailRunning']
 
 # (name, model, text in NativeProtocol.tla, replacement, property expected to fail)
 MUTANTS = [
@@ -60,13 +61,28 @@ MUTANTS = [
     ('a dead lease never runs out', 'MC_NSeq',
      'ExpireDead(k) ==\n    /\\ Running /\\ slot = k', 'ExpireDead(k) ==\n    /\\ FALSE /\\ slot = k', 'Settles'),
     ('the mark where the code threw is scheduled like a task', 'MC_NThrow',
-     'IF x \\in newRefs THEN (IF entry(x).kind = "mark" THEN "fail" ELSE "none") ELSE st[x]', 'IF x \\in newRefs THEN "none" ELSE st[x]',
+     'IF x \\in newRefs THEN (IF entry(x).kind = "mark" THEN "fail" ELSE "none")', 'IF x \\in newRefs THEN "none"',
      ('MarksAndPreviewsNeverRun', 'FailedNamesItsCause')),
+    ('a lane that never paused never settles', 'MC_NSpawnOnly',
+     '    /\\ \\/ LaneMarks(l) = {}\n       \\/ /\\ \\E k', '    /\\ \\/ FALSE\n       \\/ /\\ \\E k', 'Settles'),
+    ('a retry removes the previews of cases not taken', 'MC_NThrowSwitch',
+     '\\/ def[r].kind = "preview" /\\ def[r].owner # "untaken"}', '\\/ def[r].kind = "preview"}', 'UntakenStayDrawn'),
+    ('a failure leaves running tasks running', 'MC_NFailRunning',
+     'ELSE IF failing /\\ st[x] = "sched" THEN "fail"', 'ELSE IF FALSE THEN "fail"', 'EndedIsQuiet'),
+    ('a switch inside a case lands at the top of its lane', 'MC_NNestedSwitch',
+     'ELSE [r EXCEPT !.entries = <<Entry(n, "switch", l, OwnerOf(nd, l), {}, FALSE)>>',
+     'ELSE [r EXCEPT !.entries = <<Entry(n, "switch", l, l, {}, FALSE)>>', 'NeverStuck'),
+    ('a failed workflow names a task whose failure the code caught', 'MC_NSeq',
+     'THEN IF Cause(Prog(r.build)[r.raised]) # NONE THEN Cause(Prog(r.build)[r.raised]) ELSE r.raised',
+     'THEN IF \\E t \\in DOMAIN def : st[t] = "fail" THEN CHOOSE t \\in DOMAIN def : st[t] = "fail"'
+     ' ELSE IF Cause(Prog(r.build)[r.raised]) # NONE THEN Cause(Prog(r.build)[r.raised]) ELSE r.raised',
+     'FailedNamesItsCause'),
     ('a failed workflow names no task', 'MC_NThrow',
      'THEN IF Cause(Prog(r.build)[r.raised]) # NONE THEN Cause(Prog(r.build)[r.raised]) ELSE r.raised', 'THEN NONE',
      'FailedNamesItsCause'),
     ('a retry keeps the mark', 'MC_NThrow',
-     'LET gone == {r \\in DOMAIN def : def[r].kind \\in {"mark", "preview"}}', 'LET gone == {}',
+     'LET gone == {r \\in DOMAIN def : \\/ def[r].kind = "mark"\n                                       \\/ def[r].kind = "preview" /\\ def[r].owner # "untaken"}',
+     'LET gone == {}',
      'unreachable:wf = "COMPLETED" /\\ retries >= 1 /\\ "b" \\in DOMAIN def'),
     ('a retry does not run the code again', 'MC_NThrow',
      '/\\ mark\' = [mark EXCEPT ![k].state = "RUNNABLE", ![k].finished = FALSE, ![k].err = FALSE]', '/\\ mark\' = mark',
@@ -113,6 +129,16 @@ WITNESSES = [
      'wf = "COMPLETED" /\\ retries >= 1 /\\ "b" \\in DOMAIN def'),
     ('MC_NHold', 'native: a held run completes after the rollback',
      'wf = "COMPLETED" /\\ "b" \\in DOMAIN def /\\ deploys = 1'),
+    ('MC_NNestedSwitch', 'native: a switch inside a case, and the code after it in the outer case, complete the run',
+     'wf = "COMPLETED" /\\ def["s2"].owner = "s1" /\\ def["c"].owner = "s1" /\\ st["b"] = "ok" /\\ st["c"] = "ok"'),
+    ('MC_NSpawnOnly', 'native: a lane that only starts another settles, and the join waits for both',
+     'wf = "COMPLETED" /\\ st["j"] = "ok" /\\ st["b"] \\in {"ok", "fail"}'),
+    ('MC_NLanePreview', 'native: a joined lane draws a preview, which never runs, and the join completes',
+     'wf = "COMPLETED" /\\ st["j"] = "ok" /\\ st["z_if_other"] = "none"'),
+    ('MC_NThrowSwitch', 'native: a retry after the fix completes, still showing the case the switch did not take',
+     'wf = "COMPLETED" /\\ retries > 0 /\\ "z_if_other" \\in DOMAIN def /\\ "b" \\in DOMAIN def'),
+    ('MC_NFailRunning', 'native: the main lane raising cancels a task still running in another lane',
+     'wf = "FAILED" /\\ "b" \\in DOMAIN def /\\ st["b"] = "fail"'),
 ]
 
 engine.HERE, engine.SPEC = HERE, 'NativeProtocol.tla'
