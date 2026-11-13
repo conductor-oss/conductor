@@ -44,6 +44,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +69,7 @@ public class NativeContinuationServiceTest {
                 .thenAnswer(invocation -> new TaskDef(invocation.getArgument(0)));
         Map<String, TaskMapper> mappers = new HashMap<>();
         for (String type :
-                List.of("SIMPLE", "FORK_JOIN", "JOIN", "TERMINATE", "WAIT", "DO_WHILE")) {
+                List.of("SIMPLE", "FORK_JOIN", "JOIN", "TERMINATE", "WAIT", "DO_WHILE", "SWITCH")) {
             mappers.put(type, new NoopTaskMapper());
         }
         service =
@@ -222,7 +223,7 @@ public class NativeContinuationServiceTest {
                 completeHoldingSlot(workflow, null, result("wf-1|main", out));
 
         assertFalse(completion.deferred);
-        assertFalse(completion.finished);
+        assertFalse(completion.reason, completion.finished);
         assertEquals(List.of("task_1"), refs(workflow.getWorkflowDefinition().getTasks()));
         assertTrue(bootstrap.isApplied());
         assertEquals(1, bootstrap.getStep());
@@ -300,6 +301,45 @@ public class NativeContinuationServiceTest {
                         workflow, again, result("id-task_c", output(3, 4, List.of(bad))));
         assertTrue(completion.finished);
         assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void aFragmentThatLeavesACaseKeepsWhatItDrewThereInTheCase() {
+        // the code passed an if inside the case it paused in, then left the case: the if stays in
+        // the case, after the task paused on, and the call after the switch goes after the switch
+        WorkflowModel workflow = freshWorkflow(false);
+        workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
+        TaskModel awaited = awaitedTask(workflow, "task_a", "main", 2, 3);
+        WorkflowTask inCase = workflow.getWorkflowDefinition().getTasks().remove(0);
+        WorkflowTask sw = new WorkflowTask();
+        sw.setName("route");
+        sw.setTaskReferenceName("route");
+        sw.setType("SWITCH");
+        sw.getMetadata().put("lane", "main");
+        sw.getDecisionCases().put("a", new ArrayList<>(List.of(inCase)));
+        sw.getDecisionCases().put("b", new ArrayList<>());
+        workflow.getWorkflowDefinition().getTasks().add(sw);
+
+        // an if the code went past without a call: a switch with the arm it took, no continuation
+        Map<String, Object> passed = entry("check", "SWITCH", "main", null, 0);
+        passed.put("evaluatorType", "value-param");
+        passed.put("expression", "switchCaseValue");
+        passed.put("inputParameters", Map.of("switchCaseValue", "false"));
+        passed.put("decisionCases", Map.of("true", List.of()));
+        passed.put("defaultCase", List.of());
+        Map<String, Object> next = entry("notify", "SIMPLE", "main", "main", 3);
+        ((Map<String, Object>) next.get("metadata")).put("after", "route");
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(
+                        workflow,
+                        awaited,
+                        result("id-task_a", output(2, 3, List.of(passed, next))));
+
+        assertFalse(completion.reason, completion.finished);
+
+        assertEquals(List.of("route", "notify"), refs(workflow.getWorkflowDefinition().getTasks()));
+        assertEquals(List.of("task_a", "check"), refs(sw.getDecisionCases().get("a")));
     }
 
     @Test
@@ -444,7 +484,7 @@ public class NativeContinuationServiceTest {
                 completeHoldingSlot(workflow, awaited, result("id-task_1", out));
 
         // the decider completes the workflow (after anything the fragment appended has run)
-        assertFalse(completion.finished);
+        assertFalse(completion.reason, completion.finished);
         assertEquals(Map.of("answer", 42), completion.output);
         assertTrue(awaited.getContinuation().isDone());
         assertEquals(Map.of("answer", 42), awaited.getContinuation().getResult());
@@ -721,6 +761,66 @@ public class NativeContinuationServiceTest {
             assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
             assertTrue(workflow.getWorkflowDefinition().getTasks().isEmpty());
         }
+    }
+
+    @Test
+    public void anExceptionTheCodeThrewIsAFailedTaskWhereItThrew() {
+        WorkflowModel workflow = freshWorkflow(false);
+        TaskModel lookup = awaitedTask(workflow, "lookup", "main", 2, 3);
+        Map<String, Object> thrown = entry("throw", "TERMINATE", "main", null, 0);
+        thrown.put("name", "IllegalArgumentException");
+        thrown.put(
+                "inputParameters",
+                Map.of("terminationStatus", "FAILED", "terminationReason", "no items"));
+        Map<String, Object> out = output(2, 3, List.of(thrown));
+        out.put("done", true);
+        out.put(
+                "error",
+                Map.of(
+                        "type",
+                        "java.lang.IllegalArgumentException",
+                        "message",
+                        "IllegalArgumentException: no items",
+                        "ref",
+                        "throw"));
+
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(workflow, lookup, result("id-lookup", out));
+
+        assertTrue(completion.finished);
+        assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
+        TaskModel cause = completion.causeTask;
+        assertEquals("throw", cause.getReferenceTaskName());
+        assertEquals("TERMINATE", cause.getTaskType());
+        assertEquals("IllegalArgumentException", cause.getTaskDefName());
+        assertEquals(TaskModel.Status.FAILED, cause.getStatus());
+        assertEquals("IllegalArgumentException: no items", cause.getReasonForIncompletion());
+        assertTrue(workflow.getTasks().contains(cause));
+        assertEquals(
+                "throw", workflow.getWorkflowDefinition().getTasks().get(1).getTaskReferenceName());
+        assertEquals(
+                "the task before it stays as it ran",
+                TaskModel.Status.COMPLETED,
+                lookup.getStatus());
+    }
+
+    @Test
+    public void anUncaughtTaskFailureShowsItsTaskFailed() {
+        WorkflowModel workflow = freshWorkflow(false);
+        TaskModel charge = awaitedTask(workflow, "charge", "main", 2, 3);
+        charge.setStatus(TaskModel.Status.COMPLETED_WITH_ERRORS);
+        charge.getOutputData().put("conductor.failedStatus", "FAILED_WITH_TERMINAL_ERROR");
+        Map<String, Object> out = output(2, 3, List.of());
+        out.put("done", true);
+        out.put(
+                "error",
+                Map.of("type", "TaskFailure", "message", "task charge FAILED", "ref", "charge"));
+
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(workflow, charge, result("id-charge", out));
+
+        assertSame(charge, completion.causeTask);
+        assertEquals(TaskModel.Status.FAILED_WITH_TERMINAL_ERROR, charge.getStatus());
     }
 
     @Test

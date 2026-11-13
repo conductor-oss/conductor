@@ -37,7 +37,7 @@ rewritten for protocol 2 with it.
 
 | Check | How | Result |
 |---|---|---|
-| Kitchensink odd path: `oddEvenDecision` as a `switchOn` whose case `"1"` holds two async lanes, each a task then a child workflow, joined | `kitchensink.Main` against the server, run three times on the final build | passed every run (49 checks, including the forEach loop, sleepUntil, MCP and agent steps, failure workflow and priority). `<!-- TODO: verify against live server -->` the `switchOn` form of `oddEvenDecision` and its check (the `SWITCH` task's `selectedCase` equals the input's `oddEven`, `Main.caseTaken`) were not re-run against a live server for this page |
+| Kitchensink odd path: `switch_oddEven`, a plain Java `switch` whose case `"1"` holds two async lanes, each a task then a child workflow, joined | `kitchensink.Main` against the server | passed, 2026-11-11 (118 checks over the odd, even and failure executions): the `SWITCH` task's `selectedCase` equals the input's `oddEven` (`Main.caseTaken`), and every plain `if` and `switch` of the composition section ran as a `SWITCH`, with the loop tags of the loops around it |
 | Kitchensink even path: fan-out over planned tasks | same | passed |
 | Kitchensink failure path: charge fails terminally, code catches `TaskFailure` | same | passed |
 | Update with reply, query, signal, condition wait released by a handler | same, all three executions | passed |
@@ -288,7 +288,7 @@ operator checks that a worker task failing once is retried rather than raised.
 | `repeatUntil` condition | a predicate | a method reference to a boolean property of the result, such as `JobStatus::done`, translated to the DO_WHILE condition |
 | Continuation routing | per worker, then per build (`nativeState.owner`, sent in every completion; workers polled their worker id too) | removed. The shared queue by default; `Workers` polls it plus `buildId` as a domain when set; pinning is opt-in with a domain list on the start, such as `.taskToDomain(Map.of("<name>.v1.code", "build-7,NO_DOMAIN"))`, and a worker's build is never captured automatically |
 | Human task timeout | a registered task definition | an inline `taskDefinition` on the HUMAN entry, with `timeoutPolicy: RETRY` and `retryCount: 0` |
-| Branching visible in the graph | `decision(name, value)`: nothing emitted, a label for the observed-graph diamond; a plain Java `switch` left no trace | `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`: a real `SWITCH` entry with every declared case, the taken body run inline with its calls inside that case, every untaken case holding a preview of the calls its body would have made (`<base>_if_<key>`, `metadata.preview: true`, read from the compiled case body, so nothing runs), and `metadata.after` on the first entry after the body when the lane resumed inside the case. Plain `if`/`switch` stays plain code; `switchOn` is the opt-in for a branch the execution should show. `decision` no longer exists. The kitchensink's `oddEvenDecision` is a `switchOn`; `switches.Switches` shows a nested switch, an empty case, the default case and an unhandled value |
+| Branching visible in the graph | `decision(name, value)`: nothing emitted, a label for the observed-graph diamond; a plain Java `switch` left no trace | a plain `if` or `switch` whose arms call the server is a `SWITCH` with every arm (read from the compiled code, the arm known from the line each call is made on); `switchOn(name, value).when(key, body)…otherwise(body).get()`/`.run()`: a real `SWITCH` entry with every declared case, the taken body run inline with its calls inside that case, every untaken case holding a preview of the calls its body would have made (`<base>_if_<key>`, `metadata.preview: true`, read from the compiled case body, so nothing runs), and `metadata.after` on the first entry after the body when the lane resumed inside the case. Plain `if`/`switch` stays plain code; `switchOn` is the opt-in for a branch the execution should show. `decision` no longer exists. The kitchensink's `oddEvenDecision` is a `switchOn`; `switches.Switches` shows a nested switch, an empty case, the default case and an unhandled value |
 | Registration checks (S2) | log when the message queue is off | as designed, plus native definitions are refused when `conductor.app.nativeWorkflow.enabled=false` |
 | Embedded-server test tier | `DurableTestEnvironment.embedded()` | not implemented; the in-memory tier and the replay test are |
 | Attach-to-execution debugger, CLI commands | listed | not implemented |
@@ -326,9 +326,11 @@ operator checks that a worker task failing once is retried rather than raised.
   twice is an error at the call. Replay is strict here too: a switch that takes a case other than
   the recorded `switchCaseValue` is a divergence.
 - Previews and the discovered definition show every call the code can make, not the path a run
-  would take. Both sides of a plain `if` and the body of a loop appear once each, in sequence, and
-  a catch block follows its try: bytecode has no value to choose by, and the graph has no shape for
-  a plain `if`. Use `switchOn` for a decision that should show as one. `fanOut` appears as a
+  would take: every arm of an `if` or `switch` whose arms call the server, as a `SWITCH`; the body
+  of a loop once; a catch block after its try. An `if` or `switch` is drawn at run time only when
+  the lines its arms call from are its own (a one-line ternary with a call in each arm is plain
+  code), its cases do not fall through, and, when the code went past it without a call, only one
+  arm could have been passed that way. `fanOut` appears as a
   `FORK_JOIN_DYNAMIC` + `JOIN`; `repeatUntil` and `forEach` as a `DO_WHILE` that never loops; a
   nested `switchOn` shows every case with an empty `switchCaseValue`. Inputs are not read, a task
   name computed at run time shows as `task`, a call through an interface or into another package

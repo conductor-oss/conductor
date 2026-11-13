@@ -32,9 +32,9 @@ class has handlers, a `handlers` marker (lane `handlers`, `n` 1, `WAITING`). A m
 The growth rule: when a continuation completes, the `fragment` in its output is inserted into the
 execution's definition immediately after the task the lane paused on, wherever that task sits:
 top level, inside a `FORK_JOIN` branch, inside a `SWITCH` case (`WorkflowDef.insertAfter`, which
-descends into `forkTasks`, `decisionCases`, `defaultCase` and `loopOver`). One exception: when the
-fragment's first entry carries `metadata.after`, the fragment is inserted after the entry it names
-instead (`NativeContinuationService.anchorOf`). The SDK sets it when the lane paused inside a
+descends into `forkTasks`, `decisionCases`, `defaultCase` and `loopOver`). One exception: an entry that
+carries `metadata.after` starts a run inserted after the entry it names instead
+(`NativeContinuationService.anchorOf`). The SDK sets it when the lane paused inside a
 `switchOn` case and the case body has since returned, so the code after the switch lands after the
 switch rather than inside the case it paused in. An anchor that names no entry in the definition
 is a rejected fragment, and the workflow fails. The bootstrap's fragment, which has no task before
@@ -57,30 +57,32 @@ entry, and `TaskMapperContext.createTaskModel` copies it onto the scheduled `Tas
 `WAITING` marker. A JOIN, a DO_WHILE and a WAIT carry it like a worker task does, since the code
 pauses on them too.
 
-Example, the kitchensink's odd path. After `task_2` the main lane reaches
-`switchOn("oddEvenDecision", …)`, takes case `"1"`, runs until `join(wf3, wf4)` and its
-continuation completes with (reference names as the SDK derives them; the JSON kitchensink calls
-them `forkx` and `join2`):
+Example, the kitchensink's odd path. After `task_2` the main lane reaches the plain Java
+`switch (oddEven.oddEven())`, takes case `"1"`, runs until `join(wf3, wf4)` and its continuation
+completes with (reference names as the SDK derives them; the JSON kitchensink calls them
+`oddEvenDecision`, `forkx` and `join2`):
 
 ```
-SWITCH oddEvenDecision, switchCaseValue "1"
+SWITCH switch_oddEven, switchCaseValue "1"
   case "0": task_4_if_0  (metadata.preview true; no marker)
   case "1":
     FORK_JOIN fork
       branch 0: task_10  (continuation {lane fork_1.0, n 1})
       branch 1: task_11  (continuation {lane fork_1.1, n 1})
     JOIN fork_join, joinOn [] (live targets), continuation {lane main, n 4}
-  defaultCase: (empty: the otherwise body throws before any call)
+  defaultCase: (empty: the default arm throws before any call)
 ```
 
 The switch is the only top-level entry of that fragment; the fork and the join sit inside the case
-the value took, because the case body ran inline and its calls were placed there. The untaken
-case `"0"` is not empty: the SDK previews it (see below) and it shows the task its body would have
-called, `task_4_if_0`, as a preview entry.
+the value took, because the case's calls were placed there. The SDK knows which arm of a plain
+`if` or `switch` a call is in from the line it is made on, read with the arms from the compiled
+code; `switchOn(name, value)` is the explicit form of the same SWITCH. The untaken case `"0"` is
+not empty: the SDK previews it (see below) and it shows the task its arm would have called,
+`task_4_if_0`, as a preview entry.
 
-**Preview entries.** When the SDK first emits a switch, every untaken case (and the `otherwise`
-body, when a declared case was taken) is read from its compiled code, without running it, to find
-the calls it would make (`Replayer.previewOf`, `CodeReader`). Those calls arrive as ordinary
+**Preview entries.** When the SDK first emits a switch, every untaken case (and the default arm,
+when a declared case was taken) is read from its compiled code, without running it, to find the
+calls it would make (`Replayer.previewOf`, `CodeReader`). Those calls arrive as ordinary
 entries inside the untaken case's list, with `metadata.preview: true`, reference names
 `<base>_if_<caseKey>`, no `metadata.continuation` and no `optional`. The server treats them as it
 treats any fragment entry: they are validated (02 §8: unique references, known types, `lane`),
@@ -101,8 +103,8 @@ pace. When a lane returns, the continuation on its last task completes with `don
 empty fragment; the marker becomes `APPLIED` with `done`, and the branch's last task is terminal.
 `fork_join` completes when every branch's current last task is terminal and settled (section 6),
 and the main lane's marker on `fork_join` becomes runnable. That continuation resumes inside case
-`"1"`; the body returns, and the first call after the switch (`get_es_1`) is emitted with
-`metadata.after: "oddEvenDecision"`, so the server inserts it after the switch at the top level,
+`"1"`; the arm ends, and the first call after the switch (`get_es_1`) is emitted with
+`metadata.after: "switch_oddEven"`, so the server inserts it after the switch at the top level,
 not after `fork_join` inside the case.
 
 Marker states:

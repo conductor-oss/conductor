@@ -135,12 +135,27 @@ public class Workflow extends Auditable {
 
     private String idempotencyKey;
     private String rateLimitKey;
+
+    /**
+     * The task a FAILED workflow failed at: the task whose failure ended it, or for a native
+     * workflow the mark where its code threw. Null when no task caused the end.
+     */
+    private String failedTaskId;
+
     private boolean rateLimited;
 
     /** Token usage summed across this workflow and its sub-workflow tree. */
     private AggregateTokenUsage aggregateTokenUsage;
 
     public Workflow() {}
+
+    public String getFailedTaskId() {
+        return failedTaskId;
+    }
+
+    public void setFailedTaskId(String failedTaskId) {
+        this.failedTaskId = failedTaskId;
+    }
 
     public String getIdempotencyKey() {
         return idempotencyKey;

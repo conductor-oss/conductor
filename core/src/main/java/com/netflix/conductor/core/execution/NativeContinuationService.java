@@ -693,21 +693,32 @@ public class NativeContinuationService {
             List<WorkflowTask> fragment = readFragment(out);
             if (!fragment.isEmpty()) {
                 WorkflowDef definition = workflow.getWorkflowDefinition();
-                validateFragment(definition, fragment, state.getCodeType());
+                validateFragment(
+                        definition, fragment, state.getCodeType(), thrownRef(done, error, marker));
                 // which continuation appended each entry: a rerun undoes a continuation's entries
                 for (WorkflowTask entry : fragment) {
                     entry.getMetadata().put(APPENDED_BY, markerKey(marker));
                 }
                 populateTaskDefinitions(workflowName, fragment);
-                // The fragment goes after the task the code paused on, unless its first entry
-                // names another anchor: code that left a switch case appends after the switch,
-                // not inside the case where it paused.
-                String anchor = anchorOf(fragment, awaited);
-                if (anchor == null) {
-                    definition.getTasks().addAll(fragment);
-                } else if (!definition.insertAfter(anchor, fragment)) {
-                    throw new RejectedFragmentException(
-                            "fragment", "task " + anchor + " is not in the execution's definition");
+                // The fragment goes after the task the code paused on; an entry that names another
+                // anchor starts a run that goes there instead: code that left a switch case
+                // appends after the switch, not inside the case where it paused, and what it drew
+                // in the case before leaving stays in the case.
+                int start = 0;
+                for (int i = 1; i <= fragment.size(); i++) {
+                    if (i < fragment.size() && anchorOf(fragment.subList(i, i + 1), null) == null) {
+                        continue;
+                    }
+                    List<WorkflowTask> run = new ArrayList<>(fragment.subList(start, i));
+                    String anchor = anchorOf(run, start == 0 ? awaited : null);
+                    if (anchor == null) {
+                        definition.getTasks().addAll(run);
+                    } else if (!definition.insertAfter(anchor, run)) {
+                        throw new RejectedFragmentException(
+                                "fragment",
+                                "task " + anchor + " is not in the execution's definition");
+                    }
+                    start = i;
                 }
                 Monitors.recordNativeFragmentApplied(workflowName, fragment.size());
             }
@@ -761,8 +772,7 @@ public class NativeContinuationService {
                     completion.finishStatus = WorkflowModel.Status.FAILED;
                     completion.reason = String.valueOf(error.get("message"));
                     Object ref = error.get("ref");
-                    completion.causeTask =
-                            ref == null ? null : workflow.getTaskByRefName(ref.toString());
+                    completion.causeTask = causeTask(workflow, ref, completion.reason);
                 }
             }
             LOGGER.debug(
@@ -795,6 +805,56 @@ public class NativeContinuationService {
             completion.reason = e.getMessage();
             return completion;
         }
+    }
+
+    /**
+     * The task a failed workflow failed at, shown failed. An uncaught task failure names its task,
+     * which the SDK made optional so the failure could reach the code: it is put back to the status
+     * it failed with. An exception the code threw names the TERMINATE entry the code appended where
+     * it threw; that entry becomes a FAILED task with the exception as its reason.
+     */
+    private TaskModel causeTask(WorkflowModel workflow, Object ref, String reason) {
+        if (ref == null) {
+            return null;
+        }
+        TaskModel task = workflow.getTaskByRefName(ref.toString());
+        if (task != null) {
+            if (task.getStatus() == TaskModel.Status.COMPLETED_WITH_ERRORS) {
+                Object failed = task.getOutputData().get("conductor.failedStatus");
+                task.setStatus(
+                        failed == null
+                                ? TaskModel.Status.FAILED
+                                : TaskModel.Status.valueOf(failed.toString()));
+            }
+            return task;
+        }
+        WorkflowTask entry = workflow.getWorkflowDefinition().getTaskByRefName(ref.toString());
+        if (entry == null || !TaskType.TERMINATE.name().equals(entry.getType())) {
+            return null;
+        }
+        long now = System.currentTimeMillis();
+        TaskModel thrown = new TaskModel();
+        thrown.setTaskId(java.util.UUID.randomUUID().toString());
+        thrown.setReferenceTaskName(entry.getTaskReferenceName());
+        thrown.setTaskType(TaskType.TERMINATE.name());
+        thrown.setTaskDefName(entry.getName());
+        thrown.setWorkflowInstanceId(workflow.getWorkflowId());
+        thrown.setWorkflowType(workflow.getWorkflowName());
+        thrown.setCorrelationId(workflow.getCorrelationId());
+        thrown.setWorkflowPriority(workflow.getPriority());
+        thrown.setWorkflowTask(entry);
+        thrown.setInputData(new HashMap<>(entry.getInputParameters()));
+        thrown.setSeq(workflow.getTasks().stream().mapToInt(TaskModel::getSeq).max().orElse(0) + 1);
+        thrown.setScheduledTime(now);
+        thrown.setStartTime(now);
+        thrown.setEndTime(now);
+        thrown.setStatus(TaskModel.Status.FAILED);
+        thrown.setReasonForIncompletion(reason);
+        workflow.getTasks().add(thrown);
+        if (executionDAOFacade != null) {
+            executionDAOFacade.createTasks(List.of(thrown));
+        }
+        return thrown;
     }
 
     private Completion defer(
@@ -1181,8 +1241,25 @@ public class NativeContinuationService {
         }
     }
 
+    /**
+     * The reference of the entry that marks where the code threw, when this completion ends the
+     * main lane with an exception: the only TERMINATE a fragment may hold, because the workflow
+     * fails in this same completion and the entry is never scheduled.
+     */
+    private static String thrownRef(
+            boolean done, Map<String, Object> error, TaskContinuation marker) {
+        if (!done || error == null || !MAIN_LANE.equals(marker.getLane())) {
+            return null;
+        }
+        Object ref = error.get("ref");
+        return ref == null ? null : ref.toString();
+    }
+
     private void validateFragment(
-            WorkflowDef definition, List<WorkflowTask> fragment, String codeType) {
+            WorkflowDef definition,
+            List<WorkflowTask> fragment,
+            String codeType,
+            String thrownRef) {
         int max = properties.getNativeWorkflow().getMaxFragmentTasks();
         if (fragment.size() > max) {
             throw new RejectedFragmentException(
@@ -1233,7 +1310,7 @@ public class NativeContinuationService {
                     throw new RejectedFragmentException(
                             "type", "task " + ref + " has unsupported type " + type);
                 }
-                if (TaskType.TERMINATE.name().equals(type)) {
+                if (TaskType.TERMINATE.name().equals(type) && !ref.equals(thrownRef)) {
                     throw new RejectedFragmentException(
                             "type",
                             "a native workflow ends through its code, not a TERMINATE task");

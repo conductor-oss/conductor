@@ -85,9 +85,9 @@ joins them next, or a `JOIN` with `metadata.detached` when it does not, and a la
 becomes a `JOIN` `fork_wait` with `metadata.waitForFork`; `fanOut`
 becomes a `FORK_JOIN_DYNAMIC` + `JOIN`, since its items exist only at run time; `repeatUntil` and
 `forEach` become a `DO_WHILE` with `loopCondition: "false"`; `once`, `now` and `random` are not
-steps. Reading follows lambdas and methods of the workflow's own package, and sees every path: both
-sides of a plain `if` and the body of a loop appear once each, one after the other, and a catch
-block follows its try. Inputs are not read, apart from constant reference names, case keys, an HTTP
+steps; an `if` or `switch` whose arms call the server becomes a `SWITCH` with every arm. Reading
+follows lambdas and methods of the workflow's own package, and sees every path: every arm, the body
+of a loop once, and a catch block after its try. Inputs are not read, apart from constant reference names, case keys, an HTTP
 method and URI and an event sink; a task name computed at run time shows as `task`; a call through
 an interface or into another package is not followed; a case key that is not a constant shows as
 `unknown_<n>`.
@@ -299,7 +299,7 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 |---|---|---|
 | `protocol` | yes | Must be the number `2`; anything else is rejected (`RejectedFragmentException`, reason `protocol`). |
 | `n`, `epoch` | yes | Must equal the marker's; otherwise `ConflictException` (HTTP 409), metric `native_stale_completion`. A late, duplicate or superseded completion. |
-| `fragment` | yes, may be empty | Inserted after the awaited task (top level for the bootstrap), or after the entry the first entry's `metadata.after` names (§8 rule 7, §9 `switchOn`). |
+| `fragment` | yes, may be empty | Inserted after the awaited task (top level for the bootstrap); an entry carrying `metadata.after` starts a run inserted after the entry it names (§8 rule 7, §9 `switchOn`). |
 | `recorded` | no | Values of `once`, `now`, `random` computed by this continuation, `{ "<name>": { "value": …, "type": "<class>" } }`; stored on the marker. |
 | `variables` | no | The lane's `@Variable` values after the continuation. Only entries that differ from `resumedWith` are applied. |
 | `resumedWith` | no | The variables the continuation started from. A variable it changed that another completion changed meanwhile defers the completion (`deferred: "variable 'x' was changed by another completion"`). |
@@ -338,7 +338,8 @@ message.
 2. `reference`: every entry at any depth has a `taskReferenceName`, absent from the current
    definition and unique within the fragment.
 3. `type`: a type `DeciderService` has a mapper for. `TERMINATE` is refused: a native workflow ends
-   through its code.
+   through its code. The one exception is the entry that marks where the main lane's code threw,
+   in the completion that ends the lane with that error and names it in `error.ref`.
 4. `lane`: every entry carries `metadata.lane`.
 5. `continuation`: a `metadata.continuation` is `{ "lane": "<lane>", "n": <number> }`, and a lane
    pauses at most once in one fragment.
@@ -347,10 +348,11 @@ message.
    registration; `SUB_WORKFLOW` entries may carry an inline `workflowDefinition` or a name and
    version.
 7. `fragment`: the awaited task's reference must still be in the definition (a rerun can remove
-   entries). When the first entry carries `metadata.after`, the entry it names must be in the
-   definition too (`NativeContinuationService.anchorOf`, `WorkflowDef.insertAfter`): the fragment
-   goes after that entry instead of after the awaited task. An anchor that names nothing is
-   rejected with "task <anchor> is not in the execution's definition".
+   entries). An entry that carries `metadata.after` starts a run of entries that goes after the
+   entry it names, which must be in the definition too (`NativeContinuationService.anchorOf`,
+   `WorkflowDef.insertAfter`); the entries before the first such entry go after the awaited task.
+   An anchor that names nothing is rejected with "task <anchor> is not in the execution's
+   definition".
 
 SDK obligations the server does not validate:
 
@@ -364,11 +366,12 @@ SDK obligations the server does not validate:
 4. The entry that carries a lane's marker is the last entry of that lane in the fragment.
 5. Data placed in task input has `${` written as `$${` (`Entries.escape`), because the server
    evaluates expressions.
-6. `metadata.after` is set only on the first entry of a fragment, and only when the lane resumed
-   inside a `switchOn` case whose body has now returned; it names the switch (`Lane.anchorAfter`,
-   consumed by the next `emit`). Within one fragment nothing is anchored: the case body's entries
-   go straight into the case list, and the entry after the body goes back to the list that holds
-   the switch.
+6. `metadata.after` is set only when the lane resumed inside a case (of a `switchOn`, or of a plain
+   `if` or `switch`) that has now ended; it names the switch (`Lane.anchorAfter`, consumed by the
+   next `emit`). It is usually the fragment's first entry; a plain `if` the code went past inside
+   the case before leaving it comes first, unanchored, and stays in the case. Within one
+   continuation's own branches nothing is anchored: their entries go straight into the case list,
+   and the entry after the body goes back to the list that holds the switch.
 7. A `SWITCH` entry declares every case the code declared, plus a `defaultCase`, and fixes
    `inputParameters.switchCaseValue` to the key the code took, so the server's `value-param`
    evaluation selects the case whose entries the code scheduled. The untaken cases (and
@@ -410,22 +413,23 @@ What each SDK call emits (`Replayer`, `Entries`). "pauses" means the entry carri
 | `event(ref).to(sink).send(p)` | `EVENT` `ref` with `sink`, `optional: true`; no pause |
 | `llm(ref)…`, `mcp(ref)…`, `agent(ref)…` | `LLM_CHAT_COMPLETE`, `LIST_MCP_TOOLS` / `CALL_MCP_TOOL`, `AGENT`; pauses |
 | `switchOn(name, value).when(key, body)…otherwise(body).get()` / `.run()` | `SWITCH` `name` with `evaluatorType: value-param`, `expression: switchCaseValue`, `inputParameters: {switchCaseValue: "<value as a string>"}`, `decisionCases` with one list per declared case, `defaultCase`, `metadata.lane`; no `optional`, no pause of its own. The taken body runs inline and its entries go inside that case's list; the lane's marker sits on whatever it paused on in there. Every untaken case, and `defaultCase` when a declared case was taken and `otherwise` exists, holds the preview of its body (rule 8 above): the entries it would have emitted, named `<base>_if_<key>`, with `metadata.preview: true`. When the lane resumes inside the case and the body returns, the next entry carries `metadata.after: "<name>"` and the server inserts it after the switch. The value is written with `${` escaped, so it is never evaluated. No match and no `otherwise`: the `SWITCH` is still emitted with every case previewed, then `WorkflowFailedException`, the lane ends with `error` |
+| an `if` or `switch` whose arms call the server | the same `SWITCH` as `switchOn`, named after what it decides on (`if_<name>`, `switch_<name>`, numbered when repeated). An `if` has the case `"true"` and its else as `defaultCase`; a `switch` has a case per arm keyed by its labels and `"default"`. `switchCaseValue` is the arm taken. Emitted when the first call inside an arm is made (the SDK knows the arm from the call's line), or, when the code went past without a call and only one arm can be passed that way, with that arm and nothing inside it |
 | `return value` | empty fragment, `done: true`, `result` |
-| `throw` | empty fragment, `done: true`, `error`; `error.ref` for an uncaught `TaskFailure` |
+| `throw` | `done: true`, `error`. For an uncaught `TaskFailure`, `error.ref` names the task, which the server puts back to the status it failed with (`outputData["conductor.failedStatus"]`) and makes the workflow's failed task (`failedTaskId` on the workflow returned by `GET /api/workflow/{workflowId}`; ui-next's "Jump to task" goes there). For any other exception, the fragment ends with a `TERMINATE` entry where the code threw (named after the exception, `metadata.site` the line it was thrown from, `metadata.thrown` its class) and `error.ref` names it: the server creates it as a `FAILED` task with the exception as its reason and makes it the failed task; it is never scheduled. The ifs and switches the code threw inside are drawn first, as at a call, so the entry lands in the arm it was in. After it come previews of what the code would have called had it not thrown (`<task>_if_no_error`, `metadata.preview`, `metadata.previewAfter: "<ref of the TERMINATE>"`), read from the compiled code: the rest of each arm in that arm's case, then the rest of each method up to the workflow method. A retry removes that task and those previews and runs the code again from its last continuation |
 
-The kitchensink's `oddEvenDecision`, as recorded in `kitchensink-odd.json` (odd path, so case
-`"1"` was taken; the fork and the join of the two `async` blocks are inside it and the main lane
-paused on the join; case `"0"` holds the preview of `task_4` and of the dynamic fork and join its
-`fanOut` would run; the `otherwise` body throws
-before any call, so `defaultCase` is empty):
+The kitchensink's plain `switch (oddEven.oddEven())`, as recorded in `kitchensink-odd.json` (odd
+path, so case `"1"` was taken; the fork and the join of the two `async` blocks are inside it and
+the main lane paused on the join; case `"0"` holds the preview of `task_4` and of the dynamic fork
+and join its `fanOut` would run; the default arm throws before any call, so `defaultCase` is
+empty):
 
 ```json
-{ "name": "oddEvenDecision", "taskReferenceName": "oddEvenDecision", "type": "SWITCH",
+{ "name": "switch_oddEven", "taskReferenceName": "switch_oddEven", "type": "SWITCH",
   "evaluatorType": "value-param", "expression": "switchCaseValue",
   "inputParameters": { "switchCaseValue": "1" },
   "decisionCases": {
     "0": [ { "name": "task_4", "taskReferenceName": "task_4_if_0", "type": "SIMPLE",
-             "inputParameters": { "oddEven": { "mod": 5, "oddEven": "1" } },
+             "inputParameters": {},
              "metadata": { "lane": "main", "site": "…", "preview": true } },
            { "name": "fanout1", "taskReferenceName": "fanout1_if_0", "type": "FORK_JOIN_DYNAMIC",
              "dynamicForkTasksParam": "dynamicTasks",
@@ -438,15 +442,15 @@ before any call, so `defaultCase` is empty):
              "metadata": { "lane": "main", "site": "…", "continuation": { "lane": "main", "n": 4 } }, "…": "…" } ]
   },
   "defaultCase": [],
-  "metadata": { "lane": "main", "site": "KitchenSinkWorkflow.kitchenSink:…" } }
+  "metadata": { "lane": "main", "site": "KitchenSinkWorkflow.kitchenSink:…", "loops": [] } }
 ```
 
-The continuation that resumes on `fork_join` returns from the case body and completes with a
-fragment whose first entry is anchored after the switch:
+The continuation that resumes on `fork_join` leaves the case and completes with a fragment whose
+first entry is anchored after the switch:
 
 ```json
 [ { "name": "get_es_1", "taskReferenceName": "get_es_1", "type": "HTTP", "optional": true, "…": "…",
-    "metadata": { "lane": "main", "site": "…", "after": "oddEvenDecision",
+    "metadata": { "lane": "main", "site": "…", "after": "switch_oddEven",
                   "continuation": { "lane": "main", "n": 5 } } } ]
 ```
 

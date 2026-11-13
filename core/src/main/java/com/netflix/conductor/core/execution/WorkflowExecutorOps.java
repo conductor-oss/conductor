@@ -1594,6 +1594,30 @@ public class WorkflowExecutorOps implements WorkflowExecutor {
      * @return true when the native path handled the retry
      */
     private boolean retryNative(WorkflowModel workflow) {
+        // An exception the code threw is marked by a TERMINATE task where it threw. Retrying runs
+        // the code again (a fixed build may now pass that point), so the mark goes and the last
+        // continuation of the main lane is offered again, as for a failure with no failed task.
+        workflow.getTasks().stream()
+                .filter(t -> t.getTaskId().equals(workflow.getFailedTaskId()))
+                .filter(t -> TaskType.TERMINATE.name().equals(t.getTaskType()))
+                .findFirst()
+                .ifPresent(
+                        thrown -> {
+                            workflow.getTasks().remove(thrown);
+                            // the mark, and the previews of what the code would have called next
+                            Set<String> refs = new HashSet<>();
+                            refs.add(thrown.getReferenceTaskName());
+                            for (WorkflowTask entry :
+                                    workflow.getWorkflowDefinition().collectTasks()) {
+                                if (thrown.getReferenceTaskName()
+                                        .equals(entry.getMetadata().get("previewAfter"))) {
+                                    refs.add(entry.getTaskReferenceName());
+                                }
+                            }
+                            workflow.getWorkflowDefinition().removeAll(refs);
+                            executionDAOFacade.removeTask(thrown.getTaskId());
+                            workflow.setFailedTaskId(null);
+                        });
         if (workflow.getFailedTaskId() != null
                 && workflow.getTasks().stream()
                         .anyMatch(t -> workflow.getFailedTaskId().equals(t.getTaskId()))) {

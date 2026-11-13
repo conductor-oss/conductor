@@ -24,7 +24,7 @@ import {
   TypeStatusMap,
 } from "./StatusMapTypes";
 import { canBeHeld, heldReasonOfMarker } from "../held";
-import { codeLoopStatus, groupCodeLoops, isCodeLoop } from "./codeLoops";
+import { codeLoopStatus, isCodeLoop } from "./codeLoops";
 import { detachedTasksByParent } from "./detachedTasks";
 import { TaskDefExecutionContext, WorkflowDefExecutionContext } from "./types";
 
@@ -474,7 +474,7 @@ export const executionToWorkflowDef = (
     {
       ...execution.workflowDefinition,
       tasks: taskStatusUpdater(
-        groupCodeLoops(execution.workflowDefinition.tasks),
+        execution.workflowDefinition.tasks,
         canBeHeld(execution)
           ? taskExecutionMap
           : (_mapValues(taskExecutionMap, (task) => ({

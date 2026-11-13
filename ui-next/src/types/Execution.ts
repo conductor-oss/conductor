@@ -141,6 +141,8 @@ export interface WorkflowExecution {
   endTime: number | string;
   executionTime: number;
   failedReferenceTaskNames: string;
+  /** The task a FAILED workflow failed at, when the server names one. */
+  failedTaskId?: string;
   input: Record<string, unknown>;
   inputSize: number;
   output: Record<string, unknown>;

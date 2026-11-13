@@ -12,6 +12,7 @@ import {
 } from "commonServices";
 import { toMaybeQueryString } from "utils/toMaybeQueryString";
 import { maybeTriggerFailureWorkflow } from "utils/maybeTriggerWorkflow";
+import { codeLoopsAsIterations } from "./codeLoops";
 
 export const fetchExecution = (context: ExecutionMachineContext) => {
   const request = {
@@ -20,7 +21,7 @@ export const fetchExecution = (context: ExecutionMachineContext) => {
   };
   return context.agentExecution
     ? fetchAgentExecution(request)
-    : fetchWorkflowExecution(request);
+    : fetchWorkflowExecution(request).then(codeLoopsAsIterations);
 };
 
 export const restartExecution = async (

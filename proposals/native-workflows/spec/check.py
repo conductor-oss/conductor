@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'workflow-semantics'))
 import check as engine  # noqa: E402
 
-MODELS = ['MC_NSeq', 'MC_NAsync', 'MC_NNested', 'MC_NUnjoined', 'MC_NSwitch', 'MC_NHold', 'MC_NRaise', 'MC_NHoldLanes']
+MODELS = ['MC_NSeq', 'MC_NAsync', 'MC_NNested', 'MC_NUnjoined', 'MC_NSwitch', 'MC_NHold', 'MC_NRaise', 'MC_NHoldLanes', 'MC_NThrow']
 
 # (name, model, text in NativeProtocol.tla, replacement, property expected to fail)
 MUTANTS = [
@@ -22,10 +22,10 @@ MUTANTS = [
      'Fresh(r) == mark[r.key].state = "LEASED" /\\ mark[r.key].epoch = r.epoch /\\ slot = r.key', 'Fresh(r) == mark[r.key].epoch = r.epoch',
      'AppliedOnce'),
     ('two continuations run at once', 'MC_NAsync',
-     ['    /\\ Leasable(k)\n    /\\ slot = NONE \\/ expired\n', '/\\ mark[r.key].epoch = r.epoch /\\ slot = r.key'],
-     ['    /\\ Leasable(k)\n', '/\\ mark[r.key].epoch = r.epoch'], 'OneContinuationAtATime'),
-    ('a result from a worker that lost the slot counts', 'MC_NAsync',
-     'mark[r.key].epoch = r.epoch /\\ slot = r.key', 'mark[r.key].epoch = r.epoch', 'AppliedOnFreshHistory'),
+     ['    /\\ Leasable(k)\n    /\\ slot = NONE \\/ (expired /\\ slot = k)', '/\\ mark[r.key].epoch = r.epoch /\\ slot = r.key'],
+     ['    /\\ Leasable(k)\n    /\\ TRUE', '/\\ mark[r.key].epoch = r.epoch'], 'OneContinuationAtATime'),
+    ('a lease that ran out lets another continuation take the slot', 'MC_NAsync',
+     'slot = NONE \\/ (expired /\\ slot = k)', 'slot = NONE \\/ expired', 'AppliedOnFreshHistory'),
     ('a divergence is not noticed', 'MC_NHold',
      'IF Diverged(v) THEN "diverged" ELSE r.res', 'r.res', 'AsIfRunOnce'),
     ('one lane diverging does not hold the others', 'MC_NHoldLanes',
@@ -40,7 +40,7 @@ MUTANTS = [
     ('replay takes the wrong branch', 'MC_NSeq',
      'IF s.st[n] = "ok" THEN nd.ok ELSE nd.fail', 'IF s.st[n] = "ok" THEN nd.fail ELSE nd.ok', 'AsIfRunOnce'),
     ('replay is not deterministic', 'MC_NSeq',
-     'entries |-> r.entries, basis', 'entries |-> IF mark[k].epoch > 0 THEN <<>> ELSE r.entries, basis', 'ReplayIsStable'),
+     'entries |-> r.entries, raised', 'entries |-> IF mark[k].epoch > 0 THEN <<>> ELSE r.entries, raised', 'ReplayIsStable'),
     ('a join does not wait', 'MC_NAsync',
      '    /\\ \\A l \\in Waits(j) : Settled(l)\n', '', 'JoinWaitsForLanes'),
     ('a join ignores what its lanes started', 'MC_NNested',
@@ -59,6 +59,23 @@ MUTANTS = [
      'Repair(k) ==\n    /\\ Running\n', 'Repair(k) ==\n    /\\ FALSE\n', 'Settles'),
     ('a dead lease never runs out', 'MC_NSeq',
      'ExpireDead(k) ==\n    /\\ Running /\\ slot = k', 'ExpireDead(k) ==\n    /\\ FALSE /\\ slot = k', 'Settles'),
+    ('the mark where the code threw is scheduled like a task', 'MC_NThrow',
+     'IF x \\in newRefs THEN (IF entry(x).kind = "mark" THEN "fail" ELSE "none") ELSE st[x]', 'IF x \\in newRefs THEN "none" ELSE st[x]',
+     ('MarksAndPreviewsNeverRun', 'FailedNamesItsCause')),
+    ('a failed workflow names no task', 'MC_NThrow',
+     'THEN IF Cause(Prog(r.build)[r.raised]) # NONE THEN Cause(Prog(r.build)[r.raised]) ELSE r.raised', 'THEN NONE',
+     'FailedNamesItsCause'),
+    ('a retry keeps the mark', 'MC_NThrow',
+     'LET gone == {r \\in DOMAIN def : def[r].kind \\in {"mark", "preview"}}', 'LET gone == {}',
+     'unreachable:wf = "COMPLETED" /\\ retries >= 1 /\\ "b" \\in DOMAIN def'),
+    ('a retry does not run the code again', 'MC_NThrow',
+     '/\\ mark\' = [mark EXCEPT ![k].state = "RUNNABLE", ![k].finished = FALSE, ![k].err = FALSE]', '/\\ mark\' = mark',
+     'Settles'),
+    ('a reported error is applied as a result', 'MC_NSeq',
+     'ELSE IF r.res = "error"', 'ELSE IF FALSE', ('NeverStuck', 'Settles')),
+    ('the previews of a case not taken are placed where the decider starts them', 'MC_NSwitch',
+     'Entry(Untaken(nd)[j], "preview", l, "untaken", {}, FALSE)', 'Entry(Untaken(nd)[j], "preview", l, l, {}, FALSE)',
+     'MarksAndPreviewsNeverRun'),
     ('a fork never starts its lanes', 'MC_NAsync',
      'THEN {seqs[l][1] : l \\in {x \\in def[t].lanes : seqs[x] # <<>>}} ELSE {}', 'THEN {} ELSE {}', ('NeverStuck', 'Settles')),
 ]
@@ -82,6 +99,18 @@ WITNESSES = [
     ('MC_NHold', 'native: a diverged run is held', '\\E k \\in DOMAIN mark : mark[k].held = 2'),
     ('MC_NHold', 'native: a run that recorded the new build is held after the rollback',
      'build = 1 /\\ deploys = 1 /\\ \\E k \\in DOMAIN mark : mark[k].held = 1'),
+    ('MC_NSeq', 'native: a lease that ran out is delivered again at the same epoch, and the late result is refused',
+     '\\E r \\in inflight : r.epoch = mark[r.key].epoch /\\ mark[r.key].state = "APPLIED" /\\ r.res # "error"'),
+    ('MC_NSeq', 'native: a worker reports an error, the continuation is offered again and the run completes',
+     'wf = "COMPLETED" /\\ \\E k \\in DOMAIN mark : mark[k].epoch >= 2'),
+    ('MC_NSwitch', 'native: a switch shows the case it did not take, which never runs',
+     'wf = "COMPLETED" /\\ "z_if_other" \\in DOMAIN def /\\ st["z_if_other"] = "none"'),
+    ('MC_NThrow', 'native: a thrown exception is marked where it threw, with what it skipped',
+     'wf = "FAILED" /\\ failedTask = "x" /\\ "b_if_no_error" \\in DOMAIN def'),
+    ('MC_NThrow', 'native: a retry on the same code fails at the same place',
+     'wf = "FAILED" /\\ retries >= 1 /\\ build = 1 /\\ failedTask = "x"'),
+    ('MC_NThrow', 'native: a retry after the fix completes the run',
+     'wf = "COMPLETED" /\\ retries >= 1 /\\ "b" \\in DOMAIN def'),
     ('MC_NHold', 'native: a held run completes after the rollback',
      'wf = "COMPLETED" /\\ "b" \\in DOMAIN def /\\ deploys = 1'),
 ]

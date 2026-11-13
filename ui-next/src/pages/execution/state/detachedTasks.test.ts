@@ -78,6 +78,15 @@ describe("detached tasks", () => {
     expect(isDetached(declared, task("inner__1"))).toBe(false);
   });
 
+  it("does not call a run of a Java loop's step detached, though it keeps its own name", () => {
+    expect(
+      isDetached(declared, {
+        referenceTaskName: "inner_2",
+        workflowTask: { taskReferenceName: "inner" },
+      } as any),
+    ).toBe(false);
+  });
+
   it("calls nothing detached when there is no definition to compare against", () => {
     expect(
       isDetached(declaredReferenceNames(undefined), task("anything")),
