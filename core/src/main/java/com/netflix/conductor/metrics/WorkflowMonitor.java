@@ -104,12 +104,6 @@ public class WorkflowMonitor {
                         }
                     });
 
-            nativeCodeTypes(workflowDefs, taskDefs)
-                    .forEach(
-                            codeType ->
-                                    Monitors.recordQueueDepth(
-                                            codeType, queueDAO.getSize(codeType), "native"));
-
             asyncSystemTasks.forEach(
                     workflowSystemTask -> {
                         long size = queueDAO.getSize(workflowSystemTask.getTaskType());
@@ -125,24 +119,6 @@ public class WorkflowMonitor {
         } catch (Exception e) {
             LOGGER.error("Error while publishing scheduled metrics", e);
         }
-    }
-
-    /**
-     * The continuation queues of native workflows that have no task definition, whose depth would
-     * otherwise not be published. A growing one means no worker is polling that code.
-     */
-    @VisibleForTesting
-    Set<String> nativeCodeTypes(List<WorkflowDef> workflowDefs, List<TaskDef> taskDefs) {
-        Set<String> defined = taskDefs.stream().map(TaskDef::getName).collect(Collectors.toSet());
-        return workflowDefs.stream()
-                .filter(def -> def.getMetadata() != null)
-                .map(def -> def.getMetadata().get("native"))
-                .filter(Map.class::isInstance)
-                .map(meta -> ((Map<?, ?>) meta).get("codeType"))
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
-                .filter(codeType -> !defined.contains(codeType))
-                .collect(Collectors.toSet());
     }
 
     /**

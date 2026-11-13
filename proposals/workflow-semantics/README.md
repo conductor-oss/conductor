@@ -86,7 +86,7 @@ decide after the reopen schedules nothing); a skipped one does nothing. A workfl
 | `ReopenedEndsAgain` | a workflow reopened with a `TERMINATE` on record starts nothing new before it ends again |
 | `EndIsFinal` | an ended workflow stays ended until an operator reruns or retries it |
 | `SuccessIsFinal` | a task that succeeded keeps its result until an operator reopens the workflow |
-| `ReopenSound` | a retry gives each task that had not succeeded one new attempt; a rerun runs it again in place; both give a fresh time budget and keep what had succeeded, except the task a rerun starts from |
+| `ReopenSound` | a retry gives each task that had not succeeded one new attempt; a rerun runs it again in place; both give a fresh time budget and keep what had succeeded, except the task a rerun starts from and a task whose success came after it (it goes back to its attempt before) |
 | `PausedIsFrozen` | while paused, nothing starts and nothing is decided; running attempts can still finish |
 | `Settles` | if the server keeps going and tasks are answered, every workflow ends, unless it is paused or waits on a paused child |
 
@@ -154,9 +154,10 @@ latest attempt, and each `JOIN`), and each task's status and attempt. The model 
 must go through every state a decide left, in order, and then reach the final state; between two
 decides the spec may take any number of steps. A test with no trace fails, and a model TLC cannot
 finish in ten minutes is reported unchecked, not passed. Traces changed by hand (two scheduled tasks
-swapped, a status changed, a state added) are rejected. On 2026-11-13, 99 of 100 traced tests of up
-to 4 nodes, with retries, restarts and reruns, matched at every step; the other is unchecked (a loop
-around a fork with a `SUB_WORKFLOW`, rerun: TLC did not finish).
+swapped, a status changed, a state added) are rejected. On 2026-11-13, 100 of 100 traced tests of up
+to 4 nodes, with retries, restarts and reruns, matched at every step (seed 7). Two had not before
+the spec described two things the server does on a rerun: forgotten `JOIN`s come back in the order
+of their forks, and a task retried after the rerun's task goes back to its attempt before it.
 
 **Server mutants.** `server_mutants.py` shows the step-by-step check catches a server that breaks
 the spec. It breaks one rule in the server at a time, builds and starts it with tracing on, and
@@ -284,9 +285,11 @@ was fixed (see `DECIDER_BUGS.md`).
   branches the output depends on timing. A fork's `JOIN` is scheduled right after what the fork
   schedules with it (each branch's first node, recursively, or a dynamic fork's copies), so when
   nothing is scheduled after those the `JOIN`'s output, the branches' outputs together, is the
-  workflow's. After a rerun forgets a `JOIN`, it is scheduled again at the rerun.
+  workflow's. After a rerun forgets `JOIN`s, they are scheduled again at the rerun, in the order of
+  their forks (an outer fork's `JOIN` before an inner one's, unlike the first run).
 - A rerun from a task forgets everything scheduled after it, in time order, not program order: a
-  rerun from a task in one branch also redoes tasks another branch scheduled later.
+  rerun from a task in one branch also redoes tasks another branch scheduled later. A task retried
+  after that point goes back to its last attempt before it, which runs again in place.
 - A retry counts against the retry budget, so a task retried after using its retries gets one
   attempt and no automatic retries; a rerun does not count.
 
@@ -297,7 +300,7 @@ was fixed (see `DECIDER_BUGS.md`).
   errors that fail them: a switch expression or loop condition that cannot be evaluated.
 - `DO_WHILE` over `items`, which can run no iteration; nested loops; a `JOIN` whose `joinOn` names a
   task other than a branch's last.
-- `EXCLUSIVE_JOIN`, `START_WORKFLOW`, `joinStrategy: ANY`, permissive tasks, and rate limits.
+- `EXCLUSIVE_JOIN`, `START_WORKFLOW`, permissive tasks, and rate limits.
 - Timeouts on `SUB_WORKFLOW` tasks, and skipping a task inside a loop.
 - Rerunning from an operator task or from a task inside a sub-workflow, and retrying or rerunning a
   child on its own.

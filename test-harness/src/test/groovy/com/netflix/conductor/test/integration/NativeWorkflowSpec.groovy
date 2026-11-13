@@ -53,7 +53,6 @@ class NativeWorkflowSpec extends AbstractSpecification {
         bootstrap.continuation.lane == 'main'
         bootstrap.continuation.n == 1
         bootstrap.continuation.state == TaskContinuation.LEASED
-        bootstrap.inputData.input == [mod: 5]
 
         when: 'the worker completes it with the first task the code called, marked as where the code paused'
         complete(bootstrap, 'worker-a', completion(bootstrap,

@@ -135,7 +135,6 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
 
 ```json
 "nativeState": {
-  "protocol": 2,
   "codeType": "kitchensink.v1.code",
   "continuationTimeoutSeconds": 30,
   "step": 7,
@@ -170,7 +169,7 @@ continuations when the entry is the code type or `*` (`Map.of("kitchensink.v1.co
   "epoch": 2, "worker": "worker-7f3a", "queue": "kitchensink.v1.code",
   "queuedAt": 1794128769900, "leasedAt": 1794128769940, "appliedAt": 0, "attempts": 2,
   "deferred": null,
-  "step": 0, "recorded": {}, "resumedWith": {}, "done": false, "result": null, "error": null
+  "step": 0, "recorded": {}, "resumedWith": {}, "done": false, "result": {}, "error": {}
 }
 ```
 
@@ -184,7 +183,7 @@ Once applied:
   "step": 7,
   "recorded": { "now": { "value": "2026-11-08T…", "type": "java.time.Instant" } },
   "resumedWith": { "stage": "new" },
-  "done": false, "result": null, "error": null
+  "done": false, "result": {}, "error": {}
 }
 ```
 
@@ -194,7 +193,7 @@ Once applied:
 | `state` | decider, poll, complete | `WAITING`, `RUNNABLE`, `LEASED`, `APPLIED` |
 | `epoch`, `queue`, `leasedAt`, `attempts` | `offer` (in a decide) | `epoch` increments per offer; `queue` is the queue the message was pushed to, acknowledged on completion; `leasedAt` is when the message is delivered (after a retry's backoff); `attempts` counts offers |
 | `worker` | `complete` | the worker whose completion applied; the poll writes nothing |
-| `queuedAt` | `onEvaluated`, `defer`, `initialize` | when the marker became runnable |
+| `queuedAt` | `repairAndWake`, `defer`, `rearmLastMain`, `initialize` | when the marker became runnable |
 | `deferred` | `defer` | why the last completion was not applied (variable conflict, pending messages, worker error); cleared when the continuation applies. A value starting `waiting for handlers: ` is a main lane that returned while the handler lane has work: it is not re-queued, and `repairAndWake` wakes it once that lane has settled |
 | `step`, `recorded`, `resumedWith`, `done`, `result`, `error`, `appliedAt` | `complete` | the record a replay reads |
 
@@ -257,7 +256,7 @@ handler lane):
 ```
 
 The messages are claimed from the workflow message queue with
-`claim(workflowId, handlerBatchSize, "handlers#<n>", n)`: a re-run of the same continuation gets
+`claim(workflowId, 10, "handlers#<n>", n)`: a re-run of the same continuation gets
 the same messages, the next run's claim deletes them, and a claim with a lower ordinal than the
 highest seen is fenced.
 
@@ -265,9 +264,9 @@ highest seen is fenced.
 
 `POST /api/tasks/update-v2` with a `TaskResult` (`TaskClient.updateTaskV2`). `taskId` is the id the
 poll returned: the awaited task's id, or a synthetic id. `WorkflowExecutorOps.updateTask` applies a
-continuation's completion in the decide it triggers, in that decide's one acquisition of the
-execution lock; `updateTaskLocked` routes a synthetic id, or a task whose
-marker is `LEASED` and whose `outputData` has `protocol`, to `completeContinuation`. Any other
+continuation's completion under the execution lock, followed by the decide it triggers in the same
+acquisition: a synthetic id, or a task with a marker whose `outputData` has `protocol`, goes to
+`completeContinuation`; a stale one is refused with 409. Any other
 result for the same task id is an ordinary task result (the worker that ran `task_10` reporting
 it), so the two never collide.
 
@@ -299,13 +298,13 @@ The output, as `Replayer.process` and `Workers.complete` build it:
 |---|---|---|
 | `protocol` | yes | Must be the number `2`; anything else is rejected (`RejectedFragmentException`, reason `protocol`). |
 | `n`, `epoch` | yes | Must equal the marker's; otherwise `ConflictException` (HTTP 409), metric `native_stale_completion`. A late, duplicate or superseded completion. |
-| `fragment` | yes, may be empty | Inserted after the awaited task (top level for the bootstrap); an entry carrying `metadata.after` starts a run inserted after the entry it names (§8 rule 7, §9 `switchOn`). |
+| `fragment` | no | Inserted after the awaited task (top level for the bootstrap); an entry carrying `metadata.after` starts a run inserted after the entry it names (§8 rule 7, §9 `switchOn`). |
 | `recorded` | no | Values of `once`, `now`, `random` computed by this continuation, `{ "<name>": { "value": …, "type": "<class>" } }`; stored on the marker. |
 | `variables` | no | The lane's `@Variable` values after the continuation. Only entries that differ from `resumedWith` are applied. |
 | `resumedWith` | no | The variables the continuation started from. A variable it changed that another completion changed meanwhile defers the completion (`deferred: "variable 'x' was changed by another completion"`). |
-| `done` | yes | `true` when the lane returned or threw. |
-| `result` | when `done` without error | Main lane: the workflow output. Other lanes: `{ "value": … }`. |
-| `error` | when `done` by throwing | `{ "type": "…", "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. Main lane: the workflow fails with `message` and `failedTaskId` from `ref`. Other lanes: raised in the lane that joins. |
+| `done` | no (false) | `true` when the lane returned or threw. |
+| `result` | main lane, `done` without error | The workflow output. |
+| `error` | main lane, `done` by throwing | `{ "message": "…", "ref": "<task>" }`; `ref` is present for an uncaught `TaskFailure`. The workflow fails with `message` and `failedTaskId` from `ref`. Another lane's error is raised by replay in the lane that joins it, so the SDK does not send it. |
 | `releases` | handler lane | `[ { "ref": "condition", "output": { "satisfied": true } } ]`: `WAIT` tasks the server completes with that output in the same write. |
 | `replies` | handler lane | `{ "<client message id>": { "value": …, "at": <millis> } }` or `{ "error": "…", "at": … }`; replaces `nativeState.replies`. |
 | `seen` | handler lane | the handled message ids, at most 500; replaces `nativeState.seen`. |
@@ -332,9 +331,8 @@ The SDK retries a 5xx or a connection failure four times, 250 ms apart and growi
 `error.message`, metric `native_fragment_rejected` with the reason, and the workflow fails with the
 message.
 
-1. `size`: at most `nativeWorkflow.maxFragmentTasks` entries (nested counted, default 500),
-   `nativeWorkflow.maxFragmentBytes` serialized (1 MB), and the definition after the append at most
-   `nativeWorkflow.maxDefinitionTasks` (5000).
+1. `size`: at most `nativeWorkflow.maxFragmentBytes` serialized (1 MB), and the definition after
+   the append at most `nativeWorkflow.maxDefinitionTasks` entries, nested ones counted (5000).
 2. `reference`: every entry at any depth has a `taskReferenceName`, absent from the current
    definition and unique within the fragment.
 3. `type`: a type `DeciderService` has a mapper for. `TERMINATE` is refused: a native workflow ends
@@ -349,10 +347,12 @@ message.
    version.
 7. `fragment`: the awaited task's reference must still be in the definition (a rerun can remove
    entries). An entry that carries `metadata.after` starts a run of entries that goes after the
-   entry it names, which must be in the definition too (`NativeContinuationService.anchorOf`,
-   `WorkflowDef.insertAfter`); the entries before the first such entry go after the awaited task.
-   An anchor that names nothing is rejected with "task <anchor> is not in the execution's
-   definition".
+   entry it names, which must be in the definition or drawn, at any depth, by an earlier run of the
+   same fragment (`NativeContinuationService.runs`, `insertAfter`); the entries before the first
+   such entry go after the awaited task. An anchor that names nothing is rejected with "task
+   <anchor> is not in the execution's definition".
+8. `variables`: the variables after the change at most
+   `maxWorkflowVariablesPayloadSizeThreshold` serialized, reason `variables`.
 
 SDK obligations the server does not validate:
 
@@ -415,7 +415,7 @@ What each SDK call emits (`Replayer`, `Entries`). "pauses" means the entry carri
 | `switchOn(name, value).when(key, body)…otherwise(body).get()` / `.run()` | `SWITCH` `name` with `evaluatorType: value-param`, `expression: switchCaseValue`, `inputParameters: {switchCaseValue: "<value as a string>"}`, `decisionCases` with one list per declared case, `defaultCase`, `metadata.lane`; no `optional`, no pause of its own. The taken body runs inline and its entries go inside that case's list; the lane's marker sits on whatever it paused on in there. Every untaken case, and `defaultCase` when a declared case was taken and `otherwise` exists, holds the preview of its body (rule 8 above): the entries it would have emitted, named `<base>_if_<key>`, with `metadata.preview: true`. When the lane resumes inside the case and the body returns, the next entry carries `metadata.after: "<name>"` and the server inserts it after the switch. The value is written with `${` escaped, so it is never evaluated. No match and no `otherwise`: the `SWITCH` is still emitted with every case previewed, then `WorkflowFailedException`, the lane ends with `error` |
 | an `if` or `switch` whose arms call the server | the same `SWITCH` as `switchOn`, named after what it decides on (`if_<name>`, `switch_<name>`, numbered when repeated). An `if` has the case `"true"` and its else as `defaultCase`; a `switch` has a case per arm keyed by its labels and `"default"`. `switchCaseValue` is the arm taken. Emitted when the first call inside an arm is made (the SDK knows the arm from the call's line), or, when the code went past without a call and only one arm can be passed that way, with that arm and nothing inside it |
 | `return value` | empty fragment, `done: true`, `result` |
-| `throw` | `done: true`, `error`. For an uncaught `TaskFailure`, `error.ref` names the task, which the server puts back to the status it failed with (`outputData["conductor.failedStatus"]`) and makes the workflow's failed task (`failedTaskId` on the workflow returned by `GET /api/workflow/{workflowId}`; ui-next's "Jump to task" goes there). For any other exception, the fragment ends with a `TERMINATE` entry where the code threw (named after the exception, `metadata.site` the line it was thrown from, `metadata.thrown` its class) and `error.ref` names it: the server creates it as a `FAILED` task with the exception as its reason and makes it the failed task; it is never scheduled. The ifs and switches the code threw inside are drawn first, as at a call, so the entry lands in the arm it was in. After it come previews of what the code would have called had it not thrown (`<task>_if_no_error`, `metadata.preview`, `metadata.previewAfter: "<ref of the TERMINATE>"`), read from the compiled code: the rest of each arm in that arm's case, then the rest of each method up to the workflow method. A retry removes that task and those previews and runs the code again from its last continuation |
+| `throw` | `done: true`, `error`. For an uncaught `TaskFailure`, `error.ref` names the task, which the server puts back to the status it failed with (`outputData["conductor.failedStatus"]`) and makes the workflow's failed task (`failedTaskId` on the workflow returned by `GET /api/workflow/{workflowId}`; ui-next's "Jump to task" goes there). For any other exception, the fragment ends with a `TERMINATE` entry where the code threw (named after the exception, `metadata.site` the line it was thrown from) and `error.ref` names it: the server creates it as a `FAILED` task with the exception as its reason and makes it the failed task; it is never scheduled. The ifs and switches the code threw inside are drawn first, as at a call, so the entry lands in the arm it was in. After it come previews of what the code would have called had it not thrown (`<task>_if_no_error`, `metadata.preview`, `metadata.previewAfter: "<ref of the TERMINATE>"`), read from the compiled code: the rest of each arm in that arm's case, then the rest of each method up to the workflow method. A retry removes all the continuation that threw drew (that task, those previews, and any if, switch or lane it drew before throwing: the workflow failed in that same completion, so none of it ran) and runs the code again from that continuation |
 
 The kitchensink's plain `switch (oddEven.oddEven())`, as recorded in `kitchensink-odd.json` (odd
 path, so case `"1"` was taken; the fork and the join of the two `async` blocks are inside it and
@@ -472,9 +472,8 @@ The task row the server writes for the switch has `outputData.selectedCase: "1"`
 
 ## 11. Versioning
 
-`protocol` is carried in the skeleton's `metadata.native.protocol` and in every completion. The
-server accepts protocol `2` (`NativeContinuationService.PROTOCOL`) and rejects anything else with
-a terminal failure naming the version it expected. Fragment rules may tighten in a new protocol
-version without touching running executions, since each execution carries its version in
-`nativeState.protocol`. Protocol 1 executions (CODE and RECORD tasks) are not readable by this
-server.
+`protocol` is carried in every completion. The server accepts protocol `2`
+(`NativeContinuationService.PROTOCOL`) and rejects anything else with a terminal failure naming the
+version it expected. A server that accepts a new version would record it per execution then; one
+version needs nothing stored. Protocol 1 executions (CODE and RECORD tasks) are not readable by
+this server.

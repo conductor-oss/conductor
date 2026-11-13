@@ -15,8 +15,7 @@ Server, from this repository:
 ./gradlew :conductor-server:bootJar -x test
 java -jar server/build/libs/conductor-server-*-boot.jar \
   --server.port=8099 \
-  --conductor.workflow-message-queue.enabled=true \
-  --conductor.app.nativeWorkflow.waitTimeScaleEnabled=true
+  --conductor.workflow-message-queue.enabled=true
 ```
 
 Kitchensink, from the Java SDK repository. The SDK's Gradle build needs JDK 21 to run.
@@ -54,7 +53,7 @@ rewritten for protocol 2 with it.
 | Replay test: current code matches a recorded execution, and an inserted call is detected | `KitchenSinkTest.currentCodeStillMatchesARecordedProductionRun`, plus a manual mutation | passed; fails on the mutation. The recording `native-examples/src/test/resources/executions/kitchensink-odd.json` was re-recorded on protocol 2 (2026-11-08): markers on tasks, `nativeState`, no CODE or RECORD entries; and re-recorded again the same day once `oddEvenDecision` became a `switchOn`, and once more when untaken cases gained previews: the definition holds the `SWITCH` with `decisionCases` `"0": [task_4_if_0 (metadata.preview)]` and `"1": [fork, fork_join]`, `inputParameters.switchCaseValue: "1"`, an empty `defaultCase` (the `otherwise` body throws before any call), the task row's `outputData.selectedCase: "1"`, no task row for the preview, and `get_es_1` carrying `metadata.after: "oddEvenDecision"` |
 | In-memory test environment | `KitchenSinkTest`, two scenarios | passed |
 | Execution shows exactly the code's tasks; continuation on the task panel, engine state on the summary (B5) | `ui-next` on a recorded execution | not yet checked on protocol 2 |
-| Server unit tests | `common`, `core`, `http-task`; `NativeContinuationServiceTest` (20 tests, including `aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`), `NativeJoinTest`, `TestDeciderOutcomes`, `WorkflowDefInsertAfterTest` | `NativeContinuationServiceTest`: 17 passed, 0 failures (protocol 2, build results of 2026-11-08) |
+| Server unit tests | `common`, `core`, `http-task`; `NativeContinuationServiceTest` (20 tests, including `aFragmentAnchoredAfterASwitchLeavesTheCaseItPausedIn`), `NativeJoinTest`, `TestDeciderOutcomes`, `NativeDefinitionEditsTest` | `NativeContinuationServiceTest`: 17 passed, 0 failures (protocol 2, build results of 2026-11-08) |
 | Server integration tests | full `test-harness` suite; `NativeWorkflowSpec` (3 scenarios: linear, fork branch independence, stale completion) | `NativeWorkflowSpec`: 3 passed, 0 failures (protocol 2, build results of 2026-11-08) |
 | SDK client tests | `conductor-client`, excluding the four classes that need a server on port 8080 | 984 passed (protocol 1); `SwitchOnTest`: 7 passed, 0 failures (test results of 2026-11-08, including `untakenCasesShowTheTasksTheyWouldHaveCalled`) |
 | Switch previews on a live server | kitchensink even path; `switches.Switches` nested run | reported from live runs, not re-run for this page `<!-- TODO: verify against live server -->`: the even run's untaken case `1` shows `fork_if_1` with `task_10_if_1` and `task_11_if_1` leading to `sub_flow_1_if_1` previews; the switches run shows `hold_if_default`, `ship_slow_if_slow`, `ship_fast_if_us` and `hold_if_default_2` |
@@ -282,7 +281,6 @@ operator checks that a worker task failing once is retried rather than raised.
 | Worker execution model | live thread as the fast path, re-run only on worker loss | The worker always replays the code against the applied markers and the tasks, so it is stateless. Segments replay in the order the server applied them (`step`). `@Variable` fields are restored at each continuation to the values recorded when it was first processed (`resumedWith`). Any worker can run any continuation; the server's slot (`nativeState.activeContinuation`) lets one continuation of an execution run at a time, across all hosts, and the SDK holds no per-execution lock. The live-thread fast path is left for the latency round. |
 | Fan-out | FORK_JOIN_DYNAMIC, in stages | a FORK_JOIN generated at run time with one lane per item; items progress independently, with no stages |
 | Native JOIN mode | `joinMode: SYNC` | default asynchronous evaluation; SYNC re-evaluates continuously and would busy-poll long branches |
-| Any-of join (S3) | `joinMode: ANY` | `inputParameters.joinStrategy: ANY`, because `joinMode` already means sync or async evaluation; other branches are not cancelled |
 | Condition waits | reference `cond`, `cond_2` | `condition`, `condition_2` |
 | `startWorkflow` | returns the new execution id | returns nothing, since the id is not deterministic on replay |
 | `repeatUntil` condition | a predicate | a method reference to a boolean property of the result, such as `JobStatus::done`, translated to the DO_WHILE condition |
@@ -296,9 +294,8 @@ operator checks that a worker task failing once is retried rather than raised.
 
 ## Known limitations
 
-- A native JOIN is checked once a second after its fast start
-  (`conductor.app.nativeWorkflow.joinPollInterval`), so it can finish up to about that long after a
-  long branch.
+- A native JOIN is checked once a second after its fast start, so it can finish up to about that
+  long after a long branch.
 - Previews and the discovered definition cannot match a `join` to a particular `async` block: a
   `join` or `get` after other calls waits for the most recent fork not yet waited for.
 - A lane nothing joins keeps the execution `RUNNING` until it finishes, and its failure does not

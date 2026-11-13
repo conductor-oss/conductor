@@ -81,11 +81,12 @@ public class TaskContinuation {
     @ProtoField(id = 15)
     private boolean done;
 
+    // never null: an empty map is no result, or no error (the generated proto mapper copies them)
     @ProtoField(id = 16)
-    private Map<String, Object> result;
+    private Map<String, Object> result = new HashMap<>();
 
     @ProtoField(id = 17)
-    private Map<String, Object> error;
+    private Map<String, Object> error = new HashMap<>();
 
     public TaskContinuation() {}
 
@@ -240,15 +241,20 @@ public class TaskContinuation {
     }
 
     public void setResult(Map<String, Object> result) {
-        this.result = result;
+        this.result = result == null ? new HashMap<>() : result;
     }
 
     public Map<String, Object> getError() {
         return error;
     }
 
+    /** Whether the code raised: the continuation ended its lane with an error. */
+    public boolean hasError() {
+        return !error.isEmpty();
+    }
+
     public void setError(Map<String, Object> error) {
-        this.error = error;
+        this.error = error == null ? new HashMap<>() : error;
     }
 
     @Override

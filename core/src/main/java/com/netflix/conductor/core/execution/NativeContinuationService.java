@@ -71,12 +71,12 @@ public class NativeContinuationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NativeContinuationService.class);
 
-    public static final int PROTOCOL = 2;
+    private static final int PROTOCOL = 2;
 
     /**
      * How a marker's {@code deferred} reason starts while the code does not match its recording.
      */
-    public static final String DIVERGED_PREFIX = "diverged: ";
+    private static final String DIVERGED_PREFIX = "diverged: ";
 
     /** How a marker's {@code deferred} reason starts while the handler lane has to run first. */
     private static final String WAITING_FOR_HANDLERS_PREFIX = "waiting for handlers: ";
@@ -84,7 +84,10 @@ public class NativeContinuationService {
     /** The longest wait before a continuation that diverged or failed is offered again. */
     private static final int MAX_RETRY_DELAY_SECONDS = 60;
 
-    public static final String MAIN_LANE = "main";
+    /** How many queued messages one handler run receives. */
+    private static final int HANDLER_BATCH_SIZE = 10;
+
+    private static final String MAIN_LANE = "main";
 
     /**
      * Task output key holding how a task failed (FAILED, TIMED_OUT, ...) once its status has become
@@ -92,27 +95,27 @@ public class NativeContinuationService {
      */
     public static final String OUTPUT_FAILED_STATUS = "conductor.failedStatus";
 
-    public static final String HANDLER_LANE = "handlers";
+    private static final String HANDLER_LANE = "handlers";
 
     /** Entry metadata naming the continuation that appended the entry, as {@code lane#n}. */
     public static final String APPENDED_BY = "appendedBy";
 
     public static final String OUTPUT_PROTOCOL = "protocol";
-    public static final String OUTPUT_FRAGMENT = "fragment";
-    public static final String OUTPUT_VARIABLES = "variables";
-    public static final String OUTPUT_RESUMED_WITH = "resumedWith";
-    public static final String OUTPUT_RECORDED = "recorded";
-    public static final String OUTPUT_EPOCH = "epoch";
-    public static final String OUTPUT_N = "n";
-    public static final String OUTPUT_DONE = "done";
-    public static final String OUTPUT_RESULT = "result";
-    public static final String OUTPUT_ERROR = "error";
-    public static final String OUTPUT_RELEASES = "releases";
-    public static final String OUTPUT_REPLIES = "replies";
-    public static final String OUTPUT_SEEN = "seen";
-    public static final String INPUT_MESSAGES = "messages";
-    public static final String METADATA_LANE = "lane";
-    public static final String METADATA_CONTINUATION = "continuation";
+    private static final String OUTPUT_FRAGMENT = "fragment";
+    private static final String OUTPUT_VARIABLES = "variables";
+    private static final String OUTPUT_RESUMED_WITH = "resumedWith";
+    private static final String OUTPUT_RECORDED = "recorded";
+    private static final String OUTPUT_EPOCH = "epoch";
+    private static final String OUTPUT_N = "n";
+    private static final String OUTPUT_DONE = "done";
+    private static final String OUTPUT_RESULT = "result";
+    private static final String OUTPUT_ERROR = "error";
+    private static final String OUTPUT_RELEASES = "releases";
+    private static final String OUTPUT_REPLIES = "replies";
+    private static final String OUTPUT_SEEN = "seen";
+    private static final String INPUT_MESSAGES = "messages";
+    private static final String METADATA_LANE = "lane";
+    private static final String METADATA_CONTINUATION = "continuation";
     private static final String SYNTHETIC_SEPARATOR = "|";
 
     private static final TypeReference<List<WorkflowTask>> FRAGMENT_TYPE = new TypeReference<>() {};
@@ -163,22 +166,28 @@ public class NativeContinuationService {
     }
 
     public static boolean isNative(WorkflowModel workflow) {
-        return workflow.getNativeState() != null || isNative(workflow.getWorkflowDefinition());
+        return isNative(workflow.getWorkflowDefinition());
     }
 
-    /** A task of a native workflow: its entry names a lane, or it carries a marker. */
-    public static boolean isNativeTask(TaskModel task) {
-        return task.getContinuation() != null
-                || (task.getWorkflowTask() != null && laneOf(task.getWorkflowTask()) != null);
+    /**
+     * The marker an entry the code paused on names ({@code metadata.continuation}: its lane and
+     * number), new and waiting for the task; null when it names none or a malformed one.
+     */
+    public static TaskContinuation markerOf(WorkflowTask entry) {
+        Object raw =
+                entry.getMetadata() == null ? null : entry.getMetadata().get(METADATA_CONTINUATION);
+        return raw instanceof Map<?, ?> m && m.get("lane") != null && m.get("n") instanceof Number n
+                ? new TaskContinuation(String.valueOf(m.get("lane")), n.intValue())
+                : null;
     }
 
-    public static String laneOf(WorkflowTask entry) {
+    private static String laneOf(WorkflowTask entry) {
         Object lane = entry.getMetadata() == null ? null : entry.getMetadata().get(METADATA_LANE);
         return lane == null ? null : lane.toString();
     }
 
     /** The id of the continuation message of a lane without a task: the bootstrap or handlers. */
-    public static String syntheticId(String workflowId, String lane) {
+    private static String syntheticId(String workflowId, String lane) {
         return workflowId + SYNTHETIC_SEPARATOR + lane;
     }
 
@@ -226,7 +235,6 @@ public class NativeContinuationService {
         WorkflowDef def = workflow.getWorkflowDefinition();
         Map<String, Object> meta = (Map<String, Object>) def.getMetadata().get("native");
         NativeState state = new NativeState();
-        state.setProtocol(meta.get("protocol") instanceof Number p ? p.intValue() : PROTOCOL);
         state.setCodeType(
                 meta.get("codeType") != null
                         ? meta.get("codeType").toString()
@@ -241,20 +249,6 @@ public class NativeContinuationService {
             state.setHandlers(new TaskContinuation(HANDLER_LANE, 1));
         }
         workflow.setNativeState(state);
-    }
-
-    /**
-     * Called by the decider when it evaluates a terminal task: a marker waiting on the task becomes
-     * runnable. The executor pushes the wake-up after saving the task.
-     */
-    public boolean onEvaluated(WorkflowModel workflow, TaskModel task) {
-        TaskContinuation marker = task.getContinuation();
-        if (marker == null || !marker.isWaiting()) {
-            return false;
-        }
-        marker.setState(TaskContinuation.RUNNABLE);
-        marker.setQueuedAt(System.currentTimeMillis());
-        return true;
     }
 
     /** What a decide must save and push for the native markers of an execution. */
@@ -322,7 +316,6 @@ public class NativeContinuationService {
                     return wakeups;
                 }
                 // offered in a queue nobody polls any more (its domain's workers went away)
-                Monitors.recordNativeLeaseExpired(workflow.getWorkflowName(), laneKind(holder));
                 queueDAO.remove(holder.getQueue(), active);
                 wakeups.offers.add(offer(workflow, holder, active, 0));
                 touch(wakeups, holderTask);
@@ -428,7 +421,7 @@ public class NativeContinuationService {
     }
 
     /** 1, 2, 4, ... seconds by how many times the continuation has been offered, capped. */
-    public static int retryDelaySeconds(TaskContinuation marker) {
+    private static int retryDelaySeconds(TaskContinuation marker) {
         int doublings = Math.min(Math.max(marker.getAttempts() - 1, 0), 6);
         return Math.min(1 << doublings, MAX_RETRY_DELAY_SECONDS);
     }
@@ -472,20 +465,12 @@ public class NativeContinuationService {
      * lanes a task that is not persisted is built from the workflow. The message stays
      * unacknowledged for the continuation timeout, so the queue redelivers it if the worker dies;
      * the next worker runs the same offer, and the first completion applies.
+     *
+     * @param task the task the message names, as the poll read it; null for a synthetic id
      */
-    public Task lease(String queueName, String messageId, String workerId) {
-        String workflowId;
-        TaskModel task = null;
-        if (isSyntheticId(messageId)) {
-            workflowId = workflowIdOf(messageId);
-        } else {
-            task = executionDAOFacade.getTaskModel(messageId);
-            if (task == null || task.getContinuation() == null) {
-                queueDAO.remove(queueName, messageId);
-                return null;
-            }
-            workflowId = task.getWorkflowInstanceId();
-        }
+    public Task lease(String queueName, String messageId, TaskModel task, String workerId) {
+        String workflowId =
+                isSyntheticId(messageId) ? workflowIdOf(messageId) : task.getWorkflowInstanceId();
         WorkflowModel workflow = executionDAOFacade.getWorkflowModel(workflowId, false);
         NativeState state = workflow == null ? null : workflow.getNativeState();
         if (state == null || workflow.getStatus().isTerminal()) {
@@ -501,24 +486,14 @@ public class NativeContinuationService {
                 || !messageId.equals(state.getActiveContinuation())
                 || !queueName.equals(marker.getQueue())) {
             // not what was offered: a stale wake-up, or a duplicate in another domain's queue
-            Monitors.recordNativeContinuationNotLeased("not_offered");
             queueDAO.remove(queueName, messageId);
             return null;
-        }
-        String laneKind = laneKind(marker);
-        if (marker.getDeferred() == null && marker.getQueuedAt() > 0) {
-            // a retry's wait is its backoff, not time spent waiting for a worker
-            Monitors.recordNativeContinuationQueueWait(
-                    workflow.getWorkflowName(),
-                    laneKind,
-                    System.currentTimeMillis() - marker.getQueuedAt());
         }
         marker.setWorker(workerId); // in what is handed out; the completion records it
         TaskModel handed =
                 task != null ? task : syntheticTask(workflow, marker, messageId, queueName);
         queueDAO.setUnackTimeout(
                 queueName, messageId, state.getContinuationTimeoutSeconds() * 1000L);
-        Monitors.recordNativeContinuationLeased(workflow.getWorkflowName(), laneKind);
         return handed.toTask();
     }
 
@@ -542,19 +517,16 @@ public class NativeContinuationService {
         task.setDomain(queueDomain(queueName));
         task.setContinuation(marker);
         Map<String, Object> input = new HashMap<>();
-        if (MAIN_LANE.equals(marker.getLane())) {
-            input.put("input", workflow.getInput());
-        } else if (workflowMessageQueueDAO != null) {
+        if (HANDLER_LANE.equals(marker.getLane()) && workflowMessageQueueDAO != null) {
             // claimed under the run's number, so a re-run of this continuation gets the same
             // messages and the next run acknowledges them (see JdbcWorkflowMessageQueueDAO)
             var messages =
                     workflowMessageQueueDAO.claim(
                             workflow.getWorkflowId(),
-                            properties.getNativeWorkflow().getHandlerBatchSize(),
+                            HANDLER_BATCH_SIZE,
                             HANDLER_LANE + "#" + marker.getN(),
                             marker.getN());
             input.put(INPUT_MESSAGES, messages);
-            Monitors.recordNativeHandlerMessages(workflow.getWorkflowName(), messages.size());
         }
         task.setInputData(input);
         return task;
@@ -579,10 +551,8 @@ public class NativeContinuationService {
         public int retryDelaySeconds;
         public boolean waitsForHandlers;
         public boolean finished;
-        public WorkflowModel.Status finishStatus;
         public String reason;
         public TaskModel causeTask;
-        public Map<String, Object> output;
         public TaskModel handed;
     }
 
@@ -622,10 +592,8 @@ public class NativeContinuationService {
                     "Continuation %s#%d of workflow %s is not leased at epoch %d (%s)",
                     marker.getLane(), n, workflow.getWorkflowId(), epoch, marker);
         }
-        if (messageId.equals(state.getActiveContinuation())) {
-            state.setActiveContinuation(null); // whatever the outcome, the next one may run
-            state.setActiveUntil(0);
-        }
+        state.setActiveContinuation(null); // whatever the outcome, the next one may run
+        state.setActiveUntil(0);
         marker.setWorker(result.getWorkerId()); // the poll that handed it out wrote nothing
         Completion completion = new Completion();
         completion.ackQueue = marker.getQueue();
@@ -638,12 +606,6 @@ public class NativeContinuationService {
                 // the usual cause is a deploy, and a rollback (or a fixed build) lets it continue.
                 Monitors.recordNativeFragmentRejected(workflowName, "diverged");
                 completion.retryDelaySeconds = retryDelaySeconds(marker);
-                if (isHeld(marker)) {
-                    Monitors.recordNativeExecutionHeldAge(
-                            workflowName, System.currentTimeMillis() - marker.getQueuedAt());
-                } else {
-                    Monitors.recordNativeExecutionHeld(workflowName);
-                }
                 return defer(
                         workflow,
                         marker,
@@ -665,7 +627,8 @@ public class NativeContinuationService {
             boolean done = Boolean.TRUE.equals(out.get(OUTPUT_DONE));
             Map<String, Object> error = mapOrNull(out.get(OUTPUT_ERROR));
 
-            String conflict = variableConflict(workflow, out);
+            Map<String, Object> changedVariables = changedVariables(out);
+            String conflict = variableConflict(workflow, out, changedVariables);
             if (conflict != null) {
                 return defer(
                         workflow,
@@ -690,40 +653,37 @@ public class NativeContinuationService {
                 }
             }
 
+            // everything is checked before anything is written: a rejected completion changes
+            // neither the definition nor the variables
             List<WorkflowTask> fragment = readFragment(out);
+            List<Run> runs = runs(fragment, awaited);
+            WorkflowDef definition = workflow.getWorkflowDefinition();
             if (!fragment.isEmpty()) {
-                WorkflowDef definition = workflow.getWorkflowDefinition();
                 validateFragment(
-                        definition, fragment, state.getCodeType(), thrownRef(done, error, marker));
+                        definition,
+                        fragment,
+                        runs,
+                        state.getCodeType(),
+                        thrownRef(done, error, marker));
+            }
+            checkVariablesSize(workflow, changedVariables);
+
+            if (!fragment.isEmpty()) {
                 // which continuation appended each entry: a rerun undoes a continuation's entries
                 for (WorkflowTask entry : fragment) {
                     entry.getMetadata().put(APPENDED_BY, markerKey(marker));
                 }
                 populateTaskDefinitions(workflowName, fragment);
-                // The fragment goes after the task the code paused on; an entry that names another
-                // anchor starts a run that goes there instead: code that left a switch case
-                // appends after the switch, not inside the case where it paused, and what it drew
-                // in the case before leaving stays in the case.
-                int start = 0;
-                for (int i = 1; i <= fragment.size(); i++) {
-                    if (i < fragment.size() && anchorOf(fragment.subList(i, i + 1), null) == null) {
-                        continue;
+                for (Run run : runs) {
+                    if (run.anchor() == null) {
+                        definition.getTasks().addAll(run.entries());
+                    } else if (!insertAfter(definition, run.anchor(), run.entries())) {
+                        // validateFragment checked every anchor
+                        throw new IllegalStateException("anchor " + run.anchor() + " not found");
                     }
-                    List<WorkflowTask> run = new ArrayList<>(fragment.subList(start, i));
-                    String anchor = anchorOf(run, start == 0 ? awaited : null);
-                    if (anchor == null) {
-                        definition.getTasks().addAll(run);
-                    } else if (!definition.insertAfter(anchor, run)) {
-                        throw new RejectedFragmentException(
-                                "fragment",
-                                "task " + anchor + " is not in the execution's definition");
-                    }
-                    start = i;
                 }
-                Monitors.recordNativeFragmentApplied(workflowName, fragment.size());
             }
-
-            applyVariables(workflow, out);
+            workflow.getVariables().putAll(changedVariables);
             if (out.get(OUTPUT_REPLIES) instanceof Map<?, ?> replies) {
                 state.setReplies(objectMapper.convertValue(replies, MAP_TYPE));
             }
@@ -740,15 +700,7 @@ public class NativeContinuationService {
             marker.setResult(mapOrNull(out.get(OUTPUT_RESULT)));
             marker.setError(error);
             marker.setAppliedAt(System.currentTimeMillis());
-            if (isHeld(marker)) {
-                recordHoldEnded(workflowName, marker, "resumed");
-            }
             marker.setDeferred(null);
-            Monitors.recordNativeContinuationRun(
-                    workflowName,
-                    laneKind(marker),
-                    "applied",
-                    marker.getAppliedAt() - marker.getLeasedAt());
             if (HANDLER_LANE.equals(marker.getLane())) {
                 // the handler lane runs once per batch of messages; it is never done
                 TaskContinuation next = new TaskContinuation(HANDLER_LANE, marker.getN() + 1);
@@ -760,20 +712,13 @@ public class NativeContinuationService {
                 awaited.setExecuted(false);
                 completion.touchedTasks.add(awaited);
             }
-            if (done && MAIN_LANE.equals(marker.getLane())) {
-                if (error == null) {
-                    // The code returned. The decider completes the workflow, with the marker's
-                    // result as the output, once everything this fragment appended has run
-                    // (DeciderService.checkForWorkflowCompletion); nothing to finish here.
-                    completion.output =
-                            marker.getResult() == null ? new HashMap<>() : marker.getResult();
-                } else {
-                    completion.finished = true;
-                    completion.finishStatus = WorkflowModel.Status.FAILED;
-                    completion.reason = String.valueOf(error.get("message"));
-                    Object ref = error.get("ref");
-                    completion.causeTask = causeTask(workflow, ref, completion.reason);
-                }
+            // The code returned: the decider completes the workflow, with the marker's result as
+            // the output, once everything this fragment appended has run
+            // (DeciderService.checkForWorkflowCompletion). The code raised: the workflow fails.
+            if (done && error != null && MAIN_LANE.equals(marker.getLane())) {
+                completion.finished = true;
+                completion.reason = String.valueOf(error.get("message"));
+                completion.causeTask = causeTask(workflow, error.get("ref"), completion.reason);
             }
             LOGGER.debug(
                     "Applied continuation {} of workflow {}: {} entries appended",
@@ -792,16 +737,10 @@ public class NativeContinuationService {
             marker.setDone(true);
             marker.setError(Map.of("message", e.getMessage()));
             marker.setAppliedAt(System.currentTimeMillis());
-            Monitors.recordNativeContinuationRun(
-                    workflowName,
-                    laneKind(marker),
-                    "rejected",
-                    marker.getAppliedAt() - marker.getLeasedAt());
             if (awaited != null) {
                 completion.touchedTasks.add(awaited);
             }
             completion.finished = true;
-            completion.finishStatus = WorkflowModel.Status.FAILED;
             completion.reason = e.getMessage();
             return completion;
         }
@@ -820,7 +759,7 @@ public class NativeContinuationService {
         TaskModel task = workflow.getTaskByRefName(ref.toString());
         if (task != null) {
             if (task.getStatus() == TaskModel.Status.COMPLETED_WITH_ERRORS) {
-                Object failed = task.getOutputData().get("conductor.failedStatus");
+                Object failed = task.getOutputData().get(OUTPUT_FAILED_STATUS);
                 task.setStatus(
                         failed == null
                                 ? TaskModel.Status.FAILED
@@ -864,8 +803,6 @@ public class NativeContinuationService {
             String why,
             String reason) {
         long now = System.currentTimeMillis();
-        Monitors.recordNativeContinuationRun(
-                workflow.getWorkflowName(), laneKind(marker), reason, now - marker.getLeasedAt());
         boolean heldBefore = isHeld(marker);
         boolean heldStill = why.startsWith(DIVERGED_PREFIX);
         marker.setState(TaskContinuation.RUNNABLE);
@@ -891,40 +828,6 @@ public class NativeContinuationService {
     /** Whether the code no longer matches this continuation's recording. */
     private static boolean isHeld(TaskContinuation marker) {
         return marker.getDeferred() != null && marker.getDeferred().startsWith(DIVERGED_PREFIX);
-    }
-
-    private static void recordHoldEnded(
-            String workflowName, TaskContinuation marker, String outcome) {
-        Monitors.recordNativeExecutionHoldEnded(workflowName, outcome);
-        Monitors.recordNativeExecutionHeldAge(
-                workflowName, System.currentTimeMillis() - marker.getQueuedAt());
-    }
-
-    /** Ends the holds of an execution that reached a terminal status while held. */
-    public static void recordHoldsEnded(WorkflowModel workflow) {
-        NativeState state = workflow.getNativeState();
-        if (state == null) {
-            return;
-        }
-        String outcome = workflow.getStatus().name();
-        for (TaskContinuation marker :
-                new TaskContinuation[] {state.getBootstrap(), state.getHandlers()}) {
-            if (marker != null && isHeld(marker)) {
-                recordHoldEnded(workflow.getWorkflowName(), marker, outcome);
-            }
-        }
-        for (TaskModel task : workflow.getTasks()) {
-            if (task.getContinuation() != null && isHeld(task.getContinuation())) {
-                recordHoldEnded(workflow.getWorkflowName(), task.getContinuation(), outcome);
-            }
-        }
-    }
-
-    /** A bounded metric tag for a lane: fan-out creates one lane per item. */
-    private static String laneKind(TaskContinuation marker) {
-        return MAIN_LANE.equals(marker.getLane()) || HANDLER_LANE.equals(marker.getLane())
-                ? marker.getLane()
-                : "branch";
     }
 
     /**
@@ -1064,12 +967,14 @@ public class NativeContinuationService {
     /**
      * After a rerun removed the tasks of its plan: the entries the plan undoes go, and the rerun
      * task's marker and the markers of the continuations that run again wait again, so each runs
-     * once more when the decider evaluates its task.
+     * once more when the decider evaluates its task. A JOIN waits again for a fork holding the
+     * rerun task, and when the code after it runs again (the lanes it waited for may run again).
+     * Returns those JOINs: the caller saves them and queues them only after the rerun is saved.
      */
-    public void adjustRerun(
+    public List<TaskModel> adjustRerun(
             WorkflowModel workflow, TaskModel rerunFrom, RerunPlan plan, List<TaskModel> touched) {
         WorkflowDef def = workflow.getWorkflowDefinition();
-        def.removeAll(plan.dropEntries());
+        removeAll(def, plan.dropEntries());
         if (rerunFrom.getContinuation() != null) {
             rerunFrom.setContinuation(rerunFrom.getContinuation().reset());
         }
@@ -1089,6 +994,80 @@ public class NativeContinuationService {
             bootstrap.setQueuedAt(System.currentTimeMillis());
             state.setBootstrap(bootstrap);
         }
+        List<TaskModel> runAgain = new ArrayList<>(touched);
+        List<TaskModel> joins = new ArrayList<>();
+        for (TaskModel task : workflow.getTasks()) {
+            if (TaskType.TASK_TYPE_JOIN.equals(task.getTaskType())
+                    && task.getStatus() == TaskModel.Status.COMPLETED
+                    && task.getWorkflowTask() != null) {
+                WorkflowTask fork = previousTask(def, task.getReferenceTaskName());
+                if (runAgain.contains(task)
+                        || (fork != null
+                                && TaskType.FORK_JOIN.name().equals(fork.getType())
+                                && fork.has(rerunFrom.getReferenceTaskName()))) {
+                    task.setStatus(TaskModel.Status.IN_PROGRESS);
+                    task.setExecuted(false);
+                    task.setEndTime(0);
+                    task.clearOutput();
+                    touched.add(task);
+                    joins.add(task);
+                }
+            }
+        }
+        workflow.setOutput(new HashMap<>());
+        return joins;
+    }
+
+    /**
+     * Before a retry runs the code again, removes from the definition the TERMINATE entry that
+     * marks where the code threw, and everything else the continuation that threw drew: the
+     * previews of what it would have called next, and an if it went past or a lane it started. The
+     * workflow failed in that same completion, so none of it has a task, and the code draws it
+     * again. Should one have a task, only the mark and its previews go.
+     */
+    public void undoThrow(WorkflowModel workflow, TaskModel thrown) {
+        LastMain last = lastMain(workflow);
+        String key =
+                last != null && last.marker().isDone() && last.marker().hasError()
+                        ? markerKey(last.marker())
+                        : null;
+        Set<String> refs = new HashSet<>();
+        for (WorkflowTask entry : workflow.getWorkflowDefinition().collectTasks()) {
+            if (key != null && key.equals(entry.getMetadata().get(APPENDED_BY))) {
+                entry.collectTasks().forEach(t -> refs.add(t.getTaskReferenceName()));
+            }
+        }
+        if (workflow.getTasks().stream().anyMatch(t -> refs.contains(t.getReferenceTaskName()))) {
+            refs.clear();
+        }
+        for (WorkflowTask entry : workflow.getWorkflowDefinition().collectTasks()) {
+            if (thrown.getReferenceTaskName().equals(entry.getMetadata().get("previewAfter"))) {
+                refs.add(entry.getTaskReferenceName());
+            }
+        }
+        refs.add(thrown.getReferenceTaskName());
+        removeAll(workflow.getWorkflowDefinition(), refs);
+    }
+
+    /**
+     * Retry when the code itself failed (it threw, or diverged from its recording): the main lane's
+     * last continuation runs again, and the slot is free for it. Returns it, or null when there is
+     * none; the caller saves the workflow, then its holder, then pushes the decider.
+     */
+    public LastMain rearmLastMain(WorkflowModel workflow) {
+        LastMain last = lastMain(workflow);
+        if (last == null) {
+            return null;
+        }
+        TaskContinuation marker = last.marker();
+        marker.setState(TaskContinuation.RUNNABLE);
+        marker.setQueuedAt(System.currentTimeMillis());
+        marker.setDeferred("retry");
+        marker.setDone(false);
+        marker.setError(null);
+        workflow.getNativeState().setActiveContinuation(null);
+        workflow.getNativeState().setActiveUntil(0);
+        return last;
     }
 
     private static String markerKey(TaskContinuation marker) {
@@ -1107,7 +1086,7 @@ public class NativeContinuationService {
                 break;
             }
             if (TaskType.TASK_TYPE_JOIN.equals(next.getType())) {
-                WorkflowTask fork = def.getPreviousTask(next.getTaskReferenceName());
+                WorkflowTask fork = previousTask(def, next.getTaskReferenceName());
                 if (fork != null && fork.has(ref)) {
                     break;
                 }
@@ -1118,32 +1097,29 @@ public class NativeContinuationService {
         return refs;
     }
 
-    /**
-     * The marker whose continuation the main lane ran last: on a task, or the bootstrap. Used by
-     * retry when the code itself failed, to run that continuation again.
-     */
-    public TaskContinuation lastMainMarker(WorkflowModel workflow, List<TaskModel> holder) {
-        TaskContinuation best = null;
-        TaskModel bestTask = null;
+    /** The main lane's last continuation, and the task it is on (null for the bootstrap). */
+    public record LastMain(TaskContinuation marker, TaskModel holder) {}
+
+    /** The marker whose continuation the main lane ran last: on a task, or the bootstrap. */
+    public LastMain lastMain(WorkflowModel workflow) {
+        TaskModel best = null;
         for (TaskModel task : latestAttempts(workflow)) {
             TaskContinuation marker = task.getContinuation();
             if (marker != null
                     && MAIN_LANE.equals(marker.getLane())
-                    && (best == null || marker.getN() > best.getN())) {
-                best = marker;
-                bestTask = task;
+                    && (best == null || marker.getN() > best.getContinuation().getN())) {
+                best = task;
             }
         }
-        if (best == null && workflow.getNativeState() != null) {
-            return workflow.getNativeState().getBootstrap();
+        if (best != null) {
+            return new LastMain(best.getContinuation(), best);
         }
-        if (bestTask != null) {
-            holder.add(bestTask);
-        }
-        return best;
+        NativeState state = workflow.getNativeState();
+        return state == null || state.getBootstrap() == null
+                ? null
+                : new LastMain(state.getBootstrap(), null);
     }
 
-    /** The latest attempt of every task reference. */
     /** Whether any task's lane has code still to run: a continuation not yet applied. */
     public boolean hasUnappliedLane(WorkflowModel workflow) {
         for (TaskModel task : latestAttempts(workflow)) {
@@ -1155,6 +1131,7 @@ public class NativeContinuationService {
         return false;
     }
 
+    /** The latest attempt of every task reference. */
     private static List<TaskModel> latestAttempts(WorkflowModel workflow) {
         Map<String, TaskModel> latest = new LinkedHashMap<>();
         for (TaskModel task : workflow.getTasks()) {
@@ -1175,16 +1152,34 @@ public class NativeContinuationService {
                     "protocol",
                     "a continuation completion must declare a numeric protocol version");
         }
-        java.util.Set<Integer> supported = properties.getNativeWorkflow().getProtocolVersions();
-        boolean known =
-                supported == null || supported.isEmpty()
-                        ? ((Number) protocol).intValue() == PROTOCOL
-                        : supported.contains(((Number) protocol).intValue());
-        if (!known) {
+        if (((Number) protocol).intValue() != PROTOCOL) {
             throw new RejectedFragmentException(
                     "protocol",
                     "protocol version " + protocol + " is not supported; expected " + PROTOCOL);
         }
+    }
+
+    /** A run of fragment entries and the entry it goes after (null: at the end of the list). */
+    private record Run(String anchor, List<WorkflowTask> entries) {}
+
+    /**
+     * The runs a fragment is inserted as. The fragment goes after the task the code paused on; an
+     * entry that names another anchor ({@code metadata.after}) starts a run that goes there
+     * instead: code that left a switch case appends after the switch, not inside the case where it
+     * paused, and what it drew in the case before leaving stays in the case.
+     */
+    private static List<Run> runs(List<WorkflowTask> fragment, TaskModel awaited) {
+        List<Run> runs = new ArrayList<>();
+        int start = 0;
+        for (int i = 1; i <= fragment.size(); i++) {
+            if (i < fragment.size() && anchorOf(fragment.subList(i, i + 1), null) == null) {
+                continue;
+            }
+            List<WorkflowTask> run = new ArrayList<>(fragment.subList(start, i));
+            runs.add(new Run(anchorOf(run, start == 0 ? awaited : null), run));
+            start = i;
+        }
+        return runs;
     }
 
     /**
@@ -1258,18 +1253,15 @@ public class NativeContinuationService {
     private void validateFragment(
             WorkflowDef definition,
             List<WorkflowTask> fragment,
+            List<Run> runs,
             String codeType,
             String thrownRef) {
-        int max = properties.getNativeWorkflow().getMaxFragmentTasks();
-        if (fragment.size() > max) {
-            throw new RejectedFragmentException(
-                    "size",
-                    "fragment has " + fragment.size() + " tasks, more than the limit of " + max);
-        }
-        int total = definition.collectTasks().size();
+        int count = 0; // nested entries count
         for (WorkflowTask task : fragment) {
-            total += task.collectTasks().size();
+            count += task.collectTasks().size();
         }
+        List<WorkflowTask> current = definition.collectTasks();
+        int total = current.size() + count;
         int maxTotal = properties.getNativeWorkflow().getMaxDefinitionTasks();
         if (total > maxTotal) {
             throw new RejectedFragmentException(
@@ -1286,7 +1278,21 @@ public class NativeContinuationService {
                     "size", "fragment is " + bytes + " bytes, more than the limit of " + maxBytes);
         }
         Set<String> existing = new HashSet<>();
-        definition.collectTasks().forEach(t -> existing.add(t.getTaskReferenceName()));
+        current.forEach(t -> existing.add(t.getTaskReferenceName()));
+        // each run's anchor is in the definition, or in a run inserted before it
+        Set<String> placed = new HashSet<>(existing);
+        for (Run run : runs) {
+            if (run.anchor() != null && !placed.contains(run.anchor())) {
+                throw new RejectedFragmentException(
+                        "fragment",
+                        "task " + run.anchor() + " is not in the execution's definition");
+            }
+            run.entries()
+                    .forEach(
+                            e ->
+                                    e.collectTasks()
+                                            .forEach(t -> placed.add(t.getTaskReferenceName())));
+        }
         Set<String> seen = new HashSet<>();
         Map<String, Integer> markersPerLane = new HashMap<>();
         for (WorkflowTask task : fragment) {
@@ -1319,16 +1325,14 @@ public class NativeContinuationService {
                     throw new RejectedFragmentException(
                             "lane", "task " + ref + " does not name its lane in metadata");
                 }
-                Object marker = nested.getMetadata().get(METADATA_CONTINUATION);
-                if (marker != null) {
-                    if (!(marker instanceof Map<?, ?> m)
-                            || m.get("lane") == null
-                            || !(m.get("n") instanceof Number)) {
+                if (nested.getMetadata().get(METADATA_CONTINUATION) != null) {
+                    TaskContinuation marker = markerOf(nested);
+                    if (marker == null) {
                         throw new RejectedFragmentException(
                                 "continuation",
                                 "task " + ref + " has a malformed continuation marker");
                     }
-                    markersPerLane.merge(String.valueOf(m.get("lane")), 1, Integer::sum);
+                    markersPerLane.merge(marker.getLane(), 1, Integer::sum);
                 }
             }
         }
@@ -1355,10 +1359,18 @@ public class NativeContinuationService {
 
     // ------------------------------------------------------------------ variables
 
-    private void applyVariables(WorkflowModel workflow, Map<String, Object> output) {
+    /**
+     * The variables this completion changed, checked: an object, within the size limit with the
+     * current variables. Empty when it changed none.
+     */
+    /**
+     * The variables this completion changed: those it wrote that differ from what its continuation
+     * read ({@code resumedWith}), so a value another completion wrote since is kept.
+     */
+    private Map<String, Object> changedVariables(Map<String, Object> output) {
         Object raw = output.get(OUTPUT_VARIABLES);
         if (raw == null) {
-            return;
+            return Map.of();
         }
         Map<String, Object> changed;
         try {
@@ -1366,17 +1378,19 @@ public class NativeContinuationService {
         } catch (IllegalArgumentException | JacksonException e) {
             throw new RejectedFragmentException("variables", "variables must be an object");
         }
-        if (changed == null || changed.isEmpty()) {
-            return;
+        if (changed == null) {
+            return Map.of();
         }
         Map<String, Object> base = mapOrNull(output.get(OUTPUT_RESUMED_WITH));
         if (base != null) {
-            // apply only what this continuation changed, so a value another completion wrote
-            // since this continuation read the variables is kept (see variableConflict)
             changed.entrySet().removeIf(e -> sameJson(e.getValue(), base.get(e.getKey())));
-            if (changed.isEmpty()) {
-                return;
-            }
+        }
+        return changed;
+    }
+
+    private void checkVariablesSize(WorkflowModel workflow, Map<String, Object> changed) {
+        if (changed.isEmpty()) {
+            return;
         }
         Map<String, Object> merged = new HashMap<>(workflow.getVariables());
         merged.putAll(changed);
@@ -1391,7 +1405,6 @@ public class NativeContinuationService {
                             + maxBytes
                             + " bytes");
         }
-        workflow.getVariables().putAll(changed);
     }
 
     /**
@@ -1400,20 +1413,14 @@ public class NativeContinuationService {
      * same time on different workers; the later completion would otherwise overwrite the earlier
      * one's writes with its stale copy. The caller runs a conflicting continuation again.
      */
-    public String variableConflict(WorkflowModel workflow, Map<String, Object> output) {
+    private String variableConflict(
+            WorkflowModel workflow, Map<String, Object> output, Map<String, Object> changed) {
         Map<String, Object> base = mapOrNull(output.get(OUTPUT_RESUMED_WITH));
-        Object raw = output.get(OUTPUT_VARIABLES);
-        if (base == null || !(raw instanceof Map)) {
+        if (base == null) {
             return null;
         }
-        Map<String, Object> written = objectMapper.convertValue(raw, MAP_TYPE);
-        Map<String, Object> current = workflow.getVariables();
-        for (Map.Entry<String, Object> e : written.entrySet()) {
-            String key = e.getKey();
-            if (sameJson(e.getValue(), base.get(key))) {
-                continue; // not changed by this continuation
-            }
-            if (!sameJson(base.get(key), current.get(key))) {
+        for (String key : changed.keySet()) {
+            if (!sameJson(base.get(key), workflow.getVariables().get(key))) {
                 return key;
             }
         }
@@ -1469,5 +1476,91 @@ public class NativeContinuationService {
             super(message);
             this.reason = reason;
         }
+    }
+
+    // ------------------------------------------------------------------ the execution's definition
+
+    /**
+     * Inserts entries right after the entry {@code ref}, in whichever list holds it: the top level,
+     * a fork branch, a switch case or a loop body. False, changing nothing, when there is no such
+     * entry.
+     */
+    static boolean insertAfter(WorkflowDef def, String ref, List<WorkflowTask> entries) {
+        return insertAfter(def.getTasks(), ref, entries);
+    }
+
+    private static boolean insertAfter(
+            List<WorkflowTask> list, String ref, List<WorkflowTask> entries) {
+        for (int i = 0; i < list.size(); i++) {
+            if (ref.equals(list.get(i).getTaskReferenceName())) {
+                list.addAll(i + 1, entries);
+                return true;
+            }
+            for (List<WorkflowTask> child : children(list.get(i))) {
+                if (insertAfter(child, ref, entries)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** The entry right before {@code ref} in the list that holds it; null when it is first. */
+    public static WorkflowTask previousTask(WorkflowDef def, String ref) {
+        return previous(def.getTasks(), ref);
+    }
+
+    private static WorkflowTask previous(List<WorkflowTask> list, String ref) {
+        for (int i = 0; i < list.size(); i++) {
+            if (ref.equals(list.get(i).getTaskReferenceName())) {
+                return i == 0 ? null : list.get(i - 1);
+            }
+            for (List<WorkflowTask> child : children(list.get(i))) {
+                WorkflowTask found = previous(child, ref);
+                if (found != null) {
+                    return found;
+                }
+                if (child.stream().anyMatch(t -> ref.equals(t.getTaskReferenceName()))) {
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Removes the entries named in {@code refs}, at any depth, with what they hold. */
+    static int removeAll(WorkflowDef def, Set<String> refs) {
+        return removeAll(def.getTasks(), refs);
+    }
+
+    private static int removeAll(List<WorkflowTask> list, Set<String> refs) {
+        int removed = 0;
+        for (java.util.Iterator<WorkflowTask> it = list.iterator(); it.hasNext(); ) {
+            WorkflowTask task = it.next();
+            if (refs.contains(task.getTaskReferenceName())) {
+                it.remove();
+                removed++;
+            } else {
+                for (List<WorkflowTask> child : children(task)) {
+                    removed += removeAll(child, refs);
+                }
+            }
+        }
+        return removed;
+    }
+
+    /** The lists an entry holds, live: switch cases and the default, fork branches, loop body. */
+    private static List<List<WorkflowTask>> children(WorkflowTask task) {
+        List<List<WorkflowTask>> lists = new ArrayList<>();
+        switch (TaskType.of(task.getType())) {
+            case DECISION, SWITCH -> {
+                lists.addAll(task.getDecisionCases().values());
+                lists.add(task.getDefaultCase());
+            }
+            case FORK_JOIN -> lists.addAll(task.getForkTasks());
+            case DO_WHILE -> lists.add(task.getLoopOver());
+            default -> {}
+        }
+        return lists;
     }
 }

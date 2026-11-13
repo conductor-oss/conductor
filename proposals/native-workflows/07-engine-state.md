@@ -345,7 +345,7 @@ or queued continuation is the running work.
 | `@Workflow`, `@Variable`, `@Signal`, `@Update`, `@Query`, `@Schedule`, `@WorkerTask` | none |
 | `Conductor.connect/start/workflow(...).idempotencyKey/correlationId/priority/execute/attach` | none |
 | `WorkflowHandle.signal/update/query/result/status/variables/completeTask` | `variables()` returns only `@Variable` values; replies move out of it |
-| `Workers.workerId/buildId/devMode/timeScale/threads/continuationTimeout/workflows/tasks/start` | none |
+| `Workers.workerId/buildId/devMode/threads/continuationTimeout/workflows/tasks/start` | none; `Workers.timeScale` is deprecated and does nothing |
 | `DurableTestEnvironment`, `TestRun`, `DirectEngine` | none |
 | `DurableReplay.assertCompatible` | none; it reads the new recording shape |
 | `TaskFailure`, `WorkflowFailedException`, `NonDeterminismException`, `Backoff`, `Promise` | none |
@@ -479,11 +479,11 @@ Order followed: 1, 2 and 3 together (a completion with any protocol other than 2
 | a message to a class without handlers is refused with 409 | queued and pushed; the poll drops the wake-up because there is no marker |
 | marker repairs in the sweeper's task-repair loop | `repairAndWake` in every decide of a native workflow |
 | the handler marker keeps its `n` between runs | a fresh `WAITING` marker for `n + 1` after each applied run |
-| `protocolVersions` property consulted | `NativeContinuationService.PROTOCOL = 2` is checked directly; the property is declared but not read |
+| `protocolVersions` property consulted | `NativeContinuationService.PROTOCOL = 2` is checked directly; the property and `nativeState.protocol` were removed |
 | re-record `kitchensink-odd.json` | done 2026-11-08; the replay test passes against it; re-recorded again the same day with `oddEvenDecision` as a `SWITCH` |
 | `decision(name, value)`: nothing emitted, a label for the diamond | removed; `switchOn` emits a real `SWITCH` (`value-param`, `switchCaseValue`, every declared case, `defaultCase`, `metadata.lane`), the taken body's entries go inside its case, and the first entry after the body carries `metadata.after` when the lane resumed inside the case |
 | an untaken switch case is an empty list | the SDK reads each untaken case (and `otherwise` when a declared case was taken) from its compiled body: `Replayer.previewOf` → `CodeReader.read`, which runs nothing; its entries (`metadata.preview: true`, `<base>_if_<key>`, no marker, no `optional`) fill the case. The server validates them as ordinary entries and never schedules them |
-| a fragment always goes after the awaited task | the first entry may name another anchor in `metadata.after` (`NativeContinuationService.anchorOf`, `WorkflowDef.insertAfter` at any depth); an anchor that names no entry is a rejected fragment |
+| a fragment always goes after the awaited task | the first entry may name another anchor in `metadata.after` (`NativeContinuationService.runs`, `insertAfter` at any depth); an anchor that names no entry is a rejected fragment |
 | the sweeper's decide may postpone a native workflow like any other, up to `maxPostponeDurationSeconds` | capped at `workflowOffsetTimeout` while a marker is `RUNNABLE` or `LEASED` (`needsPromptRevisit`), and always written to replace a longer earlier postpone, so `repairAndWake` re-routes a wake-up stuck in a dead domain's queue; found by the chaos run under the earlier per-worker routing |
 | the registered skeleton has `tasks: []`; the definition view comes later from an observed graph | the registered definition carries the graph discovered from the code (`Registration.skeleton` → `Replayer.discover`: the compiled method read by `CodeReader`, plain reference names, no `metadata.preview`, inline task definitions), plus `inputParameters` and `metadata.native.signals/updates/queries/discovered`; `NativeContinuationService.initialize` clears those tasks from the execution's copy at start and restart, so the rule above still holds: an execution contains exactly the tasks the code asked for. New public API: `Conductor.register(Class<?>...)` and `Conductor.definitions(Class<?>)` |
 | continuations of one execution may run concurrently, one lease per marker | one per execution at a time across hosts (`nativeState.activeContinuation`, `activeUntil`) |

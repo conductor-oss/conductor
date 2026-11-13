@@ -486,6 +486,7 @@ def main():
     ap.add_argument('--deadline', type=int, default=120, help='seconds before a test counts as not settling')
     ap.add_argument('--ops', type=float, default=0.4, help='share of tests that retry or rerun at the end')
     ap.add_argument('--keep', default=None, help='directory for the models of tests that did not match')
+    ap.add_argument('--only', default=None, help='run only the tests whose id (s<seed>x<n>) matches this regex')
     ap.add_argument('--trace-dir', default=None,
                     help="the server's conductor.trace.dir: each run is then checked step by step, not by its end alone")
     a = ap.parse_args()
@@ -505,6 +506,8 @@ def main():
         kinds = [rng.choice([k for k in KINDS if k in slot]) for slot in gen.slots(shape)]
         op = rng.choice(['retry', 'restart', 'rerun']) if rng.random() < a.ops else None
         tests.append((f's{a.seed}x{i}', f'{run_id}x{i}', shape, kinds, rng.random() < 0.5, op))
+    if a.only:
+        tests = [t for t in tests if re.search(a.only, t[0])]
     srv = Server(a.server)
     results, lock = [], threading.Lock()
 

@@ -105,15 +105,8 @@ public class DeciderService {
                 });
     }
 
-    /** Whether the execution's definition was produced by a native (code-first) workflow. */
     public NativeContinuationService getNativeContinuationService() {
         return nativeContinuationService;
-    }
-
-    static boolean isNativeWorkflow(WorkflowModel workflow) {
-        return workflow.getWorkflowDefinition() != null
-                && workflow.getWorkflowDefinition().getMetadata() != null
-                && workflow.getWorkflowDefinition().getMetadata().containsKey("native");
     }
 
     public DeciderOutcome decide(WorkflowModel workflow) throws TerminateWorkflowException {
@@ -253,7 +246,7 @@ public class DeciderService {
                 } else if (!(pendingTask.getWorkflowTask() != null
                         && pendingTask.getWorkflowTask().isPermissive()
                         && !pendingTask.getWorkflowTask().isOptional())) {
-                    if (isNativeWorkflow(workflow)) {
+                    if (NativeContinuationService.isNative(workflow)) {
                         // Native workflows mark the tasks their code waits on optional, so a
                         // failure continues to the code's next continuation. The code receives it
                         // as an exception naming how the task failed, which the status no longer
@@ -269,8 +262,6 @@ public class DeciderService {
             if (!pendingTask.isExecuted()
                     && !pendingTask.isRetried()
                     && pendingTask.getStatus().isTerminal()) {
-                // Native workflows: the code paused on this task; its continuation runs now.
-                nativeContinuationService.onEvaluated(workflow, pendingTask);
                 pendingTask.setExecuted(true);
                 List<TaskModel> nextTasks = getNextTask(workflow, pendingTask);
                 if (pendingTask.isLoopOverTask()
@@ -390,7 +381,7 @@ public class DeciderService {
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (workflowDef.getTasks().isEmpty()) {
-                if (isNativeWorkflow(workflow)) {
+                if (NativeContinuationService.isNative(workflow)) {
                     // the code's first continuation appends the first tasks
                     return new LinkedList<>();
                 }
@@ -499,14 +490,15 @@ public class DeciderService {
 
     public boolean checkForWorkflowCompletion(final WorkflowModel workflow)
             throws TerminateWorkflowException {
-        if (isNativeWorkflow(workflow)) {
+        if (NativeContinuationService.isNative(workflow)) {
             // A native execution ends when its code returned (the main lane's last continuation
             // is done) and everything that continuation appended has run: tasks all being
             // terminal says nothing about the code, and the code returning says nothing about
             // trailing tasks (an event fired last, a switch whose case has no tasks).
-            TaskContinuation last =
-                    nativeContinuationService.lastMainMarker(workflow, new ArrayList<>());
-            if (last == null || !last.isApplied() || !last.isDone() || last.getError() != null) {
+            NativeContinuationService.LastMain lastMain =
+                    nativeContinuationService.lastMain(workflow);
+            TaskContinuation last = lastMain == null ? null : lastMain.marker();
+            if (last == null || !last.isApplied() || !last.isDone() || last.hasError()) {
                 return false;
             }
             // code that returned without calling anything has no tasks to wait for
@@ -517,7 +509,7 @@ public class DeciderService {
             if (nativeContinuationService.hasUnappliedLane(workflow)) {
                 return false;
             }
-            workflow.setOutput(last.getResult() == null ? new HashMap<>() : last.getResult());
+            workflow.setOutput(last.getResult());
             return true;
         }
         return checkTasksForWorkflowCompletion(workflow);

@@ -179,11 +179,7 @@ public class TestDeciderOutcomes {
         taskMappers.put(
                 SUB_WORKFLOW.name(), new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
-        taskMappers.put(
-                WAIT.name(),
-                new WaitTaskMapper(
-                        parametersUtils,
-                        new com.netflix.conductor.core.config.ConductorProperties()));
+        taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(
                 TaskType.TERMINATE.name(),
@@ -626,17 +622,27 @@ public class TestDeciderOutcomes {
     }
 
     @Test
-    public void evaluatingTheTaskTheCodePausedOnMakesItsContinuationRunnable() {
+    public void evaluatingTheTaskTheCodePausedOnWakesItsContinuation() {
         WorkflowModel workflow = nativeWorkflowPausedOn(TaskModel.Status.COMPLETED);
         TaskModel task = workflow.getTasks().get(0);
 
         DeciderOutcome outcome = deciderService.decide(workflow);
 
         assertTrue(task.isExecuted());
-        assertTrue(task.getContinuation().isRunnable());
         assertTrue(outcome.tasksToBeUpdated.contains(task));
         assertFalse(outcome.isComplete); // every task is terminal, but the code has not returned
         assertTrue(outcome.tasksToBeScheduled.isEmpty());
+        // the executor wakes it in the same decide
+        assertEquals(
+                List.of(task.getTaskId()),
+                deciderService
+                        .getNativeContinuationService()
+                        .repairAndWake(workflow)
+                        .offers
+                        .stream()
+                        .map(NativeContinuationService.Offer::messageId)
+                        .toList());
+        assertTrue(task.getContinuation().isLeased());
     }
 
     @Test

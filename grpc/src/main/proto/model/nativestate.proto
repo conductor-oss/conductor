@@ -9,7 +9,6 @@ option java_outer_classname = "NativeStatePb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message NativeState {
-    int32 protocol = 1;
     string code_type = 2;
     int32 continuation_timeout_seconds = 3;
     int64 step = 4;

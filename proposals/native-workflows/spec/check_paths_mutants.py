@@ -64,7 +64,7 @@ def m_loop_tag_lost(w):
 def m_completed_names_a_failed_task(w):  w['failedTaskId'] = task(w, 'task_1')['taskId']
 def m_mark_in_completed(w):
     w['workflowDefinition']['tasks'].append({'name': 'X', 'taskReferenceName': 'throw', 'type': 'TERMINATE',
-                                             'metadata': {'lane': 'main', 'thrown': 'X'}})
+                                             'metadata': {'lane': 'main'}})
 
 
 # --- on the failed run

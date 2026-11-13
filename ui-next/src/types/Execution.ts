@@ -108,7 +108,6 @@ export interface TaskContinuation {
 
 /** The engine's state of a native (code-first) workflow execution. */
 export interface NativeState {
-  protocol?: number;
   codeType?: string;
   continuationTimeoutSeconds?: number;
   step?: number;

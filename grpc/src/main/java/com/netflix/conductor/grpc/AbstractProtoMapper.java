@@ -528,7 +528,6 @@ public abstract class AbstractProtoMapper {
 
     public NativeStatePb.NativeState toProto(NativeState from) {
         NativeStatePb.NativeState.Builder to = NativeStatePb.NativeState.newBuilder();
-        to.setProtocol( from.getProtocol() );
         if (from.getCodeType() != null) {
             to.setCodeType( from.getCodeType() );
         }
@@ -553,7 +552,6 @@ public abstract class AbstractProtoMapper {
 
     public NativeState fromProto(NativeStatePb.NativeState from) {
         NativeState to = new NativeState();
-        to.setProtocol( from.getProtocol() );
         to.setCodeType( from.getCodeType() );
         to.setContinuationTimeoutSeconds( from.getContinuationTimeoutSeconds() );
         to.setStep( from.getStep() );

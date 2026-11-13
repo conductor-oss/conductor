@@ -59,6 +59,7 @@ public class NativeContinuationServiceTest {
     private static final String CODE_TYPE = "kitchensink.v1.code";
 
     private ObjectMapper objectMapper;
+    private ConductorProperties properties;
     private NativeContinuationService service;
 
     @Before
@@ -72,12 +73,10 @@ public class NativeContinuationServiceTest {
                 List.of("SIMPLE", "FORK_JOIN", "JOIN", "TERMINATE", "WAIT", "DO_WHILE", "SWITCH")) {
             mappers.put(type, new NoopTaskMapper());
         }
+        properties = new ConductorProperties();
         service =
                 new NativeContinuationService(
-                        objectMapper,
-                        new ConductorProperties(),
-                        new MetadataMapperService(metadataDAO),
-                        mappers);
+                        objectMapper, properties, new MetadataMapperService(metadataDAO), mappers);
     }
 
     // ------------------------------------------------------------------ fixtures
@@ -300,7 +299,6 @@ public class NativeContinuationServiceTest {
                 completeHoldingSlot(
                         workflow, again, result("id-task_c", output(3, 4, List.of(bad))));
         assertTrue(completion.finished);
-        assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
     }
 
     @Test
@@ -371,8 +369,12 @@ public class NativeContinuationServiceTest {
         assertEquals(List.of("id-left"), offered(service.repairAndWake(workflow))); // held
 
         // the poll hands out the offer and writes nothing; anything else is a stale message
-        assertTrue(service.lease(CODE_TYPE, "id-left", "worker-a") != null);
-        assertEquals(null, service.lease(CODE_TYPE, "id-right", "worker-b"));
+        assertTrue(
+                service.lease(CODE_TYPE, "id-left", dao.getTaskModel("id-left"), "worker-a")
+                        != null);
+        assertEquals(
+                null,
+                service.lease(CODE_TYPE, "id-right", dao.getTaskModel("id-right"), "worker-b"));
         org.mockito.Mockito.verify(queue).remove(CODE_TYPE, "id-right");
         org.mockito.Mockito.verify(dao, org.mockito.Mockito.never()).updateWorkflow(any());
         org.mockito.Mockito.verify(dao, org.mockito.Mockito.never()).updateTask(any());
@@ -384,7 +386,9 @@ public class NativeContinuationServiceTest {
         service.complete(workflow, left, failed);
         assertEquals(TaskModel.Status.COMPLETED, left.getStatus()); // the task's own result stands
         assertEquals(List.of("id-right"), offered(service.repairAndWake(workflow)));
-        assertTrue(service.lease(CODE_TYPE, "id-right", "worker-b") != null);
+        assertTrue(
+                service.lease(CODE_TYPE, "id-right", dao.getTaskModel("id-right"), "worker-b")
+                        != null);
     }
 
     private static List<String> offered(NativeContinuationService.Wakeups wakeups) {
@@ -485,7 +489,6 @@ public class NativeContinuationServiceTest {
 
         // the decider completes the workflow (after anything the fragment appended has run)
         assertFalse(completion.reason, completion.finished);
-        assertEquals(Map.of("answer", 42), completion.output);
         assertTrue(awaited.getContinuation().isDone());
         assertEquals(Map.of("answer", 42), awaited.getContinuation().getResult());
         assertFalse(awaited.isExecuted());
@@ -504,7 +507,6 @@ public class NativeContinuationServiceTest {
                 completeHoldingSlot(workflow, awaited, result("id-charge", out));
 
         assertTrue(completion.finished);
-        assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
         assertEquals("task charge FAILED: over limit", completion.reason);
         assertEquals(awaited, completion.causeTask);
     }
@@ -522,11 +524,8 @@ public class NativeContinuationServiceTest {
     /** What a decide and then a poll do: offer the next continuation, then hand it out. */
     private void offerAndPoll(WorkflowModel workflow, String messageId, String workerId) {
         assertEquals(List.of(messageId), offered(service.repairAndWake(workflow)));
-        assertTrue(service.lease(CODE_TYPE, messageId, workerId) != null);
-    }
-
-    private static double count(String name, String... tags) {
-        return com.netflix.conductor.metrics.Monitors.getCounter(name, tags).count();
+        assertTrue(
+                service.lease(CODE_TYPE, messageId, dao.getTaskModel(messageId), workerId) != null);
     }
 
     private TaskResult diverged(TaskContinuation marker) {
@@ -538,32 +537,21 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
-    public void aHoldIsCountedOnceAndLastsAcrossRetriesUntilTheCodeMatches() {
+    public void aHoldLastsAcrossRetriesUntilTheCodeMatches() {
         WorkflowModel workflow = freshWorkflow(false);
         useMockedStores(workflow);
         TaskContinuation marker = workflow.getNativeState().getBootstrap();
         marker.setState(TaskContinuation.RUNNABLE);
-        String[] name = {"workflowName", "kitchensink"};
-        double held = count("native_execution_held", name);
-        double resumed =
-                count(
-                        "native_execution_hold_ended",
-                        "workflowName",
-                        "kitchensink",
-                        "outcome",
-                        "resumed");
 
         offerAndPoll(workflow, "wf-1|main", "worker-a");
         completeHoldingSlot(workflow, null, diverged(marker));
         long heldSince = marker.getQueuedAt();
-        assertEquals(held + 1, count("native_execution_held", name), 0);
 
-        // the retry is still held while it runs, and does not count as a new hold
+        // the retry is still held while it runs, and the hold keeps its start
         offerAndPoll(workflow, "wf-1|main", "worker-a");
         assertTrue(marker.isLeased());
         assertTrue(marker.getDeferred().startsWith("diverged: "));
         completeHoldingSlot(workflow, null, diverged(marker));
-        assertEquals(held + 1, count("native_execution_held", name), 0);
         assertEquals(heldSince, marker.getQueuedAt());
 
         // a build that matches the recording ends the hold
@@ -574,36 +562,10 @@ public class NativeContinuationServiceTest {
                 result("wf-1|main", output(marker.getN(), marker.getEpoch(), List.of())));
         assertTrue(marker.isApplied());
         assertEquals(null, marker.getDeferred());
-        assertEquals(
-                resumed + 1,
-                count(
-                        "native_execution_hold_ended",
-                        "workflowName",
-                        "kitchensink",
-                        "outcome",
-                        "resumed"),
-                0);
     }
 
     @Test
-    public void aHeldExecutionThatIsTerminatedEndsItsHold() {
-        WorkflowModel workflow = freshWorkflow(false);
-        useMockedStores(workflow);
-        TaskContinuation marker = workflow.getNativeState().getBootstrap();
-        marker.setState(TaskContinuation.RUNNABLE);
-        offerAndPoll(workflow, "wf-1|main", "worker-a");
-        completeHoldingSlot(workflow, null, diverged(marker));
-        String[] tags = {"workflowName", "kitchensink", "outcome", "TERMINATED"};
-        double ended = count("native_execution_hold_ended", tags);
-
-        workflow.setStatus(WorkflowModel.Status.TERMINATED);
-        NativeContinuationService.recordHoldsEnded(workflow);
-
-        assertEquals(ended + 1, count("native_execution_hold_ended", tags), 0);
-    }
-
-    @Test
-    public void leaseMetricsUseABoundedLaneAndCountOffersMovedToAnotherQueue() {
+    public void anOfferInAQueueNobodyPollsIsMovedToTheQueueWorkersPoll() {
         WorkflowModel workflow = freshWorkflow(false);
         useMockedStores(workflow);
         workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
@@ -611,13 +573,8 @@ public class NativeContinuationServiceTest {
         TaskContinuation marker = item.getContinuation();
         marker.setState(TaskContinuation.RUNNABLE);
         when(dao.getTaskModel("id-item")).thenReturn(item);
-        String[] tags = {"workflowName", "kitchensink", "lane", "branch"};
-        double leased = count("native_continuation_leased", tags);
-        double expired = count("native_lease_expired", tags);
 
         offerAndPoll(workflow, "id-item", "worker-a");
-        assertEquals(leased + 1, count("native_continuation_leased", tags), 0);
-        assertEquals(expired, count("native_lease_expired", tags), 0);
 
         // within its lease, or in the queue resolved now, the offer stands
         long epoch = marker.getEpoch();
@@ -630,9 +587,9 @@ public class NativeContinuationServiceTest {
         assertEquals(List.of("id-item"), offered(service.repairAndWake(workflow)));
         assertEquals(epoch + 1, marker.getEpoch());
         assertEquals(CODE_TYPE, marker.getQueue());
-        assertEquals(expired + 1, count("native_lease_expired", tags), 0);
-        assertTrue(service.lease(CODE_TYPE, "id-item", "worker-b") != null);
-        assertEquals(leased + 2, count("native_continuation_leased", tags), 0);
+        assertTrue(
+                service.lease(CODE_TYPE, "id-item", dao.getTaskModel("id-item"), "worker-b")
+                        != null);
     }
 
     @Test
@@ -758,9 +715,89 @@ public class NativeContinuationServiceTest {
                     completeHoldingSlot(
                             workflow, null, result("wf-1|main", output(1, 1, List.of(bad))));
             assertTrue(bad.toString(), completion.finished);
-            assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
             assertTrue(workflow.getWorkflowDefinition().getTasks().isEmpty());
         }
+    }
+
+    /** A SWITCH entry whose one case holds {@code children}. */
+    private static Map<String, Object> switchOf(String ref, List<Map<String, Object>> children) {
+        Map<String, Object> sw = entry(ref, "SWITCH", "main", null, 0);
+        sw.put("decisionCases", Map.of("a", children));
+        return sw;
+    }
+
+    @Test
+    public void nestedEntriesCountTowardsTheDefinitionLimit() {
+        properties.getNativeWorkflow().setMaxDefinitionTasks(5);
+        List<Map<String, Object>> children = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            children.add(entry("c" + i, "SIMPLE", "main", null, 0));
+        }
+        WorkflowModel workflow = freshWorkflow(false);
+        lease(workflow.getNativeState().getBootstrap(), 1);
+        NativeContinuationService.Completion completion =
+                completeHoldingSlot(
+                        workflow,
+                        null,
+                        result("wf-1|main", output(1, 1, List.of(switchOf("sw", children)))));
+        assertTrue(completion.finished);
+        assertTrue(
+                completion.reason, completion.reason.contains("6 tasks, more than the limit of 5"));
+        assertTrue(workflow.getWorkflowDefinition().getTasks().isEmpty());
+    }
+
+    @Test
+    public void aRejectedFragmentChangesNothingAndARunMayAnchorOnAnEarlierRun() {
+        // a run may go after an entry nested in an earlier run of the same fragment
+        WorkflowModel workflow = freshWorkflow(false);
+        lease(workflow.getNativeState().getBootstrap(), 1);
+        Map<String, Object> after = entry("next", "SIMPLE", "main", "main", 2);
+        ((Map<String, Object>) after.get("metadata")).put("after", "inner");
+        Map<String, Object> sw = switchOf("sw", List.of(entry("inner", "SIMPLE", "main", null, 0)));
+        NativeContinuationService.Completion ok =
+                completeHoldingSlot(
+                        workflow, null, result("wf-1|main", output(1, 1, List.of(sw, after))));
+        assertFalse(ok.finished);
+        assertEquals(
+                List.of("inner", "next"),
+                refs(
+                        workflow.getWorkflowDefinition()
+                                .getTasks()
+                                .get(0)
+                                .getDecisionCases()
+                                .get("a")));
+
+        // a run whose anchor is nowhere: nothing of the fragment, and no variable, is written
+        WorkflowModel other = freshWorkflow(false);
+        lease(other.getNativeState().getBootstrap(), 1);
+        Map<String, Object> lost = entry("later", "SIMPLE", "main", "main", 2);
+        ((Map<String, Object>) lost.get("metadata")).put("after", "nowhere");
+        Map<String, Object> out =
+                output(1, 1, List.of(entry("first", "SIMPLE", "main", null, 0), lost));
+        out.put("variables", Map.of("x", 1));
+        NativeContinuationService.Completion rejected =
+                completeHoldingSlot(other, null, result("wf-1|main", out));
+        assertTrue(rejected.finished);
+        assertTrue(rejected.reason, rejected.reason.contains("nowhere"));
+        assertTrue(other.getWorkflowDefinition().getTasks().isEmpty());
+        assertTrue(other.getVariables().isEmpty());
+    }
+
+    @Test
+    public void variablesOverTheLimitChangeNothing() {
+        properties.setMaxWorkflowVariablesPayloadSizeThreshold(
+                org.springframework.util.unit.DataSize.ofBytes(100));
+        WorkflowModel workflow = freshWorkflow(false);
+        lease(workflow.getNativeState().getBootstrap(), 1);
+        Map<String, Object> out =
+                output(1, 1, List.of(entry("first", "SIMPLE", "main", "main", 2)));
+        out.put("variables", Map.of("big", "x".repeat(500)));
+        NativeContinuationService.Completion rejected =
+                completeHoldingSlot(workflow, null, result("wf-1|main", out));
+        assertTrue(rejected.finished);
+        assertTrue(rejected.reason, rejected.reason.contains("variables payload"));
+        assertTrue(workflow.getWorkflowDefinition().getTasks().isEmpty());
+        assertTrue(workflow.getVariables().isEmpty());
     }
 
     @Test
@@ -788,7 +825,6 @@ public class NativeContinuationServiceTest {
                 completeHoldingSlot(workflow, lookup, result("id-lookup", out));
 
         assertTrue(completion.finished);
-        assertEquals(WorkflowModel.Status.FAILED, completion.finishStatus);
         TaskModel cause = completion.causeTask;
         assertEquals("throw", cause.getReferenceTaskName());
         assertEquals("TERMINATE", cause.getTaskType());
@@ -866,18 +902,16 @@ public class NativeContinuationServiceTest {
     }
 
     @Test
-    public void evaluationMakesAWaitingMarkerRunnableAndRepairCollectsWakeups() {
+    public void markersOnEvaluatedTasksWakeAndQueuedMessagesWakeHandlers() {
         WorkflowModel workflow = freshWorkflow(true);
         workflow.getNativeState().getBootstrap().setState(TaskContinuation.APPLIED);
         TaskModel awaited = awaitedTask(workflow, "task_1", "main", 2, 0);
         awaited.getContinuation().setState(TaskContinuation.WAITING);
         awaited.setExecuted(false);
+        assertFalse(offered(service.repairAndWake(workflow)).contains("id-task_1"));
+        assertTrue(awaited.getContinuation().isWaiting()); // not evaluated yet
 
-        assertTrue(service.onEvaluated(workflow, awaited));
-        assertTrue(awaited.getContinuation().isRunnable());
-        assertFalse(service.onEvaluated(workflow, awaited)); // once
-
-        // a marker left waiting on an evaluated task is repaired; messages queued wake handlers
+        awaited.setExecuted(true); // the decider evaluated it
         TaskModel forgotten = awaitedTask(workflow, "task_2", "fork_1.0", 1, 0);
         forgotten.getContinuation().setState(TaskContinuation.WAITING);
         WorkflowMessageQueueDAO queue = mock(WorkflowMessageQueueDAO.class);
@@ -886,6 +920,7 @@ public class NativeContinuationServiceTest {
 
         NativeContinuationService.Wakeups wakeups = service.repairAndWake(workflow);
 
+        assertTrue(awaited.getContinuation().isLeased()); // offered
         assertTrue(forgotten.getContinuation().isRunnable());
         assertTrue(wakeups.touchedTasks.contains(forgotten));
         assertTrue(wakeups.workflowTouched);

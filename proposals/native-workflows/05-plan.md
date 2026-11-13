@@ -10,12 +10,12 @@ what shipped in each PR-sized unit, and the decisions taken.
 
 | PR | Contents | Depends on | Size | Risk |
 |---|---|---|---|---|
-| 1 | `WorkflowDef.insertAfter`, `removeAll`, empty task list for native definitions; properties under `conductor.app.nativeWorkflow`; `NativeContinuationService` validation, append and variables; decider hook; metrics; unit tests | – | 5 d | medium; the core change |
+| 1 | Definition edits at any depth (`insertAfter`, `removeAll`), empty task list for native definitions; properties under `conductor.app.nativeWorkflow`; `NativeContinuationService` validation, append and variables; decider hook; metrics; unit tests | – | 5 d | medium; the core change |
 | 2 | `Join` live targets; `NativeJoinTest`; harness scenario 2 | 1 | 2 d | medium; touches fork semantics |
 | 3 | Durable workflow message queue (`JdbcWorkflowMessageQueueDAO`, migrations for SQLite, Postgres and MySQL); claim-based pulls, claim fence; registration-time check for the queue flag | 1 | 2 d | low |
-| 4 | `WaitTaskMapper` time scale | 1 | 1 d | low |
+| 4 | (dropped: `WaitTaskMapper` time scale) | | | |
 | 5 | Idempotency key on public start | – | 1 d | low |
-| 6 | `JOIN` any-of (`joinStrategy: ANY`) | 2 | 2 d | low |
+| 6 | (dropped: `JOIN` any-of) | | | |
 | 7 | Operator operations: native-aware `restart`, `rerunWF`, `retry` | 2 | 3 d | medium; touches operator paths |
 | 8 | Durability fixes from the bench: write order, completion deferral, variable fencing, message de-duplication, storage outages as transient, stale-write guard, Jepsen review items | 1 to 7 | 4 d | medium |
 | 9 | Protocol 2: `TaskContinuation` and `NativeState`; `TaskMapperContext` copies the marker; `lease` in `ExecutionService.poll`; `completeContinuation` in `WorkflowExecutorOps.updateTask`; `repairAndWake` in `decide`; markers in `Join`, rerun, retry, restart; the message endpoint wakes the handler marker; removal of the `CODE` and `RECORD` task types; harness spec rewritten; mutants re-mapped (`ignore-epoch`) | 1 to 8 | 5 d | medium; replaces the pause mechanism |

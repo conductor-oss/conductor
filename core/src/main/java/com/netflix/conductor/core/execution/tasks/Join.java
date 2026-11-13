@@ -54,11 +54,6 @@ public class Join extends WorkflowSystemTask {
 
     private final ConductorProperties properties;
 
-    /** JOIN input that selects the join strategy; {@code ANY} completes on the first success. */
-    public static final String JOIN_STRATEGY = "joinStrategy";
-
-    public static final String JOIN_STRATEGY_ANY = "ANY";
-
     /** Native JOIN metadata: completes at once, leaving its fork's lanes running on their own. */
     public static final String DETACHED = "detached";
 
@@ -77,7 +72,7 @@ public class Join extends WorkflowSystemTask {
         StringBuilder failureReason = new StringBuilder();
         StringBuilder optionalTaskFailures = new StringBuilder();
         boolean agentExecution = isAgentExecution(workflow);
-        if (isNativeWorkflow(workflow)
+        if (NativeContinuationService.isNative(workflow)
                 && task.getWorkflowTask() != null
                 && Boolean.TRUE.equals(task.getWorkflowTask().getMetadata().get(DETACHED))) {
             // lanes nothing waits for yet: the code goes on while they run
@@ -87,7 +82,7 @@ public class Join extends WorkflowSystemTask {
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if ((joinOn == null || joinOn.isEmpty())
                 && !task.isLoopOverTask()
-                && isNativeWorkflow(workflow)) {
+                && NativeContinuationService.isNative(workflow)) {
             // Live targets: a JOIN after a FORK_JOIN that names no targets joins on whatever each
             // branch currently ends with. Native workflows grow fork branches at run time, so the
             // targets cannot be fixed when the JOIN is scheduled.
@@ -98,18 +93,12 @@ public class Join extends WorkflowSystemTask {
                 // Wait for the next evaluation rather than completing with no targets.
                 return false;
             }
-            if (!JOIN_STRATEGY_ANY.equals(task.getInputData().get(JOIN_STRATEGY))
-                    && !NativeContinuationService.lanesSettled(workflow, joinOn)) {
-                // any-of checks each candidate on its own below: a lane that is still running
-                // must not hold back a branch that already returned
+            if (!NativeContinuationService.lanesSettled(workflow, joinOn)) {
                 return false;
             }
         }
         if (joinOn == null) {
             joinOn = List.of();
-        }
-        if (JOIN_STRATEGY_ANY.equals(task.getInputData().get(JOIN_STRATEGY))) {
-            return executeAnyOf(workflow, task, joinOn);
         }
         if (task.isLoopOverTask()) {
             // If join is part of loop over task, wait for specific iteration to get complete
@@ -318,7 +307,7 @@ public class Join extends WorkflowSystemTask {
             return List.of();
         }
         String joinRef = joinTask.getWorkflowTask().getTaskReferenceName();
-        if (!workflow.getWorkflowDefinition().containsTaskRef(joinRef)) {
+        if (workflow.getWorkflowDefinition().getTaskByRefName(joinRef) == null) {
             // stale copy: the fragment that holds this JOIN is not in the definition yet
             return null;
         }
@@ -326,8 +315,9 @@ public class Join extends WorkflowSystemTask {
             return targetsOfLanes(workflow, lanes);
         }
         WorkflowTask fork =
-                workflow.getWorkflowDefinition()
-                        .getPreviousTask(joinTask.getWorkflowTask().getTaskReferenceName());
+                NativeContinuationService.previousTask(
+                        workflow.getWorkflowDefinition(),
+                        joinTask.getWorkflowTask().getTaskReferenceName());
         if (fork == null || !TaskType.FORK_JOIN.name().equals(fork.getType())) {
             return List.of();
         }
@@ -408,52 +398,6 @@ public class Join extends WorkflowSystemTask {
         return caseTasks.isEmpty() ? last.getTaskReferenceName() : lastTaskRef(workflow, caseTasks);
     }
 
-    /** Live targets apply to native (code-first) workflows; others keep the static joinOn. */
-    private static boolean isNativeWorkflow(WorkflowModel workflow) {
-        return workflow.getWorkflowDefinition() != null
-                && workflow.getWorkflowDefinition().getMetadata() != null
-                && workflow.getWorkflowDefinition().getMetadata().containsKey("native");
-    }
-
-    /**
-     * Any-of join: completes with the output of the first target that finished successfully, and
-     * fails when every target is terminal and none succeeded. The other branches are not cancelled;
-     * they keep running and are cancelled with the rest of the workflow when it ends.
-     */
-    private boolean executeAnyOf(WorkflowModel workflow, TaskModel task, List<String> joinOn) {
-        boolean allTerminal = true;
-        StringBuilder reasons = new StringBuilder();
-        for (String ref : joinOn) {
-            TaskModel target = workflow.getTaskByRefName(ref);
-            if (target == null || !target.getStatus().isTerminal()) {
-                allTerminal = false;
-                continue;
-            }
-            if (target.getStatus().isSuccessful()
-                    && !target.getOutputData()
-                            .containsKey(NativeContinuationService.OUTPUT_FAILED_STATUS)) {
-                if (!NativeContinuationService.lanesSettled(workflow, List.of(ref))) {
-                    allTerminal = false; // the branch's code has not returned yet
-                    continue;
-                }
-                task.addOutput(ref, target.getOutputData());
-                task.addOutput("winner", ref);
-                task.setStatus(TaskModel.Status.COMPLETED);
-                return true;
-            }
-            if (target.getReasonForIncompletion() != null) {
-                reasons.append(target.getReasonForIncompletion()).append(' ');
-            }
-        }
-        if (allTerminal && !joinOn.isEmpty()) {
-            task.setStatus(TaskModel.Status.FAILED);
-            task.setReasonForIncompletion(
-                    "no branch of the any-of join succeeded: " + reasons.toString().trim());
-            return true;
-        }
-        return false;
-    }
-
     /**
      * Evaluating a JOIN only reads the state of its targets, so running it again is harmless and a
      * JOIN whose server died mid-evaluation is picked up again in about a minute.
@@ -485,8 +429,9 @@ public class Join extends WorkflowSystemTask {
         double exp = pollCount - properties.getSystemTaskPostponeThreshold();
         long offset = Math.min((long) Math.pow(EVALUATION_OFFSET_BASE, exp), maxOffset);
         if (workflowTask != null && workflowTask.getMetadata().containsKey("lane")) {
-            long interval = properties.getNativeWorkflow().getJoinPollInterval().toSeconds();
-            offset = Math.min(offset, Math.max(1, interval));
+            // a native JOIN is checked every second: it finishes at most that long after a long
+            // branch, whose end nothing else reports to it
+            offset = Math.min(offset, 1);
         }
         return Optional.of(offset);
     }

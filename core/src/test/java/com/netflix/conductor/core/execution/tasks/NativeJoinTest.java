@@ -90,7 +90,7 @@ public class NativeJoinTest {
         return j;
     }
 
-    private static TaskModel joinTask(WorkflowTask def, boolean any) {
+    private static TaskModel joinTask(WorkflowTask def) {
         TaskModel t = new TaskModel();
         t.setReferenceTaskName("join");
         t.setTaskType(TaskType.TASK_TYPE_JOIN);
@@ -98,9 +98,6 @@ public class NativeJoinTest {
         t.setWorkflowTask(def);
         t.setInputData(new HashMap<>());
         t.getInputData().put("joinOn", List.of());
-        if (any) {
-            t.getInputData().put(Join.JOIN_STRATEGY, Join.JOIN_STRATEGY_ANY);
-        }
         return t;
     }
 
@@ -110,10 +107,10 @@ public class NativeJoinTest {
         WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
         wf.getTasks().add(task("a1", TaskModel.Status.COMPLETED));
         wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         // branch a grows after the join was scheduled: the join must wait for a2
-        wf.getWorkflowDefinition().insertAfter("a1", List.of(simple("a2")));
+        wf.getWorkflowDefinition().getTasks().get(0).getForkTasks().get(0).add(simple("a2"));
         assertFalse(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.IN_PROGRESS, j.getStatus());
 
@@ -130,7 +127,7 @@ public class NativeJoinTest {
         WorkflowTask jd = joinDef();
         WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
         wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         for (String state :
                 List.of(
@@ -171,7 +168,7 @@ public class NativeJoinTest {
         chosen.addOutput("selectedCase", "x");
         wf.getTasks().add(chosen);
         wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         // the switch finished at once, but the task in its case has not
         wf.getTasks().add(task("a1", TaskModel.Status.IN_PROGRESS));
@@ -195,7 +192,7 @@ public class NativeJoinTest {
         jd.getMetadata().put(Join.DETACHED, true);
         WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
         wf.getTasks().add(task("a1", TaskModel.Status.IN_PROGRESS));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         assertTrue(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
@@ -210,7 +207,7 @@ public class NativeJoinTest {
         jd.getMetadata().put(Join.WAIT_FOR, List.of("fork_1.a"));
         wf.getTasks().add(task("a1", TaskModel.Status.IN_PROGRESS));
         wf.getTasks().add(task("b1", TaskModel.Status.IN_PROGRESS));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         assertFalse(join.execute(wf, j, null));
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("a1"));
@@ -235,7 +232,7 @@ public class NativeJoinTest {
         jd.getMetadata().put(Join.WAIT_FOR, List.of("fork_1.a"));
         wf.getTasks().add(task("a1", TaskModel.Status.COMPLETED));
         wf.getTasks().add(task("c1", TaskModel.Status.IN_PROGRESS));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         assertFalse(join.execute(wf, j, null));
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("c1"));
@@ -263,7 +260,7 @@ public class NativeJoinTest {
         wf.getTasks().add(task("a1", TaskModel.Status.COMPLETED));
         wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
         wf.getTasks().add(task("late", TaskModel.Status.IN_PROGRESS));
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
 
         assertFalse(join.execute(wf, j, null));
         wf.getTasks().removeIf(t -> t.getReferenceTaskName().equals("late"));
@@ -278,47 +275,19 @@ public class NativeJoinTest {
         wf.getWorkflowDefinition().getTasks().add(jd);
         jd.setTaskReferenceName("wait");
         jd.getMetadata().put(Join.WAIT_FOR, List.of("fork_9.0"));
-        assertFalse(join.execute(wf, joinTask(jd, false), null));
+        assertFalse(join.execute(wf, joinTask(jd), null));
     }
 
     @Test
     public void aNativeJoinKeepsPollingAtItsIntervalAfterTheFastStart() {
-        TaskModel nativeJoin = joinTask(joinDef(), false);
+        TaskModel nativeJoin = joinTask(joinDef());
         nativeJoin.getWorkflowTask().getMetadata().put("lane", "main");
         nativeJoin.setPollCount(1000);
         assertEquals(1L, (long) join.getEvaluationOffset(nativeJoin, 30).orElseThrow());
 
-        TaskModel plainJoin = joinTask(joinDef(), false);
+        TaskModel plainJoin = joinTask(joinDef());
         plainJoin.setPollCount(1000);
         assertEquals(30L, (long) join.getEvaluationOffset(plainJoin, 30).orElseThrow());
-    }
-
-    @Test
-    public void anyOfCompletesOnTheFirstSuccess() {
-        WorkflowTask jd = joinDef();
-        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
-        wf.getTasks().add(task("a1", TaskModel.Status.IN_PROGRESS));
-        wf.getTasks().add(task("b1", TaskModel.Status.COMPLETED));
-        TaskModel j = joinTask(jd, true);
-
-        assertTrue(join.execute(wf, j, null));
-        assertEquals(TaskModel.Status.COMPLETED, j.getStatus());
-        assertEquals("b1", j.getOutputData().get("winner"));
-    }
-
-    @Test
-    public void anyOfFailsWhenEveryBranchFailed() {
-        WorkflowTask jd = joinDef();
-        WorkflowModel wf = workflow(List.of(simple("a1")), List.of(simple("b1")), jd);
-        wf.getTasks().add(task("a1", TaskModel.Status.FAILED));
-        TaskModel b1 = task("b1", TaskModel.Status.IN_PROGRESS);
-        wf.getTasks().add(b1);
-        TaskModel j = joinTask(jd, true);
-
-        assertFalse(join.execute(wf, j, null));
-        b1.setStatus(TaskModel.Status.FAILED);
-        assertTrue(join.execute(wf, j, null));
-        assertEquals(TaskModel.Status.FAILED, j.getStatus());
     }
 
     @Test
@@ -331,7 +300,7 @@ public class NativeJoinTest {
         stale.setTasks(new ArrayList<>(List.of(simple("before"))));
         WorkflowModel wf = new WorkflowModel();
         wf.setWorkflowDefinition(stale);
-        TaskModel j = joinTask(jd, false);
+        TaskModel j = joinTask(jd);
         assertFalse(join.execute(wf, j, null));
         assertEquals(TaskModel.Status.IN_PROGRESS, j.getStatus());
     }

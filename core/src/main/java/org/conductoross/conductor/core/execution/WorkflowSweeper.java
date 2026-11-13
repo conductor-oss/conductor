@@ -30,6 +30,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.LifecycleAwareComponent;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.NotFoundException;
+import com.netflix.conductor.core.execution.NativeContinuationService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.SystemTaskRegistry;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -288,7 +289,7 @@ public class WorkflowSweeper extends LifecycleAwareComponent {
                     workflow.getTasks().stream().anyMatch(task -> !task.getStatus().isTerminal());
             // a native workflow's running work may be a queued or leased continuation, which
             // decide re-pushes; its tasks all being terminal is normal
-            if (!hasRunningTasks && workflow.getNativeState() == null) {
+            if (!hasRunningTasks && !NativeContinuationService.isNative(workflow)) {
                 // Workflow is in RUNNING status but there are no tasks that are running
                 // This can happen in case of the database failures where the task scheduling failed
                 // after the last task was completed

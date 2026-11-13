@@ -36,6 +36,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.netflix.conductor.common.config.TestObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
@@ -86,6 +87,7 @@ import static org.mockito.Mockito.*;
 public class TestWorkflowExecutor {
 
     private WorkflowExecutorOps workflowExecutor;
+    private NativeContinuationService nativeService;
     private ExecutionDAOFacade executionDAOFacade;
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
@@ -196,11 +198,7 @@ public class TestWorkflowExecutor {
         taskMappers.put(
                 SUB_WORKFLOW.name(), new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(EVENT.name(), new EventTaskMapper(parametersUtils));
-        taskMappers.put(
-                WAIT.name(),
-                new WaitTaskMapper(
-                        parametersUtils,
-                        new com.netflix.conductor.core.config.ConductorProperties()));
+        taskMappers.put(WAIT.name(), new WaitTaskMapper(parametersUtils));
         taskMappers.put(HTTP.name(), new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(LAMBDA.name(), new LambdaTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put(INLINE.name(), new InlineTaskMapper(parametersUtils, metadataDAO));
@@ -212,11 +210,12 @@ public class TestWorkflowExecutor {
                         metadataDAO,
                         externalPayloadStorageUtils,
                         systemTaskRegistry,
-                        new NativeContinuationService(
-                                objectMapper,
-                                new ConductorProperties(),
-                                new MetadataMapperService(metadataDAO),
-                                taskMappers),
+                        nativeService =
+                                new NativeContinuationService(
+                                        objectMapper,
+                                        new ConductorProperties(),
+                                        new MetadataMapperService(metadataDAO),
+                                        taskMappers),
                         taskMappers,
                         new HashMap<>(),
                         Duration.ofMinutes(60));
@@ -512,7 +511,9 @@ public class TestWorkflowExecutor {
                         i -> {
                             WorkflowModel w = i.getArgument(0);
                             writes.add(
-                                    "workflow:" + w.getWorkflowDefinition().containsTaskRef("t1"));
+                                    "workflow:"
+                                            + (w.getWorkflowDefinition().getTaskByRefName("t1")
+                                                    != null));
                             return null;
                         })
                 .when(executionDAOFacade)
@@ -559,6 +560,114 @@ public class TestWorkflowExecutor {
         assertEquals(
                 TaskModel.Status.COMPLETED, awaited.getStatus()); // the task's own result stands
         verify(queueDAO).remove("native-order.v1.code:w1", "t0-id");
+    }
+
+    /** A native workflow whose code paused on t0, with t0's marker in {@code state}. */
+    private TaskModel pausedOnT0(String state, TaskModel.Status taskStatus) {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-route");
+        def.getMetadata().put("native", Map.of("codeType", "native-route.v1.code"));
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("t0");
+        entry.setType("SIMPLE");
+        entry.setTaskReferenceName("t0");
+        def.getTasks().add(entry);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-route-1");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.getNativeState().setCodeType("native-route.v1.code");
+        workflow.getNativeState().setActiveContinuation("t0-id");
+        TaskModel t0 = taskOf(entry, "t0", 1);
+        t0.setTaskId("t0-id");
+        t0.setWorkflowInstanceId("native-route-1");
+        t0.setStatus(taskStatus);
+        TaskContinuation marker = new TaskContinuation("main", 2);
+        marker.setState(state);
+        marker.setEpoch(4);
+        marker.setQueue("native-route.v1.code");
+        t0.setContinuation(marker);
+        workflow.getTasks().add(t0);
+        when(executionLockService.acquireLock(anyString())).thenReturn(true);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel("t0-id")).thenReturn(t0);
+        return t0;
+    }
+
+    private static TaskResult continuationResult(TaskResult.Status status) {
+        TaskResult result = new TaskResult();
+        result.setWorkflowInstanceId("native-route-1");
+        result.setTaskId("t0-id");
+        result.setWorkerId("w1");
+        result.setStatus(status);
+        result.getOutputData().put("protocol", 2);
+        result.getOutputData().put("n", 2);
+        result.getOutputData().put("epoch", 4L);
+        return result;
+    }
+
+    @Test
+    public void aStaleContinuationCompletionAfterARerunIsRefusedAndLeavesTheTaskAlone() {
+        // a rerun reset t0 to SCHEDULED and its marker to WAITING; the old continuation's
+        // completion arrives late
+        TaskModel t0 = pausedOnT0(TaskContinuation.WAITING, TaskModel.Status.SCHEDULED);
+
+        assertThrows(
+                ConflictException.class,
+                () -> workflowExecutor.updateTask(continuationResult(TaskResult.Status.COMPLETED)));
+
+        assertEquals(TaskModel.Status.SCHEDULED, t0.getStatus());
+        verify(executionDAOFacade, never()).updateTask(any());
+    }
+
+    @Test
+    public void aDeferredContinuationIsOfferedAgainOnlyAfterItsAckIsSaved() {
+        TaskModel t0 = pausedOnT0(TaskContinuation.LEASED, TaskModel.Status.COMPLETED);
+        nativeService.setQueueDAO(queueDAO);
+
+        // a worker error: the continuation runs again after a backoff, under the same message id
+        workflowExecutor.updateTask(continuationResult(TaskResult.Status.FAILED));
+
+        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        order.verify(executionDAOFacade).updateWorkflow(any());
+        order.verify(executionDAOFacade).updateTasks(any());
+        order.verify(queueDAO).remove("native-route.v1.code", "t0-id");
+        order.verify(queueDAO)
+                .pushIfNotExists(eq("native-route.v1.code"), eq("t0-id"), anyInt(), anyLong());
+        assertTrue(t0.getContinuation().isLeased());
+    }
+
+    @Test
+    public void aPlainTaskWhoseOutputSaysProtocolCompletesAsATask() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("plain");
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("p");
+        entry.setTaskReferenceName("p");
+        def.getTasks().add(entry);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("plain-1");
+        workflow.setStatus(WorkflowModel.Status.RUNNING);
+        TaskModel p = taskOf(entry, "p", 1);
+        p.setTaskId("p-id");
+        p.setWorkflowInstanceId("plain-1");
+        p.setStatus(TaskModel.Status.IN_PROGRESS);
+        workflow.getTasks().add(p);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getTaskModel("p-id")).thenReturn(p);
+        TaskResult result = new TaskResult();
+        result.setWorkflowInstanceId("plain-1");
+        result.setTaskId("p-id");
+        result.setStatus(TaskResult.Status.COMPLETED);
+        result.getOutputData().put("protocol", "https");
+
+        workflowExecutor.updateTask(result);
+
+        assertEquals(TaskModel.Status.COMPLETED, p.getStatus());
+        assertEquals("https", p.getOutputData().get("protocol"));
+        verify(executionDAOFacade).updateTaskIfStatus(p, TaskModel.Status.IN_PROGRESS);
     }
 
     @Test
@@ -997,6 +1106,36 @@ public class TestWorkflowExecutor {
         assertEquals(
                 workflow.getWorkflowId(), argumentCaptor.getAllValues().get(1).getWorkflowId());
         assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
+    }
+
+    @Test
+    public void restartWithLatestNonNativeDefinitionClearsNativeState() {
+        WorkflowTask task = new WorkflowTask();
+        task.setName("test_task");
+        task.setTaskReferenceName("task_ref");
+        WorkflowDef nativeDef = new WorkflowDef();
+        nativeDef.setName("was_native");
+        nativeDef.setVersion(1);
+        nativeDef.getMetadata().put("native", Map.of("codeType", "was_native.v1.code"));
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(nativeDef);
+        workflow.setWorkflowId("was-native-1");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        WorkflowDef latest = new WorkflowDef();
+        latest.setName("was_native");
+        latest.setVersion(2);
+        latest.setRestartable(true);
+        latest.getTasks().add(task);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getLatestWorkflowDef("was_native")).thenReturn(Optional.of(latest));
+        when(metadataDAO.getTaskDef("test_task")).thenReturn(new TaskDef());
+
+        workflowExecutor.restart(workflow.getWorkflowId(), true);
+
+        assertEquals(latest, workflow.getWorkflowDefinition());
+        assertNull(workflow.getNativeState());
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
     }
 
     @Test
@@ -2241,6 +2380,71 @@ public class TestWorkflowExecutor {
     }
 
     @Test
+    public void aRerunTaskIsNotWrittenAgainAfterItIsQueued() {
+        // a worker can poll and complete the task as soon as it is queued: a later write of the
+        // rerun's copy would put it back to SCHEDULED, and it would run again
+        WorkflowTask entry = new WorkflowTask();
+        entry.setName("task1");
+        entry.setTaskReferenceName("task1_ref");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("rerun_order");
+        def.setVersion(1);
+        def.getTasks().add(entry);
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowId("rerun-order-1");
+        workflow.setWorkflowDefinition(def);
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        TaskModel task = new TaskModel();
+        task.setTaskId("task1-id");
+        task.setSeq(1);
+        task.setTaskType(TaskType.SIMPLE.toString());
+        task.setTaskDefName("task1");
+        task.setReferenceTaskName("task1_ref");
+        task.setWorkflowTask(entry);
+        task.setStatus(TaskModel.Status.FAILED);
+        workflow.getTasks().add(task);
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(def));
+        List<String> events = new ArrayList<>();
+        doAnswer(
+                        i -> {
+                            if ("task1-id".equals(i.getArgument(1))) {
+                                events.add("queued");
+                            }
+                            return null;
+                        })
+                .when(queueDAO)
+                .push(anyString(), anyString(), anyInt(), anyLong());
+        doAnswer(
+                        i -> {
+                            if (((TaskModel) i.getArgument(0)).getTaskId().equals("task1-id")) {
+                                events.add("written");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTask(any());
+        doAnswer(
+                        i -> {
+                            List<TaskModel> tasks = i.getArgument(0);
+                            if (tasks.stream().anyMatch(t -> t.getTaskId().equals("task1-id"))) {
+                                events.add("written");
+                            }
+                            return null;
+                        })
+                .when(executionDAOFacade)
+                .updateTasks(any());
+
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(workflow.getWorkflowId());
+        request.setReRunFromTaskId("task1-id");
+        workflowExecutor.rerun(request);
+
+        assertEquals("queued", events.get(events.size() - 1));
+        assertEquals(1, events.stream().filter("queued"::equals).count());
+    }
+
+    @Test
     public void testRerunWorkflowWithTaskId() {
         // setup
         WorkflowModel workflow = new WorkflowModel();
@@ -2309,6 +2513,159 @@ public class TestWorkflowExecutor {
         assertNull(workflow.getReasonForIncompletion());
         assertEquals(new HashSet<>(), workflow.getFailedReferenceTaskNames());
         assertEquals(new HashSet<>(), workflow.getFailedTaskNames());
+    }
+
+    /**
+     * A native rerun from a task inside a fork reopens the fork's JOIN. The JOIN reaches the
+     * system-task queue only once it and the rerun task are saved: otherwise the async executor can
+     * run it on the stored workflow, where the rerun task is still COMPLETED, and close it again.
+     */
+    @Test
+    public void nativeRerunQueuesReopenedJoinOnlyAfterSavingIt() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-rerun");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("protocol", 2, "codeType", "native-rerun.v1.code"));
+        WorkflowTask a = new WorkflowTask();
+        a.setName("a");
+        a.setType("SIMPLE");
+        a.setTaskReferenceName("a");
+        a.getMetadata().put("lane", "L1");
+        WorkflowTask fork = new WorkflowTask();
+        fork.setName("f");
+        fork.setType(TaskType.FORK_JOIN.name());
+        fork.setTaskReferenceName("f");
+        fork.getMetadata().put("lane", "main");
+        fork.setForkTasks(List.of(new ArrayList<>(List.of(a))));
+        WorkflowTask join = new WorkflowTask();
+        join.setName("f_join");
+        join.setType(TaskType.JOIN.name());
+        join.setTaskReferenceName("f_join");
+        join.getMetadata().put("lane", "main");
+        join.setJoinOn(List.of("a"));
+        def.getTasks().addAll(List.of(fork, join));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-rerun-1");
+        workflow.setStatus(WorkflowModel.Status.COMPLETED);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        workflow.getNativeState().setCodeType("native-rerun.v1.code");
+        TaskModel forkTask = taskOf(fork, TaskType.TASK_TYPE_FORK, 1);
+        TaskModel aTask = taskOf(a, "a", 2);
+        TaskModel joinTask = taskOf(join, TaskType.TASK_TYPE_JOIN, 3);
+        workflow.getTasks().addAll(List.of(forkTask, aTask, joinTask));
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(workflow.getWorkflowId());
+        request.setReRunFromTaskId(aTask.getTaskId());
+        workflowExecutor.rerun(request);
+
+        assertEquals(TaskModel.Status.IN_PROGRESS, joinTask.getStatus());
+        org.mockito.InOrder order = inOrder(executionDAOFacade, queueDAO);
+        order.verify(executionDAOFacade).updateTask(aTask);
+        order.verify(executionDAOFacade).updateTask(joinTask);
+        order.verify(queueDAO).push(anyString(), eq(joinTask.getTaskId()), anyInt(), anyLong());
+    }
+
+    @Test
+    public void retryAfterTheCodeThrewRemovesWhatThatContinuationDrew() {
+        WorkflowModel workflow = threwAfterAnIf();
+        TaskModel a = workflow.getTasks().get(0);
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        // the if, its case and the mark go: the code draws them again when it runs again
+        assertEquals(
+                List.of("a"),
+                workflow.getWorkflowDefinition().collectTasks().stream()
+                        .map(WorkflowTask::getTaskReferenceName)
+                        .toList());
+        assertEquals(List.of(a), workflow.getTasks());
+        assertEquals(WorkflowModel.Status.RUNNING, workflow.getStatus());
+        assertEquals(TaskContinuation.RUNNABLE, a.getContinuation().getState());
+        assertFalse(a.getContinuation().hasError());
+        verify(executionDAOFacade).removeTask("thrown-id");
+    }
+
+    @Test
+    public void retryAfterTheCodeThrewKeepsWhatAlreadyHasATask() {
+        WorkflowModel workflow = threwAfterAnIf();
+        WorkflowTask ifEntry = workflow.getWorkflowDefinition().getTasks().get(1);
+        workflow.getTasks().add(1, taskOf(ifEntry, TaskType.TASK_TYPE_SWITCH, 2));
+
+        workflowExecutor.retry(workflow.getWorkflowId(), false);
+
+        // not the code's own throw in one completion: only the mark goes
+        assertEquals(
+                List.of("a", "if_x", "b"),
+                workflow.getWorkflowDefinition().collectTasks().stream()
+                        .map(WorkflowTask::getTaskReferenceName)
+                        .toList());
+    }
+
+    /** a, then an if the code went past, then a throw: one continuation (main#2) drew both. */
+    private WorkflowModel threwAfterAnIf() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("native-throw");
+        def.setSchemaVersion(2);
+        def.getMetadata().put("native", Map.of("codeType", "native-throw.v1.code"));
+        WorkflowTask a = new WorkflowTask();
+        a.setName("a");
+        a.setType("SIMPLE");
+        a.setTaskReferenceName("a");
+        WorkflowTask b = new WorkflowTask();
+        b.setName("b");
+        b.setType("SIMPLE");
+        b.setTaskReferenceName("b");
+        WorkflowTask ifEntry = new WorkflowTask();
+        ifEntry.setName("if_x");
+        ifEntry.setType(TaskType.SWITCH.name());
+        ifEntry.setTaskReferenceName("if_x");
+        ifEntry.setEvaluatorType("value-param");
+        ifEntry.setExpression("c");
+        ifEntry.setDecisionCases(new HashMap<>(Map.of("true", new ArrayList<>(List.of(b)))));
+        ifEntry.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        WorkflowTask mark = new WorkflowTask();
+        mark.setName("thrown");
+        mark.setType(TaskType.TERMINATE.name());
+        mark.setTaskReferenceName("thrown");
+        mark.getMetadata().put(NativeContinuationService.APPENDED_BY, "main#2");
+        def.getTasks().addAll(List.of(a, ifEntry, mark));
+
+        WorkflowModel workflow = new WorkflowModel();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("native-rerun-1");
+        workflow.setStatus(WorkflowModel.Status.FAILED);
+        workflow.setCreateTime(System.currentTimeMillis());
+        workflow.setNativeState(new com.netflix.conductor.common.run.NativeState());
+        TaskModel aTask = taskOf(a, "a", 1);
+        TaskContinuation marker = new TaskContinuation("main", 2);
+        marker.setState(TaskContinuation.APPLIED);
+        marker.setDone(true);
+        marker.setError(new HashMap<>(Map.of("message", "boom")));
+        aTask.setContinuation(marker);
+        TaskModel thrown = taskOf(mark, TaskType.TASK_TYPE_TERMINATE, 2);
+        workflow.getTasks().addAll(new ArrayList<>(List.of(aTask, thrown)));
+        workflow.setFailedTaskId(thrown.getTaskId());
+        when(executionDAOFacade.getWorkflowModel(anyString(), anyBoolean())).thenReturn(workflow);
+        return workflow;
+    }
+
+    private static TaskModel taskOf(WorkflowTask entry, String type, int seq) {
+        TaskModel task = new TaskModel();
+        task.setTaskId(entry.getTaskReferenceName() + "-id");
+        task.setReferenceTaskName(entry.getTaskReferenceName());
+        task.setTaskType(type);
+        task.setTaskDefName(entry.getName());
+        task.setWorkflowTask(entry);
+        task.setWorkflowInstanceId("native-rerun-1");
+        task.setStatus(TaskModel.Status.COMPLETED);
+        task.setExecuted(true);
+        task.setSeq(seq);
+        return task;
     }
 
     @Test

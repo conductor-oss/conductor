@@ -30,24 +30,26 @@ variables come later; task retries are in `Workflow.tla`.
 | `FailedNamesItsCause` | a `FAILED` workflow names what the main lane's raise names: the task whose failure it did not catch, or the mark where it threw; never another failed task, such as one whose failure the code caught |
 | `MarksAndPreviewsNeverRun` | a mark is failed from the start and a preview, of a case not taken or of what thrown code skipped, never starts: they are drawn, never run |
 | `EndedIsQuiet` | an ended workflow has nothing running: the main lane raising cancels what other lanes still run |
-| `UntakenStayDrawn` | a switch shows the cases it did not take for as long as it is drawn: a retry removes only the mark and what the throw skipped |
+| `UntakenStayDrawn` | a switch shows the cases it did not take for as long as it is drawn: a retry removes only what the continuation that threw drew, never a switch an earlier one drew |
 | `NeverStuck` | every entry lands where it will run: with nothing left to do, the workflow can complete |
-| `SequenceOrder` | a task runs only after the entry before it ended |
+| `SequenceOrder` | a task runs only after the entry before it ended (a mark is never run: it is created failed) |
 | `OneContinuationAtATime` | only the worker holding the slot can have its result count |
 | `AppliedOnFreshHistory` | a result applies only if nothing else was applied since its worker read the history |
 | `Settles` | each time it runs, including after a retry, a workflow ends, unless it is held waiting for a compatible build (`running ~> ended or held`) |
 
-Fourteen small models (`MC_N*`) check these with up to two faults, up to about 12,000 states each.
+Fifteen small models (`MC_N*`) check these with up to two faults, up to about 41,000 states each.
 `MC_NThrow` has code that throws between two calls, a deploy that fixes it, and up to two retries;
 `MC_NSwitch`'s switch has a case it does not take; in `MC_NNestedSwitch` a switch inside another's
 case is followed by a call in the outer case, so the code goes on in the outer case after the inner
 one (a switch belongs to the case it is in, like any other entry). `MC_NSpawnOnly` has a lane that
 only starts another and returns, `MC_NLanePreview` a joined lane whose switch draws a preview,
-`MC_NThrowSwitch` a switch preview before code that throws and is retried, and `MC_NFailRunning` a
-main lane that raises while another lane's task runs.
+`MC_NThrowSwitch` a switch preview before code that throws and is retried, `MC_NThrowDrawn` code
+that goes past a switch and starts a lane in the continuation that throws, and is retried (all that
+continuation drew goes, and the code draws it again), and `MC_NFailRunning` a main lane that raises
+while another lane's task runs.
 
-`TLA2TOOLS=/path/to/tla2tools.jar python3 check.py` runs every model, 31 mutants that each break one
-rule and must be caught, and 25 outcomes the models must reach. It takes a few seconds.
+`TLA2TOOLS=/path/to/tla2tools.jar python3 check.py` runs every model, 32 mutants that each break one
+rule and must be caught, and 27 outcomes the models must reach. It takes a few seconds.
 
 `check_runs.py` compares real native executions on a server with these promises, using what they
 stored: tasks, the definition that grew, and the markers with their lease and apply times. On the

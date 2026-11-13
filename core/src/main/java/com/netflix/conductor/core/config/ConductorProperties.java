@@ -15,10 +15,8 @@ package com.netflix.conductor.core.config;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DataSizeUnit;
@@ -162,16 +160,13 @@ public class ConductorProperties {
 
     /**
      * Native workflows grow an execution's definition one continuation completion at a time. These
-     * limits bound a single fragment, the definition it is appended to, and which protocol versions
-     * the server accepts from workers. Bound as {@code conductor.app.nativeWorkflow.*}.
+     * limits bound a single fragment and the definition it is appended to. Bound as {@code
+     * conductor.app.nativeWorkflow.*}.
      */
     public static class NativeWorkflow {
 
         /** Refuse to register native (code-first) workflow definitions when false. */
         private boolean enabled = true;
-
-        /** Maximum number of tasks, nested ones included, in one fragment. */
-        private int maxFragmentTasks = 500;
 
         /** Maximum serialized size of one fragment. */
         private DataSize maxFragmentBytes = DataSize.ofMegabytes(1);
@@ -179,54 +174,12 @@ public class ConductorProperties {
         /** Maximum number of tasks, nested ones included, in an execution's definition. */
         private int maxDefinitionTasks = 5000;
 
-        /** Protocol versions a continuation completion may declare. */
-        private Set<Integer> protocolVersions = new HashSet<>(Set.of(2));
-
-        /** How many queued messages one handler run receives. */
-        private int handlerBatchSize = 10;
-
-        /**
-         * When true, a WAIT task's duration is divided by the execution's {@code __timeScale}
-         * variable. Meant for development and tests; leave off in production.
-         */
-        private boolean waitTimeScaleEnabled = false;
-
-        /**
-         * How often a native JOIN is checked once its fast start is over, instead of backing off to
-         * the system task callback duration. Bounds how late a join finishes after a long branch.
-         */
-        private Duration joinPollInterval = Duration.ofSeconds(1);
-
-        public Duration getJoinPollInterval() {
-            return joinPollInterval;
-        }
-
-        public void setJoinPollInterval(Duration joinPollInterval) {
-            this.joinPollInterval = joinPollInterval;
-        }
-
         public boolean isEnabled() {
             return enabled;
         }
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
-        }
-
-        public int getHandlerBatchSize() {
-            return handlerBatchSize;
-        }
-
-        public void setHandlerBatchSize(int handlerBatchSize) {
-            this.handlerBatchSize = handlerBatchSize;
-        }
-
-        public int getMaxFragmentTasks() {
-            return maxFragmentTasks;
-        }
-
-        public void setMaxFragmentTasks(int maxFragmentTasks) {
-            this.maxFragmentTasks = maxFragmentTasks;
         }
 
         public DataSize getMaxFragmentBytes() {
@@ -243,22 +196,6 @@ public class ConductorProperties {
 
         public void setMaxDefinitionTasks(int maxDefinitionTasks) {
             this.maxDefinitionTasks = maxDefinitionTasks;
-        }
-
-        public Set<Integer> getProtocolVersions() {
-            return protocolVersions;
-        }
-
-        public void setProtocolVersions(Set<Integer> protocolVersions) {
-            this.protocolVersions = protocolVersions;
-        }
-
-        public boolean isWaitTimeScaleEnabled() {
-            return waitTimeScaleEnabled;
-        }
-
-        public void setWaitTimeScaleEnabled(boolean waitTimeScaleEnabled) {
-            this.waitTimeScaleEnabled = waitTimeScaleEnabled;
         }
     }
 

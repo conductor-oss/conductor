@@ -51,7 +51,8 @@ RECURSIVE Closure(_)
 Closure(l) == {l} \cup UNION {Closure(c) : c \in Spawns[l]}
 
 VARIABLES
-    def,       \* ref -> [kind, lane, owner, lanes]: the definition so far
+    def,       \* ref -> [kind, lane, owner, lanes, by]: the definition so far; by: the marker
+               \* whose continuation drew the entry
     seqs,      \* owner -> the refs in it, in order
     st,        \* ref -> "none", "sched", "ok", "fail"
     done,      \* ref -> TRUE once the decider has evaluated it
@@ -218,7 +219,7 @@ Waits(j) == UNION {Closure(l) : l \in def[j].lanes}
 (* The server *)
 
 Init ==
-    /\ def = BOOT :> [kind |-> "boot", lane |-> "main", owner |-> "main", lanes |-> {}]
+    /\ def = BOOT :> [kind |-> "boot", lane |-> "main", owner |-> "main", lanes |-> {}, by |-> NONE]
     /\ seqs = [o \in Owners |-> IF o = "main" THEN <<BOOT>> ELSE <<>>]
     /\ st = BOOT :> "ok"
     /\ done = BOOT :> TRUE
@@ -305,7 +306,7 @@ Apply(r) ==
         failing == mark[k].lane = "main" /\ r.res = "err"
     IN /\ def' = [x \in DOMAIN def \cup newRefs |->
                     IF x \in newRefs
-                    THEN [kind |-> entry(x).kind, lane |-> entry(x).lane, owner |-> entry(x).owner, lanes |-> entry(x).lanes]
+                    THEN [kind |-> entry(x).kind, lane |-> entry(x).lane, owner |-> entry(x).owner, lanes |-> entry(x).lanes, by |-> k]
                     ELSE def[x]]
        /\ seqs' = Placed(es, anchor)
        /\ st' = [x \in DOMAIN st \cup newRefs |->
@@ -415,22 +416,25 @@ Rollback ==
     /\ build' = 1
     /\ UNCHANGED <<def, seqs, st, done, mark, slot, expired, queue, inflight, wf, faults, deploys, applied, failedTask, retries>>
 
-\* An operator retries a workflow that failed where its code threw: the mark and its previews
-\* go, and the main lane's last continuation runs the code again, on whatever build runs now.
+\* An operator retries a workflow that failed where its code threw: everything the continuation
+\* that threw drew goes (the mark, its previews, and a switch it went past or a lane it started,
+\* with their markers), and that continuation runs the code again, on whatever build runs now.
+\* The workflow failed as that continuation was applied, so none of it was started.
 \* (Retrying from a failed task reruns that task; that path predates native workflows.)
 Retry ==
     /\ wf = "FAILED" /\ retries < MaxRetries
     /\ failedTask \in DOMAIN def /\ def[failedTask].kind = "mark"
-    /\ LET gone == {r \in DOMAIN def : \/ def[r].kind = "mark"
-                                       \/ def[r].kind = "preview" /\ def[r].owner # "untaken"}
-           k == CHOOSE x \in DOMAIN mark : mark[x].lane = "main" /\ mark[x].err
+    /\ LET k == CHOOSE x \in DOMAIN mark : mark[x].lane = "main" /\ mark[x].err
+           gone == {r \in DOMAIN def : def[r].by = k}
        IN /\ def' = [r \in DOMAIN def \ gone |-> def[r]]
           /\ seqs' = [o \in Owners |-> SelectSeq(seqs[o], LAMBDA x : x \notin gone)]
           /\ st' = [r \in DOMAIN st \ gone |-> st[r]]
           /\ done' = [r \in DOMAIN done \ gone |-> done[r]]
-          /\ mark' = [mark EXCEPT ![k].state = "RUNNABLE", ![k].finished = FALSE, ![k].err = FALSE]
-          /\ queue' = queue \cup {k}
-          /\ applied' = [x \in DOMAIN applied \ {k} |-> applied[x]]
+          /\ mark' = [x \in DOMAIN mark \ gone |->
+                        IF x = k THEN [mark[k] EXCEPT !.state = "RUNNABLE", !.finished = FALSE, !.err = FALSE]
+                        ELSE mark[x]]
+          /\ queue' = (queue \ gone) \cup {k}
+          /\ applied' = [x \in DOMAIN applied \ ({k} \cup gone) |-> applied[x]]
     /\ wf' = "RUNNING"
     /\ failedTask' = NONE
     /\ retries' = retries + 1
@@ -562,7 +566,7 @@ NeverStuck ==
 \* A task runs only after the entry before it in its list ended.
 SequenceOrder ==
     \A o \in Owners : \A j \in 2..Len(seqs[o]) :
-        st[seqs[o][j]] # "none" => st[seqs[o][j - 1]] \in {"ok", "fail"}
+        st[seqs[o][j]] # "none" /\ def[seqs[o][j]].kind # "mark" => st[seqs[o][j - 1]] \in {"ok", "fail"}
 
 \* One continuation counts at a time: a result is live only while it holds the slot.
 OneContinuationAtATime ==

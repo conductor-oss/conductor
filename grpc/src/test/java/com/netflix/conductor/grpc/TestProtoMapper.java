@@ -24,6 +24,7 @@ import com.netflix.conductor.proto.WorkflowTaskPb;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -134,6 +135,23 @@ public class TestProtoMapper {
   }
 
   @Test
+  public void aMarkerThatHasNotRunYetGoesOverGrpc() {
+    // a waiting marker, and one whose result and error the code cleared: no result, no error
+    TaskContinuation waiting = new TaskContinuation("main", 1);
+    TaskContinuation cleared = marker();
+    cleared.setResult(null);
+    cleared.setError(null);
+    for (TaskContinuation marker : List.of(waiting, cleared)) {
+      Task task = new Task();
+      task.setContinuation(marker);
+      TaskContinuation back = mapper.fromProto(mapper.toProto(task)).getContinuation();
+      assertTrue(back.getResult().isEmpty());
+      assertTrue(back.getError().isEmpty());
+      assertFalse(back.hasError());
+    }
+  }
+
+  @Test
   public void aTaskWithoutAContinuationStaysWithoutOne() {
     assertNull(mapper.fromProto(mapper.toProto(new Task())).getContinuation());
   }
@@ -141,7 +159,6 @@ public class TestProtoMapper {
   @Test
   public void aWorkflowKeepsItsNativeStateOverGrpc() {
     NativeState state = new NativeState();
-    state.setProtocol(2);
     state.setCodeType("greet.v1.code");
     state.setContinuationTimeoutSeconds(30);
     state.setStep(9);
@@ -156,7 +173,6 @@ public class TestProtoMapper {
 
     NativeState back = mapper.fromProto(mapper.toProto(workflow)).getNativeState();
 
-    assertEquals(2, back.getProtocol());
     assertEquals("greet.v1.code", back.getCodeType());
     assertEquals(30, back.getContinuationTimeoutSeconds());
     assertEquals(9, back.getStep());

@@ -31,7 +31,7 @@ class has handlers, a `handlers` marker (lane `handlers`, `n` 1, `WAITING`). A m
 
 The growth rule: when a continuation completes, the `fragment` in its output is inserted into the
 execution's definition immediately after the task the lane paused on, wherever that task sits:
-top level, inside a `FORK_JOIN` branch, inside a `SWITCH` case (`WorkflowDef.insertAfter`, which
+top level, inside a `FORK_JOIN` branch, inside a `SWITCH` case (`NativeContinuationService.insertAfter`, which
 descends into `forkTasks`, `decisionCases`, `defaultCase` and `loopOver`). One exception: an entry that
 carries `metadata.after` starts a run inserted after the entry it names instead
 (`NativeContinuationService.anchorOf`). The SDK sets it when the lane paused inside a
@@ -111,7 +111,7 @@ Marker states:
 
 | State | Meaning | Leaves it when |
 |---|---|---|
-| `WAITING` | the task is not terminal yet | the decider evaluates the terminal task (`onEvaluated`) |
+| `WAITING` | the task is not terminal yet | the decide that evaluates the terminal task (`repairAndWake`) |
 | `RUNNABLE` | the code must run; one queue message with the task's id is outstanding | a poll leases it |
 | `LEASED` | a worker holds it under `epoch` until the continuation timeout | a completion with that `n` and `epoch`, or the lease expires and a poll re-leases it with `epoch + 1` |
 | `APPLIED` | the continuation ran and its fragment was appended after this task | never; a rerun resets it to `WAITING` |
@@ -211,7 +211,7 @@ scheduled for it. A signal, update or query is a message pushed to the execution
 (`POST /api/workflow/{workflowId}/messages`, `WorkflowMessageQueueResource`). The endpoint pushes
 the message inside a decide (`WorkflowExecutor.decide(workflowId, change)`), and that decide marks
 the handler marker `RUNNABLE` if it was `WAITING` and offers it (`repairAndWake`). A worker's poll
-hands out the offered marker and claims up to `handlerBatchSize` messages (default 10) from the message
+hands out the offered marker and claims up to 10 messages from the message
 queue under claimant `handlers#<n>` with ordinal `n`; the messages arrive in the handed task's
 `inputData.messages`. The worker runs the handlers between pauses of the other lanes and completes
 with the changed variables, `replies`, `seen` and `releases`. The server then installs a fresh
@@ -250,7 +250,6 @@ means the lane has more to append; an `APPLIED` marker that did not end the lane
 real last entry is not this one yet in the copy of the definition being read. A JOIN whose fork is
 missing from the definition it reads waits for the next evaluation. Failure semantics of
 `Join.execute` are unchanged: `optional` on the branch's current last task applies.
-`inputParameters.joinStrategy: ANY` completes on the first settled successful branch.
 
 `async` does not make the code wait. Lanes still running when the code next does something durable
 are forked with a `JOIN` marked `metadata.detached`, which completes at once, and the code carries

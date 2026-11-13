@@ -24,7 +24,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.dal.ExecutionDAOFacade;
 import com.netflix.conductor.dao.QueueDAO;
@@ -73,22 +72,5 @@ public class WorkflowMonitorTest {
 
         Assert.assertEquals("name1", mapping.get("test1"));
         Assert.assertEquals("last", mapping.get("test2"));
-    }
-
-    @Test
-    public void publishesTheCodeTypesOfNativeWorkflowsWithoutATaskDefinition() {
-        WorkflowDef plain = makeDef("plain", 1, null);
-        WorkflowDef undefined = makeDef("orders", 1, null);
-        undefined.getMetadata().put("native", Map.of("codeType", "orders.v1.code"));
-        WorkflowDef secondVersion = makeDef("orders", 2, null);
-        secondVersion.getMetadata().put("native", Map.of("codeType", "orders.v2.code"));
-        WorkflowDef defined = makeDef("hello", 1, null);
-        defined.getMetadata().put("native", Map.of("codeType", "hello.v1.code"));
-
-        Assert.assertEquals(
-                Set.of("orders.v1.code", "orders.v2.code"),
-                workflowMonitor.nativeCodeTypes(
-                        List.of(plain, undefined, secondVersion, defined),
-                        List.of(new TaskDef("hello.v1.code"))));
     }
 }

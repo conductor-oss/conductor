@@ -102,8 +102,7 @@ public abstract class ExecutionDAOTest {
         polled.setStatus(TaskModel.Status.IN_PROGRESS);
         assertFalse(getExecutionDAO().updateTaskIfStatus(polled, TaskModel.Status.SCHEDULED));
         assertEquals(
-                TaskModel.Status.CANCELED,
-                getExecutionDAO().getTask(task.getTaskId()).getStatus());
+                TaskModel.Status.CANCELED, getExecutionDAO().getTask(task.getTaskId()).getStatus());
 
         // a task still as it was read is updated
         assertTrue(getExecutionDAO().updateTaskIfStatus(polled, TaskModel.Status.CANCELED));

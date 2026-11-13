@@ -29,9 +29,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskContinuation;
 @ProtoMessage
 public class NativeState {
 
-    @ProtoField(id = 1)
-    private int protocol;
-
     @ProtoField(id = 2)
     private String codeType;
 
@@ -81,14 +78,6 @@ public class NativeState {
 
     public void setActiveUntil(long activeUntil) {
         this.activeUntil = activeUntil;
-    }
-
-    public int getProtocol() {
-        return protocol;
-    }
-
-    public void setProtocol(int protocol) {
-        this.protocol = protocol;
     }
 
     public String getCodeType() {

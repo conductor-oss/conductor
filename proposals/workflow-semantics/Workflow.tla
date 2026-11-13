@@ -176,11 +176,12 @@ NewInst(w, parent, origin) ==
 \* A new activation; leaves hold the latest attempt. Put sets its seq.
 Act(st) == [status |-> st, attempt |-> 1, auto |-> 0, spent |-> FALSE, child |-> 0,
             choice |-> 0, iter |-> 0, stopped |-> FALSE, seq |-> 0,
+            seqs |-> <<>>,  \* where each attempt was created: a rerun may go back to an earlier one
             join |-> 0]   \* a fork's or dynamic fork's JOIN: where the server scheduled it, after its branches
 
 \* The next attempt of a leaf, created at seq.
 Fresh(a, seq) == [a EXCEPT !.status = "SCHEDULED", !.attempt = @ + 1, !.spent = FALSE,
-                           !.child = 0, !.seq = seq]
+                           !.child = 0, !.seq = seq, !.seqs = Append(@, seq)]
 
 \* The same attempt run again in place, as a rerun does: same seq, same count.
 Reset(a) == [a EXCEPT !.status = "SCHEDULED", !.spent = FALSE, !.child = 0]
@@ -323,7 +324,7 @@ EndAll(s, C) ==
     ELSE LET c == CHOOSE x \in C : TRUE
          IN EndAll(EndIn(s, c, "TERMINATED", Cause("parent", NoKey), FALSE), C \ {c})
 
-Put(i, k, a) == inst' = [inst EXCEPT ![i].act = (k :> [a EXCEPT !.seq = inst[i].clock]) @@ @,
+Put(i, k, a) == inst' = [inst EXCEPT ![i].act = (k :> [a EXCEPT !.seq = inst[i].clock, !.seqs = <<inst[i].clock>>]) @@ @,
                                      ![i].clock = @ + 1]
 
 -----------------------------------------------------------------------------
@@ -353,10 +354,11 @@ RerunTargets(i) == DOMAIN inst[i].act   \* the activations an operator may rerun
 \* decision builds them; the result is every way the decision can end.
 RECURSIVE StartNode(_, _, _, _), StartFrom(_, _, _, _, _), StartBranches(_, _, _, _, _)
 
-Add(w, k, a) == [w EXCEPT !.act = (k :> [a EXCEPT !.seq = w.clock]) @@ @, !.clock = @ + 1]
+Add(w, k, a) == [w EXCEPT !.act = (k :> [a EXCEPT !.seq = w.clock, !.seqs = <<w.clock>>]) @@ @, !.clock = @ + 1]
 JoinAt(w, k) == [w EXCEPT !.act[k].join = w.clock, !.clock = @ + 1]
 Copies(w, leaf, it, width) ==
-    [w EXCEPT !.act = [q \in {<<leaf, it, j>> : j \in 1..width} |-> [Act("SCHEDULED") EXCEPT !.seq = w.clock + q[3] - 1]] @@ @,
+    [w EXCEPT !.act = [q \in {<<leaf, it, j>> : j \in 1..width} |->
+                          [Act("SCHEDULED") EXCEPT !.seq = w.clock + q[3] - 1, !.seqs = <<w.clock + q[3] - 1>>]] @@ @,
               !.clock = @ + width]
 
 StartNode(i, w, n, it) ==
@@ -541,13 +543,22 @@ Skip(i, n) ==
 
 \* Rerun an ended workflow from one of its leaf activations: what came after
 \* it is forgotten, it runs again, and so does every kept leaf that had not
-\* succeeded, each in place (a rerun uses no retry). A loop holding a task
-\* that runs again or was forgotten resumes at its last iteration on record.
+\* succeeded, each in place (a rerun uses no retry). A leaf retried after the
+\* cut goes back to its last attempt before it, which runs again in place. A
+\* loop holding a task that runs again or was forgotten resumes at its last
+\* iteration on record.
 RerunFrom(w, k) ==
     LET cut  == w.act[k].seq
-        kept == {q \in DOMAIN w.act : w.act[q].seq <= cut}
+        early(q) == {j \in 1..Len(w.act[q].seqs) : w.act[q].seqs[j] <= cut}
+        back == {q \in DOMAIN w.act : w.act[q].seq > cut /\ early(q) # {}}
+        kept == {q \in DOMAIN w.act : w.act[q].seq <= cut} \cup back
         gone == DOMAIN w.act \ kept
-        redo(q) == IsLeaf(q[1]) /\ (q = k \/ w.act[q].status \in Unsuccessful)
+        redo(q) == IsLeaf(q[1]) /\ (q = k \/ q \in back \/ w.act[q].status \in Unsuccessful)
+        last(q) == LET j == Max(early(q)) IN
+                   IF q \in back
+                   THEN [w.act[q] EXCEPT !.attempt = j, !.auto = IF @ < j - 1 THEN @ ELSE j - 1,
+                                         !.seq = w.act[q].seqs[j], !.seqs = SubSeq(@, 1, j)]
+                   ELSE w.act[q]
         fix(q) ==
             IF Kind(q[1]) # "loop" THEN w.act[q]
             ELSE [w.act[q] EXCEPT
@@ -555,11 +566,12 @@ RerunFrom(w, k) ==
                     !.stopped = @ /\ ~\E r \in gone \cup {x \in kept : redo(x)} : r[1] \in Under[q[1]]]
         \* a JOIN scheduled after the task goes too, and the rerun schedules it again
         late == {q \in kept : w.act[q].join > cut}
+        \* in the order of their forks, as the rerun walks the tasks it kept
         rejoin(q, a) == IF q \in late
-                        THEN [a EXCEPT !.join = w.clock + Cardinality({r \in late : w.act[r].join < w.act[q].join})]
+                        THEN [a EXCEPT !.join = w.clock + Cardinality({r \in late : w.act[r].seq < w.act[q].seq})]
                         ELSE a
     IN [w EXCEPT !.status = "RUNNING", !.cause = NoCause, !.out = NoKey, !.epoch = @ + 1, !.how = "rerun",
-                 !.act = [q \in kept |-> rejoin(q, IF redo(q) THEN Reset(w.act[q]) ELSE fix(q))],
+                 !.act = [q \in kept |-> rejoin(q, IF redo(q) THEN Reset(last(q)) ELSE fix(q))],
                  !.clock = @ + Cardinality(late),
                  !.endsAgain = \E q \in kept : Kind(q[1]) = "terminate" /\ w.act[q].status = "COMPLETED"]
 
@@ -941,7 +953,8 @@ SuccessIsFinal ==
 
 \* Reopening an ended workflow (rerun or retry) runs again each task that had
 \* not succeeded, with at most one new attempt and a fresh time budget, and
-\* keeps every task that had succeeded except the one a rerun starts from.
+\* keeps every task that had succeeded except the one a rerun starts from (and
+\* those whose success came after it: they go back to their attempt before it).
 ReopenSound ==
     [][\A i \in 1..Len(inst) : inst'[i].epoch # inst[i].epoch =>
           /\ inst[i].status \in WfTerminal /\ inst'[i].status = "RUNNING"
@@ -949,8 +962,9 @@ ReopenSound ==
           /\ \A q \in DOMAIN inst'[i].act :
                 (IsLeaf(q[1]) /\ inst[i].act[q].status \in Unsuccessful)
                     => /\ inst'[i].act[q].status = "SCHEDULED" /\ ~inst'[i].act[q].spent
-                       /\ inst'[i].act[q].attempt =
-                             IF inst'[i].how = "retry" THEN inst[i].act[q].attempt + 1 ELSE inst[i].act[q].attempt
+                       /\ IF inst'[i].how = "retry"
+                          THEN inst'[i].act[q].attempt = inst[i].act[q].attempt + 1
+                          ELSE inst'[i].act[q].attempt <= inst[i].act[q].attempt
           /\ \A q \in DOMAIN inst'[i].act :
                 Kind(q[1]) \in {"switch", "dynfork"} => inst'[i].act[q].choice = inst[i].act[q].choice
           /\ inst'[i].how = "retry" => (DOMAIN inst'[i].act = DOMAIN inst[i].act /\ inst[i].status \in WfFailed)
@@ -958,9 +972,10 @@ ReopenSound ==
           /\ inst'[i].how = "rerun" =>
                 \E t \in DOMAIN inst'[i].act :
                    /\ IsLeaf(t[1]) /\ inst'[i].act[t].status = "SCHEDULED"
-                   /\ DOMAIN inst'[i].act = {q \in DOMAIN inst[i].act : inst[i].act[q].seq <= inst[i].act[t].seq}
+                   /\ DOMAIN inst'[i].act = {q \in DOMAIN inst[i].act : inst[i].act[q].seqs[1] <= inst[i].act[t].seq}
           /\ LET changed == {q \in DOMAIN inst'[i].act :
                                IsLeaf(q[1]) /\ inst[i].act[q].status \in Successful
+                               /\ inst'[i].act[q].attempt = inst[i].act[q].attempt   \* (not gone back to an earlier one)
                                /\ inst'[i].act[q] # inst[i].act[q]}
              IN /\ Cardinality(changed) <= IF inst'[i].how = "rerun" THEN 1 ELSE 0
                 /\ \A q \in changed : inst'[i].act[q] = Reset(inst[i].act[q])]_vars

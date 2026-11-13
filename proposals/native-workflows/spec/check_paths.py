@@ -106,7 +106,8 @@ def check(w):
             ok('P1', e['taskReferenceName'] in last, e['taskReferenceName'], 'drawn, but never ran in a completed execution')
 
     # P2: previews never ran, and sit where a preview may
-    marks = {e['taskReferenceName'] for e in entries if e['type'] == 'TERMINATE' and md(e).get('thrown')}
+    # a native workflow's only TERMINATE entries are the marks where its code threw
+    marks = {e['taskReferenceName'] for e in entries if e['type'] == 'TERMINATE'}
 
     def previews_ok(seq, untaken):
         for e in seq:

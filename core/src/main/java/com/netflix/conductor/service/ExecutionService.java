@@ -156,7 +156,8 @@ public class ExecutionService {
                                 || (taskModel != null
                                         && taskModel.getContinuation() != null
                                         && !taskType.equals(taskModel.getTaskType())))) {
-                    Task leased = nativeContinuationService.lease(queueName, taskId, workerId);
+                    Task leased =
+                            nativeContinuationService.lease(queueName, taskId, taskModel, workerId);
                     if (leased != null) {
                         tasks.add(leased);
                     }

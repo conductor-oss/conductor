@@ -12,7 +12,8 @@ sys.path.insert(0, os.path.join(HERE, '..', '..', 'workflow-semantics'))
 import check as engine  # noqa: E402
 
 MODELS = ['MC_NSeq', 'MC_NAsync', 'MC_NNested', 'MC_NUnjoined', 'MC_NSwitch', 'MC_NHold', 'MC_NRaise', 'MC_NHoldLanes', 'MC_NThrow',
-          'MC_NNestedSwitch', 'MC_NSpawnOnly', 'MC_NLanePreview', 'MC_NThrowSwitch', 'MC_NFailRunning']
+          'MC_NNestedSwitch', 'MC_NSpawnOnly', 'MC_NLanePreview', 'MC_NThrowSwitch', 'MC_NFailRunning',
+          'MC_NThrowDrawn']
 
 # (name, model, text in NativeProtocol.tla, replacement, property expected to fail)
 MUTANTS = [
@@ -66,7 +67,11 @@ MUTANTS = [
     ('a lane that never paused never settles', 'MC_NSpawnOnly',
      '    /\\ \\/ LaneMarks(l) = {}\n       \\/ /\\ \\E k', '    /\\ \\/ FALSE\n       \\/ /\\ \\E k', 'Settles'),
     ('a retry removes the previews of cases not taken', 'MC_NThrowSwitch',
-     '\\/ def[r].kind = "preview" /\\ def[r].owner # "untaken"}', '\\/ def[r].kind = "preview"}', 'UntakenStayDrawn'),
+     'gone == {r \\in DOMAIN def : def[r].by = k}', 'gone == {r \\in DOMAIN def : def[r].by = k \\/ def[r].kind = "preview"}',
+     'UntakenStayDrawn'),
+    ('a retry keeps the switch and the lane the code drew before it threw', 'MC_NThrowDrawn',
+     'gone == {r \\in DOMAIN def : def[r].by = k}',
+     'gone == {r \\in DOMAIN def : def[r].by = k /\\ def[r].kind \\in {"mark", "preview"}}', 'ReplayIsStable'),
     ('a failure leaves running tasks running', 'MC_NFailRunning',
      'ELSE IF failing /\\ st[x] = "sched" THEN "fail"', 'ELSE IF FALSE THEN "fail"', 'EndedIsQuiet'),
     ('a switch inside a case lands at the top of its lane', 'MC_NNestedSwitch',
@@ -81,11 +86,10 @@ MUTANTS = [
      'THEN IF Cause(Prog(r.build)[r.raised]) # NONE THEN Cause(Prog(r.build)[r.raised]) ELSE r.raised', 'THEN NONE',
      'FailedNamesItsCause'),
     ('a retry keeps the mark', 'MC_NThrow',
-     'LET gone == {r \\in DOMAIN def : \\/ def[r].kind = "mark"\n                                       \\/ def[r].kind = "preview" /\\ def[r].owner # "untaken"}',
-     'LET gone == {}',
+     'gone == {r \\in DOMAIN def : def[r].by = k}', 'gone == {}',
      'unreachable:wf = "COMPLETED" /\\ retries >= 1 /\\ "b" \\in DOMAIN def'),
     ('a retry does not run the code again', 'MC_NThrow',
-     '/\\ mark\' = [mark EXCEPT ![k].state = "RUNNABLE", ![k].finished = FALSE, ![k].err = FALSE]', '/\\ mark\' = mark',
+     'IF x = k THEN [mark[k] EXCEPT !.state = "RUNNABLE", !.finished = FALSE, !.err = FALSE]', 'IF x = k THEN mark[k]',
      'Settles'),
     ('a reported error is applied as a result', 'MC_NSeq',
      'ELSE IF r.res = "error"', 'ELSE IF FALSE', ('NeverStuck', 'Settles')),
@@ -137,6 +141,10 @@ WITNESSES = [
      'wf = "COMPLETED" /\\ st["j"] = "ok" /\\ st["z_if_other"] = "none"'),
     ('MC_NThrowSwitch', 'native: a retry after the fix completes, still showing the case the switch did not take',
      'wf = "COMPLETED" /\\ retries > 0 /\\ "z_if_other" \\in DOMAIN def /\\ "b" \\in DOMAIN def'),
+    ('MC_NThrowDrawn', 'native: a retry on the same code draws the switch and the lane again, and fails where it threw',
+     'wf = "FAILED" /\\ retries >= 1 /\\ build = 1 /\\ failedTask = "x" /\\ "s" \\in DOMAIN def /\\ "l1" \\in DOMAIN def'),
+    ('MC_NThrowDrawn', 'native: a retry after the fix completes, with the switch and the lane drawn again',
+     'wf = "COMPLETED" /\\ retries > 0 /\\ "b" \\in DOMAIN def /\\ st["l1"] \\in {"ok", "fail"} /\\ "z_if_other" \\in DOMAIN def'),
     ('MC_NFailRunning', 'native: the main lane raising cancels a task still running in another lane',
      'wf = "FAILED" /\\ "b" \\in DOMAIN def /\\ st["b"] = "fail"'),
 ]
