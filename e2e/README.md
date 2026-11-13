@@ -60,8 +60,9 @@ If you need to test against a locally built server (e.g., after changing `core/`
 # 2. Build the Docker image
 docker build -t conductor:server -f docker/server/Dockerfile .
 
-# 3. Start with the e2e compose file (maps port 6000 → 8080)
-docker compose -f docker/docker-compose-postgres-e2e.yaml up -d
+# 3. Start with the e2e compose file (maps port 6000 → 8080). The e2e overlay
+#    turns on the features that the e2e tests need, such as the MCP server.
+docker compose -f docker/docker-compose-postgres-e2e.yaml -f docker/docker-compose-e2e.yaml up -d
 
 # 4. Run tests
 RUN_E2E=true SERVER_ROOT_URI=http://localhost:6000 ./gradlew :conductor-e2e:test

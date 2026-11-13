@@ -62,7 +62,7 @@ Yes. Conductor provides LLM tasks, MCP tool discovery and calls, human approval,
 
 ## Does Conductor support MCP (Model Context Protocol)?
 
-Yes. LIST_MCP_TOOLS discovers available tools from any MCP server, and CALL_MCP_TOOL executes them. Workflows can also be exposed as MCP tools via the MCP Gateway.
+Yes. LIST_MCP_TOOLS discovers available tools from any MCP server, and CALL_MCP_TOOL executes them. The Conductor server can also serve workflows and agents as MCP tools itself: see the [built-in MCP server](ai/mcp-guide.md#built-in-mcp-server).
 
 ## What LLM providers does Conductor support?
 

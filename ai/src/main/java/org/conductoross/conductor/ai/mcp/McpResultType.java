@@ -34,6 +34,9 @@ public enum McpResultType {
      */
     UNKNOWN("");
 
+    /** The name of the result member that holds the result type. */
+    public static final String FIELD = "resultType";
+
     private final String value;
 
     McpResultType(String value) {

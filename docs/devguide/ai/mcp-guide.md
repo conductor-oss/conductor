@@ -15,9 +15,9 @@ description: "MCP (Model Context Protocol) integration with Conductor — connec
       <span class="integration-action-card__title">Call tools</span>
       <span>Run a selected tool as a native Conductor task.</span>
     </a>
-    <a class="integration-action-card" href="#exposing-workflows-as-mcp-tools">
-      <span class="integration-action-card__title">Expose workflows</span>
-      <span>Publish durable workflow logic as an MCP tool.</span>
+    <a class="integration-action-card" href="#exposing-workflows-and-agents-as-mcp-tools">
+      <span class="integration-action-card__title">Expose workflows and agents</span>
+      <span>Publish durable workflows and agents as MCP tools.</span>
     </a>
   </div>
 </section>
@@ -233,9 +233,9 @@ An agent can connect to multiple MCP servers in the same workflow. Discover tool
 ```
 
 
-## Exposing workflows as MCP tools
+## Exposing workflows and agents as MCP tools
 
-Any Conductor workflow can be exposed as an MCP tool via the MCP Gateway. This means other agents and LLMs can discover and invoke your workflows using the MCP protocol.
+Conductor can serve your workflows and agents as MCP tools with its [built-in MCP server](#built-in-mcp-server). Other agents and LLMs can then discover and invoke them using the MCP protocol.
 
 ```
 Agent → LIST_MCP_TOOLS → discovers your workflow
@@ -244,9 +244,231 @@ Conductor → executes with full durability
 Agent → receives structured output
 ```
 
-Your workflow's `inputParameters` become the tool's input schema, and `outputParameters` become the tool's output. The workflow runs with full durable execution guarantees — retries, persistence, compensation — while appearing to the calling agent as a simple tool call.
+Your workflow's input schema becomes the tool's input schema (see [Choose the tools](#choose-the-tools)), and its output becomes the tool's result. The workflow runs with full durable execution guarantees — retries, persistence, compensation — while appearing to the calling agent as a simple tool call.
 
 This creates a composable architecture: workflows call MCP tools, and workflows *are* MCP tools. Agents can invoke other agents' workflows without knowing they're workflows.
+
+
+## Built-in MCP server
+
+The Conductor server can serve MCP itself at `POST /api/mcp`. Opted-in workflows and deployed agents become MCP tools. Any MCP client can list them, call them, and follow long calls as MCP tasks.
+
+The server speaks MCP `2026-07-28` with the Tasks extension (`io.modelcontextprotocol/tasks`). Clients on `2025-03-26`, `2025-06-18` and `2025-11-25` are also served, with synchronous calls only.
+
+!!! warning "No authentication or request filtering"
+    The MCP server is open by default, like the Conductor REST API and the A2A server. Any client that can reach `/api/mcp` can list and call the exposed tools, and read or cancel their executions, including executions started through the REST API.
+
+    The server also does not check the `Origin` header (which the MCP transport requires of servers, to stop DNS rebinding) or the request `Content-Type`, so a web page that a user on your network opens could send it a call. Before you turn it on, put it behind a gateway or firewall that does authentication and `Origin` checks, or use a Conductor build with inbound authentication.
+
+### Turn it on
+
+The MCP server is off by default. Set:
+
+```properties
+conductor.mcp.server.enabled=true
+```
+
+When it is off, `/api/mcp` does not exist and no MCP server component runs.
+
+### Choose the tools
+
+A workflow is a tool when one of these is true:
+
+- its definition has metadata `"mcp.enabled": true`
+- its name is in `conductor.mcp.server.exposedWorkflows`
+- `conductor.mcp.server.exposeAll` is `true`
+
+```json
+{
+  "name": "greet",
+  "description": "Greets a name.",
+  "inputParameters": ["name"],
+  "metadata": {"mcp.enabled": true}
+}
+```
+
+The tool name is the workflow name, and a call starts the latest version. An MCP tool name may use only letters, digits, `_`, `-` and `.`, up to 128 characters. A workflow or agent whose name has any other character (for example a space, `:` or `/`) is not a tool. Choose names that follow this rule.
+
+The tool's input schema is the first of these that applies:
+
+1. The workflow's `inputSchema`, when it is of type `JSON`: the inline schema in its `data`, or else the registered schema it names. This is the schema the engine validates the input against. A schema without a `type` gets `"type": "object"`; a schema with another `type` is skipped.
+2. An object with one property for each `inputParameters` entry.
+3. `{"type": "object"}`.
+
+The schema can mark string, integer or boolean properties with `x-mcp-header`, so that clients also send those arguments as `Mcp-Param-*` headers. A workflow whose schema has an invalid `x-mcp-header` annotation (for example on a `number` property, or the same header name twice, ignoring case) is not a tool: it is not listed, and a call to it gets the unknown-tool error (`-32602`). The server logs a warning that names it. Executions that were already running can still be read and cancelled.
+
+**Agents.** When the server also runs embedded AgentSpan (`agentspan.embedded=true`, which needs `conductor.integrations.ai.enabled=true`), every deployed agent is a tool. Agents need no opt-in. An agent tool takes one required string argument, `prompt`. Its description is the description in the agent definition, or `Conductor tool '<name>'` when that is empty. An agent is always served as an agent: the workflow settings above never expose an agent definition. Without embedded AgentSpan, agents are not tools.
+<!-- TODO: verify against live server (agent tools are covered by McpServerAgentEndToEndTest, not yet run against a packaged server with agentspan.embedded=true) -->
+
+Clients see only tools. Results and messages say "call" and "execution id". They do not say whether a tool is a workflow or an agent.
+
+### Call a tool
+
+Every `2026-07-28` request carries `_meta` with the protocol version and the client capabilities, and the matching `MCP-Protocol-Version`, `Mcp-Method` and `Mcp-Name` headers.
+
+List the tools:
+
+```bash
+curl -s http://localhost:8080/api/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'MCP-Protocol-Version: 2026-07-28' \
+  -H 'Mcp-Method: tools/list' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"_meta":{
+        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities":{}}}}'
+```
+
+```json
+{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"greet","description":"Greets a name.","inputSchema":{"type":"object","properties":{"name":{}}}},{"name":"nightly_report","description":"Builds the nightly report.","inputSchema":{"type":"object","properties":{"date":{}}}}],"ttlMs":0,"cacheScope":"public","resultType":"complete"}}
+```
+
+Call a tool that ends quickly:
+
+```bash
+curl -s http://localhost:8080/api/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'MCP-Protocol-Version: 2026-07-28' \
+  -H 'Mcp-Method: tools/call' \
+  -H 'Mcp-Name: greet' \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"greet","arguments":{"name":"Ada"},"_meta":{
+        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities":{}}}}'
+```
+
+```json
+{"jsonrpc":"2.0","id":3,"result":{"resultType":"complete","content":[{"type":"text","text":"{\"greeting\":\"Hello, Ada!\"}"}],"isError":false,"structuredContent":{"greeting":"Hello, Ada!"}}}
+```
+
+The result is the workflow output, as JSON text and as `structuredContent`. A workflow that fails or is terminated gives `isError: true` with the status, the reason and the execution id. A workflow that times out gives `isError: true` with `The call timed out` and the execution id.
+
+### Long calls and MCP tasks
+
+`tools/call` first waits for the execution: `conductor.mcp.server.syncWaitSeconds` (10 by default). A workflow can set its own wait with metadata `"mcp.syncWaitSeconds"`, from `0` to `conductor.mcp.server.maxSyncWaitSeconds`. An agent sets it in its own [`metadata`](agent-configuration.md). If the execution ends in that time, the client gets the result at once. If not:
+
+- **A client that declares the Tasks extension** gets an MCP task. The task id is the execution id.
+- **Any other client** keeps waiting, up to `conductor.mcp.server.blockingCapSeconds` (25 by default) in total, including the first wait. If the execution is still running then, the client gets an error result. The execution keeps running.
+
+```json
+{"jsonrpc":"2.0","id":9,"result":{"resultType":"complete","content":[{"type":"text","text":"The call is still running. Execution id: <execution-id>"}],"isError":true}}
+```
+
+**Choosing the sync wait.** With the default wait, a call that ends quickly gets its result in one round trip, and a long one becomes a task after the wait. A sync wait of `0` skips the wait: a client that declares Tasks gets a task at once (unless the execution has already ended) and polls for the result. A client without Tasks still waits up to the blocking cap, so a wait of `0` does not change it. Set `"mcp.syncWaitSeconds": 0` on a workflow that is always long, or `conductor.mcp.server.syncWaitSeconds=0` to make this the default for all tools.
+
+A call from a client that declares Tasks, to a workflow with `"mcp.syncWaitSeconds": 0`:
+
+```bash
+curl -s http://localhost:8080/api/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'MCP-Protocol-Version: 2026-07-28' \
+  -H 'Mcp-Method: tools/call' \
+  -H 'Mcp-Name: nightly_report' \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"nightly_report","arguments":{"date":"2026-11-09"},"_meta":{
+        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities":{"extensions":{"io.modelcontextprotocol/tasks":{}}}}}}'
+```
+
+```json
+{"jsonrpc":"2.0","id":4,"result":{"taskId":"<execution-id>","status":"working","createdAt":"<timestamp>","lastUpdatedAt":"<timestamp>","ttlMs":86400000,"pollIntervalMs":5000,"resultType":"task"}}
+```
+
+The client then polls with `tasks/get` (`Mcp-Name` is the task id):
+
+```bash
+curl -s http://localhost:8080/api/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'MCP-Protocol-Version: 2026-07-28' \
+  -H 'Mcp-Method: tasks/get' \
+  -H 'Mcp-Name: <execution-id>' \
+  -d '{"jsonrpc":"2.0","id":5,"method":"tasks/get","params":{"taskId":"<execution-id>","_meta":{
+        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+        "io.modelcontextprotocol/clientCapabilities":{"extensions":{"io.modelcontextprotocol/tasks":{}}}}}}'
+```
+
+```json
+{"jsonrpc":"2.0","id":5,"result":{"taskId":"<execution-id>","status":"working","createdAt":"<timestamp>","lastUpdatedAt":"<timestamp>","ttlMs":86400000,"pollIntervalMs":5000,"resultType":"complete"}}
+```
+
+The status follows the execution:
+
+| Execution | Task status |
+| --- | --- |
+| Running or paused, including a workflow that waits on a HUMAN or WAIT task | `working` |
+| Completed | `completed`, with the result |
+| Failed or timed out | `completed`, with an error result (`isError: true`) |
+| Terminated | `cancelled`, with the reason in `statusMessage` |
+| Any, when the server cannot build the result (an internal error) | `failed`, with a `statusMessage` that gives the execution ID and an `error` object (`-32603`) |
+
+`tasks/cancel` (`Mcp-Method: tasks/cancel`, with the same `Mcp-Name` and `params` as `tasks/get`) terminates a running execution. The server answers `{"resultType":"complete"}` also when the execution has already ended. After a cancel, `tasks/get` gives:
+
+```json
+{"jsonrpc":"2.0","id":7,"result":{"taskId":"<execution-id>","status":"cancelled","createdAt":"<timestamp>","lastUpdatedAt":"<timestamp>","ttlMs":86400000,"statusMessage":"Cancelled by MCP client","resultType":"complete"}}
+```
+
+### Older clients
+
+A client on `2025-03-26`, `2025-06-18` or `2025-11-25` uses `initialize`, `tools/list` and `tools/call`, without `_meta`. Its calls are synchronous, with the same blocking cap. It gets no tasks. No session is kept. JSON-RPC batches (arrays of requests, which `2025-03-26` allowed) are not supported and get `-32600`.
+
+```bash
+curl -s http://localhost:8080/api/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'MCP-Protocol-Version: 2025-11-25' \
+  -d '{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"greet","arguments":{"name":"Ada"}}}'
+```
+
+```json
+{"jsonrpc":"2.0","id":8,"result":{"content":[{"type":"text","text":"{\"greeting\":\"Hello, Ada!\"}"}],"isError":false,"structuredContent":{"greeting":"Hello, Ada!"}}}
+```
+
+### Configuration
+
+| Property | Default | Description |
+| --- | --- | --- |
+| `conductor.mcp.server.enabled` | `false` | Serves `POST /api/mcp`. |
+| `conductor.mcp.server.exposedWorkflows` | empty | Workflow names to expose, in addition to metadata `mcp.enabled`. |
+| `conductor.mcp.server.exposeAll` | `false` | Exposes every workflow. |
+| `conductor.mcp.server.syncWaitSeconds` | `10` | How long `tools/call` waits before it answers with a task or keeps waiting. |
+| `conductor.mcp.server.maxSyncWaitSeconds` | `25` | Upper bound for a workflow's or agent's `mcp.syncWaitSeconds`. |
+| `conductor.mcp.server.blockingCapSeconds` | `25` | Longest wait for a client without Tasks. Keep it below the servlet async request timeout (`spring.mvc.async.request-timeout`, 30 seconds on Tomcat by default). The server logs a warning at startup when a cap is not below it. |
+| `conductor.mcp.server.pollIntervalMs` | `5000` | The `pollIntervalMs` hint sent with a task. |
+| `conductor.mcp.server.taskTtlMs` | `86400000` (24 hours) | The `ttlMs` sent with a task. Keep it within how long your deployment keeps execution records. |
+
+### Limits
+
+- **Duplicate runs.** Each `tools/call` starts a new execution. If a client retries a call, the tool runs again.
+- **No input requests.** A workflow that waits for input (HUMAN or WAIT) is reported as `working`. Complete its task through the Conductor API or UI. `tasks/update` is acknowledged and changes nothing.
+- **Tools only.** The server offers no resources, prompts, completions, logging or progress notifications.
+- **Long holds.** A client without Tasks holds an HTTP request open for up to the blocking cap. Prefer clients that support the Tasks extension for long workflows.
+- **Large outputs.** A workflow output between `conductor.app.workflowOutputPayloadSizeThreshold` (5 MB by default) and `conductor.app.maxWorkflowOutputPayloadSizeThreshold` (10 MB by default) is moved to external payload storage, and the MCP server does not read it back. The call then completes with an empty result. Read such an output through the Conductor API with the execution id. This is the same as for the A2A server. A larger output fails the workflow, so the call gets an error result.
+
+### Errors
+
+Protocol errors are JSON-RPC errors. A `2026-07-28` request gets them with these HTTP statuses:
+
+| HTTP status | Code | When |
+| --- | --- | --- |
+| `400` | `-32700` | The body is not valid JSON. |
+| `400` | `-32600` | The body is empty or not a JSON-RPC request object (not an object, `jsonrpc` is not `"2.0"`, or `method` is missing), or the `id` is not a string or an integer (for example `null`). |
+| `400` | `-32602` | `params` is not an object, or `params._meta` is missing or has no protocol version or no client capabilities. |
+| `400` | `-32020` | A header is missing or does not match the body: `MCP-Protocol-Version`, `Mcp-Method`, `Mcp-Name` or an `Mcp-Param-*` header. `MCP-Protocol-Version` and `Mcp-Method` are compared as sent; only `Mcp-Name` and `Mcp-Param-*` values may be Base64-encoded. An integer `Mcp-Param-*` value matches its argument by value (`42.0` matches `42`). |
+| `400` | `-32022` | The protocol version is not `2026-07-28`. `error.data` has `requested`, and `supported`, which lists `2026-07-28` and the older versions the server serves through `initialize`. |
+| `400` | `-32021` | A `tasks/*` request from a client that does not declare the Tasks extension. `error.data.requiredCapabilities` names it. |
+| `404` | `-32601` | The method does not exist, for example `initialize`, `ping` or `resources/list`. |
+| `200` | `-32602` | An unknown tool or task, a missing `name` or `taskId`, `arguments` that is not an object, an agent call without a `prompt`, or an argument that cannot be sent as its `Mcp-Param-*` header. |
+| `500` | `-32603` | An internal error, for example the Conductor store is not available. The client can retry. |
+
+A notification (a request without `id`) gets HTTP `202` with no body. A `GET` gets HTTP `405`.
+
+A request from an older client gets the same `-32700` and `-32600` errors for a body that is not JSON-RPC. It gets HTTP `400` and `-32600` for an unsupported `MCP-Protocol-Version` header. It gets HTTP `200` for method errors: `-32601` for a method it cannot use (for example `tasks/get`), and `-32602` for an unknown tool, a missing `name`, `arguments` or `params` that is not an object, or an agent call without a `prompt`. Internal errors are HTTP `500`, `-32603`.
+
+A tool call that runs but does not succeed is not a protocol error. Its result has `isError: true` and a text that says what happened:
+
+| Text | When |
+| --- | --- |
+| `The call ended with status FAILED: <reason>. Execution id: <id>` | The workflow failed. `TERMINATED` reads the same way. Without a reason, the `: <reason>` part is left out. The word "workflow" in a reason is shown as "call". |
+| `The call timed out. Execution id: <id>` | The workflow timed out. |
+| `The call is still running. Execution id: <id>` | A client without Tasks reached the blocking cap. The execution keeps running. |
+| `The call could not be started: <reason>` | The arguments do not match the workflow's input schema (with `enforceSchema`). The reason says which argument is wrong. |
+| `The call could not be started.` | Conductor could not start the workflow or agent for any other reason. |
 
 
 ## MCP vs HTTP vs custom workers

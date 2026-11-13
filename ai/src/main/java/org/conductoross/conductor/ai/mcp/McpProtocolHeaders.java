@@ -109,6 +109,28 @@ public final class McpProtocolHeaders {
                 + SENTINEL_SUFFIX;
     }
 
+    /**
+     * Returns a header value as sent: the decoded text of a {@code =?base64?...?=} value, or the
+     * value unchanged when it is not one or its Base64 is invalid. The inverse of {@link
+     * #encodeHeaderValue}.
+     */
+    public static String decodeHeaderValue(String value) {
+        if (value == null
+                || !value.startsWith(SENTINEL_PREFIX)
+                || !value.endsWith(SENTINEL_SUFFIX)
+                || value.length() < SENTINEL_PREFIX.length() + SENTINEL_SUFFIX.length()) {
+            return value;
+        }
+        String encoded =
+                value.substring(
+                        SENTINEL_PREFIX.length(), value.length() - SENTINEL_SUFFIX.length());
+        try {
+            return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return value;
+        }
+    }
+
     static String clientVersion() {
         return CLIENT_VERSION;
     }

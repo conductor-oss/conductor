@@ -1,0 +1,82 @@
+# Expected failures of the MCP conformance suite (0.2.0-alpha.12, requirements 2026-07-28)
+# against the Conductor MCP server. Entries are single checks (<scenario>:<check-id>), so the
+# other checks of a scenario stay enforced. The suite fails when an entry starts to pass:
+# remove it then.
+server:
+  # Not in v1: the server exposes tools only (no resources, prompts, completion).
+  - caching:sep-2549-prompts-list-caching-hints
+  - caching:sep-2549-resources-list-caching-hints
+  - caching:sep-2549-resources-templates-list-caching-hints
+  - completion-complete:completion-complete
+  - prompts-list:prompts-list
+  - prompts-get-simple:prompts-get-simple
+  - prompts-get-with-args:prompts-get-with-args
+  - prompts-get-embedded-resource:prompts-get-embedded-resource
+  - prompts-get-with-image:prompts-get-with-image
+  - resources-list:resources-list
+  - resources-read-text:resources-read-text
+  - resources-read-binary:resources-read-binary
+  - resources-templates-read:resources-templates-read
+  # SHOULD-level warnings, which count as failures in a baseline run.
+  - sep-2164-resource-not-found:sep-2164-error-code
+  - sep-2164-resource-not-found:sep-2164-data-uri
+
+  # Not in v1 (Deviation): no input_required, so no InputRequiredResult, elicitation, sampling,
+  # roots or tasks/update round trips. A workflow waiting for input is driven through the
+  # Conductor API.
+  - input-required-result-basic-elicitation:sep-2322-elicitation-incomplete
+  - input-required-result-basic-sampling:sep-2322-sampling-incomplete
+  - input-required-result-basic-list-roots:sep-2322-list-roots-incomplete
+  - input-required-result-request-state:sep-2322-request-state-incomplete
+  - input-required-result-multiple-input-requests:sep-2322-multiple-inputs-incomplete
+  - input-required-result-multi-round:sep-2322-multi-round-r1
+  - input-required-result-non-tool-request:sep-2322-non-tool-incomplete
+  - input-required-result-result-type:sep-2322-result-type-included
+  - input-required-result-tampered-state:sep-2322-reject-tampered-state
+  - input-required-result-capability-check:sep-2322-respect-client-capabilities
+  - tasks-mrtr-input:sep-2663-tasks-get-status-input-required
+  - tasks-mrtr-input:tasks-mrtr-tasks-update-resumes
+  - tasks-mrtr-input:tasks-mrtr-partial-fulfillment
+  - tasks-mrtr-composition:sep-2663-mrtr-synchronous-before-task-creation
+  - tasks-dispatch-and-envelope:tasks-result-type-complete-on-non-task-responses
+  # SHOULD-level warnings, which count as failures in a baseline run.
+  - input-required-result-missing-input-response:sep-2322-missing-response-rerequests
+  - input-required-result-ignore-extra-params:sep-2322-ignore-unexpected-params
+
+  # Not in v1: no progress or logging notifications.
+  - tools-call-with-progress:tools-call-with-progress
+  - server-stateless:sep-2575-server-no-log-without-loglevel
+  - server-stateless:sep-2575-http-server-no-independent-requests-on-stream
+
+  # Fixture tools of the SDK reference server that a Conductor workflow cannot provide:
+  # image, audio and resource content, a schema-feature probe, a tool that needs an
+  # undeclared capability, and a tool that fails as a protocol error.
+  - tools-call-simple-text:tools-call-simple-text
+  - tools-call-image:tools-call-image
+  - tools-call-audio:tools-call-audio
+  - tools-call-embedded-resource:tools-call-embedded-resource
+  - tools-call-mixed-content:tools-call-mixed-content
+  - tools-call-error:tools-call-error
+  - json-schema-2020-12:json-schema-2020-12-tool-found
+  - server-stateless:sep-2575-server-rejects-undeclared-capability
+  - server-stateless:sep-2575-missing-capability-http-400
+  - tasks-lifecycle:sep-2663-tasks-get-status-failed
+  # No exposed tool has x-mcp-header annotations, so these checks have nothing to test.
+  # The Mcp-Param-* validation itself is covered by McpServerMethodsTest.
+  - http-custom-header-server-validation:sep-2243-server-no-xmcp-tool
+  - http-custom-header-server-validation:sep-2243-server-decode-base64
+  - http-custom-header-server-validation:sep-2243-server-validate-param-match
+  - http-custom-header-server-validation:sep-2243-server-reject-invalid-param-chars
+  - http-custom-header-server-validation:sep-2243-server-reject-param-mismatch
+
+  # Conductor design choices (see the spec):
+  # - A tool result's text is the workflow output as JSON (with structuredContent), so greet
+  #   answers {"greeting":"Hello, <name>!"}, not the bare string the fixture expects.
+  - tasks-request-headers:tasks-headers-tolerate-mcp-method-on-tools-call
+  # - No tool requires Tasks: a client without the extension is served synchronously up to the
+  #   blocking cap, so failing_job is not rejected with -32021.
+  - tasks-required-task-error:sep-2663-server-returns-missing-capability-when-required
+  # - No Origin or Host check: like the OSS REST API and the A2A server, the MCP server is open
+  #   by default and leaves request filtering (Origin, authentication) to a gateway in front of
+  #   it or to a build with inbound authentication. Stated in the user docs.
+  - dns-rebinding-protection:localhost-host-rebinding-rejected
