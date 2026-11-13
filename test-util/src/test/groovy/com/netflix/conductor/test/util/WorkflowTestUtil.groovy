@@ -29,7 +29,7 @@ import com.netflix.conductor.model.WorkflowModel
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 
 /**
  * This is a helper class used to initialize task definitions required by the tests when loaded up.

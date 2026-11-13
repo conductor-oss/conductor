@@ -1,0 +1,63 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "Route customer requests to the right specialist: billing, technical, or sales.\n\nBased on the work done by the agents above, provide your final response to the user. IMPORTANT: Include ALL details from every agent's response — do NOT summarize or omit code examples, technical specifications, or specific recommendations. Organize the information coherently but preserve completeness.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What's the balance on account ACC-123?\n\n[coordinator -> billing]\n\n[billing]: The balance on account **ACC-123** is **$5,432.10 USD**.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_02d1b81776aab009006aa82aface5887d0880a70ad77210222",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 117,
+        "completionTokens" : 24,
+        "totalTokens" : 141,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_02d1b81776aab009006aa82aface5887d0880a70ad77210222",
+        "reasoning_tokens" : 0
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "The balance on account **ACC-123** is **$5,432.10 USD**.",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

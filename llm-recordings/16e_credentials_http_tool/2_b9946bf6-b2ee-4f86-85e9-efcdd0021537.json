@@ -1,0 +1,131 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You list GitHub repos using the list_github_repos tool. Summarize the results.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "[TOOL RESULTS]\n[{\"output\":{\"response\":{\"headers\":{\"X-Accepted-OAuth-Scopes\":[\"\"],\"Server\":[\"github.com\"],\"X-RateLimit-Resource\":[\"core\"],\"Access-Control-Allow-Origin\":[\"*\"],\"X-RateLimit-Used\":[\"2087\"],\"x-github-api-version-selected\":[\"2022-11-28\"],\"X-Frame-Options\":[\"deny\"],\"Referrer-Policy\":[\"origin-when-cross-origin, strict-origin-when-cross-origin\"],\"Access-Control-Expose-Headers\":[\"ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning\"],\"Strict-Transport-Security\":[\"max-age=31536000; includeSubdomains; preload\"],\"X-RateLimit-Remaining\":[\"2913\"],\"X-GitHub-Media-Type\":[\"github.v3\"],\"Content-Security-Policy\":[\"default-src 'none'\"],\"Content-Length\":[\"2\"],\"X-XSS-Protection\":[\"0\"],\"Content-Type\":[\"application/json; charset=utf-8\"],\"X-GitHub-Request-Id\":[\"DC22:239705:44E727:4F0EF0:6AA83F2F\"],\"X-Content-Type-Options\":[\"nosniff\"],\"X-RateLimit-Reset\":[\"1789411863\"],\"Date\":[\"Mon, 14 Sep 2026 18:38:39 GMT\"],\"Cache-Control\":[\"private, max-age=60, s-maxage=60\"],\"ETag\":[\"\\\"bb1f5ef12225a90fc069c5db1a701c2395011771af33c0db59aeebac50818c23\\\"\"],\"x-oauth-client-id\":[\"178c6fc778ccc68e1d6a\"],\"Vary\":[\"Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With\"],\"X-RateLimit-Limit\":[\"5000\"],\"x-github-edge-region\":[\"westus3\"],\"X-OAuth-Scopes\":[\"admin:public_key, gist, read:org, repo, write:packages\"]},\"reasonPhrase\":\"OK\",\"body\":[],\"statusCode\":200}},\"name\":\"list_github_repos\"}]\n[/TOOL RESULTS]\n\nList the repos for Conductor",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "assistant",
+      "text" : "{}",
+      "toolCalls" : [ {
+        "reference" : "call_0",
+        "name" : "list_github_repos",
+        "arguments" : {
+          "method" : "list_github_repos"
+        }
+      } ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "tool",
+      "text" : "",
+      "toolCalls" : [ ],
+      "toolResults" : [ {
+        "reference" : "call_0",
+        "name" : "list_github_repos",
+        "value" : {
+          "response" : {
+            "headers" : {
+              "Date" : [ "Mon, 14 Sep 2026 18:38:39 GMT" ],
+              "Content-Type" : [ "application/json; charset=utf-8" ],
+              "Content-Length" : [ "2" ],
+              "Cache-Control" : [ "private, max-age=60, s-maxage=60" ],
+              "Vary" : [ "Accept, Authorization, Cookie, X-GitHub-OTP,Accept-Encoding, Accept, X-Requested-With" ],
+              "ETag" : [ "\"bb1f5ef12225a90fc069c5db1a701c2395011771af33c0db59aeebac50818c23\"" ],
+              "X-OAuth-Scopes" : [ "admin:public_key, gist, read:org, repo, write:packages" ],
+              "X-Accepted-OAuth-Scopes" : [ "" ],
+              "x-oauth-client-id" : [ "178c6fc778ccc68e1d6a" ],
+              "X-GitHub-Media-Type" : [ "github.v3" ],
+              "x-github-api-version-selected" : [ "2022-11-28" ],
+              "Access-Control-Expose-Headers" : [ "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning" ],
+              "Access-Control-Allow-Origin" : [ "*" ],
+              "Strict-Transport-Security" : [ "max-age=31536000; includeSubdomains; preload" ],
+              "X-Frame-Options" : [ "deny" ],
+              "X-Content-Type-Options" : [ "nosniff" ],
+              "X-XSS-Protection" : [ "0" ],
+              "Referrer-Policy" : [ "origin-when-cross-origin, strict-origin-when-cross-origin" ],
+              "Content-Security-Policy" : [ "default-src 'none'" ],
+              "Server" : [ "github.com" ],
+              "X-RateLimit-Limit" : [ "5000" ],
+              "X-RateLimit-Remaining" : [ "2913" ],
+              "X-RateLimit-Reset" : [ "1789411863" ],
+              "X-RateLimit-Used" : [ "2087" ],
+              "X-RateLimit-Resource" : [ "core" ],
+              "X-GitHub-Request-Id" : [ "DC22:239705:44E727:4F0EF0:6AA83F2F" ],
+              "x-github-edge-region" : [ "westus3" ]
+            },
+            "reasonPhrase" : "OK",
+            "body" : [ ],
+            "statusCode" : 200
+          }
+        }
+      } ]
+    }, {
+      "role" : "user",
+      "text" : "Please continue where you left off.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "list_github_repos",
+      "description" : "List public GitHub repositories for a user. Returns JSON array with name, url, and stars.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : { }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0729dfcb6fc7cec4006aa83f2ffb5c87d08e7c991a7f9c6ed8",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 1228,
+        "completionTokens" : 98,
+        "totalTokens" : 1326,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0729dfcb6fc7cec4006aa83f2ffb5c87d08e7c991a7f9c6ed8",
+        "reasoning_tokens" : 55
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "The GitHub repository query returned **no repositories** for Conductor.\n\n- **Repositories found:** 0\n- **Result:** Empty list\n- **API status:** 200 OK",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

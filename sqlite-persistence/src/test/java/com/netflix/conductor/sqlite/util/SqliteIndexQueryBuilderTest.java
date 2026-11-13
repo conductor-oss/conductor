@@ -24,6 +24,7 @@ import com.netflix.conductor.sqlite.config.SqliteProperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class SqliteIndexQueryBuilderTest {
@@ -303,5 +304,29 @@ public class SqliteIndexQueryBuilderTest {
         inOrder.verify(mockQuery).addParameter(15);
         inOrder.verify(mockQuery).addParameter(0);
         verifyNoMoreInteractions(mockQuery);
+    }
+
+    @Test
+    void shouldRejectLongInputWithoutOperatorWithoutCatastrophicBacktracking() {
+        String longInput = "a".repeat(5000);
+        try {
+            new SqliteIndexQueryBuilder(
+                    "workflow_index", longInput, "", 0, 15, new ArrayList<>(), properties);
+            fail("should have failed with IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("Incorrectly formatted query string: " + longInput, e.getMessage());
+        }
+    }
+
+    @Test
+    void shouldHandleVariousWhitespaceAroundOperators() throws SQLException {
+        String inputQuery = "workflowId = \"abc123\" AND status   IN   (COMPLETED,RUNNING)";
+        SqliteIndexQueryBuilder builder =
+                new SqliteIndexQueryBuilder(
+                        "table_name", inputQuery, "", 0, 15, new ArrayList<>(), properties);
+        String generatedQuery = builder.getQuery();
+        assertEquals(
+                "SELECT json_data FROM table_name WHERE status IN (?,?) AND workflow_id = ? LIMIT ? OFFSET ?",
+                generatedQuery);
     }
 }

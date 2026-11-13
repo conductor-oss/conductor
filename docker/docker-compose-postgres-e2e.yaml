@@ -14,7 +14,7 @@ services:
     ports:
       - "8000:8080"
     healthcheck:
-      test: [ "CMD", "curl", "-I", "-XGET", "http://localhost:8080/health" ]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
       interval: 10s
       timeout: 10s
       retries: 20

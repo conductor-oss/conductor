@@ -37,11 +37,11 @@ const FlexibleAutoCompleteVariables = ({
             options={options}
             disableClearable
             getOptionLabel={(option) => option}
-            renderOption={(props, option, { inputValue }) => {
+            renderOption={({ key, ...props }, option, { inputValue }) => {
               const matches = match(option as string, inputValue);
               const parts = parse(option as string, matches);
               return (
-                <li {...props}>
+                <li key={key} {...props}>
                   {parts.map((part, index) => (
                     <span
                       key={index}

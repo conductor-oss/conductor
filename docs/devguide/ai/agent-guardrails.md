@@ -1,3 +1,7 @@
+---
+description: "Add guardrails to Conductor agents to validate inputs, constrain model output, block unsafe tool calls, and pause risky actions for human approval."
+---
+
 # Agent Guardrails
 
 <section class="integration-hero integration-hero--guardrails" aria-label="Agent guardrails">
@@ -46,7 +50,7 @@ Conductor Agent definitions support four guardrail implementations:
 
 Regex guards run in `block` mode by default: a pattern match fails the check. Use `allow` mode when the content must match at least one allowed pattern, such as a constrained output format. Keep regexes narrow and deterministic; an allowlist for structured tool arguments is usually better expressed as a custom guardrail that parses the arguments by field.
 
-An LLM guardrail receives the candidate content and a policy, then must produce a JSON pass/fail decision. Treat it as a semantic check, not a replacement for deterministic access control. Do not send credentials or raw sensitive records to an LLM judge; validate a redacted representation instead.
+An LLM guardrail receives the candidate content and a policy, then must produce a JSON pass/fail decision. Treat it as a semantic check, not a replacement for deterministic access control. Do not send credentials or raw sensitive records to an LLM judge; validate a redacted representation instead. (Note: using `LLMGuardrail` with the Python SDK requires the `litellm` package: `pip install litellm`).
 
 Custom and external guards become `SIMPLE` tasks. Register their task definitions and run an idempotent worker before deploying the agent; otherwise the guardrail task cannot be completed.
 

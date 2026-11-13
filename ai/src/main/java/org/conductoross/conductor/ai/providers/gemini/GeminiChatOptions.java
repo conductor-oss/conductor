@@ -15,6 +15,7 @@ package org.conductoross.conductor.ai.providers.gemini;
 import java.util.List;
 
 import org.conductoross.conductor.ai.model.ToolSpec;
+import org.conductoross.conductor.ai.providers.ProviderChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 import lombok.Builder;
@@ -49,21 +50,24 @@ public class GeminiChatOptions implements ChatOptions {
     private Boolean includeThoughts;
 
     @Override
-    public ChatOptions copy() {
-        return GeminiChatOptions.builder()
-                .model(model)
-                .temperature(temperature)
-                .topP(topP)
-                .topK(topK)
-                .maxTokens(maxTokens)
-                .stopSequences(stopSequences)
-                .frequencyPenalty(frequencyPenalty)
-                .presencePenalty(presencePenalty)
-                .tools(tools)
-                .googleSearchRetrieval(googleSearchRetrieval)
-                .codeExecution(codeExecution)
-                .thinkingBudgetTokens(thinkingBudgetTokens)
-                .includeThoughts(includeThoughts)
-                .build();
+    public ChatOptions.Builder<?> mutate() {
+        return ProviderChatOptionsBuilder.from(
+                this,
+                fields ->
+                        GeminiChatOptions.builder()
+                                .model(fields.model())
+                                .temperature(fields.temperature())
+                                .topP(fields.topP())
+                                .topK(fields.topK())
+                                .maxTokens(fields.maxTokens())
+                                .stopSequences(fields.stopSequences())
+                                .frequencyPenalty(fields.frequencyPenalty())
+                                .presencePenalty(fields.presencePenalty())
+                                .tools(tools)
+                                .googleSearchRetrieval(googleSearchRetrieval)
+                                .codeExecution(codeExecution)
+                                .thinkingBudgetTokens(thinkingBudgetTokens)
+                                .includeThoughts(includeThoughts)
+                                .build());
     }
 }

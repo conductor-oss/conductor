@@ -179,6 +179,163 @@ const EMPTY_TASK_SEARCH = {
   results: [],
 };
 
+/**
+ * OSS queue monitor fetches sizes and poll records as two endpoints and joins
+ * them in the client. Register these AFTER `mockCommonApis` so they win over
+ * the `/api/**` catch-all.
+ */
+export const QUEUE_MONITOR_SIZES = {
+  send_email: 12,
+  process_payment: 0,
+  idle_queue: 3,
+};
+
+export const QUEUE_MONITOR_POLL_DATA = [
+  {
+    queueName: "send_email",
+    domain: "",
+    workerId: "worker-east",
+    lastPollTime: 0,
+  },
+  {
+    queueName: "send_email",
+    domain: "",
+    workerId: "worker-west",
+    lastPollTime: 0,
+  },
+  {
+    queueName: "process_payment",
+    domain: "",
+    workerId: "worker-pay",
+    lastPollTime: 0,
+  },
+];
+
+export async function mockQueueMonitorApis(page: Page): Promise<void> {
+  await page.route("**/api/tasks/queue/polldata/all**", (route) =>
+    route.fulfill({ json: QUEUE_MONITOR_POLL_DATA }),
+  );
+  await page.route("**/api/tasks/queue/all**", (route) =>
+    route.fulfill({ json: QUEUE_MONITOR_SIZES }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Schema registry fixtures
+// ---------------------------------------------------------------------------
+
+/**
+ * Two schemas, one of them with a version history, and one of a type this
+ * server stores but does not validate. Enough for the management screen to show
+ * every column it has and for a picker to offer a name and its versions.
+ */
+export const SCHEMAS = [
+  {
+    name: "order_input",
+    version: 1,
+    type: "JSON",
+    data: {
+      $schema: "http://json-schema.org/draft-07/schema",
+      type: "object",
+      properties: { orderId: { type: "string" } },
+      required: ["orderId"],
+    },
+    createTime: 1735689600000,
+    updateTime: 1735689600000,
+  },
+  {
+    name: "order_input",
+    version: 2,
+    type: "JSON",
+    data: {
+      $schema: "http://json-schema.org/draft-07/schema",
+      type: "object",
+      properties: {
+        orderId: { type: "string" },
+        total: { type: "integer" },
+      },
+      required: ["orderId", "total"],
+    },
+    createTime: 1735776000000,
+    updateTime: 1735776000000,
+  },
+  {
+    name: "shipment_event",
+    version: 1,
+    type: "AVRO",
+    data: { type: "record", name: "shipment" },
+    createTime: 1735862400000,
+    updateTime: 1735862400000,
+  },
+];
+
+/** A task definition that references a registered schema on both sides. */
+export const SCHEMA_REFERENCING_TASK_DEF = {
+  name: "process_order",
+  description: "Processes one order",
+  retryCount: 3,
+  timeoutSeconds: 3600,
+  inputKeys: [],
+  outputKeys: [],
+  timeoutPolicy: "TIME_OUT_WF",
+  retryLogic: "FIXED",
+  retryDelaySeconds: 60,
+  responseTimeoutSeconds: 600,
+  concurrentExecLimit: 0,
+  rateLimitPerFrequency: 0,
+  rateLimitFrequencyInSeconds: 1,
+  ownerEmail: "test@example.com",
+  pollTimeoutSeconds: 3600,
+  backoffScaleFactor: 1,
+  enforceSchema: true,
+  inputSchema: { name: "order_input", version: 2, type: "JSON" },
+  outputSchema: { name: "order_input", version: 2, type: "JSON" },
+};
+
+/**
+ * Register the schema-referencing task definition. Call AFTER `mockCommonApis`
+ * so it wins over the `/api/**` catch-all.
+ */
+export async function mockSchemaReferencingTaskDef(page: Page): Promise<void> {
+  await page.route("**/api/metadata/taskdefs/process_order**", (route) =>
+    route.fulfill({ json: SCHEMA_REFERENCING_TASK_DEF }),
+  );
+}
+
+/**
+ * A server that serves the schema registry. Register AFTER `mockCommonApis`.
+ *
+ * Playwright matches the most recently registered route first, so the listing
+ * pattern — which also matches every single-schema path — goes first and the
+ * per-version overrides after it. Registered the other way round, a request for
+ * one schema is answered with the whole list.
+ */
+export async function mockSchemaRegistry(page: Page): Promise<void> {
+  await page.route("**/api/schema**", (route) =>
+    route.fulfill({ json: SCHEMAS }),
+  );
+  await page.route("**/api/schema/order_input/2**", (route) =>
+    route.fulfill({ json: SCHEMAS[1] }),
+  );
+  await page.route("**/api/schema/shipment_event/1**", (route) =>
+    route.fulfill({ json: SCHEMAS[2] }),
+  );
+}
+
+/**
+ * A server with no schema registry: what a stock OSS server did before the
+ * registry existed. The picker asks for the list and gets a 404.
+ * Register AFTER `mockCommonApis`.
+ */
+export async function mockMissingSchemaRegistry(page: Page): Promise<void> {
+  await page.route("**/api/schema**", (route) =>
+    route.fulfill({
+      status: 404,
+      json: { status: 404, message: "No such endpoint" },
+    }),
+  );
+}
+
 /** Mock API endpoints that are fetched on initial page load */
 export async function mockCommonApis(page: Page): Promise<void> {
   // Workflow execution search (WorkflowSearch page default load)

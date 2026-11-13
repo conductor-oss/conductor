@@ -1,0 +1,64 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a tool selection assistant. Given a user query and a catalog of available tools, select the most relevant tools the AI agent will need. Select at most 64 tools.\n\nTOOL CATALOG:\n- format_report: Format a title and body into a structured report.\n- reverse_string: Reverse a string using the HTTP API\n- math_add: Add two numbers and return the sum.\n- math_subtract: Subtract b from a and return the difference.\n- math_multiply: Multiply two numbers and return the product.\n- math_divide: Divide a by b. Returns an error if b is zero.\n- math_modulo: Return the remainder of a divided by b. Returns an error if b is zero.\n- math_power: Raise base to the power of exponent.\n- math_factorial: Return n factorial (n!). Returns an error if n is negative.\n- math_fibonacci: Return the nth Fibonacci number (0-indexed). Returns an error if n is negative.\n- string_reverse: Reverse a string.\n- string_uppercase: Convert a string to uppercase.\n- string_lowercase: Convert a string to lowercase.\n- string_length: Return the character count of a string.\n- string_char_count: Count occurrences of a character in a string.\n- string_replace: Replace all occurrences of old with new in a string.\n- string_split: Split a string by a delimiter.\n- string_join: Join a list of strings with a delimiter.\n- collection_sort: Sort a list of items.\n\n        Args:\n            items: The list to sort.\n            reverse: If True, sort in descending order.\n        \n- collection_flatten: Recursively flatten nested lists.\n\n        Args:\n            items: A potentially nested list to flatten.\n        \n- collection_merge: Merge two dictionaries. Values from dict_b win on conflict.\n\n        Args:\n            dict_a: The base dictionary.\n            dict_b: The dictionary to merge in (wins on conflict).\n        \n- collection_filter_gt: Filter numbers greater than a threshold.\n\n        Args:\n            items: List of numbers to filter.\n            threshold: The threshold value.\n        \n- collection_unique: Remove duplicates from a list, preserving order.\n\n        Uses JSON serialization for dedup keys to handle mixed types.\n\n        Args:\n            items: The list to deduplicate.\n        \n- collection_group_by: Group a list of objects by a key.\n\n        Args:\n            items: List of dictionaries to group.\n            key: The key to group by.\n        \n- collection_zip: Zip two lists into a list of pairs.\n\n        Args:\n            list_a: The first list.\n            list_b: The second list.\n        \n- collection_chunk: Split a list into chunks of a given size.\n\n        Args:\n            items: The list to split.\n            size: The chunk size.\n        \n- encoding_base64_encode: Base64-encode a string.\n- encoding_base64_decode: Base64-decode a string. Returns an error if the input is not valid base64.\n- encoding_url_encode: URL-encode a string using percent-encoding (spaces become +).\n- encoding_url_decode: URL-decode a percent-encoded string.\n- encoding_hex_encode: Hex-encode a string.\n- encoding_hex_decode: Hex-decode a string. Returns an error if the input is not valid hex.\n- encoding_md5: Return the MD5 hash hex digest of a string.\n- encoding_sha256: Return the SHA-256 hash hex digest of a string.\n- datetime_parse: Parse an ISO date string and return its components {year, month, day, hour, minute, second}.\n- datetime_format: Format a date to a string using a strftime format specifier.\n- datetime_add_days: Add N days to a date and return the resulting ISO date string.\n- datetime_diff: Return the number of days between two dates (a - b).\n- datetime_day_of_week: Return the weekday name (e.g., 'Friday') for a given date.\n- datetime_is_leap_year: Return whether the given year is a leap year.\n- datetime_days_in_month: Return the number of days in the given month and year.\n- datetime_week_number: Return the ISO week number for the given date.\n- validation_is_email: Check whether a string is a valid email address format.\n- validation_is_url: Check whether a string is a valid URL with http or https scheme.\n- validation_is_ipv4: Check whether a string is a valid IPv4 address.\n- validation_is_ipv6: Check whether a string is a valid IPv6 address.\n- validation_is_uuid: Check whether a string is a valid UUID.\n- validation_is_json: Check whether a string is valid JSON.\n- validation_is_palindrome: Check whether a string is a case-sensitive palindrome.\n- validation_matches_regex: Check whether a string matches a given regular expression pattern.\n- conversion_celsius_to_fahrenheit: Convert a temperature from Celsius to Fahrenheit.\n- conversion_fahrenheit_to_celsius: Convert a temperature from Fahrenheit to Celsius.\n- conversion_km_to_miles: Convert a distance from kilometers to miles.\n- conversion_miles_to_km: Convert a distance from miles to kilometers.\n- conversion_bytes_to_human: Convert a byte count to a human-readable string (e.g., '1.00 KB').\n- conversion_rgb_to_hex: Convert RGB color values (0-255) to a hex color string.\n- conversion_hex_to_rgb: Convert a hex color string to RGB values. Supports with or without '#' prefix.\n- conversion_decimal_to_binary: Convert a decimal integer to its binary string representation (without '0b' prefix).\n- echo: Return the input message unchanged.\n- echo_error: Always raises a ToolError with the given message.\n- echo_large: Return deterministic text of approximately N kilobytes.\n- echo_nested: Return nested JSON structure to the given depth.\n- echo_types: Return an object containing all JSON types.\n- echo_empty: Return an empty string result.\n- echo_multiple: Return multiple TextContent blocks, one per message.\n- echo_schema: Echo all parameters back as JSON.\n- get_weather: Get weather for a city. Always returns fixed deterministic data (77°F, sunny).\n\nRespond with ONLY a JSON object: {\"selected_tools\": [\"tool_name_1\", \"tool_name_2\", ...]}",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "Reverse the string 'hello world' and add 33 and 21 append the result to that string, then write a report with the result.\n\nRespond in json format.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ ],
+    "jsonOutput" : true,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 4096,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_04f64cda575cf12f006aa83c72736c87d0bac6f08924c60e11",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 1329,
+        "completionTokens" : 63,
+        "totalTokens" : 1392,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_04f64cda575cf12f006aa83c72736c87d0bac6f08924c60e11",
+        "reasoning_tokens" : 40
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "{\"selected_tools\":[\"string_reverse\",\"math_add\",\"format_report\"]}",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "STOP",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

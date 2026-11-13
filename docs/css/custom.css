@@ -1423,7 +1423,7 @@ body {
   display: flex;
   min-height: 102px;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 6px;
   padding: 16px;
   border: 1px solid var(--c-border);
@@ -3137,6 +3137,21 @@ code.hero-terminal {
   background: transparent;
   border-radius: 0;
   padding: 0;
+}
+/* Mermaid diagrams are baked with the light workflow palette at build time
+   (main.py MERMAID_WORKFLOW_INIT), while their HTML labels pick up Material's
+   dark-scheme colors — white text on light fills, unreadable. Keep the diagram
+   card light in dark mode and re-pin the label variables so the diagram
+   renders exactly as in light mode, on a light card. */
+[data-md-color-scheme="slate"] .md-typeset .workflow-diagram {
+  background: linear-gradient(135deg, rgba(25, 118, 210, 0.07), transparent 52%), #f8f9fa;
+  border-color: #e8ebf0;
+  color: #1e293b;
+  --md-mermaid-label-fg-color: #1e293b;
+  --md-mermaid-label-bg-color: transparent;
+  --md-mermaid-edge-color: #1e3a8a;
+  --md-mermaid-node-fg-color: #1e293b;
+  --md-mermaid-node-bg-color: #eef2ff;
 }
 
 /* ---------- Durable Adaptive Graphs hero (dynamic-workflows.md inline SVG) ---------- */

@@ -1,4 +1,5 @@
-import { dynamicSort } from "./helpers";
+import { dynamicSort, formatForColumn } from "./helpers";
+import { ColumnCustomType, LegacyColumn } from "./types";
 
 const cases = [
   {
@@ -177,4 +178,37 @@ describe("Compare 2 objects for sorting", () => {
       expect(result).toEqual(expected);
     },
   );
+});
+
+describe("formatForColumn", () => {
+  const booleanColumn = {
+    id: "restartable",
+    name: "restartable",
+    label: "Restartable",
+    type: ColumnCustomType.BOOLEAN,
+  } as LegacyColumn;
+
+  test.each([
+    { value: true, expected: "Yes" },
+    { value: false, expected: "No" },
+  ])("labels $value as $expected", ({ value, expected }) => {
+    const format = formatForColumn(booleanColumn);
+
+    expect(format({ restartable: value }, 0)).toEqual(expected);
+  });
+
+  test("leaves a missing boolean value untouched", () => {
+    const format = formatForColumn(booleanColumn);
+
+    expect(format({}, 0)).toBeUndefined();
+  });
+
+  test("prefers an explicit renderer over the boolean label", () => {
+    const format = formatForColumn({
+      ...booleanColumn,
+      renderer: (value: boolean) => (value ? "hit" : "miss"),
+    } as LegacyColumn);
+
+    expect(format({ restartable: true }, 0)).toEqual("hit");
+  });
 });

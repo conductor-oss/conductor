@@ -1,0 +1,141 @@
+/*
+ * Copyright 2026 Conductor Authors.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package org.conductoross.conductor.ai.decision;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.conductoross.conductor.ai.http.RetryInterceptor;
+import org.springframework.stereotype.Component;
+
+import com.netflix.conductor.sdk.workflow.executor.task.NonRetryableException;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+import static org.conductoross.conductor.ai.decision.DecisionValidation.requireResponse;
+import static tools.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS;
+
+/** Provider-neutral HTTP transport for structured decision inference. */
+@Component
+public class HttpDecisionClient implements DecisionClient {
+    private static final int MAX_RESPONSE_BYTES = 2_000_000;
+    private final DecisionConfiguration config;
+    private final ObjectMapper mapper;
+    private final OkHttpClient client;
+    private final Map<String, DecisionApiAdapter> adapters;
+
+    public HttpDecisionClient(
+            DecisionConfiguration config,
+            ObjectMapper mapper,
+            OkHttpClient client,
+            List<DecisionApiAdapter> adapters) {
+        this.config = config;
+        this.mapper = mapper;
+        this.adapters =
+                adapters.stream()
+                        .collect(
+                                Collectors.toUnmodifiableMap(
+                                        DecisionApiAdapter::name, Function.identity()));
+        // Decision SWITCH failures must not retry HTTP calls. Redirects must not forward the API
+        // key.
+        OkHttpClient.Builder builder =
+                client.newBuilder()
+                        .followRedirects(false)
+                        .followSslRedirects(false)
+                        .retryOnConnectionFailure(false)
+                        .callTimeout(config.getTimeout())
+                        .readTimeout(config.getTimeout());
+        builder.interceptors().removeIf(RetryInterceptor.class::isInstance);
+        this.client = builder.build();
+    }
+
+    @Override
+    public DecisionResult decide(DecisionRequest input) {
+        DecisionConfiguration.Route route = config.resolve(input.provider(), input.model());
+        DecisionApiAdapter adapter = adapters.get(route.apiShape());
+        requireResponse(adapter != null, "Unknown decision API shape: " + route.apiShape());
+        long started = System.nanoTime();
+        try {
+            Request request = buildRequest(input, route, adapter);
+            try (Response response = client.newCall(request).execute()) {
+                JsonNode data = readResponse(response);
+                DecisionResult result =
+                        adapter.decode(
+                                data,
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started),
+                                route.provider());
+                DecisionValidation.result(input, result);
+                return result;
+            }
+        } catch (JacksonException e) {
+            throw new NonRetryableException("Invalid Decision JSON response");
+        } catch (IOException e) {
+            // Provider errors may contain credentials; omit response bodies and causes.
+            throw new IllegalStateException("Decision transport failed");
+        }
+    }
+
+    private Request buildRequest(
+            DecisionRequest input, DecisionConfiguration.Route route, DecisionApiAdapter adapter)
+            throws JacksonException {
+        byte[] payload = mapper.writeValueAsBytes(adapter.encode(input));
+        DecisionHttpRequest providerRequest = adapter.createRequest(input, route, payload);
+        validateRequest(providerRequest);
+        Request.Builder requestBuilder = new Request.Builder().url(providerRequest.endpoint());
+        providerRequest.headers().forEach(requestBuilder::header);
+        RequestBody body =
+                providerRequest.body() == null
+                        ? null
+                        : RequestBody.create(
+                                providerRequest.body(), MediaType.get(providerRequest.mediaType()));
+        return requestBuilder.method(providerRequest.method(), body).build();
+    }
+
+    private static void validateRequest(DecisionHttpRequest request) {
+        requireResponse(
+                request != null
+                        && request.endpoint() != null
+                        && !request.endpoint().isBlank()
+                        && request.method() != null
+                        && !request.method().isBlank()
+                        && request.headers() != null
+                        && (request.body() == null
+                                || (request.mediaType() != null && !request.mediaType().isBlank())),
+                "invalid provider HTTP request");
+    }
+
+    private JsonNode readResponse(Response response) throws IOException {
+        if (!response.isSuccessful()) {
+            String error = "Decision HTTP status " + response.code();
+            if (response.code() == 429 || response.code() >= 500) {
+                throw new IllegalStateException(error);
+            }
+            throw new NonRetryableException(error);
+        }
+        requireResponse(response.body() != null, "empty Decision response");
+        byte[] bytes = response.body().byteStream().readNBytes(MAX_RESPONSE_BYTES + 1);
+        requireResponse(bytes.length <= MAX_RESPONSE_BYTES, "Decision response too large");
+        return mapper.reader().with(USE_BIG_DECIMAL_FOR_FLOATS).readTree(bytes);
+    }
+}

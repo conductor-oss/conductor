@@ -26,7 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.conductoross.conductor.es8.config.ElasticSearchProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.metrics.Monitors;
 
@@ -130,7 +130,7 @@ class Es8BulkIngestionSupport {
         long startTime = System.currentTimeMillis();
         try {
             retryTemplate.execute(
-                    context -> {
+                    () -> {
                         elasticSearchClient.index(
                                 i -> {
                                     i.index(index).document(doc).refresh(refreshPolicy);
@@ -213,7 +213,7 @@ class Es8BulkIngestionSupport {
                         logger.error("Bulk indexing failed for doc type {}", docType, failure);
                         try {
                             retryTemplate.execute(
-                                    context -> {
+                                    () -> {
                                         elasticSearchClient.bulk(request);
                                         return null;
                                     });
@@ -279,7 +279,7 @@ class Es8BulkIngestionSupport {
         }
         try {
             retryTemplate.execute(
-                    context -> {
+                    () -> {
                         elasticSearchClient.bulk(b -> b.operations(failedOperations));
                         return null;
                     });

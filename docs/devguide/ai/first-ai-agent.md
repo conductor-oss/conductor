@@ -42,7 +42,7 @@ Start with one of these maintained, runnable SDK paths:
 
 - [Run Your First Conductor Agent](../../quickstart/first-agent.md) — Python example; Conductor Agents also support Java, TypeScript/JavaScript, and C#.
 - [Framework Agent Quickstarts](../../quickstart/framework-agents.md) — OpenAI Agents, Google ADK, LangChain/LangChain4j, LangGraph/LangGraph4j, and Vercel AI SDK.
-- [Framework Agent Bridges](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every bridge.
+- [Framework Agents](agent-framework-recipes.md) — the supported SDK, lifecycle, and executable example for every framework.
 
 For this tutorial, deploy an agent named `greeter`. The agent takes a prompt and returns a concise answer. The framework code belongs in the maintained SDK example; the workflow below needs only the stable deployed-agent contract.
 
@@ -176,6 +176,6 @@ From here, add ordinary Conductor capabilities around the same agent: a `HUMAN` 
 ## Next steps
 
 - [Conductor Agents](conductor-agents.md) — complete `AGENT` input, output, wait/resume, timeout, and cancellation contract.
-- [Framework Agent Bridges](agent-framework-recipes.md) — choose the supported SDK bridge for your framework.
+- [Framework Agents](agent-framework-recipes.md) — choose the supported Conductor SDK for your framework.
 - [Human-in-the-Loop](human-in-the-loop.md) — pause a graph for review and resume an agent safely.
 - [A2A Integration](a2a-integration.md) — use a remote A2A agent instead of an SDK-authored Conductor Agent.

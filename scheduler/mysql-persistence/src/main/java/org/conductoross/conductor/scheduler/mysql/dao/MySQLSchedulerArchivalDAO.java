@@ -18,7 +18,7 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
@@ -27,10 +27,10 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.mysql.dao.MySQLBaseDAO;
 import com.netflix.conductor.mysql.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.orkes.conductor.dao.archive.SchedulerArchivalDAO;
 import io.orkes.conductor.dao.archive.SchedulerSearchQuery;
 import io.orkes.conductor.scheduler.model.WorkflowScheduleExecutionModel;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * MySQL implementation of {@link SchedulerArchivalDAO}.

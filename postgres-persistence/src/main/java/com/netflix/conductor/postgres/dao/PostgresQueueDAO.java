@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
@@ -30,11 +30,11 @@ import com.netflix.conductor.postgres.util.ExecutorsUtil;
 import com.netflix.conductor.postgres.util.PostgresQueueListener;
 import com.netflix.conductor.postgres.util.Query;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
@@ -55,7 +55,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
                 Executors.newSingleThreadScheduledExecutor(
                         ExecutorsUtil.newNamedThreadFactory("postgres-queue-"));
         this.scheduledExecutorService.scheduleAtFixedRate(
-                this::processAllUnacks,
+                this::runScheduledProcessAllUnacks,
                 UNACK_SCHEDULE_MS,
                 UNACK_SCHEDULE_MS,
                 TimeUnit.MILLISECONDS);
@@ -149,6 +149,13 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
+        // A zero- (or negative-) count poll can never pop a message, so return immediately.
+        // Otherwise the long-poll loop below would block for the full timeout waiting on a message
+        // it would never accept. This preserves the immediate empty return that callers relied on
+        // before issue #142 moved the loop guard onto what was actually popped.
+        if (count <= 0) {
+            return new ArrayList<>();
+        }
         if (timeout < 1) {
             List<Message> messages =
                     getWithTransactionWithOutErrorPropagation(
@@ -160,25 +167,24 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         }
 
         long start = System.currentTimeMillis();
-        final List<Message> messages = new ArrayList<>();
 
         while (true) {
             List<Message> messagesSlice =
                     getWithTransactionWithOutErrorPropagation(
-                            tx -> popMessages(tx, queueName, count - messages.size(), timeout));
+                            tx -> popMessages(tx, queueName, count, timeout));
             if (messagesSlice == null) {
                 logger.warn(
-                        "Unable to poll {} messages from {} due to tx conflict, only {} popped",
-                        count,
-                        queueName,
-                        messages.size());
-                // conflict could have happened, returned messages popped so far
-                return messages;
+                        "Unable to poll {} messages from {} due to tx conflict", count, queueName);
+                return new ArrayList<>();
             }
 
-            messages.addAll(messagesSlice);
-            if (messages.size() >= count || ((System.currentTimeMillis() - start) > timeout)) {
-                return messages;
+            // Long-poll semantics: return as soon as at least one message is available (up to
+            // count), rather than blocking for the full timeout waiting to fill the whole batch.
+            // The retry is still needed to keep waiting while the queue is empty; there is no
+            // partial batch to accumulate because we return on the first non-empty poll. This
+            // matches the Redis queue behavior and keeps tail latency low under low activity.
+            if (!messagesSlice.isEmpty() || ((System.currentTimeMillis() - start) > timeout)) {
+                return messagesSlice;
             }
             Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
         }
@@ -313,6 +319,30 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     }
 
     /**
+     * Scheduled entry point for {@link #processAllUnacks()}.
+     *
+     * <p>An exception that escapes a {@code scheduleAtFixedRate} task cancels every later run of
+     * it, and the executor keeps that exception in the task's future instead of logging it. One
+     * failed run, for example a dropped connection (the retry template only retries deadlocks and
+     * serialization failures), would therefore stop un-popping messages for the life of the
+     * process, silently. The sweeper leaves a workflow's decider message popped after a sweep that
+     * does not re-arm it, so a workflow that only the sweeper can move (such as one whose worker
+     * polled a task and died) would then never be decided again: its task stays IN_PROGRESS past
+     * both responseTimeoutSeconds and timeoutSeconds. Logging the failure here keeps the schedule
+     * alive, so the next run picks the work up once the database is reachable again.
+     */
+    void runScheduledProcessAllUnacks() {
+        try {
+            processAllUnacks();
+        } catch (Exception e) {
+            logger.error(
+                    "processAllUnacks failed; popped messages are re-checked in {} ms",
+                    UNACK_SCHEDULE_MS,
+                    e);
+        }
+    }
+
+    /**
      * Un-pop all un-acknowledged messages for all queues.
      *
      * @since 1.11.6
@@ -434,8 +464,9 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
         createQueueIfNotExists(connection, queueName);
 
+        // Bug #1667: Reset popped = false on re-push so messages become immediately poppable
         String UPDATE_MESSAGE =
-                "UPDATE queue_message SET payload=?, deliver_on=(current_timestamp + (? ||' seconds')::interval) WHERE queue_name = ? AND message_id = ?";
+                "UPDATE queue_message SET payload=?, deliver_on=(current_timestamp + (? ||' seconds')::interval), popped = false WHERE queue_name = ? AND message_id = ?";
         int rowsUpdated =
                 query(
                         connection,
@@ -449,7 +480,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
         if (rowsUpdated == 0) {
             String PUSH_MESSAGE =
-                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES ((current_timestamp + (? ||' seconds')::interval), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on";
+                    "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES ((current_timestamp + (? ||' seconds')::interval), ?,?,?,?,?) ON CONFLICT (queue_name,message_id) DO UPDATE SET payload=excluded.payload, deliver_on=excluded.deliver_on, popped = false";
             execute(
                     connection,
                     PUSH_MESSAGE,

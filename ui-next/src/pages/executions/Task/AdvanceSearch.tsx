@@ -16,6 +16,7 @@ import {
   TASK_SEARCH_QUERY_SUGGESTIONS,
   WORKFLOW_SEARCH_QUERY_SUGGESTIONS,
 } from "utils/constants/common";
+import { FEATURES, featureFlags } from "utils";
 import { useLocalStorage } from "utils/localstorage";
 import { DateControlComponent } from "../DateControlComponent";
 import { ExampleSearchQuery } from "../SearchExampleQuery";
@@ -40,8 +41,8 @@ interface AdvanceSearchComponentProps {
   setOpenDateSelect: Dispatch<SetStateAction<boolean>>;
   setToDisplayTime: Dispatch<SetStateAction<string>>;
   openEndDatePicker: boolean;
-  setFreeText: QueryDispatch<SetStateAction<string>>;
-  setQueryText: QueryDispatch<SetStateAction<string>>;
+  setFreeText: (value: string) => void;
+  setQueryText: (value: string) => void;
   setShowCodeDialog: QueryDispatch<SetStateAction<string>>;
   handleReset: () => void;
   doSearch: () => void;
@@ -82,6 +83,9 @@ export const AdvanceSearch = ({
   onEndToChange,
   recentSearches,
 }: AdvanceSearchComponentProps) => {
+  const showTaskReferenceName = featureFlags.isEnabled(
+    FEATURES.SHOW_TASK_REFERENCE_NAME,
+  );
   const disposeRef = useRef<null | (() => void)>(null);
 
   useEffect(() => {
@@ -151,7 +155,10 @@ export const AdvanceSearch = ({
                     ...TASK_SEARCH_QUERY_SUGGESTIONS,
                     ...taskTypes,
                     ...taskStatuses,
-                  ];
+                  ].filter(
+                    (property) =>
+                      showTaskReferenceName || property !== "referenceTaskName",
+                  );
 
                   // Provide suggestions for properties that start with the current text
                   const propertySuggestions = propertyKeys.map((property) => ({

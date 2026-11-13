@@ -1,0 +1,95 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You are a refund specialist. Process the customer's refund request. Check eligibility, confirm the refund amount, and let them know the timeline. Be empathetic and clear. Do NOT ask follow-up questions — just process the refund based on what the customer told you.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "I bought a product last week and it arrived damaged. I want my money back.\n\n[support -> refund_specialist]: Customer purchased a product last week, it arrived damaged, and they are requesting a full refund. Please check eligibility, process the refund based on this information, confirm the amount, and provide the expected timeline without asking follow-up questions.\n\n[refund_specialist]: I’m sorry your product arrived damaged. It qualifies for a full refund, including the product purchase price. However, I don’t have access to the payment system in this chat to submit the refund or confirm the exact amount.\n\nOnce processed, refunds typically appear within **5–10 business days**, depending on your payment provider.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "refund_specialist_transfer_to_support",
+      "description" : "Transfer the conversation to support. You are the front-line customer support agent. Triage customer requests. If the customer needs a refund, transfer to the refund specialist. If they have a technical issue, transfer to tech support. Use the transfer tools available to you to hand off the conversation. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for support: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    }, {
+      "name" : "refund_specialist_transfer_to_tech_support",
+      "description" : "Transfer the conversation to tech_support. You are a technical support specialist. Diagnose the customer's technical issue and provide clear troubleshooting steps. Call at most ONE transfer tool per turn.",
+      "inputSchema" : {
+        "type" : "object",
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "description" : "Hand-off note for tech_support: what they should do next and any context they need.",
+            "type" : "string"
+          }
+        }
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_0714331fe07753c7006aa82c08875087d097df6fccfd028211",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 394,
+        "completionTokens" : 146,
+        "totalTokens" : 540,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_0714331fe07753c7006aa82c08875087d097df6fccfd028211",
+        "reasoning_tokens" : 68
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_qvJK0pUZK60Us9CIKfb6TQch",
+          "type" : "function",
+          "name" : "refund_specialist_transfer_to_support",
+          "arguments" : "{\"message\":\"Customer's damaged product purchase from last week qualifies for a full refund of the product purchase price. Please process the refund through the payment system and confirm the exact refunded amount. Advise that funds typically appear within 5–10 business days, depending on the payment provider.\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

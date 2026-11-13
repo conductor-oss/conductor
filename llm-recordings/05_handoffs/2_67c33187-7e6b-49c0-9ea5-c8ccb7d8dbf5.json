@@ -1,0 +1,81 @@
+{
+  "schemaVersion" : 3,
+  "request" : {
+    "messages" : [ {
+      "role" : "system",
+      "text" : "You handle billing questions: balances, payments, invoices.",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    }, {
+      "role" : "user",
+      "text" : "What's the balance on account ACC-123?\n\n[coordinator -> billing]",
+      "toolCalls" : [ ],
+      "toolResults" : [ ]
+    } ],
+    "tools" : [ {
+      "name" : "check_balance",
+      "description" : "Check the balance of a bank account.",
+      "inputSchema" : {
+        "type" : "object",
+        "properties" : {
+          "account_id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "account_id" ]
+      }
+    } ],
+    "jsonOutput" : false,
+    "outputSchema" : null,
+    "generationOptions" : {
+      "temperature" : 0.0,
+      "maxTokens" : 16384,
+      "thinkingTokenLimit" : 0
+    }
+  },
+  "response" : {
+    "metadata" : {
+      "id" : "resp_037290647377e488006aa82af6531087d08ee1e7fca7260616",
+      "model" : "gpt-5.6-luna",
+      "usage" : {
+        "promptTokens" : 75,
+        "completionTokens" : 31,
+        "totalTokens" : 106,
+        "nativeUsage" : null
+      },
+      "rateLimit" : {
+        "requestsLimit" : 0,
+        "requestsRemaining" : 0,
+        "requestsReset" : 0,
+        "tokensLimit" : 0,
+        "tokensRemaining" : 0,
+        "tokensReset" : 0
+      },
+      "promptMetadata" : [ ],
+      "properties" : {
+        "response_id" : "resp_037290647377e488006aa82af6531087d08ee1e7fca7260616",
+        "reasoning_tokens" : 8
+      }
+    },
+    "results" : [ {
+      "output" : {
+        "text" : "",
+        "metadata" : {
+          "messageType" : "ASSISTANT"
+        },
+        "toolCalls" : [ {
+          "id" : "call_IY7zB6zIuQFI6Nj8FxeBIJvG",
+          "type" : "function",
+          "name" : "check_balance",
+          "arguments" : "{\"account_id\":\"ACC-123\"}"
+        } ],
+        "media" : [ ]
+      },
+      "metadata" : {
+        "finishReason" : "TOOL_CALLS",
+        "contentFilters" : [ ],
+        "properties" : { }
+      }
+    } ]
+  }
+}

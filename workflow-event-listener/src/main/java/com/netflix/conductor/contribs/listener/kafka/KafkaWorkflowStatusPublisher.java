@@ -25,8 +25,8 @@ import com.netflix.conductor.common.run.WorkflowSummaryExtended;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.model.WorkflowModel;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /** Kafka-based publisher for workflow status events. */
 public class KafkaWorkflowStatusPublisher implements WorkflowStatusListener, DisposableBean {
@@ -147,7 +147,7 @@ public class KafkaWorkflowStatusPublisher implements WorkflowStatusListener, Dis
                         }
                     });
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.error(
                     "Error serializing workflow event for {}: {}", eventType, e.getMessage(), e);
         } catch (Exception e) {
